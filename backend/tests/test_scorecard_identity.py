@@ -33,6 +33,16 @@ def _patch(rl, data, *, matches=False):
     )
 
 
+@pytest.fixture(autouse=True)
+def _no_candidate_lookups():
+    """The resolution panel asks both address sources for every PIN at the address;
+    these tests are about identity reconciliation, not that lookup (which has its own
+    tests), and unit tests may not touch the network."""
+    with patch("backend.retrieval.property.address_points.address_point_pins", new=AsyncMock(return_value=[])), \
+         patch("backend.retrieval.property.parcel_addresses.assessor_address_pins", new=AsyncMock(return_value=[])):
+        yield
+
+
 async def test_approximate_neighbor_pin_is_withheld_and_flagged():
     """Round-trip fails (neighbour) → PIN withheld, confidence stays approximate,
     nearest_parcel_unverified set. Never surface the neighbour as identity."""
@@ -79,3 +89,37 @@ async def test_approximate_without_property_pin_is_not_flagged():
     assert out["resolved_pin"] is None
     assert out["nearest_parcel_unverified"] is False
     match_mock.assert_not_awaited()
+
+
+async def test_passed_not_on_map_matches_the_profile_parcel_by_pin(monkeypatch):
+    """The Profile's context carries the reconciled PIN, so an off-map rezoning that lists the parcel
+    matches on the PIN even when the address text sits outside the listed range (a corner lot's other
+    address). A withheld PIN (approximate) leaves the address to decide."""
+    from datetime import datetime, timezone
+
+    from backend.legislation import currency
+    from backend.models import ZoningSummary
+    from backend.tests.test_rezonings import _row, _snap
+
+    now = datetime(2026, 10, 21, 12, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(currency, "_now", lambda n=None: now)
+    snap = _snap(_row())  # lists PIN 17000000000001 on 6701-6717 S Western Ave (odd)
+    monkeypatch.setattr(currency, "load_snapshot", lambda: snap)
+
+    def data():
+        return {"context": ContextObject(parcel_zoning=ZoningSummary(zone_class="B3-2"), resolved_address="1 N Elsewhere Ave"),
+                "comparables": None}
+
+    rl = main.ResolvedLocation(41.77, -87.68, "1 N Elsewhere Ave", "17000000000001", "authoritative")
+    p_resolve, p_fetch, p_match = _patch(rl, data())
+    with p_resolve, p_fetch, p_match:
+        out = await main.scorecard(address="1 N Elsewhere Ave")
+    assert out["context"]["parcel_pin"] == "17000000000001"
+    hit = out["context"]["passed_not_on_map"][0]
+    assert hit["record"] == "SO2026-0028350" and hit["matched_by"] == "pin"
+
+    rl2 = main.ResolvedLocation(41.77, -87.68, "1 N Elsewhere Ave", None, "approximate")
+    p_resolve, p_fetch, p_match = _patch(rl2, data())
+    with p_resolve, p_fetch, p_match:
+        out = await main.scorecard(address="1 N Elsewhere Ave")
+    assert "passed_not_on_map" not in out["context"]   # no PIN, and the address is outside the range

@@ -1,0 +1,131 @@
+{
+  "columns": [
+    {
+      "dataTypeName": "number",
+      "fieldName": "id"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "case_number"
+    },
+    {
+      "dataTypeName": "calendar_date",
+      "fieldName": "date"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "block"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "iucr"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "primary_type"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "description"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "location_description"
+    },
+    {
+      "dataTypeName": "checkbox",
+      "fieldName": "arrest"
+    },
+    {
+      "dataTypeName": "checkbox",
+      "fieldName": "domestic"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "beat"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "district"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": "ward"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "community_area"
+    },
+    {
+      "dataTypeName": "text",
+      "fieldName": "fbi_code"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": "x_coordinate"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": "y_coordinate"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": "year"
+    },
+    {
+      "dataTypeName": "calendar_date",
+      "fieldName": "updated_on"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": "latitude"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": "longitude"
+    },
+    {
+      "dataTypeName": "location",
+      "fieldName": "location"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_awaf_s7ux"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_6mkv_f3dw"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_vrxf_vc4k"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_bdys_3d7i"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_43wa_7qmu"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_rpca_8um6"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_d9mm_jgwp"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_d3ds_rm58"
+    },
+    {
+      "dataTypeName": "number",
+      "fieldName": ":@computed_region_8hcu_yrd4"
+    }
+  ],
+  "id": "ijzp-q8t2",
+  "name": "Crimes - 2001 to Present",
+  "rowsUpdatedAt": 1792580008
+}

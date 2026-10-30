@@ -24,6 +24,7 @@ from backend.discovery.index_build import (
     assemble_parcel,
 )
 from backend.discovery.parcel_index import read_index, read_meta
+from backend.retrieval.utils import format_pin
 
 AS_OF = datetime.date(2025, 1, 1)
 
@@ -512,6 +513,109 @@ async def test_build_index_degrades_when_a_layer_fails(tmp_path, monkeypatch):
     assert total == 1  # build did not abort
     _, parcels = read_index(tmp_path / "idx.db")
     assert parcels[0].get("in_tif_district") is False  # flag degraded, not crashed
+
+
+# --- suburban points are dropped, not tagged to the bbox's community area ----
+
+_IN_LAT, _IN_LON = 41.9, -87.7       # inside the fake polygon (community area 22)
+_OUT_LAT, _OUT_LON = 41.85, -87.75   # inside the fetched bbox but in no polygon (a suburb)
+
+
+def _fake_ca_by_point(monkeypatch):
+    """community_area_by_point over one fake polygon, CA 22; everything else is outside the city."""
+    poly = _box_around(_IN_LAT, _IN_LON)
+    monkeypatch.setattr(
+        ib, "community_area_by_point",
+        lambda lat, lon: 22 if poly.contains(ib.Point(lon, lat)) else None,
+    )
+
+
+def _spine_row(pin, lat, lon):
+    """Shaped like `_fetch_spine`: `pin` is the dashed key the index stores, `pin_digits` the 14 digits."""
+    return {"pin": format_pin(pin), "pin_digits": pin, "class": "311", "lat": lat, "lon": lon}
+
+
+def test_split_by_community_area_drops_points_outside_every_polygon(monkeypatch):
+    _fake_ca_by_point(monkeypatch)
+    inside = _spine_row("14311000010000", _IN_LAT, _IN_LON)
+    outside = _spine_row("16311000010000", _OUT_LAT, _OUT_LON)
+
+    kept, dropped = ib._split_by_community_area([inside, outside])
+
+    assert kept == [(inside, 22)]  # keeps its own polygon's area
+    assert dropped == [format_pin("16311000010000")]
+
+
+async def test_assemble_ca_excludes_outside_points_and_keeps_polygon_area(monkeypatch):
+    _fake_ca_by_point(monkeypatch)
+    joined: list[list[str]] = []
+
+    async def fake_spine(ca, *, client=None):
+        return [_spine_row("14311000010000", _IN_LAT, _IN_LON),
+                _spine_row("16311000010000", _OUT_LAT, _OUT_LON)]
+
+    async def fake_batch(dataset, pins, order_field, client, settings, *, where_extra=None):
+        joined.append(list(pins))
+        return {}
+
+    async def fake_zoning(ca, *, client=None):
+        return {"features": []}
+
+    monkeypatch.setattr(ib, "_fetch_spine", fake_spine)
+    monkeypatch.setattr(ib, "_batch_latest", fake_batch)
+    monkeypatch.setattr(ib, "zoning_polygons_for_map", fake_zoning)
+    monkeypatch.setattr(ib, "_fetch_address_points", lambda ca, *, client=None: _async([]))
+
+    # Fetched as CA 25 (Austin); the inside point's polygon says 22.
+    rows, outside = await ib._assemble_ca(
+        25, settings=ib.get_settings(), tif_polys=[], ez_polys=[], rail_stations=[],
+        as_of=AS_OF, client=None,
+    )
+
+    assert [r[0] for r in rows] == [format_pin("14311000010000")]
+    assert rows[0][4].count("neighborhood:22") == 1
+    assert "neighborhood:25" not in rows[0][4]
+    assert outside == [format_pin("16311000010000")]
+    # The dropped point never reached a join query.
+    assert all("16311000010000" not in chunk for chunk in joined)
+
+
+async def test_build_index_prunes_stale_outside_rows_on_refresh(tmp_path, monkeypatch):
+    """An index built before the exclusion holds the suburban PIN; a rebuild removes it."""
+    from backend.discovery.parcel_index import upsert_parcels
+
+    _fake_ca_by_point(monkeypatch)
+    path = tmp_path / "idx.db"
+    stale = format_pin("16311000010000")  # the index stores dashed PINs
+    upsert_parcels(path, [(stale, _OUT_LAT, _OUT_LON, {"land_use_class": "multi_family"},
+                           ["neighborhood:25"])])
+
+    async def fake_spine(ca, *, client=None):
+        return [_spine_row("14311000010000", _IN_LAT, _IN_LON),
+                _spine_row("16311000010000", _OUT_LAT, _OUT_LON)]
+
+    async def fake_batch(dataset, pins, order_field, client, settings, *, where_extra=None):
+        return {}
+
+    async def fake_none(*a, **k):
+        return []
+
+    async def fake_zoning(ca, *, client=None):
+        return {"features": []}
+
+    monkeypatch.setattr(ib, "_load_tif_boundaries", fake_none)
+    monkeypatch.setattr(ib, "_load_ez_boundaries", fake_none)
+    monkeypatch.setattr(ib, "_fetch_spine", fake_spine)
+    monkeypatch.setattr(ib, "_batch_latest", fake_batch)
+    monkeypatch.setattr(ib, "zoning_polygons_for_map", fake_zoning)
+    monkeypatch.setattr(ib, "_fetch_address_points", lambda ca, *, client=None: _async([]))
+    monkeypatch.setattr(ib, "default_index_path", lambda: path)
+
+    _, total = await ib.build_index([25], as_of=AS_OF)
+
+    assert total == 1
+    _, parcels = read_index(path)
+    assert [p.pin for p in parcels] == [format_pin("14311000010000")]
 
 
 # --- chunked ingest + streaming finalize (memory-safe build) ----------------

@@ -1,0 +1,38 @@
+{
+ "text": "## Zoning Evaluation \u2014 1218 W George St, Chicago IL\n**PIN:** 14291230290000 | **Parcel resolution:** authoritative (city address records)\n**Municipal Code current through:** Council Journal of March 18, 2026 \u2014 a later amendment may not be reflected.\n\n---\n\n### 1. Zoning District Currently in Effect\n\nThis parcel is zoned **RT-4** (Residential Two-Flat, Townhouse & Multi-Unit). This is confirmed by the City's official GIS parcel record, which you can verify on the [Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning).\n\n---\n\n### 2. Is Residential Use Allowed?\n\n**Yes \u2014 residential use is the primary permitted use in RT-4.** Allowed residential forms include detached houses, two-flats, townhouses, and multi-unit buildings (3+ units), as well as parks, schools, religious institutions, and home occupations [1] (\u00a717-2-0103).\n\n---\n\n### 3. Key Bulk & Density Standards\n\nAll figures are from the zoning table for RT-4 (\u00a717-2-0103) and [1] (\u00a717-2-0303):\n\n| Standard | RT-4 Value |\n|---|---|\n| **FAR** | 1.2 |\n| **Max height** | 38 ft |\n| **Min lot area per dwelling unit** | 1,000 sq ft |\n| **Min lot size** | 1,650 sq ft |\n\n**Lot-area unit yield:** The parcel is 3,075 sq ft \u00f7 1,000 sq ft per unit = **3 units maximum by lot area alone** [1]. *Important caveat:* lot area is only one constraint \u2014 FAR, height limits, parking, and lot configuration can independently reduce achievable units. Conversely, ground-floor Type A accessible units are exempt from the per-unit calculation, and",
+ "error": "Something went wrong while answering. Please try again.",
+ "seconds": 17.7,
+ "citation_warnings": null,
+ "plan_location": {
+  "raw": "1218 W George St, Chicago, Illinois",
+  "type": "address",
+  "resolved_community_area": 6,
+  "resolved_community_area_name": "Lake View",
+  "resolved_address": "1218 W George St, Chicago, IL",
+  "resolved_lat": 41.93458012,
+  "resolved_lon": -87.65966119,
+  "pin": "14291230290000",
+  "resolution": "authoritative"
+ },
+ "plan_sources": [
+  "regulatory_domain",
+  "property_domain",
+  "vector_search",
+  "permits_api",
+  "incentives_domain",
+  "neighborhood_domain"
+ ],
+ "context_zone": {
+  "zone_class": "RT-4",
+  "zone_type": 4,
+  "ordinance_num": "O2026-0025358",
+  "application_num": "23082T1",
+  "ordinance_date": "2026-06-16",
+  "map_updated": "2026-08-21",
+  "clerk_url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=39EAE819-E452-F111-BEC6-001DD80B0E39",
+  "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+  "recently_rezoned": true
+ },
+ "pid": "P7",
+ "address": "1218 W George St"
+}

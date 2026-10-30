@@ -594,7 +594,7 @@ class TestFunnelEvents:
         # ...and the new client-side funnel events ARE accepted.
         for name in (
             "visit_start", "scorecard_view", "checkout_started",
-            "discovery_search", "signup_completed",
+            "discovery_search", "discovery_start_choice", "signup_completed",
         ):
             assert name in _VALID_EVENT_NAMES
 

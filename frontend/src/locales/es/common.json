@@ -9,10 +9,10 @@
   "noConversations": "Aún no hay conversaciones",
   "signIn": "Iniciar sesión con Google",
   "signInShort": "Iniciar sesión",
-  "signInToSave": "Inicia sesión para guardar tu investigación",
-  "signInToSaveShort": "Guardar tu trabajo",
-  "signInTitle": "Inicia sesión para continuar",
-  "signInDescription": "Crea una cuenta para guardar las conversaciones y acceder a todas las funciones.",
+  "signInToSave": "Inicie sesión para guardar su investigación",
+  "signInToSaveShort": "Guardar su trabajo",
+  "signInTitle": "Inicie sesión para continuar",
+  "signInDescription": "Cree una cuenta para guardar las conversaciones y acceder a todas las funciones.",
   "signInFreeNote": "Los usuarios de planes gratuitos tienen un límite de 25 consultas por día",
   "continueBrowsing": "Continuar navegando",
   "signOut": "Cerrar sesión",
@@ -49,7 +49,7 @@
   "questionsLeft_one": "Queda {{count}} pregunta en esta conversación.",
   "questionsLeft_other": "Quedan {{count}} preguntas en esta conversación.",
   "upgradeToPro": "Mejorar a Pro",
-  "followUpPlaceholder": "Escribe una consulta de seguimiento...",
+  "followUpPlaceholder": "Escriba una consulta de seguimiento...",
   "messageLimitReached": "Ha alcanzado el límite de 10 mensajes para esta conversación.",
   "shared": "Compartida",
   "openDataPanel": "Abrir panel de datos",
@@ -59,24 +59,24 @@
   "copyMessage": "Copiar mensaje",
   "maybeLater": "Quizás más tarde",
   "upgradePrompt": {
-    "featureBody": "{{feature}} es una función Pro. Actualiza para desbloquearla junto con consultas ilimitadas, informes en PDF y más.",
-    "genericBody": "Desbloquea consultas ilimitadas, informes de zonificación en PDF, Descubrimiento de propiedades y soporte prioritario por $99/mes.",
+    "featureBody": "{{feature}} es una función Pro. Actualice para desbloquearla junto con consultas ilimitadas, informes en PDF y más.",
+    "genericBody": "Desbloquee consultas ilimitadas, informes de zonificación en PDF, Descubrimiento de propiedades y soporte prioritario por $99/mes.",
     "cta": "Actualizar — $99/mes",
     "redirecting": "Redirigiendo al pago…"
   },
   "reportPrompt": {
-    "title": "Obtén este informe",
+    "title": "Obtenga este informe",
     "buy": "Comprar informe — $25",
     "redirecting": "Redirigiendo al pago…",
-    "orPro": "O obtén informes ilimitados con Pro",
+    "orPro": "O obtenga informes ilimitados con Pro",
     "upgrade": "Actualizar — $99/mes",
     "redirectingShort": "Redirigiendo…",
-    "bodyPrefix": "Descarga un informe profesional de viabilidad de desarrollo para",
+    "bodyPrefix": "Descargue un informe profesional de viabilidad de desarrollo para",
     "haveCode": "¿Tienes un código de acceso?"
   },
-  "loadConversationError": "No se pudo cargar la conversación. Es posible que se haya eliminado o que no tengas acceso.",
+  "loadConversationError": "No se pudo cargar la conversación. Es posible que se haya eliminado o que no tenga acceso.",
   "transcriptTitle": "Transcripción de Chicago",
-  "viewQuestionData": "Haz clic para ver los datos de esta pregunta",
+  "viewQuestionData": "Haga clic para ver los datos de esta pregunta",
   "theme": {
     "label": "Tema",
     "light": "Claro",
@@ -87,5 +87,127 @@
     "comingSoon": "Compras próximamente",
     "reportsSoon": "La compra de informes en línea estará disponible próximamente. La Ficha gratuita tiene los mismos datos de base, y ya puede ver un informe de muestra.",
     "proSoon": "Las suscripciones Pro estarán disponibles próximamente."
+  },
+  "confidence": {
+    "state": {
+      "low": "Low confidence"
+    },
+    "notVerified": "not verified",
+    "noMargin": "no margin of error published",
+    "wideMargin": "margin of error is {{cv}}% of the estimate",
+    "sampleN": "{{n}} {{unit}}",
+    "coverage": "{{pct}}% coverage",
+    "compsBasis": "{{radius}} mi · {{years}} yr",
+    "widened": "(search widened)",
+    "daysOld_one": "{{count}} day old",
+    "daysOld_other": "{{count}} days old",
+    "unit": {
+      "sales_one": "sale",
+      "sales_other": "sales",
+      "parcels_one": "parcel",
+      "parcels_other": "parcels",
+      "units_one": "unit",
+      "units_other": "units",
+      "records_one": "record",
+      "records_other": "records",
+      "buildings_one": "building",
+      "buildings_other": "buildings"
+    },
+    "tier": {
+      "official_record": "Official record",
+      "official_publication": "Official publication",
+      "official_estimate": "Official estimate",
+      "our_calculation": "Our calculation",
+      "ai_extracted": "Read by AI",
+      "non_government": "Private company"
+    },
+    "method": {
+      "recorded": "Recorded by the publisher",
+      "published_text": "Published Municipal Code text",
+      "code_table": "Title 17 table, checked against the code",
+      "hand_reviewed": "Ordinance not yet in the code, read by us",
+      "survey_estimate": "Census survey estimate",
+      "government_model": "Government model",
+      "bracket_median": "Estimated from income brackets",
+      "calculation": "Our calculation",
+      "keyword_grouping": "Grouped by keyword (our grouping)",
+      "ai_read_code": "Read by AI from the code",
+      "ai_read_ordinance": "Read by AI from a scanned ordinance",
+      "ai_read_filing": "Read by AI from the filing",
+      "commercial_index": "Private company's index"
+    },
+    "source": {
+      "chi_building_footprints": "City footprint survey",
+      "private_walkscore": "Walk Score® (private company)",
+      "artifact_chrs": "Historic Resources Survey (frozen)",
+      "cook_treasurer_tax_sale": "County tax-sale records (frozen)",
+      "cook_treasurer_scavenger_sale": "County tax-sale records (frozen)",
+      "chi_energy_benchmarking": "City energy benchmarking (owner-reported)",
+      "cook_assessor_commercial_valuation": "Assessor commercial valuation",
+      "cook_assessor_condo_characteristics": "Assessor condominium record",
+      "cook_ptaxsim": "Cook County PTAXSIM model",
+      "artifact_rent_by_area": "Census rent brackets summed by community area (our aggregation)",
+      "artifact_assessor_model_by_area": "Assessor's apartment income model, by community area",
+      "census_reporter_acs": "Census Bureau ACS 5-year (via Census Reporter)"
+    },
+    "basis": {
+      "source_updated": "source last updated",
+      "record_updated": "this record last changed",
+      "current_through": "current through",
+      "period_end": "latest data",
+      "vintage": "dataset vintage",
+      "tax_year": "tax year"
+    },
+    "withheld": {
+      "small_sample": "Not shown: only {{n}} {{unit}} (needs {{min}}).",
+      "low_coverage": "Not shown: the data covers {{pct}}% here (needs {{min}}%).",
+      "not_comparable": "Not shown: the model counts {{pct}}% of this area's renter households, so it is not a comparable set of homes.",
+      "high_cv": "Not shown: the margin of error is {{cv}}% of the estimate.",
+      "generic": "Not shown: too little data."
+    },
+    "field": {
+      "authority": "Published by: {{value}}",
+      "asOf": "As of: {{value}}",
+      "asOfUnknown": "No date from the publisher; checked {{date}}",
+      "coverage": "Coverage: {{value}}",
+      "precision": "Precision: {{value}} ({{level}}% margin of error)",
+      "agreement": "Checked: {{agree}} of {{n}} readings agreed with a person",
+      "method": "Method: {{value}}",
+      "source": "Source: {{value}}",
+      "scope": "Covers: {{value}}"
+    },
+    "sourceHeading": "Source",
+    "unavailable": "Couldn't be checked today",
+    "ai": "AI",
+    "moeMethod": {
+      "acs_handbook_median": "Summed from Census rent brackets"
+    }
+  },
+  "dataDates": {
+    "noun": {
+      "zoning_map": "Zoning map record",
+      "code_text": "Code text current",
+      "assessor": "Assessor values",
+      "tax_year": "Tax year",
+      "sales": "Sales",
+      "acs_tract": "ACS (tract)",
+      "acs_community_area": "ACS (community area)",
+      "crime": "Crime",
+      "c311": "Open 311 requests",
+      "permits": "Permits",
+      "violations": "Violations",
+      "business": "Business licenses",
+      "vacant": "Vacant buildings",
+      "food": "Food inspections"
+    },
+    "record": "{{noun}} edited {{v}}",
+    "through": "{{noun}} through {{v}}",
+    "period": "{{noun}} {{v}}",
+    "checked": "{{noun}} checked {{v}}",
+    "since_one": "(+{{count}} later zoning amendment)",
+    "since_other": "(+{{count}} later zoning amendments)",
+    "sinceAging_one": "(+{{count}} later zoning amendment as of {{d}})",
+    "sinceAging_other": "(+{{count}} later zoning amendments as of {{d}})",
+    "sinceUnknown": "(couldn't check recently for later amendments)"
   }
 }

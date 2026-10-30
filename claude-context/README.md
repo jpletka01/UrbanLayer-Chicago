@@ -3,7 +3,7 @@
 Load only what the current task needs. **Don't read everything.** One line per file below; the
 `load-urbanlayer-context` skill maps common work-types → the exact files to open.
 
-**The definitive archive is the website About page** (`frontend/src/components/AboutPage.tsx`, ~35
+**The definitive archive is the website About page** (`frontend/src/components/AboutPage.tsx`, ~38
 sections): architecture, design decisions, and war stories in full. Files under `archive/` and `audits/`
 are now short **pointers** into that record + git history — read them for the one-paragraph summary and
 reusable lesson, not the full narrative.
@@ -18,6 +18,9 @@ reusable lesson, not the full narrative.
 - `guides/frontend-guide.md` — components, design tokens, state, map system, responsive, animations.
 - `guides/report.md` — **the $25 Feasibility Report** (current V6 architecture, render isolation, honesty rules, known data-blocks, QA parcels).
 - `guides/zoning-cache.md` — precomputed zoning-extraction cache (reranker is out of the report path); rebuild + limits.
+- `guides/source-confidence.md` — **the source confidence standard**: authority tiers, the five fields (source, date, coverage, precision, method), withhold/fade thresholds, caption rules, source ids, the "adding a figure" checklist. Read before adding or changing any displayed figure.
+- `guides/data-health.md` — **the data-source registry and checker** (`backend/data_health/`): one `SourceSpec` per source, how each date is read, statuses, acks, `check --dry-run`, how to add a source. Read before adding any data source.
+- `guides/code-refresh.md` — **the monthly municipal-code routine**: review what Council passed (`code_amendments.json`), when and how to ingest a new American Legal export, push the index to prod, what each red signal asks of you. Read when the reminder email arrives or before touching `ingestion/` or `backend/legislation/`.
 - `guides/parcel-resolution-truth-model.md` — the canonical address→PIN contract (who may write parcel identity; approximate/nearest-unverified rules).
 - `guides/scorecard-dashboard-model.md` — the Scorecard's dashboard+chat model and card architecture.
 - `guides/deployment.md` — server ops, `.env` template, deploy commands, monitoring, DB backups.
@@ -33,7 +36,7 @@ reusable lesson, not the full narrative.
 
 ## Property Discovery — filter/search workbench (SHIPPED, full citywide, nav-linked)
 - `property-discovery/` — engineering spec (`00`–`09`, normative) + implementation record. **Start with
-  `10-implementation-status.md`.** Live on prod across all 77 community areas (~949k parcels). Impl:
+  `10-implementation-status.md`.** Live on prod across all 77 community areas (~882k in-city parcels; the 2026-10-01 build also held ~67k suburban strays, fixed in PR #128 pending a rebuild; WS8 Phase 0 audit: decision Item 36). Impl:
   `backend/discovery/` + `frontend/src/discovery/`. Strategy/why: `strategy/property-discovery-filters.md`.
   (Spec drift to know: `03` says 29 filters — live is 32; wire is `{rows,total,nextOffset,gated}` + `/search/pins` + `/search/export`.)
 
@@ -51,6 +54,7 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
 - `strategy/2026-07-02_data-expansion-candidates.md` — **live backlog** of available-but-unintegrated data, ranked (Tier 0–2; items 1–2 + appeals/ward shipped in the lot-info arc; CPS/Divvy tail remains).
 
 ## Archive & Audits (pointers — full stories on the About page)
+- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Current: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phase 0 coverage audit; Items 1–36) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
 - `archive/*` — one-paragraph markers for each shipped feature/incident (deployment, expansion, revenue, i18n,
   a-la-carte reports, coherence steps 1–3, selected-parcel, scorecard-ux, report-oom-reranker,
   `2026-06-report-saga` [V3→V6 + R5–R7], pin-resolution-seam, scorecard-chat-grounding, verdict-grounding-ux,
@@ -61,7 +65,17 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   building code — finally indexed and pushed to prod; vitest wired into CI; deploy gated on non-docs
   changes; Discovery range slider, Divvy, assessor permits, FAR-normalized comps],
   **`2026-09-28_pre-share-review`** [multi-lens review → PRs #24–#30: security fixes, visible bugs, lint in
-  CI, EVALS.md, README, purchases-coming-soon; production server hardened via `deploy/hardening-runbook.md`]).
+  CI, EVALS.md, README, purchases-coming-soon; production server hardened via `deploy/hardening-runbook.md`],
+  **`2026-10-26_ws3-map-fixes`** [coverage-safe Property Profile zoning; backend label/availability contract;
+  exact intensity and semantic boundary colors; road-aware ordering; accessible On/Dim/Off, exact/withheld
+  counts, confidence styling, and responsive Layers UI],
+  **`2026-10-27_ws3-discovery-map`** [canonical list/map consistency; truthful unavailable/unlocated/capped
+  states; render-derived Property Use/Upside keys; free/Pro linkage, theme-safe layers, and responsive key UI],
+  **`2026-10-28_ws2-upcoming-zoning`** [pending Clerk snapshot; free Upcoming Zoning list; reviewed pending
+  Title 17 text impacts beside current law; WS2 PR4 extraction intentionally not built],
+  **`2026-10-28_ws4-official-rent`** [PR1–3: Census rent by community area/tract/bedroom (tract else PUMA) and the
+  Assessor's modeled apartment income as a separate series, both committed artifacts; PR4 trends and PR5 HUD
+  SAFMR still active and unapproved]).
   `archive/TEMPLATE.md` is the archivation template.
 - `audits/*` — resolved point-in-time investigations, each pointing at the archive entry or living guide that
   superseded it (full-site-sweep, resolver-investigation, gis-parcel-resolution-fix, design-ux-skills-audit,

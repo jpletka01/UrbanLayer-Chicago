@@ -2,12 +2,16 @@
 
 Loads chunks.jsonl produced by ingestion.chunk, computes embeddings with the
 configured model (default: BAAI/bge-base-en-v1.5, 768-dim), and writes them
-to the chicago_municipal_code Qdrant collection. (A second, Title-17-only
-collection used to be written too; nothing ever searched it, and it was removed.)
+to the collection the ``municipal_code`` alias points at (one collection per code
+vintage, e.g. ``municipal_code_2026-03-18``; see ingestion/push_index.py). With no
+alias yet (a fresh checkout), it creates the collection for the vintage in
+backend/code_vintage.json and points the alias at it. A code refresh goes through
+``ingestion.update``, which embeds into a new collection instead.
 
 Modes:
-  --recreate     Drop and rebuild collections (required after model changes)
+  --recreate     Drop and rebuild the collection (required after model changes)
   --incremental  Only re-embed sections whose content changed since last run
+  --collection   Write to this collection instead of the alias target
 """
 
 from __future__ import annotations
@@ -28,10 +32,9 @@ from qdrant_client.models import (
     PointStruct,
     VectorParams,
 )
-from sentence_transformers import SentenceTransformer
-
 from backend.config import get_settings
 
+from .code_vintage import CODE_ALIAS, collection_for, load_code_vintage
 from .manifest import (
     build_manifest,
     diff_manifests,
@@ -39,6 +42,7 @@ from .manifest import (
     save_manifest,
     set_chunk_counts,
 )
+from .push_index import alias_target, switch_alias
 
 
 log = logging.getLogger(__name__)
@@ -71,6 +75,11 @@ def _delete_section_points(
     )
 
 
+def delete_sections(client: QdrantClient, collection: str, section_ids) -> None:
+    for section_id in section_ids:
+        _delete_section_points(client, collection, section_id)
+
+
 def _embed_and_buffer(
     model, batch: list[dict], buffer: list[PointStruct]
 ) -> None:
@@ -80,12 +89,12 @@ def _embed_and_buffer(
         buffer.append(PointStruct(id=str(uuid.uuid4()), vector=vec.tolist(), payload=chunk))
 
 
-def _run_incremental(client: QdrantClient, model: SentenceTransformer) -> None:
-    settings = get_settings()
+def _run_incremental(client: QdrantClient, model, collection: str) -> None:
     old_manifest = load_manifest()
     if not old_manifest:
         log.warning("No existing manifest -- falling back to full rebuild")
-        _run_full(client, model, save_new_manifest=True)
+        embed_chunks(client, model, collection)
+        _save_manifest_from_sections()
         return
 
     new_manifest = build_manifest(SECTIONS_DIR)
@@ -103,74 +112,42 @@ def _run_incremental(client: QdrantClient, model: SentenceTransformer) -> None:
     )
 
     affected_sections = set(diff.added) | set(diff.modified)
-    collection = settings.qdrant_code_collection
+    delete_sections(client, collection, diff.deleted + diff.modified)
+    if diff.deleted:
+        log.info("Deleted points for %d removed section(s)", len(diff.deleted))
 
-    for section_id in diff.deleted:
-        _delete_section_points(client, collection, section_id)
-        log.info("Deleted points for section %s", section_id)
-
-    for section_id in diff.modified:
-        _delete_section_points(client, collection, section_id)
-
-    if not affected_sections:
-        set_chunk_counts(new_manifest, CHUNKS_FILE)
-        save_manifest(new_manifest)
-        log.info("Done -- only deletions")
-        return
-
-    buffer: list[PointStruct] = []
-    total = 0
-
-    def flush() -> None:
-        nonlocal buffer
-        if buffer:
-            client.upsert(settings.qdrant_code_collection, points=buffer)
-            buffer = []
-
-    with CHUNKS_FILE.open() as fh:
-        batch: list[dict] = []
-        for line in fh:
-            chunk = json.loads(line)
-            if chunk.get("section") not in affected_sections:
-                continue
-            batch.append(chunk)
-            if len(batch) >= BATCH_SIZE:
-                _embed_and_buffer(model, batch, buffer)
-                total += len(batch)
-                batch = []
-                flush()
-        if batch:
-            _embed_and_buffer(model, batch, buffer)
-            total += len(batch)
-
-    flush()
+    total = embed_chunks(client, model, collection, only_sections=affected_sections) if affected_sections else 0
     set_chunk_counts(new_manifest, CHUNKS_FILE)
     save_manifest(new_manifest)
     log.info("Incremental update done -- %d chunks re-embedded", total)
 
 
-def _run_full(
+def embed_chunks(
     client: QdrantClient,
-    model: SentenceTransformer,
-    *,
-    save_new_manifest: bool = False,
+    model,
+    collection: str,
     chunks_path: Path = CHUNKS_FILE,
-) -> None:
-    settings = get_settings()
+    *,
+    only_sections: set[str] | None = None,
+) -> int:
+    """Embed chunks (all, or only those of ``only_sections``) into ``collection``."""
     buffer: list[PointStruct] = []
     total = 0
 
     def flush() -> None:
         nonlocal buffer
         if buffer:
-            client.upsert(settings.qdrant_code_collection, points=buffer)
+            client.upsert(collection, points=buffer, wait=True)
             buffer = []
 
     opener = gzip.open if chunks_path.suffix == ".gz" else open
     with opener(chunks_path, "rt") as fh:
         batch: list[dict] = []
         for line in fh:
-            batch.append(json.loads(line))
+            chunk = json.loads(line)
+            if only_sections is not None and chunk.get("section") not in only_sections:
+                continue
+            batch.append(chunk)
             if len(batch) >= BATCH_SIZE:
                 _embed_and_buffer(model, batch, buffer)
                 total += len(batch)
@@ -183,19 +160,35 @@ def _run_full(
             total += len(batch)
 
     flush()
-    log.info("Done. %d chunks total.", total)
+    log.info("Done. %d chunks embedded into %s.", total, collection)
+    return total
 
-    if save_new_manifest and SECTIONS_DIR.exists():
+
+def _save_manifest_from_sections() -> None:
+    if SECTIONS_DIR.exists():
         manifest = build_manifest(SECTIONS_DIR)
         set_chunk_counts(manifest, CHUNKS_FILE)
         save_manifest(manifest)
         log.info("Saved manifest with %d sections", len(manifest))
 
 
+def resolve_collection(client: QdrantClient) -> str:
+    """The collection behind the alias; without one, the collection for the vintage in
+    backend/code_vintage.json."""
+    target = alias_target(client, CODE_ALIAS)
+    if target:
+        return target
+    vintage = load_code_vintage() or {}
+    if not vintage.get("current_through"):
+        raise SystemExit("No municipal_code alias and no backend/code_vintage.json; pass --collection")
+    return collection_for(vintage["current_through"])
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--recreate", action="store_true", help="Drop and recreate collections")
+    parser.add_argument("--recreate", action="store_true", help="Drop and recreate the collection")
     parser.add_argument("--incremental", action="store_true", help="Only re-embed changed sections")
+    parser.add_argument("--collection", default=None, help="Target collection (default: the alias target)")
     parser.add_argument(
         "--chunks", type=Path, default=None,
         help="Embed this chunks file (.jsonl or .jsonl.gz) instead of the full corpus, e.g. "
@@ -210,31 +203,40 @@ def main() -> None:
     if not chunks_path.exists():
         raise SystemExit(f"No chunks at {chunks_path} -- run ingestion.chunk first")
 
+    from sentence_transformers import SentenceTransformer
+
     log.info("Loading embedding model %s", settings.embedding_model)
     model = SentenceTransformer(settings.embedding_model)
 
     client = QdrantClient(url=settings.qdrant_url)
+    collection = args.collection or resolve_collection(client)
     if args.recreate:
         try:
-            client.delete_collection(settings.qdrant_code_collection)
-            log.info("Deleted collection %s", settings.qdrant_code_collection)
+            client.delete_collection(collection)
+            log.info("Deleted collection %s", collection)
         except Exception:
             pass
-    _ensure_collection(client, settings.qdrant_code_collection, settings.embedding_dim)
+    _ensure_collection(client, collection, settings.embedding_dim)
+    # Deleting a collection drops its aliases too, so this also covers --recreate.
+    if not args.collection and alias_target(client, CODE_ALIAS) != collection:
+        switch_alias(client, collection, CODE_ALIAS)
+        log.info("Pointed alias %s at %s", CODE_ALIAS, collection)
     if args.chunks and not args.recreate:
         # Point ids are random, so embedding a sample into a populated collection
         # would duplicate every chunk it shares with the corpus.
-        existing = client.count(settings.qdrant_code_collection).count
+        existing = client.count(collection).count
         if existing:
             raise SystemExit(
-                f"{settings.qdrant_code_collection} already has {existing} points; "
+                f"{collection} already has {existing} points; "
                 "--chunks is for seeding an empty Qdrant (add --recreate to replace it)."
             )
 
     if args.incremental:
-        _run_incremental(client, model)
+        _run_incremental(client, model, collection)
     else:
-        _run_full(client, model, save_new_manifest=args.chunks is None, chunks_path=chunks_path)
+        embed_chunks(client, model, collection, chunks_path)
+        if args.chunks is None:
+            _save_manifest_from_sections()
 
 
 if __name__ == "__main__":

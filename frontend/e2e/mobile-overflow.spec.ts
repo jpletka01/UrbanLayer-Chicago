@@ -53,6 +53,8 @@ const PAGES: Array<{
     awaitApi: "/api/scorecard",
     settle: 3000,
   },
+  // The Start panel (nothing runs on arrival): audited on its own, then again after one search.
+  { id: "discovery-start", path: "/discovery", settle: 1500 },
   { id: "discovery", path: "/discovery", awaitApi: "/search", settle: 3000 },
   { id: "pricing", path: "/pricing" },
   { id: "about", path: "/about" },
@@ -223,10 +225,70 @@ for (const pageDef of PAGES) {
       : Promise.resolve(null);
 
     await page.goto(pageDef.path, { waitUntil: "domcontentloaded" });
+    // Discovery opens on the Start panel; "discovery" audits the page after one explicit search.
+    if (pageDef.id === "discovery") {
+      await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
+    }
     await page.waitForLoadState("load").catch(() => {});
     await apiWait;
     await page.evaluate(() => document.fonts.ready).catch(() => {});
     await page.waitForTimeout(pageDef.settle ?? 1200);
+
+    // Discovery keeps one Mapbox instance mounted behind the List tab. Reveal it
+    // before auditing so the phone gate catches the hidden-init 400×300 fallback.
+    if (pageDef.id === "discovery") {
+      await page.getByRole("button", { name: "Map", exact: true }).click();
+      const mapPane = page.getByTestId("discovery-map-pane");
+      const mapContainer = page.getByTestId("discovery-map-container");
+      const canvas = mapPane.locator("canvas.mapboxgl-canvas");
+      await expect(mapPane).toBeVisible();
+      await expect(canvas).toBeVisible();
+      await expect.poll(async () => {
+        const containerBox = await mapContainer.boundingBox();
+        const canvasBox = await canvas.boundingBox();
+        if (!containerBox || !canvasBox) return false;
+        const backingStoreMatches = await canvas.evaluate((element) => {
+          const pixelRatio = window.devicePixelRatio;
+          const rect = element.getBoundingClientRect();
+          return (
+            Math.abs(element.width - Math.ceil(rect.width) * pixelRatio) <= pixelRatio &&
+            Math.abs(element.height - Math.ceil(rect.height) * pixelRatio) <= pixelRatio
+          );
+        });
+        return backingStoreMatches && (
+          Math.abs(containerBox.width - canvasBox.width) <= 1 &&
+          Math.abs(containerBox.height - canvasBox.height) <= 1
+        );
+      }, { message: "Discovery Mapbox canvas and backing store must fill its revealed container" }).toBe(true);
+
+      const keyButton = page.getByTestId("discovery-map-key-button");
+      await expect(keyButton).toBeVisible();
+      await keyButton.click();
+      const keyPanel = page.getByTestId("discovery-map-legend");
+      await expect(keyPanel).toBeVisible();
+      const keyBox = await keyPanel.boundingBox();
+      expect(keyBox).not.toBeNull();
+      expect(keyBox!.x).toBeGreaterThanOrEqual(0);
+      expect(keyBox!.x + keyBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+      expect(keyBox!.y).toBeGreaterThanOrEqual(0);
+      expect(keyBox!.y + keyBox!.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
+
+      const controls = [
+        mapPane.locator(".mapboxgl-ctrl-bottom-left"),
+        mapPane.locator(".mapboxgl-ctrl-bottom-right"),
+      ];
+      for (const control of controls) {
+        const controlBox = await control.boundingBox();
+        if (!controlBox) continue;
+        const overlapsControl = !(
+          keyBox!.x + keyBox!.width <= controlBox.x
+          || controlBox.x + controlBox.width <= keyBox!.x
+          || keyBox!.y + keyBox!.height <= controlBox.y
+          || controlBox.y + controlBox.height <= keyBox!.y
+        );
+        expect(overlapsControl, "Discovery Map key must not cover Mapbox controls").toBe(false);
+      }
+    }
 
     const topAudit = await auditOverflow(page);
 
@@ -246,10 +308,40 @@ for (const pageDef of PAGES) {
     });
     await page.waitForTimeout(800);
     const bottomAudit = await auditOverflow(page);
+    let popoverAudit: AuditResult | null = null;
+
+    // M3 parcel-map control: audit the responsive Layers surface while it is
+    // actually open, including the Mapbox-owned bottom-left attribution area.
+    if (pageDef.id === "scorecard") {
+      const layersButton = page.getByTestId("parcel-map-layers-button").first();
+      await expect(layersButton).toBeVisible();
+      await layersButton.scrollIntoViewIfNeeded();
+      await layersButton.click();
+      const popover = page.getByTestId("parcel-map-controls-mobile").first();
+      await expect(popover).toBeVisible();
+      const popoverBox = await popover.boundingBox();
+      expect(popoverBox).not.toBeNull();
+      expect(popoverBox!.x).toBeGreaterThanOrEqual(0);
+      expect(popoverBox!.x + popoverBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+
+      const attributionBox = await layersButton.locator("xpath=..").locator(".mapboxgl-ctrl-bottom-left").boundingBox();
+      if (attributionBox) {
+        const overlapsAttribution = !(
+          popoverBox!.x + popoverBox!.width <= attributionBox.x
+          || attributionBox.x + attributionBox.width <= popoverBox!.x
+          || popoverBox!.y + popoverBox!.height <= attributionBox.y
+          || attributionBox.y + attributionBox.height <= popoverBox!.y
+        );
+        expect(overlapsAttribution, "Layers popover must not cover Mapbox attribution").toBe(false);
+      }
+      popoverAudit = await auditOverflow(page);
+    }
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(400);
 
-    const result = mergeAudits(topAudit, bottomAudit);
+    const result = popoverAudit
+      ? mergeAudits(mergeAudits(topAudit, bottomAudit), popoverAudit)
+      : mergeAudits(topAudit, bottomAudit);
     await saveArtifacts(page, testInfo, pageDef.id, result);
 
     const scrollingOffenders = result.offenders.filter((o) => !o.fixed);

@@ -47,5 +47,7 @@ async def get_characteristics(
         _cache.set(key, rows[0])
         return rows[0]
     except Exception as exc:
+        # Raise (nothing cached): the property domain reports "property characteristics" as a gap instead of
+        # treating a failed call as a parcel the Assessor has no building record for (WS6 M7).
         log.warning("CCAO characteristics failed for PIN %s: %s", pin14, exc)
-        return None
+        raise

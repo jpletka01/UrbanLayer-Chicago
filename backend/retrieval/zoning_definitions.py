@@ -14,7 +14,13 @@ Source sections:
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+
+# The code vintage (code_vintage.json:current_through) this table was last checked against.
+# Evidence is test_zoning_ordinance_parity.py, which compares every value here with the
+# ingested ordinance text. Data health alarms when this no longer equals the served vintage,
+# so after each code refresh: run that test, fix the table, then move this date.
+VERIFIED_AGAINST = "2026-06-17"
 
 
 @dataclass(frozen=True)
@@ -37,6 +43,14 @@ class ZoneDefinition:
     # B/C/M/D districts have no minimum lot size). Distinct from the per-unit
     # density minimums in _MIN_LOT_AREA_PER_UNIT below.
     min_lot_sqft: int | None = None
+    # Minimum lot area PER DWELLING UNIT (Table 17-2-0303-A for R districts,
+    # 17-3-0402-A for B/C, 17-4-0300 for D) — the number that caps unit count on a
+    # given lot. Not stored per row: ``get_zone_definition`` fills it from the one
+    # parity-tested table (``min_lot_area_per_unit``), so it can't drift from it.
+    min_lot_area_per_unit: int | None = None
+    # Exemptions / caveats that change the per-unit number (e.g. the RS-3
+    # Predominance-of-the-Block 1,500 sq ft rule). Empty when none apply.
+    lot_area_note: str = ""
     uses: str = ""
     notes: str = ""
     is_fallback: bool = field(default=False, repr=False)
@@ -74,14 +88,15 @@ ZONE_NAMES: dict[str, str] = {
 # Full zone class data — every standard Chicago zone class
 # ---------------------------------------------------------------------------
 
-_RES_USES = "Detached houses, two-flats, townhouses, parks, schools, religious institutions, home occupations"
+_RES_USES = "Detached houses, two-flats, townhouses, multi-unit buildings (3+ units), parks, schools, religious institutions, home occupations"
 _RS_USES = "Detached houses, parks, schools, religious institutions, home occupations"
+_RS3_USES = "Detached houses, two-flats, parks, schools, religious institutions, home occupations"
 _RM_USES = "Detached houses, two-flats, townhouses, multi-unit buildings, parks, schools, community centers"
 _B1_USES = "Small-scale retail, restaurants, personal services, offices; residential above ground floor. All operations indoors."
 _B2_USES = "Retail, restaurants, services, offices; residential on or above ground floor. All operations indoors."
 _B3_USES = "Broad retail, restaurants, services, entertainment, offices; residential above ground floor. Destination-oriented, higher parking."
-_C1_USES = "Retail, restaurants, offices, personal services, auto-oriented commercial; residential above ground floor."
-_C2_USES = "Broadest commercial: nearly any business/service/commercial use including outdoor operations and storage; residential above ground floor."
+_C1_USES = "Retail, restaurants, offices, personal services, auto-oriented commercial (no new gas stations, §17-3-0207); residential above ground floor."
+_C2_USES = "Broadest commercial: nearly any business/service/commercial use including outdoor operations and storage (no new gas stations, §17-3-0207); residential above ground floor."
 _C3_USES = "Commercial and light manufacturing mix; warehousing, distribution, offices, retail. Outdoor operations permitted."
 _M1_USES = "Light manufacturing, offices, business parks, warehousing. No residential."
 _M2_USES = "Moderate manufacturing, warehousing, distribution. Limited retail. No residential."
@@ -98,7 +113,7 @@ ZONE_CLASS_DATA: dict[str, ZoneDefinition] = {
     # ordinance text 2026-07-06 — see tests/test_zoning_ordinance_parity.py.
     "RS-1": ZoneDefinition("RS-1", "Residential Single-Unit", "§17-2-0102", far=0.50, max_height="30 ft", min_lot_sqft=6250, uses=_RS_USES, notes="Largest lot size. Detached houses only."),
     "RS-2": ZoneDefinition("RS-2", "Residential Single-Unit", "§17-2-0102", far=0.65, max_height="30 ft", min_lot_sqft=5000, uses=_RS_USES, notes="Standard single-family. Detached houses only."),
-    "RS-3": ZoneDefinition("RS-3", "Residential Single-Unit", "§17-2-0102", far=0.90, max_height="30 ft", min_lot_sqft=2500, uses=_RS_USES, notes="Most common RS district. Smaller lots."),
+    "RS-3": ZoneDefinition("RS-3", "Residential Single-Unit", "§17-2-0102", far=0.90, max_height="30 ft", min_lot_sqft=2500, uses=_RS3_USES, notes="Most common RS district. Smaller lots."),
 
     # --- Residential Two-Flat/Townhouse (§17-2-0103, §17-2-0300) ---
     "RT-3.5": ZoneDefinition("RT-3.5", "Residential Two-Flat, Townhouse & Multi-Unit", "§17-2-0103", far=1.05, max_height="35 ft", min_lot_sqft=2500, uses=_RES_USES),
@@ -256,7 +271,11 @@ def get_zone_definition(zone_class: str) -> ZoneDefinition:
     normalized = zone_class.strip().upper()
     exact = ZONE_CLASS_DATA.get(normalized)
     if exact:
-        return exact
+        return replace(
+            exact,
+            min_lot_area_per_unit=min_lot_area_per_unit(normalized),
+            lot_area_note=_lot_area_note(normalized),
+        )
 
     prefix, dash = _parse_zone_prefix(zone_class)
 
@@ -398,4 +417,198 @@ def min_lot_area_per_unit(zone_class: str | None) -> int | None:
         return _BC_PER_UNIT_BY_DASH.get(num)
     if prefix in _D_RESIDENTIAL_PREFIXES:
         return _D_PER_UNIT_BY_DASH.get(num)
+    return None
+
+
+# --- Transit-served benefits (17-3-04xx-B, 17-4-04xx-B, 17-10-0102-B) ---------
+#
+# Being "near transit" buys two different things, and the code gives them to
+# different districts:
+#   * PARKING relief (17-10-0102-B.1): up to 100% off the minimum within 2,640 ft
+#     of a CTA rail entrance / 1,320 ft of a CTA bus corridor in every district
+#     except D (50%); Metra-only locations get up to 50% in all districts.
+#   * FAR / height / lot-area-per-unit increases (17-3-0402-B, -0403-B, -0408-B
+#     for B/C; the D-district equivalents): ONLY dash-3 districts ("B-3 and C-3",
+#     "D-3"), and only through a Type 1 map amendment, a Planned Development or
+#     an ARO entitlement. B1-2, RS-3, RT-4, B3-2 ... get none of it.
+# The kit (P3 B1-2, P6 RS-3, P7 RT-4) caught the product saying "density bonus"
+# wherever a parcel was transit-served. This is the one place that decides.
+
+_TOD_BONUS_PREFIXES = ("B1", "B2", "B3", "C1", "C2", "C3", "DX", "DR", "DS", "DC")
+_TOD_BONUS_CITATION = "17-3-0402-B, 17-3-0403-B, 17-3-0408-B (B/C districts); 17-4 (D districts)"
+_TOD_PARKING_CITATION = "17-10-0102-B"
+
+
+def tod_benefits(
+    zone_class: str | None,
+    in_tod_area: bool,
+    layer_types: tuple[str, ...] | list[str] = (),
+) -> dict | None:
+    """What transit-served status does and does not change for a district.
+
+    Returns ``None`` when the parcel is not in a transit-served area. Otherwise:
+    ``parking_relief`` (True, or None for a Planned Development whose ordinance
+    governs), ``parking_max_reduction_pct`` (100 / 50 / None when the CTA-vs-Metra
+    split is unknown), ``density_bonus_eligible`` (dash-3 B/C and D-3 districts
+    only; even then entitlement-gated), ``entitlement_required`` and a one-line
+    ``note`` the UI and the model can restate.
+    """
+    if not in_tod_area:
+        return None
+    norm = (zone_class or "").strip().upper()
+    prefix, dash = _parse_zone_prefix(norm) if norm else ("", None)
+    is_pd = prefix == "PD"
+    is_d = prefix in ("DX", "DR", "DS", "DC")
+    cta = "tod_cta" in layer_types
+    metra = "tod_metra" in layer_types
+
+    if is_pd:
+        pct: int | None = None
+    elif is_d:
+        pct = 50
+    elif cta:
+        pct = 100
+    elif metra:
+        pct = 50
+    else:
+        pct = None  # transit-served, but we don't know by which kind of station
+
+    eligible = prefix in _TOD_BONUS_PREFIXES and dash == "3"
+    if is_pd:
+        note = "Planned Development: the PD ordinance governs parking and density."
+    elif eligible:
+        note = (
+            f"{norm} is a dash-3 district, so FAR, height and lot-area-per-unit increases for "
+            f"transit-served sites are possible, but only with a Type 1 map amendment, Planned "
+            f"Development or ARO entitlement ({_TOD_BONUS_CITATION}). Parking relief applies by right."
+        )
+    else:
+        label = norm or "this district"
+        note = (
+            f"Transit-served: minimum parking can be reduced ({_TOD_PARKING_CITATION}). "
+            f"No density, FAR or height bonus at {label}: those apply only in dash-3 districts "
+            f"({_TOD_BONUS_CITATION})."
+        )
+    return {
+        "parking_relief": None if is_pd else True,
+        "parking_max_reduction_pct": pct,
+        "density_bonus_eligible": eligible,
+        "entitlement_required": eligible,
+        "note": note,
+    }
+
+
+# --- Unit yield by lot area (F3) -------------------------------------------------
+#
+# "How many units fit?" is answered first by lot area per dwelling unit
+# (Table 17-2-0303-A / 17-3-0402-A / 17-4-0300). Chat used to guess this number
+# from memory (kit: RM-4.5 stated as 1,000 sq ft instead of 700 → 3 units instead
+# of 4). The arithmetic is deterministic, so compute it, show its inputs, and say
+# plainly that it is only one of several limits.
+
+_UNIT_YIELD_CAVEAT = (
+    "Lot area per unit only: FAR, height, parking and other standards can allow fewer units, "
+    "and exemptions (efficiency/SRO units, ground-floor Type A units) can allow more."
+)
+
+
+def _lot_area_note(zone_class: str) -> str:
+    """Exemptions that change the per-unit number for this district (§17-2-0303-B)."""
+    prefix, _ = _parse_zone_prefix(zone_class)
+    notes: list[str] = []
+    if zone_class == "RS-3":
+        notes.append(
+            "Reduced to 1,500 sq ft per unit (two-unit building only) when the parcel is in the "
+            "Predominance of the Block (606) district or 60% or more of the lots on the block face "
+            "already hold two or more units (§17-2-0303-B.1)."
+        )
+    if zone_class in ("RS-3", "RT-3.5", "RT-4"):
+        notes.append("Ground-floor Type A accessible units are exempt from this count (§17-2-0303-B.2).")
+    if prefix in ("RT", "RM", "B1", "B2", "B3", "C1", "C2", "DX", "DC", "DR"):
+        notes.append("Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table).")
+    return " ".join(notes)
+
+
+def max_units_by_lot_area(zone_class: str | None, lot_sqft: float | int | None) -> dict | None:
+    """Maximum dwelling units the lot's AREA allows, with the arithmetic shown.
+
+    None when the district has no per-unit minimum (C3, M, DS, PD, unknown) or the
+    lot area is unknown — never a fabricated number.
+    """
+    mla = min_lot_area_per_unit(zone_class)
+    if not mla or not lot_sqft or lot_sqft <= 0:
+        return None
+    lot = int(round(lot_sqft))
+    units = lot // mla
+    ratio = lot / mla
+    arithmetic = f"{lot:,} sq ft ÷ {mla:,} sq ft per unit = {ratio:.1f} → {units} unit{'s' if units != 1 else ''}"
+    caveat = _UNIT_YIELD_CAVEAT
+    note = _lot_area_note((zone_class or "").strip().upper())
+    if (zone_class or "").strip().upper() == "RS-3":
+        caveat += " In a Predominance of the Block (606) district RS-3 can add a second unit at 1,500 sq ft per unit (§17-2-0303-B.1)."
+    return {
+        "units": units,
+        "lot_sqft": lot,
+        "min_lot_area_per_unit": mla,
+        "arithmetic": arithmetic,
+        "basis": "Minimum lot area per dwelling unit for the district",
+        "caveat": caveat,
+        "lot_area_note": note,
+    }
+
+
+# --- Accessory dwelling units: coach houses and conversion units (F7) -----------------
+#
+# The ADU map layer returns a hit for any point inside an "ADU zone" polygon, but the
+# zones only matter for RS districts (§17-7-0570): coach houses and conversion units are
+# permitted by right in RT, RM and the B/C districts, and in an RS district only inside
+# an ADU-Allowed RS Area, with that zone's limitations. The Profile used to say
+# "ADU-eligible" for anything the layer hit and never named the zone or its limits
+# (kit P6: Zone 10 = annual limit + owner occupancy).
+
+_ADU_BY_RIGHT_PREFIXES = ("RT", "RM", "B1", "B2", "B3", "C1", "C2")
+
+
+def adu_status(
+    zone_class: str | None,
+    in_adu_area: bool,
+    adu_name: str | None = None,
+    adu_limits: str | None = None,
+) -> dict | None:
+    """Can a coach house / conversion unit be added, and under what limits?
+
+    ``allowed_with_limits`` (RS in an ADU-Allowed Area, with the zone and its limits),
+    ``not_allowed`` (RS outside one), ``allowed_by_right`` (RT, RM, B1-C2). None for
+    districts the use tables don't cover this way (C3, M, D, PD, POS, unknown).
+    """
+    if not zone_class:
+        return None
+    prefix, _ = _parse_zone_prefix(zone_class.strip().upper())
+    if prefix == "RS":
+        if in_adu_area:
+            label = f"the {adu_name}" if adu_name else "an ADU-Allowed RS Area"
+            note = (
+                f"Coach houses and conversion units are permitted by right in this RS district because the "
+                f"parcel is in {label} (§17-7-0570)."
+            )
+            if adu_limits:
+                note += f" {adu_limits}"
+            return {"status": "allowed_with_limits", "zone": adu_name, "limits": adu_limits, "note": note}
+        return {
+            "status": "not_allowed",
+            "zone": None,
+            "limits": None,
+            "note": (
+                "Coach houses and conversion units are permitted in an RS district only inside an "
+                "ADU-Allowed RS Area (§17-7-0570); this parcel is not in one."
+            ),
+        }
+    if prefix in _ADU_BY_RIGHT_PREFIXES:
+        section = "§17-2-0207" if prefix in ("RT", "RM") else "§17-3-0207"
+        return {
+            "status": "allowed_by_right",
+            "zone": None,
+            "limits": None,
+            "note": f"Coach houses and conversion units are permitted by right in this district ({section}).",
+        }
     return None

@@ -1,3 +1,5 @@
+import type { Provenance } from "./api";
+
 export type Role = "user" | "assistant";
 
 // Parcel identity: pin/confidence are authoritative (backend-resolved only),
@@ -33,6 +35,9 @@ export interface Message {
   mapFetchedAt?: number;
   attachments?: UploadMeta[];
   turnSummary?: TurnSummary;
+  /** When the server stored this message (epoch ms): set on a reopened or shared conversation, never on an
+      answer from this session. Its presence is what puts "Answered <date>" under an answer. */
+  createdAt?: number;
 }
 
 export type SourceTag =
@@ -163,6 +168,41 @@ export interface CodeChunk {
   subsection: string | null;
   score: number;
   cross_references: string[];
+  /** Council amendments passed after this text's vintage that touch the section. */
+  amended_since?: Amendment[];
+}
+
+/** One City Council amendment passed after the code text's vintage (backend `legislation.currency.public`). */
+export interface Amendment {
+  record: string;
+  /** ISO day (America/Chicago). */
+  passed_on: string;
+  title: string;
+  /** Reviewed one-liner; null until someone has read the ordinance. Never inferred from the title. */
+  summary: string | null;
+  sections: string[];
+  url: string | null;
+  relevance?: "title17" | "cited_other" | "other" | null;
+  review_status: "reviewed" | "unreviewed" | null;
+  /** applied: this page reflects it; none: reviewed, no change to what we show; pending: not read yet. */
+  product_effect: "applied" | "none" | "pending" | null;
+  codified?: boolean | null;
+  /** True when it touches a section this Profile cites or its map effect reaches the address. */
+  parcel_relevant?: boolean;
+}
+
+/** What the Profile (and chat) carry about how current the code text is (backend `ContextObject.code_currency`). */
+export interface CodeCurrency {
+  current_through: string;
+  label: string | null;
+  source?: string | null;
+  checked_at: string | null;
+  /** fresh (<72 h) | aging (3-14 d) | unknown (no count is shown, never "none"). */
+  check_state: "fresh" | "aging" | "unknown";
+  /** Null when check_state is unknown. */
+  since: { title17: number; cited_other: number } | null;
+  clerk_url: string;
+  amendments: Amendment[];
 }
 
 export interface TrendItem {
@@ -183,8 +223,25 @@ export interface AnalyticsSummary {
 export interface ZoningSummary {
   zone_class: string;
   zone_type: number | null;
+  /** The ordinance identifier (clerk number for a recent amendment). An
+      application number (e.g. 23082T1) is kept apart in application_num. */
   ordinance_num: string | null;
+  application_num?: string | null;
+  /** ISO dates from the City's zoning layer: when the ordinance behind this district
+      passed, and when this district's record was last edited. */
+  ordinance_date?: string | null;
+  map_updated?: string | null;
+  clerk_url?: string | null;
+  /** Ordinance passed within ~180 days — the map can lag a passed amendment by up to 90. */
+  recently_rezoned?: boolean;
   zoning_map_url: string;
+}
+
+/** How current the indexed Municipal Code is (its "current through" date). */
+export interface CodeVintage {
+  current_through: string;
+  label: string;
+  source?: string;
 }
 
 export interface OverlayDistrict {
@@ -192,6 +249,18 @@ export interface OverlayDistrict {
   name: string | null;
   ordinance: string | null;
   description: string | null;
+  /** What this overlay means for the parcel, pinned to the code (null when the code
+      doesn't say), and where to read the source (code section or PD ordinance PDF). */
+  detail?: string | null;
+  link?: string | null;
+}
+
+/** Coach house / conversion-unit status for this parcel's district (backend adu_status). */
+export interface AduStatus {
+  status: "allowed_by_right" | "allowed_with_limits" | "not_allowed";
+  zone: string | null;
+  limits: string | null;
+  note: string;
 }
 
 export interface RegulatorySummary {
@@ -212,9 +281,17 @@ export interface RegulatorySummary {
   ssa_name: string | null;
   flood_zone: string | null;
   flood_zone_subtype: string | null;
-  in_special_flood_hazard: boolean;
+  /** null = unknown: FEMA's flood map didn't answer (`flood_unchecked`). Never render it as "not in". */
+  in_special_flood_hazard: boolean | null;
+  /** FEMA's flood map didn't answer, so `flood_zone` is null because it is UNKNOWN, not because the parcel is clear. */
+  flood_unchecked?: boolean;
   brownfield_sites: Record<string, unknown>[];
   aro_housing: AROHousingSummary | null;
+  /** Overlay layer types the City map couldn't answer for. Their in_* flags are
+   *  false because they're UNKNOWN — never render them as "not in". */
+  unchecked_overlays?: string[];
+  /** Plain-language labels for those (also merged into partial_failures). */
+  data_gaps?: string[];
 }
 
 export interface AROHousingProject {
@@ -338,6 +415,10 @@ export interface PropertySummary {
       "commercial_valuation" | "footprint") — absent when the field is null. */
   land_sqft_source?: string | null;
   bldg_sqft_source?: string | null;
+  /** Set when this parcel is one of several in a commercial "economic unit" whose
+      building-area total is the WHOLE complex's, not this lot's (bldg_sqft stays null). */
+  complex_bldg_sqft?: number | null;
+  complex_member_pins?: string[] | null;
   year_built_source?: string | null;
   stories_source?: string | null;
   units_source?: string | null;
@@ -420,19 +501,16 @@ export interface GrantProgramSummary {
   recent_projects: GrantProject[];
 }
 
+/** Community-area figures from the City's ACS extract. The median income is
+    interpolated from 5 brackets (no margin of error). Rent, home value, poverty and
+    the other fields this dataset never held were removed 2026-10-20 (WS0 M1). */
 export interface DemographicsSummary {
   community_area: number | null;
   community_area_name: string | null;
   population: number | null;
   median_household_income: number | null;
-  median_home_value: number | null;
-  median_gross_rent: number | null;
-  median_age: number | null;
-  poverty_rate: number | null;
-  unemployment_rate: number | null;
-  owner_occupied_pct: number | null;
-  bachelors_degree_pct: number | null;
-  vacancy_rate: number | null;
+  /** The ACS 5-year window, e.g. "2019–2023". Absent on older stored contexts. */
+  acs_period?: string | null;
 }
 
 export interface TransitAccess {
@@ -474,8 +552,12 @@ export interface CensusTractDemographics {
   owner_occupied_pct: number | null;
   vacancy_rate: number | null;
   poverty_rate: number | null;
+  /** Absent on contexts stored before 2026-10-20. */
+  unemployment_rate?: number | null;
   bachelors_or_higher_pct: number | null;
   foreign_born_pct: number | null;
+  /** The ACS release's years, e.g. "2020–2024". */
+  acs_period?: string | null;
   age_distribution: DistributionBucket[];
   income_distribution: DistributionBucket[];
   race_distribution: DistributionBucket[];
@@ -501,9 +583,70 @@ export interface DivvyAccess {
   radius_mi: number;
 }
 
+/** Overall median gross rent of a community area, summed from Census tract bracket counts (backend `CommunityAreaRent`). */
+export interface CommunityAreaRent {
+  community_area: number;
+  households: number;
+  median?: number | null;
+  moe?: number | null;
+  cv?: number | null;
+  top_coded?: boolean;
+  moe_method: string;
+  design_factor?: number | null;
+  acs_period?: string | null;
+  acs_release?: string | null;
+  period_end?: string | null;
+}
+
+/** The Cook County Assessor's modeled apartment income for a community area: its OWN series, not an ACS rent and
+    never by bedroom (backend `AssessorModelRent`). `median_per_unit_month` is potential gross income before vacancy. */
+export interface AssessorModelRent {
+  community_area: number;
+  buildings: number;
+  /** Buildings the median rests on (the sample the n rule reads). */
+  priced: number;
+  units: number;
+  households?: number | null;
+  /** Modeled units over ACS renter households with cash rent; above 1 the two are not comparable. */
+  coverage?: number | null;
+  median_per_unit_month?: number | null;
+  year: string;
+  cycle: string;
+  as_of: string;
+  dataset: string;
+}
+
+/** The Census's published median gross rent for one bedroom count: the parcel's tract, else its PUMA. */
+export interface BedroomRent {
+  bedrooms: "1_bedroom" | "2_bedrooms" | "3_bedrooms";
+  scope: "tract" | "puma";
+  geography?: string | null;
+  geoid?: string | null;
+  /** Null = the Census publishes no usable median here. */
+  estimate?: number | null;
+  moe?: number | null;
+  cv?: number | null;
+  /** Why the tract's own figure was not used. */
+  tract_fallback?: "suppressed" | "low_confidence" | null;
+}
+
+/** The API omits null fields, so each is optional. Current official rent for the parcel's area (WS4 PR2). `unchecked` = parts that could not be fetched today. */
+export interface RentEvidence {
+  community_area?: CommunityAreaRent | null;
+  assessor_model?: AssessorModelRent | null;
+  bedrooms: BedroomRent[];
+  acs_period?: string | null;
+  acs_release?: string | null;
+  tract_name?: string | null;
+  puma_geoid?: string | null;
+  puma_name?: string | null;
+  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent" | "assessor_model">;
+}
+
 export interface NeighborhoodSummary {
   demographics: DemographicsSummary | null;
   census_tract: CensusTractDemographics | null;
+  rent?: RentEvidence | null;
   transit: TransitAccess | null;
   walkscore: WalkScoreSummary | null;
   ward?: WardInfo | null;
@@ -610,7 +753,179 @@ export interface VerdictGrounding {
   };
 }
 
+// What transit-served status does and does not change for this parcel's
+// district. Computed by the backend (backend/retrieval/zoning_definitions.py
+// tod_benefits) so the page, chat and report never disagree: parking relief
+// applies to every district, density/FAR/height bonuses only to dash-3 ones.
+export interface TodBenefits {
+  parking_relief: boolean | null; // null = Planned Development, ordinance governs
+  parking_max_reduction_pct: number | null;
+  density_bonus_eligible: boolean;
+  entitlement_required: boolean;
+  note: string;
+}
+
+// Max dwelling units the lot AREA allows (backend max_units_by_lot_area): shows its
+// inputs and says it is one limit among several, never "the" buildable count.
+export interface UnitYield {
+  units: number;
+  lot_sqft: number;
+  min_lot_area_per_unit: number;
+  arithmetic: string;
+  basis: string;
+  caveat: string;
+  lot_area_note: string;
+}
+
+/** One "what this page does not cover" note for this parcel (backend coverage_notes). */
+export interface CoverageNote {
+  id: string;
+  /** "parcel": found on THIS parcel and not assessed here; "general": true of every parcel. */
+  applies: "parcel" | "general";
+  /** English text (what chat restates); the UI translates by id + params. */
+  text: string;
+  params: Record<string, string | number | null>;
+  link: string | null;
+  section: string | null;
+  /** True for law Council passed that the published code text lacks (WS1 M4b). */
+  ahead_of_code?: boolean;
+}
+
+/** A rezoning ordinance whose legal description lists this address and that the City's map does not
+    carry yet (backend `ContextObject.passed_not_on_map`, WS1 M5). "Listing", never "rezoned": it can
+    name only part of a range, and what it changes to is not read. */
+export interface PassedNotOnMap {
+  record: string;
+  /** ISO date Council passed it. */
+  passed_on: string;
+  url: string;
+  /** The listed range that reaches this address, in the ordinance's words ("6701-6731 S Western Ave"). */
+  segment: string | null;
+  maps: string | null;
+  matched_by: "pin" | "address";
+  /** WS1 M6: the district the ordinance changes it to, AI-read and validated against the live map; absent when not read. */
+  from_district?: string;
+  to_district?: string;
+  district_source?: "ai_read_ordinance";
+  agreement?: { n: number; agree: number };
+}
+
+/** A Chicago Landmark designation ordinance that lists this parcel's address (or, for a district, a block it
+    is on) and that the City's landmark map doesn't show this parcel for yet (backend/legislation/designations.py). */
+export interface PassedLandmarkDesignation {
+  record: string;
+  /** ISO date Council passed it. */
+  passed_on: string;
+  url: string;
+  /** What the title calls it ("Chicago Daily News Building"); "building" when the title names none. */
+  name: string | null;
+  kind: "building" | "district";
+  /** The listed range that reaches this address, in the ordinance's words ("900-1199 W Bryn Mawr Ave"). */
+  segment: string | null;
+  /** False when the landmark layers did not answer for this parcel: the map's answer is unknown. */
+  map_checked: boolean;
+  matched_by: "pin" | "address";
+}
+
+export interface UpcomingZoningFiling {
+  record_number: string;
+  title: string;
+  status: string;
+  sub_status: string;
+  introduced_at?: string | null;
+  latest_action_at?: string | null;
+  url: string;
+  application_number?: string | null;
+  segment?: string | null;
+  match_kind: "subject_pin" | "subject_range" | "nearby";
+  distance_mi?: number | null;
+}
+
+export interface UpcomingZoningProvenance {
+  source_id: string;
+  as_of?: string | null;
+  method: string;
+  confidence: "standard" | "low";
+}
+
+export interface PendingTextAffectedFact {
+  fact_id: string;
+  label: string;
+  current_value?: string | number | boolean | null;
+  section?: string | null;
+  current_law?: string | null;
+}
+
+export interface PendingTextEffect {
+  id: string;
+  sections: string[];
+  could_change: string;
+  reach: "parcel" | "untested";
+  reach_note?: string | null;
+  affected: PendingTextAffectedFact[];
+}
+
+export interface PendingTextImpact {
+  record_number: string;
+  lifecycle_id: string;
+  title: string;
+  status: string;
+  sub_status: string;
+  introduced_at?: string | null;
+  latest_action_at?: string | null;
+  url: string;
+  reviewed_on: string;
+  reviewed_by: string;
+  basis: "ordinance";
+  summary?: string | null;
+  effects: PendingTextEffect[];
+}
+
+export interface PendingTextUnreviewed {
+  record_number: string;
+  title: string;
+  url: string;
+  introduced_at?: string | null;
+  reason: "unreviewed" | "outdated";
+  waiting_days?: number | null;
+}
+
+export interface PendingTextReview {
+  status: "complete" | "incomplete" | "unavailable";
+  pending_count: number;
+  reviewed_count: number;
+  unreviewed: PendingTextUnreviewed[];
+  oldest_unreviewed_days?: number | null;
+  overdue: boolean;
+  review_provenance?: UpcomingZoningProvenance | null;
+}
+
+export interface UpcomingZoningSummary {
+  status: "ready" | "stale" | "unavailable";
+  placement_status: "complete" | "partial";
+  checked_at?: string | null;
+  radius_mi: number;
+  subject_filings: UpcomingZoningFiling[];
+  nearby_filings: UpcomingZoningFiling[];
+  placed_count: number;
+  unplaced_count: number;
+  placement_coverage?: number | null;
+  record_provenance: UpcomingZoningProvenance;
+  placement_provenance: UpcomingZoningProvenance;
+  text_impacts?: PendingTextImpact[];
+  text_review?: PendingTextReview | null;
+}
+
 export interface ContextObject {
+  passed_landmark_designations?: PassedLandmarkDesignation[] | null;
+  passed_not_on_map?: PassedNotOnMap[] | null;
+  upcoming_zoning?: UpcomingZoningSummary | null;
+  coverage_notes?: CoverageNote[] | null;
+  adu?: AduStatus | null;
+  code_vintage?: CodeVintage | null;
+  code_currency?: CodeCurrency | null;
+  tod_benefits?: TodBenefits | null;
+  unit_yield?: UnitYield | null;
   community_area: number | null;
   community_area_name: string | null;
   resolved_address: string | null;
@@ -635,6 +950,17 @@ export interface ContextObject {
   requires_disclaimer: boolean;
   analytics?: AnalyticsSummary | null;
   partial_failures?: string[];
+  /** Where each figure came from and how far to trust it, keyed by fact id (backend/provenance.py).
+      Set once when the answer was assembled and stored with the message: a reopened answer keeps its dates. */
+  provenance?: Record<string, Provenance> | null;
+  /** Figures the data could not support (too few sales, too wide a margin). Their values are absent above. */
+  withheld_figures?: WithheldFigure[] | null;
+}
+
+export interface WithheldFigure {
+  fact_id: string;
+  figure: string;
+  reason: string;
 }
 
 export interface TurnSummary {
@@ -656,7 +982,7 @@ export type ChatChunk =
   | { type: "map_data"; map_data: MapData; t_ms?: number }
   | { type: "token"; text: string; t_ms?: number }
   | { type: "error"; error: string; t_ms?: number }
-  | { type: "done"; t_ms?: number; timings?: PhaseTimings }
+  | { type: "done"; t_ms?: number; timings?: PhaseTimings; truncated?: boolean }
   | { type: "turn_summary"; turn_summary: TurnSummary; t_ms?: number };
 
 export interface PhaseTimings {
@@ -753,6 +1079,26 @@ export interface StoredMessage {
   map_data?: MapData | null;
   map_fetched_at?: number | null;
   summary?: TurnSummary | null;
+  created_at?: number | null;
+}
+
+/** What changed since an answer or a report was made (WS6 M9; backend `data_health/diff.py`). */
+export type SinceThenChange =
+  | { kind: "district"; old: string; new: string; record?: string | null; passed_on?: string | null; url?: string | null }
+  | { kind: "overlay"; change: "added" | "removed"; layer: string; name?: string | null }
+  | { kind: "standards"; field: string; old: string | number; new: string | number; zone_class?: string | null }
+  | { kind: "amendment"; phase: "after_answer" | "before_answer"; record: string; title?: string | null; passed_on: string; url?: string | null; sections: string[] }
+  | { kind: "map_amendment"; record: string; passed_on?: string | null; url?: string | null }
+  | { kind: "designation"; record: string; passed_on?: string | null; url?: string | null; name?: string | null }
+  | { kind: "text_refresh"; current_through: string; sections: string[] }
+  | { kind: "correction"; id: string; date: string; summary: string };
+
+export interface SinceThenResult {
+  status: "changes" | "none" | "partial" | "unavailable" | "too_soon" | "skipped" | "no_parcel";
+  answered_on?: string | null;
+  reconstructed?: boolean;
+  changes: SinceThenChange[];
+  unchecked: string[];
 }
 
 export interface ConversationDetail {

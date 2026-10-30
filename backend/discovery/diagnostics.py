@@ -6,10 +6,10 @@ deterministic function of `(CQS, dataVersion)`. Computing them MUST NOT alter `p
 re-evaluates); the evaluator never auto-relaxes.
 
 `build` receives `evaluate` as a black box (09) and calls it for `mostRestrictive`
-(D5) — it MUST NOT reimplement filtering. `excludedUnknown` (D4) is the one piece that
-inspects parcels directly (it must know *which* candidates miss a field, which the
-black box cannot reveal); it does so via the same shared `satisfies`/`within_scope`
-leaf semantics the evaluator uses, over the same dataVersion snapshot.
+(D5) — it MUST NOT reimplement filtering. `excludedUnknown` (D4) needs to know *which*
+candidates miss a field, which the black box cannot reveal, so the evaluator computes it in
+its own filter pass (`OrderedResult.excludedUnknown`) and `build` only passes it through.
+`_excluded_unknown` below is the independent scan that the tests hold that result to.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from backend.discovery import parcel as parcel_mod
 from backend.discovery.cqs import CQS, DroppedInvalid
-from backend.discovery.evaluator import OrderedResult
+from backend.discovery.evaluator import EvalResult
 from backend.discovery.predicates import satisfies, within_scope
 from backend.discovery.registry import load as load_registry
 
@@ -69,7 +69,13 @@ def _conflicts(cqs: CQS) -> list[Conflict]:
 
 
 def _excluded_unknown(cqs: CQS, data_version: str) -> dict[str, int]:
-    """D4 — per exclude-policy scalar filter, parcels dropped *solely* for a missing field.
+    """D4 reference implementation — one full scan per exclude-policy filter.
+
+    `build` no longer calls this: `evaluate` computes the same counts in its single filter
+    pass (`OrderedResult.excludedUnknown`). It stays as the independent oracle that
+    `test_fused_excluded_unknown_matches_reference_scan` checks the fused result against.
+
+    D4 — per exclude-policy scalar filter, parcels dropped *solely* for a missing field.
 
     A parcel counts iff it is within scope, passes every *other* applied predicate, and
     the filter's own field is missing (so `unknownPolicy="exclude"` is the sole reason
@@ -103,7 +109,7 @@ def _excluded_unknown(cqs: CQS, data_version: str) -> dict[str, int]:
 
 
 def _most_restrictive(
-    cqs: CQS, data_version: str, evaluate: Callable[[CQS, str], OrderedResult]
+    cqs: CQS, data_version: str, evaluate: Callable[[CQS, str], EvalResult]
 ) -> list[MostRestrictive]:
     """D5 — zero-result diagnosis. For each applied filter, |evaluate(CQS \\ f)|.
 
@@ -121,14 +127,14 @@ def _most_restrictive(
 def build(
     cqs: CQS,
     data_version: str,
-    evaluate: Callable[[CQS, str], OrderedResult],
+    evaluate: Callable[[CQS, str], EvalResult],
     *,
-    result: OrderedResult | None = None,
+    result: EvalResult | None = None,
     dropped: list[DroppedInvalid] | None = None,
 ) -> Diagnostics:
     """Assemble the advisory diagnostics for an evaluated CQS.
 
-    `result` (the already-computed `OrderedResult`) may be passed to avoid a redundant
+    `result` (the already-computed result) may be passed to avoid a redundant
     evaluation; otherwise it is computed via the black-box `evaluate`. `dropped` is the
     compiler's invalid/validation drops (produced upstream by the merge, 04/06-D3).
     """
@@ -143,7 +149,7 @@ def build(
         appliedFilters=applied_count,
         conflicts=_conflicts(cqs),  # D2
         droppedInvalid=list(dropped or []),  # D3 (pass-through from merge)
-        excludedUnknown=_excluded_unknown(cqs, data_version),  # D4
+        excludedUnknown=dict(result.excludedUnknown),  # D4 (fused into the evaluator's filter pass)
     )
     if result.total == 0:  # D5 — only when zero results
         diag.mostRestrictive = _most_restrictive(cqs, data_version, evaluate)

@@ -1,0 +1,2822 @@
+{
+"recorded": "2026-10-21",
+"source": "City Clerk eLMS API, ZONING RECLASSIFICATIONS passed after 2025-10-20; on_map = layer 1 CLERK_DOCNO carried the record",
+"matters": [
+{
+"record": "O2025-0017919",
+"matter_id": "C5D7D02F-5F48-F011-8779-001DD8307DDE",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-J at 3250-3256 W Franklin Blvd, 519-523 N Spaulding Ave and 520-522 N Sawyer Ave - App No. A-9018",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019316",
+"matter_id": "B386CE4B-ED8C-F011-B4CB-001DD809BB6C",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 22-E at 2-356 E 95th St and 9401-9443 S State St - App No. A-9052",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019623",
+"matter_id": "FBFFC0C7-DE93-F011-B4CB-001DD8097E77",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-G at 3650 N Clark St - App No. 22838",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019683",
+"matter_id": "D8263B06-9395-F011-B4CB-001DD806A7A2",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 22-E at 412-736 E 95th St, 9447-9455 S Vernon Ave, 9345-9443 S St. Lawrence Ave, 9410-9444 S Champlain Ave, 9409-9441 S Champlain Ave, 9426-9438 S Langley Ave, 9421-9439 S Langley Ave and 9303-9345 S Burnside Ave - App No. A-9063",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019688",
+"matter_id": "4F742DBB-9495-F011-B4CB-001DD806A7A2",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 22-E at 9449-9465 S Cottage Grove Ave and 9445 S Burnside Ave - App No. A-9064",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019835",
+"matter_id": "D4852B9A-9598-F011-B4CB-001DD8054936",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 22-F at 634-724 W 95th Street - App No. A-9071",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019838",
+"matter_id": "49124F43-9798-F011-B4CB-001DD8054936",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 22-F, 22-G and 24-G at 732-744 W 95th St, 9443-9447 S Green St, 9418-9530 S Halsted St and 9449-9455 S Halsted St - App No. A-9070",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020025",
+"matter_id": "62E92982-0E9B-F011-B4CB-001DD80B0D2F",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-G at 1030 W 21st St - App No. 22879T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020111",
+"matter_id": "137EAABC-669D-F011-B4CB-001DD8001AAF",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-G at 2505 N Lincoln Ave - App No. 22888",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020476",
+"matter_id": "839497AE-E2A9-F011-BBD2-001DD80B7FF7",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-I at 1313 S Talman Ave - App No. 22895T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020481",
+"matter_id": "9F1D9768-F3A9-F011-BBD2-001DD80B7FF7",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-H at 2249 W Belmont Ave - App No. 22896T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020486",
+"matter_id": "6B7A0DAC-00AA-F011-BBD2-001DD80B7FF7",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-I at 1138 N California Ave - App No. 22897T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020493",
+"matter_id": "863614D2-04AA-F011-BBD2-001DD80B7FF7",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-G at 2852-2856 N Southport Ave - App No. 22898",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020561",
+"matter_id": "AD26B2CB-89AB-F011-BBD2-001DD80FF047",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-G at 1120 W Fullerton Ave - App No. 22902",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020562",
+"matter_id": "75BCD459-8CAB-F011-BBD2-001DD80FF047",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 6-J at 2637-2643 S Harding Ave - App No. 22903",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020564",
+"matter_id": "ADD940BD-95AB-F011-BBD2-001DD80FF047",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-M at 6148 W Diversey Ave and 2821 N Melvina Ave - App No. 22905T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020565",
+"matter_id": "F9027194-98AB-F011-BBD2-001DD80FF047",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-G at 1480 W Huron St - App No. 22906T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020566",
+"matter_id": "CEBB1BA1-BBAD-F011-BBD2-001DD80E4407",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2333 W Huron St - App No. 22907T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020567",
+"matter_id": "E78486F9-BEAD-F011-BBD2-001DD80E4407",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-J at 136 N Kedzie Ave - App No. 22908T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020568",
+"matter_id": "999A809B-C7AD-F011-BBD2-001DD80E4407",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-K at 3530-3536 N Milwaukee Ave - App No. 22909T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020570",
+"matter_id": "685A7208-CAAD-F011-BBD2-001DD80E4407",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-D at 4624 S Ellis Ave - App No. 22910",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020571",
+"matter_id": "96C11E58-CCAD-F011-BBD2-001DD80E4407",
+"passed_on": "2025-11-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-G at 935 W Willow St - App No. 22911T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2023-0004765",
+"matter_id": "3096DAC6-495E-EE11-BE6E-001DD8306E88",
+"passed_on": "2025-11-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 6-H at 2334-2336 S Hoyne Ave - App No. 21170T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0019640",
+"matter_id": "DEFBFFB0-AB94-F011-B4CB-001DD809A5D6",
+"passed_on": "2025-11-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 13-H at 5054-5060 N Ashland Ave - App No. 22845T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2025-0020108",
+"matter_id": "6AEA99AD-5C9D-F011-B4CB-001DD80F1323",
+"passed_on": "2025-11-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 930 W Huron St - App No. 22877T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020110",
+"matter_id": "364D29BC-639D-F011-B4CB-001DD80F1323",
+"passed_on": "2025-11-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-F at 554-628 W Diversey Pkwy - App No. 22885",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0018687",
+"matter_id": "344C8C0E-CC60-F011-BEC1-001DD8301D22",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-J at 3734 W Wrightwood Ave - App No. 22800",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019458",
+"matter_id": "D17850B9-2D8F-F011-B4CB-001DD809BB6C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-J at 318 S Christiana Ave - App No. A-9061",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019459",
+"matter_id": "2A5645F5-2D8F-F011-B4CB-001DD809BB6C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-I at 3007-3127 and 3064-3134 W Fifth Ave - App No. A-9062",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019460",
+"matter_id": "4A594A67-2E8F-F011-B4CB-001DD809BB6C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-J at 3222-3232 W Jackson Blvd - App No. A-9060",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019461",
+"matter_id": "409424A9-2E8F-F011-B4CB-001DD809BB6C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-J at 3401-3425 W Fifth Ave - App No. A-9058",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019462",
+"matter_id": "65DD2E1B-2F8F-F011-B4CB-001DD809BB6C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-J at 331-339 S Central Park Blvd and 3501-3631 and 3454-3460 W Fifth Ave - App No. A-9059",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019924",
+"matter_id": "BC744F16-8699-F011-B4CB-001DD802A35E",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-J at 3339 N Hamlin Ave - App No. 22857",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019932",
+"matter_id": "EA6A8B9A-299A-F011-B4CB-001DD808E1CA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-L at 6355 S Central Ave - App No. A-9069",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0019985",
+"matter_id": "01249574-4A9A-F011-B4CB-001DD808E1CA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-I at 2429-2431 W Fullerton Ave - App No. A-9065",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020460",
+"matter_id": "F63AAD9C-39A9-F011-BBD2-001DD80FF047",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 14-G and 16-G at 1443-1547 and 1500-1546 W 63rd St and 6247-6301 S Ashland Ave - App No. A-9075",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020461",
+"matter_id": "24DEB126-3AA9-F011-BBD2-001DD80FF047",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 14-G and 16-G at 935-1323 and 946-1322 W 63rd St and 6249 S Sangamon Ave - App No. A-9074",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020462",
+"matter_id": "CC1057AA-3AA9-F011-BBD2-001DD80FF047",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-G at 815-859 W 63rd St and 6300-6312 S Halsted St - App No. A-9076",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020495",
+"matter_id": "D20D4819-94AA-F011-BBD2-001DD80FF047",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-E at 4508 S Cottage Grove Ave - App No. A-9073",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020862",
+"matter_id": "7FCD8C00-42BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-F at 2527 N Burling St - App No. 22913T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020868",
+"matter_id": "5DB44C5D-51BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 8-E at 3522-3524 S Calumet Ave - App No. 22915",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020871",
+"matter_id": "FC03D2FF-53BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-F at 1234 N State Pkwy - App No. 22916T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020874",
+"matter_id": "E2F97BF2-55BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 13-H at 4943-4947 N Damen Ave - App No. 22917T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020880",
+"matter_id": "118FC673-59BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-G at 2804 N Lakewood Ave - App No. 22918T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020884",
+"matter_id": "E6B48B9E-62BE-F011-BBD2-001DD80C6CBA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 20-F at 7936-7956 S Emerald Ave and 7937-7945 S Halsted St - App No. A-9077",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020887",
+"matter_id": "8612EB4C-66BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-G at 1536-1538 N Halsted St - App No. 22919T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020891",
+"matter_id": "401849A5-68BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-I at 2240 N Milwaukee Ave - App No. 22920T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020892",
+"matter_id": "EB337BA0-6CBE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2254 W Grand Ave - App No. 22921",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020895",
+"matter_id": "BBA39DEC-6DBE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-J at 3256 W Franklin Blvd - App No. 22922",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020911",
+"matter_id": "84D5096D-7CBE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-H at 1801 W Byron St - App No. 22926T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020935",
+"matter_id": "00D269C7-DBBF-F011-BBD2-001DD80C6CBA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-J at 2718 N Hamlin Ave - App No. 22929T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020952",
+"matter_id": "7C1DBED8-E5BF-F011-BBD2-001DD80C6CBA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-F at 640-652 W 47th St - App No. 22932T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020955",
+"matter_id": "2784C9C4-EBBF-F011-BBD2-001DD80C6CBA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-I at 3057-3059 W Augusta Blvd - App No. 22933T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020967",
+"matter_id": "8081F51A-01C0-F011-BBD2-001DD80C033C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-J at 4815 S Ridgeway Ave and 3716 W 49th St - App No. 22939",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020970",
+"matter_id": "C20B46A0-09C0-F011-BBD2-001DD80C033C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 8-F at 3649 S Emerald Ave - App No. 22941T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2024-0009537",
+"matter_id": "A78250E5-D816-EF11-9F89-001DD80972A9",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 28-G at 11400-11458 S Halsted St and 800-912 W 115th St - App No. 22442",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2024-0013057",
+"matter_id": "2BE30573-8085-EF11-AC21-001DD8306DF0",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-I at 2411-2423 N Kedzie Blvd - App No. A-8927",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2024-0013062",
+"matter_id": "988C86EC-8385-EF11-AC21-001DD8306DF0",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-I at 2443-2511 N Kedzie Blvd App No. A-8925",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2024-0013066",
+"matter_id": "E8820657-8685-EF11-AC21-001DD8306DF0",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-J at 3600-3650 W Wrightwood Ave and 2609-2611 N Lawndale Ave - App No. A-8926",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0017410",
+"matter_id": "9082A0DB-CC31-F011-8C4D-001DD8069D7D",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-I at 2517-2549 W Fillmore St - App No. 22754T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0017435",
+"matter_id": "AE1F2FC3-9332-F011-8C4D-001DD8069D7D",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 1200 W Carroll Ave - App No. 22762",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0019779",
+"matter_id": "B7B933F6-DF97-F011-B4CB-001DD8054936",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-H at 1855 W Grand Ave - App No. 22852T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0019960",
+"matter_id": "0945512B-399A-F011-B4CB-001DD808E1CA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 22-B at 2700-2864 E 95th St - App No. A-9066",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0019962",
+"matter_id": "FE9617B7-399A-F011-B4CB-001DD808E1CA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 24-B at 9510-9594 S Torrence Ave, 9501-9737 S Torrence Ave and 9545 S Colfax Ave - App No. A-9067",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020094",
+"matter_id": "34E9F11D-459D-F011-B4CB-001DD8001AAF",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 6-J at 2200-2260 S Springfield Ave, 3901-3925 W Cermak Rd and 3927-3929 W Ogden Ave - App No. 22882",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020103",
+"matter_id": "A122CE5C-519D-F011-B4CB-001DD8001AAF",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 11-G at 4641 N Ashland Ave - App No. 22884",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020115",
+"matter_id": "A77684A3-6D9D-F011-B4CB-001DD80F1323",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 210-220 N Morgan St - App No. 22886",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020122",
+"matter_id": "602ADB5A-749D-F011-B4CB-001DD8001AAF",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-G at 970 W Montana St - App No. 22893T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020123",
+"matter_id": "AF141BED-F69D-F011-B4CB-001DD80F1323",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map Nos. 7-G and 5-G at 2318-2340 N Halsted St, 929-941 W Fullerton Ave, 1014-1022 W Belden Ave and 2334-2400 N Racine Ave - App No. 22892",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020475",
+"matter_id": "6C664611-DFA9-F011-BBD2-001DD80B7FF7",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 11-L at 5161-5223 W Lawrence Ave, 4750-4760 N Laramie Ave, 4753-4761 N Laramie Ave and 4786-4798 N Avondale Ave - App No. 22894",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020494",
+"matter_id": "508EDA72-07AA-F011-BBD2-001DD80B7FF7",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-I at 2409-2411 W Congress Pkwy - App No. 22899T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020530",
+"matter_id": "E441D6C4-D0AA-F011-BBD2-001DD80FF047",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-I at 2401-2407 W Congress Pkwy - App No. 22900T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020897",
+"matter_id": "1A9F57B2-6FBE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 6-F at 2821-2823 S Stewart Ave - App No. 22923T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020905",
+"matter_id": "17984712-75BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-J at 3051 N Drake Ave - App No. 22924T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020906",
+"matter_id": "0A8A66C7-76BE-F011-BBD2-001DD80AA671",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-K at 4528-4558 W Fullerton Ave and 2401-2413 N Kenton Ave - App No. 22925T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020932",
+"matter_id": "04F8EF69-D6BF-F011-BBD2-001DD80C6CBA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 4-H at 2036-2038 W Armitage Ave - App No. 22927T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020933",
+"matter_id": "7FED3BA3-D9BF-F011-BBD2-001DD80C6CBA",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-I at 2531-2533 W Augusta Blvd - App No. 22928T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020963",
+"matter_id": "F6E73BE3-FDBF-F011-BBD2-001DD80C033C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 900-910 W Fulton Market - App No. 22937T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020966",
+"matter_id": "B1F1DBD5-FFBF-F011-BBD2-001DD80C033C",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 16-H at 6743 S Honore St - App No. 22938T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0021118",
+"matter_id": "E9FF9243-B5C4-F011-BBD2-001DD80113CE",
+"passed_on": "2025-12-10",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 17-G at 6925-6939 N Sheridan Rd and 1151-1163 W Morse Ave - App No. 22942T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021093",
+"matter_id": "AB7AC92E-ACC1-F011-BBD2-001DD80C6CBA",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-I at 2401-2427 W Belmont Ave and 3140 N Western Ave",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021642",
+"matter_id": "AB445202-54D4-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-I at 2934 W Irving Park Rd - App No. 22944T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021643",
+"matter_id": "62BF95E2-58D4-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-H at 1137 S Western Ave - App No. 22945",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021648",
+"matter_id": "A34CD981-68D4-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-I at 1805 N Campbell Ave - App No. 22947T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021650",
+"matter_id": "89002512-74D4-F011-8543-001DD80FD0D4",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-I at 2648 W 21st St - App No. 22949",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021651",
+"matter_id": "E9A90DCB-7AD4-F011-8543-001DD80FD0D4",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-K at 3352 N Milwaukee Ave - App No. 22950T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021693",
+"matter_id": "5847F56E-CDD5-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 22-G at 9414-9434 S Halsted St and 9443 S Green St - App No. A-9083",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021695",
+"matter_id": "5A41F64E-D2D5-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-H at 2312 W 21st St - App No. 22951",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021725",
+"matter_id": "37EA3387-F7D5-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-H at 1617 N Honore St - App No. 22952",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021728",
+"matter_id": "8015E5B7-06D6-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-J at 5414-5422 S Kedzie Ave - App No. 22954",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021730",
+"matter_id": "74735FDA-0AD6-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-K at 2531 N Cicero Ave - App No. 22956T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021732",
+"matter_id": "392919BB-10D6-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-K at 4254 W 55th St - App No. 22958",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022161",
+"matter_id": "6796EFA3-D2EC-F011-8543-001DD80F73A3",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-J at 3200-3224 W Franklin Blvd, 501-511 N Sawyer Ave and 500-510 N Kedzie Ave - App No. 22962",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022341",
+"matter_id": "E3BB1821-91F1-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-J at 522 N Sawyer Ave - App No. 22963T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022344",
+"matter_id": "CC04BE9D-29F2-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-K at 3538-3540 N Milwaukee Ave - App No. 22964T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022345",
+"matter_id": "1CE05346-2DF2-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-H at 1635 W 69th St - App No. 22965T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022371",
+"matter_id": "67B62105-42F2-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2300 W Huron St - App No. 22967T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022377",
+"matter_id": "FF4F0B5B-45F2-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2302 W Huron St - App No. 22968T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022387",
+"matter_id": "B5A863B4-4BF2-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-K at 1625 N Keeler Ave - App No. 22969T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022419",
+"matter_id": "43D45A1C-5BF2-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-J at 2839 N Milwaukee Ave - App No. 22970",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022463",
+"matter_id": "C1791A1E-EEF2-F011-8406-001DD808A8BA",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-G at 1401 W 71st St and 7104 S Loomis Blvd - App No. 22972T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022486",
+"matter_id": "38FD2574-FDF2-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-F at 1247 N Clybourn Ave - App No. 22976T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0014842",
+"matter_id": "F608AB68-ADD2-EF11-8EEA-001DD804C7AB",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-G at 1054-1064 W Van Buren St - App No. 22636",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020098",
+"matter_id": "7BF2001A-499D-F011-B4CB-001DD8001AAF",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 8-E at 3746-3766 S Michigan Ave - App No. 22883",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020860",
+"matter_id": "E20F54E3-3ABE-F011-BBD2-001DD80AA671",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-G at 1133 W Van Buren St - App No. 22912",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020863",
+"matter_id": "2386FB53-46BE-F011-BBD2-001DD80AA671",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-G at 3233-3247 N Sheffield Ave - App No. 22914T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020885",
+"matter_id": "B9694984-63BE-F011-BBD2-001DD80C6CBA",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 24-G at 1123-1149 W 95th St and 9501-9513 S Racine Ave - App No. A-9078",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020943",
+"matter_id": "D938D833-DFBF-F011-BBD2-001DD80C6CBA",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-F at 1143-1155 N Wells St - App No. 22930T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020960",
+"matter_id": "0CEEFA2B-F9BF-F011-BBD2-001DD80C033C",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-H at 2343 W Chicago Ave - App No. 22935T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0021647",
+"matter_id": "330E1271-66D4-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 16-G at 1414-1416 W 69th St - App No. 22946T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0021729",
+"matter_id": "39E526A8-08D6-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 4-H at 1606 S Ashland Ave - App No. 22955T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0021731",
+"matter_id": "5F6F7B24-0DD6-F011-8543-001DD8066465",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-G at 1300-1422 and 1301-1511 W Cortland St/1940-2076 N Kingsbury St/2046-2068 and 2041-2047 N Southport Ave/1401-1443 W Dickens Ave/2084-2166 N Dominick St/1736-2082 and 1739-2077 N Throop St/1400-1440 and 1401-1433 W Armitage Ave/1503-1523 W Webster Ave/1801-1853 N Elston Ave - App No. 22957",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022346",
+"matter_id": "78C26C5A-30F2-F011-8406-001DD80FF597",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 13-H at 5054-5060 N Ashland Ave - App No. 22966T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022478",
+"matter_id": "DB05894E-F7F2-F011-8406-001DD808A8BA",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 6-H at 1823-1825 W 22nd Pl - App No. 22974T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022499",
+"matter_id": "B9F13A2F-1AF6-F011-8406-001DD8071093",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-H at 1805-1809 W Augusta Blvd - App No. 22980T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022502",
+"matter_id": "B130817F-1FF6-F011-8406-001DD8071093",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 20-C at 8649 S Euclid Ave - App No. 22979T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022506",
+"matter_id": "BF2CE9F7-2EF6-F011-8406-001DD8071093",
+"passed_on": "2026-02-18",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 4-I at 2733-2735 W 16th St and 1600-1612 S Fairfield Ave - App No. 22981T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020958",
+"matter_id": "4FF0D21A-F7BF-F011-BBD2-001DD80C033C",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 8-G at 3423 S Morgan St - App No. 22934T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0020969",
+"matter_id": "C9CF47C0-03C0-F011-BBD2-001DD80C033C",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-J at 3707 W Mclean Ave - App No. 22940T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021692",
+"matter_id": "5598CD99-CCD5-F011-8543-001DD8066465",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 26-G at 1236-1230 W 105th, 1245 W 105th St and 10335 S Vincennes Ave - App No. A-9084",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2025-0021895",
+"matter_id": "773CDE3D-30DC-F011-8543-001DD802FB0D",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 22-G and 22-H at 8901-9357 S Ashland Ave, 8900-9258 S Ashland Ave and 9334-9344 S Ashland Ave - App No. A-9085",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0021983",
+"matter_id": "560714E6-5DEA-F011-8543-001DD80F73A3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-G at 1938 N Kingsbury St - App No. A-9091",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022521",
+"matter_id": "D21D6153-D4F6-F011-8406-001DD8080DE8",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-D at 7050 S Dorchester Ave - App No. A-9088",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0022546",
+"matter_id": "71539DC1-A6F7-F011-8406-001DD8071B7F",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-C at 2206 E 75th St - App No. A-9090",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0022547",
+"matter_id": "96F0C453-A7F7-F011-8406-001DD8071B7F",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 20-B at 2949-2951 E 79th St - App No. A-9089",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0022965",
+"matter_id": "90423D50-2601-F111-8406-001DD80F113F",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-F at 1616 N Burling St - App No. A-9092",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023103",
+"matter_id": "A9DC1807-9703-F111-8406-001DD8001D38",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-K at 4024-4110 W Melrose St, 3233-3243 N Karlov Ave, 3232-3256 N Karlov Ave and 4101-4111 W School St - App No. 22988",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023112",
+"matter_id": "09D90177-A103-F111-8406-001DD8001D38",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-K at 3301-3309 N Karlov Ave and 4048-4058 W School St - App No. 22989T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023170",
+"matter_id": "B2766B46-9006-F111-8406-001DD8071528",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-K at 3300 N Karlov Ave - App No. 22990",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023183",
+"matter_id": "320E1025-A506-F111-8406-001DD80F113F",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-I at 3039 W Irving Park Rd - App No. 22992T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023192",
+"matter_id": "06B4D0D5-B906-F111-8406-001DD8001D38",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-H at 2150 W Chicago Ave - App No. 22994T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023198",
+"matter_id": "EE1C4432-C606-F111-8406-001DD8071528",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-J at 1616 N St Louis Ave - App No. 22995T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023208",
+"matter_id": "7F48F9D9-7707-F111-8406-001DD8071528",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-G at 3639 N Ashland Ave - App No. 22997T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023213",
+"matter_id": "77DC7CCC-7E07-F111-8406-001DD8071528",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-J at 3251-3263 W Division St and 1149-1159 N Spaulding Ave - App No. 23001T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023276",
+"matter_id": "2A97282F-F808-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-I at 1114-1118 N California Ave - App No. 23004T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023280",
+"matter_id": "43D2458E-FC08-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 13-J at 3240 W Lawrence Ave - App No. 23007T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023281",
+"matter_id": "14999C67-FD08-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-H at 4000 N Lincoln Ave - App No. 23008T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023282",
+"matter_id": "55459547-FE08-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-I at 1749 N Mozart St- App No. 23009T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023287",
+"matter_id": "5FFBC65F-0E09-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-G at 2244 N Halsted St - App No. 23011",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023288",
+"matter_id": "25EF19C6-0F09-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-I at 2813 W Wilcox St - App No. 23012",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023289",
+"matter_id": "1B954EF7-1009-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-E at 4727 S Wabash Ave - App No. 23013",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023290",
+"matter_id": "F1E84A02-1309-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 8-G at 3363 S Morgan St and 946-958 W 34th St - App No. 23014T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023546",
+"matter_id": "92E6D2CC-FA13-F111-8406-001DD803E075",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 206-B at 224 E 103rd St - App No. 9094",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023549",
+"matter_id": "DE287137-FC13-F111-8406-001DD803E075",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 226-B at 11155 S Michigan Ave - App No. A-9095",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023889",
+"matter_id": "8891E648-1D1E-F111-8341-001DD8062515",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-H at 2052 W 21st St - App No. 23017",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023891",
+"matter_id": "73A84527-261E-F111-8341-001DD80C2AAC",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-I at 3000 W Madison St - App No. 23018",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023906",
+"matter_id": "6857FE94-531E-F111-8341-001DD80C2AAC",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 13-M at 5677-5679 W Higgins Ave - App No. 23023T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023979",
+"matter_id": "2511D420-4B21-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-H at 2210-2214 W Belmont Ave - App No. 23026T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023980",
+"matter_id": "5D31782F-4F21-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-G at 1257 W Fry St - App No. 23027T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023981",
+"matter_id": "AC0B63C5-5121-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-G at 918-920 W Eastwood Ave - App No. 23028T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023991",
+"matter_id": "3108A9BC-6A21-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-H at 4614 N Seeley Ave - App No. 23030T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0023997",
+"matter_id": "21D96ED0-7321-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-H at 2103 W Eastwood Ave - App No. 23031T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024001",
+"matter_id": "B69C8F72-7521-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-F at 4325-4341 S Halsted St - App No. 23032T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024009",
+"matter_id": "B745D37C-7821-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-F at 500-534 W 47th St - App No. 23033",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024016",
+"matter_id": "98884AED-1722-F111-8341-001DD80BA390",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-H at 1649-1659 W Wolfram St. - App No. 23034T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024025",
+"matter_id": "F351F5F3-2E22-F111-8341-001DD80BA390",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 15-I at 2415-2425 W Peterson Ave - App No. 23036",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024029",
+"matter_id": "5B26A2EA-3822-F111-8341-001DD80BA390",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-G at 1456 W Chicago Ave - App No. 23038T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024032",
+"matter_id": "FD23EDB8-4122-F111-8341-001DD80BA390",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 15-I at 6333-6335 N Mozart St - App No. 23040T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024035",
+"matter_id": "421C6B40-CD22-F111-8341-001DD80C2AAC",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-D at 7811 S Ellis Ave - App No. 23043T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0024762",
+"matter_id": "694E09D9-E334-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-G at 3040-3042 N Lincoln Ave. - App No. 23047T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024765",
+"matter_id": "9DC09B52-E834-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-G at 4447 N Ashland Ave - App No. 23049T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024766",
+"matter_id": "B2BC2ECB-EE34-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-I at 3100-3108 W Lake St - App No. 23050T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024767",
+"matter_id": "74BB51EB-F034-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2124 W Madison St - App No. 23051T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024768",
+"matter_id": "CAB44E16-F434-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-H at 3000-3010 N Oakley Ave - App No. 23052T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024769",
+"matter_id": "F1C80642-F634-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-I at 6940 S Campbell Ave - App No. 23053",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024770",
+"matter_id": "107D62E5-F734-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-E at 657 E 75th St - App No. 23054",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024778",
+"matter_id": "6505417B-0135-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-L at 4640 S Lamon Ave - App No. A-9098",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024787",
+"matter_id": "CEF66618-0C35-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-D at 4315-4317 S Cottage Grove Ave - App No. 23057",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024790",
+"matter_id": "470C8BCE-0F35-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-J at 1001-1021 N Homan Ave - App No. 23058",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024791",
+"matter_id": "D0963A23-1235-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-J at 3444-3446 W North Ave- App No. 23059T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024820",
+"matter_id": "6EA13B54-6137-F111-88B3-001DD8033B18",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-K at 4133-4135 W Lawrence Ave - App No. 23061",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024864",
+"matter_id": "C8AB0938-3038-F111-88B3-001DD8033B18",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-G at 446 N Aberdeen St - App No. 23064T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024867",
+"matter_id": "A1568CC4-3838-F111-88B3-001DD8033B18",
+"passed_on": "2026-05-20",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-G at 448 N Aberdeen St - App No. 23065T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2023-0004764",
+"matter_id": "1DC06185-495E-EE11-BE6E-001DD8306AD0",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 1338 W Lake St - App No. 21123",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2023-0006454",
+"matter_id": "17C18D36-9F9A-EE11-BE36-001DD8305C66",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-F at 30 N LaSalle St - App No. 22315T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0020118",
+"matter_id": "07BE3FD1-709D-F011-B4CB-001DD80F1323",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 1201-1219 W Kinzie St and 366-372 N Racine Ave - App No. 22887T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0021639",
+"matter_id": "E89B89EF-50D4-F011-8543-001DD8066465",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-F at 3611-3625 N Halsted St - App No. 22943",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0021727",
+"matter_id": "7AEED6D4-04D6-F011-8543-001DD8066465",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-G at 3841-3843 N Lakewood Ave - App No. 22953T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0021890",
+"matter_id": "75708E1B-86DB-F011-8543-001DD802FB0D",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-G at 1061 W Van Buren St - App No. 22959",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022481",
+"matter_id": "84C6440E-F9F2-F011-8406-001DD808A8BA",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-H at 1801-1809 N Winnebago Ave and 2248-2254 W Bloomindale Ave - App No. 22975T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022492",
+"matter_id": "3C700754-0EF3-F011-8406-001DD8080B41",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 14-D at 6151-6159 S University Ave and 1144-1160 E 62nd St - App No. 22978T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022511",
+"matter_id": "281E633A-36F6-F011-8406-001DD8071093",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-J at 3401 N Lawndale Ave and 3400 N Monticello Ave - App No. 22983T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0022513",
+"matter_id": "C66EF7B6-38F6-F011-8406-001DD8071093",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-J at 3425 N Lawndale Ave - App No. 22984T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023096",
+"matter_id": "CE0E2A46-8903-F111-8406-001DD80F113F",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-G at 1415 N Dayton St, 811 W Evergreen Ave, 821 W Eastman St and 1415 N Kingsbury St - App No. 22987",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023174",
+"matter_id": "BEC09461-9B06-F111-8406-001DD80F113F",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 13-K at 4518 W Lawrence Ave - App No. 22991T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023190",
+"matter_id": "4B433DBC-B406-F111-8406-001DD80F113F",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-J at 3948-3954 N Elston Ave - App No. 22993T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023206",
+"matter_id": "1D2658F7-6B07-F111-8406-001DD80F113F",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-G at 3043 N Ashland Ave - App No. 22996T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023209",
+"matter_id": "9BC01815-7A07-F111-8406-001DD8071528",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 15-G at 1527 W Edgewater Ave - App No. 22998T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023211",
+"matter_id": "FD4E42AA-7D07-F111-8406-001DD8071528",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-G at 854 W Wrightwood Ave - App No. 23000T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023275",
+"matter_id": "875F078C-F508-F111-8406-001DD80D78DD",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map Nos. 12-D and 14-D at 5725 S Woodlawn Ave and 1100 E 55th St - App No. 23003",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023297",
+"matter_id": "898E68E9-130C-F111-8406-001DD802B467",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 16-M at 5626 W 63rd Pl - App No. A-9093",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023892",
+"matter_id": "CF8F18F7-291E-F111-8341-001DD80C2AAC",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-K at 3702 N Kedvale Ave - App No. 23019T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023894",
+"matter_id": "40A10D6F-401E-F111-8341-001DD80C2AAC",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-E at 212 E Ohio St - App No. 23020T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023968",
+"matter_id": "8EEAF241-3F21-F111-8341-001DD8062515",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-H at 2137-2147 W Irving Park Rd - App No. 23024T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023978",
+"matter_id": "6F247DB5-4821-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-I at 2652 W Chicago Ave - App No. 23025T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023984",
+"matter_id": "49676230-5E21-F111-8341-001DD8064EE3",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-I at 526 N Western Ave - App No. 23029T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024027",
+"matter_id": "09219A9D-3122-F111-8341-001DD80BA390",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-F at 1928 N Lincoln Ave - App No. 23037T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024031",
+"matter_id": "2D056B17-3D22-F111-8341-001DD80BA390",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 28-G at 1223-1231 W 112th St - App No. 23039T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024033",
+"matter_id": "EC8AFF54-C622-F111-8341-001DD80C2AAC",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 15-K at 6332-6340 N Pulaski Rd - App No. 23041T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024037",
+"matter_id": "93582FF9-CF22-F111-8341-001DD80C2AAC",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 10-E at 4524 S Michigan Ave - App No. 23044T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024805",
+"matter_id": "9529B6D8-3E37-F111-88B3-001DD80B0E39",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-G at 3440-3444 N Janssen Ave- App No. 23060T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024821",
+"matter_id": "F882067F-6337-F111-88B3-001DD8033B18",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-I at 2653 W Monroe St - App No. 23062T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0025017",
+"matter_id": "60C0A358-F843-F111-88B4-001DD8033B18",
+"passed_on": "2026-05-20",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 19-H at 1646-1654 W Howard St and 7601-7623 N Paulina St - App No. 22068",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024906",
+"matter_id": "CFAAD079-E738-F111-88B3-001DD8033B18",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 15-H at 2131-2225 W Devon Ave - App No. A-9099",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024907",
+"matter_id": "6A22DBB0-E738-F111-88B3-001DD8033B18",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 30-F at 433-437 W 119th St - App No. A-9100",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025313",
+"matter_id": "ED649673-9950-F111-BEC6-001DD8033B18",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-G at 3909 N Ashland Ave - App No. 23072T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025334",
+"matter_id": "B45AC09A-C052-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 6-F at 437-439 W 28th Pl and 436-438 W 29th St - App No. 23074T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025342",
+"matter_id": "25F1B760-CC52-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2323 W Grand Ave - App No. 23077T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025343",
+"matter_id": "B7626B86-D052-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2315 W Grand Ave - App No. 23078T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025345",
+"matter_id": "320C9B53-D252-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-F at 2701 N Clark St - App No. 23079",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025350",
+"matter_id": "636C01C3-D452-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-H at 2029 W 17th St - App No. 23080T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025357",
+"matter_id": "9930366E-E152-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-K at 1522 N Keystone Ave - App No. 23081",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025358",
+"matter_id": "39EAE819-E452-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-G at 1218 W George St - App No. 23082T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025359",
+"matter_id": "4B57769D-E652-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-F at 1841 N Orleans St - App No. 23083T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025360",
+"matter_id": "2F014680-EA52-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-H at 1921-1925 N Milwaukee Ave - App No. 23084T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025385",
+"matter_id": "E9B3F272-A353-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 14-D and 16-D at 935-1043 E 63rd St; 1153-1169 E 63rd St, 1000-1178 E 63rd St, 6310-6336 S Woodlawn Ave and 6311-6337 S University Ave - App No. A-9104",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025386",
+"matter_id": "A54B9D7D-A453-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 14-D and 16-D at 1200-1328 and 1201-1321 E 63rd St - App No. A-9105",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025388",
+"matter_id": "0A1084C8-A853-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-N at 6902 W Diversey Ave - App No. 23089",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025390",
+"matter_id": "22413C61-AF53-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-E at 201 E Walton Pl - App No. 23086T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025401",
+"matter_id": "078EEA4C-5454-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 13-G at 5255-5259 N Clark St - App No. 23088",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025416",
+"matter_id": "380DD022-6154-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-F at 654 W 47th St - App No. 23091",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025478",
+"matter_id": "A86B3BC1-7754-F111-BEC6-001DD8033B18",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 18-B and 20-B at 2900-3032 E 79th St, 2901-2953 E 79th St, 7916-7956 S Exchange Ave and 7913-8043 S Exchange Ave - App No. A-9122",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025480",
+"matter_id": "4515DEA0-7854-F111-BEC6-001DD8033B18",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 18-B, 18-C, 20-C and 20-B at 2200-2870 E 79th St, 2201-2853 E 79th St, 7915 S Yates Ave and 7900 S Escanaba Ave - App No. A-9121",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025482",
+"matter_id": "22C1FB56-7954-F111-BEC6-001DD8033B18",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-C at 1932-2258 E 75th St and 2131-2225 E 75th St - App No. A-9124",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0025483",
+"matter_id": "4C543EB8-7954-F111-BEC6-001DD8033B18",
+"passed_on": "2026-06-17",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 18-B and 18-C at 2300-2600 E 75th St, 2301-2631 E 75th St, 7462-7474 S Exchange Ave, 2338-2654 E 75th St, 7515-7535 S Saginaw Ave and 7550 S Exchange Ave",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0016791",
+"matter_id": "10D8111F-5A1C-F011-9989-001DD830A299",
+"passed_on": "2026-06-17",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 215 N Racine Ave - App No. 22741",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023084",
+"matter_id": "24DF2ADB-7603-F111-8406-001DD80F113F",
+"passed_on": "2026-06-17",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-I at 3231-3265 N California Ave and 2752-2762 W Melrose St - App No. 22986",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023903",
+"matter_id": "093DE8E3-4B1E-F111-8341-001DD80C2AAC",
+"passed_on": "2026-06-17",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-H at 2428 N Clybourn Ave - App No. 23021T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024034",
+"matter_id": "4937F89D-C822-F111-8341-001DD80C2AAC",
+"passed_on": "2026-06-17",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 15-K at 6342-6344 N Pulaski Rd - App No. 23042T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024734",
+"matter_id": "1E4FB83D-4E34-F111-88B3-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 4-G at 1441-1471 S Blue Island Ave, 1434-1458 S Racine Ave and 1200-1228 W 15th St - App No. 23045",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024764",
+"matter_id": "5731F363-E634-F111-88B3-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-I at 2553-2565 W Madison St - App No. 23048T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0024780",
+"matter_id": "B9322960-0335-F111-88B3-001DD80B0E39",
+"passed_on": "2026-06-17",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 8-G at 3301-3315 S Justine St - App No. 23046",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0025322",
+"matter_id": "4FAD61DA-9C50-F111-BEC6-001DD8033B18",
+"passed_on": "2026-06-17",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-K at 3542-3544 N Milwaukee Ave - App No. 23073T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0024863",
+"matter_id": "86390664-2D38-F111-88B3-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-G at 6716 S Bishop St - App No. 23063T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025038",
+"matter_id": "00C82BFF-8C45-F111-88B4-001DD812F2C3",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 28-E at 11139 S Michigan Ave - A-9115",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025039",
+"matter_id": "6938A4EA-8E45-F111-88B4-001DD812F2C3",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 28-E at 234 E 115th St - App No. A-9114",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025199",
+"matter_id": "EC230819-EB4A-F111-88B4-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 24-F at 33 W 95th St - A-9118",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025200",
+"matter_id": "24ADA502-F34A-F111-88B4-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 26-E at 354 E 107th St - App No. A-9116",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025201",
+"matter_id": "C8CD5FE7-F34A-F111-88B4-001DD812F2C3",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 26-E at 10701 S Dr. Martin Luther King, Jr. Dr - App No. A-9117",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025373",
+"matter_id": "B95103D8-9653-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 1559 S Sawyer Ave - App No. A-9112",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025375",
+"matter_id": "1BEC631A-9C53-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 1558 S Spaulding Ave - App No. A-9113",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025377",
+"matter_id": "64DD3F00-9D53-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 1601 S Avers Ave and 1600 S Hamlin Ave - App No. A-9111",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025378",
+"matter_id": "CF769D2C-9F53-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 1601-1607 S Lawndale Ave - App No. A-9110",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025379",
+"matter_id": "EDCDE960-A053-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 3600-3732 and 36333701 W 16th St - App No. A-9108",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025380",
+"matter_id": "0123AB0F-A153-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 3400-3550 and 34013551 W 16th St - App No. A-9109",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025382",
+"matter_id": "B175CDB2-A153-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 3615-3621 W 16th St - App No. A-9107",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025383",
+"matter_id": "FE152F3E-A253-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 3717 W 16th St, 1601 S Ridgeway Ave, 3733 W 16th St and 1601 S Hamlin Ave - App No. A-9106",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025469",
+"matter_id": "E51F6C69-7354-F111-BEC5-001DD801AB0F",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-I at 3003-3139 W 51st St - App No. A-9126",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025474",
+"matter_id": "44A27FF1-7454-F111-BEC5-001DD801AB0F",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-J at 3947 W Wrightwood Ave - App No. A-9127",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026094",
+"matter_id": "23C90F3B-F764-F111-A823-001DD80071EA",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-K at 4345-4347 N Cicero Ave - App No. 23094T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026096",
+"matter_id": "8D3BE0B2-FC64-F111-A823-001DD80071EA",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-L at 5417 W Adams St - App No. 23095T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026100",
+"matter_id": "A681FCDC-0565-F111-A823-001DD80071EA",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-G at 1720-1726 N Clybourn Ave - App No. 23096T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026104",
+"matter_id": "E588F45A-0C65-F111-A823-001DD80071EA",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-I at 1619 N Artesian Ave - App No. 23098T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026108",
+"matter_id": "626E012B-AD65-F111-A823-001DD80071EA",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-G at 3853 N Janssen Ave - App No. 23099T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026119",
+"matter_id": "0CD975C8-D265-F111-A823-001DD80EA58E",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-D at 1501 E 69th St - App No. 23103",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026165",
+"matter_id": "CC30BFD8-9566-F111-A823-001DD806162C",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-D at 1469 E 69th Pl - App No. 23104",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026177",
+"matter_id": "2C6CB3EF-C168-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-I at 2739-2745 W Belmont Ave - App No. 23106T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026195",
+"matter_id": "F70732D8-C968-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-J at 3400-3406 W Ogden Ave, 1817-1837 S Trumbull Ave and 1816-1824 S Homan Ave - App No. 23107T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026201",
+"matter_id": "9A3E917F-CE68-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-L at 2700-2704 N Laramie Ave - App No. 23109T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026204",
+"matter_id": "620E9FC3-D268-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-I at 2705-2707 W Augusta Blvd - App No. 23111T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026206",
+"matter_id": "B2A213C1-D468-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-J at 3951 W Washington Blvd - App No. 23112T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026211",
+"matter_id": "D49FE4D7-DF68-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-H at 2128 W Eastwood Ave - App No. 23113T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026212",
+"matter_id": "FEBD6FA4-E268-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-K at 4411 W Diversey Ave - App No. 23114T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0026213",
+"matter_id": "EDAF067C-E468-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2119-2129 W Grand Ave - App No. 23115T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0022150",
+"matter_id": "63DE8463-C7EC-F011-8543-001DD80F73A3",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 14-D and 16-D at 6320 S Dorchester Ave - App No. 22961",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0022460",
+"matter_id": "AF1835CB-E9F2-F011-8406-001DD808A8BA",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 1313-1315 W Ancona St - App No. 22971T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0023278",
+"matter_id": "7213F42E-FA08-F111-8406-001DD80D78DD",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 9-G at 1040 W Belmont Ave - App No. 23005T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0024781",
+"matter_id": "DD7153F0-0535-F111-88B3-001DD80B0E39",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-G at 1901-1925 N Clybourn Ave and 1904-1908 N Maud Ave - App No. 23055T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0025285",
+"matter_id": "A9F88186-6750-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-N at 6400-6562 W Fullerton Ave and 2630 N Narragansett Ave - App No. 23066",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0025288",
+"matter_id": "5690ACA4-7850-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-G at 1333 N Kingsbury St - App No. 23067",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0025298",
+"matter_id": "6C7E6DFB-9350-F111-BEC6-001DD8033B18",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 32-D at 13100-13122 S Ellis Ave - App No. 23071",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0025364",
+"matter_id": "4E8F445A-F652-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-H at 2721-2733 N Paulina St - App No. 23085T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0025376",
+"matter_id": "BDD6F398-9C53-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-F at 212-232 W Erie St, 659-679 N Franklin St and 217-233 W Huron St - App No. A-9103",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0026115",
+"matter_id": "A65A494E-CD65-F111-A823-001DD80EA58E",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-H at 1818-1832 N Winnebago Ave/2327-2329 W Moffat St - App No. 23101T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0026200",
+"matter_id": "91EAC6F6-CB68-F111-A823-001DD801545D",
+"passed_on": "2026-07-15",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-I at 2523 W Augusta Blvd - App No. 23108T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0025387",
+"matter_id": "6D1C7EC9-A553-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-K at 4626 N Knox Ave - App No. A-9102",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026306",
+"matter_id": "C1C99D81-6E6A-F111-A823-001DD80F48AE",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 26-F at 318-344 W 111th St - App No. A-9134",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026308",
+"matter_id": "F5E538BE-6E6A-F111-A823-001DD80F48AE",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 26-F and 28-F at 301-347 W 108th Pl, 300-346 W 109th St, 301-347 W 109th St, 318-346 w 109th Pl, 301-341 W 109th Pl, 300-340 W 110th St, 301-347 W 110th St, 302-346 W 110th St, 301-345 W 110th Pl, 300-314 W 111th St, 303-329 W 111th St, 300-332 W 111th Pl, 301-331 W 111th Pl, 300-334 W 112th St, 301-329 W 112th St, and 302-324 W 112th Pl - App No. A-9133",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026310",
+"matter_id": "CC045B89-6F6A-F111-A823-001DD80F48AE",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 28-F at 11115-11157 S Normal Ave, 11114-11154 S Eggleston Ave, 11115-11157 S Eggleston Ave, 11114-11145 S Stewart Ave, and 406-410 W 112th St - App No. A-9132",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026313",
+"matter_id": "2D7BB8F1-6F6A-F111-A823-001DD80F48AE",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 28-F at 355-725 W 111th St, 360-420 W 111th St, and 11031 S Eggleston Ave App No. A-9131",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026887",
+"matter_id": "254292F4-A17B-F111-AB0D-001DD8066831",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-K at 5345-5353 S Archer Ave - App No. A-9145",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026907",
+"matter_id": "0ED5263C-BA7B-F111-AB0D-001DD8066831",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-C at 1600-1820 E 71st St - App No. A-9140",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026919",
+"matter_id": "EAFDE31A-C87B-F111-AB0D-001DD8066831",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-C-at 1834-2126 E 71st St, 1853-2007 E 71st St, 7109-7129 S Bennet Ave, 7108-7116 S Euclid Ave - App No. A-9141",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026924",
+"matter_id": "FA0CF4B2-CA7B-F111-AB0D-001DD8066831",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 16-D and 18-D at 7104-7128 S Drexel Ave, 7105-7135 S Drexel Ave, 7102-7154 S Ingleside Ave, 7105-7201 S Ingleside Ave, 7102-7220 S Ellis Ave, 7103-7243 S Ellis Ave, 7100-7244 S Dobson Ave, 7103-7157 S Dobson Ave, 7102-7326 S Greenwood Ave, 7103-7345 S Greenwood Ave, 7102-7358 S University Ave, 7103-7357 S University Ave, 6900-7356 S Woodlawn Ave, 6901-7293 S Woodlawn Ave, 6900-7056 S Kimbark Ave, 6901-7055 S Kimbark Ave, 1200-1318 E 69th St, 1215-1241 E 71st St, 1214-1238 E 71st Pl, 1211-1237 E 71st Pl, 1204-1230 E 72nd St, 1201-1229 E 72nd St, 1212-1226 E 72nd Pl, 1211-1221 E 72nd Pl, 1200-1216 E 73rd St - App No. A-9142",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026930",
+"matter_id": "7DAAD361-CD7B-F111-AB0D-001DD8066831",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-D at 7343 S Woodlawn Ave App No. A-9143",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026933",
+"matter_id": "9431CC76-CE7B-F111-AB0D-001DD8066831",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 16-C and 18-C at 2132-2238 E 71st St and 2135-2325 E 71st St - App No. A-9139",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027136",
+"matter_id": "448FE634-5480-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-J at 4634-4636 N Avers Ave - App No. 23124T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027171",
+"matter_id": "FAF3117B-6780-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-G at 1331 W Flournoy St - App No. 23126T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027212",
+"matter_id": "854B5789-7480-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-I at 2431 W Thomas St - App No. 23127T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027232",
+"matter_id": "5876CFAD-7780-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 11-H at 4545 N Ravenswood Ave - App No. 23128T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027269",
+"matter_id": "49E237F2-7C80-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2339-2349 W Grand Ave - App No. 23129T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027347",
+"matter_id": "C2A92DF8-EF81-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-I at 2739 W Monroe St - App No. 23132",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027360",
+"matter_id": "61BAC444-F281-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 8-G at 3540-3542 S Halsted St - App No. 23133",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027370",
+"matter_id": "7831675D-F581-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 9-K at 3745 N Cicero Ave - App No. 23134",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027374",
+"matter_id": "EA0B612C-F981-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-I at 2522-2524 W Diversey Ave - App No. 23136T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027398",
+"matter_id": "9910EF61-0B82-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 6-F at 2901-2905 S Lowe Ave - App No. 23139T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027401",
+"matter_id": "BFA70EFA-0C82-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-G at 167-171 N Morgan St - App No. 23140T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027402",
+"matter_id": "346A4807-1E82-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 13-K at 4865 N Elston Ave - App No. 23141T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027413",
+"matter_id": "FB2BA8B6-5884-F111-AB0E-001DD80ED7AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-L at 1640 N Linder Ave - App No. 23143",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027415",
+"matter_id": "5AA714A5-5A84-F111-AB0E-001DD80ED7AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 4-G at 1704 S Racine Ave - App No. 23144T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0027416",
+"matter_id": "E6BE87E3-5C84-F111-AB0E-001DD80ED7AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-D at 7200 S Dorchester Ave - App No. 23145",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2024-0011156",
+"matter_id": "01E1B366-BD4A-EF11-A316-001DD8306DF0",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-G at 37 S Sangamon St - App No. 22491",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2025-0018864",
+"matter_id": "62C01397-6366-F011-BEC1-001DD80DE488",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 18-K at 7600-7400 S Kostner Ave and 7601 S Cicero Ave - App No. 22814",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023210",
+"matter_id": "BB2A18D7-7B07-F111-8406-001DD8071528",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-F at 754 W Belden Ave - App No. 22999T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0023888",
+"matter_id": "AD3466A9-1A1E-F111-8341-001DD8062515",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-J at 3601-3611 W Cortland St and 1844-1856 N Central Park Ave - App No. 23016T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0025291",
+"matter_id": "53EF3116-8450-F111-BEC6-001DD8033B18",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 12-I at 2800-3156 W 51st St, 4911-5061 S Kedzie Ave and 4914-5058 S California Ave - App No. 23068",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0025293",
+"matter_id": "FF002FC9-8750-F111-BEC6-001DD8033B18",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-H at 2235-2259 W Oakdale Ave and 2901-2927 N Oakley Ave - App No. 23069",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0025294",
+"matter_id": "DA24EA94-8C50-F111-BEC6-001DD8033B18",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 12-J at 5050 S Kedzie Ave - App No. 23070",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0025335",
+"matter_id": "E4EFA5FD-C252-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 219 N Elizabeth St - App No. 23075T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0025336",
+"matter_id": "B68C441D-C552-F111-BEC6-001DD80B0E39",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-I at 2954 W Roosevelt Rd - App No. 23076T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0026077",
+"matter_id": "7D1E3ACE-E564-F111-A823-001DD80071EA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-E at 301-363 E Huron St, 300-362 E Erie St, 333-425 E Erie St, 659-679 N Fairbanks Ct, 628-678 N McClurg Ct, 629-649 N McClurg Ct and 400-424 E Ontario St - App No. 23092",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0026090",
+"matter_id": "B9358B34-F264-F111-A823-001DD80071EA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-F at 330 W Webster Ave and 327-335 W Belden Ave - App No. 23093",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0026102",
+"matter_id": "91E0B786-0865-F111-A823-001DD80071EA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-G at 1724 N Dayton St - App No. 23097T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0027101",
+"matter_id": "1CCFF29F-F77E-F111-AB0E-001DD8013458",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-G at 1838-1842 N Elston Ave and 1839-1843 N Besly Ct - App No. 23120",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0027120",
+"matter_id": "C03F9875-B67F-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 370 N Morgan St, 400 N Morgan St, 401 N Morgan St and 403 N Carpenter St - App No. 23121",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0027134",
+"matter_id": "42B374BE-5080-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 1-G at 940-942 W Erie St a.k.a 660-662 N Milwaukee Ave - App No. 23123T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0027154",
+"matter_id": "FE9D4DD7-6380-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-J at 3300 W Pierce Ave - App No. 23125T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0027384",
+"matter_id": "67F08848-FB81-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 6-F at 2815-2819 S Stewart Ave - App No. 23137T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0027396",
+"matter_id": "C168658B-0882-F111-AB0E-001DD80216AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 3-K at 4701-4725 W North Ave - App No. 23138T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "SO2026-0027411",
+"matter_id": "CD3876DE-5484-F111-AB0E-001DD80ED7AA",
+"passed_on": "2026-09-23",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 15-H at 5636-5640 N Ashland Ave - App No. 23142T1",
+"on_map_2026_10_21": true
+},
+{
+"record": "O2026-0026168",
+"matter_id": "9FAFCC37-9A66-F111-A823-001DD80EA58E",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-E at 124-130 E 75t St - App No. 23105T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0027173",
+"matter_id": "AF028087-6880-F111-AB0E-001DD80216AA",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 10-F at 4639-4643 S Wallace St",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0027299",
+"matter_id": "56B0F4DD-8380-F111-AB0E-001DD80F46AC",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-H at 1807-1809 W Augusta Blvd - App No. 23130T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0027331",
+"matter_id": "A7621F54-EC81-F111-AB0E-001DD80216AA",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No.  4-E at 1608 S Wabash Ave - App No. 23131",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0027987",
+"matter_id": "97D9288D-B0A7-F111-B8DD-001DD80EFCF5",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-F at 5000-5046 S Wells St",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028339",
+"matter_id": "FA892D9D-16B1-F111-AAAC-001DD803894A",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 2156 W Warren Blvd - App No. 23147T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028341",
+"matter_id": "EA03AE95-18B1-F111-AAAC-001DD803894A",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 18-E at 7353-7359 S Indiana Ave - App No. 23148T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028345",
+"matter_id": "6E25D182-1AB1-F111-AAAC-001DD803894A",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-I at 2400 W Grenshaw St a.k.a. 1124 S Western Ave - App No. 23149T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028350",
+"matter_id": "EBBB228A-1EB1-F111-AAAC-001DD803894A",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-H at 6701-6731 S Western Ave - App No. 23150",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028355",
+"matter_id": "67E86441-3DB1-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map Nos. 1-H and 3-H at 1600-1760 W Chicago Ave and 1601-1759 W Chicago Ave",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028406",
+"matter_id": "BE7EF8ED-FFB1-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-L at 5300-5358 W 55th St, 5425-5459 S Lorel Ave and 5426-5458 S Lockwood Ave - App No. 23151",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028439",
+"matter_id": "05C17037-C8B2-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 1-H at 1921 W Chicago Ave - App No. 23153T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028457",
+"matter_id": "2D4022F7-D3B2-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-J at 1147-1151 S Independence Blvd - App No. 23154T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028465",
+"matter_id": "ECB9930F-D7B2-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 5-H at 1644 N Winchester Ave - App No. 23155T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028670",
+"matter_id": "4F5A95FE-C2B5-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-H at 2342-2346 W Jackson Blvd - App No. 23156T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028671",
+"matter_id": "B0F6F700-C7B5-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 6-H at 2249 W Cermak Rd - App No. 23157",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028687",
+"matter_id": "4F714F60-D4B5-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 16-G at 814 W 69th St - App No. 23159",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028689",
+"matter_id": "D44E42A4-D7B5-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 13-I at 2648-2658 W Lawrence Ave - App No. 23160T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028698",
+"matter_id": "62741F70-ECB5-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-I at 1140 N California Ave - App No. 23162T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028700",
+"matter_id": "1C0D623D-F4B5-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 13-L at 4841 N Lipps Ave- App No. 23163",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028704",
+"matter_id": "5C3BAB30-F9B5-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-I at 1140-1144 S California Ave - App No. 23165T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028726",
+"matter_id": "B202D5C0-98B6-F111-AAAC-001DD80B58E5",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 3-F at 537-547 W Oak St and 939-957 N Larrabee St - App No. 23166T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028734",
+"matter_id": "30899EE4-ABB6-F111-AAAC-001DD80B58E5",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 7-H at 2315-2317 W Barry Ave - App No. 23169T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028739",
+"matter_id": "7D205D14-B4B6-F111-AAAC-001DD80B58E5",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 12-K at 5312 S Kenneth Ave - App No. 23172",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028744",
+"matter_id": "33D52AFE-C2B6-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 15-J at 3244-3250 W Bryn Mawr Ave - App No. 23176T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "O2026-0028747",
+"matter_id": "7D9067C9-C4B6-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed",
+"title": "Zoning Reclassification Map No. 2-I at 1001-1003 S Campbell Ave - App No. 23177T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0028415",
+"matter_id": "A17DE8AE-9EB2-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 8-G at 3439 S Morgan St - App No. 23152T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0028696",
+"matter_id": "E4E22B29-E9B5-F111-AAAC-001DD80FDA55",
+"passed_on": "2026-10-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 5-K at 1745-1759 N Cicero Ave- App No. 23161T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0028730",
+"matter_id": "28AFA89A-9DB6-F111-AAAC-001DD80B58E5",
+"passed_on": "2026-10-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 7-H at 2328-2334 W Montana St. - App No. 23167T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0028731",
+"matter_id": "5D3E21AB-9FB6-F111-AAAC-001DD80B58E5",
+"passed_on": "2026-10-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 11-K at 4301 W Montrose Ave - App No. 23168T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0028735",
+"matter_id": "60806D93-AEB6-F111-AAAC-001DD80B58E5",
+"passed_on": "2026-10-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 12-D at 5482 S Ridgewood Ct - App No. 23170T1",
+"on_map_2026_10_21": false
+},
+{
+"record": "SO2026-0028738",
+"matter_id": "94D76BDB-B1B6-F111-AAAC-001DD80B58E5",
+"passed_on": "2026-10-14",
+"sub_status": "Passed as Substitute",
+"title": "Zoning Reclassification Map No. 2-K at 4125 and 4127 W 5th Ave - App No. 23171T1",
+"on_map_2026_10_21": false
+}
+]
+}

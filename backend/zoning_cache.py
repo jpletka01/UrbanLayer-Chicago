@@ -161,6 +161,20 @@ def get_cached_zoning_standards(zone_class: str | None) -> ZoningStandards | Non
     return apply_table_authority(standards, zone_class)
 
 
+def get_cached_zoning_meta(zone_class: str | None) -> dict[str, Any] | None:
+    """What the report needs to say about where a cached reading came from: the code sections the extraction
+    read (``provenance``), the code text it was checked against, and when it was built. None on a miss."""
+    if not zone_class:
+        return None
+    cache = _load()
+    entry = cache.get("entries", {}).get(_normalize_zone_class(zone_class))
+    if not entry:
+        return None
+    meta = cache.get("_meta") or {}
+    return {"sections": list(entry.get("provenance") or []), "code_vintage": meta.get("code_vintage"),
+            "built_at": meta.get("built_at")}
+
+
 def reset_cache() -> None:
     """Drop the in-memory cache so the next access reloads from disk (tests)."""
     global _cache

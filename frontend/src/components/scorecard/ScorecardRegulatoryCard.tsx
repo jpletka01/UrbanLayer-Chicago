@@ -4,10 +4,14 @@
 // Classification is presentational only — the same overlays render, grouped.
 import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import type { RegulatorySummary } from "../../lib/types";
+import type { AduStatus, PassedLandmarkDesignation, RegulatorySummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
+import { ConfidenceCaption } from "../ui/Confidence";
+import { useFact } from "../../lib/provenanceContext";
 import { humanizeShoutyCase } from "../../lib/format";
+import { ZONING_MAP_URL } from "../../lib/failedSources";
 import { getTermInfo } from "../../lib/termDefinitions";
+import { LandmarkDesignationBox } from "./LandmarkDesignationBox";
 import { SubSection, ShowMore } from "./ProfileModule";
 
 const ShieldIcon = (
@@ -74,11 +78,24 @@ interface OverlayRow {
   title: string;
   type: string | null;
   detail: string | null;
+  link: string | null;
   term: string;
+}
+
+function SourceLink({ href, label }: { href: string; label?: string }) {
+  const { t } = useTranslation("data");
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer"
+      className="inline-block text-caption text-text-secondary hover:text-accent transition-colors mt-0.5">
+      {label ?? t("regulatory.source")}
+    </a>
+  );
 }
 
 function OverlayRowView({ row }: { row: OverlayRow }) {
   const tone = TONE[row.severity];
+  // A layer's own entry speaks only when it is stale, low or not the publisher's word (default-quiet).
+  const entry = useFact(`overlay.${row.term}`);
   return (
     <div className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 ${tone.row}`}>
       {tone.icon}
@@ -91,6 +108,8 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
             {[row.type, row.detail].filter(Boolean).join(" — ")}
           </div>
         )}
+        {row.link && <SourceLink href={row.link} />}
+        <ConfidenceCaption entry={entry} size="micro" />
       </div>
     </div>
   );
@@ -101,17 +120,46 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
 // with a dead-space flank). Top-N rows always visible, the tail discloses.
 const CONSTRAINT_BUDGET = 6;
 
-export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
+
+/** A failed overlay lookup is unknown, not "none": say so instead of disappearing. */
+function UncheckedOverlays({ types }: { types: string[] }) {
+  const { t } = useTranslation("data");
+  const items = [...new Set(types.map((ty) => t(`regulatory.unchecked.types.${ty}`, { defaultValue: formatLayerType(ty) })))];
+  return (
+    <div className="flex items-start gap-2.5 rounded-lg border border-state-warning/25 bg-state-warning/5 px-3 py-2.5"
+      data-testid="overlays-unchecked">
+      {TONE.constraint.icon}
+      <div className="min-w-0">
+        <div className="text-body text-text-primary leading-snug">{t("regulatory.unchecked.title")}</div>
+        <div className="text-caption text-text-muted mt-0.5 leading-snug">
+          {t("regulatory.unchecked.body", { items: items.join(", ") })}
+        </div>
+        <SourceLink href={ZONING_MAP_URL} label={t("regulatory.unchecked.mapLink")} />
+      </div>
+    </div>
+  );
+}
+
+export function ScorecardRegulatoryCard({ data, adu, designations }: {
+  data: RegulatorySummary; adu?: AduStatus | null;
+  /** Passed Chicago Landmark designations the map does not show for this parcel yet (WS1 M5b). */
+  designations?: PassedLandmarkDesignation[] | null;
+}) {
   const { t } = useTranslation("data");
 
   // Same dedup as the sidebar card: status flags that restate an overlay are dropped.
   const overlayCores = new Set(data.overlays.map((ov) => flagCore(ov.layer_type)));
+  // The ADU layer returns a hit for any point inside an ADU zone polygon, but zones only
+  // matter for RS districts; with the backend's adu status the layer artifact is dropped
+  // and replaced by the real answer (allowed by right / allowed with this zone's limits /
+  // not allowed). Without it (older payloads) the flag renders as before.
+  const aduOverlayShown = (type: string) => type !== "adu_area" || !adu || adu.status === "allowed_with_limits";
   const activeFlags = FLAG_KEYS.filter(
-    (k) => data[k as keyof RegulatorySummary] === true && !overlayCores.has(flagCore(k)),
+    (k) => data[k as keyof RegulatorySummary] === true && !overlayCores.has(flagCore(k)) && !(adu && k === "in_adu_area"),
   );
 
   const rows: OverlayRow[] = [
-    ...data.overlays.map((ov, i): OverlayRow => {
+    ...data.overlays.filter((ov) => aduOverlayShown(ov.layer_type)).map((ov, i): OverlayRow => {
       const rawTypeLabel = formatLayerType(ov.layer_type);
       const typeLabel = getTermInfo(ov.layer_type)?.label || rawTypeLabel;
       const name = ov.name && normLabel(ov.name) !== normLabel(rawTypeLabel) ? humanizeShoutyCase(ov.name) : null;
@@ -124,30 +172,54 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
         severity: severityOf(ov.layer_type),
         title: name ?? typeLabel,
         type: name ? typeLabel : null,
-        detail: [description, ov.ordinance ? `${t("regulatory.ord")} ${ov.ordinance}` : null].filter(Boolean).join(" · ") || null,
+        // What the overlay requires, in the code's own terms, beats the generic layer name.
+        detail: [
+          ov.layer_type === "adu_area" && adu ? adu.note : (ov.detail ?? description),
+          ov.ordinance ? `${t("regulatory.ord")} ${ov.ordinance}` : null,
+        ].filter(Boolean).join(" · ") || null,
+        link: ov.link ?? null,
         term: ov.layer_type,
       };
     }),
+    ...(adu && adu.status !== "allowed_with_limits"
+      ? [{
+          key: "adu-status",
+          severity: (adu.status === "allowed_by_right" ? "opportunity" : "context") as Severity,
+          title: t(`regulatory.adu.${adu.status}`),
+          type: null,
+          detail: adu.note,
+          link: null,
+          term: "adu_area",
+        } satisfies OverlayRow]
+      : []),
     ...activeFlags.map((key): OverlayRow => ({
       key,
       severity: severityOf(key),
       title: t(`regulatory.flags.${key}`),
       type: key === "in_ssa" && data.ssa_name ? data.ssa_name : null,
       detail: null,
+      link: null,
       term: key,
     })),
   ];
 
   const constraints = rows.filter((r) => r.severity === "constraint");
   const others = rows.filter((r) => r.severity !== "constraint");
+  const unchecked = data.unchecked_overlays ?? [];
 
   return (
     <SubSection title={t("regulatory.title")} icon={ShieldIcon}
-      meta={rows.length > 0 ? t("regulatory.constraintCount", { count: constraints.length }) : undefined}
+      meta={rows.length > 0 && !(data.unchecked_overlays?.length) ? t("regulatory.constraintCount", { count: constraints.length }) : undefined}
       className="flex-1"
     >
       <div className="space-y-5">
-        {rows.length === 0 && <p className="text-body text-text-muted">{t("regulatory.noOverlays")}</p>}
+        <LandmarkDesignationBox hits={designations} />
+
+        {unchecked.length > 0 && <UncheckedOverlays types={unchecked} />}
+
+        {rows.length === 0 && unchecked.length === 0 && !(designations?.length) && (
+          <p className="text-body text-text-muted">{t("regulatory.noOverlays")}</p>
+        )}
 
         {constraints.length > 0 && (
           <div>
@@ -186,6 +258,16 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
                 </span>
               ))}
             </div>
+            {others.some((r) => r.detail || r.link) && (
+              <ul className="mt-2.5 space-y-1.5" data-testid="overlay-notes">
+                {others.filter((r) => r.detail || r.link).map((r) => (
+                  <li key={r.key} className="text-caption text-text-muted leading-snug">
+                    <span className="text-text-secondary">{r.title}: </span>{r.detail}
+                    {r.link && <> <SourceLink href={r.link} /></>}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 

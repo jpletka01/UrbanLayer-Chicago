@@ -1,0 +1,867 @@
+{
+ "address": "3400 N Central Park Ave",
+ "lat": 41.9429879322,
+ "lon": -87.7178641776,
+ "community_area": 21,
+ "community_area_name": "Avondale",
+ "context": {
+  "community_area": 21,
+  "community_area_name": "Avondale",
+  "resolved_address": "3400 N Central Park Ave",
+  "data_as_of": "2026-10-01",
+  "data_lag_note": "Crime data excludes the most recent 7 days (as of 2026-09-24).",
+  "data_lag_days": 7,
+  "data_lag_cutoff": "2026-09-24",
+  "crime_last_90d": {
+   "total": 522,
+   "arrest_rate": 0.125,
+   "by_type": {
+    "THEFT": 158,
+    "CRIMINAL DAMAGE": 67,
+    "BATTERY": 65,
+    "MOTOR VEHICLE THEFT": 49,
+    "BURGLARY": 41
+   },
+   "yoy": [
+    {
+     "category": "THEFT",
+     "current_count": 158,
+     "prior_year_count": 195,
+     "change_pct": -19
+    },
+    {
+     "category": "CRIMINAL DAMAGE",
+     "current_count": 67,
+     "prior_year_count": 65,
+     "change_pct": 3
+    },
+    {
+     "category": "BATTERY",
+     "current_count": 65,
+     "prior_year_count": 77,
+     "change_pct": -16
+    },
+    {
+     "category": "MOTOR VEHICLE THEFT",
+     "current_count": 49,
+     "prior_year_count": 36,
+     "change_pct": 36
+    },
+    {
+     "category": "BURGLARY",
+     "current_count": 41,
+     "prior_year_count": 37,
+     "change_pct": 11
+    }
+   ],
+   "yoy_period": "Jun\u2013Sep 2026 vs Jun\u2013Sep 2025",
+   "capped": false
+  },
+  "address_311": {
+   "total": 15,
+   "open_count": 2,
+   "by_type": {
+    "Graffiti Removal Request": 4,
+    "Finance Parking Code Enforcement Review": 2,
+    "Pothole in Street Complaint": 2,
+    "Open Fire Hydrant Complaint": 2,
+    "Sign Repair Request - Stop Sign": 2,
+    "Tree Removal Inspection": 1,
+    "Tree Emergency": 1,
+    "Shared Cost Sidewalk Program Request": 1
+   },
+   "high_risk_flags": [],
+   "routine_service_flags": []
+  },
+  "code_chunks": [],
+  "parcel_zoning": {
+   "zone_class": "RS-3",
+   "zone_type": 4,
+   "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+  },
+  "regulatory": {
+   "overlays": [
+    {
+     "layer_type": "special_district",
+     "name": "Special Districts",
+     "description": "Special Districts"
+    },
+    {
+     "layer_type": "tod_cta",
+     "name": "Transit-Oriented Development (CTA)",
+     "description": "Transit-Oriented Development (CTA)"
+    },
+    {
+     "layer_type": "adu_area",
+     "name": "ADU Eligible Areas",
+     "description": "ADU Eligible Areas"
+    },
+    {
+     "layer_type": "aro_zone",
+     "name": "Affordable Requirements Ordinance Zones",
+     "description": "Affordable Requirements Ordinance Zones"
+    }
+   ],
+   "in_planned_development": false,
+   "in_landmark_district": false,
+   "is_landmark_building": false,
+   "in_historic_district": false,
+   "on_national_register": false,
+   "in_lakefront_protection": false,
+   "on_pedestrian_street": false,
+   "in_special_district": true,
+   "in_pmd": false,
+   "in_tod_area": true,
+   "in_adu_area": true,
+   "in_aro_zone": true,
+   "in_ssa": false,
+   "in_special_flood_hazard": false,
+   "brownfield_sites": [
+    {
+     "site_name": "BNSF LITTLE VILLAGE PASEO SEGMENT 1",
+     "epa_id": "110071982538",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.939229999999995,
+     "longitude": -87.71737
+    },
+    {
+     "site_name": "BNSF LITTLE VILLAGE PASEO SEGMENT 2",
+     "epa_id": "110071982539",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.940404,
+     "longitude": -87.717411
+    }
+   ],
+   "aro_housing": {
+    "total_projects": 6,
+    "total_units": 76,
+    "projects": [
+     {
+      "name": "2823 W. Belmont Ave.",
+      "address": "2823 W. Belmont Ave.",
+      "units": 5,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Hairpin Lofts",
+      "address": "3414 W. Diversey Ave.",
+      "units": 25,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Milwaukee Ave. Apts.",
+      "address": "3060 N. Milwaukee Ave.",
+      "units": 32,
+      "property_type": "Supportive Housing"
+     },
+     {
+      "name": "The Avondale Residences II",
+      "address": "3153 N. Tripp Ave.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Avondale Residences II",
+      "address": "4181 W. Belmont Ave.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Field's Lofts",
+      "address": "4000 W. Diversey Ave.",
+      "units": 12,
+      "property_type": "ARO"
+     }
+    ]
+   }
+  },
+  "property": {
+   "pin14": "13233160400000",
+   "bldg_class": "211",
+   "bldg_sqft": 3616,
+   "land_sqft": 3616,
+   "land_sqft_source": "assessor",
+   "bldg_sqft_source": "assessor",
+   "year_built_source": "assessor",
+   "stories_source": "assessor",
+   "units_source": "assessor",
+   "stories": 2.0,
+   "units": 5,
+   "rooms": 20,
+   "bedrooms": 10,
+   "full_baths": 5,
+   "half_baths": 0,
+   "bldg_age": 99,
+   "year_built": 1927,
+   "exterior_wall": "Masonry",
+   "roof_type": "Tar + Gravel",
+   "basement": "Full",
+   "garage_size": "3 cars",
+   "air_conditioning": "Central A/C",
+   "tax_exempt": false,
+   "total_assessed_value": 55976.0,
+   "estimated_annual_tax": 14876.11,
+   "tax_estimate_is_fallback": false,
+   "assessment_level": 0.1,
+   "implied_market_value": 559760.0,
+   "effective_tax_rate": 0.0202,
+   "tax_year": 2024,
+   "tax_code": "71164",
+   "tax_breakdown": [
+    {
+     "agency": "BOARD OF EDUCATION",
+     "rate": 3.630964,
+     "amount": 8130.57
+    },
+    {
+     "agency": "CITY OF CHICAGO",
+     "rate": 1.614882,
+     "amount": 3616.1
+    },
+    {
+     "agency": "COUNTY OF COOK",
+     "rate": 0.390469,
+     "amount": 874.35
+    },
+    {
+     "agency": "METRO WATER RECLAMATION DISTRICT OF GREATER CHICAGO",
+     "rate": 0.340445,
+     "amount": 762.34
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT",
+     "rate": 0.294209,
+     "amount": 658.8
+    },
+    {
+     "agency": "CHICAGO COMMUNITY COLLEGE DISTRICT 508",
+     "rate": 0.14948,
+     "amount": 334.72
+    },
+    {
+     "agency": "CITY OF CHICAGO SCHOOL BLDG & IMP FUND",
+     "rate": 0.129569,
+     "amount": 290.14
+    },
+    {
+     "agency": "FOREST PRESERVE DISTRICT OF COOK COUNTY",
+     "rate": 0.068588,
+     "amount": 153.58
+    },
+    {
+     "agency": "LOGAN AVONDALE HERMOSA EXPANDED MENTAL HEALTH SERVICE DISTRICTERV",
+     "rate": 0.022293,
+     "amount": 49.92
+    },
+    {
+     "agency": "NORTHWEST HOME EQUITY ASSURANCE",
+     "rate": 0.002496,
+     "amount": 5.59
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT AQUARIUM & MUSEUM BONDS",
+     "rate": 0.0,
+     "amount": 0.0
+    }
+   ],
+   "tax_exemptions": [],
+   "appeals": {
+    "records": [
+     {
+      "year": 2025,
+      "stage": "assessor",
+      "before_total": 73768.0,
+      "after_total": 63967.0,
+      "result": "change",
+      "reduction_pct": 13.3,
+      "appeal_type": "residential"
+     },
+     {
+      "year": 2025,
+      "stage": "board_of_review",
+      "before_total": 63967.0,
+      "after_total": 55976.0,
+      "result": "Decrease",
+      "reduction_pct": 12.5,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2024,
+      "stage": "assessor",
+      "before_total": 85000.0,
+      "after_total": 81538.0,
+      "result": "change",
+      "reduction_pct": 4.1,
+      "appeal_type": "residential"
+     },
+     {
+      "year": 2024,
+      "stage": "board_of_review",
+      "before_total": 81538.0,
+      "after_total": 73767.0,
+      "result": "Decrease",
+      "reduction_pct": 9.5,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2023,
+      "stage": "assessor",
+      "before_total": 52000.0,
+      "after_total": 52000.0,
+      "result": "no change",
+      "appeal_type": "residential"
+     },
+     {
+      "year": 2023,
+      "stage": "board_of_review",
+      "before_total": 52000.0,
+      "after_total": 52000.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2022,
+      "stage": "assessor",
+      "before_total": 52000.0,
+      "after_total": 52000.0,
+      "result": "no change",
+      "appeal_type": "residential"
+     },
+     {
+      "year": 2022,
+      "stage": "board_of_review",
+      "before_total": 52000.0,
+      "after_total": 52000.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2021,
+      "stage": "assessor",
+      "before_total": 52000.0,
+      "after_total": 52000.0,
+      "result": "no change",
+      "appeal_type": "residential"
+     },
+     {
+      "year": 2021,
+      "stage": "board_of_review",
+      "before_total": 52000.0,
+      "after_total": 52000.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2020,
+      "stage": "board_of_review",
+      "before_total": 37419.0,
+      "after_total": 37419.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2019,
+      "stage": "board_of_review",
+      "before_total": 43011.0,
+      "after_total": 43011.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2018,
+      "stage": "board_of_review",
+      "before_total": 43011.0,
+      "after_total": 43011.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2017,
+      "stage": "board_of_review",
+      "before_total": 38014.0,
+      "after_total": 38014.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2016,
+      "stage": "board_of_review",
+      "before_total": 40020.0,
+      "after_total": 40020.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     }
+    ],
+    "nearby_window_years": [
+     2023,
+     2024,
+     2025
+    ],
+    "nearby_appeal_count": 163,
+    "nearby_reduced_count": 62,
+    "nearby_median_reduction_pct": 7.5,
+    "nearby_capped": false
+   },
+   "assessment_history": [
+    {
+     "year": 2026,
+     "land": 15730.0,
+     "building": 40246.0,
+     "total": 55976.0
+    },
+    {
+     "year": 2025,
+     "land": 15730.0,
+     "building": 40246.0,
+     "total": 55976.0
+    },
+    {
+     "year": 2024,
+     "land": 15730.0,
+     "building": 58038.0,
+     "total": 73768.0
+    },
+    {
+     "year": 2023,
+     "land": 12656.0,
+     "building": 39344.0,
+     "total": 52000.0
+    },
+    {
+     "year": 2022,
+     "land": 12656.0,
+     "building": 39344.0,
+     "total": 52000.0
+    }
+   ],
+   "sales_history": [
+    {
+     "date": "2016-07-31T00:00:00.000",
+     "price": 1.0,
+     "deed_type": "Warranty"
+    },
+    {
+     "date": "2014-07-09T00:00:00.000",
+     "price": 282000.0,
+     "deed_type": "Other"
+    },
+    {
+     "date": "2000-10-01T00:00:00.000",
+     "price": 378000.0,
+     "deed_type": "Trustee"
+    }
+   ],
+   "parcel_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.71763,
+       41.94295
+      ],
+      [
+       -87.71763,
+       41.94303
+      ],
+      [
+       -87.7181,
+       41.94302
+      ],
+      [
+       -87.71809,
+       41.94295
+      ],
+      [
+       -87.71763,
+       41.94295
+      ]
+     ]
+    ]
+   },
+   "data_gaps": []
+  },
+  "incentives": {
+   "in_tif_district": false,
+   "tif_fund_history": [],
+   "tif_financials": [],
+   "in_opportunity_zone": false,
+   "in_enterprise_zone": false,
+   "in_qct": false,
+   "in_nmtc": false,
+   "nmtc_tract": "17031831100",
+   "nmtc_severe_distress": false,
+   "nmtc_poverty_rate": 8.3,
+   "census_tract": "17031831100",
+   "property_tax_class": "standard",
+   "tax_incentive_description": "Property class 211 is a standard classification \u2014 no tax incentive reduction applies.",
+   "grant_programs": {
+    "total_projects": 15,
+    "total_funding": 1214712.3499999999,
+    "by_program": {
+     "SBIF": 15
+    },
+    "recent_projects": [
+     {
+      "name": "3471 N. Elston, Inc. dba Chief O'Neill's Pub & Restaurant",
+      "program": "SBIF",
+      "incentive_amount": 147723.06,
+      "total_cost": 164136.73,
+      "property_type": "General Commercial",
+      "description": "Removal of the existing roofing system down to the wood decking and replacement with new insulation, modified membrane, gravel stop, parapet wall flashings, and aluminum termination bar; installation of two (2) new air conditioning units on the main roof and one (1) unit along the upper roof with necessary gas and electric connections.",
+      "date": "2025-02-07"
+     },
+     {
+      "name": "Steve Albini, Inc. dba Electrical Audio",
+      "program": "SBIF",
+      "incentive_amount": 43889.2,
+      "total_cost": 43889.2,
+      "property_type": "Manufacturing",
+      "description": "Build out of studio room C including removal of exterior steel doors and small section of shared wall and replacement with a new partition wall and door for lounge area, new drywall, new door, and finishes, carpet flooring, carpentry work, two (2) new core doors, frame up new window area to align with the existing window, and install new glass block windows; installation of new duct work in studio room B including relocating air handlers, reworking refrigeration lines, low voltage electric work, and gas piping, new condensate pump, and drainage, add new returns/transfer grills, running new supply to the southwest corner of building, and install balancing dampers; electrical work including the installation three (3) 20amp to the existing panel, six (6) junction boxes with duplex outlets, install a new baseboard heater and end cap thermostat in the front stairwell.",
+      "date": "2024-04-17"
+     },
+     {
+      "name": "Nathan Gentile",
+      "program": "SBIF",
+      "incentive_amount": 97246.04,
+      "total_cost": 108051.15,
+      "property_type": "Mixed Use: Retail and Commercial",
+      "description": "Renovation to an existing leased commercial space.",
+      "date": "2023-11-30"
+     },
+     {
+      "name": "Kobo Enterprises LLC",
+      "program": "SBIF",
+      "incentive_amount": 113653.5,
+      "total_cost": 227307.0,
+      "property_type": "General Industrial",
+      "description": "Exterior renovations including tuckpointing, remove overhead and dock doors, furnish and install overhead and dock doors. Interior renovations including removal of steel large steel plate, cut, grind, demo concrete, frame up new 6\u2019 w x 8\u2019 L x 20\u201d.",
+      "date": "2023-10-17"
+     },
+     {
+      "name": "Vintage Frills",
+      "program": "SBIF",
+      "incentive_amount": 19365.92,
+      "total_cost": 21517.69,
+      "property_type": "Retail",
+      "description": "Removal of stucco, storefront improvements, new flooring, and doors.",
+      "date": "2023-04-19"
+     },
+     {
+      "name": "Avondale Auto Repair Inc.",
+      "program": "SBIF",
+      "incentive_amount": 50000.0,
+      "total_cost": 59350.0,
+      "property_type": "General Commercial",
+      "description": "Masonry work including tuckpointing from the 2nd floor windowsill down, replacing the existing damaged lintel along the overhead doors along the north elevation, removing and reinstalling the existing parapet limestone copings with new flashings, removing the existing parge coating and damaged bricks along the knee wall of the east elevation and replacing them with new bricks to match the existing.",
+      "date": "2023-04-12"
+     },
+     {
+      "name": "Visceral Dance Center",
+      "program": "SBIF",
+      "incentive_amount": 50000.0,
+      "total_cost": 254026.8,
+      "property_type": "General Commercial",
+      "description": "Furnish and install thirteen (13) skylights; rebuild rear elevation masonry wall, windows; furnish and install exterior commercial doors and three (3) garage doors; interior improvements including: install new aluminum vestibule, install new floor system, furnish and install twenty-two (22) interior doors; mechanical upgrades including HVAC (furnish and install new rooftop units), and plumbing (new plumbing lines for bathrooms and fixtures).",
+      "date": "2023-01-24"
+     },
+     {
+      "name": "Bash Sports Academy, LLC",
+      "program": "SBIF",
+      "incentive_amount": 93801.68,
+      "total_cost": 128769.0,
+      "property_type": "General Commercial",
+      "description": "Tuckpointing east and south walls; installation of a new HVAC unit; removal of existing turf, demolish and remove existing concrete flooring, and pour new concrete flooring.",
+      "date": "2021-12-09"
+     },
+     {
+      "name": "2620 W Fletcher, LLC",
+      "program": "SBIF",
+      "incentive_amount": 88710.6,
+      "total_cost": 124850.0,
+      "property_type": "Mixed-Use: Retail and Commercial",
+      "description": "Rebuild parapet wall along north, east, and west elevations, tuckpointing throughout entire exterior, repair glass blocks, remove and replace ninety-two (92) window panels, removal of beams along north elevation, removal of wooden canopy at north-east corner; roof improvements including installation of new flashing and new silver coating, build saddles to redirect settled water, remove and install nine (9) new drains; and furnish and install new security system.",
+      "date": "2021-03-12"
+     },
+     {
+      "name": "AA Tempo Auto, Inc.",
+      "program": "SBIF",
+      "incentive_amount": 47343.75,
+      "total_cost": 63125.0,
+      "property_type": "General Commercial",
+      "description": "Roofing work including installation of modified bitumen membrane, and rubber flashing at parapet walls, rear masonry work including removal of plaster, replacement of bricks, repair inner wall if necessary, acid clean new wall, and concrete work including replacement of 12\u2019x15\u2019 concrete pad.",
+      "date": "2021-01-08"
+     }
+    ]
+   }
+  },
+  "neighborhood": {
+   "census_tract": {
+    "tract_fips": "17031831100",
+    "tract_name": "Census Tract 8311, Cook, IL",
+    "census_reporter_url": "https://censusreporter.org/profiles/14000US17031831100/",
+    "population": 6760,
+    "median_household_income": 104399,
+    "per_capita_income": 51776,
+    "median_home_value": 471400,
+    "median_gross_rent": 1662,
+    "owner_occupied_pct": 45.3,
+    "vacancy_rate": 9.6,
+    "poverty_rate": 8.1,
+    "bachelors_or_higher_pct": 50.3,
+    "foreign_born_pct": 24.4,
+    "age_distribution": [
+     {
+      "label": "Under 18",
+      "value": 18.1
+     },
+     {
+      "label": "18-24",
+      "value": 7.8
+     },
+     {
+      "label": "25-34",
+      "value": 22.7
+     },
+     {
+      "label": "35-44",
+      "value": 17.6
+     },
+     {
+      "label": "45-54",
+      "value": 9.9
+     },
+     {
+      "label": "55-64",
+      "value": 9.7
+     },
+     {
+      "label": "65-74",
+      "value": 10.5
+     },
+     {
+      "label": "75+",
+      "value": 3.6
+     }
+    ],
+    "income_distribution": [
+     {
+      "label": "Under $25K",
+      "value": 11.3
+     },
+     {
+      "label": "$25-50K",
+      "value": 15.4
+     },
+     {
+      "label": "$50-75K",
+      "value": 7.1
+     },
+     {
+      "label": "$75-100K",
+      "value": 10.6
+     },
+     {
+      "label": "$100-150K",
+      "value": 28.1
+     },
+     {
+      "label": "$150-200K",
+      "value": 13.8
+     },
+     {
+      "label": "$200K+",
+      "value": 13.8
+     }
+    ],
+    "race_distribution": [
+     {
+      "label": "White",
+      "value": 23.0
+     },
+     {
+      "label": "Black",
+      "value": 1.4
+     },
+     {
+      "label": "Asian",
+      "value": 1.3
+     },
+     {
+      "label": "Two+",
+      "value": 12.6
+     },
+     {
+      "label": "Other",
+      "value": 10.6
+     },
+     {
+      "label": "Hispanic",
+      "value": 51.1
+     }
+    ],
+    "education_distribution": [
+     {
+      "label": "No degree",
+      "value": 8.3
+     },
+     {
+      "label": "High school",
+      "value": 25.9
+     },
+     {
+      "label": "Some college",
+      "value": 15.5
+     },
+     {
+      "label": "Bachelor's",
+      "value": 37.6
+     },
+     {
+      "label": "Graduate+",
+      "value": 12.7
+     }
+    ],
+    "transportation_distribution": [
+     {
+      "label": "Drove alone",
+      "value": 29.2
+     },
+     {
+      "label": "Carpooled",
+      "value": 6.1
+     },
+     {
+      "label": "Public transit",
+      "value": 24.3
+     },
+     {
+      "label": "Walked",
+      "value": 1.7
+     },
+     {
+      "label": "Bicycle",
+      "value": 3.2
+     },
+     {
+      "label": "Work from home",
+      "value": 35.0
+     },
+     {
+      "label": "Other",
+      "value": 0.4
+     }
+    ],
+    "county_median_income": 83498,
+    "city_median_income": 77902
+   },
+   "transit": {
+    "nearest_cta_rail": "Addison (Blue)",
+    "cta_rail_distance_mi": 0.25,
+    "cta_lines": [
+     "Blue Line"
+    ],
+    "nearest_metra": "Irving Park",
+    "metra_distance_mi": 0.9,
+    "metra_line": "Union Pacific Northwest",
+    "tod_eligible": true,
+    "tod_type": "CTA rail"
+   },
+   "walkscore": {
+    "walk_score": 84,
+    "walk_description": "Very Walkable",
+    "transit_score": 73,
+    "transit_description": "Excellent Transit",
+    "bike_score": 68,
+    "bike_description": "Bikeable",
+    "ws_link": "https://www.walkscore.com/score/3400-N-Central-Park-Ave/lat=41.9429879322/lng=-87.7178641776/?utm_source=pletka.com&utm_medium=ws_api&utm_campaign=ws_api"
+   },
+   "ward": {
+    "ward": 30,
+    "alderman": "Cruz, Ruth",
+    "phone": "(773) 628-7874",
+    "email": "Ward30@cityofchicago.org"
+   },
+   "divvy": {
+    "nearest_station": "Drake Ave & Addison St",
+    "distance_mi": 0.3,
+    "docks": 15,
+    "stations_within_radius": 3,
+    "radius_mi": 0.5
+   }
+  },
+  "requires_disclaimer": true,
+  "partial_failures": []
+ },
+ "comparables": {
+  "median_sale_price": 525000.0,
+  "median_price_per_buildable_sqft": 188.51,
+  "buildable_median_basis": "mixed",
+  "buildable_median_n": 2,
+  "price_range_min": 269900.0,
+  "price_range_max": 665000.0,
+  "sales_volume": 3,
+  "sales": [
+   {
+    "pin": "13233020391003",
+    "sale_date": "2026-02-25T00:00:00.000",
+    "sale_price": 269900.0,
+    "class_code": "299",
+    "deed_type": "Warranty",
+    "distance_mi": 0.23,
+    "lat": 41.9458200567,
+    "lon": -87.72025224,
+    "zone_class": "RS-3",
+    "far": 0.9
+   },
+   {
+    "pin": "13233020310000",
+    "sale_date": "2026-01-22T00:00:00.000",
+    "sale_price": 665000.0,
+    "class_code": "211",
+    "land_sqft": 3031,
+    "deed_type": "Warranty",
+    "distance_mi": 0.25,
+    "lat": 41.945811202,
+    "lon": -87.7209407774,
+    "zone_class": "RS-3",
+    "far": 0.9,
+    "price_per_buildable_sqft": 243.78,
+    "land_sqft_source": "geometry"
+   },
+   {
+    "pin": "13233020120000",
+    "sale_date": "2025-06-26T00:00:00.000",
+    "sale_price": 525000.0,
+    "class_code": "211",
+    "land_sqft": 4378,
+    "deed_type": "Warranty",
+    "distance_mi": 0.27,
+    "lat": 41.9462002077,
+    "lon": -87.7207861056,
+    "zone_class": "RS-3",
+    "far": 0.9,
+    "price_per_buildable_sqft": 133.24,
+    "land_sqft_source": "geometry"
+   }
+  ]
+ },
+ "partial_failures": [],
+ "violations_checked": true,
+ "resolved_pin": "13233160400000",
+ "resolved_confidence": "authoritative",
+ "nearest_parcel_unverified": false,
+ "resolved_lat": 41.9429879322,
+ "resolved_lon": -87.7178641776,
+ "zone_definition": {
+  "zone_class": "RS-3",
+  "name": "Residential Single-Unit",
+  "code_section": "\u00a717-2-0102",
+  "far": 0.9,
+  "max_height": "30 ft",
+  "lot_coverage": null,
+  "min_lot_sqft": 2500,
+  "uses": "Detached houses, parks, schools, religious institutions, home occupations",
+  "notes": "Most common RS district. Smaller lots.",
+  "is_fallback": false
+ }
+}

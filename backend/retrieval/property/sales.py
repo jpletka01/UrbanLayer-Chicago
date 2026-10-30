@@ -50,9 +50,9 @@ async def get_sales(
         _cache.set(key, result)
         return result
     except Exception as exc:
+        # Raise, and cache nothing: a failed call is not "no sales on record" (WS6 M7).
         log.warning("CCAO sales failed for PIN %s: %s", pin14, exc)
-        _cache.set(key, _NOT_FOUND)
-        return []
+        raise
 
 
 def _normalize_pin(pin: str) -> str:
@@ -110,9 +110,12 @@ async def nearby_comparable_sales(
         (base_radius * 2, base_years + 2),
     ]
     result: dict[str, Any] = {"summary": {}, "sales": []}
-    for rad, yrs in tiers:
+    for tier_i, (rad, yrs) in enumerate(tiers):
         result = await _query_comps(lat, lon, class_prefix, yrs, rad, limit, client)
         if result["sales"]:
+            result["summary"]["comp_radius_mi"] = _deg_to_mi(rad)
+            result["summary"]["comp_window_years"] = yrs
+            result["summary"]["comp_widened"] = tier_i > 0
             result["summary"]["comp_basis"] = (
                 f"Class {class_prefix}xx sales within {_deg_to_mi(rad)} mi, last {yrs} yr "
                 f"(n={len(result['sales'])})"
@@ -295,5 +298,8 @@ async def _query_comps(
         return {"summary": summary, "sales": comps}
 
     except Exception as exc:
+        # Raise: an empty result here meant "no comps nearby" to the caller, which cached it for an hour and
+        # showed the market module as absent. The callers already turn an exception into "comparable sales"
+        # in partial_failures (WS6 M7).
         log.warning("Comparable sales failed for (%s, %s): %s", lat, lon, exc)
-        return {"summary": {}, "sales": []}
+        raise

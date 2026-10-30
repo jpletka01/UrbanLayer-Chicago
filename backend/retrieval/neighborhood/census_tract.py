@@ -1,18 +1,25 @@
 """Census tract demographics via Census Reporter API (ACS 5-year estimates)."""
 
 import logging
+import math
 
 import httpx
 
 from backend.config import get_settings
-from backend.models import CensusTractDemographics, DistributionBucket
+from backend.models import CensusTractDemographics, DistributionBucket, RentCell
 from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
 _cache = TTLCache(ttl_seconds=86400, maxsize=256, name="census_tract_demographics")
 
-TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B25077,B05002,B25064,B25003,B25002"
+TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B23025,B25077,B05002,B25064,B25003,B25002,B25031"
+
+# B25031 columns after the total (001), by the names ``neighborhood.rent.BEDROOM_GROUPS`` uses.
+B25031_COLUMNS = {
+    "no_bedroom": "B25031002", "1_bedroom": "B25031003", "2_bedrooms": "B25031004",
+    "3_bedrooms": "B25031005", "4_bedrooms": "B25031006", "5_plus_bedrooms": "B25031007",
+}
 
 # Chicago (place) and Cook County geo IDs for comparison medians
 CHICAGO_GEO = "16000US1714000"
@@ -61,6 +68,59 @@ def _est(data: dict, table: str, col: str) -> float | None:
     if not tbl:
         return None
     return _safe_float(tbl.get("estimate", {}).get(col))
+
+
+def _err(data: dict, table: str, col: str) -> float | None:
+    """The published margin of error (90% level) for a column; None when absent, negative
+    (the Census's "controlled estimate" sentinels) or not a number."""
+    tbl = data.get(table)
+    if not tbl:
+        return None
+    v = _safe_float((tbl.get("error") or {}).get(col))
+    return v if v is not None and v >= 0 else None
+
+
+MOE_Z = 1.645  # ACS margins of error are at the 90% confidence level
+
+
+def _moe_sum(*moes: float | None) -> float | None:
+    """MOE of a sum of estimates: root of the summed squares. None if any part has none."""
+    if not moes or any(m is None for m in moes):
+        return None
+    return math.sqrt(sum(m * m for m in moes))  # type: ignore[operator]
+
+
+def _moe_prop(num: float | None, num_moe: float | None, den: float | None, den_moe: float | None) -> float | None:
+    """MOE (in percentage points) of a proportion whose numerator is part of its denominator,
+    by the Census Bureau's formula; falls back to the ratio formula when the radicand is negative."""
+    if num is None or num_moe is None or den is None or den_moe is None or den <= 0:
+        return None
+    p = num / den
+    radicand = num_moe**2 - p**2 * den_moe**2
+    if radicand < 0:
+        radicand = num_moe**2 + p**2 * den_moe**2
+    return round(math.sqrt(radicand) / den * 100, 1)
+
+
+def _cv(estimate: float | None, moe: float | None) -> float | None:
+    """Coefficient of variation: standard error (MOE / 1.645) over the estimate."""
+    if estimate is None or moe is None or estimate <= 0:
+        return None
+    return round(moe / MOE_Z / estimate, 3)
+
+
+def rent_cells(data: dict) -> dict[str, RentCell]:
+    """The B25031 median gross rents by bedroom count in one geography's Census Reporter data.
+    Only columns the response carries are returned; a suppressed estimate is a cell with ``estimate`` None."""
+    if not data.get("B25031"):
+        return {}
+    cells = {}
+    for name, col in B25031_COLUMNS.items():
+        est = _safe_int(_est(data, "B25031", col))
+        moe = _err(data, "B25031", col)
+        cells[name] = RentCell(estimate=est, moe=None if moe is None else round(moe, 1),
+                               cv=_cv(est, moe))
+    return cells
 
 
 def _parse_age(data: dict) -> tuple[list[DistributionBucket], float | None]:
@@ -243,10 +303,15 @@ async def fetch_census_tract(
     owns = client is None
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    from backend.data_health import live
+
     try:
+        if live.fault("source", "-", "census.reporter.acs"):
+            raise RuntimeError("forced by DATA_HEALTH_FAULT")
         resp = await client.get(url, params=params)
         resp.raise_for_status()
         payload = resp.json()
+        live.record("census.reporter.acs", True)
 
         tract_data = payload.get("data", {}).get(geo_id, {})
         if not tract_data:
@@ -283,6 +348,11 @@ async def fetch_census_tract(
         poverty_below = _est(tract_data, "B17001", "B17001002")
         poverty_rate = _pct(poverty_below, poverty_total)
 
+        # Unemployed ÷ civilian labor force (B23025005 / B23025003)
+        labor_force = _est(tract_data, "B23025", "B23025003")
+        unemployed = _est(tract_data, "B23025", "B23025005")
+        unemployment_rate = _pct(unemployed, labor_force)
+
         foreign_total = _est(tract_data, "B05002", "B05002013")
         native_total = _est(tract_data, "B05002", "B05002001")
         foreign_pct = _pct(foreign_total, native_total)
@@ -292,6 +362,43 @@ async def fetch_census_tract(
         cook_data = payload.get("data", {}).get(COOK_COUNTY_GEO, {})
         city_median = _safe_int(_est(chicago_data, "B19013", "B19013001"))
         county_median = _safe_int(_est(cook_data, "B19013", "B19013001"))
+
+        # Margins of error (90%) and their coefficients of variation, for the figures the page shows.
+        # Percentages carry their MOE in percentage points.
+        bach_cols = [f"B15003{i:03d}" for i in (22, 23, 24, 25)]
+        bach_moe = _moe_sum(*(_err(tract_data, "B15003", c) for c in bach_cols))
+        moe: dict[str, float] = {}
+        for name, value in (
+            ("population", _err(tract_data, "B01001", "B01001001")),
+            ("median_household_income", _err(tract_data, "B19013", "B19013001")),
+            ("per_capita_income", _err(tract_data, "B19301", "B19301001")),
+            ("median_home_value", _err(tract_data, "B25077", "B25077001")),
+            ("median_gross_rent", _err(tract_data, "B25064", "B25064001")),
+            ("owner_occupied_pct", _moe_prop(owner_occ, _err(tract_data, "B25003", "B25003002"), tenure_total, _err(tract_data, "B25003", "B25003001"))),
+            ("vacancy_rate", _moe_prop(vacant, _err(tract_data, "B25002", "B25002003"), occ_total, _err(tract_data, "B25002", "B25002001"))),
+            ("poverty_rate", _moe_prop(poverty_below, _err(tract_data, "B17001", "B17001002"), poverty_total, _err(tract_data, "B17001", "B17001001"))),
+            ("unemployment_rate", _moe_prop(unemployed, _err(tract_data, "B23025", "B23025005"), labor_force, _err(tract_data, "B23025", "B23025003"))),
+            ("bachelors_or_higher_pct", _moe_prop(
+                sum(_est(tract_data, "B15003", c) or 0 for c in bach_cols), bach_moe,
+                _est(tract_data, "B15003", "B15003001"), _err(tract_data, "B15003", "B15003001"))),
+            ("foreign_born_pct", _moe_prop(foreign_total, _err(tract_data, "B05002", "B05002013"), native_total, _err(tract_data, "B05002", "B05002001"))),
+            ("city_median_income", _err(chicago_data, "B19013", "B19013001")),
+            ("county_median_income", _err(cook_data, "B19013", "B19013001")),
+        ):
+            if value is not None:
+                moe[name] = round(value, 1)
+        estimates = {
+            "population": population, "median_household_income": median_income, "per_capita_income": per_capita,
+            "median_home_value": home_value, "median_gross_rent": median_rent, "owner_occupied_pct": owner_occ_pct,
+            "vacancy_rate": vacancy_rate, "poverty_rate": poverty_rate, "unemployment_rate": unemployment_rate,
+            "bachelors_or_higher_pct": bach_pct, "foreign_born_pct": foreign_pct,
+            "city_median_income": city_median, "county_median_income": county_median,
+        }
+        cv = {k: c for k, m in moe.items() if (c := _cv(estimates.get(k), m)) is not None}
+        rent_by_bedroom = rent_cells(tract_data)
+        release = payload.get("release") or {}
+        years = release.get("years")
+        acs_period = years.replace("-", "–") if isinstance(years, str) and years else None
 
         result = CensusTractDemographics(
             tract_fips=tract_fips,
@@ -306,8 +413,14 @@ async def fetch_census_tract(
             owner_occupied_pct=owner_occ_pct,
             vacancy_rate=vacancy_rate,
             poverty_rate=poverty_rate,
+            unemployment_rate=unemployment_rate,
             bachelors_or_higher_pct=bach_pct,
             foreign_born_pct=foreign_pct,
+            acs_period=acs_period,
+            acs_release=release.get("id") if isinstance(release.get("id"), str) else None,
+            moe=moe,
+            cv=cv,
+            rent_by_bedroom=rent_by_bedroom,
             age_distribution=age_dist,
             income_distribution=income_dist,
             race_distribution=race_dist,
@@ -320,6 +433,7 @@ async def fetch_census_tract(
         return result
     except Exception as exc:
         log.warning("Census Reporter fetch failed for tract %s: %s", tract_fips, exc)
+        live.record("census.reporter.acs", False)
         return None
     finally:
         if owns:

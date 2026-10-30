@@ -1,5 +1,90 @@
 # Deploy units
 
+## Data-health check — daily (WS6 M2)
+
+`backend.data_health.check --write --alert` probes every registered data source (HTTP reads and
+local files; **no model calls**), stores the result in `backend/data/data_health.db` (persistent
+volume) and tells Sentry about sources that turned red. It also checks the age of the newest DB backup
+(`backup_status.json`, written by `scripts/backup_db.sh`). `/health` reads the store and shows
+`data_health.checker` (`ok`, or `late` after 36 h without a finished run). Design and alarm rules:
+`claude-context/guides/data-health.md`.
+
+`scripts/backup_db.sh` also mirrors the stored report originals (`backend/data/reports/`, the PDFs buyers were sold) into `/opt/urbanlayer/backups/reports/`, append-only (`rsync --ignore-existing`, never deleting). The Mac-side off-box pull (`scripts/pull_backups.sh`) fetches only the database copies so far.
+
+The **app** writes a second file on the same volume, `backend/data/data_health_live.db`: hourly counts of its own
+calls to each source and how many failed (WS6 M7, `backend/data_health/live.py`). The checker reads the last 24 hours
+and turns a failure rate over 20% (50% = alarm) of at least 10 calls into `warn` (`alarm`) between two daily probes.
+Each container only ever writes its own file. The file appears an hour after a deploy; delete it to reset the counts.
+
+### Install on the prod host (`ssh urbanlayer-prod`; needs sudo)
+
+```bash
+cd /opt/urbanlayer                                          # the unit files arrive with the deploy
+sudo /opt/urbanlayer/scripts/backup_db.sh                   # once now, so backup_status.json exists before the first check
+sudo cp deploy/data-health-check.service deploy/data-health-check.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now data-health-check.timer
+sudo systemctl start data-health-check.service              # first run now, don't wait for 05:37 UTC
+systemctl status data-health-check.service --no-pager       # "status=0/SUCCESS"
+systemctl list-timers data-health-check.timer               # next run 05:37 UTC
+```
+
+### Check it
+
+```bash
+journalctl -u data-health-check.service -n 120 --no-pager   # the table, worst first, then "Sentry: N event(s)"
+curl -s https://urbanlayerchicago.com/health                # "data_health":{"checker":"ok","last_run_age_h":0.0,...}
+```
+
+Exit `1` = the checker itself crashed (a Sentry Cron `error` check-in; the unit retries once after
+30 min). A red *source* is not a failed unit: it is a Sentry issue. The alarm drill is in the guide.
+
+The GitHub workflows `data-health-deadman.yml` (daily, fails if `/health` shows the checker late) and
+`code-export-reminder.yml` (monthly, fails while the code text was ingested over 35 days ago) email a
+failure to whoever last edited their schedule.
+
+## Legislation sync — daily (WS1 M2 + WS2 PR 1)
+
+`backend.legislation.sync` asks the City Clerk's API what Municipal Code amendments passed
+after the code text's vintage and writes `backend/data/legislation_snapshot.json` (persistent
+volume). It also refreshes the dark WS2 store `backend/data/pending_legislation.db`: pending zoning
+map filings and Title-17-looking text matters, their actions, lifecycle links, and non-EDS attachment
+metadata. Both keep last-good data on failure. The app only reads local artifacts (no Clerk call on
+the request path); the pending store has no request-path reader until WS2 PR 2. Without a passed-law
+check in the last 72 h the Profile, chat and report stop giving a count; after
+14 days they say "we couldn't check" (the committed `backend/code_amendments.json` still lists the
+reviewed ones).
+
+### Install on the prod host (`ssh urbanlayer-prod`; needs sudo)
+
+```bash
+cd /opt/urbanlayer                                          # the unit files arrive with the deploy
+sudo cp deploy/legislation-sync.service deploy/legislation-sync.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now legislation-sync.timer
+sudo systemctl start legislation-sync.service               # first run now, don't wait for 06:00
+systemctl status legislation-sync.service --no-pager        # "status=0/SUCCESS"
+systemctl list-timers legislation-sync.timer                # next run 06:00 Chicago
+```
+
+### Check it
+
+```bash
+journalctl -u legislation-sync.service -n 20 --no-pager     # status=ok ... title17=16 ...
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend \
+  python -c "from backend.legislation.currency import code_currency_status as s; print(s())"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend \
+  python -c "from backend.config import get_settings; from backend.legislation.pending_store import read_status; print(read_status(get_settings().pending_legislation_path))"
+```
+
+Exit codes: `1` = the Clerk or a local store failed (last-good rows and their successful check date
+are kept, so consumers age out gracefully); `2` = contract drift (an unknown final/pending state,
+a previously passed record vanished, or one lifecycle has two current matters). The affected
+artifact is marked failed/suspect without poisoning the other one. Both report to Sentry. Passed-law
+status appears at `GET /api/admin/code-currency`; the generic Data Health panel reports
+`internal.pending_legislation`.
+
+
 ## Property Discovery — monthly index rebuild
 
 The prospecting index (`backend/data/discovery_index.db`, persistent volume) goes stale as CCAO

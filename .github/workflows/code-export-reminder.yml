@@ -1,0 +1,38 @@
+name: Code export reminder
+
+# Monthly nudge to download a newer Municipal Code export (WS6 M2). American Legal has no feed and
+# charges for one, so the refresh is manual: this fails on the 1st of each month while the code text
+# was last ingested more than 35 days ago, and GitHub emails the failure. It goes quiet by itself
+# once someone ingests a newer export (ingestion/update.py rewrites backend/code_vintage.json).
+# The steps to follow are in claude-context/guides/code-refresh.md (the monthly review and the refresh with a
+# new export); the index push itself is in claude-context/guides/deployment.md.
+
+on:
+  schedule:
+    - cron: "0 15 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Is the ingested export more than 35 days old?
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          from datetime import datetime, timezone
+          v = json.load(open("backend/code_vintage.json"))
+          ingested = datetime.fromisoformat(v["ingested_at"])
+          age = (datetime.now(timezone.utc) - ingested).days
+          print(f"code text current through {v['current_through']} ({v.get('label')}), ingested {ingested:%Y-%m-%d} ({age} days ago)")
+          if age > 35:
+              print(f"::error title=Download a new Municipal Code export::The code text was last ingested {age} days ago "
+                    f"(current through {v['current_through']}). Check American Legal's Chicago code page for a newer export, "
+                    "then follow claude-context/guides/code-refresh.md. Council passes amendments monthly.")
+              sys.exit(1)
+          PY

@@ -105,6 +105,13 @@ SAMPLE_RESPONSE = {
                 },
                 "error": {},
             },
+            "B23025": {
+                "estimate": {
+                    "B23025001": 2600, "B23025002": 2000, "B23025003": 2000,
+                    "B23025004": 1900, "B23025005": 100, "B23025006": 0, "B23025007": 600,
+                },
+                "error": {},
+            },
             "B25077": {
                 "estimate": {"B25077001": 628300},
                 "error": {},
@@ -142,7 +149,7 @@ SAMPLE_RESPONSE = {
     "geography": {
         "14000US17031242400": {"name": "Census Tract 2424, Cook, IL"},
     },
-    "release": {"id": "acs2024_5yr", "name": "ACS 2024 5-year"},
+    "release": {"id": "acs2024_5yr", "name": "ACS 2024 5-year", "years": "2020-2024"},
     "tables": {},
 }
 
@@ -218,6 +225,9 @@ class TestFetchCensusTract:
         assert result.vacancy_rate > 0
         assert result.poverty_rate is not None
         assert result.poverty_rate > 0
+        # Unemployed ÷ civilian labor force (B23025005 / B23025003), as a percentage.
+        assert result.unemployment_rate == 5.0
+        assert result.acs_period == "2020–2024"
         assert result.census_reporter_url == "https://censusreporter.org/profiles/14000US17031242400/"
         assert len(result.age_distribution) == 8
         assert len(result.income_distribution) == 7
@@ -278,3 +288,8 @@ async def test_live_census_reporter():
     assert result.median_household_income is not None
     assert len(result.age_distribution) > 0
     assert len(result.income_distribution) > 0
+
+
+def test_b23025_is_requested():
+    from backend.retrieval.neighborhood.census_tract import TABLE_IDS
+    assert "B23025" in TABLE_IDS.split(",")

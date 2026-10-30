@@ -1,0 +1,34 @@
+{
+ "text": "## 1500 W Wilson Ave \u2014 Zoning & Development Analysis\n**PIN:** 14171060250000 | Parcel resolution: authoritative\n\n---\n\n### 1. Zoning District\n\nThis parcel is zoned **B1-2 (Neighborhood Shopping, Density 2)** [1]. The zoning map was last updated 2025-03-19; no recent rezoning is on record. Verify at the [Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning). Code text is current through the Council Journal of March 18, 2026.\n\n---\n\n### 2. Residential Uses: Above & At Ground Floor\n\n**Above ground floor:** Dwelling units above the ground floor are **permitted by right (P)** in B1 districts [2]. You can build apartments above ground-floor retail without any special approval.\n\n**Ground floor:** Dwelling units *below the second floor* are handled differently [2]. Standard ground-floor residential is **not listed as permitted by right** in B1. A limited exception exists: the Zoning Administrator may approve conversion of an existing ground-floor commercial space into residential units under [3] (\u00a717-13-1003-NN). Artist Live/Work Space on the ground floor requires **special use approval (S)** in B1 [2]. For entirely new ground-floor residential construction, the code text retrieved does not confirm a by-right path \u2014 confirm directly with the Department of Planning & Development (DPD) or a zoning attorney.\n\n---\n\n### 3. Bulk & Density Standards\n\n| Standard | Value | Source |\n|---|---|---|\n| **FAR** | 2.2 maximum | Zoning table, [3] |\n| **Max height** | 45\u201350 ft (varies by lot frontage & ground-floor commercial) | Zoning table, [3] |\n| **Min lot area per dwelling unit** | 1,000 sq ft | Zoning table, [3] |\n| **Implied unit yield (lot area only)** | ~4 units (4,347 sq ft \u00f7 1,000 = 4.3 \u2192 4) | Lot-area math only |\n\n**Important caveat on unit yield:** The 4-unit figure reflects lot-area-per-unit math only. FAR (2.2 \u00d7 4,347 sq ft = ~9,563 sq ft of buildable floor area), height limits, parking, and other standards can further constrain what's actually buildable. Efficiency and SRO units count at smaller areas than standard dwelling units, so those unit types could yield more. Setbacks were not returned in the retrieved code text for B1-2 \u2014 confirm with DPD or the full zoning table at [3].\n\n---\n\n### 4. Overlays & Special Designations\n\n- **Transit-Oriented Development (CTA & Metra):** Both overlays apply. Nearest CTA rail is Montrose (Brown Line, 0.45 mi); nearest Metra is Ravenswood/Union Pacific North (0.39 mi). The parcel is within 2,640 feet of a CTA rail station, triggering transit-served location standards [4].\n- **ADU Eligible Area:** This parcel is in an ADU-eligible area \u2014 accessory dwelling units may be permitted subject to applicable standards.\n- **Affordable Requirements Ordinance (ARO) Zone:** Any residential development triggering ARO entitlement thresholds will require affordable units. Uptown has 20 ARO projects totaling 976 affordable units in the community area.\n- **Special Service Area:** The parcel is within **Greater Ravenswood SSA** (note: the SSA levy appears in the tax bill as City of Chicago Special Service Area 31).\n- **No Planned Development, landmark/historic district, lakefront protection, or PMD** applies to this parcel.\n- **Flood Zone X** \u2014 area of minimal flood hazard; flood insurance not required.\n- **No brownfield sites** nearby.\n\nVerify overlays via DPD's online Property Profile or the Chicago Zoning Map linked above.\n\n---\n\n### 5. Parking Requirement & Transit Reduction\n\nThis parcel qualifies for transit-served parking relief under \u00a717-10-0102-B [4]. Because it sits within a CTA TOD overlay, the **minimum parking requirement can be reduced by up to 100%** \u2014 meaning no minimum off-street parking is required. This relief is available by right (no entitlement required) for a B1-2 project here.\n\n---\n\n### 6. Height, FAR & What Proximity to Transit Changes\n\n**Height & FAR:** Maximum FAR is **2.2** and maximum height is **45\u201350 ft**, as stated above [3]. These are the base B1-2 standards.\n\n**Does transit change what you can build?** For density, FAR, and height bonuses \u2014 **no, not here.** The FAR and height bonuses for transit-served locations apply only in **dash-3 districts** (e.g., B1-3, B2-3, C1-3) under [3]. B1-2 is a dash-2 district and is not eligible for those bonuses. Transit-served new construction in B and C districts must still satisfy pedestrian-street design standards and parking reduction provisions [4], but no FAR, height, or density increase is available by right or by any entitlement path at B1-2.\n\n**What transit *does* change:** Full parking relief (up to 100% reduction), as noted in Part 5.\n\n**Additional TIF context:** The parcel sits in the **Clark/Montrose TIF district** (est. 1999, expires 2035), which carries a current fund balance of ~$14M. TIF increment financing may be available for qualifying projects \u2014 contact DPD's Office of Planning & Development or the City's TIF administrator to assess eligibility.\n\n---\n\n### Confidence & Limitations\n\n- **High confidence:** Zoning district, FAR, height, lot-area-per-unit, TOD parking relief, overlays \u2014 all from authoritative parcel data and retrieved code text.\n- **Could not confirm:** Setback requirements (not in retrieved code text); precise ground-floor residential permissions beyond the conversion exception; whether a specific use mix would trigger mandatory Planned Development review (check \u00a717-8-0500 thresholds).\n- Assessment value data is not currently available from Cook County for this parcel. Estimated annual property tax (2024) is **$15,960**, primarily to the Board of Education ($8,539), City of Chicago ($3,798), and Cook County ($918).\n\n*This information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the relevant city department for official guidance.*",
+ "error": null,
+ "seconds": 50.7,
+ "citation_warnings": null,
+ "plan_location": {
+  "raw": "1500 W Wilson Ave, Chicago, Illinois",
+  "type": "address",
+  "resolved_community_area": 3,
+  "resolved_community_area_name": "Uptown",
+  "resolved_address": "1500 W Wilson Ave, Chicago, IL",
+  "resolved_lat": 41.96548595,
+  "resolved_lon": -87.66783518,
+  "pin": "14171060250000",
+  "resolution": "authoritative"
+ },
+ "plan_sources": [
+  "regulatory_domain",
+  "property_domain",
+  "vector_search",
+  "permits_api",
+  "neighborhood_domain",
+  "incentives_domain"
+ ],
+ "context_zone": {
+  "zone_class": "B1-2",
+  "zone_type": 1,
+  "map_updated": "2025-03-19",
+  "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+  "recently_rezoned": false
+ },
+ "pid": "P3",
+ "address": "1500 W Wilson Ave"
+}

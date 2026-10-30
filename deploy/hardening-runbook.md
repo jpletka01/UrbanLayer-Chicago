@@ -201,37 +201,114 @@ The deploy script also warms them after each restart.
 
 ## 8c. Backups, and getting them off the box (20 min)
 
+`chicago.db` (users, conversations, purchases, analytics) is the one irreplaceable file;
+Qdrant, the Discovery index and ptaxsim can all be rebuilt from source.
 `scripts/backup_db.sh` defaults to the real database, the `chicago.db` file in the
-`backend_data` volume. (Its old default named a file that doesn't exist; the server's cron
-entry passed the right path explicitly, so nightly backups were in fact running.)
+`backend_data` volume, and keeps the newest 7 copies in `/opt/urbanlayer/backups`.
+
+**On the server** (as root). The copies hold user data, so the folder is `root:jack`
+with setgid and the script's `umask 027` makes each copy `640`: `jack` can read them
+for the off-box pull, nobody else can.
 
 ```bash
 apt install -y sqlite3
-/opt/urbanlayer/scripts/backup_db.sh          # run once by hand and check the output
-( crontab -l 2>/dev/null; echo '0 3 * * * /opt/urbanlayer/scripts/backup_db.sh' ) | crontab -
+chown root:jack /opt/urbanlayer/backups && chmod 2750 /opt/urbanlayer/backups
+( crontab -l 2>/dev/null | grep -v backup_db.sh
+  echo '0 3 * * * /opt/urbanlayer/scripts/backup_db.sh >> /var/log/urbanlayer-backup.log 2>&1' ) | crontab -
+/opt/urbanlayer/scripts/backup_db.sh >> /var/log/urbanlayer-backup.log 2>&1   # once by hand
+crontab -l && tail -3 /var/log/urbanlayer-backup.log
 ```
 
-Those copies live on the same disk as the database. Ship them off the box with an
-encrypted tool such as `restic` to a Hetzner Storage Box or Backblaze B2, then
-**test a restore**.
+The server runs on UTC, so 03:00 is 21:00/22:00 Chicago time.
+
+> **2026-10-20:** root's crontab was found **empty**. The entry was lost in the
+> 2026-09-28 hardening, so no backup ran from Sept 28 to Oct 20. It's restored (with the
+>  log redirect, which the old entry lacked).
+
+**Backup-age alarm (WS6 M2).** After each successful backup the script also writes
+`backup_status.json` (time, file name, size, copies kept) beside `chicago.db` in the
+`backend_data` volume; the data-health checker (`deploy/README.md`) reads it from its
+container, which cannot see `/opt/urbanlayer/backups`. No backup for 30 h is a warning
+and 36 h an alarm (Sentry). It watches the on-box copy only: the Mac pull below is
+not seen from the server. After a deploy that changes the script, run it once by hand
+so the file exists before the first check.
+
+**Off the box: a pull to Jack's Mac** (free, no new accounts). The Mac pulls rather than
+the server pushing, so the server holds no credential for anything else.
+
+1. A dedicated key with no passphrase (so `launchd` can use it unattended), which the
+   server accepts **only** for read-only `rrsync` of the backups folder. It can't open
+   a shell, write, or leave that folder (all three checked 2026-10-20):
+
+   ```bash
+   ssh-keygen -t ed25519 -N '' -C 'urbanlayer-backup-pull (read-only rrsync)' -f ~/.ssh/urbanlayer_backup_pull
+   PUB=$(cat ~/.ssh/urbanlayer_backup_pull.pub)
+   ssh urbanlayer-prod "echo 'command=\"/usr/bin/rrsync -ro /opt/urbanlayer/backups/\",restrict $PUB' >> ~/.ssh/authorized_keys"
+   ```
+
+   Then add a `Host urbanlayer-backup` alias to `~/.ssh/config`, with the server's
+   `HostName`, `User jack`, `IdentityFile ~/.ssh/urbanlayer_backup_pull` and
+   `IdentitiesOnly yes`. The script connects through that alias, so the origin IP (which
+   Cloudflare hides) stays out of this public repo.
+
+2. `scripts/pull_backups.sh` copies `urbanlayer_*.db` into `~/Backups/urbanlayer` (mode
+   700) and keeps the newest 60. It prunes by name, never by age, so the Mac's copies survive
+   if the server stops making new ones. It runs `PRAGMA quick_check` on the newest copy and
+   shows a macOS notification if the pull fails, the check fails, or the newest copy is over
+   36 h old.
+
+3. The launchd job runs it at login and every 4 hours; a run missed during sleep fires on
+   wake. Its log is at `~/Library/Logs/urbanlayer-backup-pull.log`.
+
+   ```bash
+   sed -e "s|__HOME__|$HOME|g" -e "s|__REPO__|$PWD|g" deploy/launchd/com.urbanlayer.backup-pull.plist \
+     > ~/Library/LaunchAgents/com.urbanlayer.backup-pull.plist
+   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.urbanlayer.backup-pull.plist
+   launchctl kickstart gui/$(id -u)/com.urbanlayer.backup-pull   # run now
+   ```
+
+Two macOS quirks are handled in the script. macOS's `openrsync` sends `--dirs` for
+`-r --include/--exclude`, which rrsync rejects, so it pulls with a remote glob instead.
+And `sqlite3 -readonly` can't open the copies, so the check uses a `file:...?immutable=1` URI.
+
+The copies on the Mac are **not encrypted**, and FileVault was off on 2026-10-20. Turning
+FileVault on covers them.
+
+**Test a restore** (last done 2026-10-20, from `urbanlayer_20261021_013112.db`: sha256
+matched the server copy, `integrity_check` ok, schema v14 = `backend/db.py`'s
+`_SCHEMA_VERSION`, and a local backend booted on it with `/health` all true):
+
+```bash
+mkdir -p /tmp/restore && cp "$(ls -1 ~/Backups/urbanlayer/urbanlayer_*.db | sort -r | head -1)" /tmp/restore/chicago.db
+sqlite3 /tmp/restore/chicago.db 'PRAGMA integrity_check; SELECT MAX(version) FROM schema_version;'
+DB_PATH=/tmp/restore/chicago.db uvicorn backend.main:app --port 8011 &   # then: curl localhost:8011/health
+```
+
+To restore prod: stop the backend, copy the chosen file over
+`/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`, delete any
+`chicago.db-wal`/`-shm` beside it, then start the backend again.
 
 ## 9. Check the vector store wasn't tampered with (5 min)
 
 Qdrant was reachable without auth from the internet until 2026-09-08, so the municipal-code
 corpus could in principle have been edited. That would be a prompt-injection path.
 
-Compare the point count with a trusted local build (as of 2026-09-28 both have
-`chicago_municipal_code` = 16,576; checked on prod that day):
+Compare the point count with a trusted local build (as of 2026-10-21 both serve
+`municipal_code_2026-03-18` = 16,576 through the `municipal_code` alias). For a
+section-by-section check instead of a count, run `python -m ingestion.push_index --target
+<tunnel> --verify` from a machine with the local index (claude-context/guides/deployment.md).
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend python -c "
 import httpx
-print(httpx.get('http://qdrant:6333/collections/chicago_municipal_code').json()['result']['points_count'])"
+print(httpx.get('http://qdrant:6333/collections/municipal_code').json()['result']['points_count'])"
 ```
 
-If the count differs, or to be certain, rebuild the collection from source
-(`python -m ingestion.update --full` against the prod Qdrant) or restore them from a local
-snapshot.
+If the count differs, or `--verify` reports differences, give prod a clean copy under a new
+name: copy the local collection to it (`push_index --target http://localhost:6333
+--snapshot-copy <served name> --collection <served name>-restore`), then `--upload`,
+`--verify` and `--switch` with `--collection <served name>-restore`, and `--drop` the
+tampered one.
 
 ## 10. Verify from outside
 

@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { Provenance } from "../../lib/api";
+import { marginText, type CaptionOpts } from "../../lib/confidence";
+import { ProvenanceContext, useFact } from "../../lib/provenanceContext";
 import type { CensusTractDemographics, DistributionBucket, NeighborhoodSummary } from "../../lib/types";
+import { ConfidenceCaption, ConfidenceValue } from "../ui/Confidence";
 import { BarChart } from "./BarChart";
 import { CollapsibleCard } from "./CollapsibleCard";
 
@@ -38,24 +42,51 @@ function fmtPct(n: number | null | undefined): string {
   return `${n.toFixed(1)}%`;
 }
 
-function StatBox({ label, value }: { label: string; value: string }) {
+/** A headline figure. With its provenance entry it takes its confidence state (a low figure is quieter)
+    and shows the published margin of error under the label. */
+function StatBox({ label, value, entry, unit }: {
+  label: string; value: string; entry?: Provenance; unit?: CaptionOpts["unit"];
+}) {
+  const margin = marginText(entry, unit);
   return (
     <div className="text-center">
-      <div className="text-sm font-semibold text-text-primary">{value}</div>
+      <div className="text-sm font-semibold text-text-primary"><ConfidenceValue entry={entry}>{value}</ConfidenceValue></div>
       <div className="text-micro text-text-muted mt-0.5">{label}</div>
+      {margin && value !== "—" && <div className="text-micro text-text-muted" data-testid="margin">{margin}</div>}
     </div>
   );
 }
 
-function KV({ label, value }: { label: string; value: string | null | undefined }) {
+function KV({ label, value, entry, unit }: {
+  label: string; value: string | null | undefined; entry?: Provenance; unit?: CaptionOpts["unit"];
+}) {
   if (!value || value === "—") return null;
+  const margin = marginText(entry, unit);
   return (
     <div className="flex justify-between items-baseline gap-2">
       <span className="text-text-muted text-micro">{label}</span>
-      <span className="text-text-primary text-micro font-mono text-right">{value}</span>
+      <span className="text-text-primary text-micro font-mono text-right">
+        <ConfidenceValue entry={entry}>{value}</ConfidenceValue>
+        {margin && <span className="text-text-muted" data-testid="margin"> {margin}</span>}
+      </span>
     </div>
   );
 }
+
+/** Tract figure → its label key and the unit its margin of error is printed in. */
+const TRACT_FIELDS: Record<string, { label: string; unit: CaptionOpts["unit"] }> = {
+  population: { label: "neighborhood.population", unit: "count" },
+  median_household_income: { label: "neighborhood.medIncome", unit: "usd" },
+  per_capita_income: { label: "neighborhood.perCapitaIncome", unit: "usd" },
+  median_home_value: { label: "neighborhood.homeValue", unit: "usd" },
+  median_gross_rent: { label: "neighborhood.medianRent", unit: "usd" },
+  owner_occupied_pct: { label: "neighborhood.ownerOccupied", unit: "pct" },
+  vacancy_rate: { label: "neighborhood.vacancyRate", unit: "pct" },
+  poverty_rate: { label: "neighborhood.poverty", unit: "pct" },
+  unemployment_rate: { label: "neighborhood.unemployment", unit: "pct" },
+  bachelors_or_higher_pct: { label: "neighborhood.bachelorsPlus", unit: "pct" },
+  foreign_born_pct: { label: "neighborhood.foreignBorn", unit: "pct" },
+};
 
 function scoreColor(score: number): string {
   if (score >= 90) return "#22c55e";
@@ -126,6 +157,12 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
   // the distribution charts are deep-dive material (scorecard cognitive-load pass).
   const [open, setOpen] = useState(false);
   const tractNum = ct.tract_name || `Tract ${ct.tract_fips}`;
+  // The turn's provenance (chat rail only): a figure's margin and state, and the figures the data could not support.
+  const prov = useContext(ProvenanceContext);
+  const fact = (field: string) => prov[`area.tract.${field}`];
+  const unit = (field: string) => TRACT_FIELDS[field]?.unit;
+  const withheld = Object.keys(TRACT_FIELDS).filter((f) => fact(f)?.confidence === "withheld");
+  const anyMargin = Object.keys(TRACT_FIELDS).some((f) => ct[f as keyof CensusTractDemographics] != null && marginText(fact(f), unit(f)));
   const incomeContext = ct.city_median_income && ct.median_household_income
     ? ct.median_household_income > ct.city_median_income
       ? t("neighborhood.aboveChicago", { pct: Math.round((ct.median_household_income / ct.city_median_income - 1) * 100) })
@@ -148,31 +185,39 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
         </svg>
         <span className="text-micro text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
           {t("neighborhood.tractDetail", { tract: tractNum })}
+          {ct.acs_period && <span className="normal-case tracking-normal"> · {t("neighborhood.acsPeriod", { period: ct.acs_period })}</span>}
         </span>
       </button>
       {!open ? null : (
       <>
       <div className="grid grid-cols-3 gap-2 py-0.5">
-        <StatBox label={t("neighborhood.population")} value={fmtNum(ct.population)} />
-        <div className="text-center">
-          <div className="text-sm font-semibold text-text-primary">{fmtDollar(ct.median_household_income)}</div>
-          <div className="text-micro text-text-muted mt-0.5">{t("neighborhood.medIncome")}</div>
-          {incomeContext && (
-            <div className="text-micro text-text-muted">{incomeContext}</div>
-          )}
-        </div>
-        <StatBox label={t("neighborhood.poverty")} value={fmtPct(ct.poverty_rate)} />
+        <StatBox label={t("neighborhood.population")} value={fmtNum(ct.population)} entry={fact("population")} unit={unit("population")} />
+        <StatBox label={t("neighborhood.medIncome")} value={fmtDollar(ct.median_household_income)}
+          entry={fact("median_household_income")} unit={unit("median_household_income")} />
+        <StatBox label={t("neighborhood.poverty")} value={fmtPct(ct.poverty_rate)} entry={fact("poverty_rate")} unit={unit("poverty_rate")} />
       </div>
+      {incomeContext && <p className="text-micro text-text-muted text-center -mt-1">{incomeContext}</p>}
 
       <div className="space-y-0.5">
-        <KV label={t("neighborhood.perCapitaIncome")} value={fmtDollar(ct.per_capita_income)} />
-        <KV label={t("neighborhood.homeValue")} value={fmtDollar(ct.median_home_value)} />
-        <KV label={t("neighborhood.medianRent")} value={fmtDollar(ct.median_gross_rent)} />
-        <KV label={t("neighborhood.ownerOccupied")} value={fmtPct(ct.owner_occupied_pct)} />
-        <KV label={t("neighborhood.vacancyRate")} value={fmtPct(ct.vacancy_rate)} />
-        <KV label={t("neighborhood.bachelorsPlus")} value={fmtPct(ct.bachelors_or_higher_pct)} />
-        <KV label={t("neighborhood.foreignBorn")} value={fmtPct(ct.foreign_born_pct)} />
+        <KV label={t("neighborhood.unemployment")} value={fmtPct(ct.unemployment_rate)} entry={fact("unemployment_rate")} unit={unit("unemployment_rate")} />
+        <KV label={t("neighborhood.perCapitaIncome")} value={fmtDollar(ct.per_capita_income)} entry={fact("per_capita_income")} unit={unit("per_capita_income")} />
+        <KV label={t("neighborhood.homeValue")} value={fmtDollar(ct.median_home_value)} entry={fact("median_home_value")} unit={unit("median_home_value")} />
+        <KV label={t("neighborhood.medianRent")} value={fmtDollar(ct.median_gross_rent)} entry={fact("median_gross_rent")} unit={unit("median_gross_rent")} />
+        <KV label={t("neighborhood.ownerOccupied")} value={fmtPct(ct.owner_occupied_pct)} entry={fact("owner_occupied_pct")} unit={unit("owner_occupied_pct")} />
+        <KV label={t("neighborhood.vacancyRate")} value={fmtPct(ct.vacancy_rate)} entry={fact("vacancy_rate")} unit={unit("vacancy_rate")} />
+        <KV label={t("neighborhood.bachelorsPlus")} value={fmtPct(ct.bachelors_or_higher_pct)} entry={fact("bachelors_or_higher_pct")} unit={unit("bachelors_or_higher_pct")} />
+        <KV label={t("neighborhood.foreignBorn")} value={fmtPct(ct.foreign_born_pct)} entry={fact("foreign_born_pct")} unit={unit("foreign_born_pct")} />
       </div>
+
+      {/* A withheld figure is never silently dropped: it says what it is and why it isn't shown. */}
+      {withheld.length > 0 && (
+        <div className="space-y-0.5" data-testid="tract-withheld">
+          {withheld.map((f) => (
+            <ConfidenceCaption key={f} size="micro" entry={fact(f)} prefix={t(TRACT_FIELDS[f].label)} />
+          ))}
+        </div>
+      )}
+      {anyMargin && <p className="text-micro text-text-muted">{t("neighborhood.marginNote")}</p>}
 
       <div className="space-y-1.5">
         <DistSection title={t("neighborhood.ageDistribution")} bars={translateBars(ct.age_distribution, "age", t)} />
@@ -212,28 +257,28 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
   const { t } = useTranslation("data");
   const demo = data.demographics;
   const transit = data.transit;
+  const caIncome = useFact("area.community_area.median_household_income");
+  const walkEntry = useFact("neighborhood.walkscore");
 
   return (
     <CollapsibleCard title={t("neighborhood.title")} icon={PeopleIcon}>
       <div className="space-y-3">
-        {demo && (
-          <>
-            <div className="grid grid-cols-3 gap-2 py-1">
+        {/* Community-area block: only what the City's ACS extract holds. The income
+            median is interpolated from 5 brackets with no margin of error, so the
+            caption says so and names the vintage — the tract block below is a
+            different (newer) ACS release, and the two must never read as one. */}
+        {demo && (demo.population != null || demo.median_household_income != null) && (
+          <div className="space-y-1">
+            <div className="grid grid-cols-2 gap-2 py-1">
               <StatBox label={t("neighborhood.population")} value={fmtNum(demo.population)} />
-              <StatBox label={t("neighborhood.medIncome")} value={fmtDollar(demo.median_household_income)} />
-              <StatBox label={t("neighborhood.homeValue")} value={fmtDollar(demo.median_home_value)} />
+              <StatBox label={t("neighborhood.medIncome")} value={fmtDollar(demo.median_household_income)} entry={caIncome} />
             </div>
-
-            <div className="space-y-0.5">
-              <KV label={t("neighborhood.medianRent")} value={fmtDollar(demo.median_gross_rent)} />
-              <KV label={t("neighborhood.medianAge")} value={demo.median_age != null ? String(demo.median_age) : null} />
-              <KV label={t("neighborhood.povertyRate")} value={fmtPct(demo.poverty_rate)} />
-              <KV label={t("neighborhood.unemployment")} value={fmtPct(demo.unemployment_rate)} />
-              <KV label={t("neighborhood.ownerOccupied")} value={fmtPct(demo.owner_occupied_pct)} />
-              <KV label={t("neighborhood.bachelorsDegree")} value={fmtPct(demo.bachelors_degree_pct)} />
-              <KV label={t("neighborhood.vacancyRate")} value={fmtPct(demo.vacancy_rate)} />
-            </div>
-          </>
+            <p className="text-micro text-text-muted leading-snug" data-testid="ca-demographics-caption">
+              {demo.acs_period
+                ? t("neighborhood.caCaption", { area: demo.community_area_name ?? "", period: demo.acs_period })
+                : t("neighborhood.caCaptionNoPeriod", { area: demo.community_area_name ?? "" })}
+            </p>
+          </div>
         )}
 
         {data.census_tract && <CensusTractSection ct={data.census_tract} />}
@@ -311,6 +356,7 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
             {data.walkscore.bike_score != null && (
               <ScoreBar score={data.walkscore.bike_score} description={translateWsDesc(t, "bikeDescriptions", data.walkscore.bike_description)} label={t("neighborhood.bike")} />
             )}
+            <ConfidenceCaption entry={walkEntry} size="micro" />
             <a
               href={data.walkscore.ws_link || "https://www.walkscore.com"}
               target="_blank"

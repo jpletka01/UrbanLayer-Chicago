@@ -1,0 +1,34 @@
+{
+ "text": "## 1500 W Wilson Ave \u2014 Zoning & Development Analysis\n**PIN:** 14171060250000 | **Parcel resolution:** authoritative (county address records)\n*Municipal Code current through the Council Journal of March 18, 2026; a later amendment may not be reflected.*\n\n---\n\n### 1. Zoning District\n\nThis parcel is zoned **B1-2 (Neighborhood Shopping, dash-2 density)** per the City's official GIS zoning layer, last updated 2025-03-19. No rezoning ordinance is on record \u2014 the district has not been recently changed. Verify at the [Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning).\n\n---\n\n### 2. Residential Use \u2014 Above Ground Floor & Ground Floor\n\n- **Residential above ground floor: Yes.** The B1 district permits residential dwelling units on or above the ground floor [1]. Mixed-use (retail below, apartments above) is the intended form.\n- **Ground-floor residential: Not by right for new residential.** [1] specifies that B1 is intended for small-scale retail and services at ground level; residential is permitted *on or above* the ground floor, meaning a purely residential ground floor is not the standard permitted use. However, [4] (\u00a717-3-0400) contains an exception allowing the Zoning Administrator to approve conversion of an occupied or vacant ground-floor commercial space in a multi-story building into dwelling units under \u00a717-13-1003-NN \u2014 but this is an administrative approval, not a by-right permit.\n\n---\n\n### 3. Key Bulk & Density Standards\n\nFrom the zoning table for B1-2 [1] (\u00a717-3-0102):\n\n| Standard | B1-2 Value |\n|---|---|\n| **FAR** | 2.2 |\n| **Max Height** | 45\u201350 ft (varies by lot frontage & ground-floor commercial) |\n| **Min Lot Area per Dwelling Unit** | 1,000 sq ft |\n| **Lot Coverage** | Not specified in retrieved data |\n| **Setbacks** | Not specified in retrieved data |\n\n**Unit yield by lot area:** This parcel's lot is 4,347 sq ft \u00f7 1,000 sq ft/unit = **up to 4 units by lot-area math alone.** This is a lot-area ceiling only \u2014 FAR, height, parking, and other standards may reduce the actual buildable count; efficiency or SRO units counted at smaller areas could allow more [4].\n\nVerify setbacks and lot coverage at \u00a717-3-0500 of the Municipal Code (not in the retrieved text).\n\n---\n\n### 4. Overlays & Special Designations\n\n- **No Planned Development.** No PD applies.\n- **No landmark or historic district.** Not a landmark building, not in a landmark or historic district, not on the National Register.\n- **Transit-Oriented Development (CTA & Metra).** Both a CTA-TOD and Metra-TOD overlay apply. The nearest CTA rail is Montrose (Brown Line), 0.45 mi away; the nearest Metra station is Ravenswood (Union Pacific North), 0.39 mi away.\n- **ADU-Allowed Area \u2014 Zone 1** [3] (\u00a717-7-0573, \u00a717-7-0574). No limitations apply in this zone. Coach houses and conversion units are also permitted by right in this B1 district (\u00a717-3-0207).\n- **Affordable Requirements Ordinance (ARO) Zone.** Any project triggering an ARO entitlement is subject to affordable unit requirements [4]. Uptown has 20 ARO projects totaling 976 affordable units in the community area.\n- **Special Service Area: Greater Ravenswood SSA.** This parcel falls within the Greater Ravenswood Special Service Area, which provides supplemental services funded by a dedicated property tax levy.\n- **Flood Zone X** \u2014 Area of Minimal Flood Hazard. No Special Flood Hazard Area designation; flood insurance is not required by federal mandate.\n- **No PMD, no lakefront protection, no pedestrian-street overlay, no landmark district.**\n\n---\n\n### 5. Parking Requirement & Transit Reduction\n\nBecause this parcel is in a transit-served location (CTA and Metra TOD overlay), **the minimum parking requirement can be reduced by up to 100%** under \u00a717-10-0102-B \u2014 meaning no off-street parking is required. This is a by-right reduction; no special entitlement is needed for the parking relief alone.\n\n---\n\n### 6. Height, FAR, and What Transit Does (and Doesn't) Change\n\n- **Maximum FAR: 2.2** | **Maximum height: 45\u201350 ft** (\u00a717-3-0102). On a 4,347 sq ft lot, 2.2 FAR yields a maximum of ~9,563 sq ft of floor area across all floors.\n- **Parking:** Transit proximity eliminates the parking minimum by right (see #5 above).\n- **Density/FAR/height bonus from transit: No.** The reduced lot-area-per-unit and density bonuses available in \"dash-3\" districts [4] (\u00a717-3-0402-B) apply only to B-3 and C-3 districts, not B1-2. A density or FAR bonus here would require either a Type 1 Zoning Map Amendment (\u00a717-13-0302), a Planned Development (\u00a717-13-0600), or an ARO entitlement \u2014 none of which is by right. Transit proximity at this district changes **parking only**, not density, FAR, or height.\n\n---\n\n### Confidence & What Could Not Be Determined\n\n**Confident:** Zoning district, FAR, height, lot-area-per-unit density, parking reduction, overlay designations \u2014 all from authoritative city GIS and the zoning table.\n\n**Could not determine from retrieved text:** Specific setback requirements, lot coverage limits, and the precise parking minimums before the 100% transit reduction (the code section \u00a717-10-0102 was not retrieved in full). Verify these at \u00a717-3-0500 (setbacks) and \u00a717-10-0102 (parking schedule).\n\n---\n\n*This information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the Department of Planning & Development for official guidance.*",
+ "error": null,
+ "seconds": 41.1,
+ "citation_warnings": null,
+ "plan_location": {
+  "raw": "1500 W Wilson Ave in Chicago, Illinois",
+  "type": "address",
+  "resolved_community_area": 3,
+  "resolved_community_area_name": "Uptown",
+  "resolved_address": "1500 W Wilson Ave, Chicago, IL 60640",
+  "resolved_lat": 41.96548595,
+  "resolved_lon": -87.66783518,
+  "pin": "14171060250000",
+  "resolution": "authoritative"
+ },
+ "plan_sources": [
+  "regulatory_domain",
+  "property_domain",
+  "vector_search",
+  "permits_api",
+  "neighborhood_domain",
+  "incentives_domain"
+ ],
+ "context_zone": {
+  "zone_class": "B1-2",
+  "zone_type": 1,
+  "map_updated": "2025-03-19",
+  "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+  "recently_rezoned": false
+ },
+ "pid": "P3",
+ "address": "1500 W Wilson Ave"
+}

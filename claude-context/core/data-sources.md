@@ -43,7 +43,7 @@ Base: `https://datacatalog.cookcountyil.gov/resource/{id}.json`. Same SODA 2.1 A
 | Parcel Sales | `wvhk-k5uv` | pin, sale_date, sale_price, deed_type | PIN |
 | Single/Multi-Family Characteristics | `x54s-btds` | pin, char_bldg_sf, char_land_sf, char_rooms, char_age | PIN |
 | Condo Characteristics | `3r7i-mrz4` | pin, char_unit_sf, char_yrblt, char_bedrooms, char_building_sf | PIN — condo UNIT facts fallback (`building_facts.py`); unit_sf (not building_sf) surfaces as the parcel's bldg_sqft |
-| Commercial Valuation | `csik-bsws` | keypin, pins, bldgsf, year | Dashed-PIN match on keypin OR `pins` membership; one row PER BUILDING per economic unit → SUM the latest year (`building_facts.py`). ~92% of Chicago 2024 rows carry bldgsf |
+| Commercial Valuation | `csik-bsws` | keypin, pins, bldgsf, year | Dashed-PIN match on keypin OR `pins` membership; one row PER BUILDING per economic unit → SUM the latest year (`building_facts.py`). ~92% of Chicago 2024 rows carry bldgsf. **WS4 PR3:** also the Assessor's income model: `pgi` (potential gross income, annual), `tot_units`, `property_type_use`; the Chicago city-wide reassessment years (2021, 2024, next 2027) hold the stock; built offline into `ingestion/data/assessor_model_by_area.json` (`Multifamily-*` only) |
 | Assessor Appeals / BOR Appeal Decisions | `y282-6ig3` / `7pny-nedm` | pin, year, before/after values, result | PIN — appeal history + nearby appeal rates (`property/appeals.py`) |
 | Assessor Permits | `6yjf-dfxs` | **pin (UNDASHED 14-digit)**, date_issued, status, amount, **assessable**, work_description | PIN — `property/assessor_permits.py`. The value is `assessable` (assessor's call on whether work changes the assessment); unclosed + assessable = a future tax change. Blank on ~84k rows ⇒ `bool \| None`, never render unknown as "not assessable". `year` is junk (2032/2027 values, ~84k nulls) — filter on `date_issued` |
 | Treasurer Annual Tax Sale / Scavenger Sale | `55ju-2fs9` / `ydgz-vkrp` | pin, tax_sale_year, sold_at_sale | **FROZEN — ends tax year 2014 / 2015** (verified 2026-09-07). Used by `property/parcel_flags.py`, which always reports the years so it cannot read as current distress. Do NOT build a "distressed today" feature or a Discovery filter on these |
@@ -97,6 +97,7 @@ GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
 | Walk Score | API key (free, 5K/day) | Walk/Transit/Bike scores (0-100). 48h TTL cache |
 | CTA GTFS (static) | None | Parsed at startup → transit station locations |
 | Metra GTFS (static) | None | Parsed at startup → station locations |
+| City Clerk eLMS | None (public BETA) | Passed-law currency plus WS2's daily pending zoning/text snapshot. Sync-only: explicit non-final states, full matter detail, lifecycle relations/actions, and allowlisted non-EDS attachment metadata. Never called on the request path. |
 
 ## Local Data
 
@@ -104,6 +105,7 @@ GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
 |--------|----------|-----|
 | Municipal Code | Qdrant (14,535 chunks from 8,615 sections) | Vector search for legal questions |
 | PTAXSIM | `backend/data/ptaxsim.db` (9.4GB SQLite) | Property tax estimation by PIN (`tax_estimate.py`, incl. per-PIN `exe_*` exemption columns — EAV deductions, not dollars) **AND parcel polygons**: `pin_geometry_raw` (WKT per pin10, indexed PK) powers on-demand land area + parcel outline (`parcel_geometry.py`). **Seeded on prod 2026-07-03** (runbook: guides/ptaxsim-prod-seeding.md — note the multi-stream bz2 + named-volume gotchas); `/health` reports `ptaxsim` |
+| Pending legislation | `backend/data/pending_legislation.db` | WS2 schema-v2 Clerk snapshot plus parsed segments and Address Points parcel locations. The daily sync owns one-transaction writes; failures retain last-good rows. `/api/scorecard` reads it `mode=ro` for exact subject and deterministic 0.5-mile nearby filings with explicit fresh/stale/unavailable and complete/partial states; no Clerk call occurs on a request. PR3 adds the committed review `backend/pending_impacts.json` (pending Title 17 text proposals → the Profile rules/facts they could change); the Profile names one only for a current, ordinance-read review whose conditions the parcel meets. |
 | Transit Stations | Parsed from GTFS at startup | Nearest station proximity |
 | Community Area Polygons | `ingestion/data/community_areas.geojson` | Point-in-polygon resolution |
 

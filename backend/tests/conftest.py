@@ -38,7 +38,6 @@ def mock_settings():
     settings.limit_ccao_sales = 10
     # Neighborhood domain
     settings.dataset_demographics = "t68z-cikk"
-    settings.dataset_socioeconomic = "kn9c-c2s2"
     settings.transit_search_radius_mi = 2.0
     return settings
 
@@ -98,6 +97,96 @@ def _clear_ttl_caches():
 
 
 @pytest.fixture(autouse=True)
+def _no_legislation_snapshot(tmp_path, monkeypatch):
+    """The app reads the daily legislation sync's snapshot from backend/data, which
+    differs per machine (absent in CI, whatever the last sync wrote locally). Point it
+    at a missing file so every test starts "never checked"; a test that needs one
+    writes it there (see test_legislation_currency.py)."""
+    from backend.legislation import currency
+
+    monkeypatch.setattr(currency, "SNAPSHOT_FILE", tmp_path / "legislation_snapshot.json")
+
+
+@pytest.fixture(autouse=True)
+def _no_pending_legislation_store(tmp_path, monkeypatch):
+    """The WS2 poller is sync-only and its local DB must never leak into a unit test.
+
+    Existing legislation-sync tests exercise the passed-law branches, so their default
+    pending world is a successful empty recorded feed. Focused pending tests inject their
+    own search/detail callables and are unaffected.
+    """
+    from backend.config import get_settings
+    from backend.legislation import pending
+
+    async def empty(*, client=None):
+        return []
+
+    monkeypatch.setattr(get_settings(), "pending_legislation_path", tmp_path / "pending_legislation.db", raising=False)
+    monkeypatch.setattr(pending, "search_pending", empty)
+
+
+@pytest.fixture(autouse=True)
+def _no_data_health_store(tmp_path, monkeypatch):
+    """Provenance reads source dates from the data-health store, which differs per machine
+    (absent in CI, whatever the last check wrote locally). Point it at a missing file; a test
+    that needs a store writes one there (see test_provenance_figures.py)."""
+    from backend.data_health import status
+
+    monkeypatch.setattr(status, "DB_FILE", tmp_path / "data_health.db")
+    status.reset_cache()
+
+
+@pytest.fixture(autouse=True)
+def _no_live_failures(tmp_path, monkeypatch):
+    """Live call counts are per process and the live-failure file differs per machine; every test starts
+    with neither, and no test can be told a source is failing by a leftover dev file."""
+    from backend.data_health import live
+
+    monkeypatch.setattr(live, "DB_FILE", tmp_path / "data_health_live.db")
+    monkeypatch.delenv("DATA_HEALTH_FAULT", raising=False)
+    live.reset()
+    yield
+    live.reset()
+
+
+@pytest.fixture(autouse=True)
+def _report_store_in_tmp(tmp_path, monkeypatch):
+    """Stored report originals go under settings.report_store_dir (backend/data/reports). No test may write
+    there: every test gets its own."""
+    from backend.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "report_store_dir", tmp_path / "reports", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _no_indexed_sections():
+    """``article_id`` reads the code index's article ids, registered when vector_search
+    first scrolls Qdrant. Start each test unregistered (the hundreds fallback); a test
+    that needs the index uses ``indexed_code``."""
+    from backend.code_sections import set_indexed_sections
+    set_indexed_sections(())
+    yield
+    set_indexed_sections(())
+
+
+# Article ids as the 2026-06-17 index holds them (ingestion/data/chunks.jsonl): chapter
+# 17-7 starts articles off the hundred (0450, 0510 … 0590); Title 11 numbers sections 1010….
+INDEXED_ARTICLES = (
+    "17-2-0100", "17-2-0200", "17-2-0300", "17-2-0400", "17-3-0400", "17-3-0500",
+    "17-7-0100", "17-7-0200", "17-7-0300", "17-7-0400", "17-7-0450", "17-7-0500", "17-7-0510", "17-7-0550",
+    "17-7-0560", "17-7-0570", "17-7-0580", "17-7-0590", "17-7-0600", "17-7-0700",
+    "17-11-0050", "17-11-0100", "11-4-1010", "11-4-1020", "2-120-740", "14A-4-407",
+)
+
+
+@pytest.fixture
+def indexed_code():
+    from backend.code_sections import set_indexed_sections
+    set_indexed_sections(INDEXED_ARTICLES)
+    return INDEXED_ARTICLES
+
+
+@pytest.fixture(autouse=True)
 def _clear_rate_limits():
     """Clear in-memory rate limit counters between tests."""
     from backend.rate_limit import clear_rate_limits
@@ -143,3 +232,13 @@ def _no_external_property_fallbacks(request):
               new=AsyncMock(return_value=None)),
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def _clear_discovery_result_cache():
+    """The Discovery result cache is process-global; start (and leave) every test empty."""
+    from backend.discovery import result_cache
+
+    result_cache.clear()
+    yield
+    result_cache.clear()

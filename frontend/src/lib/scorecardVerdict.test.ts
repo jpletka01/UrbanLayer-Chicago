@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { computeVerdict, deriveSignals, selectCategory, type TFunc } from "./scorecardVerdict";
 import type { ScorecardResponse } from "./api";
@@ -29,13 +31,18 @@ type Mk = {
   pd?: boolean;
   lakefront?: boolean;
   flood?: string | null;
+  floodUnchecked?: boolean;
   tod?: boolean;
+  todBenefits?: Record<string, unknown> | null;
   adu?: boolean;
   aro?: boolean;
   openViolations?: number;
   unverified?: boolean;
   approximate?: boolean;
   partial?: string[];
+  unchecked?: string[];
+  failed?: { key: string; labels: string[] }[];
+  gaps?: string[];
   cityOwned?: boolean;
   scofflaw?: boolean;
   strProhibited?: boolean;
@@ -102,14 +109,20 @@ function mk(o: Mk): ScorecardResponse {
       in_tod_area: !!o.tod,
       in_adu_area: !!o.adu,
       in_aro_zone: !!o.aro,
-      flood_zone: o.flood ?? "X",
+      flood_zone: o.floodUnchecked ? null : (o.flood ?? "X"),
+      in_special_flood_hazard: o.floodUnchecked ? null : false,
+      flood_unchecked: !!o.floodUnchecked,
+      unchecked_overlays: o.unchecked ?? [],
+      data_gaps: o.gaps ?? [],
     },
     violations: { total: 491, open_count: o.openViolations ?? 0 },
+    tod_benefits: o.todBenefits ?? null,
   };
   return {
     address: "1 Test St",
     context,
     partial_failures: o.partial ?? [],
+    failed_sources: o.failed ?? [],
     resolved_pin: o.unverified ? null : "12345678901234",
     resolved_confidence: o.approximate || o.unverified ? "approximate" : "authoritative",
     nearest_parcel_unverified: !!o.unverified,
@@ -330,3 +343,228 @@ describe("building-area caveat", () => {
   });
 });
 
+
+describe("transit-served (TOD) reason — parking relief is not a density bonus", () => {
+  const reason = (o: Mk) => computeVerdict(mk(o), t).reasons.find((r) => r.text.startsWith("scorecard.verdict.reason.tod"));
+  const base = { zone: "B1-2", far: 2.2, bldg: 3000, land: 4347, tod: true, tif: false } as const;
+
+  it("never claims a density bonus when the district isn't dash-3 (parking relief only)", () => {
+    const r = reason({
+      ...base,
+      todBenefits: { parking_relief: true, parking_max_reduction_pct: 100, density_bonus_eligible: false, entitlement_required: false, note: "" },
+    });
+    expect(r?.text).toBe('scorecard.verdict.reason.todParking {"pct":100,"zone":"B1-2"}');
+    expect(r?.polarity).toBe("neutral");
+  });
+
+  it("states the dash-3 possibility only when the backend says the district is eligible", () => {
+    const r = reason({
+      ...base,
+      zone: "B3-3",
+      todBenefits: { parking_relief: true, parking_max_reduction_pct: 100, density_bonus_eligible: true, entitlement_required: true, note: "" },
+    });
+    expect(r?.text).toBe('scorecard.verdict.reason.tod {"zone":"B3-3"}');
+    expect(r?.polarity).toBe("positive");
+  });
+
+  it("without backend tod_benefits it falls back to parking-only wording, never a bonus claim", () => {
+    expect(reason({ ...base })?.text).toBe("scorecard.verdict.reason.todParkingGeneric");
+  });
+
+  it("a Planned Development defers to its ordinance", () => {
+    const r = reason({
+      ...base,
+      zone: "PD 835",
+      todBenefits: { parking_relief: null, parking_max_reduction_pct: null, density_bonus_eligible: false, entitlement_required: false, note: "" },
+    });
+    expect(r?.text).toBe("scorecard.verdict.reason.todPd");
+  });
+});
+
+describe("recently rezoned (F5a)", () => {
+  it("adds a caveat carrying the ordinance date, so the Profile says the district just changed", () => {
+    const data = mk({ zone: "RT-4", far: 1.2, bldg: 1500, land: 3000 });
+    (data.context as unknown as Record<string, unknown>).parcel_zoning = { zone_class: "RT-4", recently_rezoned: true, ordinance_date: "2026-06-16" };
+    const v = computeVerdict(data, t);
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.recentlyRezoned") && c.includes("2026-06-16"))).toBe(true);
+  });
+
+  it("no caveat for an older rezoning or when the field is absent", () => {
+    const old = mk({ zone: "RT-4", far: 1.2, bldg: 1500, land: 3000 });
+    (old.context as unknown as Record<string, unknown>).parcel_zoning = { zone_class: "RT-4", recently_rezoned: false, ordinance_date: "2007-09-05" };
+    expect(computeVerdict(old, t).caveats.some((c) => c.includes("recentlyRezoned"))).toBe(false);
+    expect(computeVerdict(mk({ zone: "RT-4", far: 1.2, bldg: 1500, land: 3000 }), t).caveats.some((c) => c.includes("recentlyRezoned"))).toBe(false);
+  });
+});
+
+describe("passed, not yet on the City map (WS1 M5)", () => {
+  const hit = { record: "O2026-0028350", passed_on: "2026-10-14", url: "https://clerk/x", segment: "6701-6731 S Western Ave", maps: "16-H", matched_by: "pin" };
+
+  it("adds a caveat naming the date, so the verdict doesn't read the old district as settled", () => {
+    const data = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
+    (data.context as unknown as Record<string, unknown>).passed_not_on_map = [hit];
+    const v = computeVerdict(data, t);
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.passedNotOnMap") && c.includes("2026-10-14"))).toBe(true);
+  });
+
+  it("no caveat without a listing", () => {
+    const none = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
+    expect(computeVerdict(none, t).caveats.some((c) => c.includes("passedNotOnMap"))).toBe(false);
+    (none.context as unknown as Record<string, unknown>).passed_not_on_map = [];
+    expect(computeVerdict(none, t).caveats.some((c) => c.includes("passedNotOnMap"))).toBe(false);
+  });
+});
+
+describe("a landmark designation that lists this address and isn't on the map yet (WS1 M5b)", () => {
+  const hit = { record: "O2026-0027059", passed_on: "2026-09-23", url: "https://clerk/x", name: "Bryn Mawr Avenue District", kind: "district", segment: "900-1199 W Bryn Mawr Ave", map_checked: true, matched_by: "pin" };
+
+  it("caveats the verdict, names the date, and stops it reading confident", () => {
+    const data = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
+    (data.context as unknown as Record<string, unknown>).passed_landmark_designations = [hit];
+    const v = computeVerdict(data, t);
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.landmarkDesignationPassed") && c.includes("2026-09-23"))).toBe(true);
+    expect(v.confidence).toBe("caveated");
+  });
+
+  it("no caveat, and no change in confidence, without a listing", () => {
+    const none = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
+    const base = computeVerdict(none, t);
+    expect(base.caveats.some((c) => c.includes("landmarkDesignationPassed"))).toBe(false);
+    (none.context as unknown as Record<string, unknown>).passed_landmark_designations = [];
+    expect(computeVerdict(none, t).confidence).toBe(base.confidence);
+  });
+});
+
+describe("building area that isn't this lot's (F6)", () => {
+  it("an existing FAR several times the zone cap is treated as unknown, not as a built-out parcel", () => {
+    // kit P3: 43,790 sq ft (a whole strip center) on a 4,347 sq ft lot -> FAR 10.07 vs a 2.2 cap
+    const s = deriveSignals(mk({ zone: "B1-2", far: 2.2, bldg: 43790, land: 4347, bldgClass: "5-17" }));
+    expect(s.bldgAreaLowConfidence).toBe(true);
+    expect(s.existingFar).toBeNull();
+    expect(s.capacityBand).toBe("unknown");
+  });
+
+  it("a plausible dense building is still used (legal nonconforming at ~2x is not flagged)", () => {
+    const s = deriveSignals(mk({ zone: "B1-2", far: 2.2, bldg: 8700, land: 4347, bldgClass: "5-17" })); // FAR ~2.0
+    expect(s.bldgAreaLowConfidence).toBe(false);
+    const nonconforming = deriveSignals(mk({ zone: "B1-2", far: 2.2, bldg: 13000, land: 4347 })); // FAR ~3.0 (1.4x cap)
+    expect(nonconforming.bldgAreaLowConfidence).toBe(false);
+  });
+
+  it("a member of a multi-parcel complex gets a caveat that names the complex, not a bogus FAR", () => {
+    const data = mk({ zone: "B1-2", far: 2.2, noProperty: false, land: 4347, bldgClass: "5-17" });
+    (data.context.property as unknown as Record<string, unknown>).complex_bldg_sqft = 43790;
+    (data.context.property as unknown as Record<string, unknown>).complex_member_pins = ["a", "b", "c", "d", "e", "f", "g"];
+    const v = computeVerdict(data, t);
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.complexBldg") && c.includes('"n":7') && c.includes("43,790"))).toBe(true);
+    expect(v.signals.existingFar).toBeNull();
+  });
+});
+
+describe("ADU and landmark reasons (F7)", () => {
+  const withAdu = (zone: string, adu: Record<string, unknown>) => {
+    const d = mk({ zone, far: 0.9, bldg: 900, land: 1000, adu: true });
+    (d.context as unknown as Record<string, unknown>).adu = adu;
+    return computeVerdict(d, t).reasons.map((r) => r.text);
+  };
+
+  it("an RS parcel in an ADU zone gets the opt-in reason, naming the zone", () => {
+    const reasons = withAdu("RS-3", { status: "allowed_with_limits", zone: "ADU-Allowed RS Area — Zone 10", limits: "x", note: "n" });
+    expect(reasons.some((r) => r.startsWith("scorecard.verdict.reason.adu") && r.includes("Zone 10"))).toBe(true);
+  });
+
+  it("RT/RM/B/C parcels get no ADU 'bonus' reason (coach houses are by right there)", () => {
+    const reasons = withAdu("RT-4", { status: "allowed_by_right", zone: null, limits: null, note: "n" });
+    expect(reasons.some((r) => r.includes("reason.adu"))).toBe(false);
+  });
+
+  it("older payloads keep the flag-based reason", () => {
+    const reasons = computeVerdict(mk({ zone: "RS-3", far: 0.9, bldg: 900, land: 1000, adu: true }), t).reasons.map((r) => r.text);
+    expect(reasons.some((r) => r.includes("reason.adu"))).toBe(true);
+  });
+
+  it("a landmark parcel's reason is the Commission-approval requirement, not 'design review'", () => {
+    const en = JSON.parse(readFileSync(resolve(__dirname, "../locales/en/pages.json"), "utf8"));
+    const text: string = en.scorecard.verdict.reason.landmark;
+    expect(text).toContain("Commission on Chicago Landmarks");
+    expect(text).toContain("in writing");
+    expect(text.toLowerCase()).not.toContain("design review");
+  });
+});
+
+describe("scorecardVerdict — a flood zone FEMA couldn't answer for", () => {
+  const FLOOD = "FEMA flood zone";
+  const failed = [{ key: "flood", labels: [FLOOD] }];
+  const strong = { zone: "DS-5", far: 5.0, bldg: 1000, land: 970 } as const;
+
+  it("hedges: flood is a friction signal when known, so an unknown one can't read clean", () => {
+    const v = computeVerdict(mk({ ...strong, floodUnchecked: true, partial: [FLOOD], failed }), t);
+    expect(v.confidence).toBe("caveated");
+    expect(v.caveats).toContain("scorecard.verdict.caveat.floodUnchecked");
+    // said once, by the specific caveat, not repeated in the generic sources line
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.partial"))).toBe(false);
+  });
+
+  it("does not change the category: unknown is not 'constrained'", () => {
+    const unknown = computeVerdict(mk({ ...strong, floodUnchecked: true, partial: [FLOOD], failed }), t);
+    const clear = computeVerdict(mk({ ...strong }), t);
+    expect(unknown.category).toBe(clear.category);
+    expect(unknown.signals.frictionFlags).not.toContain("flood");
+    // and a known floodplain still is friction
+    expect(computeVerdict(mk({ ...strong, flood: "AE" }), t).signals.frictionFlags).toContain("flood");
+  });
+
+  it("other failed sources still get the generic line, without the flood label", () => {
+    const v = computeVerdict(mk({ ...strong, floodUnchecked: true, partial: [FLOOD, "crime statistics"], failed }), t);
+    const partial = v.caveats.find((c) => c.startsWith("scorecard.verdict.caveat.partial"));
+    expect(partial).toContain("crime statistics");
+    expect(partial).not.toContain(FLOOD);
+  });
+
+  it("a healthy flood lookup adds no caveat", () => {
+    expect(computeVerdict(mk({ ...strong }), t).caveats).not.toContain("scorecard.verdict.caveat.floodUnchecked");
+  });
+});
+
+describe("scorecardVerdict — overlays the City map couldn't answer (WS6 M7a)", () => {
+  const gap = "landmark designation (City zoning map didn't answer)";
+  const strong = { zone: "DS-5", far: 5.0, bldg: 1000, land: 970 } as const;
+
+  it("an unchecked landmark layer caveats the verdict instead of reading clean", () => {
+    const v = computeVerdict(mk({ ...strong, unchecked: ["landmark_building"], gaps: [gap], partial: [gap] }), t);
+    expect(v.confidence).toBe("caveated");
+    expect(v.caveats).toContain("scorecard.verdict.caveat.overlayUnchecked");
+    // Said once, by the specific caveat — not repeated in the generic sources line.
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.partial"))).toBe(false);
+  });
+
+  it("other failed sources still get the generic line, without the overlay gap", () => {
+    const v = computeVerdict(mk({ ...strong, unchecked: ["planned_development"], gaps: ["planned development status (City zoning map didn't answer)"], partial: ["planned development status (City zoning map didn't answer)", "crime statistics"] }), t);
+    expect(v.caveats).toContain("scorecard.verdict.caveat.overlayUnchecked");
+    const partial = v.caveats.find((c) => c.startsWith("scorecard.verdict.caveat.partial"));
+    expect(partial).toContain("crime statistics");
+    expect(partial).not.toContain("planned development");
+  });
+
+  it("a non-friction unchecked layer (ARO) caveats via partial only", () => {
+    const aro = "ARO zone (City zoning map didn't answer)";
+    const v = computeVerdict(mk({ ...strong, unchecked: ["aro_zone"], gaps: [aro], partial: [aro] }), t);
+    expect(v.confidence).toBe("caveated");
+    expect(v.caveats).not.toContain("scorecard.verdict.caveat.overlayUnchecked");
+  });
+
+  it("a district lookup that failed says so, once, and the verdict is not confident", () => {
+    const v = computeVerdict(mk({ noZone: true, noProperty: true, partial: ["parcel zoning", "crime statistics"], failed: [{ key: "zoning", labels: ["parcel zoning"] }, { key: "crime", labels: ["crime statistics"] }] }), t);
+    expect(v.category).toBe("insufficient_data");
+    expect(v.confidence).toBe("caveated");
+    expect(v.caveats).toContain("scorecard.verdict.caveat.zoningUnchecked");
+    const partial = v.caveats.find((c) => c.startsWith("scorecard.verdict.caveat.partial"));
+    expect(partial).toContain("crime statistics");
+    expect(partial).not.toContain("parcel zoning");
+  });
+
+  it("everything checked: no overlay caveat (unchanged)", () => {
+    const v = computeVerdict(mk(strong), t);
+    expect(v.caveats).not.toContain("scorecard.verdict.caveat.overlayUnchecked");
+  });
+});

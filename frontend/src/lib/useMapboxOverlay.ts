@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import type { LayerPickInfo, TooltipContent } from "./mapTooltip";
+import {
+  reviseMapStyleOrder,
+  type MapStyleLayerLike,
+  type MapStyleOrderRevision,
+} from "./mapLayerOrder";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
@@ -19,6 +24,10 @@ interface UseMapboxOverlayOptions {
   /** Disable scroll-zoom until the map is clicked (page-scroll trap guard for
       inline page maps; the chat/Discovery maps keep default behavior). */
   clickToActivate?: boolean;
+  /** Deck shares Mapbox's WebGL canvas by default. Discovery opts out because
+      a map initialized under display:none can leave the shared drawing buffer
+      pinned to Mapbox's 400×300 fallback after the pane is revealed. */
+  interleaved?: boolean;
 }
 
 /**
@@ -36,6 +45,10 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [contextRestored, setContextRestored] = useState(0);
+  const [styleOrder, setStyleOrder] = useState<MapStyleOrderRevision>({
+    roadInsertionId: null,
+    revision: 0,
+  });
 
   // Keep the latest callbacks without retriggering init. Updated in an effect
   // (not during render) so the tooltip/click handlers always see fresh props.
@@ -78,7 +91,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     });
 
     const overlay = new MapboxOverlay({
-      interleaved: true,
+      interleaved: optsRef.current.interleaved ?? true,
       pickingRadius: optsRef.current.pickingRadius,
       getTooltip: (info: LayerPickInfo) => optsRef.current.getTooltip?.(info) ?? null,
       onClick: (info: LayerPickInfo) => optsRef.current.onClick?.(info),
@@ -87,9 +100,22 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
 
     mapRef.current = map;
     overlayRef.current = overlay;
-    map.on("load", () => setMapReady(true));
+    const resolveStyleOrder = () => {
+      const layers = (map.getStyle()?.layers ?? []) as MapStyleLayerLike[];
+      setStyleOrder((previous) => reviseMapStyleOrder(previous, layers));
+    };
+    const onLoad = () => {
+      setMapReady(true);
+      resolveStyleOrder();
+    };
+    // `style.load` fires again after setStyle() (including light/dark swaps),
+    // so deck layers that carry beforeId are rebuilt against the new style.
+    map.on("style.load", resolveStyleOrder);
+    map.on("load", onLoad);
 
     return () => {
+      map.off("style.load", resolveStyleOrder);
+      map.off("load", onLoad);
       map.remove();
       mapRef.current = null;
       overlayRef.current = null;
@@ -97,5 +123,13 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     };
   }, []);
 
-  return { containerRef, mapRef, overlayRef, mapReady, contextRestored };
+  return {
+    containerRef,
+    mapRef,
+    overlayRef,
+    mapReady,
+    contextRestored,
+    roadInsertionId: styleOrder.roadInsertionId,
+    styleRevision: styleOrder.revision,
+  };
 }

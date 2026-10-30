@@ -259,34 +259,86 @@ export function isArrested(arrest: boolean | string): boolean {
   return arrest === true || arrest === "true";
 }
 
-// --- Zoning colors (Chicago standard scheme) ---
+// --- Zoning colors (exact Chicago district class + intensity) ---
 
-const ZONE_PREFIX_COLORS: Record<string, [number, number, number]> = {
-  RS: [255, 235, 59],     // Yellow — single-family residential
-  RT: [255, 224, 130],    // Light yellow — two-flat residential
-  RM: [255, 213, 79],     // Gold — multi-unit residential
-  B:  [66, 133, 244],     // Blue — business
-  C:  [156, 39, 176],     // Purple — commercial
-  M:  [233, 30, 99],      // Magenta/pink — manufacturing
-  PD: [158, 158, 158],    // Gray — planned development
-  PMD:[176, 176, 176],    // Light gray — planned manufacturing
-  D:  [0, 150, 136],      // Teal — downtown core
-  DC: [0, 150, 136],      // Teal — downtown core
-  DX: [38, 166, 154],     // Light teal — downtown mixed-use
-  DR: [77, 182, 172],     // Aqua — downtown residential
-  DS: [0, 137, 123],      // Dark teal — downtown service
-  T:  [141, 110, 99],     // Brown — transportation
-  P:  [76, 175, 80],      // Green — parks
-  POS:[102, 187, 106],    // Light green — open space
+export type MapTheme = "dark" | "light";
+
+export interface ParsedZoneClass {
+  /** Whitespace/case-normalized district identifier used for deterministic color. */
+  exactClass: string;
+  /** Title 17 family used by the existing labels/tooltips (B, RM, DX, PD, ...). */
+  family: string;
+  /** Family plus subtype where present (B3, C1, M2); never an intensity. */
+  series: string;
+  /** The dash suffix that communicates district intensity (including 4.5). */
+  intensity: number | null;
+  /** PD/PMD numbers identify an ordinance district; they are not intensity steps. */
+  plannedDevelopment: boolean;
+  knownFamily: boolean;
+}
+
+const ZONE_FAMILY_TONES: Record<string, { hue: number; saturation: number; darkLightness: number; lightLightness: number }> = {
+  RS: { hue: 53, saturation: 88, darkLightness: 70, lightLightness: 55 },
+  RT: { hue: 45, saturation: 86, darkLightness: 70, lightLightness: 56 },
+  RM: { hue: 38, saturation: 88, darkLightness: 68, lightLightness: 53 },
+  B: { hue: 215, saturation: 78, darkLightness: 70, lightLightness: 55 },
+  C: { hue: 282, saturation: 62, darkLightness: 70, lightLightness: 54 },
+  M: { hue: 334, saturation: 74, darkLightness: 69, lightLightness: 53 },
+  D: { hue: 174, saturation: 70, darkLightness: 65, lightLightness: 46 },
+  DC: { hue: 174, saturation: 72, darkLightness: 64, lightLightness: 44 },
+  DX: { hue: 169, saturation: 66, darkLightness: 66, lightLightness: 47 },
+  DR: { hue: 183, saturation: 58, darkLightness: 68, lightLightness: 48 },
+  DS: { hue: 164, saturation: 72, darkLightness: 63, lightLightness: 43 },
+  T: { hue: 24, saturation: 30, darkLightness: 67, lightLightness: 47 },
+  P: { hue: 126, saturation: 50, darkLightness: 65, lightLightness: 44 },
+  POS: { hue: 137, saturation: 43, darkLightness: 68, lightLightness: 48 },
 };
 
-const ZONE_FALLBACK: [number, number, number] = [120, 120, 120];
+const PLANNED_FAMILIES = new Set(["PD", "PMD"]);
+
+function normalizeZoneClass(zoneClass: string): string {
+  return (zoneClass || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s*-\s*/g, "-")
+    .replace(/\s+/g, " ");
+}
+
+/** Parse Chicago's exact district syntax without mistaking PD 799 for intensity 799. */
+export function parseZoneClass(zoneClass: string): ParsedZoneClass {
+  const exactClass = normalizeZoneClass(zoneClass);
+  const leading = exactClass.match(/^([A-Z]+)/)?.[1] ?? "";
+  if (PLANNED_FAMILIES.has(leading)) {
+    return {
+      exactClass,
+      family: leading,
+      series: leading,
+      intensity: null,
+      plannedDevelopment: true,
+      knownFamily: true,
+    };
+  }
+
+  // B3-2 / C1-3 / M2-3 carry a numeric subtype before the dash. RS-3,
+  // RM-4.5 and DX-7 do not. In every case only the final dash value is the
+  // intensity that controls the lightness step.
+  const match = exactClass.match(/^([A-Z]+)(\d+)?(?:-(\d+(?:\.\d+)?))?$/);
+  const family = match?.[1] ?? leading;
+  const subtype = match?.[2] ?? "";
+  const rawIntensity = match?.[3];
+  const intensity = rawIntensity == null ? null : Number(rawIntensity);
+  return {
+    exactClass,
+    family,
+    series: `${family}${subtype}`,
+    intensity: Number.isFinite(intensity) ? intensity : null,
+    plannedDevelopment: false,
+    knownFamily: family in ZONE_FAMILY_TONES,
+  };
+}
 
 export function zonePrefix(zoneClass: string): string {
-  const s = (zoneClass || "").trim().toUpperCase();
-  // "PD 799" → "PD", "PMD 3" → "PMD", "RS-3" → "RS", "B3-2" → "B", "DX-7" → "DX"
-  const m = s.match(/^([A-Z]+)/);
-  return m ? m[1] : "";
+  return parseZoneClass(zoneClass).family;
 }
 
 export const ZONE_PREFIX_LABELS: Record<string, string> = {
@@ -327,53 +379,101 @@ export const ZONE_INFO: Record<string, { label: string; description: string; exa
   POS: { label: "Parks & Open Space", description: "Public parks, recreation areas, and open space", examples: ["Public park", "Playground", "Nature preserve"] },
 };
 
-export function zoneColor(zoneClass: string): [number, number, number, number] {
-  const rgb = ZONE_PREFIX_COLORS[zonePrefix(zoneClass)] ?? ZONE_FALLBACK;
-  return [rgb[0], rgb[1], rgb[2], 80];
+function zoneRgb(zoneClass: string, theme: MapTheme): [number, number, number] {
+  const parsed = parseZoneClass(zoneClass);
+  if (parsed.plannedDevelopment) {
+    const lightness = parsed.family === "PMD"
+      ? (theme === "dark" ? 69 : 51)
+      : (theme === "dark" ? 63 : 44);
+    return hslToRgb(218, 8 / 100, lightness / 100);
+  }
+
+  const tone = ZONE_FAMILY_TONES[parsed.family];
+  if (!tone) {
+    // Unknown classes remain visibly neutral rather than acquiring a misleading
+    // family hue. The small exact-class step makes the fallback deterministic.
+    const lightness = (theme === "dark" ? 61 : 43) + ((hashStr(parsed.exactClass) % 7) - 3);
+    return hslToRgb(215, 7 / 100, lightness / 100);
+  }
+
+  const base = theme === "dark" ? tone.darkLightness : tone.lightLightness;
+  const intensityStep = parsed.intensity == null
+    ? 0
+    : Math.max(0, Math.min(22, (parsed.intensity - 1) * 5));
+  const minLightness = theme === "dark" ? 45 : 31;
+  const lightness = Math.max(minLightness, base - intensityStep);
+  return hslToRgb(tone.hue, tone.saturation / 100, lightness / 100);
 }
 
-export function zoneLineColor(zoneClass: string): [number, number, number, number] {
-  const rgb = ZONE_PREFIX_COLORS[zonePrefix(zoneClass)] ?? ZONE_FALLBACK;
-  return [rgb[0], rgb[1], rgb[2], 180];
+export function zoneColor(zoneClass: string, theme: MapTheme = "dark"): [number, number, number, number] {
+  const rgb = zoneRgb(zoneClass, theme);
+  return [rgb[0], rgb[1], rgb[2], 78];
 }
 
-export function zoneColorCSS(zoneClass: string): string {
-  const rgb = ZONE_PREFIX_COLORS[zonePrefix(zoneClass)] ?? ZONE_FALLBACK;
+export function zoneLineColor(zoneClass: string, theme: MapTheme = "dark"): [number, number, number, number] {
+  const rgb = zoneRgb(zoneClass, theme);
+  return [rgb[0], rgb[1], rgb[2], 220];
+}
+
+export function zoneColorCSS(zoneClass: string, theme: MapTheme = "dark"): string {
+  const rgb = zoneRgb(zoneClass, theme);
   return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 }
 
-// --- Overlay district colors (regulatory overlays on map) ---
-const OVERLAY_TYPE_COLORS: Record<string, [number, number, number]> = {
-  planned_development: [158, 158, 158],
-  lakefront_protection: [0, 188, 212],
-  pedestrian_street: [0, 150, 136],
-  landmark_district: [255, 193, 7],
-  historic_district: [141, 110, 99],
-  landmark_building: [255, 160, 0],
-  national_register: [188, 170, 164],
-  special_district: [121, 85, 72],
-  fema_floodplain: [33, 150, 243],
-  pmd_subarea: [255, 152, 0],
-  tod_cta: [63, 81, 181],
-  tod_metra: [48, 63, 159],
-  adu_area: [76, 175, 80],
-  aro_zone: [156, 39, 176],
-  ssa: [233, 30, 99],
+// --- Boundary family colors (fixed semantics; orange stays parcel/action-only) ---
+
+export type BoundaryFamily = "overlay" | "tif" | "enterprise_zone" | "other_incentive";
+
+const BOUNDARY_FAMILY_COLORS: Record<MapTheme, Record<BoundaryFamily, [number, number, number]>> = {
+  dark: {
+    overlay: [92, 174, 255],
+    tif: [190, 142, 255],
+    enterprise_zone: [67, 205, 151],
+    other_incentive: [95, 196, 207],
+  },
+  light: {
+    overlay: [29, 101, 166],
+    tif: [104, 61, 173],
+    enterprise_zone: [5, 118, 83],
+    other_incentive: [20, 109, 120],
+  },
 };
 
-export function overlayColor(type: string): [number, number, number, number] {
-  const rgb = OVERLAY_TYPE_COLORS[type] ?? [120, 120, 120];
-  return [rgb[0], rgb[1], rgb[2], 50];
+export function incentiveBoundaryFamily(zoneType: string, name = ""): BoundaryFamily {
+  const value = `${zoneType} ${name}`.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (value.includes("enterprise_zone") || value.includes("enterprise")) return "enterprise_zone";
+  if (value.includes("tif")) return "tif";
+  return "other_incentive";
 }
 
-export function overlayLineColor(type: string): [number, number, number, number] {
-  const rgb = OVERLAY_TYPE_COLORS[type] ?? [120, 120, 120];
-  return [rgb[0], rgb[1], rgb[2], 200];
+export function boundaryFillColor(family: BoundaryFamily, theme: MapTheme = "dark"): [number, number, number, number] {
+  const rgb = BOUNDARY_FAMILY_COLORS[theme][family];
+  // Boundary polygons overlap heavily at parcel scale. Keep identity on the
+  // outline; even six stacked special-purpose overlays stay below a 15% wash.
+  const alpha = family === "overlay" ? 6 : 7;
+  return [rgb[0], rgb[1], rgb[2], alpha];
 }
 
-export function overlayColorCSS(type: string): string {
-  const rgb = OVERLAY_TYPE_COLORS[type] ?? [120, 120, 120];
+export function boundaryLineColor(family: BoundaryFamily, theme: MapTheme = "dark"): [number, number, number, number] {
+  const rgb = BOUNDARY_FAMILY_COLORS[theme][family];
+  return [rgb[0], rgb[1], rgb[2], 230];
+}
+
+export function boundaryColorCSS(family: BoundaryFamily, theme: MapTheme = "dark"): string {
+  const rgb = BOUNDARY_FAMILY_COLORS[theme][family];
   return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
+export function overlayColor(_type: string, theme: MapTheme = "dark"): [number, number, number, number] {
+  return boundaryFillColor("overlay", theme);
+}
+
+export function overlayLineColor(_type: string, theme: MapTheme = "dark"): [number, number, number, number] {
+  return boundaryLineColor("overlay", theme);
+}
+
+export function overlayColorCSS(_type: string, theme: MapTheme = "dark"): string {
+  return boundaryColorCSS("overlay", theme);
 }
 
 export const OVERLAY_INFO: Record<string, { label: string; description: string; implications: string[] }> = {
@@ -430,12 +530,12 @@ export const OVERLAY_INFO: Record<string, { label: string; description: string; 
   tod_cta: {
     label: "TOD (CTA)",
     description: "Transit-Oriented Development zone near CTA rail stations",
-    implications: ["Reduced parking requirements", "Density bonuses available"],
+    implications: ["Reduced parking requirements", "Density bonuses only in dash-3 districts (with approval)"],
   },
   tod_metra: {
     label: "TOD (Metra)",
     description: "Transit-Oriented Development zone near Metra stations",
-    implications: ["Reduced parking requirements", "Density bonuses available"],
+    implications: ["Reduced parking requirements", "Density bonuses only in dash-3 districts (with approval)"],
   },
   adu_area: {
     label: "ADU Eligible Area",
@@ -475,24 +575,24 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
 }
 
-function nameToRgb(name: string): [number, number, number] {
-  const hue = hashStr(name) % 360;
-  return hslToRgb(hue, 0.65, 0.55);
+export function incentiveZoneColor(
+  name: string,
+  zoneType = "",
+  theme: MapTheme = "dark",
+): [number, number, number, number] {
+  return boundaryFillColor(incentiveBoundaryFamily(zoneType, name), theme);
 }
 
-export function incentiveZoneColor(name: string): [number, number, number, number] {
-  const rgb = nameToRgb(name);
-  return [rgb[0], rgb[1], rgb[2], 30];
+export function incentiveZoneLineColor(
+  name: string,
+  zoneType = "",
+  theme: MapTheme = "dark",
+): [number, number, number, number] {
+  return boundaryLineColor(incentiveBoundaryFamily(zoneType, name), theme);
 }
 
-export function incentiveZoneLineColor(name: string): [number, number, number, number] {
-  const rgb = nameToRgb(name);
-  return [rgb[0], rgb[1], rgb[2], 200];
-}
-
-export function incentiveZoneColorCSS(name: string): string {
-  const rgb = nameToRgb(name);
-  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+export function incentiveZoneColorCSS(name: string, zoneType = "", theme: MapTheme = "dark"): string {
+  return boundaryColorCSS(incentiveBoundaryFamily(zoneType, name), theme);
 }
 
 export function incentiveLabel(zoneType: string): string {

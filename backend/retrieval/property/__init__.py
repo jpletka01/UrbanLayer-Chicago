@@ -97,12 +97,14 @@ async def property_domain(
         results = await asyncio.gather(*coros, return_exceptions=True)
 
         data_gaps: list[str] = []
+        failed_calls: list[str] = []  # the gaps that are a call failing, not a record being absent (WS6 M7)
 
         idx = 0
         chars = results[idx] if not isinstance(results[idx], Exception) else None
         if isinstance(results[idx], Exception):
             log.warning("CCAO characteristics failed: %s", results[idx])
             data_gaps.append("property characteristics")
+            failed_calls.append("property characteristics")
         idx += 1
 
         assessments: list[dict] = []
@@ -113,12 +115,15 @@ async def property_domain(
             if isinstance(results[idx], Exception):
                 log.warning("CCAO assessments failed: %s", results[idx])
                 data_gaps.append("property assessments")
+                failed_calls.append("property assessments")
             elif not assessments:
                 data_gaps.append("property assessments")
             idx += 1
             sales = results[idx] if not isinstance(results[idx], Exception) else []
             if isinstance(results[idx], Exception):
                 log.warning("CCAO sales failed: %s", results[idx])
+                data_gaps.append("property sales history")
+                failed_calls.append("property sales history")
             idx += 1
             appeals_summary = results[idx] if not isinstance(results[idx], Exception) else None
             if isinstance(results[idx], Exception):
@@ -131,6 +136,7 @@ async def property_domain(
             if isinstance(results[idx], Exception):
                 log.warning("PTAXSIM tax estimate failed: %s", results[idx])
                 data_gaps.append("property tax estimate")
+                failed_calls.append("property tax estimate")
             elif tax_result is None:
                 data_gaps.append("property tax estimate")
             idx += 1
@@ -173,7 +179,7 @@ async def property_domain(
                               appeals_summary=appeals_summary,
                               parcel_flags=parcel_flags,
                               assessor_permits=assessor_permits,
-                              data_gaps=data_gaps)
+                              data_gaps=data_gaps, failed_calls=failed_calls)
     finally:
         if owns:
             await client.aclose()
@@ -321,6 +327,11 @@ def _chars_describe_prior_structure(
     return has_building_facts
 
 
+# A building footprint may exceed the lot by this factor before we conclude the
+# building spans several lots (see _build_summary's footprint fallback).
+_FOOTPRINT_SPAN_SLACK = 1.1
+
+
 def _build_summary(
     parcel: dict,
     chars: dict | None,
@@ -334,6 +345,7 @@ def _build_summary(
     parcel_flags=None,
     assessor_permits=None,
     data_gaps: list[str] | None = None,
+    failed_calls: list[str] | None = None,
 ) -> PropertySummary:
     pin14 = parcel["pin14"]
     address = parcel.get("address")
@@ -342,6 +354,7 @@ def _build_summary(
     land_sqft = _safe_int(parcel.get("land_sqft"))
     land_sqft_source = "gis" if land_sqft else None
     bldg_sqft_source = "gis" if bldg_sqft else None
+    commercial_valuation_year: int | None = None
 
     bldg_class_description = None
     stories = None
@@ -451,6 +464,8 @@ def _build_summary(
     # Building-fact fallbacks (condo unit chars → commercial valuation →
     # city footprints), applied ONLY into holes the assessor data left, with
     # per-field provenance so the UI/report can label non-assessor numbers.
+    complex_bldg_sqft: int | None = None
+    complex_member_pins: list[str] | None = None
     year_built_source = "assessor" if year_built else None
     stories_source = "assessor" if stories else None
     units_source = "assessor" if units else None
@@ -472,14 +487,22 @@ def _build_summary(
             if not bldg_sqft and commercial.get("bldg_sqft"):
                 bldg_sqft = commercial["bldg_sqft"]
                 bldg_sqft_source = "commercial_valuation"
+                commercial_valuation_year = commercial.get("valuation_year")
+            # A member of a multi-PIN complex: the valuation total describes the
+            # whole complex, so it is carried beside — never as — this parcel's area.
+            if commercial.get("complex_bldg_sqft"):
+                complex_bldg_sqft = commercial["complex_bldg_sqft"]
+                complex_member_pins = commercial.get("member_pins")
             if not year_built and commercial.get("year_built"):
                 year_built = commercial["year_built"]
                 year_built_source = "commercial_valuation"
+                commercial_valuation_year = commercial.get("valuation_year")
                 bldg_age = datetime.date.today().year - year_built
             if not units and commercial.get("units"):
                 # Filled only for single-PIN economic units (get_commercial_facts).
                 units = commercial["units"]
                 units_source = "commercial_valuation"
+                commercial_valuation_year = commercial.get("valuation_year")
         energy = building_fallbacks.get("energy")
         if energy:
             from backend.models import EnergyBenchmark
@@ -495,7 +518,13 @@ def _build_summary(
                 bldg_sqft_source = "energy_benchmark"
         footprint = building_fallbacks.get("footprint")
         if footprint:
-            if not bldg_sqft and footprint.get("bldg_sqft"):
+            # A footprint larger than the lot belongs to a building that spans several
+            # lots (the same strip-center problem as a multi-PIN valuation total) —
+            # not this parcel's own area. 10% slack for polygon measurement error.
+            spans_lots = bool(
+                land_sqft and footprint.get("bldg_sqft") and footprint["bldg_sqft"] > land_sqft * _FOOTPRINT_SPAN_SLACK
+            )
+            if not bldg_sqft and footprint.get("bldg_sqft") and not spans_lots:
                 bldg_sqft = footprint["bldg_sqft"]
                 bldg_sqft_source = "footprint"
             if not year_built and footprint.get("year_built"):
@@ -567,6 +596,9 @@ def _build_summary(
         land_sqft=land_sqft,
         land_sqft_source=land_sqft_source,
         bldg_sqft_source=bldg_sqft_source,
+        commercial_valuation_year=commercial_valuation_year,
+        complex_bldg_sqft=complex_bldg_sqft if not bldg_sqft else None,
+        complex_member_pins=complex_member_pins if not bldg_sqft else None,
         year_built_source=year_built_source,
         stories_source=stories_source,
         units_source=units_source,
@@ -602,4 +634,5 @@ def _build_summary(
         sales_history=sales_history,
         parcel_geometry=parcel_geometry,
         data_gaps=data_gaps or [],
+        failed_calls=failed_calls or [],
     )

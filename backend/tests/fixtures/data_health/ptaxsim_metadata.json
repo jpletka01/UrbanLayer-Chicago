@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-05-06 14:44:27",
+  "created_with_pkg_version": "1.1.0",
+  "data_year_max": 2024,
+  "data_year_min": 2006,
+  "db_version": "2024.0.0",
+  "requires_pkg_version": "1.1.0",
+  "source_url_database": "https://ccao-data-public-us-east-1.s3.amazonaws.com/ptaxsim/ptaxsim-2024.0.0.db.bz2",
+  "source_url_package": "https://github.com/ccao-data/ptaxsim"
+}

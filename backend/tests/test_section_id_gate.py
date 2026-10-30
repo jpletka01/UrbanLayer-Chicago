@@ -66,16 +66,12 @@ def test_gate_covers_every_title_14_volume():
 class TestManifestContentHash:
     """The manifest hash gates incremental re-embedding.
 
-    NOTE: `section_title` is deliberately NOT hashed. It reaches the index (it is stored
-    on the Qdrant payload), so a heading-only fix is a silent no-op — the diff reports
-    "0 modified" and the stale title stays indexed. That was hit for real on 2026-09-07
-    (50 Energy-Code sections). Adding it to the hash was tried and REVERTED: it
-    invalidates every existing hash, which forces a full 9,487-section re-embed and
-    trips the zoning-cache staleness check for 147 Title-17 sections that did not
-    actually change — and rebuilding that cache requires RERANKER_ENABLED=true, which
-    is off by design after the OOM incident. The cost lands on prod ops for a rare edge
-    case, so the gap is documented in known-issues.md instead. These tests pin the
-    CURRENT behavior; flip the last one if that tradeoff is ever revisited.
+    `section_title` is deliberately NOT in `content_hash`: widening it invalidated every
+    hash at once (a full 9,487-section re-embed) and tripped the zoning-cache staleness
+    check, which keys on `content_hash`, for 147 Title-17 sections that had not changed.
+    Heading-only changes (hit for real on 2026-09-07, 50 Energy-Code sections) are now
+    caught by the manifest's separate `title_hash` instead (WS1 M0, 2026-10-21; see
+    test_ingestion_pipeline.py).
     """
 
     def test_body_change_is_detected(self):
@@ -95,12 +91,12 @@ class TestManifestContentHash:
         d = {"body_paragraphs": ["x"], "tables": [], "section_title": "T"}
         assert _content_hash(d) == _content_hash(dict(d))
 
-    def test_section_title_is_not_hashed_documented_gap(self):
-        """Documents the known gap above — NOT an endorsement of it."""
+    def test_section_title_stays_out_of_the_content_hash(self):
+        """Retitles are caught by title_hash; content_hash must not move."""
         from ingestion.manifest import _content_hash
         a = {"body_paragraphs": ["x"], "tables": [], "section_title": ""}
         b = {"body_paragraphs": ["x"], "tables": [], "section_title": "Building envelope"}
         assert _content_hash(a) == _content_hash(b), (
-            "if this now differs, the hash was widened — see known-issues.md and drop "
-            "the workaround note there"
+            "widening content_hash invalidates the zoning cache's corpus fingerprint; "
+            "use title_hash for heading changes"
         )

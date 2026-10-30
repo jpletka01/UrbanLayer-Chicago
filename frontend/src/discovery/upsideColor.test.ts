@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { upsideColor, UPSIDE_LEGEND } from "./upsideColor";
+import {
+  landUseColor,
+  landUseLegendKey,
+  LAND_USE_LEGEND,
+  RENDERABLE_LAND_USES,
+  upsideColor,
+  UPSIDE_LEGEND,
+} from "./upsideColor";
 
 describe("upsideColor", () => {
   it("maps null/undefined to a DISTINCT no-data swatch, not the low-upside end", () => {
@@ -22,5 +29,26 @@ describe("upsideColor", () => {
 
   it("legend includes the no-data swatch", () => {
     expect(UPSIDE_LEGEND.map((l) => l.label)).toContain("No data");
+  });
+
+  it("gives every renderable land-use value exactly one named key entry", () => {
+    for (const value of RENDERABLE_LAND_USES) {
+      const key = landUseLegendKey(value);
+      expect(LAND_USE_LEGEND.filter((entry) => entry.key === key)).toHaveLength(1);
+      expect(LAND_USE_LEGEND.find((entry) => entry.key === key)?.rgba).toEqual(landUseColor(value));
+    }
+    expect(RENDERABLE_LAND_USES).toEqual([
+      "vacant", "residential", "multi_family", "commercial", "industrial",
+      "mixed_use", "institutional", "exempt",
+    ]);
+  });
+
+  it("maps unknown and null land use to the named no-data entry", () => {
+    const noData = LAND_USE_LEGEND.find((entry) => entry.key === "land_use:no_data");
+    expect(noData?.label).toBe("No data");
+    expect(landUseLegendKey("unknown")).toBe("land_use:no_data");
+    expect(landUseLegendKey(null)).toBe("land_use:no_data");
+    expect(landUseColor("unknown")).toEqual(noData?.rgba);
+    expect(landUseColor(null)).toEqual(noData?.rgba);
   });
 });

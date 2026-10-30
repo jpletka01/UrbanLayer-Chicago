@@ -12,7 +12,8 @@ import httpx
 from backend.models import OverlayDistrict, RegulatorySummary
 from backend.retrieval.regulatory.environmental import query_brownfield_sites
 from backend.retrieval.regulatory.flood import query_flood_zone
-from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS, query_all_overlays
+from backend.retrieval.regulatory.overlay_facts import describe_overlay
+from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS, OverlayResults, query_overlays_checked
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +34,25 @@ FLAG_MAP: dict[str, str] = {
     "ssa": "in_ssa",
 }
 
+# What a failed layer means to a reader, for partial_failures ("Couldn't check ...").
+UNCHECKED_LABELS: dict[str, str] = {
+    "planned_development": "planned development status",
+    "lakefront_protection": "Lakefront Protection District",
+    "pedestrian_street": "pedestrian street status",
+    "landmark_building": "landmark designation",
+    "historic_district": "historic and landmark districts",
+    "national_register": "National Register districts",
+    "special_district": "special districts",
+    "fema_floodplain": "local floodplain map",
+    "pmd_subarea": "PMD subareas",
+    "tod_cta": "transit-served (TOD) area",
+    "tod_metra": "transit-served (TOD) area",
+    "adu_area": "ADU eligibility",
+    "aro_zone": "ARO zone",
+    "ssa": "Special Service Area",
+}
+_UNCHECKED_SUFFIX = "(City zoning map didn't answer)"
+
 
 async def regulatory_domain(
     lat: float,
@@ -49,7 +69,7 @@ async def regulatory_domain(
         skip_brownfield = workflow in ("business_launch",)
 
         coros: dict[str, object] = {
-            "overlays": query_all_overlays(lat, lon, client=client),
+            "overlays": query_overlays_checked(lat, lon, client=client),
             "flood": query_flood_zone(lat, lon, client=client),
         }
         if not skip_brownfield:
@@ -58,8 +78,13 @@ async def regulatory_domain(
         results_list = await asyncio.gather(*coros.values(), return_exceptions=True)
         results_map = dict(zip(coros.keys(), results_list))
 
-        overlay_hits = results_map["overlays"] if not isinstance(results_map["overlays"], Exception) else []
-        flood_result = results_map["flood"] if not isinstance(results_map["flood"], Exception) else None
+        overlay_results = results_map["overlays"]
+        if isinstance(overlay_results, Exception):
+            # Nothing was checked, which is not the same as "in no overlay".
+            overlay_results = OverlayResults(failed=list(OVERLAY_LAYERS))
+        # A flood lookup that raised is UNKNOWN; None is FEMA's answer that the point is in no mapped zone.
+        flood_unchecked = isinstance(results_map["flood"], Exception)
+        flood_result = None if flood_unchecked else results_map["flood"]
         brownfield_result = results_map.get("brownfield")
         if isinstance(brownfield_result, Exception):
             log.warning("Brownfield query failed: %s", brownfield_result)
@@ -69,10 +94,13 @@ async def regulatory_domain(
 
         if isinstance(results_map["overlays"], Exception):
             log.warning("Overlay queries failed: %s", results_map["overlays"])
-        if isinstance(results_map["flood"], Exception):
+        if flood_unchecked:
             log.warning("Flood zone query failed: %s", results_map["flood"])
 
-        return _build_summary(overlay_hits, flood_result, brownfield_result)
+        return _build_summary(
+            overlay_results.hits, flood_result, brownfield_result,
+            failed_layers=overlay_results.failed, flood_unchecked=flood_unchecked,
+        )
     finally:
         if owns:
             await client.aclose()
@@ -82,6 +110,9 @@ def _build_summary(
     overlay_hits: list[tuple[int, dict]],
     flood_result: dict | None,
     brownfield_sites: list[dict],
+    *,
+    failed_layers: list[int] | None = None,
+    flood_unchecked: bool = False,
 ) -> RegulatorySummary:
     overlays: list[OverlayDistrict] = []
     flags: dict[str, bool | str] = {}
@@ -114,16 +145,25 @@ def _build_summary(
             display_name = feature_name or layer_name
             description = layer_name
 
+        # Layer-specific facts (the special district's real name, the ADU zone and its
+        # limits, the PD number and PDF, the landmark's name and what it requires).
+        facts = describe_overlay(layer_type, attrs)
         overlays.append(OverlayDistrict(
             layer_type=layer_type,
-            name=display_name,
+            name=facts["name"] or display_name,
             ordinance=ordinance,
             description=description,
+            detail=facts["detail"],
+            link=facts["link"],
         ))
 
         flag_field = FLAG_MAP.get(layer_type)
         if flag_field:
             flags[flag_field] = True
+        # The Historic Districts layer flags the districts that are Chicago Landmark districts
+        # (LANDMARK=Y); those need the same Commission approval as an individual landmark.
+        if layer_type == "historic_district" and str(attrs.get("LANDMARK") or "").strip().upper() == "Y":
+            flags["in_landmark_district"] = True
 
         if layer_type == "ssa":
             ssa_name = feature_name or attrs.get("SSA") or attrs.get("SSA_NUM")
@@ -136,8 +176,21 @@ def _build_summary(
         flood_zone_subtype = flood_result.get("zone_subty")
         in_sfha = flood_result.get("sfha_tf", "").upper() == "T"
 
+    unchecked = list(dict.fromkeys(
+        OVERLAY_LAYERS.get(lid, {}).get("type", f"layer_{lid}") for lid in failed_layers or []
+    ))
+    if failed_layers and len(set(failed_layers)) >= len(OVERLAY_LAYERS):
+        data_gaps = [f"regulatory overlays {_UNCHECKED_SUFFIX}"]
+    else:
+        data_gaps = [
+            f"{label} {_UNCHECKED_SUFFIX}"
+            for label in dict.fromkeys(UNCHECKED_LABELS.get(t, t) for t in unchecked)
+        ]
+
     return RegulatorySummary(
         overlays=overlays,
+        unchecked_overlays=unchecked,
+        data_gaps=data_gaps,
         in_planned_development=flags.get("in_planned_development", False),
         in_landmark_district=flags.get("in_landmark_district", False),
         is_landmark_building=flags.get("is_landmark_building", False),
@@ -154,6 +207,7 @@ def _build_summary(
         ssa_name=ssa_name,
         flood_zone=flood_zone,
         flood_zone_subtype=flood_zone_subtype,
-        in_special_flood_hazard=in_sfha,
+        in_special_flood_hazard=None if flood_unchecked else in_sfha,
+        flood_unchecked=flood_unchecked,
         brownfield_sites=brownfield_sites,
     )

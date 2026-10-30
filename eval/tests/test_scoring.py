@@ -129,3 +129,17 @@ def test_wrong_truth_pin_is_not_a_match():
     resp = json.loads((FIXTURES / "scorecard_1601_n_milwaukee.json").read_text())
     fields = _classify_fields(resp, {"address": "1601 N Milwaukee Ave", "truth_pin": "14330000000000"})
     assert fields["pin_matches_truth"] != FieldStatus.PRESENT.value
+
+
+def test_member_of_a_multi_pin_complex_is_an_explained_absence_not_a_gap():
+    """F6 withholds bldg_sqft for a non-keypin member of a multi-PIN commercial unit
+    (the total is the whole complex's). The coverage suite must not count that as a
+    missing field - and a plain missing area on an ordinary parcel still is one."""
+    resp = json.loads((FIXTURES / "scorecard_1601_n_milwaukee.json").read_text())
+    prop = resp["context"]["property"]
+    prop["bldg_sqft"] = None
+    row = {"address": "1601 N Milwaukee Ave", "truth_pin": "14313320180000"}
+    prop["complex_bldg_sqft"] = 43790
+    assert _classify_fields(resp, row)["bldg_sqft"] == FieldStatus.EXPECTED_ABSENT.value
+    prop.pop("complex_bldg_sqft")
+    assert _classify_fields(resp, row)["bldg_sqft"] == FieldStatus.MISSING.value

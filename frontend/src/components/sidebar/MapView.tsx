@@ -12,6 +12,7 @@ import {
   zoneColor, zoneLineColor, zonePrefix,
   overlayColor, overlayLineColor, overlayColorCSS, overlayLabel, incentiveLabel,
   incentiveZoneColor, incentiveZoneLineColor, incentiveZoneColorCSS,
+  boundaryColorCSS,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
@@ -494,12 +495,14 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
           getFillColor: (f: unknown) => {
             const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
             const name = (props?.name as string) ?? (props?.zone_type as string) ?? "";
-            return incentiveZoneColor(name);
+            const zoneType = (props?.zone_type as string) ?? "";
+            return incentiveZoneColor(name, zoneType);
           },
           getLineColor: (f: unknown) => {
             const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
             const name = (props?.name as string) ?? (props?.zone_type as string) ?? "";
-            return incentiveZoneLineColor(name);
+            const zoneType = (props?.zone_type as string) ?? "";
+            return incentiveZoneLineColor(name, zoneType);
           },
           lineWidthMinPixels: 2,
           getDashArray: [8, 4],
@@ -818,8 +821,8 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
           <span
             className="w-2.5 h-2.5 rounded-sm inline-block"
             style={{
-              backgroundColor: showIncentives ? "rgba(255,87,34,0.5)" : "transparent",
-              border: showIncentives ? "1px solid rgba(255,87,34,0.8)" : "1px solid #555",
+              backgroundColor: showIncentives ? boundaryColorCSS("tif") : "transparent",
+              border: showIncentives ? `1px solid ${boundaryColorCSS("tif")}` : "1px solid #555",
             }}
           />
           {t("layers.incentives")}
@@ -837,8 +840,8 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
           <span
             className="w-2.5 h-2.5 rounded-sm inline-block"
             style={{
-              backgroundColor: showOverlays ? "rgba(156,39,176,0.5)" : "transparent",
-              border: showOverlays ? "1px solid rgba(156,39,176,0.8)" : "1px solid #555",
+              backgroundColor: showOverlays ? boundaryColorCSS("overlay") : "transparent",
+              border: showOverlays ? `1px solid ${boundaryColorCSS("overlay")}` : "1px solid #555",
             }}
           />
           {t("layers.overlays")}
@@ -1296,7 +1299,7 @@ function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<s
                 <span
                   className="w-2 h-2 rounded-full shrink-0"
                   style={{
-                    backgroundColor: incentiveZoneColorCSS(inc.name || inc.zone_type)
+                    backgroundColor: incentiveZoneColorCSS(inc.name || inc.zone_type, inc.zone_type)
                   }}
                 />
                 <span className="text-text-primary font-medium">{incentiveLabel(inc.zone_type)}</span>

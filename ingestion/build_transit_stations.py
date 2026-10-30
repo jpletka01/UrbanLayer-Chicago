@@ -12,11 +12,15 @@ import io
 import json
 import zipfile
 from collections import defaultdict
+from datetime import date
 from pathlib import Path
 from urllib.request import Request, urlopen
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = PROJECT_ROOT / "ingestion" / "data" / "transit_stations.json"
+# Beside the artifact: when it was built and from what, so CI and the daily checker can say how old it is
+# (WS6 M5). Written by this script; the data-health probe and `artifacts --ci` read it.
+META_PATH = OUTPUT_PATH.with_name("transit_stations.meta.json")
 
 CTA_GTFS_URL = "https://www.transitchicago.com/downloads/sch_data/google_transit.zip"
 METRA_GTFS_URL = "https://schedules.metrarail.com/gtfs/schedule.zip"
@@ -150,6 +154,13 @@ def main():
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(all_stations, indent=2) + "\n")
     print(f"Wrote {len(all_stations)} stations to {OUTPUT_PATH}")
+    META_PATH.write_text(json.dumps({
+        "built_at": date.today().isoformat(),
+        "stations": len(all_stations),
+        "sources": {"cta": CTA_GTFS_URL, "metra": METRA_GTFS_URL},
+        "script": "ingestion/build_transit_stations.py",
+    }, indent=2) + "\n")
+    print(f"Wrote {META_PATH}")
 
 
 if __name__ == "__main__":

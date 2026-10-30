@@ -1,0 +1,35 @@
+{
+ "text": "## 401 N Wabash Ave \u2014 Zoning & Development Analysis\n**PIN:** 17101350390000 | **Near North Side, Ward 42**\n\n---\n\n### 1. Zoning District in Effect\n\nThis parcel is zoned **Planned Development 835 (PD 835)**, per the City's official GIS zoning records (Ordinance 13559, map last updated 2021-10-27). This is the authoritative classification from Cook County's address-parcel records. Verify at the [Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning).\n\n---\n\n### 2. Base District vs. Something Else?\n\nThis parcel is **not** governed by an ordinary base zoning district. It is entirely governed by **Planned Development 835** \u2014 a site-specific ordinance approved by City Council. As [1] makes clear, there is no maximum FAR or height cap in the Downtown \"D\" districts generally, and [2] describes the DC/DX/DR framework; but none of that framework applies here by right, because the PD supersedes it. Under [1], height, floor area, uses and setbacks all come from the **PD 835 ordinance's plan of development and bulk table**, not from Title 17's standard tables. The zoning table confirms: \"Standards are site-specific per the approved planned development ordinance\" and \"Consult the specific PD ordinance for FAR, height, use, and setback requirements.\"\n\n---\n\n### 3. Bulk & Density Standards (FAR, Height, Setbacks, Lot Area)\n\n**None of these figures can be stated from the retrieved data.** The PD 835 ordinance is the controlling document, and its specific bulk table \u2014 FAR, maximum height, setbacks, minimum lot area per unit \u2014 was not reproduced in the context.\n\n- **What the code says generally for Downtown districts** [1]: There are no maximum building height limits in \"D\" districts, and rear setbacks for floors containing dwelling units are generally 30 feet (with exemptions for DC-12, DX-12, DC-16, DX-16 sub-districts) \u2014 **but these standards apply only if not superseded by a PD ordinance**, which here they are.\n- **How to verify:** Download the PD 835 ordinance directly: [PD 835 PDF](https://gisapps.chicago.gov/gisimages/zoning_pds/PD835.pdf). The bulk table within that document is the controlling authority, cited under [1] and the zone definition per \u00a717-8-0500.\n\n*Physical note:* Property records show this is a 92-story, ~2.6 million sq ft building (the Trump International Hotel & Tower) on a ~98,000 sq ft lot, built in 2006 \u2014 context for scale, not a zoning standard.\n\n---\n\n### 4. Overlays & Special Designations\n\n- **Planned Development 835** \u2014 Height, FAR, use standards and setbacks are all governed by the PD ordinance (Ordinance 13559), not by Title 17 base-district tables. Verify: [PD 835 PDF](https://gisapps.chicago.gov/gisimages/zoning_pds/PD835.pdf), \u00a717-8-0500.\n- **Transit-Oriented Development \u2014 CTA Rail** \u2014 The parcel is within the CTA TOD overlay (nearest station: Grand Red Line, ~0.2 mi). Parking and density implications are governed by the PD ordinance, not the standard TOD rules (see \u00a75 below).\n- **Transit-Oriented Development \u2014 Metra** \u2014 Also within Metra TOD overlay (Millennium Station, ~0.37 mi, Metra Electric line).\n- **Affordable Requirements Ordinance (ARO) Zone** \u2014 This parcel is subject to ARO requirements on new residential entitlements. The Near North Side community area has 20 ARO-tracked affordable housing projects totaling 1,010 units.\n- **No landmark, historic district, lakefront protection, PMD, or special service area** designations apply.\n- **Flood Zone X** \u2014 Area of minimal flood hazard; flood insurance is not required. No Special Flood Hazard Area designation.\n- **Brownfield sites nearby** \u2014 EPA records list several brownfield properties in the broader area (including the Bloomingdale Park Trail and Gateway Park Industrial Complex sites). Standard environmental due diligence is advisable for any ground disturbance.\n\n---\n\n### 5. Parking Requirements & Transit Reduction\n\nThe standard TOD parking relief under \u00a717-10-0102-B does **not** apply here in the ordinary way. As noted in the TOD benefits data: *\"Planned Development: the PD ordinance governs parking and density.\"* The PD 835 ordinance contains its own parking table; consult [PD 835 PDF](https://gisapps.chicago.gov/gisimages/zoning_pds/PD835.pdf) for the controlling figures. No density bonus is available under the TOD overlay \u2014 the PD governs.\n\n---\n\n### 6. Maximum FAR and Building Height\n\n**These cannot be stated from the available data.** The zoning table explicitly flags PD 835 as site-specific, with FAR and max height shown as not determined from Title 17. [1] confirms that Downtown \"D\" districts have no statutory height maximum, and [2] notes that PD review is required for buildings exceeding the thresholds in \u00a717-4-0900 \u2014 but the specific approved FAR and height envelope for this parcel are in the PD 835 ordinance only.\n\n- **How to verify:** [PD 835 PDF](https://gisapps.chicago.gov/gisimages/zoning_pds/PD835.pdf) \u2014 look for the \"bulk table\" or \"plan of development\" pages. You may also contact the Department of Planning and Development at (312) 744-5777 or submit a Zoning Determination Letter request.\n\n---\n\n### Confidence Summary\n\n| Item | Confidence | Gap |\n|---|---|---|\n| Zoning district (PD 835) | **High** \u2014 authoritative GIS record | None |\n| PD vs. base district | **High** | None |\n| Specific bulk standards | **Cannot determine** | PD 835 ordinance bulk table not retrieved |\n| Overlays | **High** | None material |\n| Parking | **Cannot determine** | PD ordinance governs; table not retrieved |\n| Max FAR / height | **Cannot determine** | PD ordinance governs; table not retrieved |\n\nThe Municipal Code text retrieved is current through the Council Journal of March 18, 2026; a later amendment may not be reflected.\n\n---\n\nThis information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the Department of Planning and Development for official guidance.",
+ "error": null,
+ "seconds": 41.6,
+ "citation_warnings": null,
+ "plan_location": {
+  "raw": "401 N Wabash Ave, Chicago, Illinois",
+  "type": "address",
+  "resolved_community_area": 8,
+  "resolved_community_area_name": "Near North Side",
+  "resolved_address": "401 N Wabash Ave, Chicago, IL",
+  "resolved_lat": 41.88892518,
+  "resolved_lon": -87.62649444,
+  "pin": "17101350390000",
+  "resolution": "authoritative"
+ },
+ "plan_sources": [
+  "regulatory_domain",
+  "property_domain",
+  "vector_search",
+  "permits_api",
+  "incentives_domain",
+  "neighborhood_domain"
+ ],
+ "context_zone": {
+  "zone_class": "PD 835",
+  "zone_type": 5,
+  "ordinance_num": "13559",
+  "map_updated": "2021-10-27",
+  "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+  "recently_rezoned": false
+ },
+ "pid": "P4",
+ "address": "401 N Wabash Ave"
+}

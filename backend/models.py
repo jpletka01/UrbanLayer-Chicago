@@ -1,6 +1,8 @@
+import builtins
+import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 
 SourceTag = Literal[
@@ -58,6 +60,16 @@ class Location(BaseModel):
     # (Scorecard→chat handoff). Read-only flow: chat never writes the
     # selection back (truth-model §3) — this only replaces text re-geocoding.
     pin: str | None = None
+    # How an address-typed location was pinned down. "authoritative": the PIN
+    # came from Address Points / Assessor Parcel Addresses (same path the
+    # Property Profile uses). "approximate": only the street-interpolated
+    # geocode point is known, which can fall in a neighboring parcel or zoning
+    # district — the answer must say so. None: not an address-typed location,
+    # or resolution was not attempted.
+    resolution: Literal["authoritative", "approximate"] | None = None
+    # Which record matched (backend/resolution.py): address_points | assessor_addresses |
+    # pin | coordinates | geocode_nearest. Lets the answer say HOW the parcel was found.
+    resolution_method: str | None = None
 
 
 class RetrievalPlan(BaseModel):
@@ -174,11 +186,39 @@ class FoodInspectionSummary(BaseModel):
     recent_inspections: list[FoodInspectionDetail] = Field(default_factory=list)
 
 
+# A district changed by ordinance within this many days is flagged "recently
+# rezoned": the City says amendments can take up to 90 days to reach the map, and
+# the kit's P7 parcel was rezoned 65 days before the layer caught up.
+RECENT_REZONING_DAYS = 180
+
+
 class ZoningSummary(BaseModel):
     zone_class: str
     zone_type: int | None = None
+    # The ordinance identifier (clerk's number for a recent amendment, a legacy id
+    # for older ones). An *application* number (23082T1) is kept apart, below.
     ordinance_num: str | None = None
+    application_num: str | None = None
+    # ISO dates from the City's zoning layer: when the ordinance that set this
+    # polygon passed, and when this polygon's record was last edited. Neither is
+    # "when the whole map was refreshed" — they describe THIS district's record.
+    ordinance_date: str | None = None
+    map_updated: str | None = None
+    clerk_url: str | None = None
     zoning_map_url: str = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def recently_rezoned(self) -> bool:
+        """True when the ordinance behind this district passed within the last
+        RECENT_REZONING_DAYS (computed at serialization, so a cached lookup ages)."""
+        if not self.ordinance_date:
+            return False
+        try:
+            passed = datetime.date.fromisoformat(self.ordinance_date)
+        except ValueError:
+            return False
+        return 0 <= (datetime.date.today() - passed).days <= RECENT_REZONING_DAYS
 
 
 class OverlayDistrict(BaseModel):
@@ -186,6 +226,11 @@ class OverlayDistrict(BaseModel):
     name: str | None = None
     ordinance: str | None = None
     description: str | None = None
+    # What this overlay means for the parcel, in one pinned-to-the-code sentence
+    # (overlay_facts.describe_overlay), and where to read the source (code section
+    # or the PD ordinance PDF). None when the code doesn't say / no link exists.
+    detail: str | None = None
+    link: str | None = None
 
 
 class AROHousingProject(BaseModel):
@@ -219,9 +264,17 @@ class RegulatorySummary(BaseModel):
     ssa_name: str | None = None
     flood_zone: str | None = None
     flood_zone_subtype: str | None = None
-    in_special_flood_hazard: bool = False
+    # None = UNKNOWN (FEMA's flood map didn't answer, ``flood_unchecked``); never state "not in" for it.
+    in_special_flood_hazard: bool | None = False
+    flood_unchecked: bool = False
     brownfield_sites: list[dict] = Field(default_factory=list)
     aro_housing: AROHousingSummary | None = None
+    # Overlay layer types the City map couldn't answer for (timeout, HTTP error, 200 +
+    # error body). Their in_* flag is False because it is UNKNOWN, not because the
+    # parcel is clear: never state "not in <overlay>" for these.
+    unchecked_overlays: list[str] = Field(default_factory=list)
+    # Plain-language labels for those, merged into partial_failures.
+    data_gaps: list[str] = Field(default_factory=list)
 
 
 class AssessmentRecord(BaseModel):
@@ -368,6 +421,15 @@ class PropertySummary(BaseModel):
     #   valuation tot_units — filled only for single-PIN economic units).
     land_sqft_source: str | None = None
     bldg_sqft_source: str | None = None
+    # The Commercial Valuation vintage (assessment year) behind any field whose source is
+    # "commercial_valuation"; None when no field came from it.
+    commercial_valuation_year: int | None = None
+    # This parcel is one of several in a CCAO commercial "economic unit" whose
+    # valuation total (a whole complex's building area) is NOT this parcel's own.
+    # Set only when no per-parcel area could be established; ``bldg_sqft`` stays
+    # empty so no FAR is computed from the wrong denominator.
+    complex_bldg_sqft: int | None = None
+    complex_member_pins: list[str] | None = None
     year_built_source: str | None = None
     stories_source: str | None = None
     units_source: str | None = None
@@ -417,6 +479,9 @@ class PropertySummary(BaseModel):
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None
     data_gaps: list[str] = Field(default_factory=list)
+    # The subset of those that are a call that FAILED (a source didn't answer), as opposed to a figure the
+    # source has no record of (no assessments for an exempt parcel). Only these are "couldn't check" (WS6 M7).
+    failed_calls: list[str] = Field(default_factory=list)
     assessor_permits: AssessorPermitSummary | None = None
 
 
@@ -468,23 +533,29 @@ class IncentivesSummary(BaseModel):
 
 
 class DemographicsSummary(BaseModel):
+    """Community-area figures from the City's ACS extract (t68z-cikk). Holds only what
+    that dataset publishes; ``median_household_income`` is interpolated from 5 brackets
+    with no margin of error. Stored contexts may carry fields removed 2026-10-20
+    (rent, home value, poverty, …); pydantic ignores them."""
+
     community_area: int | None = None
     community_area_name: str | None = None
     population: int | None = None
     median_household_income: int | None = None
-    median_home_value: int | None = None
-    median_gross_rent: int | None = None
-    median_age: float | None = None
-    poverty_rate: float | None = None
-    unemployment_rate: float | None = None
-    owner_occupied_pct: float | None = None
-    bachelors_degree_pct: float | None = None
-    vacancy_rate: float | None = None
+    acs_period: str | None = None  # e.g. "2019–2023"
 
 
 class DistributionBucket(BaseModel):
     label: str
     value: float
+
+
+class RentCell(BaseModel):
+    """One published median gross rent with its 90% margin of error and coefficient of variation."""
+
+    estimate: int | None = None
+    moe: float | None = None
+    cv: float | None = None
 
 
 class CensusTractDemographics(BaseModel):
@@ -501,8 +572,19 @@ class CensusTractDemographics(BaseModel):
     owner_occupied_pct: float | None = None
     vacancy_rate: float | None = None
     poverty_rate: float | None = None
+    unemployment_rate: float | None = None
     bachelors_or_higher_pct: float | None = None
     foreign_born_pct: float | None = None
+    acs_period: str | None = None  # the release's years, e.g. "2020–2024"
+    acs_release: str | None = None  # Census Reporter's release id, e.g. "acs2024_5yr"
+    # Published margins of error (90% level; percentage points for the *_pct and *_rate fields)
+    # and coefficients of variation (SE / estimate), keyed by the field name above.
+    moe: dict[str, float] = Field(default_factory=dict)
+    cv: dict[str, float] = Field(default_factory=dict)
+    # The Census's published median gross rent by bedroom count (B25031) for this tract, keyed by
+    # ``backend.retrieval.neighborhood.rent.BEDROOM_GROUPS``. An absent key or a null estimate is a
+    # suppressed cell, not a zero.
+    rent_by_bedroom: dict[str, RentCell] = Field(default_factory=dict)
 
     age_distribution: list[DistributionBucket] = Field(default_factory=list)
     income_distribution: list[DistributionBucket] = Field(default_factory=list)
@@ -567,9 +649,81 @@ class TrafficSummary(BaseModel):
     as_of: str | None = None
 
 
+class CommunityAreaRent(BaseModel):
+    """Overall median gross rent of a community area, rebuilt from summed tract bracket counts
+    (``ingestion/build_rent_artifact.py``). ``moe`` is the ACS Handbook's margin for an interpolated
+    median (``moe_method``), 90% level; ``median`` is None when it falls in the open-ended top bracket."""
+
+    community_area: int
+    households: int
+    median: int | None = None
+    moe: int | None = None
+    cv: float | None = None
+    top_coded: bool = False
+    moe_method: str = "acs_handbook_median"
+    design_factor: float | None = None
+    acs_period: str | None = None
+    acs_release: str | None = None
+    period_end: str | None = None
+
+
+class AssessorModelRent(BaseModel):
+    """The Cook County Assessor's modeled apartment income for a community area (WS4 PR3), its OWN series:
+    not an ACS rent, not an asking or achieved rent, and never by bedroom count. ``median_per_unit_month`` is
+    the median over apartment buildings of the model's potential gross income (before vacancy) per unit per
+    month. ``coverage`` is the modeled units' share of the area's ACS renter households with cash rent (None
+    when no household count exists); ``priced`` is the sample size the n rule reads. A row with no
+    buildings is an area the Assessor models none in, which is a finding, not an error."""
+
+    community_area: int
+    buildings: int = 0
+    priced: int = 0
+    units: int = 0
+    households: int | None = None
+    coverage: float | None = None
+    median_per_unit_month: int | None = None
+    year: str
+    cycle: str = "city reassessment"
+    as_of: str
+    dataset: str = "csik-bsws"
+
+
+class BedroomRent(BaseModel):
+    """Median gross rent for one bedroom count, from the parcel's tract when the Census's figure
+    passes the confidence rules, otherwise from its PUMA. ``scope`` says which; a PUMA is never
+    presented as a community area."""
+
+    bedrooms: str  # one of rent.BEDROOM_GROUPS
+    scope: str  # "tract" | "puma"
+    geography: str | None = None
+    geoid: str | None = None
+    estimate: int | None = None
+    moe: float | None = None
+    cv: float | None = None
+    # why the tract's own figure was not used ("suppressed" | "low_confidence"); None when it was used
+    tract_fallback: str | None = None
+
+
+class RentEvidence(BaseModel):
+    """Current official rent for a parcel's area (WS4 PR2): the community area's overall median, and the
+    published bedroom medians for its tract (else PUMA). ``unchecked`` names the parts that could not be
+    fetched, which is never the same as 'the Census publishes none'."""
+
+    community_area: CommunityAreaRent | None = None
+    assessor_model: AssessorModelRent | None = None
+    bedrooms: list[BedroomRent] = Field(default_factory=list)
+    acs_period: str | None = None
+    acs_release: str | None = None
+    tract_name: str | None = None
+    puma_geoid: str | None = None
+    puma_name: str | None = None
+    unchecked: list[str] = Field(default_factory=list)
+
+
 class NeighborhoodSummary(BaseModel):
     demographics: DemographicsSummary | None = None
     census_tract: CensusTractDemographics | None = None
+    rent: RentEvidence | None = None
     transit: TransitAccess | None = None
     walkscore: WalkScoreSummary | None = None
     ward: WardInfo | None = None
@@ -659,13 +813,151 @@ class ComparablesSummary(BaseModel):
     # Human-readable basis describing the comp set used (class + radius + window),
     # set by the progressive-widening search so the reader can judge comparability.
     comp_basis: str | None = None
+    # The comp set's actual search basis (the progressive search widens): radius in miles,
+    # window in years, and whether it widened past the first tier.
+    comp_radius_mi: float | None = None
+    comp_window_years: int | None = None
+    comp_widened: bool = False
     sales: list[ComparableSale] = Field(default_factory=list)
+
+
+class WithheldFigure(BaseModel):
+    """A figure the context would have carried but the confidence standard withholds
+    (too small a sample, too wide a margin). Its value is removed from the context before the model sees it."""
+
+    fact_id: str
+    figure: str  # the figure's label, in words the reader sees
+    reason: str  # plain words: "only 2 sales (needs 3)"
+
+
+class FigureNote(BaseModel):
+    """How to name a figure the answer states when it is an estimate, our own calculation, AI-read or from a
+    private company (the Profile's captions, in words). Present only for those figures."""
+
+    fact_id: str
+    figure: str
+    note: str
+
+
+class UpcomingZoningFiling(BaseModel):
+    """One current applicant filing from the Clerk's non-final zoning docket."""
+
+    record_number: str
+    title: str
+    status: str
+    sub_status: str
+    introduced_at: str | None = None
+    latest_action_at: str | None = None
+    url: str
+    application_number: str | None = None
+    segment: str | None = None
+    match_kind: Literal["subject_pin", "subject_range", "nearby"]
+    distance_mi: float | None = None
+
+
+class UpcomingZoningProvenance(BaseModel):
+    source_id: str
+    as_of: str | None = None
+    method: str
+    confidence: Literal["standard", "low"]
+
+
+class PendingTextAffectedFact(BaseModel):
+    """A current Profile fact a pending proposal could change, as the Profile states it today."""
+
+    fact_id: str
+    label: str
+    current_value: str | int | float | bool | None = None
+    section: str | None = None
+    current_law: str | None = None
+
+
+class PendingTextEffect(BaseModel):
+    """One reviewed way a pending Title 17 amendment could change a rule this Profile uses."""
+
+    id: str
+    sections: list[str]
+    could_change: str
+    reach: Literal["parcel", "untested"]
+    reach_note: str | None = None
+    affected: list[PendingTextAffectedFact] = Field(default_factory=list)
+
+
+class PendingTextImpact(BaseModel):
+    """A pending (not adopted) Title 17 amendment a committed review maps to this Profile."""
+
+    record_number: str
+    lifecycle_id: str
+    title: str
+    status: str
+    sub_status: str
+    introduced_at: str | None = None
+    latest_action_at: str | None = None
+    url: str
+    reviewed_on: str
+    reviewed_by: str
+    basis: Literal["ordinance"]
+    summary: str | None = None
+    effects: list[PendingTextEffect]
+
+
+class PendingTextUnreviewed(BaseModel):
+    record_number: str
+    title: str
+    url: str
+    introduced_at: str | None = None
+    reason: Literal["unreviewed", "outdated"]
+    waiting_days: int | None = None
+
+
+class PendingTextReview(BaseModel):
+    """Whether every pending Title 17 text proposal has a current committed review.
+
+    ``complete`` is the only state that lets the Profile say none of the reviewed
+    proposals maps to it; ``incomplete`` and ``unavailable`` never read as "none".
+    """
+
+    status: Literal["complete", "incomplete", "unavailable"]
+    pending_count: int = 0
+    reviewed_count: int = 0
+    unreviewed: list[PendingTextUnreviewed] = Field(default_factory=list)
+    oldest_unreviewed_days: int | None = None
+    overdue: bool = False
+    review_provenance: UpcomingZoningProvenance | None = None
+
+
+class UpcomingZoningSummary(BaseModel):
+    """Conservative parcel placement of current zoning filings.
+
+    ``ready`` with empty lists is a checked zero. ``stale`` preserves the last-good
+    evidence with a warning. ``unavailable`` never claims a zero.
+    """
+
+    status: Literal["ready", "stale", "unavailable"]
+    placement_status: Literal["complete", "partial"]
+    checked_at: str | None = None
+    radius_mi: float = 0.5
+    subject_filings: list[UpcomingZoningFiling] = Field(default_factory=list)
+    nearby_filings: list[UpcomingZoningFiling] = Field(default_factory=list)
+    placed_count: int = 0
+    unplaced_count: int = 0
+    placement_coverage: float | None = None
+    record_provenance: UpcomingZoningProvenance
+    placement_provenance: UpcomingZoningProvenance
+    # Pending Title 17 text amendments that a committed review maps to this Profile
+    # (WS2 PR3). Pending proposals never change a current-law answer; they only sit beside it.
+    text_impacts: list[PendingTextImpact] = Field(default_factory=list)
+    text_review: PendingTextReview | None = None
 
 
 class ContextObject(BaseModel):
     community_area: int | None = None
     community_area_name: str | None = None
     resolved_address: str | None = None
+    # Parcel identity behind the parcel-scoped fields below (see Location.resolution).
+    parcel_pin: str | None = None
+    parcel_resolution: Literal["authoritative", "approximate"] | None = None
+    parcel_resolution_method: str | None = None
     data_as_of: str | None = None
     data_lag_note: str | None = None
     data_lag_days: int | None = None
@@ -681,6 +973,9 @@ class ContextObject(BaseModel):
     code_chunks: list[CodeChunk] = Field(default_factory=list)
     parcel_zoning: ZoningSummary | None = None
     regulatory: RegulatorySummary | None = None
+    # Profile-only. Built from the daily Clerk/Address Points snapshot after
+    # parcel identity is reconciled; never fetched from Clerk on the request path.
+    upcoming_zoning: UpcomingZoningSummary | None = None
     property: PropertySummary | None = None
     incentives: IncentivesSummary | None = None
     neighborhood: NeighborhoodSummary | None = None
@@ -702,6 +997,158 @@ class ContextObject(BaseModel):
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
     partial_failures: list[str] = Field(default_factory=list)
+    # WS0 M6, chat path only (None elsewhere, so the Profile's context payload is unchanged).
+    # `withheld_figures` and `figure_notes` ride to the model; `provenance` does NOT (the synthesizer
+    # excludes it): it is the dated source of every figure, set once when the answer is assembled,
+    # sent to the sidebar and stored with the message so a reopened answer keeps the dates it was given.
+    provenance: dict[str, dict] | None = Field(default=None, max_length=400)
+    withheld_figures: list[WithheldFigure] | None = None
+    figure_notes: list[FigureNote] | None = None
+
+    # `property` is a field name in this class body, so spell the builtin out.
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def adu(self) -> dict | None:
+        """Coach house / conversion unit status for THIS parcel's district: allowed by
+        right (RT, RM, B1-C2), allowed with the ADU zone's limits (RS in an ADU-Allowed
+        Area), or not allowed (RS outside one). Derived from parcel_zoning and the ADU
+        overlay, so the Profile, a cold chat turn and a handoff agree. None when the
+        district's use table doesn't answer it."""
+        if self.parcel_zoning is None:
+            return None
+        from backend.retrieval.zoning_definitions import adu_status
+
+        adu_overlay = next((o for o in (self.regulatory.overlays if self.regulatory else []) if o.layer_type == "adu_area"), None)
+        limits = adu_overlay.detail if adu_overlay else None
+        return adu_status(self.parcel_zoning.zone_class, adu_overlay is not None, adu_overlay.name if adu_overlay else None, limits)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def coverage_notes(self) -> list[dict] | None:
+        """Where this page stops, for THIS parcel: what it found that it does not
+        assess (a PD, a landmark, a CHRS demolition hold, a recent rezoning, ADU limits)
+        and what is true of every parcel (alderman's role, map lag, code vintage, the
+        City's official letter). Derived, so the Profile, a cold chat turn and a handoff
+        agree. None when no parcel zoning was resolved."""
+        if self.parcel_zoning is None:
+            return None
+        from backend.retrieval.coverage_notes import build_coverage_notes
+
+        return build_coverage_notes(
+            zoning=self.parcel_zoning,
+            regulatory=self.regulatory,
+            property_=self.property,
+            neighborhood=self.neighborhood,
+            adu=self.adu,
+            code_vintage=self.code_vintage,
+            code_currency=self.code_currency,
+            address=self.resolved_address,
+            passed_not_on_map=self.passed_not_on_map,
+            passed_landmark_designations=self.passed_landmark_designations,
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def passed_not_on_map(self) -> list[dict] | None:
+        """Rezoning ordinances Council has passed that list this address and that the City's zoning
+        map does not carry yet (WS1 M5). The district on this page is then the OLD one. Offline: the
+        daily sync's snapshot, matched on the parcel's PIN (or, when the PIN is unresolved, its
+        address). None when nothing matches or the snapshot can't be trusted. Says "a rezoning listing
+        this address", never "this parcel was rezoned", and never to what."""
+        if self.parcel_zoning is None:
+            return None
+        from backend.legislation.rezonings import matches_for
+
+        pin = None if self.parcel_resolution == "approximate" else self.parcel_pin
+        return matches_for(
+            pin, self.resolved_address, self.parcel_zoning.ordinance_num,
+            live_district=getattr(self.parcel_zoning, "zone_class", None),
+        ) or None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def passed_landmark_designations(self) -> list[dict] | None:
+        """Chicago Landmark designation ordinances passed lately whose title lists this address, for a parcel
+        the City's landmark map does not already show as a landmark (WS1 M5b). A designation reaches the map
+        weeks to months after it passes, so the overlays on this page can read "no landmark" in the meantime.
+        Offline: the daily sync's snapshot, matched on the parcel's PIN (or, when the PIN is unresolved, its
+        address); the parcel's own overlay result decides whether the map already knows (no name is matched).
+        None when nothing matches or the snapshot can't be trusted. Says "a designation ordinance listing this
+        address", never "this is a landmark"."""
+        if self.parcel_pin is None and not self.resolved_address:
+            return None
+        from backend.legislation.designations import matches_for
+
+        pin = None if self.parcel_resolution == "approximate" else self.parcel_pin
+        return matches_for(pin, self.resolved_address, self.regulatory) or None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def code_currency(self) -> dict | None:
+        """The code text's vintage plus what City Council has passed since (WS1 M2):
+        for a parcel, every Title 17 amendment, the ones touching what its Profile cites
+        first (``parcel_relevant``); for a parcel-less code question, only the amendments
+        touching a retrieved chunk's section. Offline (the daily sync's snapshot + the
+        committed review file). None when nothing applies."""
+        from backend.legislation.currency import code_currency, parcel_cited_sections
+
+        chunk_sections = [c.section for c in self.code_chunks]
+        if self.parcel_zoning is None:
+            if not chunk_sections:
+                return None
+            cc = code_currency(chunk_sections=chunk_sections, only_touching=True)
+            return cc if cc and cc["amendments"] else None
+        overlays = list(self.regulatory.overlays) if self.regulatory else []
+        chrs = (getattr(getattr(self.property, "flags", None), "chrs_rating", None) or "").lower()
+        cited = parcel_cited_sections(
+            self.parcel_zoning.zone_class, overlays, ["14A-4-407.6"] if chrs in ("orange", "red") else [],
+        )
+        return code_currency(
+            cited_sections=cited, chunk_sections=chunk_sections, address=self.resolved_address,
+            overlay_types=[o.layer_type for o in overlays],
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def code_vintage(self) -> dict | None:
+        """How current the indexed Municipal Code is (its 'current through' date).
+        Present whenever the turn resolved a parcel's zoning, so the answer and the
+        Profile can say the code text is a snapshot, not live law."""
+        if self.parcel_zoning is None:
+            return None
+        from backend.code_vintage import get_code_vintage
+
+        return get_code_vintage()
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def unit_yield(self) -> dict | None:
+        """Max dwelling units this parcel's LOT AREA allows at its district's
+        minimum lot area per unit, with the arithmetic and the caveat that other
+        standards can bind first. Derived (never stored) from parcel_zoning and
+        property.land_sqft, so the Profile, a cold chat turn and a handoff all
+        agree. None for districts with no per-unit minimum, or an unknown lot."""
+        if self.parcel_zoning is None or self.property is None:
+            return None
+        from backend.retrieval.zoning_definitions import max_units_by_lot_area
+
+        return max_units_by_lot_area(self.parcel_zoning.zone_class, self.property.land_sqft)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def tod_benefits(self) -> dict | None:
+        """What transit-served status does and does not change for THIS parcel's
+        district (parking relief vs. dash-3-only density bonuses). Derived, never
+        stored, so it is right on every path: the Profile payload, a cold chat
+        turn, and a Profile->chat handoff that grafts zoning/regulatory in after
+        construction. None when the parcel isn't transit-served."""
+        reg = self.regulatory
+        if reg is None or not reg.in_tod_area:
+            return None
+        from backend.retrieval.zoning_definitions import tod_benefits
+
+        zone = self.parcel_zoning.zone_class if self.parcel_zoning else None
+        return tod_benefits(zone, True, tuple(o.layer_type for o in reg.overlays))
 
 
 class MapDataRequest(BaseModel):
@@ -825,6 +1272,10 @@ class ChatChunk(BaseModel):
     # On `done`: citation markers in the answer that aren't backed by this
     # turn's context (see backend/citations.py). Empty/None when all check out.
     citation_warnings: list[str] | None = None
+    # On `done`: True when the answer hit the synthesizer's token cap and was cut
+    # off mid-answer. A visible notice is also appended to the streamed text, so
+    # clients that ignore this flag (and saved/exported conversations) still show it.
+    truncated: bool | None = None
 
 
 class StoredMessage(BaseModel):
@@ -937,6 +1388,9 @@ class ReportData(BaseModel):
     # the INV-5 disclosure on the report cover when resolution was degraded.
     resolved_pin: str | None = None
     resolved_confidence: str | None = None
+    # WS0 M5: where each figure came from and how far to trust it (report_provenance.entries_for_report),
+    # filled when the report is rendered; the Data Sources table is built from it.
+    provenance: dict[str, dict] = Field(default_factory=dict)
     # V5 synthesis fields
     opportunities: list[dict] = Field(default_factory=list)
     constraints: list[dict] = Field(default_factory=list)

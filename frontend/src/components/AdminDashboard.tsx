@@ -25,6 +25,8 @@ import { StatCard } from "./admin/StatCard";
 import { TimeSeriesChart } from "./admin/TimeSeriesChart";
 import { LatencyTable } from "./admin/LatencyTable";
 import { RequestsTable } from "./admin/RequestsTable";
+import { CodeCurrencySection } from "./admin/CodeCurrencySection";
+import { DataHealthSection } from "./admin/DataHealthSection";
 import { BenchmarkSection } from "./admin/BenchmarkSection";
 import { JudgeSection } from "./admin/JudgeSection";
 import { VouchersSection } from "./admin/VouchersSection";
@@ -572,7 +574,23 @@ export function AdminDashboard() {
               />
             </section>
 
-            {/* Row 9: Early-adopter access (voucher codes + email grants) */}
+            {/* Row 9a: Data health (WS6 M3): every source, worst first */}
+            <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+              <h2 className="text-body font-semibold text-text-secondary mb-3">
+                Data Health
+              </h2>
+              <DataHealthSection />
+            </section>
+
+            {/* Row 9: How current the Municipal Code text is */}
+            <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+              <h2 className="text-body font-semibold text-text-secondary mb-3">
+                Code Currency
+              </h2>
+              <CodeCurrencySection />
+            </section>
+
+            {/* Row 10: Early-adopter access (voucher codes + email grants) */}
             <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
               <h2 className="text-body font-semibold text-text-secondary mb-3">
                 Early Access

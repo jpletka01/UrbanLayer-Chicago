@@ -12,6 +12,7 @@
 // discipline — friction can't be masked, tradeoffs shown inline).
 
 import type { ScorecardResponse } from "./api";
+import type { AduStatus, TodBenefits } from "./types";
 
 // Minimal i18next-compatible signature so the module stays React/i18n-pure and
 // unit-testable (the category/signal logic below needs no strings at all).
@@ -27,6 +28,7 @@ export const STACK_MIN = 2;                 // ≥ this many incentives ⇒ "str
 // Appeal-upside gate: dense areas show a handful of small nearby wins everywhere
 // (median −4…−6% is background noise); the reason fires only where appealing
 // demonstrably pays — many wins AND a big median cut.
+export const IMPLAUSIBLE_FAR_MULTIPLE = 3;  // existing FAR above this × the zone cap ⇒ building area isn't this lot's
 export const APPEAL_UPSIDE_MIN_WINS = 10;
 export const APPEAL_UPSIDE_MIN_MEDIAN_PCT = 10;
 
@@ -82,6 +84,10 @@ export interface VerdictSignals {
   incentiveCount: number;
   tifBalance: number;
   bonusFlags: string[]; // "tod" | "adu"
+  // Backend-computed (parking relief vs. dash-3-only density bonus); null when absent.
+  todBenefits: TodBenefits | null;
+  // Backend coach-house/conversion-unit status; null on older payloads.
+  adu: AduStatus | null;
   frictionFlags: string[]; // parcel-specific obstacles only
   frictionLevel: "meaningful" | "low";
   neutralFlags: string[]; // aro, etc. — context, never friction
@@ -116,6 +122,11 @@ function compactUsd(n: number): string {
   return `$${Math.round(n)}`;
 }
 
+// Overlay types whose hit is verdict friction (mirrors frictionPairs below).
+const FRICTION_OVERLAY_TYPES = new Set([
+  "landmark_building", "historic_district", "national_register", "planned_development", "lakefront_protection",
+]);
+
 // --- signal derivation --------------------------------------------------------
 // Thresholds were calibrated against 59 real parcels via a one-off
 // verdict_calibration.py harness (since deleted, 2026-07-03 doc cleanup);
@@ -148,12 +159,18 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
 
   // Pushback #1: bldg_sqft is frequently stale/missing/area-derived. Degrade to
   // "unknown" rather than confidently misclassify a parcel's capacity.
+  // Plausibility guard: an existing FAR several times the zone's maximum means the
+  // building area and the lot aren't the same thing (a complex's total against one
+  // member lot — kit P3 read 10.07 against a 2.2 cap). Legal nonconforming
+  // buildings exist, but not at 3x; treat the area as unknown rather than as fact.
+  const implausibleFar = allowedFar != null && allowedFar > 0 && !!bldg && !!land && bldg / land > IMPLAUSIBLE_FAR_MULTIPLE * allowedFar;
   const bldgAreaLowConfidence =
     pf.includes("property characteristics") ||
     !bldg ||
     !land ||
     (vacantClass && !!bldg && bldg > 0) ||
     bldgAreaNotGfa ||
+    implausibleFar ||
     !!data.nearest_parcel_unverified;
 
   const existingFar = !bldgAreaLowConfidence && bldg && land ? bldg / land : null;
@@ -184,7 +201,9 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
 
   const bonusFlags: string[] = [];
   if (reg?.in_tod_area) bonusFlags.push("tod");
-  if (reg?.in_adu_area) bonusFlags.push("adu");
+  // "ADU-eligible" is only a real opt-in for an RS district inside an ADU-Allowed Area;
+  // coach houses are permitted by right in RT/RM/B/C, so the layer's hit there is no bonus.
+  if (ctx.adu ? ctx.adu.status === "allowed_with_limits" : reg?.in_adu_area) bonusFlags.push("adu");
 
   // CALIBRATION FIX: in_aro_zone (~citywide) and violations.total (area-level
   // count, identical across neighbors) are all-checkmarks rows — NOT friction.
@@ -231,6 +250,8 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
     incentiveCount,
     tifBalance,
     bonusFlags,
+    todBenefits: ctx.tod_benefits ?? null,
+    adu: ctx.adu ?? null,
     frictionFlags,
     frictionLevel,
     neutralFlags,
@@ -286,9 +307,43 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   const emptyVacantLot = isVacantClass(data.context?.property?.bldg_class) && !data.context?.property?.bldg_sqft;
   if (s.bldgAreaLowConfidence && s.capacityBand === "unknown" && data.zone_definition?.far != null && !emptyVacantLot)
     caveats.push(t("scorecard.verdict.caveat.noBldgArea"));
+  const rezoned = data.context?.parcel_zoning;
+  if (rezoned?.recently_rezoned && rezoned.ordinance_date)
+    caveats.push(t("scorecard.verdict.caveat.recentlyRezoned", { date: rezoned.ordinance_date }));
+  // A rezoning listing this address passed but the City's map hasn't caught up: the district this read
+  // rests on may be the old one (WS1 M5).
+  const notOnMap = data.context?.passed_not_on_map?.[0];
+  if (notOnMap) caveats.push(t("scorecard.verdict.caveat.passedNotOnMap", { date: notOnMap.passed_on }));
+  // A Chicago Landmark designation listing this address passed and the City's landmark map doesn't show it for the
+  // parcel yet: a Commission on Chicago Landmarks review may apply that the overlays can't rule out (WS1 M5b).
+  const designated = data.context?.passed_landmark_designations?.[0];
+  if (designated) caveats.push(t("scorecard.verdict.caveat.landmarkDesignationPassed", { date: designated.passed_on }));
+  const complexSqft = data.context?.property?.complex_bldg_sqft;
+  if (complexSqft)
+    caveats.push(t("scorecard.verdict.caveat.complexBldg", { n: data.context?.property?.complex_member_pins?.length ?? 0, sqft: complexSqft.toLocaleString() }));
   if (data.zone_definition?.is_fallback) caveats.push(t("scorecard.verdict.caveat.fallbackZone"));
-  if ((data.partial_failures?.length ?? 0) > 0)
-    caveats.push(t("scorecard.verdict.caveat.partial", { sources: data.partial_failures.join(", ") }));
+  // A friction overlay the City map couldn't answer for is unknown, not clear: the
+  // verdict can't read clean while landmark / PD / district review is unruled-out.
+  const reg = data.context?.regulatory ?? null;
+  const unchecked = reg?.unchecked_overlays ?? [];
+  if (unchecked.some((ty) => FRICTION_OVERLAY_TYPES.has(ty)))
+    caveats.push(t("scorecard.verdict.caveat.overlayUnchecked"));
+  // Overlay gaps are said by the caveat above (friction) or the Regulatory card's
+  // "couldn't check" row; the generic line lists the remaining sources only.
+  const overlayGaps = new Set(reg?.data_gaps ?? []);
+  // The district itself couldn't be looked up (WS6 M7): every standard below it is unknown, so the verdict says
+  // so in its own words rather than burying "parcel zoning" in the generic list.
+  const zoningFailed = (data.failed_sources ?? []).find((f) => f.key === "zoning");
+  if (zoningFailed) caveats.push(t("scorecard.verdict.caveat.zoningUnchecked"));
+  const zoningLabels = new Set(zoningFailed?.labels ?? []);
+  // FEMA's flood map didn't answer: flood is a friction signal when known, so an unknown one means the verdict
+  // can't rule out a floodplain constraint (the category itself is left alone: unknown is not "constrained").
+  const floodFailed = (data.failed_sources ?? []).find((f) => f.key === "flood");
+  if (reg?.flood_unchecked || floodFailed) caveats.push(t("scorecard.verdict.caveat.floodUnchecked"));
+  const floodLabels = new Set(floodFailed?.labels ?? []);
+  const otherFailures = (data.partial_failures ?? []).filter((f) => !overlayGaps.has(f) && !zoningLabels.has(f) && !floodLabels.has(f));
+  if (otherFailures.length > 0)
+    caveats.push(t("scorecard.verdict.caveat.partial", { sources: otherFailures.join(", ") }));
   // Parcel-risk caveats (scofflaw list, STR prohibition): rendered with the
   // data-quality caveats but deliberately NOT part of the `caveated` confidence
   // flip below — they are facts about the parcel, not about our data.
@@ -299,6 +354,7 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
     !!data.nearest_parcel_unverified ||
     data.resolved_confidence === "approximate" ||
     !!data.zone_definition?.is_fallback ||
+    (data.context?.passed_landmark_designations?.length ?? 0) > 0 ||
     (data.partial_failures?.length ?? 0) > 0;
   return { confidence: caveated ? "caveated" : "high", caveats };
 }
@@ -338,9 +394,25 @@ function incentiveReasons(s: VerdictSignals, data: ScorecardResponse, t: TFunc):
   return out;
 }
 
+// Transit-served parcels get PARKING relief everywhere, but density/FAR/height
+// bonuses only in dash-3 districts (and then only via an entitlement). The old
+// copy said "and a density bonus" for every transit-served parcel — wrong at
+// B1-2, B3-2, RS-3, RT-4 (kit 2026-10-01, P3/P6/P7). Without the backend's
+// tod_benefits we state the parking relief only and claim nothing about density.
+function todReason(s: VerdictSignals, t: TFunc): VerdictReason {
+  const b = s.todBenefits;
+  const zone = s.zoneClass ?? "";
+  const anchor = "regulatory" as const;
+  if (b?.density_bonus_eligible) return { text: t("scorecard.verdict.reason.tod", { zone }), polarity: "positive", cardAnchor: anchor };
+  if (b && b.parking_relief === null) return { text: t("scorecard.verdict.reason.todPd"), polarity: "neutral", cardAnchor: anchor };
+  if (b?.parking_max_reduction_pct != null)
+    return { text: t("scorecard.verdict.reason.todParking", { pct: b.parking_max_reduction_pct, zone }), polarity: "neutral", cardAnchor: anchor };
+  return { text: t("scorecard.verdict.reason.todParkingGeneric"), polarity: "neutral", cardAnchor: anchor };
+}
+
 function bonusReason(s: VerdictSignals, t: TFunc): VerdictReason | null {
-  if (s.bonusFlags.includes("tod")) return { text: t("scorecard.verdict.reason.tod"), polarity: "positive", cardAnchor: "regulatory" };
-  if (s.bonusFlags.includes("adu")) return { text: t("scorecard.verdict.reason.adu"), polarity: "positive", cardAnchor: "regulatory" };
+  if (s.bonusFlags.includes("tod")) return todReason(s, t);
+  if (s.bonusFlags.includes("adu")) return { text: t("scorecard.verdict.reason.adu", { zone: s.adu?.zone ?? "" }), polarity: "positive", cardAnchor: "regulatory" };
   return null;
 }
 

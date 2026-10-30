@@ -2,7 +2,7 @@
 // The envelope carries raw inputs (userFilters + topicId + text + sort + scope) — the
 // backend compiles, merges, evaluates, and echoes back the canonical CQS.
 
-import { discoveryExportCsv, discoverySearch, discoverySearchPins } from "../lib/api";
+import { discoveryExportCsv, discoverySearch, discoverySearchPins, discoveryTextPreview } from "../lib/api";
 import { compilePanel } from "./uiCompiler";
 import type {
   PanelState,
@@ -12,6 +12,7 @@ import type {
   SearchResponse,
   SortSpec,
   SpatialScope,
+  TextPreview,
 } from "./types";
 
 export interface SearchInputs {
@@ -22,6 +23,7 @@ export interface SearchInputs {
   scope?: SpatialScope | null;
   offset?: number; // infinite-scroll window start (omitted = page 0)
   limit?: number; // window size (omitted = server default)
+  includePins?: boolean; // ask for the map's points in the same response (one evaluation)
 }
 
 /** Build the wire envelope. `userFilters` is the compiled panel (cleared controls dropped). */
@@ -36,23 +38,33 @@ export function buildRequest(inputs: SearchInputs, registry: Registry): SearchRe
   if (inputs.scope && inputs.scope.mode !== "all") req.scope = inputs.scope;
   if (inputs.offset != null) req.offset = inputs.offset;
   if (inputs.limit != null) req.limit = inputs.limit;
+  if (inputs.includePins) req.includePins = true;
   return req;
 }
 
 export async function runSearch(
   inputs: SearchInputs,
   registry: Registry,
+  signal?: AbortSignal,
 ): Promise<SearchResponse | null> {
-  return discoverySearch(buildRequest(inputs, registry));
+  return discoverySearch(buildRequest(inputs, registry), signal);
 }
 
 /** Fetch the full ordered coord set for the map. Same buildRequest envelope as runSearch
- * (so the backend's shared _resolve yields a sequence-identical ordering). */
+ * (so the backend's shared _resolve yields a sequence-identical ordering). The page asks
+ * runSearch for the points with `includePins` instead; this separate request is the fallback
+ * for a backend that does not return them. */
 export async function runPins(
   inputs: SearchInputs,
   registry: Registry,
+  signal?: AbortSignal,
 ): Promise<PinsResponse | null> {
-  return discoverySearchPins(buildRequest(inputs, registry));
+  return discoverySearchPins(buildRequest(inputs, registry), signal);
+}
+
+/** What the text compiler makes of a phrase, without searching (null if it could not be asked). */
+export async function previewText(text: string, signal?: AbortSignal): Promise<TextPreview | null> {
+  return discoveryTextPreview(text, signal);
 }
 
 /** Download the full match set as CSV (server-side, premium-gated). Same envelope, so the

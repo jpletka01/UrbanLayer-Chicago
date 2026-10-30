@@ -1,0 +1,34 @@
+{
+ "text": "## Zoning Analysis \u2014 6247 N Rockwell St (PIN 13-01-212-003-0000)\n\nThis is an authoritative parcel match \u2014 the data below applies to this specific parcel.\n\n---\n\n### 1. Zoning District in Effect\n\nThis parcel is zoned **RS-2 (Residential Single-Unit)** [3]. The map was last updated December 1, 2025, and no recent rezoning is on record. The RS-2 district accommodates detached houses on individual lots [3].\n\n**Verify:** [Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning) \u2014 search by address or PIN.\n\n---\n\n### 2. Can You Build a Two-Flat Here?\n\n**Almost certainly no** \u2014 not as a matter of right. The zoning table for RS-2 (\u00a7 [3]) limits uses to detached houses; two-flats are not a permitted use in RS-2. Beyond the use restriction, the lot is also undersized for two units: at 4,125 sq ft, it falls short of the 5,000 sq ft minimum lot area per dwelling unit required in RS-2 by [1] (4,125 \u00f7 5,000 = 0.8 \u2192 **0 additional units by right**).\n\nThe RS3 \"predominance of the block\" exemption that can reduce the minimum to 1,500 sq ft for a two-flat [1] does **not** apply here \u2014 this parcel is zoned RS-2, not RS-3.\n\n**Confidence:** High that a two-flat is not permitted by right. A rezoning to RT3.5 or higher would be required and would need Aldermanic and Plan Commission support.\n\n---\n\n### 3. Key Bulk & Density Standards\n\n| Standard | RS-2 Value | Source |\n|---|---|---|\n| FAR | **0.65** | [3] / zone table |\n| Max height | **30 ft** | [3] |\n| Min lot area per unit | **5,000 sq ft** | [1] |\n| Min lot size | **5,000 sq ft** | zone table |\n| Permitted uses | Detached houses, parks, schools, religious institutions | [3] |\n\nThe current lot is 4,125 sq ft \u2014 **below the 5,000 sq ft minimum lot size** for RS-2, making new construction of even a single-family home potentially non-conforming depending on how the existing structure was established. Setbacks are governed by [2] for RS districts (parking location), and general RS-2 setback standards would appear in \u00a717-2-0500 (not retrieved in full here \u2014 confirm directly in the Municipal Code, current through the Council Journal of March 18, 2026).\n\n---\n\n### 4. Overlays & Special Designations\n\n- **Affordable Requirements Ordinance (ARO) Zone** \u2014 This parcel is in an ARO zone. West Ridge has 6 ARO projects totaling 324 units in the community area, including senior housing projects at Peterson Ave., Lincoln Ave., California Ave., and Western Ave. ARO obligations may be triggered by residential development above a threshold size.\n- **No Planned Development** \u2014 not in a PD.\n- **No Landmark or Historic District** \u2014 not a Chicago landmark, not in a historic district, not on the National Register.\n- **Not transit-oriented (TOD)** \u2014 the parcel is not in a designated TOD area (nearest CTA rail is Morse/Red Line at 1.71 miles; nearest Metra is Peterson/Ridge at 1.04 miles \u2014 neither brings TOD eligibility here).\n- **Not an ADU area** \u2014 the parcel is **not** in a city-designated ADU pilot area.\n- **No Special Service Area (SSA)** \u2014 not in an SSA.\n- **Flood Zone X** \u2014 area of minimal flood hazard; no Special Flood Hazard Area designation, so flood insurance is not federally required.\n- **No brownfield sites** nearby.\n- **NMTC / QCT designations** (census tract 17031020802): The tract qualifies as a **HUD Qualified Census Tract (QCT)** \u2014 LIHTC projects here receive an enhanced basis boost of up to 130%. It also qualifies as a **New Markets Tax Credit (NMTC) Low-Income Community** with **severe distress** designation (poverty rate 23.2%), enabling below-market financing for qualifying commercial/community development projects.\n\n**Verify overlays:** Chicago Zoning Map (link above); ARO details via the Dept. of Housing.\n\n---\n\n### 5. Parking Requirements & Transit Reduction\n\nIn RS districts, required off-street parking must be located on the same zoning lot as the dwelling units served [2]. Parking in side setbacks is prohibited except when accessed by a permitted driveway from the front property line [2].\n\nThe parcel is **not in a TOD area**, so no transit-related parking reduction applies here [2]. The specific minimum number of spaces for a single-family home in RS-2 would be found in \u00a717-10-0200 (not retrieved \u2014 confirm in the Municipal Code).\n\n---\n\n### 6. Can You Add a Coach House / ADU?\n\n**Almost certainly no** \u2014 two barriers apply:\n\n1. **ADU area:** This parcel is **not** in the city's designated ADU pilot area, so the ADU program does not apply here.\n2. **Coach house rules:** A building permit for a new coach house may not be issued for any RS-designated lot unless it complies with \u00a717-7-0570 [4]. Coach houses may not exceed 22 ft in height [4], and at least 3 ft of open space must be maintained between the coach house and at least one side property line [4]. However, the RS-2 district's single-family-only use restriction and the lot's sub-5,000 sq ft size make establishing any additional unit extremely constrained.\n\nThe existing structure is a 1-story, 1-unit, ~1,661 sq ft masonry home built in 1925 with a full basement and 1-car garage \u2014 any accessory structure would also be subject to the 60% lot coverage and 15 ft height limits for rear-setback accessory buildings [4].\n\n**Confidence:** High that neither a standard ADU nor a by-right coach house is available here without either an area rezoning or a change in the ADU pilot boundary.\n\n---\n\n*This information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the relevant city department for official guidance.*",
+ "error": null,
+ "seconds": 60.4,
+ "citation_warnings": null,
+ "plan_location": {
+  "raw": "6247 N Rockwell St in Chicago, Illinois",
+  "type": "address",
+  "resolved_community_area": 2,
+  "resolved_community_area_name": "West Ridge",
+  "resolved_address": "6247 N Rockwell St, Chicago, IL",
+  "resolved_lat": 41.99544816,
+  "resolved_lon": -87.69440463,
+  "pin": "13012120030000",
+  "resolution": "authoritative"
+ },
+ "plan_sources": [
+  "regulatory_domain",
+  "property_domain",
+  "vector_search",
+  "permits_api",
+  "neighborhood_domain",
+  "incentives_domain"
+ ],
+ "context_zone": {
+  "zone_class": "RS-2",
+  "zone_type": 4,
+  "map_updated": "2025-12-01",
+  "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+  "recently_rezoned": false
+ },
+ "pid": "P1",
+ "address": "6247 N Rockwell St"
+}

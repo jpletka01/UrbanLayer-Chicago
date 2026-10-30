@@ -193,3 +193,50 @@ def test_region_filter_and_viewport_scope_both_apply():
 def test_unknown_data_version_raises():
     with pytest.raises(KeyError):
         evaluate(_cqs(), "no-such-version")
+
+
+# --- sort parity with the original comparator -------------------------------
+
+
+def _oracle_order(parcels, sort_field, descending):
+    """The original cmp_to_key ordering, kept here as the oracle for the key-based sort."""
+    import functools
+
+    from backend.discovery.evaluator import _normalize_pin
+
+    def sort_value(p):
+        return _normalize_pin(p.pin) if sort_field == "pin" else p.get(sort_field)
+
+    def compare(a, b):
+        av, bv = sort_value(a), sort_value(b)
+        if (av is None) != (bv is None):
+            return 1 if av is None else -1
+        if av is not None:
+            primary = -1 if av < bv else (1 if av > bv else 0)
+            if descending:
+                primary = -primary
+            if primary:
+                return primary
+        pa, pb = _normalize_pin(a.pin), _normalize_pin(b.pin)
+        return -1 if pa < pb else (1 if pa > pb else 0)
+
+    return [p.pin for p in sorted(parcels, key=functools.cmp_to_key(compare))]
+
+
+@pytest.mark.parametrize("key,field", [("lot_size", "land_sqft"), ("year_built", "year_built"), ("pin", "pin")])
+@pytest.mark.parametrize("direction", ["asc", "desc"])
+def test_key_sort_matches_original_comparator(key, field, direction):
+    import random
+
+    rng = random.Random(7)
+    parcels = []
+    for i in range(400):
+        pin = rng.choice([f"{rng.randrange(10**13, 10**14)}", f"{rng.randrange(10**9, 10**10)}-{rng.randrange(1000, 9999)}"])
+        pin = f"{pin}{i}"  # unique
+        attrs = {}
+        if rng.random() > 0.2:  # ~20% missing
+            attrs = {"land_sqft": rng.choice([1000, 2500, 2500, 4000, 4000.5]), "year_built": rng.choice([1900, 1925, 1925, 2001])}
+        parcels.append(DictParcel(pin, attrs))
+    _register(parcels)
+    got = evaluate(_cqs(sort=SortSpec(key=key, dir=direction)), VERSION).pins
+    assert got == _oracle_order(parcels, field, direction == "desc")

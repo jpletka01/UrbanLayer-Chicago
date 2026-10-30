@@ -24,6 +24,10 @@ services:
       # pre-enable on: 55/55 agreement w/ Address Points, 20/20 independent geocode
       # spot-check, 5 live integration tests. See audits/2026-06-22_gis-parcel-resolution-fix.md.
       - ASSESSOR_ADDRESS_RESOLUTION_ENABLED=true
+      # 2026-10-21 (WS6 M2): scripts/backup_db.sh writes backup_status.json beside chicago.db after
+      # each backup. With this set the data-health checker alarms when that file is missing or stale;
+      # in a dev checkout (unset) a missing file just reads "not probed here".
+      - BACKUP_STATUS_REQUIRED=true
 
   frontend:
     build:

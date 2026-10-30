@@ -54,6 +54,31 @@ async def socrata_get(
     base_url: str | None = None,
     app_token: str | None = None,
 ) -> list[dict[str, Any]]:
+    """One Socrata query, with retry/backoff. The call's outcome (not each attempt) is counted for the
+    live failure rate (data_health/live.py), and ``DATA_HEALTH_FAULT=socrata:<id>`` forces it to fail."""
+    from backend.data_health import live
+
+    sid = live.source_for_dataset(dataset_id)
+    if live.fault("socrata", dataset_id, sid):
+        live.record(sid, False)
+        raise SocrataError(f"Socrata request failed for {dataset_id}: forced by DATA_HEALTH_FAULT")
+    try:
+        out = await _socrata_get(dataset_id, params, client=client, base_url=base_url, app_token=app_token)
+    except Exception:
+        live.record(sid, False)
+        raise
+    live.record(sid, True)
+    return out
+
+
+async def _socrata_get(
+    dataset_id: str,
+    params: dict[str, Any],
+    *,
+    client: httpx.AsyncClient | None = None,
+    base_url: str | None = None,
+    app_token: str | None = None,
+) -> list[dict[str, Any]]:
     settings = get_settings()
     if "$limit" not in params:
         raise ValueError(f"Socrata query for {dataset_id} missing $limit guard")

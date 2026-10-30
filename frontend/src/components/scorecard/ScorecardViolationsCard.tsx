@@ -4,6 +4,7 @@
 import { useTranslation } from "react-i18next";
 import type { ViolationSummary } from "../../lib/types";
 import { SubSection, ShowMore } from "./ProfileModule";
+import { MethodCaption } from "../ui/Confidence";
 
 const AlertIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -44,6 +45,7 @@ export function ScorecardViolationsCard({ data, scopeLabel }: { data: ViolationS
                 <span className="text-text-primary tabular-nums shrink-0">{count}</span>
               </div>
             ))}
+            <MethodCaption method="keyword_grouping" size="micro" />
           </div>
         )}
 

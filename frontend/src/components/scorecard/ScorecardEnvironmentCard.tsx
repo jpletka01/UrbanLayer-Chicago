@@ -6,6 +6,8 @@ import type { RegulatorySummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { translateFloodSubtype } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
+import { UncheckedRow } from "./UncheckedRow";
+import { FEMA_FLOOD_MAP_URL } from "../../lib/failedSources";
 
 const WaterIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -15,7 +17,8 @@ const WaterIcon = (
 
 export function ScorecardEnvironmentCard({ data }: { data: RegulatorySummary }) {
   const { t } = useTranslation("data");
-  if (!data.flood_zone && data.brownfield_sites.length === 0) return null;
+  const floodUnchecked = !!data.flood_unchecked && !data.flood_zone;
+  if (!data.flood_zone && !floodUnchecked && data.brownfield_sites.length === 0) return null;
 
   return (
     <SubSection title={t("regulatory.environment")} icon={WaterIcon} className="flex-1">
@@ -44,6 +47,16 @@ export function ScorecardEnvironmentCard({ data }: { data: RegulatorySummary }) 
                 <p className="text-caption text-text-muted mt-0.5">{translateFloodSubtype(data.flood_zone_subtype)}</p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* FEMA's flood map didn't answer: the zone is unknown, never "no flood zone" (the card would otherwise be silent). */}
+        {floodUnchecked && (
+          <div data-testid="flood-unchecked">
+            <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
+              {t("regulatory.floodZone")}
+            </div>
+            <UncheckedRow labels={[t("regulatory.unchecked.flood")]} href={FEMA_FLOOD_MAP_URL} linkLabel={t("regulatory.unchecked.floodLink")} />
           </div>
         )}
 

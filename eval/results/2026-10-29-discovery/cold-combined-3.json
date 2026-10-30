@@ -1,0 +1,27 @@
+{
+  "label": "cold-combined-3",
+  "mode": "combined",
+  "measured_at": "2026-10-29T02:15:00+00:00",
+  "cells": [
+    {
+      "query": "recipe (4 filters)",
+      "edit_ms": 528.5
+    },
+    {
+      "query": "3 filters (no lot size)",
+      "edit_ms": 358.2
+    },
+    {
+      "query": "1 filter (zoning: residential)",
+      "edit_ms": 650.3
+    },
+    {
+      "query": "no filters",
+      "edit_ms": 528.2
+    },
+    {
+      "query": "recipe again (repeat)",
+      "edit_ms": 11.8
+    }
+  ]
+}

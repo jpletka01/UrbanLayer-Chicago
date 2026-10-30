@@ -33,3 +33,17 @@ def assessment_level_for_class(bldg_class: str | None) -> float | None:
     if not code or code.startswith(("EX", "RR")):
         return None
     return _LEVEL_BY_PREFIX.get(code[0])
+
+
+# The Profile's "class norm" effective tax rate = CLASS_NORM_RATE_PER_LEVEL x the class's assessment level
+# (frontend ScorecardPage.tsx holds the same constant; a test pins them together). It is the Chicago
+# composite rate (the most common one, 6.995%) times the state equalizer (3.0163), both for tax year 2023,
+# and so reads 0.2110. The same arithmetic on tax year 2024 (6.6186% x 3.0355) gives 0.2009: the constant
+# runs about 5% high against the newest bill year. Both figures were read from ptaxsim on 2026-10-21.
+CLASS_NORM_RATE_PER_LEVEL = 0.21
+CLASS_NORM_TAX_YEAR = 2023
+CLASS_NORM_NOTE = (
+    "Chicago's most common composite tax rate (6.995%) times the state equalizer (3.0163), tax year 2023, "
+    "times the class's assessment level. The same arithmetic on tax year 2024 gives 0.2009, so this norm "
+    "runs about 5% high against the newest bill year."
+)

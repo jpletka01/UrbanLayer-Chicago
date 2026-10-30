@@ -1,0 +1,116 @@
+{
+  "section": "17-10-0100",
+  "section_title": "General",
+  "title_number": 17,
+  "title_name": "CHICAGO ZONING ORDINANCE",
+  "chapter": "17-10",
+  "chapter_name": "PARKING AND LOADING",
+  "article": null,
+  "article_name": "",
+  "subarticle": null,
+  "subarticle_name": "",
+  "part": null,
+  "part_name": "",
+  "body_paragraphs": [
+    "17-10-0101 Applicability.",
+    "17-10-0101-A New Development. Unless otherwise expressly stated, the parking and loading standards of this chapter apply to all new buildings constructed and all new uses established in all zoning districts.",
+    "17-10-0101-B Expansions and increases in intensity.",
+    "1. Nonresidential Uses.",
+    "(a) Unless otherwise expressly stated, the parking and loading standards of this chapter apply when an existing nonresidential building or nonresidential use is expanded or enlarged by 15% or more. This provision applies to the addition of floor area, seating capacity, employees or other units of measurement used for establishing off-street parking and loading requirements.",
+    "(b) In the case of nonresidential buildings or nonresidential uses that have been in lawful existence for 50 or more years, the parking and loading standards of this chapter apply when the building or use is expanded or enlarged by 25% or more.",
+    "(c) In the case of nonresidential building or use expansions triggering requirements for additional parking, such additional off-street parking and loading spaces are required only to serve the enlarged or expanded area, not the entire building or use.",
+    "2. Residential Uses.",
+    "(a) Unless otherwise expressly stated, the parking and loading standards of this chapter apply whenever additional dwelling units are added to an existing residential building or other residential use. In such cases, additional off-street parking and loading spaces are required only to serve the added dwelling units . While a lawfully existing off-street parking deficit is not required to be eliminated when additional dwelling units are added to a building , existing off-street parking spaces may not be reduced below, or if already less than, may not be further reduced further below minimum required parking ratios. The Zoning Administrator is authorized to require that applicants provide reasonable evidence showing the existing number of dwelling units and the existing number of off-street parking spaces. The intent of this provision is to ensure that existing parking deficits are not increased as a result of additions containing dwelling units . If the residential building or other residential use has been in lawful existence for 20 or more years, the parking and loading standards of this chapter apply when 2 or more dwelling units are added.",
+    "17-10-0101-C Change of Use (Nonresidential).",
+    "1. Unless otherwise expressly stated, when the use of property changes, off-street parking and loading facilities must be provided to serve nonresidential uses only when the number of parking or loading spaces required for the new nonresidential use exceeds the number of spaces required for the use that most recently occupied the building, based on the minimum parking standards of this Zoning Ordinance. In other words, \"credit\" is given to the most recent use of the property for the number of parking spaces that would be required now; a new nonresidential use is not required to \"make up\" the existing deficit.",
+    "2. If the building in which the change of use occurs has been in lawful existence for 50 or more years, additional parking and loading facilities must be provided only when the number of parking or loading spaces required for the new nonresidential use exceed by 25% or more the number of spaces that would have been required for the use that most recently occupied the building based on the minimum parking standards of this Zoning Ordinance. In such cases, additional parking and loading spaces must be provided only in the amount by which the number of parking or loading spaces required for the new nonresidential use exceed 125% of the number of spaces that would have been required for the use that most recently occupied the building (based on existing parking ratios).",
+    "3. Notwithstanding any other provision of the code to the contrary, no credit for required off-street parking or loading space shall be given to any building, or any part thereof, in which the change is to a use as an industrial private event venue .",
+    "17-10-0102 Off-street Parking Exemptions and Reductions.",
+    "17-10-0102-A Landmarks.",
+    "1. No additional off-street parking or loading spaces are required for rehabilitation or reuse of an official Chicago Landmark building.",
+    "2. No additional off-street parking or loading spaces are required for rehabilitation or reuse of an existing \"contributing building\" within an official Chicago Landmark district.",
+    "3. Minimum off-street automobile parking ratios for all uses may be reduced by up to 50 percent from the otherwise applicable standards for the rehabilitation of existing buildings which are 1) designated a National Historic Landmark; or 2) listed individually on the National Register of Historic Places; or 3) listed as a \"contributing building\" to a Historic District that is listed on the National Register of Historic Places.",
+    "17-10-0102-B Transit-Served Locations.",
+    "1. (a) In all districts except D districts, minimum off-street automobile parking ratios may be reduced by up to 100 percent from the otherwise applicable standards for new construction or rehabilitation or reuse of existing structures located within 2,640 feet of a CTA rail station entrance or exit or within 1,320 feet of a CTA bus line corridor roadway segment listed in Table 17-17-0400-B.",
+    "(b) In D districts, minimum off-street automobile parking ratios may be reduced by up to 50 percent from the otherwise applicable standards for new construction or rehabilitation or reuse of existing structures located within 2,640 feet of a CTA rail station entrance or exit or within 1,320 feet of a CTA bus line corridor roadway segment listed in Table 17-17-0400-B. Any reduction in minimum off-street automobile parking ratios in excess of 50 percent under this Section 17-10-0102-B.1(b) shall be approved only as an administrative adjustment under the provisions of Section 17-13-1003-EE. Any party requesting a reduction in excess of 50 percent under this Section 17-10-0102-B.1(b) shall provide notice to the alderman of the ward in which the subject property is located, and no such reduction shall be approved until at least 10 days after the date that such notice was delivered to the alderman.",
+    "(c) In all districts, minimum off-street automobile parking ratios may be reduced by up to 50 percent from the otherwise applicable standards for new construction or rehabilitation or reuse of existing structures located within 2,640 feet of a METRA rail station entrance or exit. Any reduction in minimum off-street automobile parking ratios in excess of 50 percent under this Section 17-10-0102-B.1(c) shall be approved only as an administrative adjustment under the provisions of Section 17-13-1003-EE. Any party requesting a reduction in excess of 50 percent under this Section 17-10-0102-B.1(c) shall provide notice to the alderman of the ward in which the subject property is located, and no such reduction shall be approved until at least 10 days after the date that such notice was delivered to the alderman.",
+    "2. Residential buildings within 2,640 feet of a CTA or METRA rail station entrance or exit or within 1,320 feet of a CTA bus line corridor roadway segment listed in Table 17-17-0400-B must contain at least one bicycle parking space per dwelling unit . Non- residential buildings within 2,640 feet of a CTA or METRA rail station entrance or exit or within 1,320 feet of a CTA bus line corridor roadway segment listed in Table 17-17-0400-B must contain at least one bicycle parking space for each automobile parking space that would otherwise be required under the applicable standards of Section 17-10-0200. When such calculations for residential buildings or non- residential buildings result in a bicycle parking requirement in excess of 50 bicycle parking spaces, the limits described in Section 17-10-0301-B shall not apply. All bicycle parking design is subject to the regulations of Section 17-10-0302.",
+    "3. The 1,320-foot and 2,640-foot distances specified in this Section must be measured along a straight line between the rail station entrance or exit and the nearest boundary of the lot to be developed or, when applied to a CTA bus line corridor roadway segment listed in Table 17-17-0400-B, between the roadway segment centerline and the nearest boundary of the lot to be developed.",
+    "4. Residential buildings which: i. achieve a mandatory planned development threshold, pursuant to Section 17-8-0513; ii. maximize minimum lot area density for efficiency units , pursuant to Sections 17-2-0313, 17-3-0410 or 17-4-0409; iii. maximize floor area ratio , pursuant to Sections 17-2-0304, 17-3-0403 or 17-4-0405; and, iv. are located within 2,640 feet of a CTA or METRA rail station entrance or exit or within 1,320 feet of a CTA bus line corridor roadway segment listed in Table 17-17-0400-B, may replace, at a 1:1 ratio, square footage required for accessory parking that was reduced pursuant to Section 17-10-0102-B.1 with floor area for on-site affordable square footage, as defined by Section 2-44-085, provided:",
+    "a. the parking is reduced beyond 50% pursuant to Section 17-10-0102-B.1;",
+    "b. the residential unit floor area is provided for new units only, and not for the expansion of allowed units, per 17-10-0102-B(4)(ii) and 17-10-0102-B(4)(iii) above;",
+    "c. notwithstanding any other provision of this Code to the contrary, any affordable units, as defined by Section 2-44-085, as amended (the \"ARO\"), established in a project pursuant to this Section, shall be subject to all terms and provisions of the ARO until the project is re-established as a non-residential use; and,",
+    "d. the residential unit floor area is provided in the same residential building from which the parking is replaced.",
+    "e. the total number of on-site affordable units in the building equals at least the minimum number of on-site affordable units required by Section 2-44-085, plus the number of additional units added to the building pursuant to this Section.",
+    "5. For projects located within 2,640 feet of a CTA or METRA rail station entrance or exit or within 1,320 feet of a CTA bus line corridor roadway segment listed in Table 17-17-0400-B, minimum off-street automobile parking ratios may be reduced by up to 100 percent for the entire building from the otherwise applicable standards for new construction or rehabilitation or reuse of existing structures if:",
+    "a. 50% or more of the dwelling units are either: (i) assisted housing, as defined by Section 2-44-120 or (ii) affordable units, as defined by Section 2-44-085; or",
+    "b. 50% or more of the dwelling units are in a residential development otherwise subject to a recorded covenant, lien, regulatory agreement, deed restriction, or similar instrument requiring that units be income restricted to no more than 80% of Area Median Income, as defined by the US Department of Housing and Urban Development, approved or acknowledged by the Department of Housing.",
+    "17-10-0102-C Underground Parking. When buildings in \"D\" zoning districts provide all parking spaces underground, minimum off-street parking ratios are reduced by 50 percent from otherwise applicable standards.",
+    "17-10-0102-D Small Dwelling Units. The Zoning Administrator is authorized to approve off-street parking ratio reductions of up to 25 percent for multi-unit residential developments in \"D\" districts if the Zoning Administrator determines, based on information provided by the applicant, that automobile ownership rates are likely to be lower than minimum off-street parking requirements. In order to qualify for consideration of lower parking ratios under this provision, the building must contain 100 or more dwelling units and the average size of a dwelling unit within the building must be less than 800 square feet.",
+    "17-10-0102-E Minimal Parking. When the minimum off-street parking requirements of this chapter result in a requirement to provide fewer than the following number of parking spaces, off-street parking need not be provided:",
+    "17-10-0102-F Type A Units. When a multi-unit residential building utilizes the incentives in 17-2-0303-B.2 or 17-2-0304-D, minimum off-street parking shall be no greater than 1 space per 8 feet of alley frontage, provided that an accessible parking space shall count as 2 spaces. Fractions in the calculation of the number of required off-street parking spaces shall be rounded down to the nearest whole number. In no circumstance should this provision be interpreted to require a greater number of off-street parking spaces than would otherwise be required.",
+    "17-10-0103 Damage or Destruction. When a use that has been damaged or destroyed by fire, collapse, explosion, or other cause is re-established, off-street parking or loading facilities must also be re-established or continued in operation in an amount equal to the number maintained at the time of such damage or destruction. It is not necessary, however, to restore or maintain parking or loading facilities in excess of those required by this Zoning Ordinance for equivalent new uses or construction."
+  ],
+  "tables": [
+    {
+      "headers": [
+        "District",
+        "Parking Waived if Minimum Requirement is for Less than:"
+      ],
+      "data_rows": [
+        [
+          "D dash 5",
+          "5 spaces"
+        ],
+        [
+          "D dash 7, 10",
+          "10 spaces"
+        ],
+        [
+          "D dash 12, 16",
+          "50 Spaces"
+        ]
+      ],
+      "caption": ""
+    }
+  ],
+  "cross_references": [
+    "Table17-17-0400-B",
+    "17-10-0102-B",
+    "17-13-1003-EE",
+    "17-10-0200",
+    "17-10-0301-B",
+    "17-10-0302",
+    "17-8-0513",
+    "17-2-0313",
+    "17-3-0410",
+    "17-4-0409",
+    "17-2-0304",
+    "17-3-0403",
+    "17-4-0405",
+    "2-44-085",
+    "2-44-120",
+    "17-2-0303-B",
+    "17-2-0304-D"
+  ],
+  "legislative_history": "(Added Coun. J. 5-26-04, p. 25275; Amend Coun. J. 3-9-05, p. 44391; Amend Coun. J. 11-19-08, p. 47220, Art. VII, \u00a7 1; Amend Coun. J. 6-27-12, p. 30542, \u00a7 1; Amend Coun. J. 11-8-12, p. 38872, \u00a7 248; Amend Coun. J. 9-11-13, p. 60173, \u00a7 7; Amend Coun. J. 11-5-14, p. 96201, \u00a7 1; Amend Coun. J. 3-18-15, p. 105476, \u00a7 8; Amend Coun. J. 9-24-15, p. 7499, \u00a7 8; Amend Coun. J. 2-10-16, p. 18766, \u00a7 15; Amend Coun. J. 1-23-19, p. 94981, \u00a7 3; Amend Coun. J. 7-20-22, p. 50878, \u00a7 6; Amend Coun. J. 7-16-25, p. 30724, \u00a7 2)",
+  "effective_dates": [
+    "5-26-04",
+    "3-9-05",
+    "11-19-08",
+    "6-27-12",
+    "11-8-12",
+    "9-11-13",
+    "11-5-14",
+    "3-18-15",
+    "9-24-15",
+    "2-10-16",
+    "1-23-19",
+    "7-20-22",
+    "7-16-25"
+  ],
+  "definitions": [],
+  "has_table": true,
+  "prev_section": "17-9-0300",
+  "next_section": "17-10-0200"
+}

@@ -1,0 +1,13 @@
+{
+  "data": {
+    "column": "no_such_column",
+    "dataset": "foxtrot.7113",
+    "position": {
+      "column": 12,
+      "line": "SELECT max(`no_such_column`) AS `m`\n           ^",
+      "row": 1
+    }
+  },
+  "errorCode": "query.soql.no-such-column",
+  "message": "Query coordinator error: query.soql.no-such-column; No such column: no_such_column; position: Map(row -> 1, column -> 12, line -> \"SELECT max(`no_such_column`) AS `m`\\n           ^\")"
+}

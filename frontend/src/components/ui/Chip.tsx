@@ -84,7 +84,7 @@ export function Chip({
       type="button"
       aria-label={removeLabel}
       onClick={(e) => { e.stopPropagation(); onRemove?.(); }}
-      className="-mr-0.5 shrink-0 opacity-70 hover:opacity-100"
+      className="touch-hit touch-hit-x -mr-0.5 shrink-0 opacity-70 hover:opacity-100"
     >
       <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

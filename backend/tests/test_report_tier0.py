@@ -65,6 +65,10 @@ def _install_common_patches(stack: ExitStack, fetch_impl) -> None:
     stack.enter_context(
         patch.object(main_mod, "_fetch_report_data", new=fetch_impl)
     )
+    # The endpoint now asks which purchase a render belongs to (WS6 M8); these tests have no database, and a
+    # premium caller without a purchase is the case under test.
+    stack.enter_context(patch.object(main_mod.db, "find_report_purchase", new=AsyncMock(return_value=None)))
+    stack.enter_context(patch.object(main_mod, "_record_report_render", new=AsyncMock(return_value="updated")))
     stack.enter_context(patch("jinja2.Environment", new=_FakeEnv))
     stack.enter_context(
         patch("backend.report_render.render_pdf",

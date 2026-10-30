@@ -53,7 +53,7 @@
   },
   "scorecard": {
     "title": "Ficha de la propiedad",
-    "subtitle": "El panel de investigación gratuito de cualquier parcela de Chicago: zonificación, impuestos, incentivos y comparables. Ingresa una dirección.",
+    "subtitle": "El panel de investigación gratuito de cualquier parcela de Chicago: zonificación, impuestos, incentivos y comparables. Ingrese una dirección.",
     "search": "Buscar",
     "loading": {
       "title": "Preparando la Ficha de {{address}}",
@@ -70,7 +70,7 @@
       "title": "Eso parece una pregunta sobre el código, no una dirección.",
       "body": "El analista puede responderla: lee el código municipal de Chicago y cita las secciones específicas.",
       "askAnalyst": "Consultar al analista",
-      "searchInstead": "O busca una dirección de Chicago",
+      "searchInstead": "O busque una dirección de Chicago",
       "orAskAnalyst": "¿No es una dirección? Consulta al analista →"
     },
     "crime": "Delitos",
@@ -82,7 +82,7 @@
     "openComplaints_one": "{{count}} denuncio abierto",
     "openComplaints_other": "{{count}} denuncios abiertos",
     "highRiskFlags": "Alertas de alto riesgo",
-    "askAboutProperty": "Pregunta sobre esta propiedad",
+    "askAboutProperty": "Pregunte sobre esta propiedad",
     "zoningRules": "Normativas de zonificación {{zone}}",
     "investigate": {
       "buildingDetails": "Detalles de la construcción",
@@ -101,7 +101,7 @@
     "downloadCsv": "Descargar CSV",
     "downloadCsvShort": "CSV",
     "generating": "Generando...",
-    "dataAsOf": "Datos al {{date}}",
+    "dataAsOf": "Consultado el {{date}}",
     "someDataUnavailable": "Algunos datos no están disponibles: {{sources}}",
     "nearestParcelCaveat": "No pudimos confirmar la parcela fiscal exacta para esta dirección, por lo que las cifras de propiedad, impuestos y ventas comparables a continuación describen la parcela más cercana, que podría ser una vecina. Verifique el PIN antes de usar números específicos de la parcela.",
     "reportCTA": {
@@ -125,6 +125,55 @@
     },
     "addressUnavailable": "Dirección no disponible",
     "vsPrior": "vs {{count}}",
+    "coverage": {
+      "title": "Lo que esta página no cubre",
+      "always": "Válido para toda parcela ({{count}})",
+      "link": "Más información ↗",
+      "notes": {
+        "planned_development": "Esta parcela está en {{name}}. Sus normas de altura, superficie construida y uso las fija la ordenanza del PD y su tabla de volumen, no las tablas de distrito base del Título 17; las cifras de distrito base de esta página no se aplican a ella.",
+        "landmark": "{{name}} es un Hito de Chicago o está en un distrito de hitos: un permiso para alterar, demoler o construir requiere la aprobación por escrito de la Comisión de Hitos de Chicago (§2-120-740). Esta página no evalúa esa revisión.",
+        "chrs_demolition_delay": "La Encuesta de Recursos Históricos de Chicago clasifica este edificio en {{color}}: un permiso de demolición puede retenerse hasta 90 días para que el Departamento de Planificación y Desarrollo explore su preservación (§14A-4-407.6).",
+        "recently_rezoned": "Este distrito fue modificado por una ordenanza con fecha {{date}}. El mapa de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada; confirme el distrito vigente con el Departamento de Planificación y Desarrollo.",
+        "adu_limits": "Las casas de carruaje y unidades de conversión aquí tienen las limitaciones de la zona de ADU ({{zone}}). Confirme que sigan disponibles antes de confiar en una.",
+        "aldermanic": "Las enmiendas al mapa de zonificación, los Desarrollos Planificados, los usos especiales y los ajustes administrativos requieren aviso al concejal del distrito (§17-13-0100, §17-13-0300, §17-13-0600), y que un proyecto sea aprobado depende de aprobaciones discrecionales que esta página no puede evaluar.",
+        "map_lag": "El mapa de zonificación de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada.",
+        "code_vintage": "El texto del Código Municipal usado aquí está vigente hasta {{date}}; una enmienda posterior del Concejo puede no estar reflejada.",
+        "official_letter": "Esta página es una herramienta de evaluación preliminar, no una determinación de zonificación. La Carta de Verificación de Zonificación de la Ciudad confirma la zonificación de una parcela (${{fee}}, hasta {{days}} días, según publica la Oficina del Administrador de Zonificación, verificado {{checked}}); una carta de opinión cubre un proyecto específico.",
+        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development.",
+        "passed_district": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
+      }
+    },
+    "resolution": {
+      "matchedBy": "Identificada mediante {{method}}",
+      "gap": "punto de dirección a {{ft}} ft del centro de la parcela",
+      "multiple": "Esta dirección corresponde a {{n}} parcelas",
+      "disagree": "— los dos registros de direcciones del condado nombran parcelas distintas",
+      "condo": "Este es un edificio de condominios: {{n}} unidades tienen cada una su propio PIN",
+      "more": "y {{n}} más",
+      "used": "la que se muestra",
+      "method": {
+        "coordinates": "el punto que indicó",
+        "pin": "el PIN que indicó",
+        "address_points": "Cook County Address Points",
+        "assessor_addresses": "las Direcciones de Parcelas del Tasador",
+        "geocode_nearest": "solo el punto geocodificado (parcela más cercana, aproximada)",
+        "geocode_nearest_verified": "la parcela más cercana, confirmada por su propia dirección"
+      },
+      "source": {
+        "address_points": "Address Points",
+        "assessor_addresses": "Tasador"
+      },
+      "unconfirmed": {
+        "property_record_is_another_parcel": "Identidad sin confirmar: el registro de la dirección nombra la parcela {{pin}}, pero los datos de parcelas del condado no tienen registro de ella, por lo que las cifras de propiedad, impuestos y comparables pueden describir una parcela vecina ({{other}}).",
+        "nearest_parcel_address_mismatch": "Identidad sin confirmar: esta dirección no coincidió con un registro de parcela, por lo que se muestra la parcela más cercana al punto geocodificado sin confirmación."
+      }
+    },
+    "codeSource": {
+      "loading": "Cargando el texto del código…",
+      "unavailable": "El texto del código no está disponible por ahora.",
+      "open": "Ver el texto del Código Municipal de donde proviene",
+      "vintage": "Código Municipal vigente hasta {{date}}. Una enmienda posterior del Concejo puede no estar reflejada."
+    },
     "zoningCard": {
       "title": "Zonificación",
       "far": "FAR máx.",
@@ -135,7 +184,17 @@
       "farHeadroom": "{{pct}}% de la envolvente de pleno derecho sin usar",
       "setByPdOrdinance": "Definido por la ordenanza del PD",
       "pdOrdinance": "Ordenanza del PD",
-      "minLotArea": "Área mínima de lote"
+      "minLotArea": "Área mínima de lote",
+      "minLotAreaPerUnit": "Área mín. de lote por unidad",
+      "recentlyRezoned": "Rezonificado por una ordenanza con fecha {{date}} — las normas siguientes son las del nuevo distrito.",
+      "zoningRecordUpdated": "Registro de zonificación actualizado",
+      "codeCurrentThrough": "Código Municipal vigente hasta",
+      "maxUnitsByLotArea": "Unidades máx. por área de lote",
+      "unitYieldCaveat": "El área de lote por unidad es un solo límite. El FAR, la altura, el estacionamiento y otras normas pueden permitir menos unidades; las exenciones pueden permitir más.",
+      "laterAmendments_one": "{{count}} later amendment",
+      "laterAmendments_other": "{{count}} later amendments",
+      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows.",
+      "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",
@@ -161,9 +220,12 @@
         "tif": "En el distrito TIF {{name}}",
         "ez": "En una Zona Empresarial de Illinois — alivio de impuestos sobre ventas y tarifas",
         "distressIncentive": "En un tracto QCT/NMTC — elegible para créditos fiscales de áreas en dificultad",
-        "tod": "Elegible para TOD — menos estacionamiento obligatorio y bono de densidad",
-        "adu": "Elegible para ADU — se permiten unidades de vivienda adicionales",
-        "landmark": "Designación de hito — prevé revisión de diseño (más tiempo y costo)",
+        "tod": "Distrito -3 cerca del transporte — posible bono de densidad con enmienda Tipo 1, PD o ARO; reducción de estacionamiento por derecho",
+        "todParking": "Cerca del transporte — el estacionamiento mínimo puede reducirse hasta {{pct}}%; sin bono de densidad en {{zone}}",
+        "todParkingGeneric": "Cerca del transporte — el estacionamiento mínimo puede reducirse; sin bono de densidad salvo en distritos -3",
+        "todPd": "Desarrollo planificado cerca del transporte — la ordenanza del PD regula estacionamiento y densidad",
+        "adu": "Área de ADU permitida en RS — se permite una casa de carruaje o unidad de conversión, con los límites de esta zona",
+        "landmark": "Designación de hito — la Comisión de Hitos de Chicago debe aprobar por escrito toda alteración, demolición o nueva construcción",
         "historic": "Distrito histórico — los cambios exteriores se revisan",
         "flood": "Zona de inundación FEMA {{zone}} — construcción resistente y seguro",
         "lakefront": "Distrito de Protección del Lago — aplica revisión adicional",
@@ -182,10 +244,17 @@
       "caveat": {
         "unverified": "Identidad de parcela sin confirmar — las cifras de propiedad y comparables podrían ser de una parcela vecina. Verifique el PIN antes de confiar en ellas.",
         "noBldgArea": "El tamaño del edificio existente es incierto, así que no estimamos cuánta de la superficie permitida ya está en uso.",
+        "recentlyRezoned": "Este distrito fue modificado por una ordenanza con fecha {{date}}. El mapa de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada — confirme el distrito vigente con el Departamento de Planificación y Desarrollo.",
+        "complexBldg": "La superficie construida está registrada para un complejo de {{n}} parcelas ({{sqft}} ft² en total), no para este lote, por lo que la superficie existente es desconocida.",
         "fallbackZone": "La zonificación mostrada es un valor por defecto de categoría, no una consulta específica de la parcela.",
         "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}.",
         "scofflaw": "En la Lista de Infractores del Código de Construcción — hay acciones de cumplimiento sin resolver contra este edificio; presupueste su corrección.",
-        "strProhibited": "Los alquileres de corto plazo están prohibidos en esta cuadra (exclusión voluntaria del distrito electoral) — relevante si proyecta ingresos de STR."
+        "strProhibited": "Los alquileres de corto plazo están prohibidos en esta cuadra (exclusión voluntaria del distrito electoral) — relevante si proyecta ingresos de STR.",
+        "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review.",
+        "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date.",
+        "zoningUnchecked": "The City's zoning map didn't answer today, so this read can't say what district the parcel is in or what that district allows.",
+        "floodUnchecked": "The FEMA flood zone couldn't be checked today (FEMA's flood map didn't answer), so this verdict can't rule out a floodplain constraint.",
+        "landmarkDesignationPassed": "A Chicago Landmark designation listing this address passed {{date}} and the City's map doesn't show it for this parcel — a Commission on Chicago Landmarks review may apply that this read can't rule out."
       },
       "next": {
         "strong": {
@@ -268,7 +337,7 @@
       "scope": "— describe {{area}}, no esta parcela"
     },
     "segmentPrompt": {
-      "question": "¿Qué te describe mejor?",
+      "question": "¿Cuál describe mejor su situación?",
       "hint": "Un toque — nos ayuda a construir para las personas correctas.",
       "thanks": "Gracias — anotado.",
       "dismiss": "Descartar",
@@ -295,8 +364,8 @@
       "title": "Preguntas rápidas",
       "groundedOn": "Respuestas sobre {{address}}",
       "notSaved": "no se guarda",
-      "startersHint": "Pregunta lo que quieras sobre esta parcela, o empieza con una de estas:",
-      "placeholder": "Pregunta sobre esta parcela…",
+      "startersHint": "Pregunte lo que desee sobre esta parcela, o comience con una de estas:",
+      "placeholder": "Pregunte sobre esta parcela…",
       "send": "Enviar",
       "escalate": "Continuar en el analista completo",
       "minimize": "Minimizar"
@@ -375,7 +444,9 @@
       "recordViolations_other": "{{count}} infracciones registradas en esta dirección ({{open}} abiertas).",
       "recordClean": "Sin infracciones registradas en esta dirección.",
       "record311_other": "La dirección registró {{count}} solicitudes 311 en el último año.",
-      "record311_one": "La dirección registró {{count}} solicitud 311 en el último año."
+      "record311_one": "La dirección registró {{count}} solicitud 311 en el último año.",
+      "marketWithheld_one": "Only {{count}} comparable sale nearby, too few to state a median.",
+      "marketWithheld_other": "Only {{count}} comparable sales nearby, too few to state a median."
     },
     "map": {
       "satellite": "Satélite",
@@ -384,7 +455,37 @@
       "compsLegend_other": "{{count}} ventas comparables",
       "keyParcel": "Esta parcela",
       "keyTransit": "Estación de transporte",
-      "keyEz": "Zona Empresarial"
+      "keyEz": "Zona Empresarial",
+      "layers": "Layers",
+      "controlAria": "{{source}} visibility",
+      "control": {
+        "on": "On",
+        "dim": "Dim",
+        "off": "Off"
+      },
+      "count": {
+        "district_one": "{{count}} district",
+        "district_other": "{{count}} districts",
+        "feature_one": "{{count}} feature",
+        "feature_other": "{{count}} features"
+      },
+      "withheldCount_one": "{{count}} feature not shown",
+      "withheldCount_other": "{{count}} features not shown",
+      "sourceUnavailable": "Unavailable",
+      "sourceEmpty": "No features at this parcel.",
+      "layerUnavailable": "Map data unavailable for: {{layers}}.",
+      "sourceControl": {
+        "zoning": "Zoning",
+        "overlays": "Special-purpose boundaries",
+        "tif": "TIF districts",
+        "ez": "Enterprise Zones"
+      },
+      "source": {
+        "zoning": "zoning",
+        "overlays": "special-purpose boundaries",
+        "tif": "TIF districts",
+        "ez": "Enterprise Zones"
+      }
     },
     "crimeCurrent": "Período actual",
     "crimePrior": "Año anterior",
@@ -395,10 +496,6 @@
       "nearestDivvy": "Divvy más cercano",
       "divvyDocks_one": "{{count}} anclaje",
       "divvyDocks_other": "{{count}} anclajes",
-      "income": "Ingreso mediano",
-      "rent": "Renta mediana",
-      "population": "Población",
-      "ownerOcc": "{{pct}}% ocupado por dueños",
       "todEligible": "Elegible TOD"
     },
     "tips": {
@@ -408,7 +505,11 @@
       "compsTile": "Precio mediano de ventas de mercado de parcelas de clase similar en ¼ de milla durante los últimos 3 años.",
       "walkScore": "Walk Score (0–100) califica qué tan caminables son las diligencias diarias en esta ubicación. 90+ significa que rara vez se necesita auto.",
       "divvy": "Divvy es el sistema de bicicletas compartidas de Chicago. {{count}} estación(es) en servicio a menos de {{radius}} mi de esta parcela; los anclajes fuera de servicio no se cuentan.",
-      "transitScore": "Transit Score (0–100) califica el acceso al transporte público en esta ubicación."
+      "transitScore": "Transit Score (0–100) califica el acceso al transporte público en esta ubicación.",
+      "rentArea": "Median monthly gross rent (rent plus utilities) of the community area's renter households, summed from Census rent brackets for each tract in the area. A survey estimate, not a count; there is no area figure by bedroom count.",
+      "rentTract": "Median monthly gross rent (rent plus utilities) of renter households in this census tract, as the Census Bureau publishes it. A survey estimate with a margin of error.",
+      "rentAssessor": "The Assessor's model of what apartments in this community area earn: potential gross income per unit per month, before vacancy, taken from its valuation of buildings with 7 or more units in the latest city-wide reassessment. A model, not a rent anyone asked or paid, and not comparable with the Census figures. There is no figure by bedroom count.",
+      "rentBedroom": "Median monthly gross rent for units this size, as the Census Bureau publishes it for this census tract. Where the tract's figure is missing or too uncertain, the PUMA's is shown: a larger statistical area of several neighborhoods."
     },
     "walkDesc": {
       "walker_s_paradise": "Paraíso del peatón",
@@ -420,11 +521,75 @@
       "good_transit": "Buen transporte",
       "some_transit": "Algo de transporte",
       "minimal_transit": "Transporte mínimo"
+    },
+    "amendments": {
+      "listSummary_one": "Later amendment ({{count}})",
+      "listSummary_other": "Later amendments ({{count}})",
+      "status": {
+        "applied": "Reflected on this page",
+        "none": "Reviewed; not reflected on this page",
+        "pending": "Not yet reviewed"
+      },
+      "banner": {
+        "title_one": "This section was amended after this text was published.",
+        "title_other": "This section was amended after this text was published.",
+        "caveat_one": "The text below does not include that change.",
+        "caveat_other": "The text below does not include those changes."
+      },
+      "notCodified": {
+        "title": "§ {{section}} isn't in the published Municipal Code text yet",
+        "body_one": "An amendment passed after this text was published added or changed it. See the ordinance:",
+        "body_other": "Amendments passed after this text was published added or changed it. See the ordinances:"
+      }
+    },
+    "highRiskFlagsOurs": "Flag list is ours, chosen from 311 request types.",
+    "unchecked": {
+      "title": "Couldn't check today",
+      "body": "{{what}} didn't answer when this page loaded, so what's shown here may be incomplete. That isn't a \"no\": reload to try again.",
+      "mapLink": "City zoning map ↗"
+    },
+    "landmarkDesignation": {
+      "title": "A Chicago Landmark designation passed that the City's map doesn't show for this parcel yet",
+      "building": "{{what}} passed Council on {{date}} and lists this address.",
+      "district": "{{what}} passed Council on {{date}} and names the blocks of {{segment}}, which include this address. The ordinance sets the district's boundary, so this page can't say whether this parcel is inside it.",
+      "mapChecked": "The City's landmark map didn't show this parcel as a landmark when checked, so the overlays on this page may be missing a review requirement.",
+      "mapUnchecked": "The City's landmark map couldn't be checked today, so the overlays on this page may be missing a review requirement.",
+      "review": "A designated Chicago Landmark needs the Commission on Chicago Landmarks' written approval before a permit to alter, demolish or build can issue (§2-120-740)."
+    },
+    "rent": {
+      "title": "Rent",
+      "scope": "Census ACS {{period}} 5-year estimates, not listing prices",
+      "scopeNoPeriod": "Census ACS 5-year estimates, not listing prices",
+      "perMonth": "/mo",
+      "communityArea": "Area median",
+      "tract": "Tract median",
+      "1_bedroom": "1 bedroom",
+      "2_bedrooms": "2 bedrooms",
+      "3_bedrooms": "3 bedrooms",
+      "tractSub": "This census tract",
+      "pumaSub": "A wider area (a PUMA), not this tract",
+      "notPublished": "The Census publishes no usable median for this tract or its PUMA",
+      "pumaUnchecked": "Couldn't check the PUMA's figure today",
+      "areaUnchecked": "Couldn't check today",
+      "fallback": {
+        "suppressed": "The Census publishes no median for this tract, so this is the PUMA's.",
+        "low_confidence": "This tract's median is too uncertain to show, so this is the PUMA's."
+      },
+      "assessor": {
+        "title": "Assessor model",
+        "scope": "The County Assessor's {{year}} {{cycle}} model of apartment income, a separate series from the Census rents above. Not an asking or achieved rent.",
+        "label": "Modeled income per unit",
+        "perUnit": "/mo per unit",
+        "sub": "Median of {{buildings}} apartment buildings, before vacancy",
+        "none": "The Assessor's model includes no apartment buildings in this area",
+        "noFigure": "The model has no usable income figure for this area",
+        "unchecked": "Couldn't check today"
+      }
     }
   },
   "discovery": {
-    "teaserCount": "{{total}} parcelas coinciden — estás viendo {{shown}}.",
-    "teaserUnlock": "Desbloquea la lista completa, el mapa de potencial, el refinado y la exportación — Pro, $99/mes.",
+    "teaserCount": "{{total}} parcelas coinciden — usted está viendo {{shown}}.",
+    "teaserUnlock": "Desbloquee la lista completa, el mapa de potencial, el refinado y la exportación — Pro, $99/mes.",
     "unlockCta": "Desbloquear con Pro — $99/mes",
     "askAnalystArea": "Pregunte al analista sobre esta zona",
     "orAskAnalystArea": "O pregunte al analista sobre esta zona — gratis",
@@ -434,9 +599,58 @@
     "exportCsv": "Exportar CSV",
     "exportPro": "Exportar (Pro)",
     "title": "Descubrimiento de propiedades",
-    "subtitle": "Empieza con un objetivo o describe lo que buscas — luego refina.",
-    "searchPlaceholder": "Describe lo que buscas — p. ej. \"multifamiliar vacante cerca del L, construida después de 1990\"",
-    "searchAria": "Describe lo que buscas",
+    "subtitle": "Comience con un objetivo o describa lo que busca — luego refine.",
+    "searchPlaceholder": "Describa lo que busca, en inglés — p. ej. \"multifamily built before 1950 with a TIF\"",
+    "indexAsOf": "Índice generado el {{date}} · {{areas}}",
+    "indexAreasAll": "las {{count}} áreas comunitarias",
+    "indexAreasSome": "{{count}} áreas comunitarias",
+    "text": {
+      "example": "multifamily built before 1950 with a TIF",
+      "noneUnderstood": "No pude convertir “{{text}}” en filtros, así que no se hizo ninguna búsqueda.",
+      "notUnderstood": "No se entendió: {{words}}.",
+      "tryExample": "Pruebe, por ejemplo (en inglés, el único idioma que entiende este cuadro): “{{example}}”, o use los filtros.",
+      "understood": "De “{{text}}” entendí: {{filters}}.",
+      "understoodNothing": "No pude convertir “{{text}}” en filtros; la búsqueda usó solo los demás filtros."
+    },
+    "newSearch": "Nueva búsqueda",
+    "header": {
+      "noFilters": "Sin filtros",
+      "more": "+{{count}} más"
+    },
+    "addFilter": {
+      "button": "Agregar filtro",
+      "menuAria": "Agregar un filtro",
+      "editAria": "Editar filtro",
+      "search": "Buscar filtros",
+      "essentials": "Esenciales",
+      "more": "Más filtros",
+      "soon": "Próximamente ({{count}})",
+      "soonNote": "Aún no hay datos para estos en el índice.",
+      "noMatch": "Ningún filtro coincide.",
+      "inSearch": "En su búsqueda",
+      "back": "Todos los filtros",
+      "reset": "Restablecer este filtro",
+      "showResults": "Mostrar resultados ({{count}})",
+      "done": "Listo",
+      "discard": "Descartar cambios",
+      "heuristic": "heurístico",
+      "heuristicTip": "Una puntuación de 0 a 100 que calculamos a partir de la capacidad de zonificación sin usar y del valor del terreno frente al de la construcción. Es una heurística preliminar (v1) que ayuda a ordenar candidatos; no es un avalúo."
+    },
+    "start": {
+      "heading": "¿Qué busca?",
+      "recipes": "Comience con una receta",
+      "filtersLine": "Filtros: {{list}}",
+      "browse": "Explore un vecindario",
+      "browsePlaceholder": "Buscar entre {{count}} vecindarios",
+      "browseAria": "Buscar vecindarios",
+      "browseNone": "Ningún vecindario coincide.",
+      "all": "Comenzar con todas las parcelas",
+      "allNote": "Sin filtros: todo el índice, para que usted lo acote.",
+      "resumeHeading": "Continúe donde se quedó",
+      "resume": "Continuar",
+      "forget": "Olvidar"
+    },
+    "searchAria": "Describa lo que busca",
     "searching": "Buscando…",
     "search": "Buscar",
     "editFilters": "Editar filtros",
@@ -456,30 +670,48 @@
     "noMatchesTitle": "Ninguna parcela coincide con esta receta en el área indexada todavía.",
     "liveBadge": "● Activo · {{count}}",
     "coverageNone": "El Descubrimiento se está preparando — aún no hay parcelas indexadas. Los resultados aparecerán cuando se construya el índice.",
-    "coveragePartial": "Área indexada: {{areas}}. Se están añadiendo más vecindarios — los resultados se limitan a las áreas activas.",
+    "coveragePartial": "Área indexada: {{areas}}. Se están agregando más vecindarios — los resultados se limitan a las áreas activas.",
     "legendUpside": "Potencial de reurbanización",
     "legendLandUse": "Uso de la propiedad",
-    "mapTruncated": "Mostrando {{shown}} de {{total}} — refina para mapear el resto.",
+    "legendLandUseNoData": "Sin datos",
+    "mapTruncated": "Mostrando {{shown}} de {{total}} — refine la búsqueda para mapear el resto.",
+    "mapAria": "Mapa de resultados de Descubrimiento de propiedades",
+    "mapKey": "Leyenda del mapa",
+    "mapIdle": "Haga una búsqueda para ver en el mapa las parcelas que coinciden.",
+    "mapLoading": "Cargando el mapa de la búsqueda actual…",
+    "mapUnavailable": "El mapa no está disponible para esta búsqueda. Vuelva a ejecutar la búsqueda.",
+    "mapEmpty": "Ninguna parcela coincide con esta búsqueda.",
+    "mapNoCoordinates_one": "La parcela devuelta no tiene una ubicación válida en el mapa.",
+    "mapNoCoordinates_other": "Ninguna de las {{count}} parcelas devueltas tiene una ubicación válida en el mapa.",
+    "mapShownOfTotal": "{{shown}} de {{total}} mostrados",
+    "mapPlotted_one": "{{plotted}} de {{returned}} parcela devuelta se muestra en el mapa.",
+    "mapPlotted_other": "{{plotted}} de {{returned}} parcelas devueltas se muestran en el mapa.",
+    "mapUnlocated_one": "1 parcela devuelta no tiene coordenadas válidas para el mapa.",
+    "mapUnlocated_other": "{{count}} parcelas devueltas no tienen coordenadas válidas para el mapa.",
+    "mapCapped_one": "1 coincidencia adicional queda fuera del límite del mapa.",
+    "mapCapped_other": "{{count}} coincidencias adicionales quedan fuera del límite del mapa.",
+    "mapSummary": "{{plotted}} parcelas en el mapa. {{unlocated}} se devolvieron sin coordenadas. {{omitted}} se omitieron por el límite del mapa.",
     "legendUpsideHigh": "Potencial 80+",
     "legendUpsideMid": "50–79",
     "legendUpsideLow": "< 50",
     "legendUpsideNoData": "Sin datos",
-    "setFilters": "Configura filtros y ejecuta una búsqueda.",
+    "setFilters": "Configure los filtros y ejecute una búsqueda.",
+    "searchUnavailable": "Los resultados de la búsqueda no están disponibles por el momento. Vuelva a realizar la búsqueda.",
     "parcelCount_one": "parcela",
     "parcelCount_other": "parcelas",
     "ignored": "Ignorado:",
     "conflictsConnector": "entra en conflicto con",
     "remove": "quitar {{label}}",
-    "broadSearch": "Búsqueda amplia — añade filtros para acotar.",
+    "broadSearch": "Búsqueda amplia — agregue filtros para acotar.",
     "excludedMissing": "{{count}} excluidas por falta de datos.",
     "showingAll": "Mostrando todas las {{count}}.",
     "zeroNullBacked_one": "Sin coincidencias — el filtro {{labels}} aún no tiene datos en este conjunto.",
     "zeroNullBacked_other": "Sin coincidencias — los filtros {{labels}} aún no tienen datos en este conjunto.",
     "zeroNonLive_one": "Sin coincidencias — {{names}} aún no está indexada. Área indexada: {{live}}.",
     "zeroNonLive_other": "Sin coincidencias — {{names}} aún no están indexadas. Área indexada: {{live}}.",
-    "zeroTooTight": "Sin coincidencias. Prueba a quitar:",
+    "zeroTooTight": "Sin coincidencias. Intente quitar:",
     "loadingMore": "Cargando más…",
-    "scrollMore": "Desplázate para ver más",
+    "scrollMore": "Desplácese para ver más",
     "near": "cerca de {{addr}}",
     "unitsCount_one": "{{count}} unidad",
     "unitsCount_other": "{{count}} unidades",
@@ -499,6 +731,7 @@
     "maxAria": "máximo {{name}}",
     "minSliderAria": "control deslizante de mínimo {{name}}",
     "maxSliderAria": "control deslizante de máximo {{name}}",
+    "editFilterAria": "Editar {{label}}",
     "removeFilterAria": "Quitar filtro {{name}}",
     "sumParcelsWhere": "Parcelas donde {{parts}}",
     "sumAllParcels": "Todas las parcelas",
@@ -552,10 +785,10 @@
       "improvement_ratio": "Proporción de mejora",
       "value_percentile": "Subvalorada vs. vecindario",
       "open_violations": "Infracciones de construcción abiertas",
-      "f311_redflags": "Denuncios 311 de alerta",
-      "floodplain": "Llanura de inundación",
+      "f311_redflags": "Solicitudes 311 de alerta",
+      "floodplain": "Zona inundable",
       "brownfield": "Cerca de sitio contaminado",
-      "crime_index": "Índice de criminalidad"
+      "crime_index": "Índice de delincuencia"
     },
     "enum": {
       "land_use": {
@@ -600,20 +833,20 @@
     },
     "topic": {
       "vacant_mf_transit": {
-        "label": "Terreno baldío, zonificado MF, cerca del transporte",
-        "description": "Lotes vacíos en zonificación multifamiliar RM/RT a ½ milla de una parada del L."
+        "label": "Terreno baldío en zonificación residencial cerca del transporte",
+        "description": "Lotes vacíos en distritos de zonificación residencial (RS, RT y RM) a ½ milla de una parada del L."
       },
       "teardown": {
         "label": "Candidatas a demolición",
-        "description": "Edificios que valen mucho menos que su terreno — jugadas clásicas de suelo."
+        "description": "Edificios que valen mucho menos que su terreno — jugadas clásicas de terreno."
       },
       "undervalued_mf": {
         "label": "Multifamiliar subvalorada",
         "description": "2–6 unidades en el cuartil inferior de $/pie² de su vecindario."
       },
       "underused_commercial_tif": {
-        "label": "Comercial infrautilizada en un TIF",
-        "description": "Las parcelas comerciales más baratas e infraconstruidas dentro de un distrito TIF."
+        "label": "Comercial subutilizada en un TIF",
+        "description": "Las parcelas comerciales más baratas y con menor aprovechamiento dentro de un distrito TIF."
       },
       "fresh_comps": {
         "label": "Comparables recientes (vendidas < 6 meses)",
@@ -621,7 +854,7 @@
       },
       "adu_2flats": {
         "label": "2–4 unidades aptas para ADU",
-        "description": "Multifamiliar pequeña en cuadras aptas para ADU — añade una casa de carruajes."
+        "description": "Multifamiliar pequeña en cuadras aptas para ADU — agregue una casa de carruajes."
       }
     },
     "sort": {
@@ -631,7 +864,7 @@
       "year_built": "año de construcción",
       "assessed_value": "valor de avalúo",
       "last_sale_price": "último precio de venta",
-      "sale_recency": "recencia de venta",
+      "sale_recency": "venta más reciente",
       "price_per_sf": "precio por pie²",
       "value_percentile": "percentil de valor",
       "upside_score": "potencial"
@@ -651,7 +884,18 @@
     },
     "clearAll": "Borrar todo ({{count}})",
     "metricAssessed": "tasación",
-    "metricPerSqft": "$ / pie² edif."
+    "metricPerSqft": "$ / pie² edif.",
+    "updateResults": "Actualizar resultados ({{count}})",
+    "updating": "Actualizando…",
+    "updatingAria": "Actualizando resultados. Se muestran los resultados anteriores hasta que lleguen los nuevos.",
+    "updateFailed": "No se pudo actualizar.",
+    "retry": "Reintentar",
+    "chipPending": "aún sin aplicar",
+    "chipPendingTitle": "Aún sin aplicar. Pulse Actualizar resultados.",
+    "restoreFilterAria": "Restaurar filtro {{name}}",
+    "restoreFilterTitle": "Quitado, aún sin aplicar. Haga clic para restaurar.",
+    "mapStale": "Resultados anteriores, actualizando",
+    "mapZoomToResults": "Ajustar a los resultados"
   },
   "settings": {
     "title": "Configuración",
@@ -666,38 +910,44 @@
     "planAdmin": "Admin",
     "manageSubscription": "Gestionar suscripción",
     "upgradeToPro": "Mejorar a Pro",
-    "freeBlurb": "Paga por informe — sin suscripción. Pro añade informes ilimitados y Discovery.",
-    "proBlurb": "Facturado mensualmente a través de Stripe. Gestiona o cancela cuando quieras.",
+    "freeBlurb": "Pague por informe — sin suscripción. Pro agrega informes ilimitados y Discovery.",
+    "proBlurb": "Facturado mensualmente a través de Stripe. Administre o cancele cuando desee.",
     "purchases": "Informes comprados",
     "purchasesEmpty": "Aún no has comprado informes.",
-    "purchasesEmptyCta": "Abre la Ficha de una parcela para comprar su informe de viabilidad de $25.",
+    "purchasesEmptyCta": "Abra la Ficha de una parcela para comprar su informe de viabilidad de $25.",
     "download": "Descargar PDF",
     "downloading": "Preparando…",
     "downloadFailed": "Error al descargar — inténtalo de nuevo.",
     "delete": "Eliminar",
     "deleteAccount": "Eliminar cuenta",
-    "deleteBlurb": "Elimina permanentemente tus conversaciones, archivos subidos y acceso. Los registros de compras se conservan para el historial de facturación.",
-    "deleteModalTitle": "¿Eliminar tu cuenta?",
-    "deleteModalBody": "Esto elimina permanentemente tus conversaciones, archivos subidos y enlaces compartidos, y cancela cualquier suscripción activa. No se puede deshacer.",
-    "deleteConfirmLabel": "Escribe “{{word}}” para confirmar",
+    "deleteBlurb": "Elimine permanentemente sus conversaciones, archivos cargados y acceso. Los registros de compras se conservan para el historial de facturación.",
+    "deleteModalTitle": "¿Eliminar su cuenta?",
+    "deleteModalBody": "Esto elimina permanentemente sus conversaciones, archivos cargados y enlaces compartidos, y cancela cualquier suscripción activa. No se puede deshacer.",
+    "deleteConfirmLabel": "Escriba “{{word}}” para confirmar",
     "deleteConfirmWord": "eliminar",
     "deleteConfirm": "Eliminar permanentemente",
     "deleting": "Eliminando…",
     "cancel": "Cancelar",
     "accessCode": "Código de acceso",
-    "accessCodePlaceholder": "Ingresa el código",
+    "accessCodePlaceholder": "Ingrese el código",
     "accessCodeApply": "Aplicar",
     "accessCodeApplying": "Aplicando…",
     "accessCodeSuccess": "Acceso anticipado activo hasta {{date}}.",
     "accessCodeInvalid": "Ese código no es válido.",
-    "accessCodeAlreadyUsed": "Ya has usado este código.",
+    "accessCodeAlreadyUsed": "Ya usó este código.",
     "accessCodeExhausted": "Este código alcanzó su límite de canjes.",
     "accessCodeError": "Algo salió mal — inténtalo de nuevo.",
-    "compBlurb": "Acceso anticipado — funciones Pro de cortesía hasta {{date}}."
+    "compBlurb": "Acceso anticipado — funciones Pro de cortesía hasta {{date}}.",
+    "downloadOriginal": "Original · {{date}}",
+    "downloadUpdated": "Updated copy",
+    "originalNote": "The original is the first report generated for this purchase, kept exactly as sold. The updated copy is a new report with today's data.",
+    "originalMissing": "The stored original couldn't be found. An updated copy is available.",
+    "sinceReport": "Facts changed since your report: {{what}}",
+    "sinceReportPartial": "Couldn't re-check everything today."
   },
   "notFound": {
     "title": "Página no encontrada",
-    "body": "No hay nada en esta dirección. Busca una propiedad de Chicago o explora parcelas.",
+    "body": "No hay nada en esta dirección. Busque una propiedad de Chicago o explore parcelas.",
     "lookup": "Buscar una dirección",
     "discover": "Explorar parcelas"
   }

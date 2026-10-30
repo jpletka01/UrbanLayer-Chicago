@@ -218,9 +218,9 @@ class TestChatEndpoint:
 
         events = _parse_sse_events(response.text)
         token_events = [e for e in events if e.get("type") == "token"]
-        assert len(token_events) == 2
-        assert token_events[0]["text"] == "Hello "
-        assert token_events[1]["text"] == "World"
+        # the model's two tokens, then the sources block appended for the crime feed the answer was given
+        assert [e["text"] for e in token_events[:2]] == ["Hello ", "World"]
+        assert len(token_events) == 3 and token_events[2]["text"].startswith("\n\n---\n**Sources for the data used**")
 
     def test_chat_streams_done_event(self, client, mock_plan, mock_context):
         with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \

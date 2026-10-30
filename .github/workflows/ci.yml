@@ -36,6 +36,13 @@ jobs:
       - name: Run eval scorer tests
         run: python -m pytest eval/test_judge.py eval/tests -q
 
+      # How old are the committed data artifacts (code vintage, zoning cache, transit stations, the answer
+      # key, the benchmark, the hand table)? Annotates the PR; never fails it (WS6 M5): a stale artifact
+      # must not block a hotfix deploy. The daily checker on the server is the real alarm.
+      - name: Committed artifact ages (warn only)
+        continue-on-error: true
+        run: python -m backend.data_health.artifacts --ci
+
       - uses: actions/setup-node@v7
         with:
           node-version-file: frontend/.nvmrc
@@ -122,6 +129,14 @@ jobs:
     needs: [test, lint, changes]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    # One deploy at a time. Two merges a minute apart ran two `up -d --build` at once
+    # and left production with no backend container (2026-10-28). A later run waits for
+    # the one in progress instead of cancelling it (cancelling mid-recreate is the same
+    # hazard); a still-waiting older run is replaced by the newest, which is safe because
+    # every deploy merges the latest origin/main.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
     # Branch rules on this environment (Settings → Environments) restrict who
     # and what can deploy; see deploy/hardening-runbook.md.
     environment: production

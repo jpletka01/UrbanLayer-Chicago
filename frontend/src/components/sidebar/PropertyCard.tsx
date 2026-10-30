@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PropertySummary } from "../../lib/types";
 import { formatDate } from "../../lib/format";
+import { useFact } from "../../lib/provenanceContext";
+import { ConfidenceCaption } from "../ui/Confidence";
 import { CollapsibleCard } from "./CollapsibleCard";
 import { ReportTeaser } from "./ReportTeaser";
 
@@ -22,12 +24,18 @@ function fmtDollar(n: number | null | undefined): string {
   return `$${n.toLocaleString()}`;
 }
 
-function KV({ label, value }: { label: string; value: string | null | undefined }) {
+/** A fact row. With a `fact` id, a caption appears under it when the figure is an estimate, our own
+    calculation, from an old dataset or low-confidence (the default-quiet rule); official records stay quiet. */
+function KV({ label, value, fact }: { label: string; value: string | null | undefined; fact?: string }) {
+  const entry = useFact(fact ?? "");
   if (!value || value === "—") return null;
   return (
-    <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-micro shrink-0">{label}</span>
-      <span className="text-text-primary text-micro font-mono text-right">{value}</span>
+    <div>
+      <div className="flex justify-between items-baseline gap-2">
+        <span className="text-text-muted text-micro shrink-0">{label}</span>
+        <span className="text-text-primary text-micro font-mono text-right">{value}</span>
+      </div>
+      <ConfidenceCaption entry={entry} size="micro" className="text-right" />
     </div>
   );
 }
@@ -95,6 +103,8 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
     : null;
 
   const hasFinancials = assessed != null || tax != null;
+  const taxEntry = useFact("property.tax_estimate");
+  const rateEntry = useFact("property.effective_rate");
 
   return (
     <CollapsibleCard title={t("property.title")} icon={BuildingIcon}>
@@ -111,16 +121,22 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
               naLabel={t("na.value")} naTitle={t("na.title")} />
           </div>
         )}
+        {hasFinancials && (
+          <div className="space-y-0.5 -mt-1">
+            <ConfidenceCaption entry={taxEntry} size="micro" prefix={t("property.annualTax")} />
+            <ConfidenceCaption entry={rateEntry} size="micro" prefix={t("property.effectiveRate")} />
+          </div>
+        )}
 
         <div className="space-y-1">
           <KV label={t("property.address")} value={data.address} />
           <KV label={t("property.pin")} value={data.pin14} />
           {classLabel && <KV label={t("property.class")} value={classLabel} />}
           {/* zeroes in the assessor characteristics feed are placeholders, not measurements — hide them */}
-          <KV label={t("property.buildingSqft")} value={data.bldg_sqft ? fmt(data.bldg_sqft) : null} />
-          <KV label={t("property.landSqft")} value={data.land_sqft ? fmt(data.land_sqft) : null} />
-          <KV label={t("property.stories")} value={data.stories ? String(data.stories) : null} />
-          <KV label={t("property.units")} value={data.units ? String(data.units) : null} />
+          <KV label={t("property.buildingSqft")} value={data.bldg_sqft ? fmt(data.bldg_sqft) : null} fact="property.bldg_sqft" />
+          <KV label={t("property.landSqft")} value={data.land_sqft ? fmt(data.land_sqft) : null} fact="property.land_sqft" />
+          <KV label={t("property.stories")} value={data.stories ? String(data.stories) : null} fact="property.stories" />
+          <KV label={t("property.units")} value={data.units ? String(data.units) : null} fact="property.units" />
           <KV label={t("property.rooms")} value={data.rooms ? String(data.rooms) : null} />
           <KV label={t("property.bedrooms")} value={data.bedrooms ? String(data.bedrooms) : null} />
           <KV label={t("property.baths")} value={baths} />

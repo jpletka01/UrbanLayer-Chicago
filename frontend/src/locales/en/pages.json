@@ -120,11 +120,60 @@
     "downloadCsv": "Download CSV",
     "downloadCsvShort": "CSV",
     "generating": "Generating...",
-    "dataAsOf": "Data as of {{date}}",
+    "dataAsOf": "Checked {{date}}",
     "someDataUnavailable": "Some data unavailable: {{sources}}",
     "nearestParcelCaveat": "We couldn't confirm the exact tax parcel for this address, so the property, tax, and comparable-sales figures below describe the nearest parcel — which may be a neighbor. Verify the PIN before relying on parcel-specific numbers.",
     "addressUnavailable": "Address unavailable",
     "vsPrior": "vs {{count}}",
+    "coverage": {
+      "title": "What this page doesn't cover",
+      "always": "True of every parcel ({{count}})",
+      "link": "Read more ↗",
+      "notes": {
+        "planned_development": "This parcel is in {{name}}. Its height, floor area and use standards are set by the PD ordinance and its bulk table, not by Title 17's base-district tables; the base-district numbers on this page do not apply to it.",
+        "landmark": "{{name}} is a Chicago Landmark or in a landmark district: a permit to alter, demolish or build needs the Commission on Chicago Landmarks' written approval (§2-120-740). This page does not assess that review.",
+        "chrs_demolition_delay": "The Chicago Historic Resources Survey color-codes this building {{color}}: a demolition permit may be held for up to 90 days so the Department of Planning and Development can explore preserving it (§14A-4-407.6).",
+        "recently_rezoned": "This district was changed by an ordinance dated {{date}}. The City's map can lag a passed amendment by up to 90 days, so confirm the current district with the Department of Planning and Development.",
+        "adu_limits": "Coach houses and conversion units here come with the ADU zone's limitations ({{zone}}). Confirm they are still available before relying on one.",
+        "aldermanic": "Zoning map amendments, Planned Developments, special uses and administrative adjustments require notice to the ward's alderman (§17-13-0100, §17-13-0300, §17-13-0600), and whether a project is approved turns on discretionary approvals this page cannot assess.",
+        "map_lag": "The City's zoning map can lag a passed amendment by up to 90 days.",
+        "code_vintage": "The Municipal Code text used here is current through {{date}}; a later Council amendment may not be reflected.",
+        "official_letter": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning (${{fee}}, up to {{days}} days, as published by the Office of the Zoning Administrator, checked {{checked}}); a letter of opinion covers a specific project.",
+        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development.",
+        "passed_district": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
+      }
+    },
+    "resolution": {
+      "matchedBy": "Matched by {{method}}",
+      "gap": "address point {{ft}} ft from the parcel's center",
+      "multiple": "This address maps to {{n}} parcels",
+      "disagree": "— the county's two address records name different ones",
+      "condo": "This is a condominium building: {{n}} units each have their own PIN",
+      "more": "and {{n}} more",
+      "used": "the one shown",
+      "method": {
+        "coordinates": "the point you gave",
+        "pin": "the PIN you gave",
+        "address_points": "Cook County Address Points",
+        "assessor_addresses": "the Assessor's Parcel Addresses",
+        "geocode_nearest": "the geocoded point only (nearest parcel, approximate)",
+        "geocode_nearest_verified": "the nearest parcel, confirmed by its own address"
+      },
+      "source": {
+        "address_points": "Address Points",
+        "assessor_addresses": "Assessor"
+      },
+      "unconfirmed": {
+        "property_record_is_another_parcel": "Identity unconfirmed: the address record names parcel {{pin}}, but the county's parcel data holds no record for it, so the property, tax and comparable figures below may describe a neighboring parcel ({{other}}).",
+        "nearest_parcel_address_mismatch": "Identity unconfirmed: this address didn't match a parcel record, so the nearest parcel to the geocoded point is shown without confirmation."
+      }
+    },
+    "codeSource": {
+      "loading": "Loading the code text…",
+      "unavailable": "The code text isn't available right now.",
+      "open": "See the Municipal Code text this comes from",
+      "vintage": "Municipal Code current through {{date}}. A later Council amendment may not be reflected."
+    },
     "zoningCard": {
       "title": "Zoning",
       "far": "Max FAR",
@@ -135,7 +184,17 @@
       "farHeadroom": "{{pct}}% of the as-of-right envelope unused",
       "setByPdOrdinance": "Set by PD ordinance",
       "pdOrdinance": "PD ordinance",
-      "minLotArea": "Min lot area"
+      "minLotArea": "Min lot area",
+      "minLotAreaPerUnit": "Min lot area per unit",
+      "recentlyRezoned": "Rezoned by an ordinance dated {{date}} — the standards below are the new district's.",
+      "zoningRecordUpdated": "Zoning record last updated",
+      "codeCurrentThrough": "Municipal Code current through",
+      "maxUnitsByLotArea": "Max units by lot area",
+      "unitYieldCaveat": "Lot area per unit is one limit. FAR, height, parking and other standards can allow fewer units; exemptions can allow more.",
+      "laterAmendments_one": "{{count}} later amendment",
+      "laterAmendments_other": "{{count}} later amendments",
+      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows.",
+      "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
     },
     "verdict": {
       "inTif": "in {{name}} TIF",
@@ -161,9 +220,12 @@
         "tif": "In the {{name}} TIF district",
         "ez": "In an Illinois Enterprise Zone — sales-tax and fee relief",
         "distressIncentive": "In a QCT/NMTC tract — eligible for distressed-area tax credits",
-        "tod": "TOD-eligible — reduced parking minimums and a density bonus",
-        "adu": "ADU-eligible — additional dwelling units permitted",
-        "landmark": "Landmark designation — expect design review (adds time and cost)",
+        "tod": "Transit-served dash-3 district — a density bonus is possible with a Type 1 amendment, PD or ARO entitlement; parking relief by right",
+        "todParking": "Transit-served — parking minimums can drop by up to {{pct}}%; no density bonus at {{zone}}",
+        "todParkingGeneric": "Transit-served — parking minimums can be reduced; no density bonus unless the district is dash-3",
+        "todPd": "Transit-served Planned Development — the PD ordinance governs parking and density",
+        "adu": "ADU-Allowed RS Area — a coach house or conversion unit is allowed, with this zone's limits",
+        "landmark": "Landmark designation — the Commission on Chicago Landmarks must approve alteration, demolition or new construction in writing",
         "historic": "Historic district — exterior changes are reviewed",
         "flood": "FEMA flood zone {{zone}} — flood-resistant construction and insurance",
         "lakefront": "Lakefront Protection district — additional review applies",
@@ -182,10 +244,17 @@
       "caveat": {
         "unverified": "Parcel identity unconfirmed — property and comps figures may be a neighboring parcel. Verify the PIN before relying on them.",
         "noBldgArea": "Existing building size is uncertain, so we didn't estimate how much of the allowed floor area is already used.",
+        "recentlyRezoned": "This district was changed by an ordinance dated {{date}}. The City's map can lag a passed amendment by up to 90 days — confirm the current district with the Department of Planning and Development.",
+        "complexBldg": "Building area is recorded for a {{n}}-parcel complex ({{sqft}} ft² in total), not for this lot, so existing floor area is unknown.",
         "fallbackZone": "Zoning shown is a category default, not a parcel-specific lookup.",
         "partial": "Some data sources were unavailable: {{sources}}.",
         "scofflaw": "On the Building Code Scofflaw List — unresolved enforcement against this building; budget for compliance.",
-        "strProhibited": "Short-term rentals are prohibited on this block (precinct owner opt-out) — relevant if you're underwriting STR income."
+        "strProhibited": "Short-term rentals are prohibited on this block (precinct owner opt-out) — relevant if you're underwriting STR income.",
+        "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review.",
+        "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date.",
+        "zoningUnchecked": "The City's zoning map didn't answer today, so this read can't say what district the parcel is in or what that district allows.",
+        "floodUnchecked": "The FEMA flood zone couldn't be checked today (FEMA's flood map didn't answer), so this verdict can't rule out a floodplain constraint.",
+        "landmarkDesignationPassed": "A Chicago Landmark designation listing this address passed {{date}} and the City's map doesn't show it for this parcel — a Commission on Chicago Landmarks review may apply that this read can't rule out."
       },
       "next": {
         "strong": {
@@ -375,7 +444,9 @@
       "recordViolations_other": "{{count}} violations on record at this address ({{open}} open).",
       "recordClean": "No violations on record at this address.",
       "record311_other": "The address logged {{count}} 311 service requests in the past year.",
-      "record311_one": "The address logged {{count}} 311 service request in the past year."
+      "record311_one": "The address logged {{count}} 311 service request in the past year.",
+      "marketWithheld_one": "Only {{count}} comparable sale nearby, too few to state a median.",
+      "marketWithheld_other": "Only {{count}} comparable sales nearby, too few to state a median."
     },
     "map": {
       "satellite": "Satellite",
@@ -384,7 +455,37 @@
       "compsLegend_other": "{{count}} comparable sales",
       "keyParcel": "This parcel",
       "keyTransit": "Transit station",
-      "keyEz": "Enterprise Zone"
+      "keyEz": "Enterprise Zone",
+      "layers": "Layers",
+      "controlAria": "{{source}} visibility",
+      "control": {
+        "on": "On",
+        "dim": "Dim",
+        "off": "Off"
+      },
+      "count": {
+        "district_one": "{{count}} district",
+        "district_other": "{{count}} districts",
+        "feature_one": "{{count}} feature",
+        "feature_other": "{{count}} features"
+      },
+      "withheldCount_one": "{{count}} feature not shown",
+      "withheldCount_other": "{{count}} features not shown",
+      "sourceUnavailable": "Unavailable",
+      "sourceEmpty": "No features at this parcel.",
+      "layerUnavailable": "Map data unavailable for: {{layers}}.",
+      "sourceControl": {
+        "zoning": "Zoning",
+        "overlays": "Special-purpose boundaries",
+        "tif": "TIF districts",
+        "ez": "Enterprise Zones"
+      },
+      "source": {
+        "zoning": "zoning",
+        "overlays": "special-purpose boundaries",
+        "tif": "TIF districts",
+        "ez": "Enterprise Zones"
+      }
     },
     "crimeCurrent": "Current period",
     "crimePrior": "Prior year",
@@ -395,10 +496,6 @@
       "nearestDivvy": "Nearest Divvy",
       "divvyDocks_one": "{{count}} dock",
       "divvyDocks_other": "{{count}} docks",
-      "income": "Median income",
-      "rent": "Median rent",
-      "population": "Population",
-      "ownerOcc": "{{pct}}% owner-occupied",
       "todEligible": "TOD-eligible"
     },
     "tips": {
@@ -408,7 +505,11 @@
       "compsTile": "Median price of arm's-length sales of similar-class parcels within ¼ mile over the last 3 years.",
       "walkScore": "Walk Score (0–100) rates daily-errand walkability at this location. 90+ means errands rarely need a car.",
       "divvy": "Divvy is Chicago's bike-share system. {{count}} in-service station(s) within {{radius}} mi of this parcel; out-of-service docks are not counted.",
-      "transitScore": "Transit Score (0–100) rates access to public transit at this location."
+      "transitScore": "Transit Score (0–100) rates access to public transit at this location.",
+      "rentArea": "Median monthly gross rent (rent plus utilities) of the community area's renter households, summed from Census rent brackets for each tract in the area. A survey estimate, not a count; there is no area figure by bedroom count.",
+      "rentTract": "Median monthly gross rent (rent plus utilities) of renter households in this census tract, as the Census Bureau publishes it. A survey estimate with a margin of error.",
+      "rentAssessor": "The Assessor's model of what apartments in this community area earn: potential gross income per unit per month, before vacancy, taken from its valuation of buildings with 7 or more units in the latest city-wide reassessment. A model, not a rent anyone asked or paid, and not comparable with the Census figures. There is no figure by bedroom count.",
+      "rentBedroom": "Median monthly gross rent for units this size, as the Census Bureau publishes it for this census tract. Where the tract's figure is missing or too uncertain, the PUMA's is shown: a larger statistical area of several neighborhoods."
     },
     "walkDesc": {
       "walker_s_paradise": "Walker's Paradise",
@@ -420,6 +521,70 @@
       "good_transit": "Good Transit",
       "some_transit": "Some Transit",
       "minimal_transit": "Minimal Transit"
+    },
+    "amendments": {
+      "listSummary_one": "Later amendment ({{count}})",
+      "listSummary_other": "Later amendments ({{count}})",
+      "status": {
+        "applied": "Reflected on this page",
+        "none": "Reviewed; not reflected on this page",
+        "pending": "Not yet reviewed"
+      },
+      "banner": {
+        "title_one": "This section was amended after this text was published.",
+        "title_other": "This section was amended after this text was published.",
+        "caveat_one": "The text below does not include that change.",
+        "caveat_other": "The text below does not include those changes."
+      },
+      "notCodified": {
+        "title": "§ {{section}} isn't in the published Municipal Code text yet",
+        "body_one": "An amendment passed after this text was published added or changed it. See the ordinance:",
+        "body_other": "Amendments passed after this text was published added or changed it. See the ordinances:"
+      }
+    },
+    "highRiskFlagsOurs": "Flag list is ours, chosen from 311 request types.",
+    "unchecked": {
+      "title": "Couldn't check today",
+      "body": "{{what}} didn't answer when this page loaded, so what's shown here may be incomplete. That isn't a \"no\": reload to try again.",
+      "mapLink": "City zoning map ↗"
+    },
+    "landmarkDesignation": {
+      "title": "A Chicago Landmark designation passed that the City's map doesn't show for this parcel yet",
+      "building": "{{what}} passed Council on {{date}} and lists this address.",
+      "district": "{{what}} passed Council on {{date}} and names the blocks of {{segment}}, which include this address. The ordinance sets the district's boundary, so this page can't say whether this parcel is inside it.",
+      "mapChecked": "The City's landmark map didn't show this parcel as a landmark when checked, so the overlays on this page may be missing a review requirement.",
+      "mapUnchecked": "The City's landmark map couldn't be checked today, so the overlays on this page may be missing a review requirement.",
+      "review": "A designated Chicago Landmark needs the Commission on Chicago Landmarks' written approval before a permit to alter, demolish or build can issue (§2-120-740)."
+    },
+    "rent": {
+      "title": "Rent",
+      "scope": "Census ACS {{period}} 5-year estimates, not listing prices",
+      "scopeNoPeriod": "Census ACS 5-year estimates, not listing prices",
+      "perMonth": "/mo",
+      "communityArea": "Area median",
+      "tract": "Tract median",
+      "1_bedroom": "1 bedroom",
+      "2_bedrooms": "2 bedrooms",
+      "3_bedrooms": "3 bedrooms",
+      "tractSub": "This census tract",
+      "pumaSub": "A wider area (a PUMA), not this tract",
+      "notPublished": "The Census publishes no usable median for this tract or its PUMA",
+      "pumaUnchecked": "Couldn't check the PUMA's figure today",
+      "areaUnchecked": "Couldn't check today",
+      "fallback": {
+        "suppressed": "The Census publishes no median for this tract, so this is the PUMA's.",
+        "low_confidence": "This tract's median is too uncertain to show, so this is the PUMA's."
+      },
+      "assessor": {
+        "title": "Assessor model",
+        "scope": "The County Assessor's {{year}} {{cycle}} model of apartment income, a separate series from the Census rents above. Not an asking or achieved rent.",
+        "label": "Modeled income per unit",
+        "perUnit": "/mo per unit",
+        "sub": "Median of {{buildings}} apartment buildings, before vacancy",
+        "none": "The Assessor's model includes no apartment buildings in this area",
+        "noFigure": "The model has no usable income figure for this area",
+        "unchecked": "Couldn't check today"
+      }
     }
   },
   "discovery": {
@@ -435,7 +600,56 @@
     "exportPro": "Export (Pro)",
     "title": "Property Discovery",
     "subtitle": "Start with a goal or describe what you're looking for — then refine.",
-    "searchPlaceholder": "Describe what you want — e.g. \"vacant multifamily near the L, built after 1990\"",
+    "searchPlaceholder": "Describe what you want — e.g. \"multifamily built before 1950 with a TIF\"",
+    "indexAsOf": "Index built {{date}} · {{areas}}",
+    "indexAreasAll": "all {{count}} community areas",
+    "indexAreasSome": "{{count}} community areas",
+    "text": {
+      "example": "multifamily built before 1950 with a TIF",
+      "noneUnderstood": "I couldn't turn “{{text}}” into filters, so no search was run.",
+      "notUnderstood": "Not understood: {{words}}.",
+      "tryExample": "Try, for example: “{{example}}”, or use the filters.",
+      "understood": "From “{{text}}” I understood: {{filters}}.",
+      "understoodNothing": "I couldn't turn “{{text}}” into filters; the search used only the other filters."
+    },
+    "newSearch": "New search",
+    "header": {
+      "noFilters": "No filters",
+      "more": "+{{count}} more"
+    },
+    "addFilter": {
+      "button": "Add filter",
+      "menuAria": "Add a filter",
+      "editAria": "Edit filter",
+      "search": "Search filters",
+      "essentials": "Essentials",
+      "more": "More filters",
+      "soon": "Coming soon ({{count}})",
+      "soonNote": "No data for these in the index yet.",
+      "noMatch": "No filter matches that.",
+      "inSearch": "In your search",
+      "back": "All filters",
+      "reset": "Reset this filter",
+      "showResults": "Show results ({{count}})",
+      "done": "Done",
+      "discard": "Discard changes",
+      "heuristic": "heuristic",
+      "heuristicTip": "A 0–100 score we calculate from unused zoning capacity and land-versus-building value. A rough v1 heuristic that helps rank candidates; it is not an appraisal."
+    },
+    "start": {
+      "heading": "What are you looking for?",
+      "recipes": "Start from a recipe",
+      "filtersLine": "Filters: {{list}}",
+      "browse": "Browse a neighborhood",
+      "browsePlaceholder": "Search {{count}} neighborhoods",
+      "browseAria": "Search neighborhoods",
+      "browseNone": "No neighborhood matches that.",
+      "all": "Start with all parcels",
+      "allNote": "No filters: the whole index, so you can narrow it yourself.",
+      "resumeHeading": "Pick up where you left off",
+      "resume": "Resume",
+      "forget": "Forget it"
+    },
     "searchAria": "Describe what you're looking for",
     "searching": "Searching…",
     "search": "Search",
@@ -459,12 +673,30 @@
     "coveragePartial": "Indexed area: {{areas}}. More neighborhoods are being added — results are limited to live areas.",
     "legendUpside": "Redevelopment upside",
     "legendLandUse": "Property use",
+    "legendLandUseNoData": "No data",
     "mapTruncated": "Mapping {{shown}} of {{total}} — refine to map the rest.",
+    "mapAria": "Property Discovery results map",
+    "mapKey": "Map key",
+    "mapIdle": "Run a search to map matching parcels.",
+    "mapLoading": "Loading the current search map…",
+    "mapUnavailable": "The map is unavailable for this search. Try running the search again.",
+    "mapEmpty": "No parcels match this search.",
+    "mapNoCoordinates_one": "The returned parcel does not have a valid map location.",
+    "mapNoCoordinates_other": "None of the {{count}} returned parcels has a valid map location.",
+    "mapShownOfTotal": "{{shown}} of {{total}} shown",
+    "mapPlotted_one": "{{plotted}} of {{returned}} returned parcel plotted.",
+    "mapPlotted_other": "{{plotted}} of {{returned}} returned parcels plotted.",
+    "mapUnlocated_one": "1 returned parcel lacks valid map coordinates.",
+    "mapUnlocated_other": "{{count}} returned parcels lack valid map coordinates.",
+    "mapCapped_one": "1 additional match is outside the map cap.",
+    "mapCapped_other": "{{count}} additional matches are outside the map cap.",
+    "mapSummary": "{{plotted}} parcels plotted. {{unlocated}} returned without coordinates. {{omitted}} omitted by the map cap.",
     "legendUpsideHigh": "Upside 80+",
     "legendUpsideMid": "50–79",
     "legendUpsideLow": "< 50",
     "legendUpsideNoData": "No data",
     "setFilters": "Set filters and run a search.",
+    "searchUnavailable": "Search results are temporarily unavailable. Please run the search again.",
     "parcelCount_one": "parcel",
     "parcelCount_other": "parcels",
     "ignored": "Ignored:",
@@ -499,6 +731,7 @@
     "maxAria": "maximum {{name}}",
     "minSliderAria": "minimum {{name}} slider",
     "maxSliderAria": "maximum {{name}} slider",
+    "editFilterAria": "Edit {{label}}",
     "removeFilterAria": "Remove {{name}} filter",
     "sumParcelsWhere": "Parcels where {{parts}}",
     "sumAllParcels": "All parcels",
@@ -600,8 +833,8 @@
     },
     "topic": {
       "vacant_mf_transit": {
-        "label": "Vacant land, MF-zoned, near transit",
-        "description": "Empty lots in RM/RT multifamily zoning within ½ mile of an L stop."
+        "label": "Vacant land in residential zoning near transit",
+        "description": "Empty lots in residential zoning districts (RS, RT and RM) within ½ mile of an L stop."
       },
       "teardown": {
         "label": "Teardown candidates",
@@ -651,7 +884,18 @@
     },
     "clearAll": "Clear all ({{count}})",
     "metricAssessed": "assessed",
-    "metricPerSqft": "$ / bldg sqft"
+    "metricPerSqft": "$ / bldg sqft",
+    "updateResults": "Update results ({{count}})",
+    "updating": "Updating…",
+    "updatingAria": "Updating results. Showing the previous results until the new ones load.",
+    "updateFailed": "Couldn't update.",
+    "retry": "Retry",
+    "chipPending": "not applied yet",
+    "chipPendingTitle": "Not applied yet. Press Update results.",
+    "restoreFilterAria": "Restore {{name}} filter",
+    "restoreFilterTitle": "Removed, not applied yet. Click to restore.",
+    "mapStale": "Previous results, updating",
+    "mapZoomToResults": "Zoom to results"
   },
   "settings": {
     "title": "Settings",
@@ -693,7 +937,13 @@
     "accessCodeAlreadyUsed": "You've already used this code.",
     "accessCodeExhausted": "This code has reached its redemption limit.",
     "accessCodeError": "Something went wrong — please try again.",
-    "compBlurb": "Early access — complimentary Pro features until {{date}}."
+    "compBlurb": "Early access — complimentary Pro features until {{date}}.",
+    "downloadOriginal": "Original · {{date}}",
+    "downloadUpdated": "Updated copy",
+    "originalNote": "The original is the first report generated for this purchase, kept exactly as sold. The updated copy is a new report with today's data.",
+    "originalMissing": "The stored original couldn't be found. An updated copy is available.",
+    "sinceReport": "Facts changed since your report: {{what}}",
+    "sinceReportPartial": "Couldn't re-check everything today."
   },
   "notFound": {
     "title": "Page not found",

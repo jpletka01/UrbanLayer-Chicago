@@ -38,6 +38,132 @@ _DIRECTION_WORD = {"N": "NORTH", "S": "SOUTH", "E": "EAST", "W": "WEST"}
 _PIN14_RE = re.compile(r"\d{14}")
 
 
+async def _query_address_points(parsed: dict, *, client: httpx.AsyncClient | None = None) -> list[dict]:
+    """The Address Points rows (pin, lat, long) for a parsed Chicago address. Raises on
+    a query error so each caller decides how to degrade."""
+    settings = get_settings()
+    # Columns confirmed against the live 78yw-iddh schema: add_number, st_predir
+    # (spelled-out word, e.g. "WEST"), st_name (no suffix), pin, lat, long (note:
+    # `long`, not `lon`). inc_muni scopes the match to Chicago — the dataset is
+    # county-wide, and an unscoped number+direction+street match collides with
+    # suburban rows (1401 W 19th St also exists in Maywood/Berwyn): at best a
+    # false multi-match fall-through, at worst a unique *suburban* parcel
+    # returned as this Chicago address's identity.
+    number, direction, name = parsed["number"], parsed["direction"], parsed["name"]
+    dir_word = _DIRECTION_WORD.get(direction, direction)
+    params = {
+        "$where": (
+            f"add_number='{number}' "
+            f"AND upper(st_predir) in ('{direction}','{dir_word}') "
+            f"AND upper(st_name)='{name.upper()}' "
+            "AND inc_muni='Chicago'"
+        ),
+        "$select": "pin,lat,long",
+        "$limit": settings.limit_address_points,
+    }
+    return await socrata_get(
+        settings.dataset_address_points,
+        params,
+        client=client,
+        base_url=settings.cook_county_socrata_base,
+        app_token=settings.cook_county_socrata_token or None,
+    )
+
+
+def _distinct_pins(rows: list[dict]) -> set[str]:
+    """Distinct WELL-FORMED PINs in Address Points rows. A Cook County PIN is exactly
+    14 digits; the dataset carries a handful of corrupt rows (13/15-digit PINs, e.g.
+    1620 N Orchard, 1401-11 W 19th, found 2026-07-07) and zfill alone would left-pad a
+    short one into a *different, nonexistent* PIN served as authoritative identity.
+    Malformed PINs are dropped, never repaired."""
+    pins = {
+        cleaned
+        for r in rows
+        if _PIN14_RE.fullmatch(cleaned := str(r.get("pin", "")).replace("-", ""))
+    }
+    pins.discard("00000000000000")
+    return pins
+
+
+async def address_point_pins(address: str, *, client: httpx.AsyncClient | None = None) -> list[str]:
+    """EVERY distinct well-formed PIN Address Points holds for this address (sorted),
+    not just a unique one: lets the Profile say "this address maps to N parcels".
+    Empty on no match, an unparseable address or a query error."""
+    parsed = parse_chicago_address(address)
+    if not parsed:
+        return []
+    key = f"addr_pins:{parsed['number']}:{parsed['direction']}:{parsed['name']}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return list(cached) if cached is not _NOT_FOUND else []
+    try:
+        pins = sorted(_distinct_pins(await _query_address_points(parsed, client=client)))
+    except Exception as exc:
+        log.warning("Address-point candidate lookup failed for %r: %s", address, exc)
+        return []
+    _cache.set(key, pins or _NOT_FOUND)
+    return pins
+
+
+# An ordinance's legal description can name a range of thousands of numbers; Address Points holds
+# one row per address point, so the cap is a safety net, not a tuning knob.
+_RANGE_LIMIT = 5000
+
+
+async def pins_in_range(
+    *, direction: str, names: list[str], types: list[str], lo: int, hi: int, side: str = "both",
+    client: httpx.AsyncClient | None = None,
+) -> list[dict]:
+    """Every well-formed parcel with an address point on one block-range of one street:
+    ``[{pin, lat, lon, number, name}]`` (one row per distinct PIN, lowest number kept).
+
+    ``names`` are the spellings to try for the street ("FIFTH", "5TH"); ``types`` the street
+    type forms ("AVE", "AVENUE"). ``side`` is "odd", "even" or "both" (WS1 parity rule).
+    Chicago only (the dataset is county-wide). Raises on a query error: the daily sync records
+    that as a failed check rather than as "no parcels".
+    """
+    settings = get_settings()
+    dir_word = _DIRECTION_WORD.get(direction, direction)
+
+    def quoted(values: list[str]) -> str:
+        return ",".join("'" + v.replace("'", "''").upper() + "'" for v in values)
+
+    params = {
+        "$where": (
+            "inc_muni='Chicago' "
+            f"AND upper(st_predir) in ('{direction}','{dir_word}') "
+            f"AND upper(st_name) in ({quoted(names)}) "
+            f"AND upper(st_postyp) in ({quoted(types)}) "
+            f"AND add_number::number between {int(lo)} and {int(hi)}"
+        ),
+        "$select": "pin,lat,long,add_number,st_name",
+        "$limit": _RANGE_LIMIT,
+    }
+    rows = await socrata_get(
+        settings.dataset_address_points, params, client=client,
+        base_url=settings.cook_county_socrata_base, app_token=settings.cook_county_socrata_token or None,
+    )
+    out: dict[str, dict] = {}
+    for r in rows or []:
+        try:
+            number = int(str(r.get("add_number", "")).strip())
+        except (TypeError, ValueError):
+            continue
+        if side == "odd" and number % 2 == 0 or side == "even" and number % 2 == 1:
+            continue
+        pin = str(r.get("pin", "")).replace("-", "")
+        if not _PIN14_RE.fullmatch(pin) or pin == "00000000000000":
+            continue
+        try:
+            lat, lon = float(r["lat"]), float(r["long"])
+        except (KeyError, TypeError, ValueError):
+            lat = lon = None
+        row = {"pin": pin, "lat": lat, "lon": lon, "number": number, "name": str(r.get("st_name", "")).upper()}
+        if pin not in out or number < out[pin]["number"]:
+            out[pin] = row
+    return sorted(out.values(), key=lambda x: x["pin"])
+
+
 async def address_to_pin(
     address: str,
     *,
@@ -63,33 +189,8 @@ async def address_to_pin(
     if cached is not None:
         return cached
 
-    settings = get_settings()
-    # Columns confirmed against the live 78yw-iddh schema: add_number, st_predir
-    # (spelled-out word, e.g. "WEST"), st_name (no suffix), pin, lat, long (note:
-    # `long`, not `lon`). inc_muni scopes the match to Chicago — the dataset is
-    # county-wide, and an unscoped number+direction+street match collides with
-    # suburban rows (1401 W 19th St also exists in Maywood/Berwyn): at best a
-    # false multi-match fall-through, at worst a unique *suburban* parcel
-    # returned as this Chicago address's identity.
-    dir_word = _DIRECTION_WORD.get(direction, direction)
-    params = {
-        "$where": (
-            f"add_number='{number}' "
-            f"AND upper(st_predir) in ('{direction}','{dir_word}') "
-            f"AND upper(st_name)='{name.upper()}' "
-            "AND inc_muni='Chicago'"
-        ),
-        "$select": "pin,lat,long",
-        "$limit": settings.limit_address_points,
-    }
     try:
-        rows = await socrata_get(
-            settings.dataset_address_points,
-            params,
-            client=client,
-            base_url=settings.cook_county_socrata_base,
-            app_token=settings.cook_county_socrata_token or None,
-        )
+        rows = await _query_address_points(parsed, client=client)
     except Exception as exc:
         log.warning("Address-point lookup failed for %r: %s", address, exc)
         return None
@@ -98,18 +199,8 @@ async def address_to_pin(
         _cache.set(key, _NOT_FOUND)
         return None
 
-    # A confident match is a single distinct WELL-FORMED PIN. A Cook County PIN
-    # is exactly 14 digits; Address Points carries a handful of corrupt rows
-    # (13/15-digit PINs — e.g. 1620 N Orchard, 1401-11 W 19th, found 2026-07-07)
-    # and zfill alone would left-pad a short one into a *different, nonexistent*
-    # PIN ("1433314059000" → township-01) served as authoritative identity.
-    # Malformed PINs are treated as no-match → fall through to step 3.5/degraded.
-    distinct_pins = {
-        cleaned
-        for r in rows
-        if _PIN14_RE.fullmatch(cleaned := str(r.get("pin", "")).replace("-", ""))
-    }
-    distinct_pins.discard("00000000000000")
+    # A confident match is a single distinct WELL-FORMED PIN (see _distinct_pins).
+    distinct_pins = _distinct_pins(rows)
     if len(distinct_pins) != 1:
         log.info(
             "Address-point multi/zero-match for %r (%d distinct PINs) — not confident",

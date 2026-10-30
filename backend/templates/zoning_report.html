@@ -68,6 +68,11 @@ tr { page-break-inside: avoid; }
 }
 .cover .meta { margin-top: 40pt; font-size: 9pt; color: #6b7280; }
 .cover .meta div { margin-bottom: 4pt; }
+.cover .dates { text-align: left; margin-top: 10pt; padding: 6pt 9pt; border: 1pt solid #e5e7eb; border-radius: 4pt; font-size: 8pt; color: #374151; page-break-inside: avoid; }
+.cover .dates .dates-title { font-weight: 700; text-transform: uppercase; letter-spacing: 0.6pt; font-size: 7pt; color: #6b7280; margin-bottom: 3pt; }
+.cover .dates ul { list-style: none; margin: 0; padding: 0; column-count: 2; column-gap: 14pt; }
+.cover .dates li { margin: 0 0 2pt; break-inside: avoid; }
+.cover .dates .dates-missing { margin-top: 4pt; color: #b45309; }
 .cover .badge {
   display: inline-block;
   background: #2563eb;
@@ -276,6 +281,10 @@ tr.summary td { border-top: 2px solid #374151; font-weight: 600; }
 }
 
 /* Disclaimer */
+/* WS0 M5: confidence captions under figures (quiet by default; see report_provenance.py) */
+.conf { font-size: 7.5pt; color: #6b7280; line-height: 1.35; margin: 2pt 0 5pt 0; }
+.conf-ai { font-family: "JetBrains Mono", monospace; font-size: 6.5pt; border: 0.5pt solid #9ca3af; border-radius: 2pt; padding: 0 2pt; margin-right: 3pt; color: #374151; }
+.conf-low { color: #b45309; font-weight: 600; }
 .disclaimer {
   background: #fef3c7;
   border: 1px solid #f59e0b;
@@ -345,6 +354,32 @@ a.glossary-link {
 </style>
 </head>
 <body>
+{# A figure's confidence caption: nothing for a standard official record, else who read it, how old, how sure. #}
+{% macro conf_line(fact) %}{% set c = conf_caption(fact) %}{% if c %}<div class="conf" data-conf="{{ fact }}">{% if c.ai %}<span class="conf-ai">{{ t("conf.ai") }}</span>{% endif %}{% if c.lead %}<span class="conf-low">{{ c.lead }}</span>{% if c.text %} · {% endif %}{% endif %}{{ c.text }}</div>{% endif %}{% endmacro %}
+
+
+{# A section that left a source out says so at its head (WS6 M7): missing is not "none on record". #}
+{% macro unchecked_note(keys) %}
+  {% set f = failed_in(*keys) %}
+  {% if f %}<p class="section-note" data-testid="section-unchecked"><span class="status-warn">{{ t("data.unchecked_section") }}</span> {{ t("data.unchecked_section_body", items=f | join(", ")) }}</p>{% endif %}
+{% endmacro %}
+
+{% macro currency_table(rows) %}
+  <table>
+    <thead><tr><th>{{ t("currency.th_passed") }}</th><th>{{ t("currency.th_record") }}</th><th>{{ t("currency.th_what") }}</th><th>{{ t("currency.th_status") }}</th></tr></thead>
+    <tbody>
+    {% for a in rows %}
+    <tr>
+      <td style="white-space: nowrap;">{{ a.passed_on|rdate }}</td>
+      <td><a href="{{ a.url }}">{{ a.record }}</a>{% if a.parcel_relevant %}<br><span style="font-size: 7.5pt; color: #b45309;">{{ t("currency.parcel_flag") }}</span>{% endif %}</td>
+      <td style="font-size: 8.5pt;">{{ a.summary or a.title }}{% if not a.summary %} <span style="color: #6b7280;">{{ t("currency.title_only") }}</span>{% endif %}</td>
+      <td style="font-size: 8.5pt;">{% if a.review_status != "reviewed" %}{{ t("currency.status_unreviewed") }}{% elif a.product_effect == "applied" %}{{ t("currency.status_reflected") }}{% else %}{{ t("currency.status_not_reflected") }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("currency.footnote") }}</p>
+{% endmacro %}
 
 {# Convenience aliases #}
 {% set ctx = report.context %}
@@ -416,7 +451,18 @@ a.glossary-link {
   <div class="meta">
     {% if prop and prop.pin14 %}<div><a href="#glossary-pin" class="glossary-link">{{ t("cover.pin") }}</a>: <a href="https://www.cookcountyassessor.com/pin/{{ prop.pin14 }}">{{ prop.pin14 }}</a></div>{% endif %}
     <div>{{ t("cover.coordinates") }}: {{ "%.5f"|format(report.lat) }}, {{ "%.5f"|format(report.lon) }}</div>
-    <div>{{ t("cover.report_date") }}: {{ report_date }}</div>
+    <div>{{ t("cover.generated_on") }}: {{ report_date }}</div>
+    {% if copy_of %}<div data-testid="updated-copy" style="font-weight: 600;">{{ t("cover.updated_copy", date=copy_of) }}</div>{% endif %}
+    {% set dd = data_dates() %}
+    {% if dd %}
+    <div class="dates" data-testid="data-dates">
+      <div class="dates-title">{{ t("cover.data_as_of") }}</div>
+      <ul>{% for d in dd %}<li>{{ d }}</li>{% endfor %}</ul>
+      {% if report.partial_failures %}<div class="dates-missing">{{ t("cover.not_checked") }} {{ report.partial_failures | join(", ") }}</div>{% endif %}
+    </div>
+    {% elif report.partial_failures %}
+    <div class="dates"><div class="dates-missing">{{ t("cover.not_checked") }} {{ report.partial_failures | join(", ") }}</div></div>
+    {% endif %}
     <div style="margin-top: 8pt; font-size: 8pt;">{{ t("cover.generated_by") }}</div>
   </div>
 </div>
@@ -499,6 +545,12 @@ a.glossary-link {
       <span class="tl-pill tl-pill-yellow">{{ t("pill.caution") }}</span>
       <span class="tl-topic">{{ t("topic.environmental") }}</span>
       <span class="tl-detail">{{ t("tl.env_flood_zone", zone=reg.flood_zone) }}</span>
+    </div>
+    {% elif reg and reg.flood_unchecked %}
+    <div class="tl-item tl-yellow">
+      <span class="tl-pill tl-pill-yellow">{{ t("pill.unchecked") }}</span>
+      <span class="tl-topic">{{ t("topic.environmental") }}</span>
+      <span class="tl-detail">{{ t("tl.env_flood_unchecked") }}</span>
     </div>
     {% else %}
     <div class="tl-item tl-green">
@@ -635,6 +687,7 @@ a.glossary-link {
 <!-- SECTION 3: Zoning & Development Standards -->
 <div class="section-flow">
   <h2 id="section-zoning">{{ t("zoning.heading") }}</h2>
+  {{ unchecked_note(["zoning", "adjacent_zoning"]) }}
 
   {% if zoning %}
   <dl class="info-grid">
@@ -643,6 +696,51 @@ a.glossary-link {
   </dl>
   {% else %}
   <p class="section-note">{{ t("zoning.unavailable") }}</p>
+  {% endif %}
+
+  {# A passed rezoning the City's map doesn't show yet (WS1 M5): the district above is the OLD one. #}
+  {% for hit in (ctx.passed_not_on_map or []) %}
+  <div style="margin: 6pt 0; padding: 5pt 8pt; background: #fffbeb; border-left: 4pt solid #d97706; border-radius: 2pt; font-size: 9pt;">
+    <strong>{{ t("zoning.passed_not_on_map_heading") }}.</strong>
+    {{ t("zoning.passed_not_on_map", segment=(hit.segment or t("common.na")), date=(hit.passed_on|rdate), record=hit.record) }}
+    {% if hit.url %}<a href="{{ hit.url }}">{{ hit.record }}</a>{% endif %}
+    {% if hit.to_district and hit.from_district %}<br>{{ t("zoning.passed_district", from_district=hit.from_district, to_district=hit.to_district) }}{% endif %}
+  </div>
+  {% endfor %}
+
+  {# How current the law in this report is (WS1 M2): the code text's vintage plus what
+     Council passed since, from the same code_currency the Profile shows. #}
+  {% set cc = ctx.code_currency %}
+  {% if cc %}
+  <h3>{{ t("currency.heading") }}</h3>
+  <p style="font-size: 9pt;">
+    {{ t("currency.vintage", label=(cc.label or cc.current_through)) }}
+    {% if cc.since is none %}
+    {{ t("currency.unknown") }} <a href="{{ cc.clerk_url }}">{{ cc.clerk_url }}</a>
+    {% elif cc.since.title17 == 0 %}
+    {{ t("currency.none_fresh", checked=(cc.checked_at|rdate)) }}
+    {% elif cc.check_state == "aging" %}
+    {{ tn("currency.since_aging", cc.since.title17, checked=(cc.checked_at|rdate)) }}
+    {% else %}
+    {{ tn("currency.since_fresh", cc.since.title17, checked=(cc.checked_at|rdate)) }}
+    {% endif %}
+  </p>
+  {% if cc.amendments %}
+  {% set relevant = cc.amendments | selectattr("parcel_relevant") | list %}
+  {% if relevant %}
+  <p style="font-size: 9pt;"><strong>{{ tn("currency.parcel_count", relevant|length) }}</strong></p>
+  {{ currency_table(relevant) }}
+  {% endif %}
+  {% set law_notes = (ctx.coverage_notes or []) | selectattr("ahead_of_code") | list %}
+  {% if law_notes %}
+  <h3>{{ t("currency.law_heading") }}</h3>
+  {% for n in law_notes %}
+  <p style="font-size: 9pt;">{{ n.text }}{% if n.link %} <a href="{{ n.link }}">{{ n.params.record }}</a>{% endif %}</p>
+  {% endfor %}
+  <p style="font-size: 8pt; color: #6b7280;">{{ t("currency.law_footnote") }}</p>
+  {% endif %}
+  <p style="font-size: 8pt; color: #6b7280;">{{ tn("currency.full_list", cc.amendments|length) }}</p>
+  {% endif %}
   {% endif %}
 
   {% if standards and standards.extraction_confidence != "low" %}
@@ -671,6 +769,7 @@ a.glossary-link {
     {% if standards.rear_setback_ft is not none %}<tr><td>{{ t("zoning.rear_yard") }}</td><td>{{ standards.rear_setback_ft }}</td></tr>{% endif %}
     </tbody>
   </table>
+  {{ conf_line("zoning.setbacks") }}
 
   {% if report.envelope_summary %}
   <h3>{{ t("zoning.envelope_summary") }}</h3>
@@ -685,17 +784,20 @@ a.glossary-link {
     {% endif %}
   </div>
   {% endif %}
-  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("zoning.envelope_note") }}</p>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("zoning.envelope_note") }}{% if conf_caption("zoning.envelope") %} {{ t("conf.envelope_caption") }}{% endif %}</p>
+  {{ conf_line("zoning.envelope") }}
   {% endif %}
 
   {% if standards.permitted_uses %}
   <h3>{{ t("zoning.permitted_uses") }}</h3>
   <p style="font-size: 9pt;">{{ standards.permitted_uses | join(", ") }}</p>
+  {{ conf_line("zoning.permitted_uses") }}
   {% endif %}
 
   {% if standards.special_uses %}
   <h3>{{ t("zoning.special_uses") }}</h3>
   <p style="font-size: 9pt;">{{ standards.special_uses | join(", ") }}</p>
+  {{ conf_line("zoning.special_uses") }}
   {% endif %}
 
   {% if standards.parking_residential or standards.parking_commercial %}
@@ -704,6 +806,7 @@ a.glossary-link {
     {% if standards.parking_residential %}<dt>{{ t("zoning.parking_residential") }}</dt><dd>{{ standards.parking_residential }}</dd>{% endif %}
     {% if standards.parking_commercial %}<dt>{{ t("zoning.parking_commercial") }}</dt><dd>{{ standards.parking_commercial }}</dd>{% endif %}
   </dl>
+  {{ conf_line("zoning.parking") }}
   {% endif %}
 
   {% if standards.notes %}
@@ -713,6 +816,7 @@ a.glossary-link {
     <li>{{ note }}</li>
     {% endfor %}
   </ul>
+  {{ conf_line("zoning.notes") }}
   {% endif %}
 
   {% elif standards and standards.extraction_confidence == "low" %}
@@ -777,8 +881,10 @@ a.glossary-link {
 <!-- SECTION 4: Regulatory & Environmental (flows, no page break) -->
 <div class="section-flow">
   <h2 id="section-regulatory">{{ t("reg.heading") }}</h2>
+  {{ unchecked_note(["flood"]) }}
 
   <h3>{{ t("reg.overlay_districts") }}</h3>
+  {% set unk = (reg.unchecked_overlays if reg else []) or [] %}
   {% if reg and reg.overlays %}
   <div class="overlay-matrix">
     {% for overlay in reg.overlays %}
@@ -789,13 +895,27 @@ a.glossary-link {
     </div>
     {% endfor %}
   </div>
-  {% else %}
+  {% elif not unk %}
   <p class="section-note">{{ t("reg.no_overlays") }}</p>
   {% endif %}
+  {% if unk %}
+  {# A failed overlay lookup is unknown, never "No" (WS6 M7a). #}
+  <p class="section-note"><span class="status-warn">{{ t("reg.unchecked") }}:</span> {{ t("reg.unchecked_note", items=reg.data_gaps | join(", ")) }}</p>
+  {% endif %}
+
+  {# A passed Chicago Landmark designation the City's map doesn't show on this parcel yet (WS1 M5b). #}
+  {% for hit in (ctx.passed_landmark_designations or []) %}
+  {% set what = (hit.name ~ " (" ~ hit.record ~ ")") if hit.name and hit.name|lower != "building" else hit.record %}
+  <div style="margin: 6pt 0; padding: 5pt 8pt; background: #fffbeb; border-left: 4pt solid #d97706; border-radius: 2pt; font-size: 9pt;" data-testid="landmark-designation-passed">
+    <strong>{{ t("reg.designation_heading") }}.</strong>
+    {% if hit.kind == "district" %}{{ t("reg.designation_district", what=what, date=(hit.passed_on|rdate), segment=(hit.segment or t("common.na"))) }}{% else %}{{ t("reg.designation_building", what=what, date=(hit.passed_on|rdate)) }}{% endif %}{{ t("reg.designation_map_checked" if hit.map_checked else "reg.designation_map_unchecked") }}{{ t("reg.designation_review") }}
+    {% if hit.url %}<a href="{{ hit.url }}">{{ hit.record }}</a>{% endif %}
+  </div>
+  {% endfor %}
 
   <dl class="info-grid">
     <dt><a href="#glossary-pd" class="glossary-link">{{ t("reg.planned_development") }}</a></dt>
-    <dd>{% if reg and reg.in_planned_development %}<span class="status-warn">{{ t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if reg and reg.in_planned_development %}<span class="status-warn">{{ t("reg.yes") }}</span>{% elif "planned_development" in unk %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     {# Chicago's local landmark designations span two GIS layers — "Landmark Boundaries"
        (in_landmark_district) and the locally-designated "Historic Districts"
        (in_historic_district). Both mean Commission on Chicago Landmarks jurisdiction, so
@@ -804,9 +924,9 @@ a.glossary-link {
        so it gets its own row. Keeping them separate avoids the old contradiction where the
        overlay matrix listed an NR-only "...Historic District" while this grid said "No". #}
     <dt>{{ t("reg.landmark_district") }}</dt>
-    <dd>{% if reg and (reg.in_landmark_district or reg.in_historic_district) %}<span class="status-warn">{{ t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if reg and (reg.in_landmark_district or reg.in_historic_district) %}<span class="status-warn">{{ t("reg.yes") }}</span>{% elif ctx.passed_landmark_designations %}<span class="status-warn">{{ t("reg.designation_passed") }}</span>{% elif "landmark_building" in unk or "historic_district" in unk %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt>{{ t("reg.national_register") }}</dt>
-    <dd>{% if reg and reg.on_national_register %}<span class="status-warn">{{ t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if reg and reg.on_national_register %}<span class="status-warn">{{ t("reg.yes") }}</span>{% elif "national_register" in unk %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-tod" class="glossary-link">TOD</a> {{ t("reg.tod_eligible") }}</dt>
     <dd>{% if nbr and nbr.transit and nbr.transit.tod_eligible %}<span class="status-yes">{{ t("reg.yes") }}</span>{% if nbr.transit.tod_type %} — {{ nbr.transit.tod_type }}{% endif %}{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-aro" class="glossary-link">ARO</a> {{ t("reg.aro_zone") }}</dt>
@@ -826,6 +946,9 @@ a.glossary-link {
     {% if reg.flood_zone_subtype %} ({{ reg.flood_zone_subtype }}){% endif %}
     {% if reg.in_special_flood_hazard %}<br><span class="status-warn"><a href="#glossary-sfha" class="glossary-link">{{ t("reg.flood_sfha") }}</a></span>{% endif %}
   </p>
+  {% elif reg and reg.flood_unchecked %}
+  {# FEMA didn't answer: the zone is unknown, never "no flood zone". #}
+  <p class="section-note" data-testid="flood-unchecked"><span class="status-warn">{{ t("reg.flood_unchecked") }}</span></p>
   {% else %}
   <p class="section-note">{{ t("reg.flood_unavailable") }}</p>
   {% endif %}
@@ -875,6 +998,7 @@ a.glossary-link {
 <!-- SECTION 5: Property & Physical Characteristics (flows) -->
 <div class="section-flow">
   <h2 id="section-property">{{ t("prop.heading") }}</h2>
+  {{ unchecked_note(["property", "incentives"]) }}
 
   {% if prop %}
   <dl class="info-grid">
@@ -1030,10 +1154,12 @@ a.glossary-link {
 <!-- SECTION 6: Market Context & Comparables -->
 <div class="page-break">
   <h2 id="section-market">Market Context &amp; Comparables</h2>
+  {{ unchecked_note(["comparables", "nearby_construction"]) }}
 
   {% if comps and comps.sales_volume %}
   <h3>{{ t("market.comp_sales_heading_pre") }}<a href="#glossary-arms-length" class="glossary-link">{{ tn("market.comp_sales_link_full", comps.sales_volume, n=comps.sales_volume) }}</a>)</h3>
 
+  {{ conf_line("property.comps.median_price") }}
   {% if report.comp_valuation %}
   {% set cv = report.comp_valuation %}
   <div class="dev-potential" style="background: #fefce8; border-color: #fde68a;">
@@ -1056,7 +1182,7 @@ a.glossary-link {
       <br><span style="font-size: 8pt; color: #92400e;">{{ t("market.too_few_sales") }}</span>
     </div>
     {% endif %}
-    {% if cv.median_price_per_bldg_sqft %}
+    {% if cv.median_price_per_bldg_sqft and conf_state("property.comps.median_price_per_bldg_sqft") != "withheld" %}
     <div class="detail" style="margin-top: 4pt;">{{ t("market.median_per_sqft") }}<strong>${{ "%.0f"|format(cv.median_price_per_bldg_sqft) }}</strong> <span style="font-size: 7pt; color: #92400e;">{{ t("market.median_per_sqft_hint") }}</span></div>
     {% endif %}
     {% if not cv.data_limited %}
@@ -1102,19 +1228,6 @@ a.glossary-link {
   </table>
   {% else %}
   <p class="section-note">{{ t("market.no_comps") }}</p>
-  {% endif %}
-
-  {% if nbr and nbr.demographics %}
-  <h3>{{ t("market.demographics") }}</h3>
-  <dl class="info-grid">
-    {% if nbr.demographics.population %}<dt>{{ t("market.population") }}</dt><dd>{{ nbr.demographics.population|fnum }}</dd>{% endif %}
-    {% if nbr.demographics.median_household_income %}<dt>{{ t("market.median_income") }}</dt><dd>{{ nbr.demographics.median_household_income|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.median_gross_rent %}<dt>{{ t("market.median_rent") }}</dt><dd>{{ nbr.demographics.median_gross_rent|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.median_home_value %}<dt>{{ t("market.median_home_value") }}</dt><dd>{{ nbr.demographics.median_home_value|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.poverty_rate is not none %}<dt>{{ t("market.poverty_rate") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.poverty_rate * 100) }}%</dd>{% endif %}
-    {% if nbr.demographics.owner_occupied_pct is not none %}<dt>{{ t("market.owner_occupied") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.owner_occupied_pct * 100) }}%</dd>{% endif %}
-    {% if nbr.demographics.bachelors_degree_pct is not none %}<dt>{{ t("market.bachelors") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.bachelors_degree_pct * 100) }}%</dd>{% endif %}
-  </dl>
   {% endif %}
 
   {% if nbr and nbr.walkscore %}
@@ -1179,6 +1292,7 @@ a.glossary-link {
 <!-- SECTION 7: Financial Feasibility & Incentives (flows) -->
 <div class="section-flow">
   <h2 id="section-financial">{{ t("fin.heading") }}</h2>
+  {{ unchecked_note(["incentives", "property"]) }}
 
   {% if inc %}
   <dl class="info-grid">
@@ -1271,6 +1385,7 @@ a.glossary-link {
 <!-- SECTION 8: Site Condition & History (flows) -->
 <div class="section-flow">
   <h2 id="section-site-condition">Site Condition &amp; History</h2>
+  {{ unchecked_note(["violations", "address_violations", "address_permits", "address_311", "crime", "crime_yoy"]) }}
 
   {% if report.address_violations %}
   <h3>{{ t("site.violations_heading", n=report.address_violations|length) }}</h3>
@@ -1339,6 +1454,7 @@ a.glossary-link {
 
   {% if crime %}
   <h3>{{ t("site.crime_heading") }}</h3>
+  {{ conf_line("area.crime") }}
   <p style="font-size: 9pt;">
     {{ t("site.crime_body", total=crime.total, rate="%.0f"|format(crime.arrest_rate * 100)) }}
     {% if crime.yoy %}
@@ -1363,7 +1479,7 @@ a.glossary-link {
       <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 1.6;">
         <li style="color: #047857;">&#10003; {{ t("site.check_zoning") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_overlay") }}</li>
-        <li style="color: #047857;">&#10003; {{ t("site.check_flood") }}</li>
+        {% if not (reg and reg.flood_unchecked) %}<li style="color: #047857;">&#10003; {{ t("site.check_flood") }}</li>{% endif %}
         <li style="color: #047857;">&#10003; {{ t("site.check_brownfield") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_tax") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_comps") }}</li>
@@ -1379,7 +1495,7 @@ a.glossary-link {
         {% if reg and reg.brownfield_sites %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_esa_brownfield") }}</li>{% else %}<li>&#9744; {{ t("site.todo_esa") }}</li>{% endif %}
         <li>&#9744; {{ t("site.todo_utility") }}</li>
         <li>&#9744; {{ t("site.todo_soil") }}</li>
-        {% if reg and reg.in_special_flood_hazard %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_flood_sfha") }}</li>{% else %}<li>&#9744; {{ t("site.todo_flood") }}</li>{% endif %}
+        {% if reg and reg.flood_unchecked %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_flood_unchecked") }}</li>{% elif reg and reg.in_special_flood_hazard %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_flood_sfha") }}</li>{% else %}<li>&#9744; {{ t("site.todo_flood") }}</li>{% endif %}
       </ul>
     </div>
   </div>
@@ -1555,20 +1671,26 @@ a.glossary-link {
 <div class="page-break">
   <h2 id="section-data-sources">{{ t("data.heading") }}</h2>
 
+  {% set cc = ctx.code_currency %}
+  {% if cc and cc.amendments %}
+  <h3 id="section-code-amendments">{{ t("currency.list_heading", label=(cc.label or cc.current_through)) }}</h3>
+  {{ currency_table(cc.amendments) }}
+  {% endif %}
+
   <h3>{{ t("data.sources") }}</h3>
-  <table>
-    <thead><tr><th>{{ t("data.th_category") }}</th><th>{{ t("data.th_source") }}</th><th>{{ t("data.th_notes") }}</th></tr></thead>
+  <p style="font-size: 8.5pt; margin-bottom: 6pt; page-break-after: avoid;">{{ t("conf.sources_intro") }}</p>
+  {% set rows = sources_rows() %}
+  <table data-testid="sources-table">
+    <thead><tr><th>{{ t("conf.th_source") }}</th><th>{{ t("conf.th_published_by") }}</th><th>{{ t("conf.th_authority") }}</th><th>{{ t("conf.th_as_of") }}</th><th>{{ t("conf.th_used_for") }}</th></tr></thead>
     <tbody>
-    <tr><td>{{ t("data.row_property_cat") }}</td><td>{{ t("data.row_property_src") }}</td><td>{{ t("data.row_property_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_zoning_cat") }}</td><td>{{ t("data.row_zoning_src") }}</td><td>{{ t("data.row_zoning_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_regulatory_cat") }}</td><td>{{ t("data.row_regulatory_src") }}</td><td>{{ t("data.row_regulatory_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_incentives_cat") }}</td><td>{{ t("data.row_incentives_src") }}</td><td>{{ t("data.row_incentives_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_demographics_cat") }}</td><td>{{ t("data.row_demographics_src") }}</td><td>{{ t("data.row_demographics_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_crime_cat") }}</td><td>{{ t("data.row_crime_src") }}</td><td>{{ t("data.row_crime_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_permits_cat") }}</td><td>{{ t("data.row_permits_src") }}</td><td>{{ t("data.row_permits_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_aro_cat") }}</td><td>{{ t("data.row_aro_src") }}</td><td>{{ t("data.row_aro_notes") }}</td></tr>
+    {% for r in rows %}
+    <tr data-source="{{ r.source_id }}"><td>{{ r.name }}</td><td>{{ r.publisher }}</td><td>{{ r.authority }}</td><td>{{ r.as_of }}</td><td>{{ r.used }}</td></tr>
+    {% endfor %}
     </tbody>
   </table>
+  {% if rows | selectattr("tier", "equalto", "ai_extracted") | list %}
+  <p style="font-size: 8pt; color: #6b7280; margin-top: 4pt;">{{ t("conf.sources_ai_note") }}</p>
+  {% endif %}
 
   <hr style="border: none; border-top: 1px solid #374151; margin: 16pt 0;">
 

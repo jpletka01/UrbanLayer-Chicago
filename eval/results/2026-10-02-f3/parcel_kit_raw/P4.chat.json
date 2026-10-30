@@ -1,0 +1,33 @@
+{
+ "text": "## 401 N Wabash Ave \u2014 Zoning & Development Analysis\n**PIN: 17101350390000 | Near North Side (Ward 42)**\n\n---\n\n### 1. Zoning District in Effect\n\nThis parcel is zoned **PD 835** (Planned Development No. 835), established by City Council ordinance **No. 13559**. You can verify this on the official Chicago Zoning Map: [gisapps.chicago.gov/ZoningMapWeb](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning)\n\n---\n\n### 2. Base Zoning vs. Something Else?\n\nThis parcel is **not** governed by an ordinary base zoning district (B, C, D, R, or M class). It is subject to a **Planned Development (PD)**, which is a site-specific, negotiated zoning instrument approved by the Chicago City Council under [1]. A PD supersedes standard base-district bulk tables \u2014 all standards (FAR, height, uses, setbacks, parking) are set by the specific PD ordinance, not by the general zoning code chapters. The relevant procedural authority is [1].\n\n---\n\n### 3. Key Bulk & Density Standards\n\nBecause this is a PD, **no generalized FAR, maximum height, minimum lot area, or setback figures appear in the standard zoning tables**. The zone definition explicitly states: *\"Standards are site-specific per the approved planned development ordinance.\"* [1]\n\nWhat is known from city records:\n- **Lot area:** ~98,019 sq ft (GIS-derived)\n- **Building area:** ~2,612,396 sq ft (from energy benchmarking records) \u2014 implying a substantial built FAR on this parcel already\n- **Stories:** 92 floors\n- **Year built:** 2006 (this is the Trump International Hotel & Tower)\n\nThe specific numeric standards (FAR cap, height limit, setbacks) that were **negotiated and approved** as part of PD 835 are contained in **PD Ordinance No. 13559**, which must be obtained directly from the City Clerk or the Department of Planning and Development (DPD).\n\n**How to verify:** Request PD 835 / Ordinance 13559 from the [Chicago City Clerk's Legislative Information Center](https://chicityclerk.com/legislation-records) or contact DPD at (312) 744-5777.\n\n---\n\n### 4. Overlays & Special Designations\n\n| Designation | Status | Notes |\n|---|---|---|\n| **Planned Development (PD 835)** | \u2705 Yes | Ordinance 13559; governs all bulk standards |\n| **Transit-Oriented Development \u2014 CTA** | \u2705 Yes | Within CTA rail TOD area (Grand Red Line, 0.2 mi) |\n| **Transit-Oriented Development \u2014 Metra** | \u2705 Yes | Within Metra TOD area (Millennium Station, 0.37 mi) |\n| **ARO Zone** | \u2705 Yes | Affordable Requirements Ordinance applies; 20 ARO projects / 1,010 units exist in this community area |\n| Landmark District | \u274c No | |\n| Historic District | \u274c No | |\n| National Register | \u274c No | |\n| Lakefront Protection | \u274c No | |\n| ADU Area | \u274c No | |\n| Special Service Area | \u274c No | |\n| Pedestrian Street | \u274c No | |\n| Planned Manufacturing District | \u274c No | |\n\nThe parcel is in **FEMA Flood Zone X** (Area of Minimal Flood Hazard) \u2014 flood insurance is not federally required. No Special Flood Hazard Area designation applies.\n\nSeveral **EPA-listed brownfield sites** exist in the broader area (including the Bloomingdale Park Trail site and Gateway Park Industrial Complex), but environmental due diligence for this specific parcel should be evaluated independently.\n\n---\n\n### 5. Parking Requirement & Transit-Related Reduction\n\nBecause this is a Planned Development, **the PD ordinance (No. 13559) governs parking** \u2014 not the standard off-street parking ratios of [5]. No specific parking minimum or transit-based reduction percentage could be determined from the retrieved data. The Connected Communities Ordinance parking relief that applies to standard transit-served locations does **not** automatically apply here; the PD's own terms control [1].\n\n**How to verify:** Review PD Ordinance 13559 via the City Clerk, or contact DPD.\n\n---\n\n### 6. Maximum FAR and Building Height\n\nPer [1]: *\"There are no maximum building height limits in the 'D' districts\"* \u2014 however, **this parcel is not in a standard D district; it is in PD 835**. For a PD, maximum FAR and height are set exclusively by the negotiated PD ordinance [1]. These figures **cannot be confirmed** from the retrieved zoning tables, which explicitly flag themselves as a fallback: the PD's site-specific standards govern.\n\nThe building as constructed reaches **92 stories / ~2.6 million sq ft**, suggesting the PD authorized very substantial FAR and height \u2014 but the precise approved limits require consulting Ordinance 13559 directly.\n\n---\n\n### Confidence Summary\n\n- **High confidence:** Zoning classification (PD 835, Ordinance 13559), overlays, flood zone, TOD status, and ARO applicability \u2014 all from city GIS/official records.\n- **Could not determine:** Specific FAR cap, maximum height, minimum setbacks, and parking minimums \u2014 these live inside PD Ordinance 13559, which was not in the retrieved data. No figures were available in the zoning table (the definition returned is explicitly a fallback).\n- **Assessment data** is not currently available from Cook County for this parcel (no assessed value on record).\n\n---\n\n*This information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the relevant city department (DPD, (312) 744-5777) for official guidance.*",
+ "error": null,
+ "seconds": 37.7,
+ "citation_warnings": null,
+ "plan_location": {
+  "raw": "401 N Wabash Ave, Chicago, Illinois",
+  "type": "address",
+  "resolved_community_area": 8,
+  "resolved_community_area_name": "Near North Side",
+  "resolved_address": "401 N Wabash Ave, Chicago, IL",
+  "resolved_lat": 41.88892518,
+  "resolved_lon": -87.62649444,
+  "pin": "17101350390000",
+  "resolution": "authoritative"
+ },
+ "plan_sources": [
+  "regulatory_domain",
+  "property_domain",
+  "vector_search",
+  "permits_api",
+  "incentives_domain",
+  "neighborhood_domain"
+ ],
+ "context_zone": {
+  "zone_class": "PD 835",
+  "zone_type": 5,
+  "ordinance_num": "13559",
+  "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+ },
+ "pid": "P4",
+ "address": "401 N Wabash Ave"
+}

@@ -47,6 +47,7 @@ async def get_assessments(
         _cache.set(key, result)
         return result
     except Exception as exc:
+        # A failure is not "no assessments": raise so the property domain reports the gap, and cache nothing
+        # (the old code stored it as "none on file" for a day). WS6 M7.
         log.warning("CCAO assessments failed for PIN %s: %s", pin14, exc)
-        _cache.set(key, _NOT_FOUND)
-        return []
+        raise

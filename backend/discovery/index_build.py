@@ -32,6 +32,7 @@ from shapely.strtree import STRtree
 from backend.config import get_settings
 from backend.discovery.parcel_index import (
     default_index_path,
+    delete_parcels,
     iter_parcel_rows,
     update_parcel_attrs,
     upsert_parcels,
@@ -661,6 +662,27 @@ def _recipe_counts(rows: list[tuple]) -> dict[str, int]:
     return _count_recipes(parcels, recipe_cqs, version="__recipe_count__")
 
 
+def _split_by_community_area(spine: list[dict]) -> tuple[list[tuple[dict, int]], list[str]]:
+    """Partition a bbox-fetched spine by true community-area membership.
+
+    A CA is fetched by bounding box, so the box also catches neighbor-CA parcels (kept, tagged to
+    their real CA) and suburban parcels that sit in no community-area polygon at all (border
+    suburbs such as Forest Park). Those suburban points are dropped, never tagged to the box's CA. Returns
+    (kept as (spine row, real CA), dropped PINs) Dropped PINs are in the form the index stores
+    (dashed, `spine["pin"]`), because `delete_parcels` matches on the stored key; the undashed
+    `pin_digits` matched nothing, so the 2026-10-29 refresh pruned none of the 66,692 suburban rows.
+    """
+    kept: list[tuple[dict, int]] = []
+    dropped: list[str] = []
+    for s in spine:
+        ca_real = community_area_by_point(s["lat"], s["lon"])
+        if ca_real is None:
+            dropped.append(s["pin"])
+        else:
+            kept.append((s, ca_real))
+    return kept, dropped
+
+
 async def _assemble_ca(
     ca: int,
     *,
@@ -670,23 +692,29 @@ async def _assemble_ca(
     rail_stations,
     as_of: datetime.date,
     client: httpx.AsyncClient | None,
-) -> list[tuple]:
+) -> tuple[list[tuple], list[str]]:
     """Assemble one community area's parcel rows (the per-CA half of a build).
 
     Pure-ish per-CA work: spine → chunked batch joins → local spatial pass → `assemble_parcel`.
     Returns the CA's row tuples; the caller upserts and drops them, so build memory is bounded by
     one CA, never the whole set. A transient spine failure warns + returns [] (does not abort the
-    larger run).
+    larger run). Also returns the PINs excluded for lying outside every community-area polygon, so
+    the caller can prune any earlier rows for them.
     """
     try:
         spine = await _fetch_spine(ca, client=client)
     except Exception as exc:
         log.warning("discovery index: spine fetch for CA %s failed: %s", ca, exc)
-        return []
-    if not spine:
+        return [], []
+    # Drop suburban points BEFORE the joins so their Socrata/ArcGIS queries are never made.
+    spine_ca, outside = _split_by_community_area(spine)
+    if outside:
+        log.info("discovery index: CA %s — dropped %s parcels outside every community area",
+                 ca, len(outside))
+    if not spine_ca:
         log.info("discovery index: CA %s — no parcels", ca)
-        return []
-    pins = [s["pin_digits"] for s in spine]
+        return [], outside
+    pins = [s["pin_digits"] for s, _ in spine_ca]
     chars = await _batch_latest(settings.dataset_ccao_characteristics, pins, "year", client, settings)
     assess = await _batch_latest(
         settings.dataset_ccao_assessments, pins, "year", client, settings,
@@ -713,8 +741,7 @@ async def _assemble_ca(
         geom_land = _load_geometry_land(settings.ptaxsim_db_path, base10s)
 
     rows: list[tuple] = []
-    for s in spine:
-        ca_real = community_area_by_point(s["lat"], s["lon"]) or ca
+    for s, ca_real in spine_ca:
         pd = s["pin_digits"]
         rows.append(assemble_parcel(
             s, chars.get(pd), assess.get(pd), sales.get(pd),
@@ -726,7 +753,7 @@ async def _assemble_ca(
             rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
         ))
     log.info("discovery index: CA %s — assembled %s parcels", ca, len(rows))
-    return rows
+    return rows, outside
 
 
 # Parcels per chunk in the streaming finalize. Bounds peak memory of the recipe-count pass (which
@@ -848,10 +875,14 @@ async def build_index(
 
     path = default_index_path()
     for ca in community_areas:
-        rows = await _assemble_ca(
+        rows, outside = await _assemble_ca(
             ca, settings=settings, tif_polys=tif_polys, ez_polys=ez_polys,
             rail_stations=rail_stations, as_of=as_of, client=client,
         )
+        # An index built before the exclusion may still hold these PINs; prune so `--refresh` heals.
+        pruned = delete_parcels(path, outside)
+        if pruned:
+            log.info("discovery index: CA %s — pruned %s stale non-Chicago rows", ca, pruned)
         if rows:
             upsert_parcels(path, rows)
         # rows dropped here — peak build memory is one CA, not the whole set.

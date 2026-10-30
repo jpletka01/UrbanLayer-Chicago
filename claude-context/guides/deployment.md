@@ -43,6 +43,9 @@ Multi-stage `backend/Dockerfile`: builder installs CPU-only PyTorch + deps + pre
 
 ## Seeding / updating the production code corpus (Qdrant)
 
+This section is the mechanics of the push. The whole refresh (the monthly review, the dry run and gates, the
+codification check, what to re-verify, when to drop old collections) is `guides/code-refresh.md`.
+
 There was no runbook for this until 2026-09-08; it is not obvious, because **the prod
 image cannot run the ingestion pipeline at all**. `backend/Dockerfile` copies `backend/`
 plus four `ingestion/data` artifacts — it does NOT copy `ingestion/*.py`, `chunks.jsonl`,
@@ -51,26 +54,52 @@ container is impossible. Qdrant is also a **persisted named volume** (`qdrant_st
 so a code deploy never touches the corpus: a parser fix ships without changing what prod
 serves.
 
-The corpus is updated by embedding LOCALLY and writing to prod over an SSH tunnel — this
-keeps all model work off the 8 GB box:
+The corpus is updated by embedding LOCALLY and copying the result to prod over an SSH
+tunnel. That keeps all model work off the 8 GB box.
+
+**One collection per code vintage, behind an alias** (WS1 M0, 2026-10-21). The app reads
+the alias `municipal_code` (`settings.qdrant_code_collection`). Each export lives in its
+own collection, `municipal_code_<current_through>` (e.g. `municipal_code_2026-03-18`), and
+`backend/code_vintage.json:collection` names the one the code was ingested into. A refresh
+never edits the collection being served:
+
+1. `python -m ingestion.update --dry-run --source <export>` parses into
+   `ingestion/data/sections.new/` and writes `ingestion/data/diff/<vintage>/report.md`.
+   Nothing else is touched. Review the report and its abort gates.
+2. `python -m ingestion.update --source <export>` (add `--force` once a tripped gate is
+   explained) embeds into the new local collection. Only after the point count matches
+   does it promote the staged files, keep the old ones in
+   `ingestion/data/snapshots/<old vintage>/`, flip the local alias, and write
+   `code_vintage.json` + `code_changes.json`.
+3. Push to prod with `ingestion.push_index` (below), then merge the PR carrying
+   `code_vintage.json`. **Alias first, then the code deploy**: in between, the product
+   understates how current the text is, never overstates it.
 
 ```bash
-# Qdrant publishes NO host port in prod (see the security note in docker-compose.yml),
-# so tunnel to the CONTAINER on the docker bridge, not to 127.0.0.1.
-IP=$(ssh urbanlayer-prod 'docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $(docker ps -qf name=qdrant)')
-ssh -f -N -L 6335:$IP:6333 urbanlayer-prod
-curl -s localhost:6335/collections/chicago_municipal_code | jq .result.points_count
+# Qdrant publishes NO host port in prod (see the security note in docker-compose.yml), so
+# tunnel to the CONTAINER on the docker bridge. `jack` isn't in the docker group, so the
+# IP lookup needs sudo (Jack types the password); the IP only changes if the container is recreated.
+ssh -t urbanlayer-prod 'sudo docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $(sudo docker ps -qf name=qdrant)'
+ssh -f -N -L 6335:<that IP>:6333 urbanlayer-prod
+
+python -m ingestion.push_index --target http://localhost:6335 --status   # collections, counts, alias
+python -m ingestion.push_index --target http://localhost:6335 --upload   # local alias target -> prod, same ids/vectors
+python -m ingestion.push_index --target http://localhost:6335 --verify   # per-section chunk-text hashes; must be 0 differences
+python -m ingestion.push_index --target http://localhost:6335 --switch   # re-verifies, then flips the alias atomically
+# rollback: --switch --to municipal_code_<previous vintage>   (kept until the next refresh)
+# cleanup, one refresh later: --drop municipal_code_<older vintage>   (refuses the served one)
 ```
 
-Then embed locally and upsert to `localhost:6335`. **Delete the target sections' points
-first** — `embed_and_store` assigns `uuid.uuid4()` per point, so a re-run without a delete
-DUPLICATES rows rather than replacing them. Verify by comparing per-section point counts
-against local, not just the total.
+`--upload` copies points with their ids and vectors, so nothing is re-embedded on prod and
+a re-run can't duplicate rows (the old hand-push used `uuid4` ids and needed a delete
+first). `--snapshot-copy FROM --collection NEW` copies a collection to a new name on the
+same server (snapshot, then recover from it), with no transfer.
 
-There is one collection, `chicago_municipal_code`. A Title-17-only `chicago_zoning`
-collection used to be written locally but was never searched, and was removed 2026-09-28.
+**Migration done 2026-10-21:** prod's `chicago_municipal_code` (16,576 points) was verified
+equal to local section by section, copied server-side to `municipal_code_2026-03-18`, and
+put behind the `municipal_code` alias before the config change deployed.
 
-**Done 2026-09-08:** Title 14 (the building code) pushed this way — prod 14,535 → 16,576
+**Done 2026-09-08:** Title 14 (the building code) pushed by hand: prod 14,535 → 16,576
 points, matching local exactly, per-section counts verified, `/section/14A-1-101` now 200.
 
 `docker-compose.prod.yml`: builds frontend with `nginx.prod.conf` (HTTPS, security headers, gzip), exposes 80+443, mounts Cloudflare Origin Certificate. Sets `RERANKER_ENABLED=true`.
@@ -130,7 +159,9 @@ STRIPE_PRICE_ID=price_...
 
 SQLite backup script at `scripts/backup_db.sh` — `sqlite3 .backup` for WAL-safe copies, retains 7 days. DB path on server: `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`.
 
-Cron (server): `0 3 * * * /opt/urbanlayer/scripts/backup_db.sh` (defaults to the volume path above, `/opt/urbanlayer/backups`, 7 copies). Until 2026-09-28 the script defaulted to a nonexistent `urbanlayer.db` and this doc's cron line was wrong, but the server's actual cron entry passed the right path, so nightly backups were running. Since then root's crontab uses the default; backups log to `/var/log/urbanlayer-backup.log`. Copies are on the same host; off-box shipping is in `deploy/hardening-runbook.md`.
+Cron (root, server): `0 3 * * * /opt/urbanlayer/scripts/backup_db.sh >> /var/log/urbanlayer-backup.log 2>&1` (UTC; defaults to the volume path above, `/opt/urbanlayer/backups`, 7 copies). The folder is `root:jack` 2750 and copies are 640 (they hold user data). **The entry was lost in the 2026-09-28 hardening; no backups ran from Sept 28 to Oct 20, when it was restored.**
+
+Off-box: Jack's Mac pulls the copies (`scripts/pull_backups.sh`, launchd job `deploy/launchd/com.urbanlayer.backup-pull.plist`, every 4 h) into `~/Backups/urbanlayer`, keeping 60. It uses a no-passphrase key the server accepts only for read-only `rrsync` of the backups folder, and shows a macOS notification if the pull fails or the newest copy is over 36 h old. The Mac copies aren't encrypted. Setup, the restore test (last passed 2026-10-20) and the prod restore steps are in `deploy/hardening-runbook.md` §8c. A server-side backup-age alarm comes with WS6 M2.
 
 ## Memory Budget (8GB CX32)
 

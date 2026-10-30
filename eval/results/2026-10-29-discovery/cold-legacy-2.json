@@ -1,0 +1,27 @@
+{
+  "label": "cold-legacy-2",
+  "mode": "legacy",
+  "measured_at": "2026-10-29T02:13:41+00:00",
+  "cells": [
+    {
+      "query": "recipe (4 filters)",
+      "edit_ms": 659.2
+    },
+    {
+      "query": "3 filters (no lot size)",
+      "edit_ms": 354.9
+    },
+    {
+      "query": "1 filter (zoning: residential)",
+      "edit_ms": 648.4
+    },
+    {
+      "query": "no filters",
+      "edit_ms": 531.1
+    },
+    {
+      "query": "recipe again (repeat)",
+      "edit_ms": 13.0
+    }
+  ]
+}

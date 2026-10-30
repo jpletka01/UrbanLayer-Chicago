@@ -88,6 +88,25 @@ async def test_check_tif_load_failure():
 
 
 @pytest.mark.asyncio
+async def test_tif_geometry_load_failure_raises():
+    mock_client = AsyncMock()
+    success = MagicMock()
+    success.raise_for_status = MagicMock()
+    success.json.return_value = _make_geojson([
+        _make_feature("Recovered TIF", (-87.65, 41.93)),
+    ])
+    mock_client.get.side_effect = [Exception("Connection refused"), success]
+
+    with pytest.raises(Exception, match="Connection refused"):
+        await tif.tif_geojson_feature(41.93, -87.65, client=mock_client)
+    recovered = await tif.tif_geojson_feature(41.93, -87.65, client=mock_client)
+
+    assert recovered is not None
+    assert recovered["properties"]["name"] == "Recovered TIF"
+    assert mock_client.get.await_count == 2
+
+
+@pytest.mark.asyncio
 @patch("backend.retrieval.incentives.tif.httpx.AsyncClient")
 async def test_check_tif_skips_repealed(mock_client_cls):
     geojson = _make_geojson([

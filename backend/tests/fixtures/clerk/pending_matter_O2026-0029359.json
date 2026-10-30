@@ -1,0 +1,91 @@
+{
+  "matterId": "A9D5CA6E-F1C3-F111-AAAE-001DD80FDAD3",
+  "fileYear": 2026,
+  "recordNumber": "O2026-0029359",
+  "legacyRecordNumber": "",
+  "status": "4-In Committee",
+  "legacyStatus": null,
+  "subStatus": "Referred",
+  "statusDescription": "4-In Committee",
+  "filingOffice": "Misc.",
+  "filingSponsor": "Misc. Transmittal",
+  "filingSponsorId": "3F825C83-0E9C-ED11-AAD0-001DD804FC82",
+  "introductionDate": "2026-10-14T15:00:00+00:00",
+  "finalActionDate": null,
+  "shortTitle": null,
+  "committeReferral": "Committee on Zoning, Landmarks and Building Standards",
+  "routine": "YES",
+  "introductionType": "Council Introduction",
+  "controllingBody": "Committee on Zoning, Landmarks and Building Standards",
+  "controllingBodyId": null,
+  "keyLegislation": "NO",
+  "economicDisclosure": "YES",
+  "title": "Zoning Reclassification Map No. 4-F at 466 W Cermak Rd and 2106-2124 S Canal St - App No. 23180",
+  "nicknameAlias": "",
+  "recordCreateDate": "2026-10-09T14:55:17+00:00",
+  "matterCategory": "ZONING RECLASSIFICATIONS",
+  "type": "Ordinance",
+  "originalRecordNumber": null,
+  "supersededBy": null,
+  "actions": [
+    {
+      "actionDate": "2026-10-14T05:00:00+00:00",
+      "journalPage": "",
+      "actionByName": "City Council",
+      "actionName": "Referred",
+      "actionText": "The matter was Referred to Committee.",
+      "meetingId": "",
+      "historyId": "83C863BB-F3C3-F111-AAAE-001DD80FDAD3",
+      "name": null,
+      "sort": 70,
+      "votes": []
+    }
+  ],
+  "sponsors": [
+    {
+      "office": "Misc.",
+      "sponsorName": "Misc. Transmittal",
+      "sponsorType": "Sponsor",
+      "personId": "3F825C83-0E9C-ED11-AAD0-001DD804FC82"
+    }
+  ],
+  "attachments": [
+    {
+      "fileName": "O2026-0029359 Ordinance.pdf",
+      "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f831cc04-aed7-4333-86f7-57cdd657407a.pdf",
+      "attachmentType": "Legislation"
+    },
+    {
+      "fileName": "O2026-0029359 Statments and Plans.pdf",
+      "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/398b5634-1162-4e24-8474-316faa696566.pdf",
+      "attachmentType": "Exhibits"
+    },
+    {
+      "fileName": "O2026-0029359 Application.pdf",
+      "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/3822a8dd-6e93-45f5-a7f0-da8cef6756c7.pdf",
+      "attachmentType": "Miscellaneous"
+    }
+  ],
+  "relations": [],
+  "agreedCalendar": "NO",
+  "timeline": [
+    {
+      "eventName": "AcceptedOn",
+      "timestamp": "2026-10-09T15:10:54+00:00",
+      "eventText": ""
+    },
+    {
+      "eventName": "PostedOn",
+      "timestamp": "2026-10-09T15:11:02+00:00",
+      "eventText": ""
+    },
+    {
+      "eventName": "SubmittedOn",
+      "timestamp": "1900-01-01T00:00:00+00:00",
+      "eventText": ""
+    }
+  ],
+  "lastPublicationDate": "2026-10-09T15:15:32+00:00",
+  "_recorded": "2026-10-27",
+  "_fixture_note": "Public Clerk response; EDS attachment metadata removed before fixture retention; no document downloaded."
+}

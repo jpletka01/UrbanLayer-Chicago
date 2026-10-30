@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { zoneColorCSS } from "../../lib/mapColors";
 
 type FilterMode = "overview" | "crime" | "311" | "permits";
 
@@ -10,15 +11,15 @@ interface Props {
   hasZoning: boolean;
 }
 
-const ZONING_LEGEND_KEYS: { key: string; color: string }[] = [
-  { key: "residential", color: "rgb(255,235,59)" },
-  { key: "business", color: "rgb(66,133,244)" },
-  { key: "commercial", color: "rgb(156,39,176)" },
-  { key: "manufacturing", color: "rgb(233,30,99)" },
-  { key: "plannedDev", color: "rgb(158,158,158)" },
-  { key: "downtown", color: "rgb(0,150,136)" },
-  { key: "transportation", color: "rgb(141,110,99)" },
-  { key: "parksOpenSpace", color: "rgb(76,175,80)" },
+const ZONING_LEGEND_KEYS: { key: string; example: string }[] = [
+  { key: "residential", example: "RS-3" },
+  { key: "business", example: "B3-2" },
+  { key: "commercial", example: "C2-2" },
+  { key: "manufacturing", example: "M2-3" },
+  { key: "plannedDev", example: "PD 799" },
+  { key: "downtown", example: "DX-7" },
+  { key: "transportation", example: "T" },
+  { key: "parksOpenSpace", example: "POS-1" },
 ];
 
 export function MapLegend({ activeLayers, filterMode, showPoints, showZoning, hasZoning }: Props) {
@@ -34,7 +35,7 @@ export function MapLegend({ activeLayers, filterMode, showPoints, showZoning, ha
             <div key={item.key} className="flex items-center gap-1.5">
               <span
                 className="w-2.5 h-2.5 rounded-sm shrink-0 border border-dark-border-strong"
-                style={{ backgroundColor: item.color }}
+                style={{ backgroundColor: zoneColorCSS(item.example) }}
               />
               <span className="text-text-muted">{t(`legend.${item.key}`)}</span>
             </div>

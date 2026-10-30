@@ -1,15 +1,19 @@
 import i18n from "./i18n";
+import type { DataDate } from "./dataDates";
+import type { FailedSource } from "./failedSources";
 import { parseSSE } from "./sse";
 import { flush, getVisitorId, track } from "./tracking";
 import type {
   PinsResponse as DiscoveryPinsResponse,
   Registry as DiscoveryRegistry,
   SearchRequest as DiscoverySearchRequest,
+  TextPreview as DiscoveryTextPreview,
   SearchResponse as DiscoverySearchResponse,
 } from "../discovery/types";
 import type {
   AddressSuggestion,
   AdminOverview,
+  Amendment,
   BenchmarkResults,
   ChatChunk,
   CodeChunk,
@@ -24,9 +28,11 @@ import type {
   Message,
   RequestLogEntry,
   SelectedParcel,
+  SinceThenResult,
   TimeseriesBucket,
   UploadMeta,
 } from "./types";
+import type { ParcelMapLayers } from "./parcelMap";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
 
@@ -296,6 +302,11 @@ export interface ReportPurchase {
   amount_cents: number;
   created_at: number;
   completed_at: number | null;
+  /** The first report this purchase rendered, kept as sold (WS6 M8). Null for a purchase made before originals
+      were kept: its next download becomes one. `available` is false if the stored file has gone missing. */
+  original?: { rendered_at: number; available: boolean } | null;
+  /** The original's facts against today's (WS6 M9). Null when there is no original to compare, or the check failed. */
+  changes?: SinceThenResult | null;
 }
 
 export async function fetchMyPurchases(): Promise<ReportPurchase[]> {
@@ -323,16 +334,39 @@ export async function createBillingPortal(): Promise<{ url: string }> {
 
 // Sections are immutable, so cache by ID — lets hover-prefetch and the
 // subsequent click share one request. Failed lookups are evicted so they retry.
-const sectionCache = new Map<string, Promise<CodeChunk | null>>();
+const sectionCache = new Map<string, Promise<CodeChunk | SectionNotCodified | null>>();
 
-export function fetchSection(sectionId: string): Promise<CodeChunk | null> {
+/** A 404 that is not "no such section": an amendment passed after the code text's vintage
+ * added the section (17-3-0600), so the text isn't published yet. */
+export interface SectionNotCodified {
+  not_in_published_code: true;
+  section_id: string;
+  message: string;
+  added_by: Amendment[];
+}
+
+export function isNotCodified(x: unknown): x is SectionNotCodified {
+  return !!x && typeof x === "object" && (x as SectionNotCodified).not_in_published_code === true;
+}
+
+async function notCodifiedFrom(resp: Response): Promise<SectionNotCodified | null> {
+  if (resp.status !== 404) return null;
+  try {
+    const body = await resp.json();
+    return isNotCodified(body?.detail) ? body.detail : null;
+  } catch {
+    return null;
+  }
+}
+
+export function fetchSection(sectionId: string): Promise<CodeChunk | SectionNotCodified | null> {
   const key = sectionId.trim();
   const hit = sectionCache.get(key);
   if (hit) return hit;
   const p = (async () => {
     try {
       const resp = await authFetch(`${API_BASE}/section/${encodeURIComponent(key)}`);
-      if (!resp.ok) return null;
+      if (!resp.ok) return notCodifiedFrom(resp);
       return (await resp.json()) as CodeChunk;
     } catch {
       return null;
@@ -556,6 +590,28 @@ export async function getShareStatus(
   return await resp.json();
 }
 
+/** "Since then" notes for each parcel answer of a conversation, keyed by message index. Never throws:
+    a failed check just means no note. */
+export async function getConversationChanges(id: string): Promise<Record<string, SinceThenResult>> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}/changes`);
+    if (!resp.ok) return {};
+    return (await resp.json()).notes ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export async function getSharedChanges(token: string): Promise<Record<string, SinceThenResult>> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/share/${encodeURIComponent(token)}/changes`);
+    if (!resp.ok) return {};
+    return (await resp.json()).notes ?? {};
+  } catch {
+    return {};
+  }
+}
+
 export async function getSharedConversation(
   token: string,
 ): Promise<ConversationDetail | null> {
@@ -708,6 +764,141 @@ export async function fetchRequestLogs(
   } catch { return []; }
 }
 
+/** The admin "Code currency" card: how current the code text is and how well the gap is handled. */
+export interface AdminCodeCurrency {
+  code: {
+    source_id: string;
+    as_of: string | null;
+    ingested_at: string | null;
+    age_days: number | null;
+    lag: {
+      title17_passed_since: number | null;
+      cited_other_passed_since: number | null;
+      unreviewed: number;
+      oldest_unreviewed_days: number | null;
+      uncodified_applied: number;
+    };
+    last_checked: string | null;
+    check_state: "fresh" | "aging" | "unknown";
+    status: "green" | "amber" | "red";
+    reasons: string[];
+  };
+  clerk: {
+    last_success: string | null;
+    last_attempt: string | null;
+    last_error: string | null;
+    consecutive_failures: number;
+    snapshot_state: string;
+    contract_ok: boolean;
+    contract_problems: string[];
+  };
+  map_lag?: AdminMapLag | null;
+  /** Passed Chicago Landmark designations and how many we could place on a parcel (WS1 M5b). */
+  designations?: AdminDesignations | null;
+  amendments: Amendment[];
+}
+
+/** Passed rezonings the City's zoning map lacks (WS1 M5). Counts are null until the check has succeeded once. */
+export interface AdminMapLag {
+  source_id: string;
+  passed_not_on_map: number | null;
+  oldest_days: number | null;
+  flaggable: number | null;
+  with_parcels: number | null;
+  unparsed_titles: number | null;
+  unparsed: string[];
+  no_parcels: string[];
+  check_status: "ok" | "failed" | "missing";
+  last_checked: string | null;
+  last_error: string | null;
+}
+
+export interface AdminDesignations {
+  passed: number | null;
+  flaggable: number | null;
+  with_parcels: number | null;
+  unparsed_titles: number | null;
+  unparsed: string[];
+  no_parcels: string[];
+  check_status: "ok" | "failed" | "missing";
+  last_checked: string | null;
+  last_error: string | null;
+}
+
+export async function fetchAdminCodeCurrency(): Promise<AdminCodeCurrency | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/code-currency`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+/** The admin "Data health" panel (WS6 M3): the source registry joined with the daily checker's stored status. */
+export type SourceState = "alarm" | "error" | "warn" | "unknown" | "acked" | "ok" | "frozen_ok";
+
+export interface DataHealthSource {
+  id: string;
+  name: string;
+  publisher: string | null;
+  link: string | null;
+  tier: string | null;
+  kind: string | null;
+  severity: "critical" | "standard" | "info";
+  owner_modules: string[];
+  surfaces: string[];
+  state: SourceState;
+  reason: string;
+  as_of: string | null;
+  basis: "content" | "published" | null;
+  age_days: number | null;
+  warn_days: number | null;
+  alarm_days: number | null;
+  frozen: string | null;
+  contract: { layer_name: string | null; required_fields: string[]; count_band: number[] | null; values?: string[] } | null;
+  ack: { reason: string; until: string; owner: string } | null;
+  state_since: string | null;
+  checked_at: string | null;
+  probe_error: boolean;
+  latency_ms: number | null;
+  requests: number | null;
+  note: string;
+}
+
+export interface DataHealth {
+  checker: {
+    state: "ok" | "late";
+    last_run: string | null;
+    age_h: number | null;
+    late_after_h: number;
+    next_run: string | null;
+    last_error: string | null;
+    runs: { started_at: string; finished_at: string | null; sources: number; alarms: number; requests: number; error: string | null }[];
+  };
+  counts: Partial<Record<SourceState, number>>;
+  sources: DataHealthSource[];
+}
+
+export interface DataHealthHistory {
+  source: string;
+  history: { checked_at: string; state: SourceState; reason: string; as_of: string | null; age_days: number | null }[];
+}
+
+export async function fetchDataHealth(): Promise<DataHealth | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/data-health`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function fetchDataHealthHistory(source: string): Promise<DataHealthHistory | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/data-health?source=${encodeURIComponent(source)}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
 export async function fetchBenchmarkResults(): Promise<BenchmarkResults | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/admin/benchmark`);
@@ -736,9 +927,113 @@ export interface ZoneDefinition {
   lot_coverage: string | null;
   // Minimum lot SIZE (Table 17-2-0303) — R districts only.
   min_lot_sqft: number | null;
+  // Minimum lot area PER DWELLING UNIT — the number that caps unit count (null for
+  // districts with no per-unit minimum: PD, C3, M, DS).
+  min_lot_area_per_unit?: number | null;
+  lot_area_note?: string;
   uses: string;
   notes: string;
   is_fallback: boolean;
+}
+
+/** How the address became this parcel (backend/resolution.py). */
+export interface ParcelResolutionRecord {
+  method: "coordinates" | "pin" | "address_points" | "assessor_addresses" | "geocode_nearest" | "geocode_nearest_verified" | null;
+  point_basis: "given" | "parcel_centroid" | "address_point" | "geocode" | null;
+  input_address: string | null;
+  pin: string | null;
+  confidence: "authoritative" | "approximate" | null;
+  point: { lat: number; lon: number };
+  /** Feet from the matched point to the parcel polygon's center, when both are known. */
+  centroid_gap_ft: number | null;
+  /** Every parcel the two address sources list for the input address; the used one is marked. */
+  candidates: { pin: string; sources: Array<"address_points" | "assessor_addresses">; used: boolean }[];
+  multiple_parcels: boolean;
+  /** The two official address sources name different parcels for this address. */
+  sources_disagree: boolean;
+  /** >0 when the matched PIN is a condominium building whose units each have their own PIN. */
+  condo_units?: number;
+  identity_unconfirmed: boolean;
+  unverified_reason: "nearest_parcel_address_mismatch" | "property_record_is_another_parcel" | null;
+  property_record_pin: string | null;
+}
+
+/** A dated source for one Profile fact (backend/provenance.py). */
+export interface Provenance {
+  label: string;
+  kind: "official_record" | "code_text" | "derived";
+  source: string | null;
+  record_id: string | null;
+  url: string | null;
+  /** Code section id the source viewer can open (code_text entries). */
+  section: string | null;
+  /** When the source says it last changed / the code is current through. */
+  as_of: string | null;
+  /** When the rule took effect (e.g. the ordinance date). */
+  effective_date: string | null;
+  /** When we queried it. Always set. */
+  query_date: string;
+  note?: string | null;
+  // --- schema v2 (backend/provenance.py; guide: claude-context/guides/source-confidence.md).
+  // Every field below is additive and optional: older stored answers lack them.
+  /** Authority tier: A record, B code text, C government estimate, D our calculation, E AI reading, F private. */
+  tier?: ProvenanceTier;
+  /** Data-health registry id (backend/data_health/registry.py). */
+  source_id?: string | null;
+  /** What `as_of` means. `record_updated` = one record's own edit date, not the dataset's currency. */
+  as_of_basis?: ProvenanceAsOfBasis;
+  /** A statistic's period, e.g. "2020–2024". */
+  period?: string | null;
+  age_days?: number | null;
+  scope?: ProvenanceScope | null;
+  geography?: string | null;
+  /** Absent on a parcel record means "not applicable", not "unknown". */
+  coverage?: ProvenanceCoverage | null;
+  /** Absent means no error is published. */
+  precision?: ProvenancePrecision | null;
+  method_key?: ProvenanceMethodKey;
+  method_params?: Record<string, unknown> | null;
+  /** English fallback for the method; the UI translates by `method_key`. */
+  method?: string;
+  /** A calculation's inputs (fact ids or registry source ids) and the weakest input's tier. */
+  inputs?: string[] | null;
+  basis_tier?: ProvenanceTier | null;
+  corroborated?: boolean | null;
+  /** Computed once by the backend. Read it; never recompute it in a component. */
+  confidence?: ProvenanceConfidence;
+  confidence_reasons?: string[];
+  /** The figure as displayed. */
+  value?: string | number | boolean | null;
+}
+
+export type ProvenanceTier =
+  | "official_record" | "official_publication" | "official_estimate"
+  | "our_calculation" | "ai_extracted" | "non_government";
+export type ProvenanceAsOfBasis =
+  | "source_updated" | "record_updated" | "current_through" | "period_end" | "vintage" | "tax_year" | "queried";
+export type ProvenanceScope = "parcel" | "address" | "radius" | "tract" | "puma" | "community_area" | "city" | "county";
+export type ProvenanceConfidence = "standard" | "low" | "withheld";
+export type ProvenanceMethodKey =
+  | "recorded" | "published_text" | "code_table" | "hand_reviewed"
+  | "survey_estimate" | "government_model" | "bracket_median" | "calculation" | "keyword_grouping"
+  | "ai_read_code" | "ai_read_ordinance" | "ai_read_filing" | "commercial_index";
+
+export interface ProvenanceCoverage {
+  n?: number | null;
+  share?: number | null;
+  universe?: string | null;
+  unit?: string | null;
+  /** Which n rule applies: an area sample (n < 30 withholds) or a comparable-sales set (fade < 5, withhold < 3). */
+  sample?: "area_sample" | "comps" | null;
+}
+
+export interface ProvenancePrecision {
+  moe?: number | null;
+  moe_level?: number | null;
+  cv?: number | null;
+  /** How a margin we derived ourselves was derived (`acs_handbook_median`); absent when the publisher states it. */
+  moe_method?: string | null;
+  agreement?: { n: number; agree: number } | null;
 }
 
 export interface ScorecardResponse {
@@ -758,6 +1053,15 @@ export interface ScorecardResponse {
   resolved_lat: number;
   resolved_lon: number;
   zone_definition?: ZoneDefinition | null;
+  /** Where each fact came from and how current it is, keyed by fact id (zoning.district,
+      zoning.far, overlay.<layer_type>, parcel.identity, ...). */
+  provenance?: Record<string, Provenance>;
+  /** The dates behind this page, in reading order (backend/data_health/vintages.py). */
+  data_dates?: DataDate[];
+  /** What couldn't be checked, by source key, with the words that reported it (backend/data_health/failures.py). */
+  failed_sources?: FailedSource[];
+  /** How the address became this parcel: method, every parcel at the address, disagreements. */
+  resolution?: ParcelResolutionRecord;
   // True when the address-scoped violation lookup actually ran (parsed + queried).
   // Lets the UI show "no violations on record" for a confirmed-zero vs. omitting
   // for an unconfirmed lookup — silence must not mean two different things.
@@ -785,7 +1089,47 @@ export async function fetchScorecard(params: {
   } catch { return null; }
 }
 
-export async function fetchReport(parcel: SelectedParcel): Promise<Blob | null> {
+/** One Municipal Code subsection (and the table it cites) with how current the code is. */
+export interface CodeSubsection {
+  section_id: string;
+  article: string;
+  article_title: string;
+  heading: string;
+  paragraphs: string[];
+  /** Raw "Columns: ... / Row n: ..." text, one entry per table. */
+  tables: string[];
+  current_through: string | null;
+  vintage_label: string | null;
+  source: string | null;
+  /** Amendments passed after this text was published that touch the section. */
+  amended_since?: Amendment[];
+}
+
+const subsectionCache = new Map<string, Promise<CodeSubsection | SectionNotCodified | null>>();
+
+export function fetchCodeSubsection(sectionId: string): Promise<CodeSubsection | SectionNotCodified | null> {
+  const key = sectionId.trim();
+  const hit = subsectionCache.get(key);
+  if (hit) return hit;
+  const p = (async () => {
+    try {
+      const resp = await authFetch(`${API_BASE}/api/code/section/${encodeURIComponent(key)}`);
+      return resp.ok ? ((await resp.json()) as CodeSubsection) : await notCodifiedFrom(resp);
+    } catch {
+      return null;
+    }
+  })();
+  subsectionCache.set(key, p);
+  p.then((r) => {
+    if (r === null) subsectionCache.delete(key);
+  });
+  return p;
+}
+
+/** The PDF report. ``copy`` picks which: "original" is the first report this purchase rendered, kept as sold;
+    "updated" (and the default) is a live render with today's data, labeled once an original exists. A purchase's
+    first download becomes its original whichever is asked for. */
+export async function fetchReport(parcel: SelectedParcel, copy?: "original" | "updated"): Promise<Blob | null> {
   // Highest-fidelity key only: pin → address → coords (never downgrade).
   const qs = new URLSearchParams();
   if (parcel.pin) {
@@ -797,6 +1141,7 @@ export async function fetchReport(parcel: SelectedParcel): Promise<Blob | null> 
     qs.set("lon", String(parcel.lon));
   }
   if (i18n.language && i18n.language !== "en") qs.set("language", i18n.language);
+  if (copy) qs.set("copy", copy);
   try {
     const resp = await authFetch(`${API_BASE}/api/report?${qs}`);
     if (!resp.ok) return null;
@@ -814,14 +1159,18 @@ export async function fetchDiscoveryRegistry(): Promise<DiscoveryRegistry | null
   } catch { return null; }
 }
 
+// `signal` lets the page abort a superseded search. An aborted request resolves to null like
+// any other failure; the caller tells them apart by checking its own signal/request id.
 export async function discoverySearch(
   req: DiscoverySearchRequest,
+  signal?: AbortSignal,
 ): Promise<DiscoverySearchResponse | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/discovery/search`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req),
+      signal,
     });
     if (!resp.ok) return null;
     return await resp.json();
@@ -831,12 +1180,32 @@ export async function discoverySearch(
 // Full ordered coord set for the map (PR6) — decoupled from the paginated list.
 export async function discoverySearchPins(
   req: DiscoverySearchRequest,
+  signal?: AbortSignal,
 ): Promise<DiscoveryPinsResponse | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/discovery/search/pins`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req),
+      signal,
+    });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+// Compile-only: what the free-text compiler makes of a phrase (no search, no index read).
+// null on any failure, so the caller can fail open and just search.
+export async function discoveryTextPreview(
+  text: string,
+  signal?: AbortSignal,
+): Promise<DiscoveryTextPreview | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/discovery/text-preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal,
     });
     if (!resp.ok) return null;
     return await resp.json();
@@ -880,6 +1249,8 @@ export async function fetchAreaStats(ca: number): Promise<{
   n_assessed: number;
   median_mv_per_land_sqft: number | null;
   n_mv_psf: number;
+  /** The benchmark's own entry (n, coverage, index build date): absent when there is no median. */
+  provenance?: Record<string, Provenance>;
 } | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/area-stats?ca=${ca}`);
@@ -892,12 +1263,10 @@ export async function fetchAreaStats(ca: number): Promise<{
 
 /** Geometry layers for the Property Profile module maps (zoning quilt +
     overlay/TIF/EZ boundaries). Every layer degrades to null. */
-export async function fetchParcelMapLayers(lat: number, lon: number): Promise<{
-  zoning: GeoJSON.FeatureCollection | null;
-  overlays: GeoJSON.FeatureCollection | null;
-  tif: GeoJSON.Feature | null;
-  ez: GeoJSON.Feature | null;
-} | null> {
+export async function fetchParcelMapLayers(
+  lat: number,
+  lon: number,
+): Promise<ParcelMapLayers | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/parcel-map?lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`);
     if (!resp.ok) return null;

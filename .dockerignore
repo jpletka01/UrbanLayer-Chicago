@@ -7,9 +7,14 @@ backend/data/
 ingestion/data/
 !ingestion/data/community_areas.geojson
 !ingestion/data/transit_stations.json
+!ingestion/data/transit_stations.meta.json
 !ingestion/data/zoning_cache.json
 !ingestion/data/chrs_orange_red.json.gz
-chicago-il-codes.html
+!ingestion/data/rent_by_area.json
+!ingestion/data/rent_by_area.meta.json
+!ingestion/data/assessor_model_by_area.json
+!ingestion/data/assessor_model_by_area.meta.json
+chicago-il-*.html
 eval/
 test-results/
 .env

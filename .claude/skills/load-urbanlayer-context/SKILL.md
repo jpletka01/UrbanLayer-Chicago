@@ -32,7 +32,7 @@ and the definitive architecture + design-decision + war-story archive is the web
 | **Theming mechanics** (CSS-var tokens, dark/light, FOUC) | `guides/light-dark-theming.md` (mechanics only — palette is retired; Bento Pro is canonical) |
 | **Map / geo visualization / deck.gl layers** | `frontend/CLAUDE.md` (Map sections) → `core/architecture.md` |
 | **Mobile / responsive / phone layout** | `frontend/CLAUDE.md` (Responsive — incl. the 5-device overflow-audit harness; gate layout work with `npm run test:mobile`) |
-| **Data sources / new dataset / endpoints** | `core/data-sources.md` → `strategy/2026-07-02_data-expansion-candidates.md` (backlog) |
+| **Data sources / new dataset / endpoints / any displayed figure** | `core/data-sources.md` + `guides/source-confidence.md` (tiers, confidence thresholds, captions, source ids) → `strategy/2026-07-02_data-expansion-candidates.md` (backlog) |
 | **Deployment / server ops / Docker / nginx** | `guides/deployment.md` → root `CLAUDE.md` (Workflow Rules) → `deploy/hardening-runbook.md` |
 | **Shipping any change / verifying a deploy** | the `ship-and-verify` skill, then the `live-site-sweep` skill |
 | **Retrieval, prompts, router, models, or Profile data-source changes** | the `eval-refresh` skill → `EVALS.md` |

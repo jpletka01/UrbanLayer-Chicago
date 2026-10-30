@@ -16,14 +16,13 @@ import {
   createBillingPortal,
   deleteAccount,
   fetchMyPurchases,
-  fetchReport,
   getSubscription,
   redeemVoucher,
   type ReportPurchase,
 } from "../lib/api";
-import { buildFilenameSlug } from "../lib/csvExport";
 import { formatDate } from "../lib/format";
 import PageHeader from "./PageHeader";
+import { PurchaseRow } from "./settings/PurchaseRow";
 import { Chip } from "./ui/Chip";
 import { Modal } from "./ui/Modal";
 import ThemeToggle from "./ThemeToggle";
@@ -44,62 +43,6 @@ function SettingsRow({ label, children }: { label: string; children: React.React
     <div className="flex items-center justify-between gap-4 py-2">
       <span className="text-body text-text-secondary">{label}</span>
       {children}
-    </div>
-  );
-}
-
-function PurchaseRow({ purchase }: { purchase: ReportPurchase }) {
-  const { t } = useTranslation("pages");
-  const [downloading, setDownloading] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  async function handleDownload() {
-    setDownloading(true);
-    setFailed(false);
-    const blob = await fetchReport({
-      pin: purchase.pin,
-      confidence: purchase.pin ? "authoritative" : "approximate",
-      lat: purchase.lat,
-      lon: purchase.lon,
-      address: purchase.address,
-    });
-    setDownloading(false);
-    if (!blob) {
-      setFailed(true);
-      return;
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${buildFilenameSlug(purchase.address ?? purchase.pin ?? "report")}_feasibility_report.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  const when = purchase.completed_at
-    ? formatDate(new Date(purchase.completed_at).toISOString())
-    : "";
-
-  return (
-    <div className="flex items-center justify-between gap-4 py-2.5 border-b border-dark-border last:border-b-0">
-      <div className="min-w-0">
-        <p className="text-body text-text-primary truncate">
-          {purchase.address ?? purchase.pin}
-        </p>
-        <p className="text-caption text-text-muted">
-          {when} · ${(purchase.amount_cents / 100).toFixed(0)}
-          {failed && (
-            <span className="text-state-negative ml-2">{t("settings.downloadFailed")}</span>
-          )}
-        </p>
-      </div>
-      <button
-        onClick={handleDownload}
-        disabled={downloading}
-        className="shrink-0 px-2.5 py-1 rounded-md border border-dark-border text-caption text-text-secondary hover:text-accent hover:border-accent/40 transition-colors disabled:opacity-50"
-      >
-        {downloading ? t("settings.downloading") : t("settings.download")}
-      </button>
     </div>
   );
 }
@@ -238,6 +181,10 @@ export default function SettingsPage() {
   const [portalBusy, setPortalBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  const refreshPurchases = () => {
+    fetchMyPurchases().then(setPurchases).catch(() => {});
+  };
+
   useEffect(() => {
     fetchMyPurchases().then(setPurchases).catch(() => setPurchases([]));
     getSubscription().then(setSubscription).catch(() => {});
@@ -364,7 +311,7 @@ export default function SettingsPage() {
           ) : (
             <div>
               {purchases.map((p) => (
-                <PurchaseRow key={p.id} purchase={p} />
+                <PurchaseRow key={p.id} purchase={p} onDownloaded={refreshPurchases} />
               ))}
             </div>
           )}

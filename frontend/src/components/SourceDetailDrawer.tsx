@@ -1,14 +1,18 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { isResolvableSection } from "../lib/codeRefs";
+import type { SectionNotCodified } from "../lib/api";
 import type { CodeChunk } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
 import { ChunkText } from "./ChunkText";
 import { CrossRefPill } from "./CrossRefPill";
+import { AmendedSinceBanner, NotCodifiedNotice } from "./scorecard/AmendedSinceBanner";
 
 export interface SectionView {
   loading: boolean;
   chunk: CodeChunk | null;
+  /** The section was added by an amendment passed after the code text's vintage. */
+  notice?: SectionNotCodified | null;
 }
 
 interface Props {
@@ -64,7 +68,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                   </>
                 ) : (
                   <h2 className="text-base font-semibold text-text-primary">
-                    {view.loading ? t("loadingSection") : t("sectionNotFound")}
+                    {view.loading ? t("loadingSection") : view.notice ? `§ ${view.notice.section_id}` : t("sectionNotFound")}
                   </h2>
                 )}
               </div>
@@ -110,7 +114,9 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                 </div>
               )}
 
-              {!view.loading && !chunk && (
+              {!view.loading && !chunk && view.notice && <NotCodifiedNotice notice={view.notice} />}
+
+              {!view.loading && !chunk && !view.notice && (
                 <p className="text-sm text-text-muted">
                   {t("crossRefUnavailable")}
                 </p>
@@ -118,6 +124,9 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
 
               {chunk && (
                 <>
+                  <div className="mb-3">
+                    <AmendedSinceBanner amendments={chunk.amended_since} />
+                  </div>
                   <ChunkText
                     text={chunk.text}
                     className="text-sm text-text-secondary leading-relaxed font-mono bg-dark-surface p-4 rounded-lg border border-dark-border"

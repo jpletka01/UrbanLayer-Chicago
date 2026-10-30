@@ -76,6 +76,25 @@ async def test_check_ez_load_failure():
 
 
 @pytest.mark.asyncio
+async def test_ez_geometry_load_failure_raises():
+    mock_client = AsyncMock()
+    success = MagicMock()
+    success.raise_for_status = MagicMock()
+    success.json.return_value = _make_geojson([
+        _make_feature("Recovered EZ", (-87.65, 41.93)),
+    ])
+    mock_client.get.side_effect = [Exception("Connection refused"), success]
+
+    with pytest.raises(Exception, match="Connection refused"):
+        await ez.ez_geojson_feature(41.93, -87.65, client=mock_client)
+    recovered = await ez.ez_geojson_feature(41.93, -87.65, client=mock_client)
+
+    assert recovered is not None
+    assert recovered["properties"]["name"] == "Recovered EZ"
+    assert mock_client.get.await_count == 2
+
+
+@pytest.mark.asyncio
 @patch("backend.retrieval.incentives.enterprise_zones.httpx.AsyncClient")
 async def test_ez_boundaries_cached(mock_client_cls):
     geojson = _make_geojson([_make_feature("Test EZ", (-87.65, 41.93))])

@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily data-health check
+
+[Timer]
+# 05:37 UTC every day (an odd minute, so it never lines up with other jobs on the hour).
+OnCalendar=*-*-* 05:37:00 UTC
+# A missed run (box down at 05:37) runs at the next boot.
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

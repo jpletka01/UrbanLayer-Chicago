@@ -1,4 +1,7 @@
 import type { ComparablesSummary, ContextObject } from "./types";
+import type { Provenance } from "./api";
+import i18n from "./i18n";
+import { displayState, plainCaption } from "./confidence";
 
 interface CSVColumn<T> {
   key: keyof T & string;
@@ -62,7 +65,37 @@ function addSection(parts: string[], title: string, csv: string): void {
   parts.push("");
 }
 
-export function buildScorecardCSV(ctx: ContextObject, address: string, comparables?: ComparablesSummary | null): string {
+interface FactRow { field: string; value: unknown; fact?: string }
+
+/** Rows with the source columns a reader needs to check a figure: who published it, how far to
+    trust it, as of when, and the same caption the page prints. A withheld figure is blank, with
+    the reason in the note. Sheets without provenance keep two columns. */
+function factRows(rows: FactRow[], prov: Record<string, Provenance> | null | undefined) {
+  const tEn = i18n.getFixedT("en", "common");
+  return rows.map(({ field, value, fact }) => {
+    const e = fact ? prov?.[fact] : undefined;
+    return {
+      field,
+      value: e && displayState(e) === "withheld" ? "" : value,
+      source: e?.source_id ?? "",
+      authority: e?.tier ? tEn(`confidence.tier.${e.tier}`) : "",
+      as_of: e?.as_of ?? e?.period ?? "",
+      note: plainCaption(e, tEn),
+    };
+  });
+}
+
+const FACT_COLUMNS = [
+  { key: "source", header: "Source" },
+  { key: "authority", header: "Authority" },
+  { key: "as_of", header: "As of" },
+  { key: "note", header: "Note" },
+] as const;
+
+export function buildScorecardCSV(
+  ctx: ContextObject, address: string, comparables?: ComparablesSummary | null,
+  provenance?: Record<string, Provenance> | null,
+): string {
   const parts: string[] = [];
   const date = new Date().toISOString().slice(0, 10);
 
@@ -74,29 +107,30 @@ export function buildScorecardCSV(ctx: ContextObject, address: string, comparabl
   // Property Summary
   if (ctx.property) {
     const p = ctx.property;
-    const kvRows = [
+    const kvRows = factRows([
       { field: "PIN", value: p.pin14 ?? "" },
       { field: "Address", value: p.address ?? "" },
       { field: "Building Class", value: p.bldg_class ?? "" },
       { field: "Class Description", value: p.bldg_class_description ?? "" },
-      { field: "Building Sqft", value: p.bldg_sqft ?? "" },
-      { field: "Land Sqft", value: p.land_sqft ?? "" },
-      { field: "Stories", value: p.stories ?? "" },
-      { field: "Units", value: p.units ?? "" },
+      { field: "Building Sqft", value: p.bldg_sqft ?? "", fact: "property.bldg_sqft" },
+      { field: "Land Sqft", value: p.land_sqft ?? "", fact: "property.land_sqft" },
+      { field: "Stories", value: p.stories ?? "", fact: "property.stories" },
+      { field: "Units", value: p.units ?? "", fact: "property.units" },
       { field: "Rooms", value: p.rooms ?? "" },
       { field: "Bedrooms", value: p.bedrooms ?? "" },
       { field: "Full Baths", value: p.full_baths ?? "" },
       { field: "Half Baths", value: p.half_baths ?? "" },
-      { field: "Building Age", value: p.bldg_age ?? "" },
-      { field: "Total Assessed Value", value: p.total_assessed_value ?? "" },
-      { field: "Implied Market Value", value: p.implied_market_value ?? "" },
-      { field: "Estimated Annual Tax", value: p.estimated_annual_tax ?? "" },
+      { field: "Building Age", value: p.bldg_age ?? "", fact: "property.year_built" },
+      { field: "Total Assessed Value", value: p.total_assessed_value ?? "", fact: "property.assessed_value" },
+      { field: "Implied Market Value", value: p.implied_market_value ?? "", fact: "property.implied_market_value" },
+      { field: "Estimated Annual Tax", value: p.estimated_annual_tax ?? "", fact: "property.tax_estimate" },
       { field: "Tax Year", value: p.tax_year ?? "" },
-      { field: "Effective Tax Rate", value: p.effective_tax_rate != null ? `${(p.effective_tax_rate * 100).toFixed(2)}%` : "" },
-    ];
+      { field: "Effective Tax Rate", value: p.effective_tax_rate != null ? `${(p.effective_tax_rate * 100).toFixed(2)}%` : "", fact: "property.effective_rate" },
+    ], provenance);
     addSection(parts, "Property Summary", toCSV(kvRows, [
       { key: "field", header: "Field" },
       { key: "value", header: "Value" },
+      ...FACT_COLUMNS,
     ]));
 
     if (p.assessment_history.length > 0) {
@@ -127,17 +161,18 @@ export function buildScorecardCSV(ctx: ContextObject, address: string, comparabl
 
   // Comparable Sales
   if (comparables && comparables.sales.length > 0) {
-    const summaryRows = [
-      { field: "Median Sale Price", value: comparables.median_sale_price ?? "" },
-      { field: "Median $/Land Sqft", value: comparables.median_price_per_land_sqft ?? "" },
-      { field: "Median $/Bldg Sqft", value: comparables.median_price_per_bldg_sqft ?? "" },
+    const summaryRows = factRows([
+      { field: "Median Sale Price", value: comparables.median_sale_price ?? "", fact: "property.comps.median_price" },
+      { field: "Median $/Land Sqft", value: comparables.median_price_per_land_sqft ?? "", fact: "property.comps.median_price_per_land_sqft" },
+      { field: "Median $/Bldg Sqft", value: comparables.median_price_per_bldg_sqft ?? "", fact: "property.comps.median_price_per_bldg_sqft" },
       { field: "Price Range Min", value: comparables.price_range_min ?? "" },
       { field: "Price Range Max", value: comparables.price_range_max ?? "" },
       { field: "Sales Volume", value: comparables.sales_volume },
-    ];
+    ], provenance);
     addSection(parts, "Comparable Sales Summary", toCSV(summaryRows, [
       { key: "field", header: "Metric" },
       { key: "value", header: "Value" },
+      ...FACT_COLUMNS,
     ]));
 
     const salesRows = comparables.sales.map(s => ({
@@ -215,15 +250,8 @@ export function buildScorecardCSV(ctx: ContextObject, address: string, comparabl
     const kvRows = [
       { field: "Community Area", value: d.community_area_name ?? "" },
       { field: "Population", value: d.population ?? "" },
-      { field: "Median Household Income", value: d.median_household_income ?? "" },
-      { field: "Median Home Value", value: d.median_home_value ?? "" },
-      { field: "Median Gross Rent", value: d.median_gross_rent ?? "" },
-      { field: "Median Age", value: d.median_age ?? "" },
-      { field: "Poverty Rate", value: d.poverty_rate != null ? `${(d.poverty_rate * 100).toFixed(1)}%` : "" },
-      { field: "Unemployment Rate", value: d.unemployment_rate != null ? `${(d.unemployment_rate * 100).toFixed(1)}%` : "" },
-      { field: "Owner Occupied", value: d.owner_occupied_pct != null ? `${(d.owner_occupied_pct * 100).toFixed(1)}%` : "" },
-      { field: "Bachelor's Degree+", value: d.bachelors_degree_pct != null ? `${(d.bachelors_degree_pct * 100).toFixed(1)}%` : "" },
-      { field: "Vacancy Rate", value: d.vacancy_rate != null ? `${(d.vacancy_rate * 100).toFixed(1)}%` : "" },
+      { field: "Median Household Income (estimated from 5 brackets)", value: d.median_household_income ?? "" },
+      { field: "ACS Period", value: d.acs_period ?? "" },
     ];
     addSection(parts, "Demographics", toCSV(kvRows, [
       { key: "field", header: "Metric" },

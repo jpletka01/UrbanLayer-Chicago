@@ -54,7 +54,10 @@ class Settings(BaseSettings):
 
     keyword_boost_weight: float = 0.20
 
-    qdrant_code_collection: str = "chicago_municipal_code"
+    # An alias, not a collection: each code vintage is its own collection
+    # (municipal_code_<current_through>) and a refresh flips this alias to the new one
+    # atomically (ingestion/push_index.py). code_vintage.json:collection names the target.
+    qdrant_code_collection: str = "municipal_code"
 
     socrata_base: str = "https://data.cityofchicago.org/resource"
     dataset_crime: str = "ijzp-q8t2"
@@ -68,6 +71,10 @@ class Settings(BaseSettings):
 
     # Cook County Socrata (datacatalog.cookcountyil.gov)
     cook_county_socrata_base: str = "https://datacatalog.cookcountyil.gov/resource"
+
+    # City Clerk eLMS API (BETA; no key, no stated rate limit). Read by scripts and the
+    # daily legislation sync only -- never on the request path (retrieval/clerk.py).
+    clerk_api_base: str = "https://api.chicityclerkelms.chicago.gov"
     cook_county_socrata_token: str = ""
     dataset_ccao_characteristics: str = "x54s-btds"
     dataset_ccao_assessments: str = "uzyt-m557"
@@ -115,7 +122,6 @@ class Settings(BaseSettings):
 
     # Neighborhood domain
     dataset_demographics: str = "t68z-cikk"
-    dataset_socioeconomic: str = "kn9c-c2s2"
     transit_search_radius_mi: float = 2.0
     walkscore_api_key: str = ""
 
@@ -169,6 +175,27 @@ class Settings(BaseSettings):
     # NOT in ingestion/data (which is ephemeral in the container) — so a prod-built index
     # survives redeploys instead of being wiped on the next image rebuild.
     discovery_index_path: Path = PROJECT_ROOT / "backend" / "data" / "discovery_index.db"
+    # Written daily by `python -m backend.legislation.sync` (prod timer) on the same volume;
+    # the app only reads it, reloading when its mtime changes.
+    legislation_snapshot_path: Path = PROJECT_ROOT / "backend" / "data" / "legislation_snapshot.json"
+    # WS2: rebuildable pending-matter + placement snapshot. The daily legislation sync is
+    # its only writer; the Profile reader opens it read-only and never calls Clerk.
+    pending_legislation_path: Path = PROJECT_ROOT / "backend" / "data" / "pending_legislation.db"
+
+    # Written by the daily checker (`python -m backend.data_health.check --write`) on the same volume;
+    # the app opens it read-only for the /health block. See deploy/README.md.
+    data_health_db_path: Path = PROJECT_ROOT / "backend" / "data" / "data_health.db"
+    # Written hourly by the APP (live failure counts per source, backend/data_health/live.py) and read by the
+    # checker, so each container only ever writes its own file.
+    data_health_live_db_path: Path = PROJECT_ROOT / "backend" / "data" / "data_health_live.db"
+    # The stored ORIGINAL of each purchased report (WS6 M8): backend/data/reports/<purchase_id>/<ms>.pdf, on the
+    # persistent volume. scripts/backup_db.sh archives it with the nightly database backup.
+    report_store_dir: Path = PROJECT_ROOT / "backend" / "data" / "reports"
+    # Written by scripts/backup_db.sh (host, as root) after each backup, into the directory that holds
+    # chicago.db, so the checker container can read it without mounting /opt/urbanlayer/backups.
+    backup_status_path: Path = PROJECT_ROOT / "backend" / "data" / "backup_status.json"
+    # Prod sets this: a missing status file then means backups are not running, not "dev checkout".
+    backup_status_required: bool = False
 
     message_limit: int = 10
 
@@ -217,6 +244,10 @@ class Settings(BaseSettings):
     nearby_construction_months: int = 12
     zoning_extract_model: str = "claude-haiku-4-5-20251001"
     zoning_extract_max_tokens: int = 1500
+    # WS1 M6: the daily sync reads the new district out of off-map rezoning ordinances (spends the
+    # production key; off until its first live run is approved).
+    ordinance_reader_enabled: bool = False
+    ordinance_reader_model: str = "claude-sonnet-4-6"
 
     # Max concurrent PDF report renders. The memory-heavy WeasyPrint span now runs
     # in an isolated child process (backend/report_render.py); measured peak is

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import re
 import time
 from typing import Any, AsyncIterator, NamedTuple
@@ -55,6 +56,8 @@ from backend.models import (
     ScorecardContext,
     TurnSummary,
 )
+from backend.data_health import failures
+from backend.provenance import withhold_low_evidence
 from backend.retrieval import buildings, business, crime, food_inspections, three11, vacant
 from backend.retrieval.geo import (
     COMMUNITY_AREAS,
@@ -166,8 +169,10 @@ app.add_middleware(CSRFMiddleware)
 
 # Property Discovery (filter/search) wire endpoints — see backend/discovery/.
 from backend.discovery.api import router as discovery_router  # noqa: E402
+from backend.discovery.text_preview import router as discovery_text_preview_router  # noqa: E402
 
 app.include_router(discovery_router)
+app.include_router(discovery_text_preview_router)
 
 
 @app.on_event("startup")
@@ -194,6 +199,14 @@ async def _startup() -> None:
             "breakdown) will be absent. Seed it with scripts/download_ptaxsim.py",
             settings.ptaxsim_db_path,
         )
+    # Live call outcomes per source, flushed hourly for the checker (WS6 M7). A forced fault is loud: it is a
+    # dev switch and must never be set on a server (the flag is ignored in production regardless).
+    from backend.data_health import live
+
+    if os.environ.get("DATA_HEALTH_FAULT"):
+        log.warning("DATA_HEALTH_FAULT=%s: forcing failures (ignored in production)", os.environ["DATA_HEALTH_FAULT"])
+    global _live_flush_task
+    _live_flush_task = asyncio.create_task(live.flush_loop())
     await _preload_datasets()
 
 
@@ -235,8 +248,13 @@ async def _preload_datasets() -> None:
         log.warning("ML model preload failed: %s", exc)
 
 
+_live_flush_task: asyncio.Task | None = None
+
+
 @app.on_event("shutdown")
 async def _shutdown() -> None:
+    if _live_flush_task is not None:
+        _live_flush_task.cancel()  # its cancel handler flushes the last counts
     await db.close_db()
     from backend.retrieval.property.tax_estimate import close as close_ptaxsim
     await close_ptaxsim()
@@ -269,8 +287,14 @@ async def health() -> dict:
     # catch a missing DB — prod ran without one for weeks, silently.
     ptaxsim_ok = bool(settings.ptaxsim_enabled and settings.ptaxsim_db_path.exists())
 
+    # Informational, never gating (a red source must not take the app out of rotation): is the
+    # daily data-health checker running, and how many sources are red. "late" = no finished run
+    # in 36 h. The scheduled dead-man workflow (.github/workflows/data-health-deadman.yml) reads it.
+    from backend.data_health.store import health_block
+    data_health = await asyncio.get_running_loop().run_in_executor(None, health_block, settings.data_health_db_path)
+
     ok = qdrant_ok and db_ok
-    result = {"ok": ok, "qdrant": qdrant_ok, "db": db_ok, "ptaxsim": ptaxsim_ok}
+    result = {"ok": ok, "qdrant": qdrant_ok, "db": db_ok, "ptaxsim": ptaxsim_ok, "data_health": data_health}
     if not ok:
         from fastapi.responses import JSONResponse
         return JSONResponse(content=result, status_code=503)
@@ -364,10 +388,66 @@ async def section(section_id: str) -> dict:
     Backs the clickable cross-references in the sources panel: a chunk may cite
     a section that wasn't itself retrieved, so we look it up on demand.
     """
+    from backend.legislation.currency import amendments_touching, public
+
     chunk = await get_full_section(section_id)
     if chunk is None:
-        raise HTTPException(status_code=404, detail=f"Section {section_id} not found")
-    return chunk.model_dump()
+        raise _section_not_found(section_id)
+    return {**chunk.model_dump(), "amended_since": [public(a) for a in amendments_touching(section_id)]}
+
+
+def _section_not_found(section_id: str, detail: str | None = None) -> HTTPException:
+    """404 for a section our code text lacks. When an amendment passed after the text's
+    vintage adds it (17-3-0600, TOD streets), say so and link the ordinance instead of
+    a bare "not found"."""
+    from backend.legislation.currency import amendments_touching, public
+
+    added_by = [public(a) for a in amendments_touching(section_id)]
+    if not added_by:
+        return HTTPException(status_code=404, detail=detail or f"Section {section_id} not found")
+    first = added_by[0]
+    return HTTPException(status_code=404, detail={
+        "message": (f"Section {section_id} isn't in the published Municipal Code text we use yet. "
+                    f"{first['record']}, passed {first['passed_on']}, added or changed it; see the ordinance."),
+        "section_id": section_id,
+        "not_in_published_code": True,
+        "added_by": added_by,
+    })
+
+
+@app.get("/api/code/section/{section_id}")
+async def code_subsection(section_id: str) -> dict:
+    """One Municipal Code subsection (and the table it cites), with how current the
+    code text is. Backs the Profile's "see the source" on a standard (V2): a Profile
+    number cites ``17-2-0304-A``; the index holds the whole article ``17-2-0300``
+    (and ``17-7-0574`` lives in ``17-7-0570``)."""
+    from backend.code_sections import SECTION_ID_RE, article_id, extract_subsection
+    from backend.code_vintage import get_code_vintage
+    from backend.legislation.currency import amendments_touching, public
+    from backend.retrieval.vector_search import _get_known_sections
+
+    if not SECTION_ID_RE.match(section_id):
+        raise HTTPException(status_code=422, detail="Not a Municipal Code section id.")
+    # Registers the index's article ids (cached after the first call), which article_id
+    # needs: 17-7-0574 lives in the indexed article 17-7-0570, not 17-7-0500.
+    await _get_known_sections()
+    chunk = await get_full_section(article_id(section_id))
+    if chunk is None:
+        raise _section_not_found(section_id)
+    sub = extract_subsection(chunk.text, section_id)
+    if sub is None:
+        raise _section_not_found(section_id, f"Subsection {section_id} not found in {chunk.section}")
+    vintage = get_code_vintage() or {}
+    return {
+        "amended_since": [public(a) for a in amendments_touching(section_id)],
+        "section_id": section_id,
+        "article": chunk.section,
+        "article_title": chunk.section_title,
+        **sub,
+        "current_through": vintage.get("current_through"),
+        "vintage_label": vintage.get("label"),
+        "source": vintage.get("source"),
+    }
 
 
 @app.post("/api/map-data")
@@ -464,6 +544,18 @@ async def get_conversation(
     if conv is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return conv
+
+
+@app.get("/api/conversations/{conv_id}/changes")
+async def conversation_changes_endpoint(
+    conv_id: str, user: dict = Depends(require_auth),
+) -> dict:
+    """What changed since each parcel answer in the owner's conversation was given (WS6 M9). Zero model calls."""
+    if await db.get_conversation(conv_id, _user_id(user)) is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    from backend.data_health.diff import conversation_changes
+
+    return await conversation_changes(conv_id)
 
 
 @app.delete("/api/conversations/{conv_id}")
@@ -573,6 +665,29 @@ async def get_shared_conversation(token: str) -> dict:
     if conv is None:
         raise HTTPException(status_code=404, detail="Shared conversation not found")
     return conv
+
+
+_share_changes_cache = TTLCache(ttl_seconds=600, maxsize=256, name="share_changes")
+
+
+@app.get("/api/share/{token}/changes")
+async def get_shared_changes(token: str, request: Request) -> dict:
+    """The same "since then" notes for a shared link, public like the link itself: per-IP limited, and kept
+    ten minutes per token on top of the per-parcel daily cache."""
+    from backend.rate_limit import check_changes_limit
+
+    check_changes_limit(request)
+    share = await db.get_share(token)
+    if not share:
+        raise HTTPException(status_code=404, detail="Shared conversation not found")
+    cached = _share_changes_cache.get(token)
+    if cached is not None:
+        return cached
+    from backend.data_health.diff import conversation_changes
+
+    result = await conversation_changes(share["conversation_id"])
+    _share_changes_cache.set(token, result)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -705,6 +820,30 @@ def _scorecard_grounding_applies(
     return bool(_PROPERTY_DOMAINS & set(plan.sources)) or plan.workflow_hint == "site_due_diligence"
 
 
+def _provenance_for(context: ContextObject) -> dict[str, dict]:
+    """Dated sources for the figures a chat turn was given: the parcel's, and the area feeds on a
+    parcel-less turn (crime, 311, permits, census tract...). Empty when the turn carried none."""
+    from backend.provenance import build_provenance
+
+    return build_provenance(
+        context=context,
+        zone_definition=context.zone_definition,
+        resolved_pin=context.parcel_pin,
+        resolved_confidence=context.parcel_resolution,
+    )
+
+
+def _ensure_zone_definition(ctx: ContextObject) -> None:
+    """Attach the deterministic Title-17 zone table when the turn resolved a
+    district but nothing (a Profile handoff) supplied it."""
+    if ctx.zone_definition is None and ctx.parcel_zoning is not None:
+        from dataclasses import asdict
+
+        from backend.retrieval.zoning_definitions import get_zone_definition
+
+        ctx.zone_definition = asdict(get_zone_definition(ctx.parcel_zoning.zone_class))
+
+
 async def _retrieve(
     plan: RetrievalPlan, scorecard_context: ScorecardContext | None = None,
 ) -> ContextObject:
@@ -806,22 +945,11 @@ async def _retrieve(
             )
         ))
 
-    _FAILURE_LABELS = {
-        "crime": "crime statistics",
-        "crime_yoy": "crime year-over-year comparison",
-        "311": "311 service requests",
-        "permits": "building permits",
-        "violations": "building violations",
-        "business": "business licenses",
-        "vacant": "vacant buildings",
-        "food_inspections": "food inspections",
-        "aro_housing": "affordable housing data",
-        "zoning_lookup": "parcel zoning",
-        "regulatory": "regulatory overlays",
-        "property": "property records",
-        "incentives": "incentive zones",
-        "neighborhood": "demographics and transit",
-    }
+    # What a failed retrieval is called lives in data_health/failures.py, shared by every surface.
+    _FAILURE_LABELS = {k: failures.label(k) for k in (
+        "crime", "crime_yoy", "311", "permits", "violations", "business", "vacant", "food_inspections", "aro_housing",
+        "zoning_lookup", "regulatory", "property", "incentives", "neighborhood",
+    )}
 
     results: dict[str, Any] = {}
     partial_failures: list[str] = []
@@ -841,9 +969,7 @@ async def _retrieve(
             else:
                 results[key] = value
 
-    prop_summary = results.get("property")
-    if prop_summary is not None and hasattr(prop_summary, "data_gaps"):
-        partial_failures.extend(prop_summary.data_gaps)
+    partial_failures.extend(_domain_data_gaps(results, ("property", "regulatory")))
 
     code_chunks = []
     if "vector_search" in plan.sources and plan.search_query:
@@ -882,6 +1008,10 @@ async def _retrieve(
             ctx.parcel_zoning = sc.parcel_zoning
         if sc.regulatory is not None:
             ctx.regulatory = sc.regulatory
+            # The flood lookup the Profile couldn't make is still unknown here (this turn skipped the fetch):
+            # the footer must say so. The label is ours, never client text.
+            if sc.regulatory.flood_unchecked and failures.label("flood") not in ctx.partial_failures:
+                ctx.partial_failures.append(failures.label("flood"))
         if sc.property is not None:
             ctx.property = sc.property
         if sc.incentives is not None:
@@ -903,17 +1033,45 @@ async def _retrieve(
             elif ctx.neighborhood.traffic is None:
                 ctx.neighborhood.traffic = sc.traffic
 
+    # The deterministic Title-17 standards (FAR, height, minimum lot area per unit)
+    # belong in front of the model on EVERY parcel-resolved turn, not only on a
+    # Profile handoff — otherwise a cold chat fills them in from memory (kit: RM-4.5
+    # stated as FAR 2.2 / 1,000 sq ft per unit instead of 1.7 / 700). The same table
+    # the Profile and the PDF report use.
+    _ensure_zone_definition(ctx)
+
     return ctx
+
+
+def _domain_data_gaps(results: dict[str, Any], keys: tuple[str, ...]) -> list[str]:
+    """``data_gaps`` the domain summaries report (a sub-source that failed inside a
+    domain that otherwise succeeded), for partial_failures. FEMA's flood lookup is a sub-source of the
+    regulatory domain with its own flag, not an overlay gap."""
+    gaps: list[str] = []
+    for key in keys:
+        summary = results.get(key)
+        gaps.extend(getattr(summary, "data_gaps", None) or [])
+        if getattr(summary, "flood_unchecked", False):
+            gaps.append(failures.label("flood"))
+    return gaps
 
 
 async def _fetch_overlay_geojson(
     lat: float, lon: float,
 ) -> dict | None:
     """Get GeoJSON features for overlays that hit at this point."""
-    from backend.retrieval.regulatory.overlays import query_all_overlays, overlay_geojson_features
-    hits = await query_all_overlays(lat, lon)
+    from backend.retrieval.regulatory.overlays import (
+        OverlayLayerError,
+        overlay_geojson_features,
+        query_overlays_checked,
+    )
+    checked = await query_overlays_checked(lat, lon)
+    if checked.failed:
+        failed = ", ".join(str(layer_id) for layer_id in checked.failed)
+        raise OverlayLayerError(f"overlay point lookup failed for layer(s) {failed}")
+    hits = checked.hits
     if not hits:
-        return None
+        return {"type": "FeatureCollection", "features": []}
     layer_ids = [lid for lid, _ in hits]
     return await overlay_geojson_features(lat, lon, layer_ids)
 
@@ -1073,11 +1231,13 @@ def _build_map_response(
         if incentive_features else None
     )
 
+    from backend.map_geometry import simplify_zoning_coverage
+
     return MapDataResponse(
         crimes=crimes,
         requests_311=requests_311,
         building_permits=building_permits,
-        zoning=_simplify_geojson(map_rows.get("zoning")),
+        zoning=simplify_zoning_coverage(map_rows.get("zoning")),
         overlay_districts=_simplify_geojson(map_rows.get("overlay_geojson")),
         incentive_zones=_simplify_geojson(incentive_zones),
         queried_address=queried_address,
@@ -1133,10 +1293,57 @@ async def _apply_parcel_hint(plan, pin: str):
     return plan
 
 
+async def _apply_typed_address(plan):
+    """Resolve an address typed into chat the way the Property Profile does.
+
+    The router geocodes the address with the Census geocoder, whose
+    street-interpolated point can land 100–200 ft away, in a neighboring parcel
+    or even a different zoning district (kit M1: wrong district on 2 of 7
+    parcels). Without a parcel hint, replace that point with the parcel's own
+    point from Address Points / Assessor Parcel Addresses (``_resolve_location``
+    steps 3–3.5). When neither confidently identifies a parcel, keep the
+    router's geocode but mark the location ``approximate`` so the answer says so.
+    Only address-typed plans are touched; any failure degrades to approximate.
+    """
+    loc = plan.location
+    if loc.type != "address" or loc.pin:
+        return plan
+    candidate = loc.resolved_address or loc.raw
+    if not candidate:
+        return plan
+    try:
+        rl = await _resolve_location(address=candidate, degraded_fallback=False)
+    except Exception:
+        # HTTPException(422) = no confident parcel; anything else = lookup error.
+        loc.resolution = "approximate"
+        return plan
+    if rl.confidence != "authoritative" or not rl.pin:
+        loc.resolution = "approximate"
+        return plan
+    ca = community_area_by_point(rl.lat, rl.lon)
+    loc.resolved_lat = rl.lat
+    loc.resolved_lon = rl.lon
+    loc.pin = rl.pin
+    loc.resolution = "authoritative"
+    loc.resolution_method = rl.method
+    if ca is not None:
+        loc.resolved_community_area = ca
+        loc.resolved_community_area_name = community_area_name(ca)
+    return plan
+
+
 # What the user sees when a chat stage fails. The exception detail stays in the
 # server log and request_logs; it used to be streamed to the browser verbatim
 # (e.g. "Synthesizer failed: '>' not supported between ...").
 _CHAT_ERROR = "Something went wrong while answering. Please try again."
+
+# Appended to the streamed answer when the model hit the token cap. Silent
+# truncation (kit 2026-10-01: 5 of 7 answers cut mid-sentence, two lost the
+# final question entirely) reads as a complete answer, so say it out loud.
+_TRUNCATION_NOTICE = {
+    "en": "\n\n---\n*This answer was cut off before it finished. Reply \"continue\" for the rest, or ask about one item at a time.*",
+    "es": "\n\n---\n*Esta respuesta se cortó antes de terminar. Responde \"continúa\" para ver el resto, o pregunta por un punto a la vez.*",
+}
 
 
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
@@ -1200,6 +1407,13 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         )
         if req.parcel_pin:
             plan = await _apply_parcel_hint(plan, req.parcel_pin)
+            if plan.location.pin:
+                plan.location.resolution = "authoritative"
+                plan.location.resolution_method = "pin"
+        if not plan.location.pin:
+            # No hint, or the user pivoted to a different address: pin it down
+            # the same way the Profile does instead of trusting the geocode.
+            plan = await _apply_typed_address(plan)
         timings["router"] = int((time.monotonic() - t0) * 1000)
     except Exception as exc:
         log.exception("Router failed")
@@ -1271,6 +1485,14 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception:
         log.warning("Analytics computation failed", exc_info=True)
 
+    # WS0 M6: build the dated source of every figure once, withhold what the standard withholds (before
+    # the model or the sidebar sees it), and keep the map on the context: stored with the answer, sent to
+    # the sidebar, never to the model.
+    try:
+        withhold_low_evidence(context, _provenance_for(context))
+    except Exception:
+        log.warning("Provenance for the chat context failed", exc_info=True)
+
     yield _sse(ChatChunk(type="context", context=context, t_ms=elapsed_ms()))
 
     # Emit map data so the frontend doesn't need a separate fetch
@@ -1284,8 +1506,15 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     first_token = True
     t_first_token: int | None = None
     answer_parts: list[str] = []
+    synth_outcome: dict = {}
+    # The model writes the answer; it does not get to write the sources. Any URL it
+    # composes that we did not supply is dropped (a link keeps its label), and a
+    # sources block is appended below from the provenance map and the chunks cited.
+    from backend.chat_sources import UrlGuard, allowed_urls, build_sources_footer, cited_chunks
+
+    url_guard = UrlGuard(allowed_urls(context))
     try:
-        async for token in stream_answer(
+        async for raw_token in stream_answer(
             context=context,
             user_message=req.message,
             history=req.history,
@@ -1295,13 +1524,40 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             request_group=request_group,
             conversation_id=req.conversation_id,
             language=req.language,
+            outcome=synth_outcome,
         ):
+            token = url_guard.feed(raw_token)
+            if not token:
+                continue
             chunk_t = elapsed_ms() if first_token else None
             if first_token:
                 t_first_token = chunk_t
             answer_parts.append(token)
             yield _sse(ChatChunk(type="token", text=token, t_ms=chunk_t))
             first_token = False
+        tail = url_guard.flush()
+        if tail:
+            answer_parts.append(tail)
+            yield _sse(ChatChunk(type="token", text=tail, t_ms=elapsed_ms()))
+        if url_guard.dropped:
+            log.warning("Dropped %d model-written URL(s) (%s): %s", len(url_guard.dropped), request_group, url_guard.dropped[:5])
+        provenance = context.provenance or {}
+        from backend.code_vintage import get_code_vintage
+
+        footer = build_sources_footer(
+            provenance, cited_chunks("".join(answer_parts), context.code_chunks),
+            (get_code_vintage() or {}).get("current_through"),
+            context.code_currency,
+            context.partial_failures,
+        )
+        if footer:
+            answer_parts.append(footer)
+            yield _sse(ChatChunk(type="token", text=footer, t_ms=elapsed_ms()))
+        if synth_outcome.get("stop_reason") == "max_tokens":
+            log.warning("Answer hit the synthesizer token cap (%s)", request_group)
+            notice = _TRUNCATION_NOTICE.get(req.language, _TRUNCATION_NOTICE["en"])
+            answer_parts.append(notice)
+            yield _sse(ChatChunk(type="token", text=notice, t_ms=elapsed_ms()))
     except Exception as exc:
         log.exception("Synthesizer failed")
         error_msg = f"Synthesizer failed: {exc}"
@@ -1314,6 +1570,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     if answer_parts and not error_msg:
         citation_warnings = citation_problems(
             "".join(answer_parts), len(context.code_chunks), data_sources_present(context),
+            provenance_keys=frozenset(context.provenance or {}),
         ) or None
         if citation_warnings:
             log.warning("Answer has unsupported citations (%s): %s", request_group, citation_warnings)
@@ -1332,7 +1589,10 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             log.warning("Failed to generate turn summary", exc_info=True)
 
     timings["total"] = elapsed_ms()
-    yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings, citation_warnings=citation_warnings))
+    yield _sse(ChatChunk(
+        type="done", t_ms=elapsed_ms(), timings=timings, citation_warnings=citation_warnings,
+        truncated=True if synth_outcome.get("stop_reason") == "max_tokens" else None,
+    ))
 
     asyncio.create_task(_save_request_log(
         request_group, req, plan, elapsed_ms(),
@@ -1384,6 +1644,10 @@ class ResolvedLocation(NamedTuple):
     address: str | None
     pin: str | None
     confidence: str
+    # How this location was established (see backend/resolution.py): coordinates | pin |
+    # address_points | assessor_addresses | geocode_nearest. Optional so existing
+    # five-field constructions stay valid.
+    method: str | None = None
 
 
 _MAX_ADDRESS_CHARS = 200
@@ -1405,6 +1669,8 @@ async def _resolve_location(
     lat: float | None = None,
     lon: float | None = None,
     pin: str | None = None,
+    *,
+    degraded_fallback: bool = True,
 ) -> ResolvedLocation:
     """Resolve input to a parcel identity + point. Raises HTTPException on failure.
 
@@ -1415,7 +1681,9 @@ async def _resolve_location(
       3. address → authoritative PIN via Cook County Address Points (78yw-iddh).
          GIS-independent; this is the step that closes R7 for typed addresses.
       4. degraded fallback — geocode + downstream nearest-centroid, flagged
-         "approximate" so the artifact discloses it (INV-5).
+         "approximate" so the artifact discloses it (INV-5). Skipped when
+         ``degraded_fallback=False`` (the chat path already holds the router's
+         own geocode and only wants a *confident* parcel).
       5. nothing resolvable → 422.
     """
     settings = get_settings()
@@ -1431,7 +1699,7 @@ async def _resolve_location(
 
     # 1. Explicit coordinates are a deliberate point override — highest precedence.
     if lat is not None and lon is not None:
-        return ResolvedLocation(lat, lon, resolved_address, pin, "authoritative")
+        return ResolvedLocation(lat, lon, resolved_address, pin, "authoritative", "coordinates")
 
     # 2. A supplied PIN is the authoritative unique parcel key — resolve its
     #    centroid directly, never overridden by a co-supplied address.
@@ -1460,7 +1728,7 @@ async def _resolve_location(
         if rows and rows[0].get("lat") and rows[0].get("lon"):
             return ResolvedLocation(
                 float(rows[0]["lat"]), float(rows[0]["lon"]),
-                display_address, pin, "authoritative",
+                display_address, pin, "authoritative", "pin",
             )
 
     # 3. Address → authoritative PIN via Address Points. Resolving the parcel by
@@ -1472,7 +1740,7 @@ async def _resolve_location(
         hit = await address_to_pin(address)
         if hit:
             return ResolvedLocation(
-                hit["lat"], hit["lon"], resolved_address, hit["pin14"], "authoritative",
+                hit["lat"], hit["lon"], resolved_address, hit["pin14"], "authoritative", "address_points",
             )
 
     # 3.5 Address → authoritative PIN via the Assessor's Parcel Addresses
@@ -1494,19 +1762,19 @@ async def _resolve_location(
             if rows and rows[0].get("lat") and rows[0].get("lon"):
                 return ResolvedLocation(
                     float(rows[0]["lat"]), float(rows[0]["lon"]),
-                    resolved_address, assessor_pin, "authoritative",
+                    resolved_address, assessor_pin, "authoritative", "assessor_addresses",
                 )
 
     # 4. Degraded fallback: geocode → street-interpolated point → downstream
     #    nearest-centroid. No confident PIN, so flag approximate (INV-5) and log.
-    if address:
+    if address and degraded_fallback:
         coords = await geocode_address(address)
         if coords:
             log.warning(
                 "R7 degraded resolution (approximate parcel) for address=%r", address
             )
             return ResolvedLocation(
-                coords[0], coords[1], resolved_address, None, "approximate",
+                coords[0], coords[1], resolved_address, None, "approximate", "geocode_nearest",
             )
 
     # 5. Nothing resolvable.
@@ -1617,18 +1885,10 @@ async def _fetch_scorecard_data(
     results: dict[str, Any] = {}
     partial_failures: list[str] = []
     comparables_summary = None
-    _FAILURE_MAP = {
-        "property": "property records",
-        "regulatory": "regulatory overlays",
-        "zoning": "parcel zoning",
-        "incentives": "incentive zones",
-        "neighborhood": "demographics and transit",
-        "aro_housing": "affordable housing data",
-        "crime": "crime statistics",
-        "crime_yoy": "crime year-over-year comparison",
-        "violations": "building violations",
-        "address_311": "address 311 complaints",
-    }
+    _FAILURE_MAP = {k: failures.label(k) for k in (
+        "property", "regulatory", "zoning", "incentives", "neighborhood", "aro_housing", "crime", "crime_yoy",
+        "violations", "address_311",
+    )}
 
     done = await asyncio.gather(*tasks.values(), return_exceptions=True)
     for key, value in zip(tasks.keys(), done):
@@ -1639,6 +1899,13 @@ async def _fetch_scorecard_data(
                 partial_failures.append(_FAILURE_MAP[key])
         else:
             results[key] = value
+
+    # Overlay layers the City map couldn't answer: unknown, not "not in it". And the Assessor/PTAXSIM calls that
+    # failed (not the figures a source simply has no record of): a Profile that lost its sales history says so.
+    partial_failures.extend(_domain_data_gaps(results, ("regulatory",)))
+    partial_failures.extend(
+        g for g in (getattr(results.get("property"), "failed_calls", None) or []) if g not in partial_failures
+    )
 
     from backend.models import RetrievalPlan, Location
     _source_tags = [
@@ -1710,11 +1977,15 @@ async def _fetch_scorecard_data(
                     price_range_min=s.get("price_range_min"),
                     price_range_max=s.get("price_range_max"),
                     sales_volume=s.get("sales_volume", 0),
+                    comp_basis=s.get("comp_basis"),
+                    comp_radius_mi=s.get("comp_radius_mi"),
+                    comp_window_years=s.get("comp_window_years"),
+                    comp_widened=bool(s.get("comp_widened")),
                     sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
                 )
         except Exception as exc:
             log.warning("Scorecard comparable sales failed: %s", exc)
-            partial_failures.append("comparable sales")
+            partial_failures.append(failures.label("comparables"))
 
     # Tri-state for the violations card: a present summary (ctx.violations), a
     # confirmed-zero ("no violations on record"), or an unconfirmed lookup
@@ -1733,6 +2004,9 @@ async def _fetch_scorecard_data(
         "context": ctx,
         "comparables": comparables_summary,
         "partial_failures": partial_failures,
+        # the stable keys behind those labels + the words that reported them, so a module can say what it left
+        # out (data_health/failures.py)
+        "failed_sources": failures.failed_detail(partial_failures),
         "violations_checked": violations_checked,
     }
 
@@ -1745,15 +2019,20 @@ async def area_stats(ca: int) -> dict:
     from backend.retrieval.area_stats import get_area_stats
 
     stats = await get_area_stats(ca)
-    return stats or {
-        "community_area": ca,
-        "n_parcels": 0,
-        "median_assessed": None,
-        "n_assessed": 0,
-        "median_mv_per_land_sqft": None,
-        "n_mv_psf": 0,
-        "by_land_use": {},
-    }
+    if not stats:
+        return {
+            "community_area": ca,
+            "n_parcels": 0,
+            "median_assessed": None,
+            "n_assessed": 0,
+            "median_mv_per_land_sqft": None,
+            "n_mv_psf": 0,
+            "by_land_use": {},
+        }
+    from backend.provenance_figures import area_benchmark_entry
+
+    entry = area_benchmark_entry(stats)
+    return {**stats, "provenance": {"area.benchmarks.market_value_per_land_sqft": entry} if entry else {}}
 
 
 _parcel_map_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="parcel_map")
@@ -1763,8 +2042,8 @@ _parcel_map_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="parcel_map")
 async def parcel_map(lat: float, lon: float) -> dict:
     """Geometry layers for the Property Profile's module maps: the zoning quilt
     around the parcel (Build module) and the overlay/TIF/EZ boundaries that hit
-    the point (Regulatory/Incentives module). Every layer degrades to None —
-    the maps render only the layers that arrive."""
+    the point (Regulatory/Incentives module). Availability distinguishes a
+    successful empty lookup from a source that could not be checked."""
     key = f"{lat:.4f},{lon:.4f}"
     cached = _parcel_map_cache.get(key)
     if cached is not None:
@@ -1781,24 +2060,32 @@ async def parcel_map(lat: float, lon: float) -> dict:
         _limited(ez_geojson_feature(lat, lon)),
         return_exceptions=True,
     )
-    zoning_fc, overlays_fc, tif_feat, ez_feat = (
-        None if isinstance(r, Exception) else r for r in results
-    )
+    layer_names = ("zoning", "overlays", "tif", "ez")
+    for name, result in zip(layer_names, results):
+        if isinstance(result, Exception):
+            log.warning("Parcel-map %s lookup failed: %s", name, result)
+    availability = {
+        name: "unavailable" if isinstance(result, Exception) else "available"
+        for name, result in zip(layer_names, results)
+    }
+    values = [None if isinstance(result, Exception) else result for result in results]
+    zoning_fc, overlays_fc, tif_feat, ez_feat = values
+
+    from backend.map_geometry import prepare_parcel_zoning, zoning_label_points
+
+    prepared_zoning = prepare_parcel_zoning(zoning_fc, lat=lat, lon=lon)
     payload = {
-        "zoning": _simplify_geojson(zoning_fc),
+        "zoning": prepared_zoning,
+        "zoning_labels": zoning_label_points(prepared_zoning),
         "overlays": _simplify_geojson(overlays_fc),
         "tif": tif_feat,
         "ez": ez_feat,
+        "availability": availability,
     }
-    # Cache only payloads with content: an all-empty result is a transient
-    # upstream failure more often than a real empty area (the zoning quilt has
-    # features anywhere in the city), and caching it blanked the maps for an
-    # hour after one ArcGIS hiccup (2026-07-07 audit D4).
-    def _feats(fc: Any) -> bool:
-        return bool(isinstance(fc, dict) and fc.get("features"))
-
-    if _feats(payload["zoning"]) or _feats(payload["overlays"]) \
-            or payload["tif"] or payload["ez"]:
+    # A complete successful empty response is definitive and may be cached.
+    # Any failed source keeps the whole response out of this aggregate cache so
+    # its unavailable state cannot mask a recovery for an hour.
+    if all(state == "available" for state in availability.values()):
         _parcel_map_cache.set(key, payload)
     return payload
 
@@ -1811,6 +2098,17 @@ async def scorecard(
     pin: str | None = None,
 ) -> dict:
     """Non-AI instant-load property dashboard. Zero LLM cost."""
+    # Every parcel the two address sources list for the typed address, fetched alongside
+    # the resolution so the "how we found this parcel" panel can say when an address
+    # maps to several parcels or the sources disagree (both are cached lookups).
+    cand_task = None
+    if address and lat is None and lon is None and not pin:
+        from backend.retrieval.property.address_points import address_point_pins
+        from backend.retrieval.property.parcel_addresses import assessor_address_pins
+
+        cand_task = asyncio.gather(
+            address_point_pins(address), assessor_address_pins(address), return_exceptions=True,
+        )
     rl = await _resolve_location(address, lat, lon, pin)
     _require_chicago(rl)
     data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
@@ -1825,7 +2123,9 @@ async def scorecard(
     # See claude-context/audits/2026-06-21_resolver-investigation.md.
     resolved_pin = rl.pin
     resolved_confidence = rl.confidence
+    resolution_method = rl.method
     nearest_parcel_unverified = False
+    unverified_reason: str | None = None
     if address and resolved_confidence == "approximate":
         prop = data["context"].property
         candidate_pin = prop.pin14 if prop else None
@@ -1834,8 +2134,10 @@ async def scorecard(
             if await parcel_address_matches(candidate_pin, address):
                 resolved_pin = candidate_pin
                 resolved_confidence = "authoritative"
+                resolution_method = "geocode_nearest_verified"
             else:
                 nearest_parcel_unverified = True
+                unverified_reason = "nearest_parcel_address_mismatch"
     # INV-1 guard: one artifact, one parcel. An authoritative resolved PIN whose
     # property record came back for a DIFFERENT pin14 means the PIN-keyed lookup
     # missed (PIN absent from Parcel Universe) and the orchestrator's coordinate
@@ -1850,9 +2152,28 @@ async def scorecard(
                 resolved_pin, prop.pin14,
             )
             nearest_parcel_unverified = True
+            unverified_reason = "property_record_is_another_parcel"
 
     data["resolved_pin"] = resolved_pin
     data["resolved_confidence"] = resolved_confidence
+    # The context's own identity, so what it derives from the parcel (passed_not_on_map matches on the
+    # PIN first) sees the reconciled PIN rather than the address alone.
+    data["context"].parcel_pin = resolved_pin
+    data["context"].parcel_resolution = resolved_confidence
+    # WS2: a read-only local snapshot lookup after identity reconciliation. This
+    # never calls Clerk or Address Points on the request path; missing/stale data
+    # is returned as an explicit state rather than being confused with zero filings.
+    from backend.legislation.upcoming import summary_for as upcoming_zoning_for
+
+    data["context"].upcoming_zoning = await asyncio.to_thread(
+        upcoming_zoning_for,
+        get_settings().pending_legislation_path,
+        lat=rl.lat,
+        lon=rl.lon,
+        pin=resolved_pin,
+        address=rl.address,
+        authoritative_pin=resolved_confidence == "authoritative",
+    )
     data["nearest_parcel_unverified"] = nearest_parcel_unverified
     data["resolved_lat"] = rl.lat
     data["resolved_lon"] = rl.lon
@@ -1865,12 +2186,134 @@ async def scorecard(
         data["zone_definition"] = asdict(get_zone_definition(zoning_summary.zone_class))
     else:
         data["zone_definition"] = None
+    # Where each fact came from and how current it is (V1): dated sources for the
+    # district, its standards, the overlays and the parcel identity.
+    from backend.provenance import build_provenance
+
+    from backend.resolution import build_resolution
+
+    ap_pins: list[str] = []
+    assessor_pins: list[str] = []
+    if cand_task is not None:
+        got = await cand_task
+        ap_pins = got[0] if isinstance(got[0], list) else []
+        assessor_pins = got[1] if isinstance(got[1], list) else []
+    _prop = data["context"].property
+    data["resolution"] = build_resolution(
+        address=address,
+        method=resolution_method,
+        lat=rl.lat,
+        lon=rl.lon,
+        pin=resolved_pin,
+        confidence=resolved_confidence,
+        ap_pins=ap_pins,
+        assessor_pins=assessor_pins,
+        unverified=nearest_parcel_unverified,
+        unverified_reason=unverified_reason,
+        property_pin=_prop.pin14 if _prop else None,
+        parcel_geometry=_prop.parcel_geometry if _prop else None,
+    )
+    data["provenance"] = build_provenance(
+        context=data["context"],
+        zone_definition=data.get("zone_definition"),
+        resolved_pin=resolved_pin,
+        resolved_confidence=resolved_confidence,
+        comparables=data.get("comparables"),
+        address_scoped_violations=True,
+    )
+    # WS2 PR3: pending Title 17 text amendments a committed review maps to THIS parcel's district,
+    # overlays and shown facts. Computed after provenance because the facts the Profile actually
+    # shows decide relevance; a pending proposal never alters any current-law figure above.
+    from datetime import datetime, timezone
+
+    from backend.legislation import impacts as pending_impacts
+    from backend.provenance import text_impact_entries
+
+    upcoming = data["context"].upcoming_zoning
+    if upcoming is not None:
+        zoning_now = data["context"].parcel_zoning
+        regulatory_now = data["context"].regulatory
+        facts = {k: v for k, v in data["provenance"].items() if not k.startswith("regulatory.upcoming_zoning.")}
+        upcoming.text_impacts, upcoming.text_review = await asyncio.to_thread(
+            pending_impacts.for_parcel,
+            get_settings().pending_legislation_path,
+            summary_status=upcoming.status,
+            checked_at=upcoming.checked_at,
+            parcel=pending_impacts.ParcelFacts(
+                zone_class=zoning_now.zone_class if zoning_now else None,
+                overlay_types=tuple(o.layer_type for o in (regulatory_now.overlays if regulatory_now else [])),
+                address=rl.address,
+                fact_ids=frozenset(facts),
+                entries=facts,
+            ),
+        )
+        data["provenance"].update(
+            text_impact_entries(upcoming, datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+        )
+    # The dates behind this page, in reading order (the chat footer and the report cover show the same list).
+    from backend.data_health.vintages import as_dicts, vintages_for
+
+    data["data_dates"] = as_dicts(vintages_for(data["provenance"], code_currency=data["context"].code_currency))
     data["context"] = data["context"].model_dump(exclude_none=True)
     if data.get("comparables"):
         data["comparables"] = data["comparables"].model_dump(exclude_none=True)
     else:
         data["comparables"] = None
     return data
+
+
+def render_report_html(
+    report_data, language: str = "en", report_date: str | None = None, copy_of: str | None = None,
+) -> str:
+    """The report's HTML from its data (deterministic catalog, no LLM)."""
+    from datetime import date
+
+    from jinja2 import Environment, FileSystemLoader
+
+    from backend import report_i18n
+    from backend.legislation.currency import chicago_day
+    from backend.retrieval.zoning_definitions import get_zone_name
+
+    _t = report_i18n.make_translator(language)
+    _na = _t("common.na")
+    env = Environment(loader=FileSystemLoader(str(Path(__file__).parent / "templates")), autoescape=True)
+    env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else _na
+    env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else _na
+    env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else _na
+    env.filters["zone_desc"] = get_zone_name
+    env.filters["rdate"] = lambda iso: report_i18n.format_report_date(chicago_day(iso), language) if iso else _na
+    env.globals["t"] = _t
+    env.globals["tn"] = report_i18n.make_plural(language)
+    # Per-figure confidence (WS0 M5): the Profile's provenance for this parcel plus the report's own AI readings.
+    from backend import report_provenance
+    from backend.zoning_cache import get_cached_zoning_meta
+
+    try:
+        standards = report_data.zoning_standards
+        zone = report_data.context.parcel_zoning.zone_class if report_data.context.parcel_zoning else None
+        ai_meta = None
+        if standards is not None and standards.extraction_confidence in ("high", "medium"):
+            ai_meta = get_cached_zoning_meta(zone) or {"sections": [], "code_vintage": None}
+        report_data.provenance = report_provenance.entries_for_report(report_data, ai_meta)
+    except Exception:
+        # Confidence captions must never stop a paid report from rendering: without a map they stay quiet.
+        log.warning("report provenance failed; rendering without confidence captions", exc_info=True)
+        report_data.provenance = {}
+    try:
+        code_currency = report_data.context.code_currency
+    except Exception:
+        code_currency = None
+    env.globals.update(report_provenance.helpers(report_data.provenance, _t, language, code_currency=code_currency))
+    # What the report could not check, by section (data_health/failures.py): a section that left a source out
+    # says so at its head instead of reading as "nothing there".
+    _detail = failures.failed_detail(report_data.partial_failures)
+    env.globals["failed_in"] = lambda *keys: list(dict.fromkeys(lab for d in _detail if d["key"] in keys for lab in d["labels"]))
+    return env.get_template("zoning_report.html").render(
+        report=report_data,
+        report_date=report_date or report_i18n.format_report_date(date.today(), language),
+        # an updated copy of a report the buyer already has: the day the first one was generated (WS6 M8)
+        copy_of=report_i18n.format_report_date(date.fromisoformat(copy_of[:10]), language) if copy_of else None,
+    )
 
 
 @app.get("/api/report")
@@ -1882,14 +2325,21 @@ async def report(
     pin: str | None = None,
     mock: bool = False,
     language: str = "en",
+    copy: str | None = None,
     user: dict = Depends(require_auth),
 ) -> Response:
-    """Generate a PDF development feasibility & site intelligence report."""
+    """Generate a PDF development feasibility & site intelligence report.
+
+    A purchase keeps the FIRST report it renders as its original (stored once, byte for byte). ``copy=original``
+    returns that stored PDF; every other download is a live render with today's data, labeled "Updated copy"
+    once an original exists (WS6 M8, Jack's policy: original plus an updated copy, free for now)."""
     import re
-    from datetime import date
+    from datetime import date, datetime, timezone
+
+    if copy not in (None, "original", "updated"):
+        raise HTTPException(status_code=400, detail="copy must be 'original' or 'updated'")
 
     from backend.auth import _TIER_ORDER
-    from jinja2 import Environment, FileSystemLoader
 
     # mock=true fills every section with fixture data for visual QA of the PDF
     # template. A customer must never receive a report built from made-up
@@ -1910,6 +2360,28 @@ async def report(
                 status_code=403,
                 detail={"error": "report_purchase_required"},
             )
+
+    # The purchase this render belongs to, and its stored original if it has one. A mock render belongs to no
+    # purchase and is never recorded.
+    purchase_id = None if mock else await db.find_report_purchase(user["id"], resolved_lat, resolved_lon, pin=rl.pin)
+    original = await db.get_original_render(purchase_id) if purchase_id else None
+    if copy == "original":
+        if original is None:
+            raise HTTPException(status_code=404, detail={"error": "no_original"})
+        stored = db.read_original_pdf(original)
+        if stored is None:
+            log.error("Stored original for purchase %s is missing or fails its hash", purchase_id)
+            raise HTTPException(status_code=410, detail={"error": "original_unavailable"})
+        first = datetime.fromtimestamp(original["rendered_at"] / 1000, tz=timezone.utc).date().isoformat()
+        slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")
+        return Response(
+            content=stored, media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{slug}_{first}_feasibility_report_original.pdf"',
+                     "X-Report-Copy": "original"},
+        )
+    copy_of = (
+        datetime.fromtimestamp(original["rendered_at"] / 1000, tz=timezone.utc).date().isoformat() if original else None
+    )
 
     # Bound concurrent report renders: _fetch_report_data through write_pdf is the
     # memory-heavy span (map rasters + WeasyPrint buffers). Holding _REPORT_SEM here
@@ -1970,26 +2442,7 @@ async def report(
         del basemap_bytes, basemap_wide_bytes
 
         # Render HTML template
-        from backend import report_i18n
-        _t = report_i18n.make_translator(language)
-        _tn = report_i18n.make_plural(language)
-        _na = _t("common.na")
-        template_dir = Path(__file__).parent / "templates"
-        env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
-        env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else _na
-        env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else _na
-        env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else _na
-        from backend.retrieval.zoning_definitions import get_zone_name
-        env.filters["zone_desc"] = get_zone_name
-        # Translator globals for the template (deterministic catalog, no LLM).
-        env.globals["t"] = _t
-        env.globals["tn"] = _tn
-        template = env.get_template("zoning_report.html")
-
-        html_content = template.render(
-            report=report_data,
-            report_date=report_i18n.format_report_date(date.today(), language),
-        )
+        html_content = render_report_html(report_data, language, copy_of=copy_of)
 
         # Generate the PDF in an ISOLATED CHILD PROCESS. write_pdf() (cairo/pango
         # laying out 16–19 image-embedded pages) is the heaviest single step of a
@@ -2017,6 +2470,13 @@ async def report(
     slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")
     filename = f"{slug}_{date.today().isoformat()}_feasibility_report.pdf"
 
+    kind = "updated" if (original is not None or purchase_id is None) else "original"
+    if not mock:
+        kind = await _record_report_render(
+            user=user, purchase_id=purchase_id, kind=kind, report_data=report_data, rl=rl, language=language,
+            pdf_bytes=pdf_bytes,
+        )
+
     # Trim glibc free lists back to the OS *after* the response is sent, so the
     # request's matplotlib/HTML allocations don't ratchet the worker's RSS up.
     from starlette.background import BackgroundTask
@@ -2024,9 +2484,46 @@ async def report(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"', "X-Report-Copy": kind},
         background=BackgroundTask(_trim_malloc),
     )
+
+
+async def _record_report_render(
+    *, user: dict, purchase_id: int | None, kind: str, report_data, rl, language: str, pdf_bytes: bytes,
+) -> str:
+    """Keep what this render said (facts + data dates), and the PDF itself when it is a purchase's first.
+    Never fails the download: a bookkeeping error is logged and the buyer still gets their report. Returns the
+    kind actually recorded (a lost race for the original becomes an updated copy)."""
+    try:
+        from dataclasses import asdict
+
+        from backend.data_health import facts
+        from backend.data_health.vintages import as_dicts, vintages_for
+        from backend.retrieval.zoning_definitions import get_zone_definition
+
+        ctx = report_data.context
+        zone = asdict(get_zone_definition(ctx.parcel_zoning.zone_class)) if ctx.parcel_zoning is not None else None
+        try:
+            code_currency = ctx.code_currency
+        except Exception:
+            code_currency = None
+        prov = getattr(report_data, "provenance", None) or {}
+        snap = facts.snapshot(
+            ctx, provenance=prov, zone_definition=zone, lat=report_data.lat, lon=report_data.lon,
+            address=report_data.address, pin=rl.pin, unchecked=report_data.partial_failures,
+        )
+        vint = as_dicts(vintages_for(prov, code_currency=code_currency))
+        args = dict(user_id=user["id"], purchase_id=purchase_id, pin=rl.pin, lat=report_data.lat, lon=report_data.lon,
+                    facts=snap, vintages=vint, language=language)
+        try:
+            await db.record_render(kind=kind, pdf=pdf_bytes if kind == "original" else None, **args)
+        except db.OriginalExists:
+            kind = "updated"
+            await db.record_render(kind="updated", **args)
+    except Exception:
+        log.warning("Could not record the report render", exc_info=True)
+    return kind
 
 
 async def _scope_to_caller(req: ChatRequest, user: dict | None) -> ChatRequest:
@@ -2193,6 +2690,22 @@ async def voucher_redeem(request: Request, user: dict = Depends(require_auth)) -
 async def my_purchases(request: Request, user: dict = Depends(require_auth)) -> dict:
     """Completed report purchases for the current user (settings billing list)."""
     purchases = await db.get_user_report_purchases(user["id"])
+    originals = await db.get_purchase_originals(user["id"])
+    # `original`: the first report this purchase rendered, kept as sold (WS6 M8); None for a purchase made
+    # before originals were kept, until its next download becomes the original.
+    for p in purchases:
+        p["original"] = originals.get(p["id"])
+    # `changes`: the original's facts against today's, same rules as a reopened conversation (WS6 M9). A
+    # failure here never costs the list.
+    try:
+        from backend.data_health.diff import purchase_changes
+
+        changes = await purchase_changes(user["id"])
+    except Exception:
+        log.warning("Purchase change check failed", exc_info=True)
+        changes = {}
+    for p in purchases:
+        p["changes"] = changes.get(p["id"])
     return {"purchases": purchases}
 
 
@@ -2351,6 +2864,38 @@ async def admin_engagement(request: Request, period: str = "30d", _admin: dict =
     return await db.get_engagement_stats(period)
 
 
+@app.get("/api/admin/data-health")
+async def admin_data_health(
+    request: Request, source: str | None = None, _admin: dict = Depends(require_admin)
+) -> dict:
+    """The Data health panel (WS6 M3): the registry joined with the checker's stored status
+    (read-only, no network), or, with ``?source=``, one source's 90-day history."""
+    from backend.data_health import panel
+
+    path = get_settings().data_health_db_path
+    loop = asyncio.get_running_loop()
+    if source:
+        return await loop.run_in_executor(None, panel.build_history, path, source)
+    return await loop.run_in_executor(None, panel.build_panel, path)
+
+
+@app.get("/api/admin/code-currency")
+async def admin_code_currency(request: Request, _admin: dict = Depends(require_admin)) -> dict:
+    """How current the code text is and how well the gap is handled: the WS6 registry's
+    inputs (no network). ``map_lag`` = passed rezonings the City's zoning map lacks."""
+    from backend.legislation.currency import (
+        amendments_since_vintage, clerk_source_status, code_currency_status, designation_status, map_lag_status, public,
+    )
+
+    return {
+        "code": code_currency_status(),
+        "clerk": clerk_source_status(),
+        "map_lag": map_lag_status(),
+        "designations": designation_status(),
+        "amendments": [public(a) for a in amendments_since_vintage(("title17", "cited_other"))],
+    }
+
+
 @app.get("/api/admin/benchmark")
 async def admin_benchmark(request: Request, _admin: dict = Depends(require_admin)) -> dict:
     import json as json_mod
@@ -2389,6 +2934,7 @@ _VALID_EVENT_NAMES = {
     "scorecard_view",
     "checkout_started",
     "discovery_search",
+    "discovery_start_choice",
     "signup_completed",
     "segment_selected",
     "scorecard_feedback",

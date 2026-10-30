@@ -333,6 +333,27 @@ def iter_parcel_rows(
         conn.close()
 
 
+def delete_parcels(path: Path, pins: Iterable[str]) -> int:
+    """Delete specific parcels by PIN (a no-op when the index file does not exist yet).
+
+    The builder prunes PINs it now excludes (points outside every community-area polygon) so a
+    `--refresh` over an index built before the exclusion removes the old rows, rather than leaving
+    them until the file is rebuilt from scratch. Returns the number of rows removed.
+    """
+    pins = list(pins)
+    if not pins or not path.exists():
+        return 0
+    conn = sqlite3.connect(path)
+    try:
+        conn.executescript(_SCHEMA)
+        before = conn.total_changes
+        conn.executemany("DELETE FROM parcels WHERE pin = ?", [(p,) for p in pins])
+        conn.commit()
+        return conn.total_changes - before
+    finally:
+        conn.close()
+
+
 def update_parcel_attrs(path: Path, updates: Iterable[tuple[str, dict[str, Any]]]) -> None:
     """Overwrite the stored attrs of specific parcels: `updates` = (pin, attrs) pairs (executemany).
 

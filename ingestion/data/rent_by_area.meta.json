@@ -1,0 +1,9 @@
+{
+ "acs_period": "2020\u20132024",
+ "acs_release": "acs2024_5yr",
+ "builder": "ingestion/build_rent_artifact.py",
+ "built_at": "2026-10-28",
+ "community_areas": 77,
+ "design_factor": 1.5,
+ "tracts": 790
+}

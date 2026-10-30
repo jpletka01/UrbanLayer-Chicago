@@ -19,6 +19,14 @@ def test_en_es_key_parity():
     assert es - en == set(), f"keys missing from EN: {sorted(es - en)}"
 
 
+def test_untranslated_es_keys_exist_and_still_equal_the_english():
+    """Keys waiting for WS7 carry the English text in es. A translated key must leave
+    _UNTRANSLATED_ES; a listed key that no longer exists or differs is a stale entry."""
+    for key in R._UNTRANSLATED_ES:
+        assert key in R._EN and key in R._ES, key
+        assert R._ES[key] == R._EN[key], f"{key} is translated: remove it from _UNTRANSLATED_ES"
+
+
 def test_plural_variants_paired():
     """A ``__one`` key must have a matching ``__other`` (and vice versa) in both."""
     for lang, cat in (("en", R._EN), ("es", R._ES)):

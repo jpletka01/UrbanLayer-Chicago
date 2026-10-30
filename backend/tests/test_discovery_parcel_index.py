@@ -73,3 +73,14 @@ def test_read_missing_index_returns_empty(tmp_path):
     version, parcels = read_index(tmp_path / "nope.db")
     assert version is None
     assert parcels == []
+
+
+def test_delete_parcels_removes_only_named_pins(tmp_path):
+    from backend.discovery.parcel_index import delete_parcels, iter_parcel_rows, upsert_parcels
+
+    path = tmp_path / "idx.db"
+    assert delete_parcels(path, ["a"]) == 0  # no file yet: a no-op, not an error
+    upsert_parcels(path, [("a", 41.9, -87.7, {}, []), ("b", 41.9, -87.7, {}, [])])
+
+    assert delete_parcels(path, ["a", "missing"]) == 1
+    assert [row[0] for row in iter_parcel_rows(path)] == ["b"]

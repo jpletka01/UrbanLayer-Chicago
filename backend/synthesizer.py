@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import logging
 from typing import AsyncIterator
 
@@ -16,7 +18,7 @@ from backend.vision import prepare_upload_content_blocks
 log = logging.getLogger(__name__)
 
 LANGUAGE_NAMES: dict[str, str] = {
-    "es": "Spanish",
+    "es": "Mexican Spanish (español de México), addressing the reader formally as usted",
     "pl": "Polish",
     "zh-CN": "Simplified Chinese",
     "zh-TW": "Traditional Chinese",
@@ -64,7 +66,17 @@ def _build_user_text(
     context: ContextObject,
     user_message: str,
 ) -> str:
-    ctx_json = context.model_dump_json(indent=2, exclude={"analytics"})
+    # `provenance` is the dated source of every figure, stored with the answer and shown in the sidebar: the
+    # model gets the two short lists distilled from it (`withheld_figures`, `figure_notes`), not the map.
+    ctx = context.model_dump(mode="json", exclude={"analytics", "provenance"})
+    for key in ("withheld_figures", "figure_notes"):
+        if not ctx.get(key):
+            ctx.pop(key, None)
+    if ctx.get("code_currency"):
+        from backend.legislation.currency import for_model
+
+        ctx["code_currency"] = for_model(ctx["code_currency"])
+    ctx_json = json.dumps(ctx, indent=2, ensure_ascii=False)
     parts = [
         "Context data (retrieved from Chicago city databases):\n",
         f"```json\n{ctx_json}\n```\n\n",
@@ -138,7 +150,11 @@ async def stream_answer(
     request_group: str = "",
     conversation_id: str | None = None,
     language: str = "en",
+    outcome: dict | None = None,
 ) -> AsyncIterator[str]:
+    """Stream the answer's text. When ``outcome`` is given it receives
+    ``stop_reason`` once the stream ends, so the caller can tell a finished
+    answer ("end_turn") from one cut off at the token cap ("max_tokens")."""
     settings = get_settings()
 
     upload_blocks: list[dict] | None = None
@@ -173,3 +189,8 @@ async def stream_answer(
         async for chunk in stream.text_stream:
             if chunk:
                 yield chunk
+        if outcome is not None:
+            try:
+                outcome["stop_reason"] = (await stream.get_final_message()).stop_reason
+            except Exception:
+                log.warning("Could not read the synthesizer stop_reason", exc_info=True)

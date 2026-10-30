@@ -28,13 +28,16 @@ import httpx
 
 from backend import report_i18n
 from backend.config import get_settings
+from backend.data_health import failures
 from backend.models import (
     ComparableSale,
     ComparablesSummary,
     ReportData,
     ZoningStandards,
 )
+from backend.legislation.applied import pedestrian_street_removed
 from backend.retrieval.property.assessment_level import assessment_level_for_class
+from backend.retrieval.tod_streets import tod_street_status
 from backend.retrieval.utils import FT_PER_DEG_LAT, MI_PER_DEG_LAT
 from backend.retrieval.vector_search import semantic_search
 from backend.retrieval.zoning import adjacent_parcel_zoning
@@ -268,6 +271,7 @@ def _generate_zoning_map(
 
         # Draw regulatory overlay boundaries (dashed outlines)
         _OVERLAY_COLORS = {
+            "landmark_building": ("#f59e0b", "Landmark"),
             "landmark_district": ("#f59e0b", "Landmark"),
             "historic_district": ("#f59e0b", "Historic"),
             "national_register": ("#fbbf24", "Nat'l Register"),
@@ -718,6 +722,8 @@ async def _fetch_report_data(
     # Step 1: Base scorecard data
     base = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address, pin=pin)
     ctx = base["context"]
+    ctx.parcel_pin = pin
+    ctx.parcel_resolution = confidence if confidence in ("authoritative", "approximate") else None
     partial_failures: list[str] = list(base.get("partial_failures", []))
 
     # Step 2: v2 data retrievals in parallel
@@ -760,13 +766,9 @@ async def _fetch_report_data(
     # Gather v2 results
     v2_done = await asyncio.gather(*v2_tasks.values(), return_exceptions=True)
     v2_results: dict[str, Any] = {}
-    _V2_FAILURE_MAP = {
-        "adjacent_zoning": "adjacent zoning",
-        "address_permits": "address-specific permits",
-        "address_violations": "address-specific violations",
-        "comparable_sales": "comparable sales",
-        "nearby_construction": "nearby construction activity",
-    }
+    _V2_FAILURE_MAP = {k: failures.label(k) for k in (
+        "adjacent_zoning", "address_permits", "address_violations", "comparable_sales", "nearby_construction",
+    )}
     for key, value in zip(v2_tasks.keys(), v2_done):
         if isinstance(value, Exception):
             log.warning("Report v2 retrieval %s failed: %s", key, value)
@@ -840,6 +842,9 @@ async def _fetch_report_data(
             price_range_max=s.get("price_range_max"),
             sales_volume=s.get("sales_volume", 0),
             comp_basis=s.get("comp_basis"),
+            comp_radius_mi=s.get("comp_radius_mi"),
+            comp_window_years=s.get("comp_window_years"),
+            comp_widened=bool(s.get("comp_widened")),
             sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
         )
 
@@ -897,7 +902,7 @@ async def _fetch_report_data(
 
     # Fetch overlay GeoJSON for zoning map boundaries
     overlay_geojson = None
-    _OVERLAY_MAP_LAYERS = [2, 5, 6, 7, 8, 9, 23]  # PD, landmark, historic, landmark bldg, nat'l register, special, SSA
+    _OVERLAY_MAP_LAYERS = [2, 5, 6, 8, 9, 23]  # PD, landmark, historic districts, nat'l register, special, SSA
     try:
         from backend.retrieval.regulatory.overlays import overlay_geojson_features
         overlay_geojson = await _limited(overlay_geojson_features(resolved_lat, resolved_lon, _OVERLAY_MAP_LAYERS))
@@ -2055,14 +2060,14 @@ def _synthesize_opportunities_constraints(
             "category": "regulatory",
         })
 
-    if reg and reg.in_landmark_district:
+    if reg and (reg.in_landmark_district or reg.is_landmark_building):
         constraints.append({
             "signal": t("oc.landmark_review.signal"),
             "detail": t("oc.landmark_review.detail"),
             "category": "regulatory",
         })
 
-    if reg and reg.on_national_register and not reg.in_landmark_district:
+    if reg and reg.on_national_register and not (reg.in_landmark_district or reg.is_landmark_building):
         constraints.append({
             "signal": t("oc.nr_review.signal"),
             "detail": t("oc.nr_review.detail"),
@@ -2088,7 +2093,16 @@ def _synthesize_opportunities_constraints(
                 "category": "regulatory",
             })
 
-    if reg and any(o.layer_type == "pedestrian_street" for o in (reg.overlays or [])):
+    # Law passed after the code text, applied ahead of codification (WS1 M4b).
+    overlay_types = [o.layer_type for o in (reg.overlays or [])] if reg else []
+    if tod_street_status(ctx.resolved_address):
+        constraints.append({
+            "signal": t("oc.tod_street.signal"),
+            "detail": t("oc.tod_street.detail"),
+            "category": "regulatory",
+        })
+
+    if reg and "pedestrian_street" in overlay_types and not pedestrian_street_removed(ctx.resolved_address, overlay_types):
         opportunities.append({
             "signal": t("oc.pedestrian_overlay.signal"),
             "detail": t("oc.pedestrian_overlay.detail"),
@@ -2538,7 +2552,7 @@ def _compute_approval_pathway(report: "ReportData") -> dict | None:
         complexity = "COMPLEX"
         detail = t("ap.pd_detail")
         timeline = t("ap.pd_timeline")
-    elif reg.in_landmark_district or reg.in_historic_district:
+    elif reg.in_landmark_district or reg.is_landmark_building or reg.in_historic_district:
         complexity = "COMPLEX"
         detail = t("ap.landmark_detail")
         timeline = t("ap.landmark_timeline")

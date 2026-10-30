@@ -29,9 +29,9 @@ kill $(lsof -ti:8001) 2>/dev/null; uvicorn backend.main:app --reload --port 8001
 kill $(lsof -ti:5173) 2>/dev/null; cd frontend && npm run dev
 
 make setup / make test / make lint / make check     # see Makefile; `make test` = backend + eval scorers + vitest
-python -m pytest backend/tests/ -q                # ~1,290 tests (61 integration); a conftest guard fails unit tests that touch the network
+python -m pytest backend/tests/ -q                # ~2,490 tests (66 integration); a conftest guard fails unit tests that touch the network
 cd frontend && npx tsc --noEmit                   # quick type check — NOT the CI gate
-cd frontend && npm run test                       # vitest (207 tests / 24 files). Runs in CI;
+cd frontend && npm run test                       # vitest (816 tests / 68 files). Runs in CI;
                                                   # a failure here blocks the deploy, same as the build.
 cd frontend && npm run build                      # ⚠️ CI-PARITY GATE (run before pushing to main): tsc -b + vite build.
                                                   # CI's `test` job runs this; deploy has `needs: test`, so a build
@@ -44,6 +44,7 @@ cd frontend && npm run test:mobile                # phone-layout gate: Playwrigh
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
 python -m eval.source_coverage --full http://localhost:8001  # data source coverage benchmark
 PYTHONPATH=. python -m eval.lot_coverage --full http://localhost:8001  # lot-info field completeness across the fixed 100-address panel (eval/lot_panel.json)
+PYTHONPATH=. python -m eval.capacity_coverage --index <discovery_index.db>  # WS8 Phase 0 built-vs-allowed census of a Discovery index (read-only; also eval.capacity_fallbacks / capacity_panel / capacity_verdicts; decision Item 36)
 
 # Docker (local)
 docker compose up -d                              # dev (backend + qdrant, hot-reload)
