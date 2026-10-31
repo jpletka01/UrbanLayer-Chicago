@@ -2229,3 +2229,34 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | New tests | 14 backend (`test_what_if.py`), 4 vitest (`WhatIfCard.test.tsx`) | `pytest backend/tests/test_what_if.py`; `npx vitest run src/components/scorecard/WhatIfCard.test.tsx` |
 
 **Not measured:** whether users understand "units the lot area allows" without the arithmetic line (the card shows the number only; the zoning card above keeps the arithmetic); a native Spanish read. The phone audit passed on this branch (75 passed, 20 skipped, the Profile on all five devices).
+
+## Item 44 (WS5 PR4): the RS-3 "60% of the block face" test is measurable, against the plan's expectation (2026-10-31)
+
+**Status (2026-10-31): measurement only, open as a PR, not merged.** No product change. The threshold is Jack's (2026-10-31, the plan's recommendation): a block face is computable only when at least 90% of its lots have a unit count from an official record.
+
+**Finding 1: the unit count exists in the source; only our index lacks it.** The plan expected this to fail because "`units` is dormant in the index (`char_apts` empty)". The Assessor's residential characteristics (`x54s-btds`) carry `char_apts` on 1,094,535 of 1,102,672 rows in 2024 (99.3%): "Two" to "Six" on 2-11 apartment buildings, "None" on single-family classes (203: 345,246 "None", 60 "Two"). The index builder never copied it, which is why the index's `units` is empty.
+
+**Finding 2: on a seeded panel, 86.5% of RS-3 block faces pass the 90% gate.** 200 block faces (seed 31) of the 13,250 RS-3 faces with four or more lots in the pruned index: 2,569 lots, 96.1% with a unit count from an official record; 173 faces computable; 53 of those meet the 60% rule.
+
+**How a lot's units are read (Decision):** `char_apts` "Two".."Six" = that count; "None" on a single-card parcel = one dwelling; "None" on a multi-card parcel = unknown (a second building, often a coach house, is a second unit the field does not count); no row: class 2-99 (condo building) or 3-xx (7+ units) = two or more, 1-xx = vacant, anything else unknown. An unknown lot counts against coverage and, on a computable face, as *not* two-plus, so "meets 60%" is a lower bound.
+
+**What this does not settle (why it stays measurement):**
+- *The block face is approximated* as street direction + name + hundred block + side (address parity), from the index's Assessor address. Chicago's hundred blocks usually are one block face, not always; the code's own definition was not checked against a sample on a map.
+- *Only RS-3 lots are counted on a face.* A face whose corner lot is in another district loses that lot; whether the code counts every lot on the face or only RS-3 lots was not read.
+- *Approximate addresses are left out* (the builder's `~` tier).
+- *Inside the 606 district the rule already applies* (Item 42); this test matters outside it. The panel did not split by 606.
+
+**Next step is Jack's call:** building it needs `units` in the index (a builder change from `char_apts` plus a `data_version` bump, picked up by the monthly rebuild) and a reviewed block-face definition. It is on his list.
+
+**Numbers** (measured 2026-10-31; pruned citywide index built 2026-10-29; `x54s-btds` fetched the same day)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| `char_apts` filled, 2024 / 2025 / 2026 | 99.3% / 99.2% / 98.9% | Socrata `x54s-btds`, `$select=year,count(*),count(char_apts)&$group=year` |
+| RS-3 block faces in the index / with 4+ lots | 16,462 / 13,250 | `PYTHONPATH=. python -m eval.blockface_panel --index <pruned index>` |
+| Panel: faces / lots / lot coverage | 200 / 2,569 / 96.1% | same (`eval/results/2026-10-31-ws5/blockface_panel.json`) |
+| Lot reasons | one dwelling 1,376; counted 2+ 1,053; field missing 67; class 2+ 37; multi-card 17; no record 16; vacant 3 | same |
+| Faces computable at 90% / meeting 60% of those | 173 (86.5%) / 53 | same |
+| Tests | 15 in `eval/tests/test_blockface_panel.py` | `pytest eval/tests/test_blockface_panel.py` |
+
+**Not measured:** a second seed; the faces split by the 606 district; whether `char_apts` is right on the ground (it is the Assessor's record, not a field check); the code's definition of a block face.
