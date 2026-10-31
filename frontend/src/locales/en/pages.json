@@ -642,6 +642,30 @@
       "tip": "{{share}}% of the allowance built (FAR {{existing}} of {{allowed}})",
       "lowTip": "Near a district boundary: lower confidence",
       "sources": "Building areas: Cook County Assessor ({{year}} reassessment) and the parcel index (built {{built}}). Parcel shapes: PTAXSIM. Districts: City of Chicago zoning map."
+    },
+    "whatIf": {
+      "title": "What if this were rezoned?",
+      "intro": "Compare what the zoning table allows on this lot in {{district}} with another district.",
+      "choose": "Choose a district to compare",
+      "any": "Any district…",
+      "loading": "Working it out…",
+      "failed": "Couldn't load the comparison. Try again.",
+      "today": "Today: {{district}}",
+      "if": "If {{district}}",
+      "row": {
+        "label": "Standard",
+        "far": "Floor area ratio (FAR)",
+        "floorArea": "Floor area the FAR allows on this lot",
+        "height": "Height",
+        "units": "Units the lot area allows",
+        "code": "Code section"
+      },
+      "sqft": "{{n}} sq ft",
+      "noFar": "No FAR in the table",
+      "noUnits": "No dwelling units",
+      "pdCurrent": "Set by its own ordinance",
+      "noLot": "The lot area is unknown, so floor area and units are not shown.",
+      "note": "This is the district table's arithmetic, not a forecast. A rezoning needs City Council approval. Parking, setbacks for this lot's shape and other rules can allow less."
     }
   },
   "discovery": {
