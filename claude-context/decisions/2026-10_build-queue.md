@@ -2079,3 +2079,36 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 - **Real run against production (read-only key, 2026-10-30 17:54 local):** exit 0, "0 listed, 0 fetched now, 0 present and matching".
 - **Not measured:** a real PDF (no purchases yet).
 
+
+## Item 39 (WS8 Phase 1 PR1): one owner for the capacity rules, and the commercial building areas committed (2026-10-31)
+
+**Status (2026-10-31): open as a PR, not merged.** No user-facing change: nothing reads the artifact yet (PR2 adds `/api/capacity-map`, PR3 the Profile map). Jack approved data path (a) of Item 36 Decision 6, the map as a free Profile feature, and a 0.1-mile radius (2026-10-31, taking the plan's recommendations).
+
+**Decision 1: the capacity rules move to `backend/capacity.py`, and the Phase 0 census imports them.** `eval/capacity_coverage.py` now re-exports `classify`, `polygon_state`, `coverage_verdict`, `pin10`, `STATES` and the constants from the backend module, so the scripts and tests that import them from the eval keep working. The coverage thresholds are imported from `backend/provenance.py` directly (the eval used to copy them and pin the agreement with a test). *Alternatives:* leave the rules in `eval/` and import them from the API (rejected: `eval/` is excluded from the Docker image by `.dockerignore`); copy them (rejected: the census and the product would drift silently). *Gate:* a test asserts the eval's names are the backend's objects and that its source defines none of them; the census JSON and printout are byte-identical before and after the move on the local index.
+
+**Decision 2: the map's two new states sit beside the census rules; they do not change the census.** `map_polygon_state(attrs, has_unit_pins, complex_total_only)` calls `classify` and then applies `condo_building` (any unit PIN on the PIN10, ahead of everything but no zoning and planned development) and `multi_pin_member` (where `unknown_gfa` would land, only when the index has no building area and the artifact's area belongs to a complex). Changing `polygon_state` itself would have changed the census numbers Item 36 recorded. A parcel that is exempt stays exempt even when it is in a complex: the earlier state is the more useful reason.
+
+**Decision 3: a multi-parcel complex's total is never attributed to any one lot, the keypin included.** This is stricter than the Profile, which attributes the total to the keypin (`building_facts.get_commercial_facts`). On a map, the keypin's polygon is still only one of the lots the total covers, so coloring it would show the "FAR 10.07" error on a different parcel. The loader's rule is by PIN10: a unit whose members all share one base parcel is one polygon and keeps its area; a unit whose members span more than one PIN10 is a complex. The 11 PINs listed in more than one unit get no single answer (they read as a complex with no total). *Revisit if* the map should draw a complex as one merged shape (needs a geometry union over member polygons; not in Phase 1).
+
+**Decision 4: the artifact holds one year, the newest city-wide reassessment (2024), and sums every row of a unit.** The dataset has one row per building and, for a split-class property, one row per class portion (for example 09-25-407-023-0000: 6,694 sq ft retail plus 11,906 sq ft apartments), so the sum is the unit's floor area and matches the Profile's rule. *Known gap:* 32 of the 411 units with several area rows have the same area on every row, which could be a building listed twice rather than two buildings; the Profile has the same exposure. They were not examined. The Profile falls back to an older year when the newest has no area; the artifact does not (1 year keeps it a single coherent vintage; the age check warns once 2027 is due).
+
+**Decision 5: the sidecar of a gzipped artifact drops both extensions.** `commercial_bldg_by_pin.json.gz` is dated by `commercial_bldg_by_pin.meta.json`. The sidecar probe and the registry test each derived the name with "replace the last extension", which for a `.json.gz` gives `commercial_bldg_by_pin.json.meta.json`. One helper, `registry.sidecar_locator`, now names it for both.
+
+**Decision 6: tier and cadence.** Registry `artifact.commercial_bldg_by_pin`, tier `official_record` (the Assessor's own building areas; Item 36 Decision 3 tiered Commercial Valuation as standard), cadence 1,095 days with warn 1,185 and alarm 1,460, the same as the Assessor model artifact. The CI age check shares that artifact's rules (build age, plus a warning once the next reassessment year arrives). No `fact_keys` or `surfaces` yet: the fact `capacity.utilization` arrives with the endpoint in PR2. The artifact is allowlisted in `.gitignore`, `.dockerignore` and a Dockerfile `COPY` (a busybox build with the repo's `.dockerignore` copied both files).
+
+**Numbers** (measured 2026-10-31)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Commercial Valuation Chicago rows by year | 2024: 32,930; 2021: 35,182 | `ingestion.build_commercial_bldg_artifact` (the `count(*)` by year it prints into its choice) |
+| Artifact: rows / units / units with an area | 32,930 / 31,702 / 29,564 | `PYTHONPATH=. python -m ingestion.build_commercial_bldg_artifact` (writes the sidecar) |
+| Artifact: multi-PIN units / spanning more than one PIN10 / member PINs / PINs in more than one unit | 8,483 / 8,468 / 56,805 / 11 | same (`commercial_bldg_by_pin.meta.json`) |
+| Artifact size (gzip) / build time | 313,922 bytes / 65 s (keyless Socrata, 4 pages) | same |
+| Census before vs after the move (local index) | byte-identical JSON and printout | `PYTHONPATH=. python -m eval.capacity_coverage --index backend/data/discovery_index.db --out <file>` on `origin/main` and on this branch, then `cmp` |
+| Local index polygons whose census state was unknown building area: became computable / multi-PIN member / apparently overbuilt / still unknown | 1,027: 206 / 298 / 2 / 521 | a one-off script over the local index (not committed): base row lacks `bldg_sqft` → `commercial_artifact.building_area` → `map_polygon_state` |
+| Local index polygons computable, census rule → map rule | 41,760 (54.0%) → 41,966 (54.3%) of 77,318 | same |
+| Backend unit suite / eval suite | 2,517 passed / 171 passed | `.venv/bin/python -m pytest backend/tests/ -q -m "not integration"`; `pytest eval/test_judge.py eval/tests -q` |
+
+The local index is a July 2026 build of six community areas (188,312 rows, before the geometry land fill, so only 24.9% of its rows have a lot area). Its shares do not describe the city; they only show that the artifact moves parcels in the expected directions.
+
+**Not measured:** the census on a fresh copy of the pruned production index (Jack's copy, on his list; the Item 36 numbers stand until then); the artifact's effect citywide (needs that copy); whether the 32 units with a repeated area double-count; the 2021 fallback the artifact leaves out; production memory for the loaded artifact (about 31,700 tuples plus a 56,805-key dict; not profiled).

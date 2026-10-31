@@ -615,6 +615,16 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "artifact check also warns when the Assessor year is three years old, since a new city reassessment is due.",
     ),
     SourceSpec(
+        id="artifact.commercial_bldg_by_pin", name="Assessor's commercial building areas by parcel (committed)",
+        publisher="UrbanLayer from the Cook County Assessor (Commercial Valuation, csik-bsws)",
+        tier="official_record", kind="artifact", locator="ingestion/data/commercial_bldg_by_pin.json.gz", probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/property/commercial_artifact.py", "ingestion/build_commercial_bldg_artifact.py"),
+        cadence_days=1095, warn_days=1185, alarm_days=1460,
+        note="Building area per economic unit (sum of bldgsf) with its member PINs, from the latest city-wide "
+             "reassessment (2024; the next is 2027). Read by the Profile's capacity map (WS8 Phase 1) for parcels the "
+             "Discovery index has no building area for. Build date from commercial_bldg_by_pin.meta.json.",
+    ),
+    SourceSpec(
         id="artifact.chrs", name="Chicago Historic Resources Survey, orange/red (committed)", publisher="City of Chicago",
         tier="official_record", kind="artifact", locator="ingestion/data/chrs_orange_red.json.gz", probe="none",
         owner_modules=("backend/retrieval/property/chrs.py", "ingestion/build_chrs_artifact.py"), surfaces=("profile",),
@@ -711,6 +721,13 @@ def _with_contracts(spec: SourceSpec, fields_read: dict[str, tuple[str, ...]]) -
 SOURCES: tuple[SourceSpec, ...] = tuple(_with_contracts(s, load_fields_read()) for s in _BASE_SOURCES)
 
 BY_ID: dict[str, SourceSpec] = {s.id: s for s in SOURCES}
+
+
+def sidecar_locator(locator: str) -> str:
+    """The ``.meta.json`` sidecar that dates a committed artifact: ``rent_by_area.json`` ->
+    ``rent_by_area.meta.json``, and a gzipped ``commercial_bldg_by_pin.json.gz`` -> ``commercial_bldg_by_pin.meta.json``."""
+    stem = locator.removesuffix(".gz")
+    return stem.rsplit(".", 1)[0] + ".meta.json"
 
 
 def socrata_locator(spec: SourceSpec) -> tuple[str, str]:
