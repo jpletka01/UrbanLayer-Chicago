@@ -2124,4 +2124,4 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 | 2600 N Milwaukee Ave, RT-4 → RM-4.5 (browser, local) | FAR 1.2 → 1.7; 10,991 → 15,570 sq ft; 9 → 13 units | browser |
 | New tests | 14 backend (`test_what_if.py`), 4 vitest (`WhatIfCard.test.tsx`) | `pytest backend/tests/test_what_if.py`; `npx vitest run src/components/scorecard/WhatIfCard.test.tsx` |
 
-**Not measured:** whether users understand "units the lot area allows" without the arithmetic line (the card shows the number only; the zoning card above keeps the arithmetic); the phone layout beyond the overflow audit; a native Spanish read.
+**Not measured:** whether users understand "units the lot area allows" without the arithmetic line (the card shows the number only; the zoning card above keeps the arithmetic); a native Spanish read. The phone audit passed on this branch (75 passed, 20 skipped, the Profile on all five devices).
