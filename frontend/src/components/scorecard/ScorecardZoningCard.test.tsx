@@ -49,6 +49,19 @@ describe("ScorecardZoningCard — the binding number (F3)", () => {
     expect(screen.queryByText("Min lot area per unit")).toBeNull();
   });
 
+  it("says when the 606 rule raised the yield, and when the 606 check failed (WS5 PR1)", () => {
+    const rs3: ZoneDefinition = { ...rm45, zone_class: "RS-3", min_lot_area_per_unit: 2500 };
+    render(<ScorecardZoningCard def={rs3} unitYield={{ ...yieldRm45, units: 2, base_units: 1, rule_606: "applied" }} />);
+    expect(screen.getByTestId("unit-yield-606").textContent).toContain("raises this from 1 to 2");
+    cleanup();
+    render(<ScorecardZoningCard def={rs3} unitYield={{ ...yieldRm45, units: 1, base_units: 1, rule_606: "unchecked" }} />);
+    expect(screen.getByTestId("unit-yield-606-unchecked").textContent).toContain("could not check");
+    expect(screen.queryByTestId("unit-yield-606")).toBeNull();
+    cleanup();
+    render(<ScorecardZoningCard def={rs3} unitYield={{ ...yieldRm45, units: 3, base_units: 3, rule_606: "applied" }} />);
+    expect(screen.queryByTestId("unit-yield-606")).toBeNull(); // in the district, but the rule changed nothing
+  });
+
   it("shows the 606-style exemption note when the district has one", () => {
     render(<ScorecardZoningCard def={{ ...rm45, zone_class: "RS-3", lot_area_note: "Reduced to 1,500 sq ft per unit in the 606 district." }} />);
     expect(screen.getByText(/1,500 sq ft per unit in the 606/)).toBeTruthy();

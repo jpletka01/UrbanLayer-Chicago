@@ -128,6 +128,16 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
               <span className="text-body font-medium text-text-primary">{unitYield.units}</span>
             </div>
             <p className="text-caption text-text-secondary mt-1">{unitYield.arithmetic}</p>
+            {unitYield.rule_606 === "applied" && unitYield.base_units != null && unitYield.units > unitYield.base_units && (
+              <p className="text-caption text-text-secondary mt-1" data-testid="unit-yield-606">
+                {t("scorecard.zoningCard.unitYield606Applied", { base: unitYield.base_units, units: unitYield.units })}
+              </p>
+            )}
+            {unitYield.rule_606 === "unchecked" && (
+              <p className="text-caption text-text-secondary mt-1" data-testid="unit-yield-606-unchecked">
+                {t("scorecard.zoningCard.unitYield606Unchecked")}
+              </p>
+            )}
             <p className="text-caption text-text-muted mt-1 leading-relaxed">{t("scorecard.zoningCard.unitYieldCaveat")}</p>
           </div>
         )}

@@ -155,6 +155,8 @@ _EN: dict[str, str] = {
     "dev.unit_capacity_body__other": " up to ~{units} dwelling units total ({land} sq ft ÷ {mla} sq ft min. lot area per unit, {zone} per Title 17-2-0303), assuming redevelopment of any existing structure. This is a density screen, ",
     "dev.unit_capacity_emph": "not a zoning determination",
     "dev.unit_capacity_tail": " — permitted units are further limited by minimum lot area, rear-yard open space, FAR, height, parking, and unit mix.",
+    "dev.unit_capacity_606": " The parcel is in the Predominance of the Block (606) district, where RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1).",
+    "dev.unit_capacity_606_unchecked": " We could not check whether the parcel is in the Predominance of the Block (606) district; there, RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1).",
     "dev.opps_constraints": "Opportunities & Constraints",
 
     # Zoning section
@@ -883,6 +885,8 @@ _ES: dict[str, str] = {
     "dev.unit_capacity_body__other": " hasta ~{units} unidades de vivienda en total ({land} pies² ÷ {mla} pies² de área mínima de lote por unidad, {zone} según Título 17-2-0303), suponiendo el redesarrollo de cualquier estructura existente. Esta es una estimación de densidad, ",
     "dev.unit_capacity_emph": "no una determinación de zonificación",
     "dev.unit_capacity_tail": " — las unidades permitidas están además limitadas por el área mínima del lote, el espacio abierto del patio trasero, el FAR, la altura, el estacionamiento y la mezcla de unidades.",
+    "dev.unit_capacity_606": " La parcela está en el distrito de Predominio de la Cuadra (606), donde RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1).",
+    "dev.unit_capacity_606_unchecked": " No pudimos revisar si la parcela está en el distrito de Predominio de la Cuadra (606); ahí, RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1).",
     "dev.opps_constraints": "Oportunidades y Limitaciones",
 
     # Zoning section

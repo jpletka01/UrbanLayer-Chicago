@@ -775,6 +775,10 @@ export interface UnitYield {
   basis: string;
   caveat: string;
   lot_area_note: string;
+  /** Units by the base district rule alone (before the 606 rule). */
+  base_units?: number;
+  /** RS-3 only: whether the Predominance of the Block (606) rule applied, was not in play, or could not be checked. */
+  rule_606?: "applied" | "not_in_district" | "unchecked" | null;
 }
 
 /** One "what this page does not cover" note for this parcel (backend coverage_notes). */
