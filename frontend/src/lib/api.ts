@@ -1276,6 +1276,65 @@ export async function fetchParcelMapLayers(
   }
 }
 
+/** The Profile's block capacity map (`/api/capacity-map`). `pin` locates the subject in the Discovery index;
+ * lat/lon are the fallback for a withheld PIN. Null on a network or HTTP failure (the component says so). */
+export async function fetchCapacityMap(
+  pin: string | null | undefined,
+  lat: number,
+  lon: number,
+): Promise<import("../components/scorecard/capacityMapModel").CapacityMapResponse | null> {
+  const params = new URLSearchParams({ lat: lat.toFixed(6), lon: lon.toFixed(6) });
+  if (pin) params.set("pin", pin);
+  try {
+    const resp = await authFetch(`${API_BASE}/api/capacity-map?${params}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    return null;
+  }
+}
+
+export interface WhatIfFigures {
+  zone_class: string;
+  name: string;
+  code_section: string;
+  far: number | null;
+  max_floor_area_sqft: number | null;
+  max_height: string | null;
+  min_lot_area_per_unit: number | null;
+  units_by_lot_area: number | null;
+  units_arithmetic: string | null;
+}
+
+export interface WhatIfResponse {
+  suggestions: string[];
+  districts: string[];
+  lot_sqft?: number | null;
+  current?: WhatIfFigures | null;
+  target?: WhatIfFigures;
+}
+
+/** "What if this were rezoned?" (`/api/what-if`, WS5 PR2): table arithmetic for the parcel's district and a
+ * chosen one. Without `district` it returns only the choice lists. Null on failure (the card says so). */
+export async function fetchWhatIf(
+  current: string,
+  district?: string | null,
+  lotSqft?: number | null,
+  in606?: boolean | null,
+): Promise<WhatIfResponse | null> {
+  const params = new URLSearchParams({ current });
+  if (district) params.set("district", district);
+  if (lotSqft) params.set("lot_sqft", String(Math.round(lotSqft)));
+  if (in606 != null) params.set("in_606", String(in606));
+  try {
+    const resp = await authFetch(`${API_BASE}/api/what-if?${params}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    return null;
+  }
+}
+
 // --- Transit Stations ---
 
 let _transitStationsCache: import("./types").TransitStation[] | null = null;

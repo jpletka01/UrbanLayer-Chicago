@@ -90,3 +90,12 @@ def describe_overlay(layer_type: str, attrs: dict) -> dict[str, str | None]:
             detail = f"Limitations: {limits} (§17-7-0573, §17-7-0574)."
 
     return {"name": name, "detail": detail, "link": link}
+
+
+def in_606_district(regulatory) -> bool | None:
+    """Whether the parcel is in the Predominance of the Block (606) district, from the special-district overlay
+    the Profile already fetched: True / False, or None when that layer could not be checked (or no regulatory
+    lookup ran), which is never "not in"."""
+    if regulatory is None or "special_district" in (regulatory.unchecked_overlays or []):
+        return None
+    return any(o.layer_type == "special_district" and "(606)" in (o.name or "") for o in regulatory.overlays)

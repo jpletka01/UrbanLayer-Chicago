@@ -2400,23 +2400,21 @@ def _compute_unit_yield(report: "ReportData") -> dict | None:
     D districts), not FAR, which is the actual as-of-right cap on unit count.
     Returns ``None`` for districts that permit no dwelling units (C3, M, DS)
     and unknown classes so we never fabricate a yield.
+
+    The number is the context's own ``unit_yield`` (``max_units_by_lot_area``, with the 606 rule), so the
+    report, the Profile and chat agree (WS5 PR1).
     """
-    from backend.retrieval.zoning_definitions import min_lot_area_per_unit
-    prop = report.context.property
+    uy = report.context.unit_yield
     zoning = report.context.parcel_zoning
-    if not prop or not prop.land_sqft or not zoning or not zoning.zone_class:
-        return None
-    mla = min_lot_area_per_unit(zoning.zone_class)
-    if not mla:
-        return None
-    units = int(prop.land_sqft // mla)
-    if units < 1:
+    if not uy or not zoning or not zoning.zone_class or uy["units"] < 1:
         return None
     return {
-        "units": units,
-        "mla_per_unit": mla,
-        "land_sqft": prop.land_sqft,
+        "units": uy["units"],
+        "mla_per_unit": uy["min_lot_area_per_unit"],
+        "land_sqft": uy["lot_sqft"],
         "zone_class": zoning.zone_class.strip().upper(),
+        "rule_606": uy.get("rule_606"),
+        "raised_by_606": uy["units"] > uy.get("base_units", uy["units"]),
     }
 
 

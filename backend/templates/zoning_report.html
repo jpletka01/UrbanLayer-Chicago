@@ -651,7 +651,7 @@ a.glossary-link {
     {% if report.unit_yield %}
     {% set uy = report.unit_yield %}
     <div class="detail" style="margin-top: 4pt;">
-      <strong>{{ t("dev.unit_capacity_label") }}</strong>{{ tn("dev.unit_capacity_body", uy.units, units=uy.units, land=uy.land_sqft|fnum, mla=uy.mla_per_unit|fnum, zone=uy.zone_class) }}<strong>{{ t("dev.unit_capacity_emph") }}</strong>{{ t("dev.unit_capacity_tail") }}
+      <strong>{{ t("dev.unit_capacity_label") }}</strong>{{ tn("dev.unit_capacity_body", uy.units, units=uy.units, land=uy.land_sqft|fnum, mla=uy.mla_per_unit|fnum, zone=uy.zone_class) }}<strong>{{ t("dev.unit_capacity_emph") }}</strong>{{ t("dev.unit_capacity_tail") }}{% if uy.raised_by_606 %}{{ t("dev.unit_capacity_606") }}{% elif uy.rule_606 == "unchecked" %}{{ t("dev.unit_capacity_606_unchecked") }}{% endif %}
     </div>
     {% endif %}
   </div>

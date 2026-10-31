@@ -532,31 +532,72 @@ def _lot_area_note(zone_class: str) -> str:
     return " ".join(notes)
 
 
-def max_units_by_lot_area(zone_class: str | None, lot_sqft: float | int | None) -> dict | None:
+# §17-2-0303-B.1: in RS-3, inside the Predominance of the Block (606) district (or where 60% of the block face
+# already holds two or more units), a TWO-UNIT building needs only 1,500 sq ft of lot per unit.
+RULE_606_MLA = 1_500
+RULE_606_MAX_UNITS = 2
+
+
+def _units_word(n: int) -> str:
+    return f"{n} unit{'s' if n != 1 else ''}"
+
+
+def max_units_by_lot_area(
+    zone_class: str | None, lot_sqft: float | int | None, *, in_606: bool | None = None,
+) -> dict | None:
     """Maximum dwelling units the lot's AREA allows, with the arithmetic shown.
 
     None when the district has no per-unit minimum (C3, M, DS, PD, unknown) or the
     lot area is unknown — never a fabricated number.
+
+    ``in_606`` is whether the parcel is in the Predominance of the Block (606) district: True, False, or None
+    when the overlay check failed.  It only matters for RS-3, where the 606 rule allows a two-unit building at
+    1,500 sq ft per unit.  The rule adds a path, it does not cap the base rule, so the yield is the larger of
+    the two (a 7,500 sq ft RS-3 lot keeps its 3 units).  ``rule_606`` says what happened: ``applied`` (in the
+    district; ``units`` may or may not have changed), ``not_in_district``, ``unchecked`` (the base number
+    stands and the response says the 606 check failed), or None for any other district.
     """
     mla = min_lot_area_per_unit(zone_class)
     if not mla or not lot_sqft or lot_sqft <= 0:
         return None
+    zone = (zone_class or "").strip().upper()
     lot = int(round(lot_sqft))
-    units = lot // mla
+    base_units = lot // mla
+    units = base_units
     ratio = lot / mla
-    arithmetic = f"{lot:,} sq ft ÷ {mla:,} sq ft per unit = {ratio:.1f} → {units} unit{'s' if units != 1 else ''}"
+    arithmetic = f"{lot:,} sq ft ÷ {mla:,} sq ft per unit = {ratio:.1f} → {_units_word(base_units)}"
     caveat = _UNIT_YIELD_CAVEAT
-    note = _lot_area_note((zone_class or "").strip().upper())
-    if (zone_class or "").strip().upper() == "RS-3":
-        caveat += " In a Predominance of the Block (606) district RS-3 can add a second unit at 1,500 sq ft per unit (§17-2-0303-B.1)."
+    note = _lot_area_note(zone)
+    rule_606: str | None = None
+    if zone == "RS-3":
+        if in_606 is True:
+            rule_606 = "applied"
+            # The rule is for a two-unit building only: it gives two units or nothing (never a single unit).
+            via_606 = RULE_606_MAX_UNITS if lot >= RULE_606_MLA * RULE_606_MAX_UNITS else 0
+            if via_606 > base_units:
+                units = via_606
+                arithmetic += (f"; in the Predominance of the Block (606) district a two-unit building needs "
+                               f"{RULE_606_MLA:,} sq ft per unit: {lot:,} ÷ {RULE_606_MLA:,} = {lot / RULE_606_MLA:.1f} "
+                               f"→ {_units_word(units)} (§17-2-0303-B.1)")
+            else:
+                arithmetic += "; the parcel is in the Predominance of the Block (606) district, whose two-unit rule does not raise this number"
+        elif in_606 is None:
+            rule_606 = "unchecked"
+            caveat += (" We could not check whether the parcel is in the Predominance of the Block (606) district; "
+                       "there, RS-3 allows a two-unit building at 1,500 sq ft per unit (§17-2-0303-B.1).")
+        else:
+            rule_606 = "not_in_district"
+            caveat += " Not in a Predominance of the Block (606) district, so its two-unit rule (§17-2-0303-B.1) does not apply."
     return {
         "units": units,
+        "base_units": base_units,
         "lot_sqft": lot,
-        "min_lot_area_per_unit": mla,
+        "min_lot_area_per_unit": mla if units == base_units else RULE_606_MLA,
         "arithmetic": arithmetic,
         "basis": "Minimum lot area per dwelling unit for the district",
         "caveat": caveat,
         "lot_area_note": note,
+        "rule_606": rule_606,
     }
 
 

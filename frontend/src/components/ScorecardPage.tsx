@@ -16,6 +16,7 @@ import { PendingTextImpactsCard } from "./scorecard/PendingTextImpactsCard";
 import { UpcomingZoningCard } from "./scorecard/UpcomingZoningCard";
 import { ParcelResolution } from "./scorecard/ParcelResolution";
 import { ScorecardZoningCard } from "./scorecard/ScorecardZoningCard";
+import { WhatIfCard } from "./scorecard/WhatIfCard";
 import { ScorecardIncentivesCard } from "./scorecard/ScorecardIncentivesCard";
 import { ScorecardViolationsCard } from "./scorecard/ScorecardViolationsCard";
 import { ScorecardEnvironmentCard } from "./scorecard/ScorecardEnvironmentCard";
@@ -41,6 +42,7 @@ import { RentBlock } from "./scorecard/RentBlock";
 import { useFact } from "../lib/provenanceContext";
 import { MiniChatDock, type DockSignal } from "./MiniChatDock";
 import { ParcelMap, type ParcelMapLayers } from "./scorecard/ParcelMap";
+import { CapacityMap } from "./scorecard/CapacityMap";
 
 // Classify a failed address-resolution input: did the user type an address
 // (a typo to fix here) or a code question (redirect to the analyst)? Computed
@@ -1143,6 +1145,14 @@ export default function ScorecardPage() {
                         className="min-h-[16rem]"
                       />
                     </div>
+                    {zdef && (
+                      <WhatIfCard
+                        key={data.resolved_pin ?? data.address}
+                        currentDistrict={zdef.zone_class}
+                        lotSqft={ctx.property?.land_sqft ?? null}
+                        in606={ctx.unit_yield?.rule_606 === "applied" ? true : ctx.unit_yield?.rule_606 === "not_in_district" ? false : null}
+                      />
+                    )}
                     {ctx.regulatory && (
                       <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch mt-8">
                         <div id="scorecard-card-regulatory" className="scroll-mt-28 flex flex-col">
@@ -1161,6 +1171,14 @@ export default function ScorecardPage() {
                         />
                       </div>
                     )}
+                    <CapacityMap
+                      key={data.resolved_pin ?? data.address}
+                      pin={data.resolved_pin ?? null}
+                      lat={data.resolved_lat ?? data.lat}
+                      lon={data.resolved_lon ?? data.lon}
+                      profileKey={data.resolved_pin ?? data.address}
+                      className="mt-10"
+                    />
                   </ProfileModule>
                 )}
 
