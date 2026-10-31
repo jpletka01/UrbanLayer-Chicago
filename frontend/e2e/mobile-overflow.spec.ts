@@ -337,6 +337,11 @@ for (const pageDef of PAGES) {
       popoverAudit = await auditOverflow(page);
 
       // WS8 capacity map: the panel and its phone key disclosure must sit inside the viewport.
+      // After the full scroll (re-renders included) each Build card exists once: same-keyed
+      // siblings once stacked the what-if card 7-13 times (2026-10-31).
+      expect(await page.getByTestId("what-if").count(), "one what-if card").toBeLessThanOrEqual(1);
+      expect(await page.getByTestId("capacity-map").count(), "one capacity map").toBe(1);
+
       const capacity = page.getByTestId("capacity-map");
       await capacity.scrollIntoViewIfNeeded();
       await expect(page.getByTestId("capacity-coverage").or(page.getByTestId("capacity-unchecked")).first()).toBeVisible({ timeout: 30_000 });
