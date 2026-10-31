@@ -2090,6 +2090,29 @@ async def parcel_map(lat: float, lon: float) -> dict:
     return payload
 
 
+@app.get("/api/capacity-map")
+async def capacity_map(
+    pin: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_mi: float | None = None,
+) -> dict:
+    """The Profile's block capacity map (WS8 Phase 1): for each parcel near the subject, how much of the allowed
+    floor area is built, or the state that says why it cannot be told. Free and anonymous like the Profile.
+    ``pin`` (a PIN14 or PIN10) locates the subject in the Discovery index; ``lat``/``lon`` are the fallback when
+    the PIN is withheld or not indexed. ``radius_mi`` is clamped to 0.05-0.25 (default 0.1)."""
+    if not pin and (lat is None or lon is None):
+        raise HTTPException(status_code=422, detail="pin or lat/lon is required")
+    if pin is not None:
+        digits = pin.replace("-", "")
+        if not digits.isdigit() or len(digits) not in (10, 14):
+            raise HTTPException(status_code=422, detail="pin must be a 10- or 14-digit PIN")
+        pin = "-".join((digits[:2], digits[2:4], digits[4:7], digits[7:10], (digits[10:] or "0000")))
+    from backend.capacity_map import build_capacity_map
+
+    return await _limited(build_capacity_map(pin=pin, lat=lat, lon=lon, radius_mi=radius_mi))
+
+
 @app.get("/api/scorecard")
 async def scorecard(
     address: str | None = None,

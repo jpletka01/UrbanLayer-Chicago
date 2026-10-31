@@ -588,6 +588,60 @@
         "noFigure": "The model has no usable income figure for this area",
         "unchecked": "Couldn't check today"
       }
+    },
+    "capacity": {
+      "title": "How much of what's allowed is built",
+      "method": "Parcels within {{radius}} mile. Built floor area divided by what the zoning allows (lot area × allowed FAR).",
+      "loading": "Checking the parcels nearby…",
+      "failed": "Couldn't load this map. This is not a finding about the block.",
+      "empty": "No indexed parcels within the radius.",
+      "couldntCheck": "Couldn't check: {{labels}}. The map is not drawn, rather than drawn wrong.",
+      "partlyUnchecked": "Couldn't check: {{labels}}. Parcels that needed it are listed as not checked.",
+      "coverage": "Colored: {{colored}} of {{total}} parcels ({{share}}).",
+      "coverageWithheld": "Only {{colorable}} of {{total}} parcels have a known floor area, lot area and allowed FAR, so no parcel is colored.",
+      "verdict": {
+        "standard": "Enough of the block is known to read the colors.",
+        "low": "Under a quarter of the block can be colored: read it as partial.",
+        "withheld": "Under a tenth of the block can be colored, too little to draw honestly.",
+        "unavailable": "The map could not be built."
+      },
+      "unchecked": {
+        "zoning": "the zoning map",
+        "parcel_geometry": "the parcel shapes",
+        "commercial_valuation": "the Assessor's commercial building areas",
+        "discovery_index": "the parcel index"
+      },
+      "keyToggle": "Map key",
+      "keyBuilt": "Share of the allowance built",
+      "keyNotColored": "Not colored, and why",
+      "keyNote": "A light color means little of the allowance is built. It is not a finding that a parcel can be redeveloped. Dashed outline: near a district boundary.",
+      "bin": {
+        "under25": "Under 25%",
+        "25to50": "25–50%",
+        "50to80": "50–80%",
+        "over80": "80% or more"
+      },
+      "state": {
+        "computable": "Known, but the view is too incomplete to color",
+        "unknown_gfa": "Building floor area not on record",
+        "multi_pin_member": "Part of a multi-parcel complex (its total area covers several lots)",
+        "condo_building": "Condominium building",
+        "planned_development": "Planned development (its own ordinance sets the limits)",
+        "exempt": "Tax-exempt or railroad",
+        "vacant_land": "Vacant land",
+        "no_allowed_far": "District has no FAR in the table",
+        "split_zoning": "Split almost evenly between two districts",
+        "apparently_overbuilt": "Recorded area far above the allowance (likely a data mismatch)",
+        "class_conflict": "Records disagree (vacant class with a building)",
+        "unknown_land": "Lot area not on record",
+        "suspect_land": "Lot area looks wrong",
+        "no_base_row": "No base parcel record",
+        "no_zoning": "Outside the zoning map",
+        "unchecked": "Not checked (source unavailable)"
+      },
+      "tip": "{{share}}% of the allowance built (FAR {{existing}} of {{allowed}})",
+      "lowTip": "Near a district boundary: lower confidence",
+      "sources": "Building areas: Cook County Assessor ({{year}} reassessment) and the parcel index (built {{built}}). Parcel shapes: PTAXSIM. Districts: City of Chicago zoning map."
     }
   },
   "discovery": {

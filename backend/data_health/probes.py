@@ -27,7 +27,7 @@ import httpx
 
 from backend.config import get_settings
 from backend.data_health.evaluate import Finding, ProbeError, ProbeResult
-from backend.data_health.registry import BY_ID, PORTAL_HOSTS, SourceSpec, socrata_locator
+from backend.data_health.registry import BY_ID, PORTAL_HOSTS, SourceSpec, sidecar_locator, socrata_locator
 
 # No URL or parenthesised comment in the UA: the City GIS server answers 403 to a UA like
 # "name/1 (+https://site)" and 200 to "name/1" (measured 2026-10-21).
@@ -774,7 +774,7 @@ async def probe_artifact_sidecar(spec: SourceSpec, ctx: ProbeContext) -> ProbeRe
     """A committed artifact dated by its ``.meta.json`` sidecar (transit stations, rent by community area); for
     transit, the CTA feed's own Last-Modified as context for "is a rebuild due"."""
     root = Path(__file__).resolve().parents[2]
-    meta_path = (root / spec.locator).with_suffix(".meta.json")
+    meta_path = root / sidecar_locator(spec.locator)
     try:
         meta = json.loads(meta_path.read_text())
         built = date.fromisoformat(str(meta["built_at"])[:10])

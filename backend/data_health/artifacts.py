@@ -15,6 +15,7 @@ Checked here (all from files in the repo, no network):
 - ``ingestion/data/rent_by_area.json``: build date from its ``.meta.json`` sidecar (400 / 730 days);
 - ``ingestion/data/assessor_model_by_area.json``: build date from its sidecar (1095 / 1460 days) and the Assessor's
   assessment year (a new city-wide reassessment is due three years on);
+- ``ingestion/data/commercial_bldg_by_pin.json.gz``: the same two rules, from ``commercial_bldg_by_pin.meta.json``;
 - ``eval/kit/parcels.json``: the answer key's version date (180 days: a person should re-review it);
 - ``docs/benchmark/results.json``: the newest recorded run (45 days);
 - ``zoning_definitions.VERIFIED_AGAINST``: the code text the hand table was last checked against.
@@ -147,19 +148,30 @@ def check_rent(today: date, root: Path = REPO) -> Check:
                  f"rent by community area built {built} from ACS {side.get('acs_period', '?')} ({age} days old; warn after {RENT_DAYS[0]})", age)
 
 
-def check_assessor_model(today: date, root: Path = REPO) -> Check:
-    path = "ingestion/data/assessor_model_by_area.json"
-    side = _read(root / "ingestion/data/assessor_model_by_area.meta.json")
+def _check_reassessment_artifact(name: str, path: str, side_name: str, label: str, today: date, root: Path) -> Check:
+    """An artifact built from one Assessor city-wide reassessment: its build age, and a warning once the next
+    reassessment is due."""
+    side = _read(root / "ingestion/data" / side_name)
     built = _iso(side.get("built_at")) if side else None
     if built is None:
-        return Check("Assessor model by community area", path, "warn", "no assessor_model_by_area.meta.json sidecar with a built_at date")
+        return Check(name, path, "warn", f"no {side_name} sidecar with a built_at date")
     age = _age(built, today)
     state = _grade(age, ASSESSOR_MODEL_DAYS)
     year = str(side.get("assessor_year") or "")
-    msg = f"Assessor model built {built} from the {year or '?'} city reassessment ({age} days old; warn after {ASSESSOR_MODEL_DAYS[0]})"
+    msg = f"{label} built {built} from the {year or '?'} city reassessment ({age} days old; warn after {ASSESSOR_MODEL_DAYS[0]})"
     if year.isdigit() and today.year >= int(year) + ASSESSOR_CYCLE_YEARS and state == "ok":
         state, msg = "warn", msg + f"; the Assessor revalues the city every {ASSESSOR_CYCLE_YEARS} years, so a {int(year) + ASSESSOR_CYCLE_YEARS} reassessment is due: check for it and rebuild"
-    return Check("Assessor model by community area", path, state, msg, age)
+    return Check(name, path, state, msg, age)
+
+
+def check_assessor_model(today: date, root: Path = REPO) -> Check:
+    return _check_reassessment_artifact("Assessor model by community area", "ingestion/data/assessor_model_by_area.json",
+                                        "assessor_model_by_area.meta.json", "Assessor model", today, root)
+
+
+def check_commercial_bldg(today: date, root: Path = REPO) -> Check:
+    return _check_reassessment_artifact("commercial building areas", "ingestion/data/commercial_bldg_by_pin.json.gz",
+                                        "commercial_bldg_by_pin.meta.json", "Commercial building areas", today, root)
 
 
 def check_kit_key(today: date, root: Path = REPO) -> Check:
@@ -201,7 +213,7 @@ def check_hand_table(today: date, root: Path = REPO) -> Check:
 
 def run_checks(today: date | None = None, root: Path = REPO) -> list[Check]:
     today = today or date.today()
-    return [f(today, root) for f in (check_code_vintage, check_zoning_cache, check_transit, check_rent, check_assessor_model, check_kit_key, check_benchmark, check_hand_table)]
+    return [f(today, root) for f in (check_code_vintage, check_zoning_cache, check_transit, check_rent, check_assessor_model, check_commercial_bldg, check_kit_key, check_benchmark, check_hand_table)]
 
 
 def annotation(c: Check) -> str:

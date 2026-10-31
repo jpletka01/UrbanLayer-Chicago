@@ -1,0 +1,12 @@
+{
+ "assessor_year": "2024",
+ "builder": "ingestion/build_commercial_bldg_artifact.py",
+ "built_at": "2026-10-31",
+ "member_pins": 56805,
+ "multi_pin10_units": 8468,
+ "multi_pin_units": 8483,
+ "pins_in_more_than_one_unit": 11,
+ "rows": 32930,
+ "units": 31702,
+ "units_with_area": 29564
+}
