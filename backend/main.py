@@ -2111,6 +2111,8 @@ async def capacity_map(
     from backend.capacity_map import build_capacity_map
 
     return await _limited(build_capacity_map(pin=pin, lat=lat, lon=lon, radius_mi=radius_mi))
+
+
 @app.get("/api/what-if")
 async def what_if(
     current: str,

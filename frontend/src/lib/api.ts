@@ -1287,6 +1287,13 @@ export async function fetchCapacityMap(
   if (pin) params.set("pin", pin);
   try {
     const resp = await authFetch(`${API_BASE}/api/capacity-map?${params}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    return null;
+  }
+}
+
 export interface WhatIfFigures {
   zone_class: string;
   name: string;
