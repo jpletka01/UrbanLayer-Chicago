@@ -41,6 +41,7 @@ import { RentBlock } from "./scorecard/RentBlock";
 import { useFact } from "../lib/provenanceContext";
 import { MiniChatDock, type DockSignal } from "./MiniChatDock";
 import { ParcelMap, type ParcelMapLayers } from "./scorecard/ParcelMap";
+import { CapacityMap } from "./scorecard/CapacityMap";
 
 // Classify a failed address-resolution input: did the user type an address
 // (a typo to fix here) or a code question (redirect to the analyst)? Computed
@@ -1161,6 +1162,14 @@ export default function ScorecardPage() {
                         />
                       </div>
                     )}
+                    <CapacityMap
+                      key={data.resolved_pin ?? data.address}
+                      pin={data.resolved_pin ?? null}
+                      lat={data.resolved_lat ?? data.lat}
+                      lon={data.resolved_lon ?? data.lon}
+                      profileKey={data.resolved_pin ?? data.address}
+                      className="mt-10"
+                    />
                   </ProfileModule>
                 )}
 

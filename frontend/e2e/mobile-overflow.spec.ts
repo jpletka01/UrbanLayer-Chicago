@@ -335,6 +335,18 @@ for (const pageDef of PAGES) {
         expect(overlapsAttribution, "Layers popover must not cover Mapbox attribution").toBe(false);
       }
       popoverAudit = await auditOverflow(page);
+
+      // WS8 capacity map: the panel and its phone key disclosure must sit inside the viewport.
+      const capacity = page.getByTestId("capacity-map");
+      await capacity.scrollIntoViewIfNeeded();
+      await expect(page.getByTestId("capacity-coverage").or(page.getByTestId("capacity-unchecked")).first()).toBeVisible({ timeout: 30_000 });
+      const keyToggle = capacity.locator("details summary").first();
+      if (await keyToggle.isVisible()) await keyToggle.click();
+      const capBox = await capacity.boundingBox();
+      expect(capBox).not.toBeNull();
+      expect(capBox!.x).toBeGreaterThanOrEqual(0);
+      expect(capBox!.x + capBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+      popoverAudit = mergeAudits(popoverAudit, await auditOverflow(page));
     }
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(400);
