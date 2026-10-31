@@ -75,14 +75,14 @@ def _load(path: Path) -> _Artifact:
     return _Artifact(year, {p: tuple(ix) for p, ix in by_pin.items()}, units)
 
 
-def artifact_year(path: Path = ARTIFACT_PATH) -> str:
+def artifact_year(path: Path | None = None) -> str:
     """The Assessor year the artifact describes (raises ``CapacityArtifactError`` when it cannot be read)."""
-    return _load(path).year
+    return _load(path or ARTIFACT_PATH).year
 
 
-def building_area(pin14: str, path: Path = ARTIFACT_PATH) -> UnitArea | MultiPinMember | None:
+def building_area(pin14: str, path: Path | None = None) -> UnitArea | MultiPinMember | None:
     """This PIN's Commercial Valuation building area, or why there is none to attribute (module docstring)."""
-    art = _load(path)
+    art = _load(path or ARTIFACT_PATH)
     pin = _undash(pin14)
     hits = art.by_pin.get(pin, ())
     if not hits:

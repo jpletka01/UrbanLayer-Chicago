@@ -2112,3 +2112,46 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 The local index is a July 2026 build of six community areas (188,312 rows, before the geometry land fill, so only 24.9% of its rows have a lot area). Its shares do not describe the city; they only show that the artifact moves parcels in the expected directions.
 
 **Not measured:** the census on a fresh copy of the pruned production index (Jack's copy, on his list; the Item 36 numbers stand until then); the artifact's effect citywide (needs that copy); whether the 32 units with a repeated area double-count; the 2021 fallback the artifact leaves out; production memory for the loaded artifact (about 31,700 tuples plus a 56,805-key dict; not profiled).
+
+## Item 40 (WS8 Phase 1 PR2): `/api/capacity-map`, and the coverage it measures (2026-10-31)
+
+**Status (2026-10-31): open as a PR stacked on Item 39's, not merged.** The endpoint exists; nothing in the frontend calls it until PR3.
+
+**Decision 1: one pure assembly, one thin fetch.** `backend/capacity_map.py` `assemble(groups, polygons, quilt, building_area, far_of)` holds every rule and touches no I/O; `build_capacity_map` only gathers the inputs: the in-memory Discovery index, the ptaxsim polygons (read in an executor, `mode=ro`), the zoning quilt (`zoning_polygons_near`, the same call and cache entry as the Profile's zoning map at the default radius) and the committed artifact. The truth rules are tested on `assemble` with no fixtures beyond shapes.
+
+**Decision 2: the district is the one covering the larger share of the polygon, never the centroid's.** Shares are computed in degrees (only ratios are used). Under 50% covered by any district = `no_zoning` (a street, a right-of-way). Two districts within 10 points of each other = `split_zoning`, not colored, and it replaces only the states that rest on the leading district (planned development, no allowed FAR, overbuilt, computable); a condo building or an unknown area keeps its own reason. A computable polygon whose leading district covers under 90% is shown at `low` confidence with reason `district_boundary`. The plan called the split state `no_honest_single_zone`; `split_zoning` is the same thing under a name the legend can use.
+
+**Decision 3: a district outside the index builder's five families is a district, not "no zoning".** Found on the panel: 182 POS-3 (parks and open space) polygons at 12200 S Hoxie Ave read `no_zoning`, because `index_build._zoning_group` maps only R/B/C/M/D/PD/PMD and `classify` treats a missing group as outside zoning. On the map, a found district with no group (POS, T) reads `no_allowed_far` (the table has no FAR for it). The census keeps the builder's rule, so Item 36's numbers do not move; its 0.6% `no_zoning` includes these districts. *Revisit if* the builder adds groups for POS and T (a `data_version` bump; the census would then shift parcels from `no_zoning` to `no_allowed_far`).
+
+**Decision 4: failures.** Zoning or ptaxsim failing returns no polygons, `unchecked: [...]` and verdict `unavailable` (a map without districts or shapes would be a guess). The artifact failing leaves the index's own areas in place and marks only the polygons that needed it `unchecked`, never `unknown_gfa`. Any response with anything in `unchecked` is not cached; a recovery shows on the next request (tested). No index loaded = `unchecked: ["discovery_index"]`.
+
+**Decision 5: a withheld view carries no utilization at all.** When under 10% of a view's polygons are colorable, the response keeps every state and count but sets every `utilization` to null, so the frontend cannot draw bins from it even by mistake (truth invariant 7).
+
+**Decision 6: the neighbor grid holds references, and groups are formed per request.** The first version memoized a PIN10 group for every polygon in the city: 7.8 s on the first request and 205 MB traced on the full index. The grid now buckets parcel references by a 0.002-degree cell (0.73 s, 11 MB) and groups the few hundred rows near the query, from a box padded by 0.02 mile so a building's unit PINs are never cut off. The subject is located through the index's existing `pin_lookup`; a condo building indexed only by its unit PINs (7141 N Kedzie Ave on the panel) falls back to a scan for any row on the PIN10, only on a miss.
+
+**Decision 7: provenance.** Fact `capacity.utilization` ("Share of the allowed floor area that is built"), tier `our_calculation`, scope `radius`, source `internal.discovery_index`, inputs ptaxsim, zoning districts, the zoning table and the artifact; registered in each of those sources' `fact_keys`. Its coverage is the view's colorable count and share. Each polygon also carries its inputs with source ids (lot area: index or ptaxsim polygon; building area: index or artifact with its year; district share; allowed FAR).
+
+**Decision 8: the census was re-run on the pruned production index already on the dev box.** A citywide index built 2026-10-29 (882,328 rows, all 77 community areas: the pruned production count) sits in an earlier session's worktree, so the "fresh copy" item on Jack's list was not needed for this gate. It was read only.
+
+**Numbers** (measured 2026-10-31)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Census, pruned index (built 2026-10-29): rows / outside the city / polygons | 882,328 / 0 / 605,074 | `PYTHONPATH=. python -m eval.capacity_coverage --index <pruned index>` (`eval/results/2026-10-31-ws8/index_census.json`) |
+| Census polygons computable: Item 36 (index of 2026-10-01) → now | 427,125 (70.6%) → 427,183 (70.6%) | same |
+| Census area verdicts (polygons) | 73 standard / 3 low / 1 withheld (the Loop) | same |
+| Citywide polygons computable, census rule → map rule with the artifact | 70.6% → 73.2% (443,188); Item 36 projected 74.5% | one-off script (not committed): every base row without `bldg_sqft` through `commercial_artifact.building_area` and `map_polygon_state` |
+| Citywide map states that the artifact creates or moves | `multi_pin_member` 24,668 (4.1%); `unknown_gfa` 59,612 → 18,831; overbuilt 307 → 415 | same |
+| Artifact lookups for no-area base rows: own area / complex / none | 17,690 / 31,968 / 93,554 | same |
+| Random views (200 base parcels, seed 31, 0.1 mile): pooled / median colorable | 72.1% / 78.1%; verdicts 182 standard, 10 low, 8 withheld | `PYTHONPATH=. python -m eval.capacity_map_panel --index <pruned index> --random 200` (`eval/results/2026-10-31-ws8/capacity_map_panel.json`) |
+| Lot panel views (77 distinct PIN10s): drawn / pooled / median | 76 / 52.7% / 43.3%; 53 standard, 11 low, 12 withheld | same |
+| Downtown views (9 fixed intersections): pooled / median | 26.2% / 20.8%; 3 standard, 5 low, 1 withheld (Loop, Wells & Lake, 6.5%) | same |
+| Latency in-process, random views: p50 / max (cold zoning fetch) | 0.20 s / 1.1 s | same |
+| Grid build, full index: first version → now | 7.8 s, 205 MB → 0.73 s, 11 MB traced; `near()` 1.7 ms | one-off timing (not committed) |
+| Artifact load | 1.16 s, 16 MB traced | same |
+| Payload at 1601 N Milwaukee (115 polygons) | about 103 KB of JSON | one-off |
+| Endpoint tests | 18 (`test_capacity_map_api.py`) + 2 (`eval/tests/test_capacity_map_panel.py`) | `pytest backend/tests/test_capacity_map_api.py eval/tests/test_capacity_map_panel.py` |
+
+**Why the lot panel is far below the citywide share, and why that is not a stop:** the panel was drawn for field coverage across classes. Of its 100 parcels, 48 are class 5 (commercial) and 17 exempt, against 7.6% and 8.2% of the city's base parcels (75.6% are class 2). Its views are commercial strips, industrial land and downtown, where Item 36 already measured the low rates (commercial 40.9% resolved, exempt never colored). The uniform random views, the check against the citywide projection, land at 72.1% pooled, inside Item 36's 70-75%. The downtown views match Item 36's downtown projection (the Loop at 24.9% after the chain; here 6.5-15.6% per Loop view, because multi-PIN complexes, keypins included, are now excluded).
+
+**Not measured:** production latency and memory (the endpoint is not deployed); the endpoint over HTTP (all numbers are in-process; the HTTP layer is covered by the tests); the share of real Profile views with a withheld map (needs PR3 and traffic); whether a 0.1-mile radius shows enough context on a phone (PR3).

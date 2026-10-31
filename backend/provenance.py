@@ -338,6 +338,11 @@ FACTS.update({
     "zoning.parking": FactSpec("Parking requirements", "artifact.zoning_cache", "ai_read_code", "parcel", "ai_extracted"),
     "zoning.notes": FactSpec("Zoning notes", "artifact.zoning_cache", "ai_read_code", "parcel", "ai_extracted"),
     "zoning.envelope": FactSpec("Buildable envelope", "artifact.zoning_cache", "calculation", "parcel", "our_calculation"),
+    # WS8 Phase 1: built floor area over allowed, per parcel, on the Profile's capacity map (Item 39).
+    "capacity.utilization": FactSpec(
+        "Share of the allowed floor area that is built", "internal.discovery_index", "calculation", "radius", "our_calculation",
+        input_source_ids=("cook.ptaxsim", "chi.zoning.districts", "code.hand_table.zoning_definitions", "artifact.commercial_bldg_by_pin"),
+    ),
 })
 
 
