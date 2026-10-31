@@ -1966,7 +1966,7 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 
 ## Item 36 (WS8 Phase 0): for which parcels can we say how much of the allowed floor area is built (2026-10-28)
 
-**Status (2026-10-28): measured on branch `codex/ws8-phase0-coverage-audit`, not merged.** A read-only audit: no app code changed, no model used, no production index rebuilt. It read a copy of the production Discovery index (built 2026-10-01, 949,014 rows, all 77 community areas; copied off the box by Jack, who ran the sudo steps). **Go/no-go for Phase 1: GO, conditionally, and with a different data path than the plan assumed** (Decisions 6-8). The scripts are `eval/capacity_coverage.py` (index census), `eval/capacity_fallbacks.py` (the Profile's fallback chain on a sample), `eval/capacity_panel.py` (index vs Profile on the 100-address panel) and `eval/capacity_verdicts.py` (which areas could be colored); results are in `eval/results/2026-10-28-ws8/`.
+**Status: measured 2026-10-28; merged 2026-10-28 (#129, `3201ad5`).** A read-only audit: no app code changed, no model used, no production index rebuilt. It read a copy of the production Discovery index (built 2026-10-01, 949,014 rows, all 77 community areas; copied off the box by Jack, who ran the sudo steps). **Go/no-go for Phase 1: GO, conditionally, and with a different data path than the plan assumed** (Decisions 6-8). The scripts are `eval/capacity_coverage.py` (index census), `eval/capacity_fallbacks.py` (the Profile's fallback chain on a sample), `eval/capacity_panel.py` (index vs Profile on the 100-address panel) and `eval/capacity_verdicts.py` (which areas could be colored); results are in `eval/results/2026-10-28-ws8/`.
 
 **Decision 1: the unit is the base-parcel polygon (PIN10), and every figure is reported at both levels.** A block map draws polygons; the index holds PIN14 rows, and 23% of in-city rows are condo unit PINs that share one building polygon. Counting rows would let one condo building outvote 100 houses. The census reports rows (882,322 in-city) and polygons (605,074), and the verdicts use polygons.
 
@@ -2020,7 +2020,7 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 
 ## Item 37 (ops): the monthly Discovery rebuild unit could not finish or reload the backend (2026-10-28)
 
-**Status (2026-10-28): changed on branch `codex/discovery-rebuild-unit-timeout`, not merged, not installed.** Only `deploy/` files changed (the unit, the README section); the builder, the timer and the index are untouched. Installing a changed unit needs `sudo` on the production box, which Jack does after review. Nothing was run on the server.
+**Status: changed 2026-10-28; merged 2026-10-30 (#142, `36c8f74`).** Whether the unit is installed on the server is tracked in Jack's server list (first scheduled run 2026-11-01). Only `deploy/` files changed (the unit, the README section); the builder, the timer and the index are untouched. Installing a changed unit needs `sudo` on the production box, which Jack does after review. Nothing was run on the server.
 
 **Evidence (read-only, 2026-10-28):** the unit's last run started 2026-10-01 04:17 UTC and ended `Result: timeout` (main exit status 130) at 10:17 UTC, the 6 h limit (`TimeoutStartSec=21600`). The index meta shows the build finished at 10:44 UTC, 6 h 27 min after the start, so a full 77-area `--refresh` takes about 6.4 h and the `docker compose run` container outlived systemd's kill (inferred: the kill reached the compose client, exit status 130, and not the container). `ExecStartPost` (the backend restart) only runs after a successful start, so it never ran; the backend picked up the new index at the next deploy restart. The next timer run (Sun 2026-11-01 04:17 UTC) would have timed out the same way. One run is the only measurement; 6.4 h includes whatever the sources' speed was that day.
 
@@ -2038,7 +2038,7 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 
 ## Item 38 (ops): two merges a minute apart took production down because deploys could overlap (2026-10-28)
 
-**Status (2026-10-28): changed on branch `codex/deploy-concurrency`, not merged.** One workflow edit (`.github/workflows/ci.yml`); no app code, no server change.
+**Status: changed 2026-10-28; merged 2026-10-29 (#130, `b12e7b4`).** One workflow edit (`.github/workflows/ci.yml`); no app code, no server change.
 
 **Evidence (read from the Actions logs and the live site, 2026-10-28):** PR #128 merged as `4295b67` and PR #129 as `3201ad5`, one minute apart (CI / Deploy runs created 22:25:41Z and 22:26:28Z). Both runs passed `test`, `lint` and `changes` and both `deploy` jobs failed. The first reported `No such container: 05e53804299f_urbanlayer-backend-1` during `Recreate`; the second reported `The container name "/urbanlayer-backend-1" is already in use`. Both ran `docker compose up -d --build` against the same project at the same time (compose renames the old container to `<id>_<name>` while it recreates it). The images had built; the old backend container was gone, a new one sat in `Created`, and `/health` and `/api/scorecard` returned 502 until Jack removed the stuck container and ran `up -d` by hand (the backend came up healthy in 27 s). The frontend and qdrant containers were untouched. Nothing in the workflow serialized deploys: `concurrency` was not set anywhere.
 
@@ -2082,7 +2082,7 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 
 ## Item 39 (WS8 Phase 1 PR1): one owner for the capacity rules, and the commercial building areas committed (2026-10-31)
 
-**Status (2026-10-31): open as a PR, not merged.** No user-facing change: nothing reads the artifact yet (PR2 adds `/api/capacity-map`, PR3 the Profile map). Jack approved data path (a) of Item 36 Decision 6, the map as a free Profile feature, and a 0.1-mile radius (2026-10-31, taking the plan's recommendations).
+**Status: merged and deployed 2026-10-31 (#154, `d663439`).** No user-facing change on its own; `/api/capacity-map` (Item 40) and the Profile map (Item 41) read the artifact. Jack approved data path (a) of Item 36 Decision 6, the map as a free Profile feature, and a 0.1-mile radius (2026-10-31, taking the plan's recommendations).
 
 **Decision 1: the capacity rules move to `backend/capacity.py`, and the Phase 0 census imports them.** `eval/capacity_coverage.py` now re-exports `classify`, `polygon_state`, `coverage_verdict`, `pin10`, `STATES` and the constants from the backend module, so the scripts and tests that import them from the eval keep working. The coverage thresholds are imported from `backend/provenance.py` directly (the eval used to copy them and pin the agreement with a test). *Alternatives:* leave the rules in `eval/` and import them from the API (rejected: `eval/` is excluded from the Docker image by `.dockerignore`); copy them (rejected: the census and the product would drift silently). *Gate:* a test asserts the eval's names are the backend's objects and that its source defines none of them; the census JSON and printout are byte-identical before and after the move on the local index.
 
@@ -2115,7 +2115,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 40 (WS8 Phase 1 PR2): `/api/capacity-map`, and the coverage it measures (2026-10-31)
 
-**Status (2026-10-31): open as a PR stacked on Item 39's, not merged.** The endpoint exists; nothing in the frontend calls it until PR3.
+**Status: merged and deployed 2026-10-31 (#155, `fef975f`).** Live: 1601 N Milwaukee 90 of 149 parcels colored (60.4%, standard); the Loop at State & Madison 14 of 138 (10.1%, low).
 
 **Decision 1: one pure assembly, one thin fetch.** `backend/capacity_map.py` `assemble(groups, polygons, quilt, building_area, far_of)` holds every rule and touches no I/O; `build_capacity_map` only gathers the inputs: the in-memory Discovery index, the ptaxsim polygons (read in an executor, `mode=ro`), the zoning quilt (`zoning_polygons_near`, the same call and cache entry as the Profile's zoning map at the default radius) and the committed artifact. The truth rules are tested on `assemble` with no fixtures beyond shapes.
 
@@ -2158,7 +2158,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 41 (WS8 Phase 1 PR3): the capacity map on the Property Profile (2026-10-31)
 
-**Status (2026-10-31): open as a PR stacked on Item 40's, not merged.** Free, in the Build module below the zoning and boundaries maps, English and Mexican Spanish (usted).
+**Status: merged and deployed 2026-10-31 (#156, `2c4dba7`); WS8 Phase 1 is live.** Free, in the Build module below the zoning and boundaries maps, English and Mexican Spanish (usted).
 
 **Decision 1: one model owns colors, counts and the key.** `capacityMapModel.ts` (`buildCapacityMapModel`) turns the response into the painted features, the four bins and the "Not colored, and why" rows; the component and the tests read the same object, so a parcel can never be drawn in one category and counted in another (the `discoveryMapModel` pattern, Item 31). A test pins that the key's counts sum to the polygons drawn.
 
@@ -2186,7 +2186,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 42 (WS5 PR1): the Predominance of the Block (606) rule in the unit yield (2026-10-31)
 
-**Status (2026-10-31): open as a PR, not merged.** Independent of the WS8 PRs (Items 39-41), which take the item numbers before it.
+**Status: merged and deployed 2026-10-31 (#157, `78f761a`).** Live: 2307 N Avers Ave (RS-3, 3,750 sq ft, in 606) shows 2 units (base 1). Independent of the WS8 PRs (Items 39-41).
 
 **Decision 1: the 606 rule adds a path; it does not cap the base rule.** §17-2-0303-B.1 lets a *two-unit building* in RS-3 use 1,500 sq ft of lot per unit inside the 606 district. The yield is the larger of the base rule (2,500 sq ft per unit) and the 606 path, which gives exactly two units on a lot of at least 3,000 sq ft and nothing otherwise. *Deviation from the plan:* the plan wrote `units = 2 if lot >= 3,000 else lot // 2,500`, which would lower a 7,500 sq ft lot from 3 units to 2. A first cut of my own (`min(lot // 1,500, 2)`) turned 433 lots of 1,500-2,499 sq ft from 0 units into 1, which the rule never allows (it is about a two-unit building); the count below caught it, and a test now pins it.
 
@@ -2211,7 +2211,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 43 (WS5 PR2): "What if this were rezoned?" on the Property Profile (2026-10-31)
 
-**Status (2026-10-31): open as a PR stacked on Item 42's, not merged.** Free (Jack, 2026-10-31, taking the plan's recommendation: it is table arithmetic).
+**Status: merged and deployed 2026-10-31 (#158, `8df5b62`).** Free (Jack, 2026-10-31, taking the plan's recommendation: it is table arithmetic).
 
 **Decision 1: pure arithmetic on numbers the Profile already has.** `GET /api/what-if?current=&district=&lot_sqft=&in_606=` (`backend/what_if.py`) reads only the district table (`zoning_definitions`, ordinance-parity tested) and the lot area the Profile resolved, so it makes no fetch and needs no PIN. *Deviation:* the plan sketched `?pin=&district=`; passing the lot area the page already shows avoids a second lookup that could disagree with it. Per district: FAR, the floor area that FAR allows on this lot, height, units by lot area (the same `max_units_by_lot_area`, so the 606 rule carries into an RS-3 comparison) and the code section.
 
@@ -2232,7 +2232,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 44 (WS5 PR4): the RS-3 "60% of the block face" test is measurable, against the plan's expectation (2026-10-31)
 
-**Status (2026-10-31): measurement only, open as a PR, not merged.** No product change. The threshold is Jack's (2026-10-31, the plan's recommendation): a block face is computable only when at least 90% of its lots have a unit count from an official record.
+**Status: measurement only, merged 2026-10-31 (#159, `de4ee64`).** No product change; building the block-face test is Jack's decision. The threshold is Jack's (2026-10-31, the plan's recommendation): a block face is computable only when at least 90% of its lots have a unit count from an official record.
 
 **Finding 1: the unit count exists in the source; only our index lacks it.** The plan expected this to fail because "`units` is dormant in the index (`char_apts` empty)". The Assessor's residential characteristics (`x54s-btds`) carry `char_apts` on 1,094,535 of 1,102,672 rows in 2024 (99.3%): "Two" to "Six" on 2-11 apartment buildings, "None" on single-family classes (203: 345,246 "None", 60 "Two"). The index builder never copied it, which is why the index's `units` is empty.
 
