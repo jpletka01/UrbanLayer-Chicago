@@ -194,7 +194,9 @@
       "laterAmendments_one": "{{count}} later amendment",
       "laterAmendments_other": "{{count}} later amendments",
       "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows.",
-      "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
+      "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF).",
+      "unitYield606Applied": "In the Predominance of the Block (606) district: a two-unit building at 1,500 sq ft of lot per unit raises this from {{base}} to {{units}} (§17-2-0303-B.1).",
+      "unitYield606Unchecked": "We could not check whether this parcel is in the Predominance of the Block (606) district. There, RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1)."
     },
     "verdict": {
       "inTif": "in {{name}} TIF",

@@ -2183,3 +2183,28 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | vitest | 715 passed (78 files; 13 new tests in 2 files) | `npx vitest run` |
 
 **Not measured:** a Loop address in the browser (the local index has no Loop; the panel's in-process Loop views are in Item 40); production latency; how often real visitors see a withheld map; screen-reader reading of the key; the Spanish wording by a native reader (added to Jack's Spanish list).
+
+## Item 42 (WS5 PR1): the Predominance of the Block (606) rule in the unit yield (2026-10-31)
+
+**Status (2026-10-31): open as a PR, not merged.** Independent of the WS8 PRs (Items 39-41), which take the item numbers before it.
+
+**Decision 1: the 606 rule adds a path; it does not cap the base rule.** §17-2-0303-B.1 lets a *two-unit building* in RS-3 use 1,500 sq ft of lot per unit inside the 606 district. The yield is the larger of the base rule (2,500 sq ft per unit) and the 606 path, which gives exactly two units on a lot of at least 3,000 sq ft and nothing otherwise. *Deviation from the plan:* the plan wrote `units = 2 if lot >= 3,000 else lot // 2,500`, which would lower a 7,500 sq ft lot from 3 units to 2. A first cut of my own (`min(lot // 1,500, 2)`) turned 433 lots of 1,500-2,499 sq ft from 0 units into 1, which the rule never allows (it is about a two-unit building); the count below caught it, and a test now pins it.
+
+**Decision 2: "in the district" comes from the overlay the Profile already fetched, and unknown stays unknown.** `overlay_facts.in_606_district(regulatory)`: True when the special-district layer returned the "(606)" district, False when it answered without it, None when that layer is in `unchecked_overlays` or no regulatory lookup ran (a chat turn that skipped the domain). None keeps the base number, `rule_606: "unchecked"`, and the caveat says the 606 check failed. `max_units_by_lot_area`'s `in_606` defaults to None for the same reason: a caller that forgets it must not claim "not in the district".
+
+**Decision 3: one computed field for the Profile, chat and the report.** `ContextObject.unit_yield` passes the overlay fact; the report's `_compute_unit_yield` now reads that field instead of recomputing (it had its own copy of the arithmetic), so the three surfaces cannot disagree. The response adds `base_units` and `rule_606`; the Profile's zoning card adds one translated line when the rule raised the number or the check failed, and the report adds one sentence in either case (en and es).
+
+**Revisit if** the 60% block-face test (WS5 PR4) ever becomes computable: it is the second trigger of the same rule and would feed `in_606`'s sibling.
+
+**Numbers** (measured 2026-10-31)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| RS-3 base parcels inside the 606 district (pruned citywide index, built 2026-10-29) | 17,697 (17,696 with a lot area) | one-off script (not committed): the City zoning MapServer layer 9 feature named "Predominance of the Block (606) District" intersected with layer 1's RS-3 polygons, then index base-row points inside |
+| Of those, yield changed by the rule | 13,748 (77.7%), all 1 → 2 units | same |
+| First cut's wrong 0 → 1 moves, caught and fixed | 433 | same, before the fix |
+| Backend unit suite / new tests | 2,505 passed; 22 new in `test_unit_yield_606.py` (vitest 703, 1 new) | `.venv/bin/python -m pytest backend/tests/ -q -m "not integration"` |
+
+*Deviation:* the plan asked for this count "with an index query, no network calls". The index stores neither the zone class nor 606 membership, so the count needed two keyless queries to the City's zoning map (no model, no credits). Parcels are placed by the index's point, not by polygon overlap, so a lot on a district edge can be misplaced.
+
+**Not measured:** how many Profile views this changes (it depends on traffic); a Spanish read by a native speaker of the three new sentences; whether the 606 district's single map feature has holes the point test treats correctly (shapely handles holes; not checked by eye).
