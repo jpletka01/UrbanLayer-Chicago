@@ -1147,7 +1147,7 @@ export default function ScorecardPage() {
                     </div>
                     {zdef && (
                       <WhatIfCard
-                        key={data.resolved_pin ?? data.address}
+                        key={`what-if:${data.resolved_pin ?? data.address}`}
                         currentDistrict={zdef.zone_class}
                         lotSqft={ctx.property?.land_sqft ?? null}
                         in606={ctx.unit_yield?.rule_606 === "applied" ? true : ctx.unit_yield?.rule_606 === "not_in_district" ? false : null}
@@ -1172,7 +1172,7 @@ export default function ScorecardPage() {
                       </div>
                     )}
                     <CapacityMap
-                      key={data.resolved_pin ?? data.address}
+                      key={`capacity:${data.resolved_pin ?? data.address}`}
                       pin={data.resolved_pin ?? null}
                       lat={data.resolved_lat ?? data.lat}
                       lon={data.resolved_lon ?? data.lon}

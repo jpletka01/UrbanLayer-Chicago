@@ -2260,3 +2260,27 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Tests | 15 in `eval/tests/test_blockface_panel.py` | `pytest eval/tests/test_blockface_panel.py` |
 
 **Not measured:** a second seed; the faces split by the 606 district; whether `char_apts` is right on the ground (it is the Assessor's record, not a field check); the code's definition of a block face.
+
+## Item 45: the what-if card stacked 7-13 times on every Profile (duplicate sibling keys), and a guard for the whole class (2026-10-31)
+
+**Status (2026-10-31): open as a PR, not merged.** A bug fix; no design change.
+
+**What happened.** #156 (Item 41) keyed `CapacityMap` and #158 (Item 43) keyed `WhatIfCard` with the same expression, `key={data.resolved_pin ?? data.address}`, as siblings in the Profile's Build module. React cannot tell same-keyed siblings apart. The Profile re-renders as you scroll (scroll-spy and the condensed-verdict band), and each re-render added another what-if card. Found by the redesign case study (`plans/2026-11-01_profile-discovery-redesign-plan.md` §0) after Jack's 2026-10-31 review named "all of these what-if questions". Each card's own vitest renders it alone, and the live sweep does not scroll, so nothing saw it.
+
+**Decision 1: distinct keys, kept per parcel.** `what-if:<pin or address>` and `capacity:<pin or address>`. The keys exist so each card remounts (resets its state) when the parcel changes; a prefix keeps that and makes them unique. *Alternative:* drop the keys and reset state inside each card; rejected as a larger change for no gain.
+
+**Decision 2: guard the class, not the instance.** `frontend/src/components/siblingKeys.test.ts` parses every non-test `.tsx` under `src/` with the TypeScript compiler and fails when two sibling JSX children carry the same `key` expression (unwrapping `cond && <X/>`, ternaries and parentheses; the two branches of one ternary may share a key, since only one renders). It runs in CI with the rest of vitest. *Alternative:* render the whole `ScorecardPage` in vitest and count cards; rejected because the page has 45 imports to mock, and it would guard one page. The phone suite (`e2e/mobile-overflow.spec.ts`, local only; CI does not run Playwright) now also asserts one what-if card and one capacity map after its full scroll.
+
+**Revisit if** a list legitimately renders same-expression keys as siblings (the test would flag it; give them distinct prefixes).
+
+**Numbers** (measured 2026-10-31)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| What-if copies on the live Profile, desktop (redesign study) | 7-13 per parcel (~500 words, ~1,900 px) | `plans/2026-11-01_redesign-assets/measure.cjs` |
+| New phone assertion against production (bug live) / local without the fix / local with the fix | 4 copies (fail) / 7 copies (fail) / 1 (pass) | `npx playwright test e2e/mobile-overflow.spec.ts -g scorecard --project="Galaxy S24"` (production: `E2E_BASE_URL=https://urbanlayerchicago.com`) |
+| Sibling-key guard: files checked / without the fix / with it | 146 / fails at `ScorecardPage.tsx:1174` / passes | `npx vitest run src/components/siblingKeys.test.ts` |
+| Other duplicate sibling keys found in the app | 0 | same |
+| Gates | vitest 867 passed (80 files); lint 0 errors; build OK; phone suite Profile 5 of 5 devices | `npx vitest run`, `npm run lint`, `npm run build`, `-g scorecard` |
+
+**Not measured:** the live Profile after deploy (checked after merge); whether other pages re-render enough to show a duplicate if one is ever added (the guard makes that moot).
