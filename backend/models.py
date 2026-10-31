@@ -1130,9 +1130,11 @@ class ContextObject(BaseModel):
         agree. None for districts with no per-unit minimum, or an unknown lot."""
         if self.parcel_zoning is None or self.property is None:
             return None
+        from backend.retrieval.regulatory.overlay_facts import in_606_district
         from backend.retrieval.zoning_definitions import max_units_by_lot_area
 
-        return max_units_by_lot_area(self.parcel_zoning.zone_class, self.property.land_sqft)
+        return max_units_by_lot_area(self.parcel_zoning.zone_class, self.property.land_sqft,
+                                     in_606=in_606_district(self.regulatory))
 
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property
