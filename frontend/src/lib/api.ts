@@ -1276,6 +1276,17 @@ export async function fetchParcelMapLayers(
   }
 }
 
+/** The Profile's block capacity map (`/api/capacity-map`). `pin` locates the subject in the Discovery index;
+ * lat/lon are the fallback for a withheld PIN. Null on a network or HTTP failure (the component says so). */
+export async function fetchCapacityMap(
+  pin: string | null | undefined,
+  lat: number,
+  lon: number,
+): Promise<import("../components/scorecard/capacityMapModel").CapacityMapResponse | null> {
+  const params = new URLSearchParams({ lat: lat.toFixed(6), lon: lon.toFixed(6) });
+  if (pin) params.set("pin", pin);
+  try {
+    const resp = await authFetch(`${API_BASE}/api/capacity-map?${params}`);
 export interface WhatIfFigures {
   zone_class: string;
   name: string;

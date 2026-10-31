@@ -183,7 +183,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
     _layer(
         f"{ZONING_MAPSERVER}/1", "chi.zoning.districts", "Zoning districts (layer 1)", CITY_GIS,
         "backend/retrieval/zoning.py", surfaces=("profile", "chat", "report", "map"),
-        fact_keys=("zoning.district",), severity="critical", cadence_days=7,
+        fact_keys=("zoning.district", "capacity.utilization"), severity="critical", cadence_days=7,
         content=Content("newest_edit", "UPDATE_TIMESTAMP"), warn_days=30, alarm_days=60,
         contract=Contract(
             required_fields=("ZONE_CLASS", "ORDINANCE_NUM", "ORDINANCE_DATE", "UPDATE_TIMESTAMP", "CLERK_URL", "PD_NUM"),
@@ -291,7 +291,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         id="cook.ptaxsim", name="PTAXSIM (property tax simulation database)", publisher=COOK_ASSESSOR,
         tier="official_estimate", kind="local_db", locator="backend/data/ptaxsim.db", probe="ptaxsim",
         owner_modules=("backend/retrieval/property/tax_estimate.py", "backend/retrieval/property/parcel_geometry.py"),
-        surfaces=_PROP, fact_keys=("property.tax_estimate", "property.effective_rate", "property.tax_class_norm", "property.exemptions", "property.land_area", "property.land_sqft"), severity="critical",
+        surfaces=_PROP, fact_keys=("property.tax_estimate", "property.effective_rate", "property.tax_class_norm", "property.exemptions", "property.land_area", "property.land_sqft", "capacity.utilization"), severity="critical",
         cadence_days=365, warn_days=800, alarm_days=1200,
         note="Content date = the last tax year in the database. Also probes the upstream release.",
     ),
@@ -546,7 +546,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         id="code.hand_table.zoning_definitions", name="Zoning district table (hand-maintained)", publisher="UrbanLayer",
         tier="official_publication", kind="hand_table", locator="backend/retrieval/zoning_definitions.py",
         probe="hand_table", owner_modules=("backend/retrieval/zoning_definitions.py",),
-        surfaces=("profile", "chat", "report"), fact_keys=("zoning.far", "zoning.max_height", "zoning.min_lot_area_per_unit", "zoning.unit_yield", "zoning.adu", "zoning.tod_benefits"), severity="critical", availability_only=True,
+        surfaces=("profile", "chat", "report"), fact_keys=("zoning.far", "zoning.max_height", "zoning.min_lot_area_per_unit", "zoning.unit_yield", "zoning.adu", "zoning.tod_benefits", "capacity.utilization"), severity="critical", availability_only=True,
         note="VERIFIED_AGAINST must equal code_vintage.current_through, so someone re-verifies after each refresh.",
     ),
     SourceSpec(
@@ -615,6 +615,16 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "artifact check also warns when the Assessor year is three years old, since a new city reassessment is due.",
     ),
     SourceSpec(
+        id="artifact.commercial_bldg_by_pin", name="Assessor's commercial building areas by parcel (committed)",
+        publisher="UrbanLayer from the Cook County Assessor (Commercial Valuation, csik-bsws)",
+        tier="official_record", kind="artifact", locator="ingestion/data/commercial_bldg_by_pin.json.gz", probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/property/commercial_artifact.py", "ingestion/build_commercial_bldg_artifact.py"),
+        surfaces=("profile",), fact_keys=("capacity.utilization",), cadence_days=1095, warn_days=1185, alarm_days=1460,
+        note="Building area per economic unit (sum of bldgsf) with its member PINs, from the latest city-wide "
+             "reassessment (2024; the next is 2027). Read by the Profile's capacity map (WS8 Phase 1) for parcels the "
+             "Discovery index has no building area for. Build date from commercial_bldg_by_pin.meta.json.",
+    ),
+    SourceSpec(
         id="artifact.chrs", name="Chicago Historic Resources Survey, orange/red (committed)", publisher="City of Chicago",
         tier="official_record", kind="artifact", locator="ingestion/data/chrs_orange_red.json.gz", probe="none",
         owner_modules=("backend/retrieval/property/chrs.py", "ingestion/build_chrs_artifact.py"), surfaces=("profile",),
@@ -630,7 +640,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         id="internal.discovery_index", name="Property Discovery index", publisher="UrbanLayer", tier="our_calculation",
         kind="local_db", locator="backend/data/discovery_index.db", probe="discovery_index",
         owner_modules=("backend/discovery/parcel_index.py", "backend/discovery/index_build.py"),
-        surfaces=("discovery", "profile"), fact_keys=("area.benchmarks",), cadence_days=30, warn_days=40, alarm_days=70,
+        surfaces=("discovery", "profile"), fact_keys=("area.benchmarks", "capacity.utilization"), cadence_days=30, warn_days=40, alarm_days=70,
         note="Rebuilt by a monthly timer. Absent in a dev checkout, where its status is unknown.",
     ),
     # --- Internal checks (their probes arrive with the milestone in ``note``) -----------------
@@ -711,6 +721,13 @@ def _with_contracts(spec: SourceSpec, fields_read: dict[str, tuple[str, ...]]) -
 SOURCES: tuple[SourceSpec, ...] = tuple(_with_contracts(s, load_fields_read()) for s in _BASE_SOURCES)
 
 BY_ID: dict[str, SourceSpec] = {s.id: s for s in SOURCES}
+
+
+def sidecar_locator(locator: str) -> str:
+    """The ``.meta.json`` sidecar that dates a committed artifact: ``rent_by_area.json`` ->
+    ``rent_by_area.meta.json``, and a gzipped ``commercial_bldg_by_pin.json.gz`` -> ``commercial_bldg_by_pin.meta.json``."""
+    stem = locator.removesuffix(".gz")
+    return stem.rsplit(".", 1)[0] + ".meta.json"
 
 
 def socrata_locator(spec: SourceSpec) -> tuple[str, str]:

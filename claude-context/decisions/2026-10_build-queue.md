@@ -2080,6 +2080,110 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 - **Not measured:** a real PDF (no purchases yet).
 
 
+## Item 39 (WS8 Phase 1 PR1): one owner for the capacity rules, and the commercial building areas committed (2026-10-31)
+
+**Status (2026-10-31): open as a PR, not merged.** No user-facing change: nothing reads the artifact yet (PR2 adds `/api/capacity-map`, PR3 the Profile map). Jack approved data path (a) of Item 36 Decision 6, the map as a free Profile feature, and a 0.1-mile radius (2026-10-31, taking the plan's recommendations).
+
+**Decision 1: the capacity rules move to `backend/capacity.py`, and the Phase 0 census imports them.** `eval/capacity_coverage.py` now re-exports `classify`, `polygon_state`, `coverage_verdict`, `pin10`, `STATES` and the constants from the backend module, so the scripts and tests that import them from the eval keep working. The coverage thresholds are imported from `backend/provenance.py` directly (the eval used to copy them and pin the agreement with a test). *Alternatives:* leave the rules in `eval/` and import them from the API (rejected: `eval/` is excluded from the Docker image by `.dockerignore`); copy them (rejected: the census and the product would drift silently). *Gate:* a test asserts the eval's names are the backend's objects and that its source defines none of them; the census JSON and printout are byte-identical before and after the move on the local index.
+
+**Decision 2: the map's two new states sit beside the census rules; they do not change the census.** `map_polygon_state(attrs, has_unit_pins, complex_total_only)` calls `classify` and then applies `condo_building` (any unit PIN on the PIN10, ahead of everything but no zoning and planned development) and `multi_pin_member` (where `unknown_gfa` would land, only when the index has no building area and the artifact's area belongs to a complex). Changing `polygon_state` itself would have changed the census numbers Item 36 recorded. A parcel that is exempt stays exempt even when it is in a complex: the earlier state is the more useful reason.
+
+**Decision 3: a multi-parcel complex's total is never attributed to any one lot, the keypin included.** This is stricter than the Profile, which attributes the total to the keypin (`building_facts.get_commercial_facts`). On a map, the keypin's polygon is still only one of the lots the total covers, so coloring it would show the "FAR 10.07" error on a different parcel. The loader's rule is by PIN10: a unit whose members all share one base parcel is one polygon and keeps its area; a unit whose members span more than one PIN10 is a complex. The 11 PINs listed in more than one unit get no single answer (they read as a complex with no total). *Revisit if* the map should draw a complex as one merged shape (needs a geometry union over member polygons; not in Phase 1).
+
+**Decision 4: the artifact holds one year, the newest city-wide reassessment (2024), and sums every row of a unit.** The dataset has one row per building and, for a split-class property, one row per class portion (for example 09-25-407-023-0000: 6,694 sq ft retail plus 11,906 sq ft apartments), so the sum is the unit's floor area and matches the Profile's rule. *Known gap:* 32 of the 411 units with several area rows have the same area on every row, which could be a building listed twice rather than two buildings; the Profile has the same exposure. They were not examined. The Profile falls back to an older year when the newest has no area; the artifact does not (1 year keeps it a single coherent vintage; the age check warns once 2027 is due).
+
+**Decision 5: the sidecar of a gzipped artifact drops both extensions.** `commercial_bldg_by_pin.json.gz` is dated by `commercial_bldg_by_pin.meta.json`. The sidecar probe and the registry test each derived the name with "replace the last extension", which for a `.json.gz` gives `commercial_bldg_by_pin.json.meta.json`. One helper, `registry.sidecar_locator`, now names it for both.
+
+**Decision 6: tier and cadence.** Registry `artifact.commercial_bldg_by_pin`, tier `official_record` (the Assessor's own building areas; Item 36 Decision 3 tiered Commercial Valuation as standard), cadence 1,095 days with warn 1,185 and alarm 1,460, the same as the Assessor model artifact. The CI age check shares that artifact's rules (build age, plus a warning once the next reassessment year arrives). No `fact_keys` or `surfaces` yet: the fact `capacity.utilization` arrives with the endpoint in PR2. The artifact is allowlisted in `.gitignore`, `.dockerignore` and a Dockerfile `COPY` (a busybox build with the repo's `.dockerignore` copied both files).
+
+**Numbers** (measured 2026-10-31)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Commercial Valuation Chicago rows by year | 2024: 32,930; 2021: 35,182 | `ingestion.build_commercial_bldg_artifact` (the `count(*)` by year it prints into its choice) |
+| Artifact: rows / units / units with an area | 32,930 / 31,702 / 29,564 | `PYTHONPATH=. python -m ingestion.build_commercial_bldg_artifact` (writes the sidecar) |
+| Artifact: multi-PIN units / spanning more than one PIN10 / member PINs / PINs in more than one unit | 8,483 / 8,468 / 56,805 / 11 | same (`commercial_bldg_by_pin.meta.json`) |
+| Artifact size (gzip) / build time | 313,922 bytes / 65 s (keyless Socrata, 4 pages) | same |
+| Census before vs after the move (local index) | byte-identical JSON and printout | `PYTHONPATH=. python -m eval.capacity_coverage --index backend/data/discovery_index.db --out <file>` on `origin/main` and on this branch, then `cmp` |
+| Local index polygons whose census state was unknown building area: became computable / multi-PIN member / apparently overbuilt / still unknown | 1,027: 206 / 298 / 2 / 521 | a one-off script over the local index (not committed): base row lacks `bldg_sqft` → `commercial_artifact.building_area` → `map_polygon_state` |
+| Local index polygons computable, census rule → map rule | 41,760 (54.0%) → 41,966 (54.3%) of 77,318 | same |
+| Backend unit suite / eval suite | 2,517 passed / 171 passed | `.venv/bin/python -m pytest backend/tests/ -q -m "not integration"`; `pytest eval/test_judge.py eval/tests -q` |
+
+The local index is a July 2026 build of six community areas (188,312 rows, before the geometry land fill, so only 24.9% of its rows have a lot area). Its shares do not describe the city; they only show that the artifact moves parcels in the expected directions.
+
+**Not measured:** the census on a fresh copy of the pruned production index (Jack's copy, on his list; the Item 36 numbers stand until then); the artifact's effect citywide (needs that copy); whether the 32 units with a repeated area double-count; the 2021 fallback the artifact leaves out; production memory for the loaded artifact (about 31,700 tuples plus a 56,805-key dict; not profiled).
+
+## Item 40 (WS8 Phase 1 PR2): `/api/capacity-map`, and the coverage it measures (2026-10-31)
+
+**Status (2026-10-31): open as a PR stacked on Item 39's, not merged.** The endpoint exists; nothing in the frontend calls it until PR3.
+
+**Decision 1: one pure assembly, one thin fetch.** `backend/capacity_map.py` `assemble(groups, polygons, quilt, building_area, far_of)` holds every rule and touches no I/O; `build_capacity_map` only gathers the inputs: the in-memory Discovery index, the ptaxsim polygons (read in an executor, `mode=ro`), the zoning quilt (`zoning_polygons_near`, the same call and cache entry as the Profile's zoning map at the default radius) and the committed artifact. The truth rules are tested on `assemble` with no fixtures beyond shapes.
+
+**Decision 2: the district is the one covering the larger share of the polygon, never the centroid's.** Shares are computed in degrees (only ratios are used). Under 50% covered by any district = `no_zoning` (a street, a right-of-way). Two districts within 10 points of each other = `split_zoning`, not colored, and it replaces only the states that rest on the leading district (planned development, no allowed FAR, overbuilt, computable); a condo building or an unknown area keeps its own reason. A computable polygon whose leading district covers under 90% is shown at `low` confidence with reason `district_boundary`. The plan called the split state `no_honest_single_zone`; `split_zoning` is the same thing under a name the legend can use.
+
+**Decision 3: a district outside the index builder's five families is a district, not "no zoning".** Found on the panel: 182 POS-3 (parks and open space) polygons at 12200 S Hoxie Ave read `no_zoning`, because `index_build._zoning_group` maps only R/B/C/M/D/PD/PMD and `classify` treats a missing group as outside zoning. On the map, a found district with no group (POS, T) reads `no_allowed_far` (the table has no FAR for it). The census keeps the builder's rule, so Item 36's numbers do not move; its 0.6% `no_zoning` includes these districts. *Revisit if* the builder adds groups for POS and T (a `data_version` bump; the census would then shift parcels from `no_zoning` to `no_allowed_far`).
+
+**Decision 4: failures.** Zoning or ptaxsim failing returns no polygons, `unchecked: [...]` and verdict `unavailable` (a map without districts or shapes would be a guess). The artifact failing leaves the index's own areas in place and marks only the polygons that needed it `unchecked`, never `unknown_gfa`. Any response with anything in `unchecked` is not cached; a recovery shows on the next request (tested). No index loaded = `unchecked: ["discovery_index"]`.
+
+**Decision 5: a withheld view carries no utilization at all.** When under 10% of a view's polygons are colorable, the response keeps every state and count but sets every `utilization` to null, so the frontend cannot draw bins from it even by mistake (truth invariant 7).
+
+**Decision 6: the neighbor grid holds references, and groups are formed per request.** The first version memoized a PIN10 group for every polygon in the city: 7.8 s on the first request and 205 MB traced on the full index. The grid now buckets parcel references by a 0.002-degree cell (0.73 s, 11 MB) and groups the few hundred rows near the query, from a box padded by 0.02 mile so a building's unit PINs are never cut off. The subject is located through the index's existing `pin_lookup`; a condo building indexed only by its unit PINs (7141 N Kedzie Ave on the panel) falls back to a scan for any row on the PIN10, only on a miss.
+
+**Decision 7: provenance.** Fact `capacity.utilization` ("Share of the allowed floor area that is built"), tier `our_calculation`, scope `radius`, source `internal.discovery_index`, inputs ptaxsim, zoning districts, the zoning table and the artifact; registered in each of those sources' `fact_keys`. Its coverage is the view's colorable count and share. Each polygon also carries its inputs with source ids (lot area: index or ptaxsim polygon; building area: index or artifact with its year; district share; allowed FAR).
+
+**Decision 8: the census was re-run on the pruned production index already on the dev box.** A citywide index built 2026-10-29 (882,328 rows, all 77 community areas: the pruned production count) sits in an earlier session's worktree, so the "fresh copy" item on Jack's list was not needed for this gate. It was read only.
+
+**Numbers** (measured 2026-10-31)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Census, pruned index (built 2026-10-29): rows / outside the city / polygons | 882,328 / 0 / 605,074 | `PYTHONPATH=. python -m eval.capacity_coverage --index <pruned index>` (`eval/results/2026-10-31-ws8/index_census.json`) |
+| Census polygons computable: Item 36 (index of 2026-10-01) → now | 427,125 (70.6%) → 427,183 (70.6%) | same |
+| Census area verdicts (polygons) | 73 standard / 3 low / 1 withheld (the Loop) | same |
+| Citywide polygons computable, census rule → map rule with the artifact | 70.6% → 73.2% (443,188); Item 36 projected 74.5% | one-off script (not committed): every base row without `bldg_sqft` through `commercial_artifact.building_area` and `map_polygon_state` |
+| Citywide map states that the artifact creates or moves | `multi_pin_member` 24,668 (4.1%); `unknown_gfa` 59,612 → 18,831; overbuilt 307 → 415 | same |
+| Artifact lookups for no-area base rows: own area / complex / none | 17,690 / 31,968 / 93,554 | same |
+| Random views (200 base parcels, seed 31, 0.1 mile): pooled / median colorable | 72.1% / 78.1%; verdicts 182 standard, 10 low, 8 withheld | `PYTHONPATH=. python -m eval.capacity_map_panel --index <pruned index> --random 200` (`eval/results/2026-10-31-ws8/capacity_map_panel.json`) |
+| Lot panel views (77 distinct PIN10s): drawn / pooled / median | 76 / 52.7% / 43.3%; 53 standard, 11 low, 12 withheld | same |
+| Downtown views (9 fixed intersections): pooled / median | 26.2% / 20.8%; 3 standard, 5 low, 1 withheld (Loop, Wells & Lake, 6.5%) | same |
+| Latency in-process, random views: p50 / max (cold zoning fetch) | 0.20 s / 1.1 s | same |
+| Grid build, full index: first version → now | 7.8 s, 205 MB → 0.73 s, 11 MB traced; `near()` 1.7 ms | one-off timing (not committed) |
+| Artifact load | 1.16 s, 16 MB traced | same |
+| Payload at 1601 N Milwaukee (115 polygons) | about 103 KB of JSON | one-off |
+| Endpoint tests | 18 (`test_capacity_map_api.py`) + 2 (`eval/tests/test_capacity_map_panel.py`) | `pytest backend/tests/test_capacity_map_api.py eval/tests/test_capacity_map_panel.py` |
+
+**Why the lot panel is far below the citywide share, and why that is not a stop:** the panel was drawn for field coverage across classes. Of its 100 parcels, 48 are class 5 (commercial) and 17 exempt, against 7.6% and 8.2% of the city's base parcels (75.6% are class 2). Its views are commercial strips, industrial land and downtown, where Item 36 already measured the low rates (commercial 40.9% resolved, exempt never colored). The uniform random views, the check against the citywide projection, land at 72.1% pooled, inside Item 36's 70-75%. The downtown views match Item 36's downtown projection (the Loop at 24.9% after the chain; here 6.5-15.6% per Loop view, because multi-PIN complexes, keypins included, are now excluded).
+
+**Not measured:** production latency and memory (the endpoint is not deployed); the endpoint over HTTP (all numbers are in-process; the HTTP layer is covered by the tests); the share of real Profile views with a withheld map (needs PR3 and traffic); whether a 0.1-mile radius shows enough context on a phone (PR3).
+
+## Item 41 (WS8 Phase 1 PR3): the capacity map on the Property Profile (2026-10-31)
+
+**Status (2026-10-31): open as a PR stacked on Item 40's, not merged.** Free, in the Build module below the zoning and boundaries maps, English and Mexican Spanish (usted).
+
+**Decision 1: one model owns colors, counts and the key.** `capacityMapModel.ts` (`buildCapacityMapModel`) turns the response into the painted features, the four bins and the "Not colored, and why" rows; the component and the tests read the same object, so a parcel can never be drawn in one category and counted in another (the `discoveryMapModel` pattern, Item 31). A test pins that the key's counts sum to the polygons drawn.
+
+**Decision 2: the encoding.** Utilization (built ÷ allowed floor area) in four bins: under 25%, 25-50%, 50-80%, 80% or more, on one orange ramp (brand series 1, per the chart-color rule), darker for more built in light mode and brighter in dark mode, so "most built" is the strongest mark in both. Every other state is one neutral gray, named with its count in the key; an apparently overbuilt parcel is neutral with a warning outline (flagged, never ranked). Low confidence (a parcel near a district boundary) halves the fill and dashes the outline, the Profile maps' existing rule. The subject parcel gets the accent outline. No hatch patterns (untested in interleaved Deck, Item 31's lesson).
+
+**Decision 3: the words never turn a light color into advice.** The key says a light color "is not a finding that a parcel can be redeveloped"; no "underbuilt" or "soft site" anywhere (plan non-goal). A withheld view says how many parcels could have been colored and that it is "too little to draw honestly", and draws every parcel neutral; a low view says "read it as partial". A failed source is named ("Couldn't check: the zoning map") and a failed request "is not a finding about the block".
+
+**Decision 4: the panel is the reading surface; the map is the picture.** A two-column row like the zoning and boundaries maps: title, method line, the coverage sentence, the key and the sources on the left; the map on the right. On phones the key is a `<details>` disclosure (the WS3 phone-key pattern) so the map is not pushed a screen down. The fetch waits until the block is within 200 px of the viewport; the page keys the component by the parcel so a new address starts at "loading".
+
+**Decision 5: the map can disagree with the Profile's own figure, on purpose.** At 1601 N Milwaukee Ave the verdict reads "FAR 2.2 allowed vs about 1.3 built" from the Profile's per-parcel Commercial Valuation fetch, which attributes a complex's total to its keypin; the map shows the same parcel as part of a multi-parcel complex and does not color it (Item 39 Decision 3). Whether the Profile's verdict should adopt the stricter rule is a separate question, not changed here.
+
+**Numbers** (measured 2026-10-31, local backend on the July 2026 six-area index, local ptaxsim, the City's live zoning layer)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| 1601 N Milwaukee Ave (West Town, residential and commercial mix) | 90 of 149 colored (60%), standard; uncolored: 22 complex, 11 condo, 10 exempt, 9 PD, 4 unknown area, 2 vacant, 1 records disagree | browser, `/scorecard?address=1601 N Milwaukee Ave` |
+| 2600 N Milwaukee Ave (Logan Square commercial strip) | 82 of 98 colored (84%), standard | same |
+| 1 S Halsted St (Near West Side, by downtown) | 5 of 36 colored (14%), low ("read it as partial") | same |
+| `/api/capacity-map` over HTTP at 1601 N Milwaukee | 0.53 s, 149 polygons | `curl "localhost:8001/api/capacity-map?pin=14-31-332-018-0000&lat=41.9097&lon=-87.6773"` |
+| Light and dark | both checked in the browser (ramp, neutral, subject outline, tooltip) | browser |
+| Phone overflow audit | 75 passed, 20 skipped (fixture-gated, unchanged), the Profile on all five devices with the capacity panel and its key opened inside the viewport | `cd frontend && npm run test:mobile` |
+| vitest | 715 passed (78 files; 13 new tests in 2 files) | `npx vitest run` |
+
+**Not measured:** a Loop address in the browser (the local index has no Loop; the panel's in-process Loop views are in Item 40); production latency; how often real visitors see a withheld map; screen-reader reading of the key; the Spanish wording by a native reader (added to Jack's Spanish list).
+
 ## Item 42 (WS5 PR1): the Predominance of the Block (606) rule in the unit yield (2026-10-31)
 
 **Status (2026-10-31): open as a PR, not merged.** Independent of the WS8 PRs (Items 39-41), which take the item numbers before it.

@@ -21,6 +21,8 @@ ingestion/data/*
 !ingestion/data/rent_by_area.meta.json
 !ingestion/data/assessor_model_by_area.json
 !ingestion/data/assessor_model_by_area.meta.json
+!ingestion/data/commercial_bldg_by_pin.json.gz
+!ingestion/data/commercial_bldg_by_pin.meta.json
 # The four Title 17 bulk-standards sections test_zoning_ordinance_parity.py
 # checks zoning_definitions.py against (otherwise the test skips in CI).
 !ingestion/data/sections/

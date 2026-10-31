@@ -589,6 +589,60 @@
         "unchecked": "No se pudo verificar hoy"
       }
     },
+    "capacity": {
+      "title": "Cuánto de lo permitido está construido",
+      "method": "Parcelas a {{radius}} milla o menos. Superficie construida dividida entre lo que permite la zonificación (área del lote × FAR permitido).",
+      "loading": "Revisando las parcelas cercanas…",
+      "failed": "No se pudo cargar este mapa. Esto no es un hallazgo sobre la cuadra.",
+      "empty": "No hay parcelas indexadas dentro del radio.",
+      "couldntCheck": "No se pudo revisar: {{labels}}. El mapa no se dibuja, para no dibujarlo mal.",
+      "partlyUnchecked": "No se pudo revisar: {{labels}}. Las parcelas que lo necesitaban aparecen como no revisadas.",
+      "coverage": "Coloreadas: {{colored}} de {{total}} parcelas ({{share}}).",
+      "coverageWithheld": "Solo {{colorable}} de {{total}} parcelas tienen superficie construida, área del lote y FAR permitido conocidos, así que no se colorea ninguna.",
+      "verdict": {
+        "standard": "Se conoce lo suficiente de la cuadra para leer los colores.",
+        "low": "Se puede colorear menos de una cuarta parte de la cuadra: léalo como parcial.",
+        "withheld": "Se puede colorear menos de una décima parte de la cuadra, muy poco para dibujarlo con honestidad.",
+        "unavailable": "No se pudo construir el mapa."
+      },
+      "unchecked": {
+        "zoning": "el mapa de zonificación",
+        "parcel_geometry": "las formas de las parcelas",
+        "commercial_valuation": "las superficies comerciales del Tasador",
+        "discovery_index": "el índice de parcelas"
+      },
+      "keyToggle": "Clave del mapa",
+      "keyBuilt": "Parte de lo permitido que está construida",
+      "keyNotColored": "Sin color, y por qué",
+      "keyNote": "Un color claro indica que se ha construido poco de lo permitido. No es un hallazgo de que una parcela pueda reurbanizarse. Contorno punteado: cerca del límite de un distrito.",
+      "bin": {
+        "under25": "Menos de 25%",
+        "25to50": "25–50%",
+        "50to80": "50–80%",
+        "over80": "80% o más"
+      },
+      "state": {
+        "computable": "Conocida, pero la vista está demasiado incompleta para colorear",
+        "unknown_gfa": "Superficie construida sin registro",
+        "multi_pin_member": "Parte de un conjunto de varias parcelas (su área total abarca varios lotes)",
+        "condo_building": "Edificio de condominios",
+        "planned_development": "Desarrollo planificado (su propia ordenanza fija los límites)",
+        "exempt": "Exento de impuestos o ferroviario",
+        "vacant_land": "Terreno baldío",
+        "no_allowed_far": "El distrito no tiene FAR en la tabla",
+        "split_zoning": "Dividida casi a partes iguales entre dos distritos",
+        "apparently_overbuilt": "Área registrada muy por encima de lo permitido (probable error de datos)",
+        "class_conflict": "Los registros no coinciden (clase baldía con un edificio)",
+        "unknown_land": "Área del lote sin registro",
+        "suspect_land": "El área del lote parece errónea",
+        "no_base_row": "Sin registro de la parcela base",
+        "no_zoning": "Fuera del mapa de zonificación",
+        "unchecked": "No revisada (fuente no disponible)"
+      },
+      "tip": "{{share}}% de lo permitido construido (FAR {{existing}} de {{allowed}})",
+      "lowTip": "Cerca del límite de un distrito: menor confianza",
+      "sources": "Superficies construidas: Tasador del Condado de Cook (revaluación {{year}}) y el índice de parcelas (creado {{built}}). Formas de las parcelas: PTAXSIM. Distritos: mapa de zonificación de la Ciudad de Chicago."
+    },
     "whatIf": {
       "title": "¿Y si se cambiara la zonificación?",
       "intro": "Compare lo que permite la tabla de zonificación en este lote en {{district}} con otro distrito.",

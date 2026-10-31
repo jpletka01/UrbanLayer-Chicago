@@ -29,91 +29,22 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Callable, Iterable
 
-HIDE_COVERAGE_BELOW = 0.10  # mirrors backend/provenance.py (a test pins the agreement)
-FADE_COVERAGE_BELOW = 0.25
-IMPLAUSIBLE_FAR_MULTIPLE = 3.0  # mirrors frontend/src/lib/scorecardVerdict.ts
-MIN_LOT_SQFT = 500.0  # below this a lot area is a data fragment, not a lot
-MAX_LOT_SQFT = 2_000_000.0
-
-# Classes whose PIN14s are units inside a building: neither lot nor building area belongs to the unit.
-CONDO_CLASSES = frozenset({"2-99", "5-99"})
-EXEMPT_CLASSES = frozenset({"EX", "RR"})
-
-# Capacity states, in precedence order.  Only COMPUTABLE may be colored as a utilization.
-STATES = (
-    "no_zoning",  # the parcel is outside the zoning polygons
-    "planned_development",  # bulk is set by the ordinance, not the district table
-    "condo_unit",  # a unit PIN; the building's area is not the unit's
-    "exempt",  # tax-exempt or railroad: not a soft-site candidate by class
-    "no_allowed_far",  # a district whose table row has no FAR (e.g. manufacturing)
-    "unknown_land",  # lot area absent
-    "suspect_land",  # lot area outside a plausible range
-    "class_conflict",  # a vacant class that also carries a building area
-    "vacant_land",  # vacant class, lot area known: nothing built
-    "unknown_gfa",  # building area absent: never read as "underbuilt"
-    "apparently_overbuilt",  # existing FAR far above the cap: data mismatch, not a legal finding
-    "computable",
+# The capacity rules live in ``backend/capacity.py`` (one owner for this census and the Profile's capacity map,
+# decision Item 39); this module re-exports them so the Phase 0 scripts and tests keep their imports.
+from backend.capacity import (  # noqa: F401
+    CONDO_CLASSES,
+    EXEMPT_CLASSES,
+    FADE_COVERAGE_BELOW,
+    HIDE_COVERAGE_BELOW,
+    IMPLAUSIBLE_FAR_MULTIPLE,
+    MAX_LOT_SQFT,
+    MIN_LOT_SQFT,
+    STATES,
+    classify,
+    coverage_verdict,
+    pin10,
+    polygon_state,
 )
-
-
-def classify(attrs: dict) -> str:
-    """One parcel's capacity state from its Discovery-index attributes.
-
-    Unknown building area is its own state: it never becomes zero, never becomes "underbuilt".  An existing FAR
-    above ``IMPLAUSIBLE_FAR_MULTIPLE`` times the cap is flagged, never ranked, and is not read as nonconformity."""
-    zoning = attrs.get("zoning_group")
-    cls = attrs.get("class") or ""
-    land = attrs.get("land_sqft")
-    bldg = attrs.get("bldg_sqft")
-    far = attrs.get("density_band")
-    if zoning is None:
-        return "no_zoning"
-    if zoning == "planned_development":
-        return "planned_development"
-    if cls in CONDO_CLASSES:
-        return "condo_unit"
-    if cls in EXEMPT_CLASSES:
-        return "exempt"
-    if not far:
-        return "no_allowed_far"
-    if land is None:
-        return "unknown_land"
-    if land < MIN_LOT_SQFT or land > MAX_LOT_SQFT:
-        return "suspect_land"
-    if attrs.get("is_vacant"):
-        return "class_conflict" if bldg else "vacant_land"
-    if not bldg:
-        return "unknown_gfa"
-    if bldg / land > IMPLAUSIBLE_FAR_MULTIPLE * far:
-        return "apparently_overbuilt"
-    return "computable"
-
-
-def pin10(pin: str) -> str:
-    """The base parcel of a formatted PIN14 ("14-33-103-011-0000" -> "14-33-103-011")."""
-    return pin[:13]
-
-
-def polygon_state(rows: list[tuple[str, dict]]) -> str:
-    """The state of a map polygon (all PIN14s sharing a PIN10).
-
-    A building with unit PINs is a condo polygon whatever its base row says.  Otherwise the base row (suffix
-    0000) speaks for the polygon; a polygon with no base row has no honest single state."""
-    if any((a.get("class") or "") in CONDO_CLASSES for _, a in rows):
-        return "condo_unit"
-    for pin, attrs in rows:
-        if pin.endswith("-0000"):
-            return classify(attrs)
-    return "no_base_row"
-
-
-def coverage_verdict(share: float) -> str:
-    """The confidence standard's coverage states applied to the share of computable parcels."""
-    if share < HIDE_COVERAGE_BELOW:
-        return "withheld"
-    if share < FADE_COVERAGE_BELOW:
-        return "low"
-    return "standard"
 
 
 def _blank() -> dict:
