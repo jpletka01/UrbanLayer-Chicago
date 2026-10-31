@@ -588,6 +588,30 @@
         "noFigure": "El modelo no tiene una cifra de ingresos utilizable para esta área",
         "unchecked": "No se pudo verificar hoy"
       }
+    },
+    "whatIf": {
+      "title": "¿Y si se cambiara la zonificación?",
+      "intro": "Compare lo que permite la tabla de zonificación en este lote en {{district}} con otro distrito.",
+      "choose": "Elija un distrito para comparar",
+      "any": "Cualquier distrito…",
+      "loading": "Calculando…",
+      "failed": "No se pudo cargar la comparación. Intente de nuevo.",
+      "today": "Hoy: {{district}}",
+      "if": "Si fuera {{district}}",
+      "row": {
+        "label": "Norma",
+        "far": "Coeficiente de edificabilidad (FAR)",
+        "floorArea": "Superficie que permite el FAR en este lote",
+        "height": "Altura",
+        "units": "Unidades que permite el área del lote",
+        "code": "Sección del código"
+      },
+      "sqft": "{{n}} pies²",
+      "noFar": "Sin FAR en la tabla",
+      "noUnits": "Sin unidades de vivienda",
+      "pdCurrent": "Lo fija su propia ordenanza",
+      "noLot": "No se conoce el área del lote, así que no se muestran la superficie ni las unidades.",
+      "note": "Esto es la aritmética de la tabla del distrito, no un pronóstico. Un cambio de zonificación requiere la aprobación del Concejo Municipal. El estacionamiento, los retiros según la forma de este lote y otras normas pueden permitir menos."
     }
   },
   "discovery": {

@@ -2104,3 +2104,24 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 *Deviation:* the plan asked for this count "with an index query, no network calls". The index stores neither the zone class nor 606 membership, so the count needed two keyless queries to the City's zoning map (no model, no credits). Parcels are placed by the index's point, not by polygon overlap, so a lot on a district edge can be misplaced.
 
 **Not measured:** how many Profile views this changes (it depends on traffic); a Spanish read by a native speaker of the three new sentences; whether the 606 district's single map feature has holes the point test treats correctly (shapely handles holes; not checked by eye).
+
+## Item 43 (WS5 PR2): "What if this were rezoned?" on the Property Profile (2026-10-31)
+
+**Status (2026-10-31): open as a PR stacked on Item 42's, not merged.** Free (Jack, 2026-10-31, taking the plan's recommendation: it is table arithmetic).
+
+**Decision 1: pure arithmetic on numbers the Profile already has.** `GET /api/what-if?current=&district=&lot_sqft=&in_606=` (`backend/what_if.py`) reads only the district table (`zoning_definitions`, ordinance-parity tested) and the lot area the Profile resolved, so it makes no fetch and needs no PIN. *Deviation:* the plan sketched `?pin=&district=`; passing the lot area the page already shows avoids a second lookup that could disagree with it. Per district: FAR, the floor area that FAR allows on this lot, height, units by lot area (the same `max_units_by_lot_area`, so the 606 rule carries into an RS-3 comparison) and the code section.
+
+**Decision 2: a short choice list, then "any district".** For people who are not very tech savvy the card offers up to three next districts up from the current one (the residential ladder RS-1 → RM-6.5; within a B/C/D/M family the higher dash numbers; B1/B2 first to B3 at the same dash), then a select of every other comparable district. Planned developments (PD/PMD) and parks (POS) are never offered: a PD's limits come from its own ordinance (a 422 says so); a parcel already in a PD can still look at a district, and its own column reads "Set by its own ordinance".
+
+**Decision 3: the words.** "What the zoning table allows on this lot", "Today: RS-3" / "If RT-4"; the note under it says it is the table's arithmetic, not a forecast, that a rezoning needs City Council approval, and that parking, setbacks for this lot's shape and other rules can allow less. Never "you can build" (a test checks the card's text). English and Mexican Spanish.
+
+**Numbers** (measured 2026-10-31)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Comparable districts / suggestions for RS-3 | 59 (the table's 61 less POS-1 and POS-2) / RT-3.5, RT-4, RM-4.5 | `GET /api/what-if?current=RS-3` |
+| RS-3 → RT-4 on a 3,125 sq ft lot (not in 606) | FAR 0.9 → 1.2; 2,812 → 3,750 sq ft; 1 → 3 units | `GET /api/what-if?current=RS-3&district=RT-4&lot_sqft=3125&in_606=false` |
+| 2600 N Milwaukee Ave, RT-4 → RM-4.5 (browser, local) | FAR 1.2 → 1.7; 10,991 → 15,570 sq ft; 9 → 13 units | browser |
+| New tests | 14 backend (`test_what_if.py`), 4 vitest (`WhatIfCard.test.tsx`) | `pytest backend/tests/test_what_if.py`; `npx vitest run src/components/scorecard/WhatIfCard.test.tsx` |
+
+**Not measured:** whether users understand "units the lot area allows" without the arithmetic line (the card shows the number only; the zoning card above keeps the arithmetic); a native Spanish read. The phone audit passed on this branch (75 passed, 20 skipped, the Profile on all five devices).

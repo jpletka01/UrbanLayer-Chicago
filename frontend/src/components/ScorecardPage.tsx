@@ -16,6 +16,7 @@ import { PendingTextImpactsCard } from "./scorecard/PendingTextImpactsCard";
 import { UpcomingZoningCard } from "./scorecard/UpcomingZoningCard";
 import { ParcelResolution } from "./scorecard/ParcelResolution";
 import { ScorecardZoningCard } from "./scorecard/ScorecardZoningCard";
+import { WhatIfCard } from "./scorecard/WhatIfCard";
 import { ScorecardIncentivesCard } from "./scorecard/ScorecardIncentivesCard";
 import { ScorecardViolationsCard } from "./scorecard/ScorecardViolationsCard";
 import { ScorecardEnvironmentCard } from "./scorecard/ScorecardEnvironmentCard";
@@ -1143,6 +1144,14 @@ export default function ScorecardPage() {
                         className="min-h-[16rem]"
                       />
                     </div>
+                    {zdef && (
+                      <WhatIfCard
+                        key={data.resolved_pin ?? data.address}
+                        currentDistrict={zdef.zone_class}
+                        lotSqft={ctx.property?.land_sqft ?? null}
+                        in606={ctx.unit_yield?.rule_606 === "applied" ? true : ctx.unit_yield?.rule_606 === "not_in_district" ? false : null}
+                      />
+                    )}
                     {ctx.regulatory && (
                       <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch mt-8">
                         <div id="scorecard-card-regulatory" className="scroll-mt-28 flex flex-col">

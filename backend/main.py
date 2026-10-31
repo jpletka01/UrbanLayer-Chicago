@@ -2090,6 +2090,27 @@ async def parcel_map(lat: float, lon: float) -> dict:
     return payload
 
 
+@app.get("/api/what-if")
+async def what_if(
+    current: str,
+    district: str | None = None,
+    lot_sqft: float | None = None,
+    in_606: bool | None = None,
+) -> dict:
+    """"What if this were rezoned?" for the Property Profile (WS5 PR2): the district table's FAR, floor area,
+    height and units by lot area for the parcel's district beside a chosen one. Pure table arithmetic on the lot
+    area the Profile already resolved; no fetch, no model, free. Without ``district`` it returns only the choice
+    lists. A planned development or an unknown class is a 422 with the reason."""
+    from backend.what_if import WhatIfError, comparable_districts, compare, suggestions
+
+    if district is None:
+        return {"suggestions": suggestions(current), "districts": comparable_districts()}
+    try:
+        return {**compare(current, district, lot_sqft, in_606=in_606), "districts": comparable_districts()}
+    except WhatIfError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.get("/api/scorecard")
 async def scorecard(
     address: str | None = None,
