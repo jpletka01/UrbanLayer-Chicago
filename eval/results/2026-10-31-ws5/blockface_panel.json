@@ -1,0 +1,2026 @@
+{
+ "computable_faces": 173,
+ "computable_share": 0.865,
+ "eligible_faces": 13250,
+ "faces": [
+  {
+   "computable": false,
+   "coverage": 0.8,
+   "face": "E 77TH ST 1400 even",
+   "known": 4,
+   "lots": 5,
+   "meets_60": null,
+   "two_plus": 1,
+   "two_plus_share": 0.2
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S MUSKEGON AVE 8500 even",
+   "known": 19,
+   "lots": 19,
+   "meets_60": true,
+   "two_plus": 14,
+   "two_plus_share": 0.7368
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KILPATRICK AVE 2200 odd",
+   "known": 18,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.2222
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W PETERSON AVE 6200 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.1
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S INDIANA AVE 11400 even",
+   "known": 13,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2308
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N LECLAIRE AVE 5200 even",
+   "known": 12,
+   "lots": 12,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W DEVON AVE 6300 odd",
+   "known": 11,
+   "lots": 11,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2727
+  },
+  {
+   "computable": true,
+   "coverage": 0.9444,
+   "face": "N BINGHAM ST 2000 odd",
+   "known": 17,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 10,
+   "two_plus_share": 0.5556
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N LEAVITT ST 4900 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.1765
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KILPATRICK AVE 2300 even",
+   "known": 13,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2308
+  },
+  {
+   "computable": true,
+   "coverage": 0.95,
+   "face": "S TRIPP AVE 4800 odd",
+   "known": 19,
+   "lots": 20,
+   "meets_60": false,
+   "two_plus": 11,
+   "two_plus_share": 0.55
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N SAWYER AVE 4200 even",
+   "known": 18,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 9,
+   "two_plus_share": 0.5
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W GRANVILLE AVE 1700 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.1765
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W PALMER ST 2500 odd",
+   "known": 9,
+   "lots": 9,
+   "meets_60": true,
+   "two_plus": 8,
+   "two_plus_share": 0.8889
+  },
+  {
+   "computable": false,
+   "coverage": 0.8947,
+   "face": "N LECLAIRE AVE 900 odd",
+   "known": 17,
+   "lots": 19,
+   "meets_60": null,
+   "two_plus": 17,
+   "two_plus_share": 0.8947
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N LONG AVE 2400 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 0.7059
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W MEDILL AVE 3500 even",
+   "known": 22,
+   "lots": 22,
+   "meets_60": false,
+   "two_plus": 9,
+   "two_plus_share": 0.4091
+  },
+  {
+   "computable": true,
+   "coverage": 0.9231,
+   "face": "N AUSTIN AVE 4000 odd",
+   "known": 12,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.3846
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W BRADLEY PL 2000 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N DAMEN AVE 4100 odd",
+   "known": 11,
+   "lots": 11,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.4545
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N LEAMINGTON AVE 5200 odd",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2143
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N SAWYER AVE 3600 even",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S TROY ST 2600 even",
+   "known": 9,
+   "lots": 9,
+   "meets_60": true,
+   "two_plus": 7,
+   "two_plus_share": 0.7778
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W LELAND AVE 4400 even",
+   "known": 5,
+   "lots": 5,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.2
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S MARSHFIELD AVE 7600 even",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.1765
+  },
+  {
+   "computable": false,
+   "coverage": 0.75,
+   "face": "S STATE ST 11200 even",
+   "known": 3,
+   "lots": 4,
+   "meets_60": null,
+   "two_plus": 1,
+   "two_plus_share": 0.25
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S KOLIN AVE 3000 even",
+   "known": 15,
+   "lots": 15,
+   "meets_60": true,
+   "two_plus": 9,
+   "two_plus_share": 0.6
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N PARKSIDE AVE 1200 odd",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 7,
+   "two_plus_share": 0.5
+  },
+  {
+   "computable": true,
+   "coverage": 0.9286,
+   "face": "W 32ND PL 900 even",
+   "known": 13,
+   "lots": 14,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 0.8571
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KARLOV AVE 4600 odd",
+   "known": 16,
+   "lots": 16,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.375
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KOLMAR AVE 2900 odd",
+   "known": 19,
+   "lots": 19,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.2105
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "E 96TH ST 2200 odd",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W RACE AVE 5900 even",
+   "known": 15,
+   "lots": 15,
+   "meets_60": false,
+   "two_plus": 7,
+   "two_plus_share": 0.4667
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S KEDVALE AVE 4400 even",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.0588
+  },
+  {
+   "computable": false,
+   "coverage": 0.8636,
+   "face": "S DREXEL AVE 9100 odd",
+   "known": 19,
+   "lots": 22,
+   "meets_60": null,
+   "two_plus": 4,
+   "two_plus_share": 0.1818
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N NORDICA AVE 6200 even",
+   "known": 5,
+   "lots": 5,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.2
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N PARKSIDE AVE 2900 odd",
+   "known": 18,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.2222
+  },
+  {
+   "computable": true,
+   "coverage": 0.9444,
+   "face": "S CONSTANCE AVE 7700 odd",
+   "known": 17,
+   "lots": 18,
+   "meets_60": true,
+   "two_plus": 15,
+   "two_plus_share": 0.8333
+  },
+  {
+   "computable": true,
+   "coverage": 0.9,
+   "face": "S INDIANA AVE 9100 odd",
+   "known": 9,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S FRANCISCO AVE 5900 even",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.1429
+  },
+  {
+   "computable": false,
+   "coverage": 0.8636,
+   "face": "W 35TH PL 900 odd",
+   "known": 19,
+   "lots": 22,
+   "meets_60": null,
+   "two_plus": 7,
+   "two_plus_share": 0.3182
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N TALMAN AVE 6000 odd",
+   "known": 11,
+   "lots": 11,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.3636
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N PINE AVE 700 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.4
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W HURON ST 2500 even",
+   "known": 11,
+   "lots": 11,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2727
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N RIDGEWAY AVE 2300 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.4
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S KOSTNER AVE 4700 even",
+   "known": 15,
+   "lots": 15,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W 118TH ST 400 odd",
+   "known": 5,
+   "lots": 5,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.2
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W BRYN MAWR AVE 2500 even",
+   "known": 4,
+   "lots": 4,
+   "meets_60": true,
+   "two_plus": 3,
+   "two_plus_share": 0.75
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S VINCENNES AVE 11700 even",
+   "known": 4,
+   "lots": 4,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N CLIFTON AVE 3000 even",
+   "known": 16,
+   "lots": 16,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 0.75
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N CENTRAL PARK AVE 800 even",
+   "known": 13,
+   "lots": 13,
+   "meets_60": true,
+   "two_plus": 10,
+   "two_plus_share": 0.7692
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N MENARD AVE 5700 even",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.375
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S EUCLID AVE 9500 odd",
+   "known": 18,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 0.9091,
+   "face": "N LEAMINGTON AVE 100 odd",
+   "known": 10,
+   "lots": 11,
+   "meets_60": true,
+   "two_plus": 10,
+   "two_plus_share": 0.9091
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N OXFORD AVE 6700 odd",
+   "known": 7,
+   "lots": 7,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.2857
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N LONG AVE 2800 odd",
+   "known": 12,
+   "lots": 12,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.4167
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W WAVELAND AVE 5100 odd",
+   "known": 13,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2308
+  },
+  {
+   "computable": false,
+   "coverage": 0.8571,
+   "face": "S HARVARD AVE 11700 even",
+   "known": 6,
+   "lots": 7,
+   "meets_60": null,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N ARTESIAN AVE 7400 odd",
+   "known": 5,
+   "lots": 5,
+   "meets_60": true,
+   "two_plus": 5,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N HERMITAGE AVE 5800 odd",
+   "known": 5,
+   "lots": 5,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.2
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W LOGAN BLVD 3000 even",
+   "known": 9,
+   "lots": 9,
+   "meets_60": true,
+   "two_plus": 8,
+   "two_plus_share": 0.8889
+  },
+  {
+   "computable": true,
+   "coverage": 0.96,
+   "face": "S THROOP ST 2900 even",
+   "known": 24,
+   "lots": 25,
+   "meets_60": true,
+   "two_plus": 18,
+   "two_plus_share": 0.72
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S MANISTEE AVE 8400 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": true,
+   "two_plus": 11,
+   "two_plus_share": 0.6471
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W BARRY AVE 1900 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.1176
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N RIDGEWAY AVE 3700 odd",
+   "known": 9,
+   "lots": 9,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.1111
+  },
+  {
+   "computable": false,
+   "coverage": 0.8889,
+   "face": "N PAULINA ST 3900 odd",
+   "known": 8,
+   "lots": 9,
+   "meets_60": null,
+   "two_plus": 2,
+   "two_plus_share": 0.2222
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W WELLINGTON AVE 1100 odd",
+   "known": 13,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.3846
+  },
+  {
+   "computable": false,
+   "coverage": 0.8333,
+   "face": "S LOWE AVE 2900 even",
+   "known": 15,
+   "lots": 18,
+   "meets_60": null,
+   "two_plus": 7,
+   "two_plus_share": 0.3889
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W KAMERLING AVE 5200 even",
+   "known": 6,
+   "lots": 6,
+   "meets_60": true,
+   "two_plus": 6,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S GREEN ST 5500 odd",
+   "known": 6,
+   "lots": 6,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.1667
+  },
+  {
+   "computable": true,
+   "coverage": 0.9474,
+   "face": "N NAGLE AVE 2200 odd",
+   "known": 18,
+   "lots": 19,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.2632
+  },
+  {
+   "computable": true,
+   "coverage": 0.9286,
+   "face": "S CORLISS AVE 10500 odd",
+   "known": 26,
+   "lots": 28,
+   "meets_60": false,
+   "two_plus": 16,
+   "two_plus_share": 0.5714
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W ADDISON ST 8100 odd",
+   "known": 12,
+   "lots": 12,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.0833
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N ROCKWELL ST 600 even",
+   "known": 5,
+   "lots": 5,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.4
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S PEORIA ST 5500 even",
+   "known": 5,
+   "lots": 5,
+   "meets_60": true,
+   "two_plus": 4,
+   "two_plus_share": 0.8
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N BERNARD ST 3700 odd",
+   "known": 9,
+   "lots": 9,
+   "meets_60": true,
+   "two_plus": 9,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": true,
+   "coverage": 0.9231,
+   "face": "N WINCHESTER AVE 4400 odd",
+   "known": 12,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.0769
+  },
+  {
+   "computable": false,
+   "coverage": 0.8,
+   "face": "S DOBSON AVE 8000 even",
+   "known": 12,
+   "lots": 15,
+   "meets_60": null,
+   "two_plus": 12,
+   "two_plus_share": 0.8
+  },
+  {
+   "computable": true,
+   "coverage": 0.95,
+   "face": "S BALTIMORE AVE 8300 even",
+   "known": 19,
+   "lots": 20,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.1
+  },
+  {
+   "computable": true,
+   "coverage": 0.9444,
+   "face": "S DAMEN AVE 6500 even",
+   "known": 17,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.2778
+  },
+  {
+   "computable": false,
+   "coverage": 0.7857,
+   "face": "S WOOD ST 6200 odd",
+   "known": 11,
+   "lots": 14,
+   "meets_60": null,
+   "two_plus": 10,
+   "two_plus_share": 0.7143
+  },
+  {
+   "computable": false,
+   "coverage": 0.875,
+   "face": "S JUSTINE ST 5500 odd",
+   "known": 7,
+   "lots": 8,
+   "meets_60": null,
+   "two_plus": 4,
+   "two_plus_share": 0.5
+  },
+  {
+   "computable": true,
+   "coverage": 0.9,
+   "face": "S PEORIA ST 5200 even",
+   "known": 9,
+   "lots": 10,
+   "meets_60": true,
+   "two_plus": 9,
+   "two_plus_share": 0.9
+  },
+  {
+   "computable": true,
+   "coverage": 0.9375,
+   "face": "W ARTHINGTON ST 4100 odd",
+   "known": 15,
+   "lots": 16,
+   "meets_60": true,
+   "two_plus": 11,
+   "two_plus_share": 0.6875
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W BARRY AVE 1600 odd",
+   "known": 9,
+   "lots": 9,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.5556
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S CANAL ST 3100 even",
+   "known": 6,
+   "lots": 6,
+   "meets_60": true,
+   "two_plus": 4,
+   "two_plus_share": 0.6667
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N RICHMOND ST 1900 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": true,
+   "two_plus": 9,
+   "two_plus_share": 0.9
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W NELSON ST 1900 even",
+   "known": 18,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.2222
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KEATING AVE 3500 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.1
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W WABANSIA AVE 3000 even",
+   "known": 4,
+   "lots": 4,
+   "meets_60": true,
+   "two_plus": 4,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W ROOT ST 400 odd",
+   "known": 12,
+   "lots": 12,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S CALHOUN AVE 10400 odd",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2143
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N MELVINA AVE 1600 odd",
+   "known": 14,
+   "lots": 14,
+   "meets_60": true,
+   "two_plus": 14,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": true,
+   "coverage": 0.9,
+   "face": "S WESTERN AVE 3500 even",
+   "known": 9,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W 60TH ST 600 odd",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.2
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S VERNON AVE 6900 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": true,
+   "two_plus": 6,
+   "two_plus_share": 0.6
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W CORTLAND ST 3000 even",
+   "known": 4,
+   "lots": 4,
+   "meets_60": true,
+   "two_plus": 3,
+   "two_plus_share": 0.75
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S BENNETT AVE 9500 even",
+   "known": 12,
+   "lots": 12,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KARLOV AVE 5600 even",
+   "known": 15,
+   "lots": 15,
+   "meets_60": true,
+   "two_plus": 9,
+   "two_plus_share": 0.6
+  },
+  {
+   "computable": false,
+   "coverage": 0.8889,
+   "face": "N MCVICKER AVE 2100 even",
+   "known": 16,
+   "lots": 18,
+   "meets_60": null,
+   "two_plus": 6,
+   "two_plus_share": 0.3333
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N MULLIGAN AVE 2300 odd",
+   "known": 7,
+   "lots": 7,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.4286
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N ARTESIAN AVE 2700 odd",
+   "known": 16,
+   "lots": 16,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.375
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W WARWICK AVE 4800 odd",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 7,
+   "two_plus_share": 0.5
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W 38TH ST 400 odd",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.1
+  },
+  {
+   "computable": false,
+   "coverage": 0.6429,
+   "face": "S HARDING AVE 4700 even",
+   "known": 9,
+   "lots": 14,
+   "meets_60": null,
+   "two_plus": 5,
+   "two_plus_share": 0.3571
+  },
+  {
+   "computable": true,
+   "coverage": 0.9231,
+   "face": "W ERIE ST 5700 odd",
+   "known": 12,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.1538
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KEDVALE AVE 900 even",
+   "known": 20,
+   "lots": 20,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.3
+  },
+  {
+   "computable": false,
+   "coverage": 0.6471,
+   "face": "W CONGRESS PKWY 4700 even",
+   "known": 11,
+   "lots": 17,
+   "meets_60": null,
+   "two_plus": 11,
+   "two_plus_share": 0.6471
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S JUSTINE ST 11700 odd",
+   "known": 20,
+   "lots": 20,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S AVENUE H 9700 even",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.3571
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S BURNSIDE AVE 9200 even",
+   "known": 12,
+   "lots": 12,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W BALMORAL AVE 1800 odd",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.125
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N NEWGARD AVE 6400 even",
+   "known": 12,
+   "lots": 12,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KILPATRICK AVE 4900 odd",
+   "known": 20,
+   "lots": 20,
+   "meets_60": true,
+   "two_plus": 18,
+   "two_plus_share": 0.9
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S MAY ST 7500 odd",
+   "known": 15,
+   "lots": 15,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.2667
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N OAKLEY AVE 7200 odd",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.125
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W WILSON AVE 5100 even",
+   "known": 8,
+   "lots": 8,
+   "meets_60": true,
+   "two_plus": 6,
+   "two_plus_share": 0.75
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S DAMEN AVE 6100 odd",
+   "known": 12,
+   "lots": 12,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S MARSHFIELD AVE 3600 even",
+   "known": 23,
+   "lots": 23,
+   "meets_60": true,
+   "two_plus": 14,
+   "two_plus_share": 0.6087
+  },
+  {
+   "computable": true,
+   "coverage": 0.9375,
+   "face": "W VAN BUREN ST 5300 odd",
+   "known": 15,
+   "lots": 16,
+   "meets_60": true,
+   "two_plus": 10,
+   "two_plus_share": 0.625
+  },
+  {
+   "computable": true,
+   "coverage": 0.9412,
+   "face": "N CAMPBELL AVE 5800 odd",
+   "known": 16,
+   "lots": 17,
+   "meets_60": true,
+   "two_plus": 16,
+   "two_plus_share": 0.9412
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S WHIPPLE ST 6000 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.2941
+  },
+  {
+   "computable": false,
+   "coverage": 0.8462,
+   "face": "W GUNNISON ST 5000 odd",
+   "known": 11,
+   "lots": 13,
+   "meets_60": null,
+   "two_plus": 6,
+   "two_plus_share": 0.4615
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KOLMAR AVE 2800 even",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.4286
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S ABERDEEN ST 5000 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": true,
+   "two_plus": 7,
+   "two_plus_share": 0.7
+  },
+  {
+   "computable": false,
+   "coverage": 0.6,
+   "face": "N KEDZIE AVE 6100 odd",
+   "known": 3,
+   "lots": 5,
+   "meets_60": null,
+   "two_plus": 3,
+   "two_plus_share": 0.6
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W 95TH ST 600 even",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KOSTNER AVE 1900 even",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.2941
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N NAPER AVE 5900 even",
+   "known": 4,
+   "lots": 4,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N OAKLEY AVE 3500 odd",
+   "known": 15,
+   "lots": 15,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 0.8
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S DANTE AVE 8800 even",
+   "known": 16,
+   "lots": 16,
+   "meets_60": true,
+   "two_plus": 14,
+   "two_plus_share": 0.875
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N MAPLEWOOD AVE 2300 odd",
+   "known": 6,
+   "lots": 6,
+   "meets_60": true,
+   "two_plus": 4,
+   "two_plus_share": 0.6667
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W GUNNISON ST 2700 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.1
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N LOTUS AVE 2900 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.0588
+  },
+  {
+   "computable": false,
+   "coverage": 0.8333,
+   "face": "S PARNELL AVE 3600 odd",
+   "known": 10,
+   "lots": 12,
+   "meets_60": null,
+   "two_plus": 2,
+   "two_plus_share": 0.1667
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N CLAREMONT AVE 3300 even",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 8,
+   "two_plus_share": 0.4706
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S RHODES AVE 7400 odd",
+   "known": 12,
+   "lots": 12,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": false,
+   "coverage": 0.8,
+   "face": "W 48TH ST 700 odd",
+   "known": 8,
+   "lots": 10,
+   "meets_60": null,
+   "two_plus": 6,
+   "two_plus_share": 0.6
+  },
+  {
+   "computable": true,
+   "coverage": 0.9474,
+   "face": "W VAN BUREN ST 4900 even",
+   "known": 18,
+   "lots": 19,
+   "meets_60": true,
+   "two_plus": 17,
+   "two_plus_share": 0.8947
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S SAINT LOUIS AVE 4400 even",
+   "known": 19,
+   "lots": 19,
+   "meets_60": true,
+   "two_plus": 13,
+   "two_plus_share": 0.6842
+  },
+  {
+   "computable": true,
+   "coverage": 0.9,
+   "face": "S ARTESIAN AVE 3800 even",
+   "known": 9,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S HAMILTON AVE 5500 even",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 0.9091,
+   "face": "W 50TH PL 800 even",
+   "known": 10,
+   "lots": 11,
+   "meets_60": true,
+   "two_plus": 7,
+   "two_plus_share": 0.6364
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S PRAIRIE AVE 10600 even",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2143
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W 87TH ST 1100 even",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 0.9333,
+   "face": "W 27TH ST 400 odd",
+   "known": 14,
+   "lots": 15,
+   "meets_60": true,
+   "two_plus": 9,
+   "two_plus_share": 0.6
+  },
+  {
+   "computable": true,
+   "coverage": 0.9286,
+   "face": "N AVERS AVE 4400 even",
+   "known": 13,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.4286
+  },
+  {
+   "computable": true,
+   "coverage": 0.9333,
+   "face": "N KILDARE AVE 4800 even",
+   "known": 14,
+   "lots": 15,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.4
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S PERRY AVE 5500 odd",
+   "known": 6,
+   "lots": 6,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.3333
+  },
+  {
+   "computable": true,
+   "coverage": 0.9412,
+   "face": "N LEAVITT ST 3800 even",
+   "known": 16,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 10,
+   "two_plus_share": 0.5882
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W WELLINGTON AVE 2100 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 4,
+   "two_plus_share": 0.4
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W HUTCHINSON ST 2000 odd",
+   "known": 15,
+   "lots": 15,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.3333
+  },
+  {
+   "computable": true,
+   "coverage": 0.95,
+   "face": "W 43RD PL 600 even",
+   "known": 19,
+   "lots": 20,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.15
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W ENGLEWOOD AVE 400 even",
+   "known": 9,
+   "lots": 9,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S RHODES AVE 7000 even",
+   "known": 10,
+   "lots": 10,
+   "meets_60": true,
+   "two_plus": 7,
+   "two_plus_share": 0.7
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W POTOMAC AVE 5500 even",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.375
+  },
+  {
+   "computable": true,
+   "coverage": 0.9,
+   "face": "N ALBANY AVE 2600 even",
+   "known": 9,
+   "lots": 10,
+   "meets_60": true,
+   "two_plus": 8,
+   "two_plus_share": 0.8
+  },
+  {
+   "computable": false,
+   "coverage": 0.7778,
+   "face": "N WALLER AVE 1200 even",
+   "known": 7,
+   "lots": 9,
+   "meets_60": null,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S PRAIRIE AVE 7900 even",
+   "known": 14,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W POPE JOHN PAUL II DR 2900 odd",
+   "known": 8,
+   "lots": 8,
+   "meets_60": true,
+   "two_plus": 8,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W SUMMERDALE AVE 2600 odd",
+   "known": 15,
+   "lots": 15,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.2
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S MUSKEGON AVE 9300 odd",
+   "known": 9,
+   "lots": 9,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 0.9474,
+   "face": "S EMERALD AVE 2800 odd",
+   "known": 18,
+   "lots": 19,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 0.6316
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N SPAULDING AVE 2800 even",
+   "known": 16,
+   "lots": 16,
+   "meets_60": false,
+   "two_plus": 8,
+   "two_plus_share": 0.5
+  },
+  {
+   "computable": false,
+   "coverage": 0.8,
+   "face": "E 74TH ST 800 even",
+   "known": 4,
+   "lots": 5,
+   "meets_60": null,
+   "two_plus": 1,
+   "two_plus_share": 0.2
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N KEDVALE AVE 2000 odd",
+   "known": 19,
+   "lots": 19,
+   "meets_60": false,
+   "two_plus": 8,
+   "two_plus_share": 0.4211
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S HARPER AVE 8700 odd",
+   "known": 12,
+   "lots": 12,
+   "meets_60": true,
+   "two_plus": 12,
+   "two_plus_share": 1.0
+  },
+  {
+   "computable": false,
+   "coverage": 0.8182,
+   "face": "W 115TH ST 0 even",
+   "known": 9,
+   "lots": 11,
+   "meets_60": null,
+   "two_plus": 1,
+   "two_plus_share": 0.0909
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S AUSTIN AVE 5400 even",
+   "known": 6,
+   "lots": 6,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.3333
+  },
+  {
+   "computable": false,
+   "coverage": 0.8824,
+   "face": "S MARSHFIELD AVE 5300 even",
+   "known": 15,
+   "lots": 17,
+   "meets_60": null,
+   "two_plus": 10,
+   "two_plus_share": 0.5882
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N MEADE AVE 6100 even",
+   "known": 23,
+   "lots": 23,
+   "meets_60": true,
+   "two_plus": 18,
+   "two_plus_share": 0.7826
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N CALIFORNIA AVE 4900 even",
+   "known": 13,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.4615
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N LAWNDALE AVE 1900 odd",
+   "known": 13,
+   "lots": 13,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.4615
+  },
+  {
+   "computable": true,
+   "coverage": 0.9474,
+   "face": "N LARAMIE AVE 1400 even",
+   "known": 18,
+   "lots": 19,
+   "meets_60": false,
+   "two_plus": 7,
+   "two_plus_share": 0.3684
+  },
+  {
+   "computable": false,
+   "coverage": 0.75,
+   "face": "S WOLCOTT AVE 5300 even",
+   "known": 6,
+   "lots": 8,
+   "meets_60": null,
+   "two_plus": 5,
+   "two_plus_share": 0.625
+  },
+  {
+   "computable": true,
+   "coverage": 0.9333,
+   "face": "W 50TH ST 2200 even",
+   "known": 14,
+   "lots": 15,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.4
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N CENTRAL AVE 1400 even",
+   "known": 16,
+   "lots": 16,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.3125
+  },
+  {
+   "computable": true,
+   "coverage": 0.9474,
+   "face": "W 50TH ST 2200 odd",
+   "known": 18,
+   "lots": 19,
+   "meets_60": false,
+   "two_plus": 7,
+   "two_plus_share": 0.3684
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N PAULINA ST 500 even",
+   "known": 12,
+   "lots": 12,
+   "meets_60": false,
+   "two_plus": 7,
+   "two_plus_share": 0.5833
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N NAGLE AVE 1600 odd",
+   "known": 10,
+   "lots": 10,
+   "meets_60": false,
+   "two_plus": 3,
+   "two_plus_share": 0.3
+  },
+  {
+   "computable": true,
+   "coverage": 0.9412,
+   "face": "S BISHOP ST 8200 odd",
+   "known": 16,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.2941
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W EASTWOOD AVE 2000 odd",
+   "known": 8,
+   "lots": 8,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.125
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N MONITOR AVE 2500 odd",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 9,
+   "two_plus_share": 0.5294
+  },
+  {
+   "computable": true,
+   "coverage": 0.9286,
+   "face": "S WASHTENAW AVE 5400 even",
+   "known": 13,
+   "lots": 14,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.4286
+  },
+  {
+   "computable": true,
+   "coverage": 0.9444,
+   "face": "S MAY ST 7600 even",
+   "known": 17,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 8,
+   "two_plus_share": 0.4444
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S WENTWORTH AVE 10500 even",
+   "known": 6,
+   "lots": 6,
+   "meets_60": true,
+   "two_plus": 4,
+   "two_plus_share": 0.6667
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W ERIE ST 4700 odd",
+   "known": 6,
+   "lots": 6,
+   "meets_60": false,
+   "two_plus": 1,
+   "two_plus_share": 0.1667
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S SANGAMON ST 6500 even",
+   "known": 18,
+   "lots": 18,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": false,
+   "coverage": 0.8889,
+   "face": "S STATE ST 8100 odd",
+   "known": 16,
+   "lots": 18,
+   "meets_60": null,
+   "two_plus": 16,
+   "two_plus_share": 0.8889
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W GRACE ST 2000 even",
+   "known": 5,
+   "lots": 5,
+   "meets_60": true,
+   "two_plus": 4,
+   "two_plus_share": 0.8
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S ROCKWELL ST 4600 even",
+   "known": 17,
+   "lots": 17,
+   "meets_60": false,
+   "two_plus": 10,
+   "two_plus_share": 0.5882
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "S KARLOV AVE 5000 odd",
+   "known": 5,
+   "lots": 5,
+   "meets_60": false,
+   "two_plus": 0,
+   "two_plus_share": 0.0
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N SAINT LOUIS AVE 2600 even",
+   "known": 16,
+   "lots": 16,
+   "meets_60": false,
+   "two_plus": 6,
+   "two_plus_share": 0.375
+  },
+  {
+   "computable": false,
+   "coverage": 0.8667,
+   "face": "S SPRINGFIELD AVE 4800 even",
+   "known": 13,
+   "lots": 15,
+   "meets_60": null,
+   "two_plus": 13,
+   "two_plus_share": 0.8667
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "N NARRAGANSETT AVE 2100 odd",
+   "known": 20,
+   "lots": 20,
+   "meets_60": false,
+   "two_plus": 2,
+   "two_plus_share": 0.1
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W HENDERSON ST 4800 odd",
+   "known": 15,
+   "lots": 15,
+   "meets_60": false,
+   "two_plus": 5,
+   "two_plus_share": 0.3333
+  },
+  {
+   "computable": false,
+   "coverage": 0.875,
+   "face": "W 51ST PL 2100 even",
+   "known": 7,
+   "lots": 8,
+   "meets_60": null,
+   "two_plus": 1,
+   "two_plus_share": 0.125
+  },
+  {
+   "computable": true,
+   "coverage": 0.9333,
+   "face": "S MONITOR AVE 1000 even",
+   "known": 14,
+   "lots": 15,
+   "meets_60": true,
+   "two_plus": 11,
+   "two_plus_share": 0.7333
+  },
+  {
+   "computable": false,
+   "coverage": 0.5714,
+   "face": "S CALIFORNIA AVE 6000 odd",
+   "known": 8,
+   "lots": 14,
+   "meets_60": null,
+   "two_plus": 4,
+   "two_plus_share": 0.2857
+  },
+  {
+   "computable": true,
+   "coverage": 1.0,
+   "face": "W HENDERSON ST 4800 even",
+   "known": 7,
+   "lots": 7,
+   "meets_60": true,
+   "two_plus": 7,
+   "two_plus_share": 1.0
+  }
+ ],
+ "index_faces": 16462,
+ "lot_coverage": 0.9611,
+ "lot_reasons": {
+  "char_apts": 1053,
+  "char_apts_missing": 67,
+  "char_apts_none": 1376,
+  "class_multi_unit": 37,
+  "class_vacant": 3,
+  "multi_card": 17,
+  "no_record": 16
+ },
+ "lots": 2569,
+ "meets_60_of_computable": 53,
+ "sampled": 200,
+ "seed": 31,
+ "skipped_lots": {
+  "approximate_or_unparsed_address": 24350
+ },
+ "threshold": 0.9
+}
