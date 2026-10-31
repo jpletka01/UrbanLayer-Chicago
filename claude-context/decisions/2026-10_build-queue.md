@@ -2155,3 +2155,31 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Why the lot panel is far below the citywide share, and why that is not a stop:** the panel was drawn for field coverage across classes. Of its 100 parcels, 48 are class 5 (commercial) and 17 exempt, against 7.6% and 8.2% of the city's base parcels (75.6% are class 2). Its views are commercial strips, industrial land and downtown, where Item 36 already measured the low rates (commercial 40.9% resolved, exempt never colored). The uniform random views, the check against the citywide projection, land at 72.1% pooled, inside Item 36's 70-75%. The downtown views match Item 36's downtown projection (the Loop at 24.9% after the chain; here 6.5-15.6% per Loop view, because multi-PIN complexes, keypins included, are now excluded).
 
 **Not measured:** production latency and memory (the endpoint is not deployed); the endpoint over HTTP (all numbers are in-process; the HTTP layer is covered by the tests); the share of real Profile views with a withheld map (needs PR3 and traffic); whether a 0.1-mile radius shows enough context on a phone (PR3).
+
+## Item 41 (WS8 Phase 1 PR3): the capacity map on the Property Profile (2026-10-31)
+
+**Status (2026-10-31): open as a PR stacked on Item 40's, not merged.** Free, in the Build module below the zoning and boundaries maps, English and Mexican Spanish (usted).
+
+**Decision 1: one model owns colors, counts and the key.** `capacityMapModel.ts` (`buildCapacityMapModel`) turns the response into the painted features, the four bins and the "Not colored, and why" rows; the component and the tests read the same object, so a parcel can never be drawn in one category and counted in another (the `discoveryMapModel` pattern, Item 31). A test pins that the key's counts sum to the polygons drawn.
+
+**Decision 2: the encoding.** Utilization (built ÷ allowed floor area) in four bins: under 25%, 25-50%, 50-80%, 80% or more, on one orange ramp (brand series 1, per the chart-color rule), darker for more built in light mode and brighter in dark mode, so "most built" is the strongest mark in both. Every other state is one neutral gray, named with its count in the key; an apparently overbuilt parcel is neutral with a warning outline (flagged, never ranked). Low confidence (a parcel near a district boundary) halves the fill and dashes the outline, the Profile maps' existing rule. The subject parcel gets the accent outline. No hatch patterns (untested in interleaved Deck, Item 31's lesson).
+
+**Decision 3: the words never turn a light color into advice.** The key says a light color "is not a finding that a parcel can be redeveloped"; no "underbuilt" or "soft site" anywhere (plan non-goal). A withheld view says how many parcels could have been colored and that it is "too little to draw honestly", and draws every parcel neutral; a low view says "read it as partial". A failed source is named ("Couldn't check: the zoning map") and a failed request "is not a finding about the block".
+
+**Decision 4: the panel is the reading surface; the map is the picture.** A two-column row like the zoning and boundaries maps: title, method line, the coverage sentence, the key and the sources on the left; the map on the right. On phones the key is a `<details>` disclosure (the WS3 phone-key pattern) so the map is not pushed a screen down. The fetch waits until the block is within 200 px of the viewport; the page keys the component by the parcel so a new address starts at "loading".
+
+**Decision 5: the map can disagree with the Profile's own figure, on purpose.** At 1601 N Milwaukee Ave the verdict reads "FAR 2.2 allowed vs about 1.3 built" from the Profile's per-parcel Commercial Valuation fetch, which attributes a complex's total to its keypin; the map shows the same parcel as part of a multi-parcel complex and does not color it (Item 39 Decision 3). Whether the Profile's verdict should adopt the stricter rule is a separate question, not changed here.
+
+**Numbers** (measured 2026-10-31, local backend on the July 2026 six-area index, local ptaxsim, the City's live zoning layer)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| 1601 N Milwaukee Ave (West Town, residential and commercial mix) | 90 of 149 colored (60%), standard; uncolored: 22 complex, 11 condo, 10 exempt, 9 PD, 4 unknown area, 2 vacant, 1 records disagree | browser, `/scorecard?address=1601 N Milwaukee Ave` |
+| 2600 N Milwaukee Ave (Logan Square commercial strip) | 82 of 98 colored (84%), standard | same |
+| 1 S Halsted St (Near West Side, by downtown) | 5 of 36 colored (14%), low ("read it as partial") | same |
+| `/api/capacity-map` over HTTP at 1601 N Milwaukee | 0.53 s, 149 polygons | `curl "localhost:8001/api/capacity-map?pin=14-31-332-018-0000&lat=41.9097&lon=-87.6773"` |
+| Light and dark | both checked in the browser (ramp, neutral, subject outline, tooltip) | browser |
+| Phone overflow audit | 75 passed, 20 skipped (fixture-gated, unchanged), the Profile on all five devices with the capacity panel and its key opened inside the viewport | `cd frontend && npm run test:mobile` |
+| vitest | 715 passed (78 files; 13 new tests in 2 files) | `npx vitest run` |
+
+**Not measured:** a Loop address in the browser (the local index has no Loop; the panel's in-process Loop views are in Item 40); production latency; how often real visitors see a withheld map; screen-reader reading of the key; the Spanish wording by a native reader (added to Jack's Spanish list).
