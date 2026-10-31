@@ -17,7 +17,7 @@ from typing import get_args
 import pytest
 
 from backend.data_health import registry as reg
-from backend.data_health.registry import BY_ID, SOURCES, layer_id_of, socrata_locator
+from backend.data_health.registry import BY_ID, SOURCES, layer_id_of, sidecar_locator, socrata_locator
 from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -198,7 +198,7 @@ def test_every_committed_data_artifact_is_registered():
     registered = {s.locator for s in SOURCES if s.kind == "artifact"}
     assert artifacts <= registered, f"committed artifacts with no registry entry: {sorted(artifacts - registered)}"
     for side in sidecars:
-        assert any(side == loc.rsplit(".", 1)[0] + ".meta.json" for loc in registered), f"{side}: no registered artifact beside it"
+        assert any(side == sidecar_locator(loc) for loc in registered), f"{side}: no registered artifact beside it"
 
 
 def test_hand_table_is_verified_against_the_served_code_vintage():
