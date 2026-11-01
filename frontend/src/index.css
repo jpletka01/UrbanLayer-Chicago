@@ -47,6 +47,15 @@
   --state-positive: 52 211 153;  /* emerald-400 */
   --state-negative: 251 113 133; /* rose-400 */
   --state-warning: 251 191 36;   /* amber-400 */
+  /* Semantic roles (redesign foundation, decision Item 49): components pick a ROLE, never a hue.
+     status-* carry genuine state only; amber = act on it, red = a blocker, neutral = information
+     (a verdict category is information, never amber). success/warning/danger reuse state-*. */
+  --text-disabled: 82 82 91;     /* #52525b */
+  --status-success: 52 211 153;  /* = state-positive */
+  --status-warning: 251 191 36;  /* = state-warning */
+  --status-danger: 251 113 133;  /* = state-negative */
+  --status-info: 125 211 252;    /* sky-300: passive information, used sparingly */
+  --status-neutral: 161 161 170; /* = text-secondary */
   --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.03), 0 2px 12px -2px rgb(0 0 0 / 0.5);
   --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.7);
   --glow-accent: 0 0 0 1px rgb(249 164 116 / 0.20), 0 0 28px -4px rgb(249 164 116 / 0.22);
@@ -80,6 +89,12 @@
   --state-positive: 4 120 87;    /* emerald-700 */
   --state-negative: 190 18 60;   /* rose-700 */
   --state-warning: 180 83 9;     /* amber-700 */
+  --text-disabled: 161 161 170;  /* #a1a1aa */
+  --status-success: 4 120 87;    /* = state-positive */
+  --status-warning: 180 83 9;    /* = state-warning */
+  --status-danger: 190 18 60;    /* = state-negative */
+  --status-info: 3 105 161;      /* sky-700 */
+  --status-neutral: 82 82 91;    /* = text-secondary */
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
   --shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --glow-accent: 0 0 0 1px rgb(234 88 12 / 0.18), 0 0 24px -6px rgb(234 88 12 / 0.18);

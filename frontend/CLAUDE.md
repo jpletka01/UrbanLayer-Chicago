@@ -99,6 +99,19 @@ the Card/Modal primitives; controls/inputs `rounded-lg`; chips/badges `rounded-m
 faint orange/violet corner blooms site-wide; `AccentRails` adds edge-masked orange plat-grid
 rails to the landing's below-hero margins.
 
+**Role layer + shape grammar (2026-11-01, decision Item 49; the Profile redesign builds on it).**
+Components pick a ROLE, never a hue: `status-{success,warning,danger,info,neutral}` (DEFAULT = text/glyph,
+`-subtle` = tinted fill), `action` (orange: clickable only, ≤1 solid per viewport), `premium` (violet:
+paid only; alias of `highlight`), `text-disabled`. Amber = the user should check or act; red = blocker;
+a verdict category is `neutral`. `components/scorecard/palette.test.ts` fails on raw palette classes
+(`text-amber-400`) in the Profile. **`Button`** (8px radius, 36-40px, hover/focus/pointer;
+`data-solid-action` on primary) vs **`StatusLabel`** (≤22px, 3px radius, tint + glyph, inert): they
+differ in radius, height, focusability and cursor (pinned by `ui/foundation.test.tsx`). **`Toggletip`**:
+click/tap to open, Escape returns focus, click-outside closes; one icon per meaning: ⓘ source/code,
+⏱ date (year may stay visible), ▾ more. **`ConfidenceState`**: the five visible states (Estimate /
+Low confidence / Not checked ◌ / None found ∅ / Withheld ⊘ / N/A) with the explanation behind ⓘ; a
+verified figure has no label; `confidenceStateFor(entry)` reads the backend's state, never recomputes it.
+
 **Primitives** (`src/components/ui/`): `Card` (flex-col, `className` pass-through — equal-height
 section grids stretch cards via `flex-1`), `Chip`, `Modal`. Use these; don't hand-roll chrome.
 

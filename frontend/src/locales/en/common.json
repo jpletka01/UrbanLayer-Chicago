@@ -181,6 +181,15 @@
     "ai": "AI",
     "moeMethod": {
       "acs_handbook_median": "Summed from Census rent brackets"
+    },
+    "kind": {
+      "estimate": "Estimate",
+      "low": "Low confidence",
+      "not_checked": "Not checked",
+      "none_found": "None found",
+      "withheld": "Withheld",
+      "na": "N/A",
+      "explain": "Why: {{label}}"
     }
   },
   "dataDates": {

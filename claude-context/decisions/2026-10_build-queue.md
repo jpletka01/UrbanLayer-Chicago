@@ -2343,3 +2343,28 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Gates | | vitest 870 passed (80 files), lint 0 errors, build OK | `npx vitest run`, `npm run lint`, `npm run build` |
 
 **Not measured:** the dark theme (both themes share the tokens, not screenshotted); a screen reader pass.
+
+## Item 49: the redesign foundation: color roles, a shape grammar, one ConfidenceState (2026-11-01)
+
+**Status (2026-11-01): open as a PR, not merged.** Step 2 of the approved Profile redesign (`plans/2026-11-01_profile-discovery-redesign-plan.md` §4 principles 4, 6, 7 and 8). Little visible change on its own; the first-screen PR builds on it.
+
+**Decision 1: a semantic role layer over Bento Pro.** New tokens: `status-{success,warning,danger,info,neutral}` (each a text/glyph color and a `-subtle` fill), `premium` (alias of `highlight`), `text-disabled`. success/warning/danger reuse the existing `state-*` values, so nothing that already uses `state-*` changes color. Rules: amber = act or check; red (never orange) = a blocker; a verdict category is neutral. *Alternative:* rename `state-*`; rejected as churn across ~60 call sites for no visible gain (migrating them is a later sweep).
+
+**Decision 2: a lint against hues, starting green.** The interface inventory found **0** raw palette classes in `components/scorecard/` and `ScorecardPage.tsx` (Bento Pro already removed them); the yellow verdict and green/amber pills come from `state-*` and `Chip` tones chosen per call site. `palette.test.ts` keeps raw hues out; it cannot judge whether a `state-warning` is deserved, which is what the first-screen PR's budget (≤3 amber items) does. *Alternative:* an ESLint rule; rejected because the class strings are built in many shapes (template literals, maps) and a regex test over files is simpler and already the repo's pattern (`siblingKeys.test.ts`).
+
+**Decision 3: the shape grammar as two components.** `Button`: `rounded-lg` (8px), `h-9`/`h-10`, hover/pressed, a 2px focus ring, pointer; `primary` = the one solid orange element and carries `data-solid-action` so the page budget can count it. `StatusLabel`: `h-5` (20px), 3px radius, tinted fill + glyph, no border, not focusable, `cursor-default`. A test asserts they differ in at least three of radius, height, focusability, cursor and focus ring (all five today). Every tone has a glyph (WCAG 1.4.1).
+
+**Decision 4: one `ConfidenceState`.** Estimate ≈, Low confidence ≈ (amber; the guide's one amber phrase), Not checked ◌, None found ∅, Withheld ⊘, N/A –. A verified figure gets no label. The explanation opens in a `Toggletip` (a real button named "Why: <figure>", click/tap, Escape returns focus, click outside closes). `confidenceStateFor(entry)` maps the backend's `confidence` and tier and never recomputes it (guide §3, rule 6). The existing `ConfidenceCaption`/`ConfidenceValue` stay until the first-screen and disclosure PRs move each figure over.
+
+**Revisit if** a status needs more than five tones; info (sky) reads as off-brand once used (it is defined, unused today); the five words test badly with users.
+
+**Numbers** (measured 2026-11-01)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Raw palette classes in the Profile's components | 0 | `npx vitest run src/components/scorecard/palette.test.ts` |
+| Button vs StatusLabel property differences | 5 of 5 checked | `npx vitest run src/components/ui/foundation.test.tsx` |
+| New tests | 11 (`foundation.test.tsx` 9, `palette.test.ts` 2) | same |
+| Existing confidence suites (`Confidence`, `KpiStrip`, card confidence tests) | unchanged, passing | `npx vitest run` |
+
+**Not measured:** contrast of the `-subtle` fills against both surfaces with a checker (the text colors are the existing AA-checked `state-*` values); a screen-reader pass on the toggletip.
