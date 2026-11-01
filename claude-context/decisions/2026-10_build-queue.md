@@ -2284,3 +2284,25 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Gates | vitest 867 passed (80 files); lint 0 errors; build OK; phone suite Profile 5 of 5 devices | `npx vitest run`, `npm run lint`, `npm run build`, `-g scorecard` |
 
 **Not measured:** the live Profile after deploy (checked after merge); whether other pages re-render enough to show a duplicate if one is ever added (the guard makes that moot).
+
+## Item 48: the Discovery test flake was a real race: a search could go out before the default sort (2026-11-01)
+
+**Status (2026-11-01): open as a PR, not merged.** Two `DiscoveryPage.test.tsx` tests each failed CI once and passed on re-run ("keeps the previous results … dimmed" blocked a deploy after #157; "offers one-click restore of a removed chip", `Unable to find … remove-tif`, failed on #161's PR).
+
+**Cause (reproduced, not guessed).** The hook fills the draft's default sort in a `useEffect` that runs after the registry arrives. The tests' `readyPage()` waits only for the Search button to enable, which happens in the render where the registry lands, before that passive effect runs. Under load the click falls in that gap: the search goes out with `sort: null`; the effect then sets the sort; when the response lands, the draft's signature no longer matches the issued one, so `reconcileWithResponse` is skipped and the response's three filters show as **removed** chips ("restore-tif"). Every test that clicks `remove-*` after `pageWithResults()` can hit it. The failing run's DOM dump showed all three chips `data-state="removed"`. The same gap exists for a real user, though a click inside one scheduler tick is unlikely.
+
+**Decision: fix the product, not the test.** `apply()` now writes the default sort into the draft before it reads it, so no search goes out without a sort and the response always matches the draft it was issued from. The effect stays (the sort control still needs a value before any search). No assertion was loosened and no retry was added. *Alternative:* make `readyPage()` also wait for the sort select's value; rejected because it hides a real ordering bug behind a longer wait.
+
+**Regression test:** `useDiscoverySearch.test.tsx` "never sends a search without the default sort …" sets the draft's sort to null, applies, and asserts the request carries the default and the chip reconciles to `applied`. It fails on `main`'s hook and passes with the fix.
+
+**`useDiscoverySearch.test.tsx` ~174** ("keeps the previous results, count and dots while a refresh runs") was read: it drives the hook through `renderHook`/`act`, so effects are flushed before each step, and it resolves its deferred promises inside `act`. No race found; it ran in every loop below.
+
+**Numbers** (measured 2026-11-01, this Mac, 6 runs of the files in parallel to imitate a loaded CI runner)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| `DiscoveryPage.test.tsx` on `main`, looped | 1 failure in 48 runs (`remove-tif` not found; chips `removed`) | 8 × 6 parallel `npx vitest run src/discovery/DiscoveryPage.test.tsx` |
+| Both Discovery files with the fix, looped | 0 failures in 108 runs (two batches of 54; 79 tests each) | 9 × 6 parallel `npx vitest run src/discovery/DiscoveryPage.test.tsx src/discovery/useDiscoverySearch.test.tsx` |
+| New test against `main`'s hook / with the fix | fails / passes | `npx vitest run src/discovery/useDiscoverySearch.test.tsx` |
+
+**Not measured:** the flake rate on GitHub's runners (1 in 48 locally is a weak baseline; the loop proves the race is closed, not the old CI rate).
