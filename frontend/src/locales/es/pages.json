@@ -682,6 +682,71 @@
       "pdCurrent": "Lo fija su propia ordenanza",
       "noLot": "No se conoce el área del lote, así que no se muestran la superficie ni las unidades.",
       "note": "Esto es la aritmética de la tabla del distrito, no un pronóstico. Un cambio de zonificación requiere la aprobación del Concejo Municipal. El estacionamiento, los retiros según la forma de este lote y otras normas pueden permitir menos."
+    },
+    "answer": {
+      "noZone": "Hoy no se pudo verificar el distrito de zonificación",
+      "ownOrdinance": "{{zone}} fija sus propias reglas por ordenanza; no hay un máximo de tabla",
+      "mostlyUnbuilt": "{{zone}} permite un coeficiente de edificabilidad (FAR) de {{far}} en un terreno casi sin construir",
+      "atCap": "{{zone}} está construido casi a su límite ({{pct}}% del área de piso permitida)",
+      "headroom": "{{zone}} permite cerca de {{x}}× el área de piso actual",
+      "allowsFar": "{{zone}} permite un coeficiente de edificabilidad (FAR) de {{far}}",
+      "units_one": ", hasta {{count}} vivienda según el área del terreno",
+      "units_other": ", hasta {{count}} viviendas según el área del terreno",
+      "blocker": {
+        "nominal": "tiene un avalúo nominal, así que quizá no sea un lote edificable por sí solo",
+        "landmark_bldg": "es un monumento designado, así que los cambios requieren la aprobación de la Comisión de Monumentos de Chicago",
+        "landmark_dist": "está en un distrito de monumentos, así que la construcción nueva requiere la aprobación de la Comisión",
+        "historic": "está en un distrito histórico, así que se revisan los cambios exteriores",
+        "pd_overlay": "está dentro de un Desarrollo Planificado, cuya ordenanza fija las reglas",
+        "flood": "está en una zona de inundación de FEMA",
+        "lakefront": "está en el Distrito de Protección del Lago, así que la mayoría de las obras requieren revisión de la Ciudad",
+        "natl_register": "está en el Registro Nacional de Lugares Históricos"
+      },
+      "caveatsLabel": "En qué se basa esta respuesta"
+    },
+    "header": {
+      "details": "Detalles de la parcela",
+      "copyPin": "Copiar PIN",
+      "copied": "Copiado",
+      "assessor": "Registro del Tasador",
+      "ask": "Pregunte al analista"
+    },
+    "panels": {
+      "build": "Construir",
+      "inTheWay": "Obstáculos",
+      "value": "Valor y costo",
+      "moreRows_one": "+{{count}} más en Reglas y superposiciones",
+      "moreRows_other": "+{{count}} más en Reglas y superposiciones",
+      "zoning": "Distrito",
+      "far": "FAR",
+      "farOf": "{{used}} de {{allowed}}",
+      "farAllowed": "{{allowed}} permitido",
+      "farDetail": "El área de piso del edificio actual dividida entre el área del terreno, frente al máximo del distrito en la tabla del Título 17.",
+      "ownOrdinance": "Fijado por ordenanza",
+      "units": "Viviendas",
+      "lot": "Terreno",
+      "exempt": "Exento de impuestos",
+      "assessedYear": "Año de avalúo {{year}}",
+      "blocker": {
+        "nominal": "Avalúo nominal",
+        "landmark_bldg": "Edificio designado monumento",
+        "landmark_dist": "Distrito de monumentos",
+        "historic": "Distrito histórico",
+        "pd_overlay": "Desarrollo Planificado",
+        "flood": "Zona de inundación de FEMA",
+        "lakefront": "Protección del Lago",
+        "natl_register": "Registro Nacional"
+      },
+      "passedNotOnMap": "Rezonificación aprobada, aún no en el mapa",
+      "designationPassed": "Designación de monumento aprobada",
+      "notChecked": {
+        "flood": "Zona de inundación de FEMA",
+        "overlays": "Mapas de monumentos y DP"
+      },
+      "noneFound": "Sin reglas de monumentos, DP, inundación ni del lago",
+      "noneFoundDetail": "Revisamos para esta parcela los mapas de la Ciudad de monumentos, distritos históricos, Desarrollos Planificados y Protección del Lago, y el mapa de inundación de FEMA. Ninguno aplica.",
+      "more": "Detalles",
+      "marketLine": "Valor de mercado ≈ {{value}} (nuestro cálculo: valor de avalúo ÷ el nivel de avalúo de la clase)"
     }
   },
   "discovery": {

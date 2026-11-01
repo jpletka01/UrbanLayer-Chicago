@@ -2368,3 +2368,43 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Existing confidence suites (`Confidence`, `KpiStrip`, card confidence tests) | unchanged, passing | `npx vitest run` |
 
 **Not measured:** contrast of the `-subtle` fills against both surfaces with a checker (the text colors are the existing AA-checked `state-*` values); a screen-reader pass on the toggletip.
+
+## Item 50: the Profile's first screen: one answer, three panels, one sticky band (2026-11-01)
+
+**Status (2026-11-01): open as a PR, not merged; stacked on Item 49.** Step 3 of the approved redesign (`plans/2026-11-01_profile-discovery-redesign-plan.md` §4, §6a-6c). Answers Jack's second-pass complaint list item by item (below).
+
+**Decision 1: the header is the address alone.** Area, ward, PIN (with Copy and the Assessor link) and the match method/distance move behind one "Parcel details ▾" (`ProfileHeader`). The candidate-parcel list inside it renders flat (`ParcelResolution flat`), so no disclosure nests in another. An approximate match or an unconfirmed PIN stays visible as one amber `StatusLabel` with ⓘ; an exact match carries no check mark (a verified identity, like a verified figure, needs no label). PIN visibility follows the research report; it is **untested with attorneys** (no interview contacts).
+
+**Decision 2: one answer = a neutral label + one deterministic sentence.** `lib/answerSentence.ts`: templates per verdict state from the verdict's own signals and `unit_yield`, e.g. "B3-2 allows about 1.7× today's floor area, up to 11 units by lot area; it is in a landmark district, so new construction needs Commission approval." The verdict category is a neutral label (Q6: names kept, never yellow). A ratio the verdict doesn't trust (low-confidence building area) is never stated. The blocker order: nominal assessment, landmark building, landmark district, historic district, PD, flood zone, lakefront, National Register. The verdict's caveats move behind one ⓘ after the sentence ("What this answer rests on"); the "Unverified" chip is gone; the verdict logic is untouched. **Jack reviews the template wording once in the PR (Q2).**
+
+**Decision 3: three panels replace the KPI strip and the reason pills.** Build (district, FAR used of allowed, units by lot area, lot), In the way (rows only for what changes the answer: blockers, a passed rezoning or landmark designation not on the map, flood or overlay maps not checked; "None found" with what was checked when nothing applies), Value & cost (assessed, est. tax with the tax year visible beside ⏱, comps median). The benchmark lines, assessed year, market value and rate move into ⓘ/⏱ toggletips (Q4). Every figure carries `ConfidenceState` (Estimate on our calculations and the tax model; Withheld = "—" + the backend's own short reason); amber rows are capped at 3 with "+N more". *Alternative:* keep market value as a fourth Value figure; moved into the Assessed ⓘ to meet the word budget, since it is our derivation of the assessed value.
+
+**Decision 4: no report CTA, one action.** The report button, sample link and "coming soon" are gone while purchases are off; the code keeps the violet report button for when they launch (it shows locally because the dev user has report access). "Ask the analyst" is a secondary `Button`; the dock's orange launcher stays the one solid-orange element on desktop.
+
+**Decision 5: one sticky band.** The floating verdict strip and the left section rail are removed. `SectionBand`: the section nav sticks under the site nav; the verdict label joins it only after the answer has scrolled out of view (say it once). Phones: a bottom action bar (verdict label + "Ask the analyst", the solid orange) and the dock launcher hides below `md`.
+
+**Jack's second-pass complaints → this PR**
+1. Header check marks / area-ward-PIN / "Matched by…" → address alone + Parcel details ▾. **Closed.**
+2. "Constrained upside" yellow, info thrown in → neutral label + one sentence + panels. **Closed.**
+3. Map key covers the map → Item 47 (#163). **Closed there.**
+4. Report "purchase coming soon" → removed. **Closed.**
+5. Buttons look like warnings → `Button` vs `StatusLabel` (Item 49). **Closed on the first screen**; modules below still use the old chips (Item 51).
+6. Dates and amendment codes everywhere → ⏱/ⓘ on the first screen. **Closed on the first screen**; module dates are Item 51.
+7. Floating bar covers the section nav → one sticky band. **Closed.**
+8. Only yellow and green → roles + neutral verdict. **Closed on the first screen.**
+
+**Numbers** (measured 2026-11-01 with `plans/2026-11-01_redesign-assets/firstscreen.cjs`: initial viewport, no scroll, site nav/maps/footer excluded; "answer zone" = above the sticky section band. Before = production `main` @ `87c9fca`; after = local)
+
+| Parcel, view | Words before → after (answer zone) | Amber before → after | Solid orange |
+|---|---|---|---|
+| 2541 N Spaulding, desktop | 167 → 109 (164 → 83) | 3 → 0 | 1 → 1 |
+| 1601 N Milwaukee, desktop | 185 → 121 (182 → 97) | 6 → 3 | 1 → 1 |
+| 233 S Wacker, desktop | 181 → 110 (181 → 84) | 3 → 0 | 1 → 1 |
+| PIN 14-28-319-102-0000, desktop | 150 → 131 (150 → 85) | 6 → 4 (answer zone 3) | 1 → 1 |
+| phones (390×844), all four | 96-132 → 69-71 | 3-6 → 0-3 | 1 → 1 |
+
+- **Budget:** phone ≤ 90 met on all four; desktop answer zone ≤ 120 met on all four. The whole desktop viewport is ≤ 120 on two of four: on Milwaukee (121) and the $1 parcel (131, plus a fourth amber item, "Upcoming zoning filings couldn't be checked") the extra words are the first module's heading and disclaimer showing below the band. Item 51 collapses the modules to one-line summaries and adds the ratcheting gate.
+- **Tests:** `answerSentence.test.ts` 6, `AnswerPanels.test.tsx` 6 (withheld "—" + reason, Low confidence / Estimate tags, Not checked ≠ None found, amber cap, explanation behind a click, header disclosure).
+- **Checks:** grayscale and blur screenshots, before and after (`check-{before,after}-milwaukee-{grayscale,blur}.png`).
+
+**Not measured:** real users (the Top Tasks vote and 5-user tests need contacts Jack doesn't have); the dark theme screenshots; a screen-reader pass; the Spanish layout (longer strings).

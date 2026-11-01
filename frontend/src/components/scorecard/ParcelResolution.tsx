@@ -11,7 +11,11 @@ function fmtPin(pin: string): string {
   return pin.length === 14 ? `${pin.slice(0, 2)}-${pin.slice(2, 4)}-${pin.slice(4, 7)}-${pin.slice(7, 10)}-${pin.slice(10)}` : pin;
 }
 
-export function ParcelResolution({ resolution }: { resolution?: ParcelResolutionRecord | null }) {
+export function ParcelResolution({ resolution, flat = false }: {
+  resolution?: ParcelResolutionRecord | null;
+  /** Inside another disclosure (the Profile's "Parcel details"): list the candidates without a nested toggle. */
+  flat?: boolean;
+}) {
   const { t } = useTranslation("pages");
   if (!resolution?.method) return null;
   const r = resolution;
@@ -40,14 +44,17 @@ export function ParcelResolution({ resolution }: { resolution?: ParcelResolution
         </p>
       )}
 
-      {r.multiple_parcels && (
-        <details className="group" data-testid="resolution-candidates">
-          <summary className="cursor-pointer text-text-secondary hover:text-accent transition-colors">
+      {r.multiple_parcels && (() => {
+        const heading = (
+          <>
             {r.condo_units
               ? t("scorecard.resolution.condo", { n: r.condo_units })
               : t("scorecard.resolution.multiple", { n: r.candidates.length })}
             {r.sources_disagree && ` ${t("scorecard.resolution.disagree")}`}
-          </summary>
+          </>
+        );
+        const list = (
+          <>
           <ul className="mt-1.5 space-y-0.5">
             {shown.map((c) => (
               <li key={c.pin} className={c.used ? "text-text-primary" : undefined} data-testid={c.used ? "candidate-used" : "candidate"}>
@@ -58,8 +65,20 @@ export function ParcelResolution({ resolution }: { resolution?: ParcelResolution
             ))}
           </ul>
           {hidden > 0 && <p className="mt-1">{t("scorecard.resolution.more", { n: hidden })}</p>}
-        </details>
-      )}
+          </>
+        );
+        return flat ? (
+          <div data-testid="resolution-candidates">
+            <p className="text-text-secondary">{heading}</p>
+            {list}
+          </div>
+        ) : (
+          <details className="group" data-testid="resolution-candidates">
+            <summary className="cursor-pointer text-text-secondary hover:text-accent transition-colors">{heading}</summary>
+            {list}
+          </details>
+        );
+      })()}
     </div>
   );
 }
