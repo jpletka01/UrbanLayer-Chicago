@@ -2319,6 +2319,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Tests | 19 backend (`test_nominal_assessment.py`), 2 vitest (`ScorecardPropertyCard.nominal.test.tsx`); backend 2,590 passed, vitest 869 passed (81 files) | `pytest backend/tests -m "not integration"`, `npx vitest run` |
 
 **Not measured:** the PDF itself (the template change is covered by the resolver test, not a render); the chat answer (rule 40 needs a production-credit run); how many nominal parcels are residential common areas versus commercial remnants.
+
 ## Item 47: the Profile's map key is collapsed by default and never covers the map (2026-11-01)
 
 **Status (2026-11-01): open as a PR, not merged.** Jack's 2026-10-31 review, item 2 and second-pass item 3: the zoning key "covers ~80% of the map". On desktop it was always open (`w-[22rem] max-w-[65%]`, nearly full height, no collapse); at 1601 N Milwaukee it listed 26 districts with a count on every row.
