@@ -1146,6 +1146,7 @@ export default function ScorecardPage() {
                       <ParcelMap
                         variant="zoning"
                         lazy
+                        subjectKey={zdef?.zone_class ?? null}
                         lat={data.resolved_lat ?? data.lat}
                         lon={data.resolved_lon ?? data.lon}
                         parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}

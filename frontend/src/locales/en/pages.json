@@ -491,6 +491,18 @@
         "overlays": "special-purpose boundaries",
         "tif": "TIF districts",
         "ez": "Enterprise Zones"
+      },
+      "key": "Key",
+      "keyClose": "Close the key",
+      "keyChip_one": "Key · {{first}} + {{count}} other",
+      "keyChip_other": "Key · {{first}} + {{count}} others",
+      "keyChipOnly": "Key · {{first}}",
+      "keyChipEmpty": "Key",
+      "countInView": {
+        "district_one": "{{count}} district in view",
+        "district_other": "{{count}} districts in view",
+        "feature_one": "{{count}} feature in view",
+        "feature_other": "{{count}} features in view"
       }
     },
     "crimeCurrent": "Current period",
