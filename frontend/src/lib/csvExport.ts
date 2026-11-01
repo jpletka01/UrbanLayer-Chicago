@@ -121,7 +121,7 @@ export function buildScorecardCSV(
       { field: "Full Baths", value: p.full_baths ?? "" },
       { field: "Half Baths", value: p.half_baths ?? "" },
       { field: "Building Age", value: p.bldg_age ?? "", fact: "property.year_built" },
-      { field: "Total Assessed Value", value: p.total_assessed_value ?? "", fact: "property.assessed_value" },
+      { field: "Total Assessed Value", value: p.nominal_assessment ? "Nominal (not a market value)" : p.total_assessed_value ?? "", fact: "property.assessed_value" },
       { field: "Implied Market Value", value: p.implied_market_value ?? "", fact: "property.implied_market_value" },
       { field: "Estimated Annual Tax", value: p.estimated_annual_tax ?? "", fact: "property.tax_estimate" },
       { field: "Tax Year", value: p.tax_year ?? "" },

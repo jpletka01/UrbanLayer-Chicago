@@ -20,7 +20,7 @@ from backend.models import (
     TaxExemption,
     TaxLineItem,
 )
-from backend.retrieval.property.assessment_level import assessment_level_for_class
+from backend.retrieval.property.assessment_level import assessment_level_for_class, is_nominal_assessment
 from backend.retrieval.property.assessments import get_assessments
 from backend.retrieval.property.characteristics import get_characteristics
 from backend.retrieval.property.parcels import lookup_parcel, lookup_parcel_by_pin
@@ -570,9 +570,22 @@ def _build_summary(
     # Class-aware market value + effective rate — assessed value alone invites
     # the reader to divide by the wrong level (see assessment_level.py).
     assessment_level = assessment_level_for_class(bldg_class or assessment_class)
+
+    # A token assessment ($1 common area, remnant of a divided lot) is not a value: keep the County's number
+    # in its own field and give no assessed value, market value, tax or rate to divide (decision Item 46).
+    prior_total = next((r.total for r in assessment_history[1:] if r.total is not None), None)
+    nominal_assessment = not tax_exempt and is_nominal_assessment(
+        total_assessed_value, bldg_class or assessment_class, prior_total=prior_total
+    )
+    nominal_assessed_value = total_assessed_value if nominal_assessment else None
+    if nominal_assessment:
+        total_assessed_value = None
+        estimated_annual_tax = None
+        tax_breakdown = []
+
     implied_market_value = None
     effective_tax_rate = None
-    if not tax_exempt and assessment_level:
+    if not tax_exempt and not nominal_assessment and assessment_level:
         if total_assessed_value and total_assessed_value > 0:
             implied_market_value = round(total_assessed_value / assessment_level)
         # Effective rate is a SAME-YEAR fact: the PTAXSIM bill divided by that
@@ -618,6 +631,8 @@ def _build_summary(
         air_conditioning=air_conditioning,
         tax_exempt=tax_exempt,
         total_assessed_value=total_assessed_value,
+        nominal_assessment=nominal_assessment,
+        nominal_assessed_value=nominal_assessed_value,
         estimated_annual_tax=estimated_annual_tax,
         assessment_level=assessment_level,
         implied_market_value=implied_market_value,
