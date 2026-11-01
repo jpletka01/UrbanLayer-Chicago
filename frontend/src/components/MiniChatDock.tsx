@@ -32,7 +32,12 @@ const chatIcon = (
   </svg>
 );
 
-export function MiniChatDock({ data, signal }: { data: ScorecardResponse; signal: DockSignal | null }) {
+export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
+  data: ScorecardResponse;
+  signal: DockSignal | null;
+  /** false when the page has its own phone action bar that opens the dock (the Profile's one sticky band). */
+  launcherBelowMd?: boolean;
+}) {
   const { t, i18n } = useTranslation(["pages", "chat", "common"]);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -123,7 +128,7 @@ export function MiniChatDock({ data, signal }: { data: ScorecardResponse; signal
           setOpen(true);
         }}
         aria-label={t("pages:scorecard.dock.title")}
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-action hover:bg-action-hover text-text-on-accent pl-4 pr-4 sm:pr-5 py-3 shadow-glow transition-colors"
+        className={`fixed bottom-4 right-4 z-40 ${launcherBelowMd ? "inline-flex" : "hidden md:inline-flex"} items-center gap-2 rounded-full bg-action hover:bg-action-hover text-text-on-accent pl-4 pr-4 sm:pr-5 py-3 shadow-glow transition-colors`}
       >
         {chatIcon}
         <span className="text-title hidden sm:inline">{t("pages:scorecard.dock.open")}</span>

@@ -10,7 +10,7 @@ import { formatDay, localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
 import { CodeSourceModal } from "./CodeSourceModal";
-import { CoverageNotes } from "./CoverageNotes";
+import { Toggletip } from "../ui/Toggletip";
 import { ConfidenceCaption } from "../ui/Confidence";
 import { useFact } from "../../lib/provenanceContext";
 import { displayState } from "../../lib/confidence";
@@ -52,7 +52,7 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, coverageNotes, passedNotOnMap }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, passedNotOnMap }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
@@ -67,6 +67,7 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   /** Dated sources per fact (backend provenance); a standard's code section opens in the viewer. */
   provenance?: Record<string, Provenance> | null;
   /** Where the analysis stops for this parcel (backend coverage_notes). */
+  /** No longer rendered here: the page's Sources & coverage sheet shows it (decision Item 51). */
   coverageNotes?: CoverageNote[] | null;
   /** Passed rezonings listing this address that the City's map doesn't show yet (WS1 M5). */
   passedNotOnMap?: PassedNotOnMap[] | null;
@@ -173,7 +174,10 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
           </p>
         )}
 
+        {/* Dates sit behind ⏱ (Jack's second pass, item 6; decision Item 51): one icon, one meaning. */}
         {(freshness?.map_updated || codeVintage) && (
+          <div className="text-caption text-text-muted">
+            <Toggletip kind="date" label={t("scorecard.zoningCard.datesLabel")} visible={t("scorecard.zoningCard.datesLabel")}>
           <dl className="text-caption text-text-muted space-y-0.5" data-testid="freshness-stamps">
             {freshness?.map_updated && (
               <div className="flex justify-between gap-3">
@@ -193,9 +197,11 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
               </div>
             )}
           </dl>
+            </Toggletip>
+          </div>
         )}
 
-        <CoverageNotes notes={coverageNotes} codeCurrency={codeCurrency} />
+        {/* "What this page doesn't cover" moved to the page's Sources & coverage sheet (decision Item 51). */}
 
         <div className="flex items-center justify-between gap-2 text-caption text-text-muted">
           <span className="font-mono">{def.code_section}</span>

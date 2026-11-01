@@ -288,3 +288,21 @@ export function plainCaption(entry: Provenance | null | undefined, t: TFunction,
   if (c.withheld) return c.withheld;
   return [c.ai ? "[AI]" : null, c.lead, ...c.parts].filter(Boolean).join(" · ");
 }
+
+/** The five visible confidence states (decision Item 49). A verified figure has none: no label is
+    what lets the labeled ones stand out. "Not checked" (a source didn't answer) and "None found"
+    (we checked, there is nothing) are different words with different glyphs, never merged. */
+export type ConfidenceKind = "estimate" | "not_checked" | "none_found" | "withheld" | "na";
+
+/** Which state a figure's provenance entry puts on screen, or null for a verified figure. The
+    backend decides low/withheld; this only reads it (guide §3). */
+export function confidenceStateFor(
+  entry: Provenance | null | undefined,
+): { kind: ConfidenceKind; low: boolean } | null {
+  if (!entry) return null;
+  const state = displayState(entry);
+  if (state === "withheld") return { kind: "withheld", low: false };
+  if (state === "low") return { kind: "estimate", low: true };
+  if (entry.tier && CAPTIONED_TIERS.has(entry.tier)) return { kind: "estimate", low: false };
+  return null;
+}

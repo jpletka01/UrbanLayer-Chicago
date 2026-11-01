@@ -431,6 +431,8 @@ export interface PropertySummary {
   half_baths: number | null;
   bldg_age: number | null;
   total_assessed_value: number | null;
+  /** Class EX: tax-exempt ownership; no assessed value or tax applies. */
+  tax_exempt?: boolean;
   /** A token assessment (under $100, or a >99% drop from a prior real value): a common area or the remainder
       of a divided lot. Then total_assessed_value, implied_market_value, estimated_annual_tax and
       effective_tax_rate are null, and the County's number sits here, never shown as a figure (Item 46). */

@@ -57,6 +57,24 @@ export default {
           secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
           muted: 'rgb(var(--text-muted) / <alpha-value>)',
           'on-accent': 'rgb(var(--text-on-accent) / <alpha-value>)',    // text/icon on accent fills
+          disabled: 'rgb(var(--text-disabled) / <alpha-value>)',
+        },
+        // ── Semantic role layer (decision Item 49) ─────────────────────────────────────────
+        // Components pick a ROLE: `action` (orange: clickable only, ≤1 solid per viewport),
+        // `premium` (violet: costs money only), `status-*` (genuine state). A test fails on raw
+        // palette classes (amber-400, …) in the Profile's components. `subtle` = the tinted fill a
+        // StatusLabel sits on; DEFAULT = its text/glyph.
+        premium: {
+          DEFAULT: 'rgb(var(--highlight) / <alpha-value>)',
+          fill: 'rgb(var(--highlight-fill) / <alpha-value>)',
+          fg: 'rgb(var(--highlight-fg) / <alpha-value>)',
+        },
+        status: {
+          success: { DEFAULT: 'rgb(var(--status-success) / <alpha-value>)', subtle: 'rgb(var(--status-success) / 0.12)' },
+          warning: { DEFAULT: 'rgb(var(--status-warning) / <alpha-value>)', subtle: 'rgb(var(--status-warning) / 0.14)' },
+          danger: { DEFAULT: 'rgb(var(--status-danger) / <alpha-value>)', subtle: 'rgb(var(--status-danger) / 0.12)' },
+          info: { DEFAULT: 'rgb(var(--status-info) / <alpha-value>)', subtle: 'rgb(var(--status-info) / 0.12)' },
+          neutral: { DEFAULT: 'rgb(var(--status-neutral) / <alpha-value>)', subtle: 'rgb(var(--status-neutral) / 0.12)' },
         },
         // Themed semantic state tones (§6) — replace the static Tailwind emerald/rose/amber-400
         // refs in Phase 3. -400 in dark, -700 in light (the only AA failures light introduces).
