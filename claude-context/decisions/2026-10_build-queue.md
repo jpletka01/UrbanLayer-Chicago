@@ -2284,3 +2284,27 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Gates | vitest 867 passed (80 files); lint 0 errors; build OK; phone suite Profile 5 of 5 devices | `npx vitest run`, `npm run lint`, `npm run build`, `-g scorecard` |
 
 **Not measured:** the live Profile after deploy (checked after merge); whether other pages re-render enough to show a duplicate if one is ever added (the guard makes that moot).
+
+## Item 47: the Profile's map key is collapsed by default and never covers the map (2026-11-01)
+
+**Status (2026-11-01): open as a PR, not merged.** Jack's 2026-10-31 review, item 2 and second-pass item 3: the zoning key "covers ~80% of the map". On desktop it was always open (`w-[22rem] max-w-[65%]`, nearly full height, no collapse); at 1601 N Milwaukee it listed 26 districts with a count on every row.
+
+**Decision 1: one collapsed chip on every screen size.** "Key · B3-2 + 25 others": the parcel's own district (new `ParcelMap` prop `subjectKey`, the zoning map passes `zone_definition.zone_class`) or the first row, plus how many others. Open, the parcel's district is listed first, bold, marked "This parcel".
+
+**Decision 2: open, the key sits next to the map, never on it.** Desktop: a column beside the map when the map's box is at least 768 px wide (`KEY_BESIDE_MIN_PX`; the 256 px column leaves the map ≥ 2/3), otherwise under the map. The Profile's zoning map sits in a half-width column, so on the Profile it opens under the map; a beside column there left a sliver of map (seen in the first local screenshot). Mapbox is told to `resize()` when the box changes. Phone: a solid sheet over the lower map, held above the Mapbox attribution (bottom-left; the phone audit checks they don't overlap) and below the chip, with a close button; Escape closes it and returns focus to the chip on both. *Alternative:* a key permanently below the map; rejected because it adds height to every Profile for something most visitors don't open.
+
+**Decision 3: counts and withheld lines move to one footer.** "26 districts in view · 2 features not shown"; per source on the boundaries map. Rule §4.8 still holds: a withheld feature is never drawn and the key gives its count. The On/Dim/Off controls stay in the open key.
+
+**Not done (later plan steps):** the plan's grouping by family (B / C / M / R / PD / POS) and the single analysis map with one key (plan step 5) replace this component later; the capacity map keeps its own `<details>` key until then. The boundaries map has no "own" row (the key cannot tell which overlay feature holds the parcel without a point-in-polygon pass).
+
+**Numbers** (measured 2026-11-01, local, 1601 N Milwaukee)
+
+| Measure | Before | After | Reproduce |
+|---|---|---|---|
+| Map area covered by the key, desktop, default | ~65% wide × nearly full height | 0 (a 32 px chip) | `plans/2026-11-01_redesign-assets/mapkey-desktop-{closed,open}.png` |
+| Phone, default | "Layers" button | "Key · B3-2 + 25 others" chip | `mapkey-phone-{closed,open}.png` |
+| Phone audit | — | 75 passed, 20 skipped, 5 devices | `npm run test:mobile` |
+| Tests | 7 in `ParcelMap.test.tsx` | 11 (collapsed default, own district first, footer counts, Escape returns focus) | `npx vitest run src/components/scorecard/ParcelMap.test.tsx` |
+| Gates | | vitest 870 passed (80 files), lint 0 errors, build OK | `npx vitest run`, `npm run lint`, `npm run build` |
+
+**Not measured:** the dark theme (both themes share the tokens, not screenshotted); a screen reader pass.

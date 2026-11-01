@@ -488,6 +488,18 @@
         "overlays": "límites de propósito especial",
         "tif": "distritos TIF",
         "ez": "Zonas Empresariales"
+      },
+      "key": "Leyenda",
+      "keyClose": "Cerrar la leyenda",
+      "keyChip_one": "Leyenda · {{first}} y {{count}} más",
+      "keyChip_other": "Leyenda · {{first}} y {{count}} más",
+      "keyChipOnly": "Leyenda · {{first}}",
+      "keyChipEmpty": "Leyenda",
+      "countInView": {
+        "district_one": "{{count}} distrito a la vista",
+        "district_other": "{{count}} distritos a la vista",
+        "feature_one": "{{count}} elemento a la vista",
+        "feature_other": "{{count}} elementos a la vista"
       }
     },
     "crimeCurrent": "Período actual",
