@@ -2287,7 +2287,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 46: a nominal assessment ($1 common area or remnant) is a statement, not a value (2026-11-01)
 
-**Status (2026-11-01): open as a PR, not merged.** A correctness fix from Jack's 2026-10-31 review (item 1): PIN 14-28-319-102-0000 showed "$1 assessed, $0 tax", with a $10 implied market value, beside a $2.0M comps median.
+**Status: merged and deployed 2026-11-01 (#162, `a3b5080`); live API and bundle verified.** A correctness fix from Jack's 2026-10-31 review (item 1): PIN 14-28-319-102-0000 showed "$1 assessed, $0 tax", with a $10 implied market value, beside a $2.0M comps median.
 
 **What the County record says.** The Assessor's certified and Board of Review totals for that PIN are $1 (class 100) every year we hold (2022-2026); the 2024 *mailed* value was $2,142,695. It sits among ten class-100 lots carrying $2,142,695 each and ~456 condo units: a divided development.
 
@@ -2319,3 +2319,27 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Tests | 19 backend (`test_nominal_assessment.py`), 2 vitest (`ScorecardPropertyCard.nominal.test.tsx`); backend 2,590 passed, vitest 869 passed (81 files) | `pytest backend/tests -m "not integration"`, `npx vitest run` |
 
 **Not measured:** the PDF itself (the template change is covered by the resolver test, not a render); the chat answer (rule 40 needs a production-credit run); how many nominal parcels are residential common areas versus commercial remnants.
+
+## Item 47: the Profile's map key is collapsed by default and never covers the map (2026-11-01)
+
+**Status (2026-11-01): open as a PR, not merged.** Jack's 2026-10-31 review, item 2 and second-pass item 3: the zoning key "covers ~80% of the map". On desktop it was always open (`w-[22rem] max-w-[65%]`, nearly full height, no collapse); at 1601 N Milwaukee it listed 26 districts with a count on every row.
+
+**Decision 1: one collapsed chip on every screen size.** "Key · B3-2 + 25 others": the parcel's own district (new `ParcelMap` prop `subjectKey`, the zoning map passes `zone_definition.zone_class`) or the first row, plus how many others. Open, the parcel's district is listed first, bold, marked "This parcel".
+
+**Decision 2: open, the key sits next to the map, never on it.** Desktop: a column beside the map when the map's box is at least 768 px wide (`KEY_BESIDE_MIN_PX`; the 256 px column leaves the map ≥ 2/3), otherwise under the map. The Profile's zoning map sits in a half-width column, so on the Profile it opens under the map; a beside column there left a sliver of map (seen in the first local screenshot). Mapbox is told to `resize()` when the box changes. Phone: a solid sheet over the lower map, held above the Mapbox attribution (bottom-left; the phone audit checks they don't overlap) and below the chip, with a close button; Escape closes it and returns focus to the chip on both. *Alternative:* a key permanently below the map; rejected because it adds height to every Profile for something most visitors don't open.
+
+**Decision 3: counts and withheld lines move to one footer.** "26 districts in view · 2 features not shown"; per source on the boundaries map. Rule §4.8 still holds: a withheld feature is never drawn and the key gives its count. The On/Dim/Off controls stay in the open key.
+
+**Not done (later plan steps):** the plan's grouping by family (B / C / M / R / PD / POS) and the single analysis map with one key (plan step 5) replace this component later; the capacity map keeps its own `<details>` key until then. The boundaries map has no "own" row (the key cannot tell which overlay feature holds the parcel without a point-in-polygon pass).
+
+**Numbers** (measured 2026-11-01, local, 1601 N Milwaukee)
+
+| Measure | Before | After | Reproduce |
+|---|---|---|---|
+| Map area covered by the key, desktop, default | ~65% wide × nearly full height | 0 (a 32 px chip) | `plans/2026-11-01_redesign-assets/mapkey-desktop-{closed,open}.png` |
+| Phone, default | "Layers" button | "Key · B3-2 + 25 others" chip | `mapkey-phone-{closed,open}.png` |
+| Phone audit | — | 75 passed, 20 skipped, 5 devices | `npm run test:mobile` |
+| Tests | 7 in `ParcelMap.test.tsx` | 11 (collapsed default, own district first, footer counts, Escape returns focus) | `npx vitest run src/components/scorecard/ParcelMap.test.tsx` |
+| Gates | | vitest 870 passed (80 files), lint 0 errors, build OK | `npx vitest run`, `npm run lint`, `npm run build` |
+
+**Not measured:** the dark theme (both themes share the tokens, not screenshotted); a screen reader pass.

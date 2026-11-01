@@ -7,7 +7,7 @@
 // lazy mount for below-the-fold variants, and graceful absence — a variant with
 // nothing to draw renders nothing (an empty map is worse than none). Colors are
 // the established functional encodings from lib/mapColors (same as the chat map).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
@@ -38,13 +38,17 @@ import {
   type ParcelMapLayerStates,
 } from "./parcelMapLayers";
 import {
-  ParcelMapControls,
+  ParcelMapKeyChip,
+  ParcelMapKeyPanel,
+  ParcelMapKeySheet,
   type ParcelMapControlSource,
 } from "./ParcelMapControls";
 
 export type { ParcelMapLayers } from "../../lib/parcelMap";
 
 const ACCENT: [number, number, number, number] = [249, 164, 116, 255];
+/** The open key sits beside the map only when the map's box is at least this wide (map keeps ≥ 2/3 of it). */
+const KEY_BESIDE_MIN_PX = 768;
 
 const TIP_STYLE: Record<string, string> = {
   backgroundColor: "#333",
@@ -85,6 +89,8 @@ interface ParcelMapProps {
   className?: string;
   /** Mount GL only when scrolled near the viewport (module maps). */
   lazy?: boolean;
+  /** The key row describing this parcel itself (its zoning class), listed first and marked in the key. */
+  subjectKey?: string | null;
 }
 
 export function ParcelMap(props: ParcelMapProps) {
@@ -139,6 +145,7 @@ function ParcelMapInner({
   layers,
   showTransit,
   parcelConfidence,
+  subjectKey,
 }: ParcelMapProps) {
   const { t } = useTranslation("pages");
   const { resolvedTheme } = useThemeContext();
@@ -153,6 +160,24 @@ function ParcelMapInner({
   });
   const unavailable = unavailableParcelMapSources(variant, layers?.availability);
   const sourceLabel = (source: ParcelMapSource) => t(`scorecard.map.source.${source}`);
+  // The key starts collapsed on every screen size; open, it sits beside the map (desktop) or as a sheet (phone).
+  const [keyOpen, setKeyOpen] = useState(false);
+  const keyButtonRef = useRef<HTMLButtonElement | null>(null);
+  const keyId = useId();
+  // Beside the map only when the map's box can spare the width; a half-width module map gets the key below it.
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const [keyBeside, setKeyBeside] = useState(true);
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => setKeyBeside(entry.contentRect.width >= KEY_BESIDE_MIN_PX));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const closeKey = () => {
+    setKeyOpen(false);
+    keyButtonRef.current?.focus();
+  };
 
   const initialStyle = useMemo(
     () => (variant === "place" ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle),
@@ -282,6 +307,13 @@ function ParcelMapInner({
     const target = satellite ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle;
     map.setStyle(target);
   }, [satellite, themeStyle, mapReady, mapRef]);
+
+  // The desktop key narrows the map's box; tell Mapbox so the canvas follows (no stretched frame).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    map.resize();
+  }, [keyOpen, mapReady, mapRef]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -431,8 +463,13 @@ function ParcelMapInner({
     }
   }
 
+  const hasKey = variant !== "place" && controlSources.length > 0;
   return (
-    <div className="relative w-full h-full min-h-[16rem] rounded-lg overflow-hidden border border-dark-border">
+    <div
+      ref={frameRef}
+      className={`flex w-full h-full min-h-[16rem] rounded-lg overflow-hidden border border-dark-border ${keyBeside ? "flex-row" : "flex-col"}`}
+    >
+    <div className="relative min-w-0 min-h-[16rem] flex-1">
       <div ref={containerRef} className="absolute inset-0" />
       {unavailable.length > 0 && (
         <div
@@ -462,8 +499,18 @@ function ParcelMapInner({
           </button>
         </div>
       )}
-      {variant !== "place" && controlSources.length > 0 && (
-        <ParcelMapControls sources={controlSources} onChange={setLayerState} />
+      {hasKey && (
+        <ParcelMapKeyChip
+          sources={controlSources}
+          subjectKey={subjectKey}
+          open={keyOpen}
+          onToggle={() => setKeyOpen((value) => !value)}
+          controlsIds={`${keyId}-panel ${keyId}-sheet`}
+          buttonRef={keyButtonRef}
+        />
+      )}
+      {hasKey && keyOpen && (
+        <ParcelMapKeySheet id={`${keyId}-sheet`} sources={controlSources} subjectKey={subjectKey} onChange={setLayerState} onClose={closeKey} />
       )}
       {variant === "place" && legend.length > 0 && (
         <div className="absolute top-2 right-2 max-w-[55%] max-h-[calc(100%-1rem)] overflow-y-auto rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5">
@@ -481,6 +528,17 @@ function ParcelMapInner({
           ))}
         </div>
       )}
+    </div>
+    {hasKey && keyOpen && (
+      <ParcelMapKeyPanel
+        id={`${keyId}-panel`}
+        sources={controlSources}
+        subjectKey={subjectKey}
+        onChange={setLayerState}
+        onClose={closeKey}
+        placement={keyBeside ? "side" : "below"}
+      />
+    )}
     </div>
   );
 }
