@@ -452,6 +452,11 @@ class PropertySummary(BaseModel):
     air_conditioning: str | None = None
     tax_exempt: bool = False
     total_assessed_value: float | None = None
+    # A token assessment (under $100, or a >99% drop from a prior real value): a common area or the remnant
+    # of a divided lot, not a valuation. total_assessed_value, implied_market_value, estimated_annual_tax and
+    # effective_tax_rate are then None and the County's number is kept here, never shown as a figure.
+    nominal_assessment: bool = False
+    nominal_assessed_value: float | None = None
     estimated_annual_tax: float | None = None
     # True when estimated_annual_tax was derived from assessed value via a
     # documented effective-rate fallback (ptaxsim bill unavailable), not a

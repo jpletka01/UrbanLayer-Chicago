@@ -2240,7 +2240,8 @@ def _resolve_market_value_and_tax(
     rate). Mutates `prop` (estimated_annual_tax / total_assessed_value /
     tax_estimate_is_fallback) for downstream rendering.
     """
-    if not prop or prop.tax_exempt:
+    if not prop or prop.tax_exempt or getattr(prop, "nominal_assessment", False):
+        # A nominal assessment has no value to recover from history (its rows are the same token amount).
         return None, None, None
     assessed = prop.total_assessed_value
     annual_tax = prop.estimated_annual_tax

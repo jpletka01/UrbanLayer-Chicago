@@ -91,7 +91,7 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
           The chart falls back to nothing on <2 years of data; the record
           tables below still carry everything. */}
       <div className="grid lg:grid-cols-3 gap-x-10 gap-y-8 lg:items-start">
-        {data.assessment_history.length >= 2 && (
+        {data.assessment_history.length >= 2 && !data.nominal_assessment && (
           <div className="lg:col-span-2 min-w-0">
             <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
               {t("property.assessmentHistory")}
@@ -106,6 +106,15 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
         {/* Tax detail */}
         <SubSection icon={TaxIcon} title={t("property.taxDetail")}>
           <div className="space-y-4">
+            {data.nominal_assessment && (
+              <div data-testid="nominal-assessment">
+                <div className="text-caption text-text-muted">{t("property.assessedValue")}</div>
+                <div className="text-body font-medium text-text-primary">
+                  {t("property.nominal.value")} <span className="text-text-secondary font-normal">· {t("property.nominal.short")}</span>
+                </div>
+                <p className="text-caption text-text-secondary mt-1">{t("property.nominal.note")}</p>
+              </div>
+            )}
             {(assessed != null || tax != null) && (
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 {assessed != null && (
@@ -185,7 +194,10 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                       {r.reduction_pct != null ? (
                         <span className="text-state-positive">
                           {t("property.appeals.won", {
-                            before: fmtDollar(r.before_total), after: fmtDollar(r.after_total),
+                            before: fmtDollar(r.before_total),
+                            // A reduction to the token amount reads as the state, not as "$1" (Item 46).
+                            after: data.nominal_assessment && r.after_total != null && r.after_total < 100
+                              ? t("property.nominal.value") : fmtDollar(r.after_total),
                             pct: r.reduction_pct,
                           })}
                         </span>
@@ -386,7 +398,7 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             />
           </div>
         )}
-        {data.assessment_history.length > 0 && (
+        {data.assessment_history.length > 0 && !data.nominal_assessment && (
           <div className="min-w-0">
             <ShowMore
               items={[...data.assessment_history].sort((a, b) => (b.year ?? 0) - (a.year ?? 0))}

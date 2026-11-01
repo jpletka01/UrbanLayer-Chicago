@@ -1021,6 +1021,7 @@ a.glossary-link {
     {% if prop.air_conditioning %}<dt>{{ t("prop.ac") }}</dt><dd>{{ prop.air_conditioning }}</dd>{% endif %}
     {% if prop.tax_exempt %}<dt>{{ t("prop.tax_status") }}</dt><dd><strong>{{ t("prop.tax_exempt_value") }}</strong>{{ t("prop.tax_exempt_class") }}{% if prop.bldg_class %} — {{ prop.bldg_class }}{% endif %}</dd>{% endif %}
     {% if not prop.tax_exempt %}
+    {% if prop.nominal_assessment %}<dt>{{ t("prop.assessed_value") }}</dt><dd><strong>{{ t("prop.nominal_value") }}</strong></dd>{% endif %}
     {% if prop.total_assessed_value %}<dt>{{ t("prop.assessed_value") }}</dt><dd>{{ prop.total_assessed_value|fcur }}</dd>{% endif %}
     {% if report.market_value %}<dt>{{ t("prop.market_value") }}</dt><dd>{{ report.market_value|fcur }} <span style="font-size: 7pt; color: #888;">{{ t("prop.market_value_hint", level="%d%%"|format(((report.assessment_level or 0.10) * 100)|round)) }}</span></dd>{% endif %}
     {% if prop.estimated_annual_tax %}<dt>{{ t("prop.annual_tax") }}{% if prop.tax_year %} ({{ prop.tax_year }}){% endif %}</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">{{ t("prop.tax_fallback_hint") }}</span>{% endif %}</dd>{% endif %}
@@ -1029,6 +1030,9 @@ a.glossary-link {
   </dl>
   {% if prop.tax_exempt %}
   <p class="section-note">{{ t("prop.tax_exempt_note") }}</p>
+  {% endif %}
+  {% if prop.nominal_assessment %}
+  <p class="section-note">{{ t("prop.nominal_note") }}</p>
   {% endif %}
 
   <h3>{{ t("prop.parcel_geometry") }}</h3>
@@ -1055,7 +1059,7 @@ a.glossary-link {
   <p style="font-size: 9pt;"><strong>{{ t("prop.tax_incentive_class") }}</strong> {{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</p>
   {% endif %}
 
-  {% if prop.assessment_history and not prop.tax_exempt %}
+  {% if prop.assessment_history and not prop.tax_exempt and not prop.nominal_assessment %}
   <h3>{{ t("prop.assessment_history") }}</h3>
   <table>
     <thead><tr><th>{{ t("prop.th_year") }}</th><th class="num">{{ t("prop.th_land") }}</th><th class="num">{{ t("prop.th_building") }}</th><th class="num">{{ t("prop.th_total") }}</th></tr></thead>
