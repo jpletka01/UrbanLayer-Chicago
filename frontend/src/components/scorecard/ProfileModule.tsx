@@ -8,14 +8,50 @@ import { useTranslation } from "react-i18next";
 /** Top-level dashboard band: title + optional takeaway + right-side action.
     The takeaway is parcel-specific computed insight ("the so-what"), NOT
     definitional copy — definitions live in tooltips (2026-07-07 rule). */
-export function ProfileModule({ id, title, takeaway, action, children }: {
+export function ProfileModule({ id, title, takeaway, action, children, open, onToggle, sources }: {
   id?: string;
   title: string;
   takeaway?: string | null;
   /** Right-aligned quiet action (the module's single "Ask" affordance). */
   action?: ReactNode;
   children: ReactNode;
+  /** Collapsible (redesign, decision Item 51): closed, the module is ONE line, its title and the takeaway
+      as a summary; open, the full detail. Without onToggle the module is always open (old behavior). */
+  open?: boolean;
+  onToggle?: () => void;
+  /** The section's Sources button, shown in the open module's header row. */
+  sources?: ReactNode;
 }) {
+  if (onToggle) {
+    return (
+      <section id={id} data-module-open={open ? "true" : "false"} className="scroll-mt-28 rounded-bento border border-dark-border bg-dark-surface shadow-card mt-4 first:mt-0">
+        <button
+          type="button"
+          aria-expanded={!!open}
+          aria-controls={id ? `${id}-body` : undefined}
+          onClick={onToggle}
+          className="flex w-full items-center gap-4 rounded-bento px-5 py-4 text-left cursor-pointer transition-colors hover:bg-dark-hover/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:px-7"
+        >
+          <span className="min-w-0 flex-1">
+            <h3 className="text-subtitle text-text-primary">{title}</h3>
+            {takeaway && <p className={`mt-0.5 text-caption text-text-secondary ${open ? "" : "truncate"}`}>{takeaway}</p>}
+          </span>
+          <span aria-hidden className={`shrink-0 text-text-muted transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+        </button>
+        {open && (
+          <div id={id ? `${id}-body` : undefined} className="px-5 pb-6 md:px-7 md:pb-7">
+            {(action || sources) && (
+              <div className="mb-5 flex flex-wrap items-center justify-end gap-3">
+                {sources}
+                {action}
+              </div>
+            )}
+            {children}
+          </div>
+        )}
+      </section>
+    );
+  }
   return (
     <section id={id} className="scroll-mt-28 rounded-bento border border-dark-border bg-dark-surface shadow-card p-5 md:p-7 mt-6 first:mt-0">
       <div className="flex items-start justify-between gap-4 mb-5">

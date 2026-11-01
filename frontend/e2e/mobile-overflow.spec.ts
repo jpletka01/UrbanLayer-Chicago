@@ -292,6 +292,16 @@ for (const pageDef of PAGES) {
 
     const topAudit = await auditOverflow(page);
 
+    // The Profile's sections start collapsed (decision Item 51): open every one so the audit below
+    // covers everything that can render, as before the redesign.
+    if (pageDef.id === "scorecard") {
+      const closed = page.locator('[data-module-open="false"] > button[aria-expanded="false"]');
+      while (await closed.count()) {
+        await closed.first().click();
+        await page.waitForTimeout(150);
+      }
+    }
+
     // Sticky strips and lazy sections can introduce overflow further down.
     // Scroll in viewport steps (not one jump) so IntersectionObserver-driven
     // content (whileInView sections, CountUp) actually mounts/animates — an

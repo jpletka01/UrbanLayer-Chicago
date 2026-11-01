@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ScorecardZoningCard } from "./ScorecardZoningCard";
 import type { ZoneDefinition } from "../../lib/api";
 import type { UnitYield } from "../../lib/types";
@@ -75,6 +75,8 @@ describe("ScorecardZoningCard — the binding number (F3)", () => {
         codeVintage={{ current_through: "2026-03-18", label: "Council Journal of March 18, 2026" }}
       />,
     );
+    // the dates sit behind ⏱ (decision Item 51); the stamps themselves are unchanged
+    fireEvent.click(screen.getByRole("button", { name: "Dates" }));
     const stamps = screen.getByTestId("freshness-stamps");
     expect(stamps.textContent).toContain("Zoning record last updated");
     expect(stamps.textContent).toContain("2021-10-27");

@@ -98,9 +98,12 @@ describe("ScorecardZoningCard — a standard links to its source", () => {
 
   it("the stamp carries the count of later amendments, and says nothing when the check is stale", () => {
     const { unmount } = render(<ScorecardZoningCard def={rm45} codeVintage={{ current_through: "2026-06-17", label: "x" }} codeCurrency={currency()} />);
+    // the dates open behind ⏱ (decision Item 51)
+    fireEvent.click(screen.getByRole("button", { name: "Dates" }));
     expect(screen.getByTestId("later-amendments").textContent).toContain("3 later amendments");
     unmount();
     render(<ScorecardZoningCard def={rm45} codeVintage={{ current_through: "2026-06-17", label: "x" }} codeCurrency={currency({ check_state: "unknown", since: null })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dates" }));
     expect(screen.queryByTestId("later-amendments")).toBeNull();
   });
 });

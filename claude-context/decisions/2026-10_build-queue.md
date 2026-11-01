@@ -2408,3 +2408,31 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 - **Checks:** grayscale and blur screenshots, before and after (`check-{before,after}-milwaukee-{grayscale,blur}.png`).
 
 **Not measured:** real users (the Top Tasks vote and 5-user tests need contacts Jack doesn't have); the dark theme screenshots; a screen-reader pass; the Spanish layout (longer strings).
+
+## Item 51: sections collapse to one line, provenance moves to Sources sheets, and a ratcheting page budget (2026-11-01)
+
+**Status (2026-11-01): open as a PR, not merged; stacked on Item 50.** Step 4 of the approved redesign (plan §4 principles 2, 3, 10; §6a L2-L3).
+
+**Decision 1: sections start collapsed (Q3).** `ProfileModule` gains `open`/`onToggle`: closed, a section is one button, its title and its existing takeaway sentence truncated to one line, with ▾; open, the full detail with its Ask chip and a Sources button. Reverses July's "nothing hides behind a closed toggle", which was made at a third of today's content. Every jump (a panel's "Details", the sticky band, a verdict link) opens its section and scrolls once it has rendered (`MODULE_OF_CARD`). A new parcel starts collapsed again. Lazy maps inside a closed section never mount. *Alternative:* single-open accordions; kept for phones in the next step (plan step 6), since desktop readers compare sections.
+
+**Decision 2: provenance in one place per section, and one page sheet.** `SourcesButton`/`SourcesSheet`: a dialog listing each figure's five fields from the backend's `provenance` map (`sourceBullets`), with its ConfidenceState; sections take their facts by id prefix (`factsFor`). The footer's "Sources & coverage" opens the page sheet: every entry, the dated source list (moved out of the footer) and the "What this page doesn't cover" notes (moved out of the Zoning card, plan §6c). A dialog rather than a nested disclosure keeps the two-level rule. The Zoning card's "record last updated / code current through" stamps move behind ⏱ "Dates" (Jack's item 6 inside the modules). The footer keeps its visible "Checked <date>".
+
+**Decision 3: the page has an owner: a ratcheting Playwright budget.** `e2e/profile-budget.spec.ts` + `e2e/profile-budget.baseline.json`: on the four reference parcels, desktop 1440×900 and phone 390×844, the first screen's words, amber items and solid-orange elements, the default page height in desktop screens, no heading twice, no figure with two confidence states. A count above its baseline fails; a baseline above the hard caps (120/90 words, 3 amber, 1 orange, 4 screens) fails; `BUDGET_UPDATE=1` lowers entries and never raises one, so raising a budget is a reviewed hand edit. Verified: lowering Milwaukee's word baseline to 100 makes it fail with "118 is above its baseline 100". **Where it runs:** part of `npm run test:mobile` (it runs once, in the "Pixel 3" project), not a CI job: CI has no backend or live data to render a Profile, and the overflow audit already lives there. It is part of the definition of done for any Profile PR. *Alternative:* a CI job against production after deploy; rejected for now because it would gate merges on the live site's state.
+
+**Not done here (recorded):** the caveat triage inside the open sections (the Upcoming and Pending disclaimers, per-block "Checked" lines, rent method lines) is unchanged; they are one click down now, but still paragraphs. The capacity map and the what-if keep their own blocks until the single analysis map (plan step 5). Phones keep multi-open sections until plan step 6.
+
+**Numbers** (measured 2026-11-01, local, live data; the budget spec's own output)
+
+| Parcel | Desktop words / amber / orange / page screens | Phone words / amber / orange |
+|---|---|---|
+| 2541 N Spaulding | 107 / 0 / 1 / 1.6 | 71 / 0 / 1 |
+| 1601 N Milwaukee | 118 / 3 / 1 / 1.7 | 71 / 3 / 1 |
+| 233 S Wacker | 105 / 0 / 1 / 1.7 | 69 / 0 / 1 |
+| PIN 14-28-319-102-0000 | 93 / 3 / 1 / 1.6 | 69 / 3 / 1 |
+
+- **All four parcels are within every cap** on the whole first screen, on both views.
+- **Default page height:** 1.6-1.7 desktop screens, from 9.1-11.4 measured by the case study (§1a).
+- **Checks:** no duplicate headings; no figure with two states.
+- **Tests:** vitest 903 passed; three existing tests now open the ⏱ "Dates" toggletip before asserting the same stamps. `npm run test:mobile` 79 passed / 36 skipped; the overflow audit now opens every Profile section before its scroll, so it still covers everything that can render.
+
+**Not measured:** the whole page's word count with every section open (the plan's "~3,000 words" is unchanged when expanded: nothing was deleted); dark theme; a screen reader.

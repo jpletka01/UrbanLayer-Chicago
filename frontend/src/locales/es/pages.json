@@ -196,7 +196,8 @@
       "passedNotOnMap": "El Concejo aprobó el {{date}} ({{record}}) una rezonificación que incluye esta dirección. El mapa de la Ciudad, de donde proviene el distrito de esta página, aún no se ha actualizado, por lo que las normas de abajo corresponden al distrito que el mapa todavía muestra.",
       "passedDistrict": "La ordenanza lo cambia de {{from}} a {{to}} (leído por IA a partir de la ordenanza escaneada; verifique el PDF).",
       "unitYield606Applied": "En el distrito de Predominio de la Cuadra (606): un edificio de dos unidades con 1,500 pies² de lote por unidad eleva esto de {{base}} a {{units}} (§17-2-0303-B.1).",
-      "unitYield606Unchecked": "No pudimos revisar si esta parcela está en el distrito de Predominio de la Cuadra (606). Ahí, RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1)."
+      "unitYield606Unchecked": "No pudimos revisar si esta parcela está en el distrito de Predominio de la Cuadra (606). Ahí, RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1).",
+      "datesLabel": "Fechas"
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",
@@ -747,6 +748,15 @@
       "noneFoundDetail": "Revisamos para esta parcela los mapas de la Ciudad de monumentos, distritos históricos, Desarrollos Planificados y Protección del Lago, y el mapa de inundación de FEMA. Ninguno aplica.",
       "more": "Detalles",
       "marketLine": "Valor de mercado ≈ {{value}} (nuestro cálculo: valor de avalúo ÷ el nivel de avalúo de la clase)"
+    },
+    "sources": {
+      "button": "Fuentes",
+      "open": "Abrir la fuente",
+      "pageTitle": "Fuentes y cobertura",
+      "pageButton": "Fuentes y cobertura",
+      "sectionTitle": "Fuentes: {{section}}",
+      "dates": "Fechas de los datos",
+      "coverage": "Lo que esta página no cubre"
     }
   },
   "discovery": {

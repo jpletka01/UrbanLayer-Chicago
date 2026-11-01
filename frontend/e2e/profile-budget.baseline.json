@@ -1,0 +1,46 @@
+{
+  "twoflat/desktop": {
+    "words": 107,
+    "amber": 0,
+    "orange": 1,
+    "screens": 1.6
+  },
+  "twoflat/phone": {
+    "words": 71,
+    "amber": 0,
+    "orange": 1
+  },
+  "milwaukee/desktop": {
+    "words": 118,
+    "amber": 3,
+    "orange": 1,
+    "screens": 1.7
+  },
+  "milwaukee/phone": {
+    "words": 71,
+    "amber": 3,
+    "orange": 1
+  },
+  "downtown/desktop": {
+    "words": 105,
+    "amber": 0,
+    "orange": 1,
+    "screens": 1.7
+  },
+  "downtown/phone": {
+    "words": 69,
+    "amber": 0,
+    "orange": 1
+  },
+  "pin1/desktop": {
+    "words": 93,
+    "amber": 3,
+    "orange": 1,
+    "screens": 1.6
+  },
+  "pin1/phone": {
+    "words": 69,
+    "amber": 3,
+    "orange": 1
+  }
+}

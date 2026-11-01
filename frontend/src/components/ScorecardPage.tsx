@@ -22,6 +22,8 @@ import { ScorecardEnvironmentCard } from "./scorecard/ScorecardEnvironmentCard";
 import { ProfileModule, SubSection } from "./scorecard/ProfileModule";
 import type { KpiTile } from "./scorecard/KpiStrip";
 import { AnswerPanels, type PanelFigure, type PanelRow } from "./scorecard/AnswerPanels";
+import { SourcesButton } from "./scorecard/SourcesSheet";
+import { CoverageNotes } from "./scorecard/CoverageNotes";
 import { ProfileHeader } from "./scorecard/ProfileHeader";
 import { SectionBand } from "./scorecard/SectionBand";
 import { Button } from "./ui/Button";
@@ -334,6 +336,11 @@ function ScorecardSkeleton({ address }: { address: string }) {
 
 // Dashboard section registry — nav labels + presence drive the sticky rail.
 const MODULE_IDS = ["module-build", "module-economics", "module-market", "module-record", "module-area"] as const;
+// Which section holds each card a first-screen link points at.
+const MODULE_OF_CARD: Record<string, (typeof MODULE_IDS)[number]> = {
+  zoning: "module-build", regulatory: "module-build", incentives: "module-economics", property: "module-economics",
+  comparables: "module-market", violations: "module-record",
+};
 type ModuleId = (typeof MODULE_IDS)[number];
 
 export default function ScorecardPage() {
@@ -839,8 +846,23 @@ export default function ScorecardPage() {
     }
   }
 
+  // Sections start collapsed (Q3, decision Item 51); a jump opens its section first, then scrolls once it
+  // has rendered. A new parcel starts collapsed again.
+  const [openModules, setOpenModules] = useState<Set<ModuleId>>(() => new Set());
+  useEffect(() => { setOpenModules(new Set()); }, [data]);
+  const toggleModule = (id: ModuleId) => setOpenModules((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const openThenScroll = (moduleId: ModuleId, elementId: string) => {
+    setOpenModules((prev) => (prev.has(moduleId) ? prev : new Set(prev).add(moduleId)));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      (document.getElementById(elementId) ?? document.getElementById(moduleId))?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+  };
   const scrollToCard = (anchor: CardId | string) => {
-    document.getElementById(`scorecard-card-${anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    openThenScroll(MODULE_OF_CARD[anchor] ?? "module-build", `scorecard-card-${anchor}`);
   };
 
   // Module presence — drives both rendering and the sticky section rail.
@@ -888,9 +910,7 @@ export default function ScorecardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, navSections.join(",")]);
 
-  const jumpToModule = (id: ModuleId) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const jumpToModule = (id: ModuleId) => openThenScroll(id, id);
 
   // Quick-chat dock: every on-page ask (module ask chips, verdict next-step,
   // the header ask button) opens/sends in the dock instead of navigating away.
@@ -1126,6 +1146,9 @@ export default function ScorecardPage() {
                 {hasBuild && (
                   <ProfileModule
                     id="module-build"
+                    open={openModules.has("module-build")}
+                    onToggle={() => toggleModule("module-build")}
+                    sources={<SourcesButton scope="build" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.build") })} />}
                     title={t("scorecard.sections.capacityTitle")}
                     takeaway={takeaways.build}
                     action={moduleAsk("build", "scorecard.ask.build", zdef
@@ -1208,6 +1231,9 @@ export default function ScorecardPage() {
                 {hasEconomics && (
                   <ProfileModule
                     id="module-economics"
+                    open={openModules.has("module-economics")}
+                    onToggle={() => toggleModule("module-economics")}
+                    sources={<SourcesButton scope="economics" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.economics") })} />}
                     title={t("scorecard.sections.economicsTitle")}
                     takeaway={takeaways.costs}
                     action={moduleAsk("economics", "scorecard.ask.costs", `Tell me about the building, taxes, and assessment history at ${addr}`)}
@@ -1232,6 +1258,9 @@ export default function ScorecardPage() {
                 {hasMarket && (
                   <ProfileModule
                     id="module-market"
+                    open={openModules.has("module-market")}
+                    onToggle={() => toggleModule("module-market")}
+                    sources={<SourcesButton scope="market" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.market") })} />}
                     title={t("scorecard.sections.marketTitle")}
                     takeaway={takeaways.market}
                     action={moduleAsk("market", "scorecard.ask.market", `What are the recent comparable sales near ${addr} and what do they suggest about property values?`)}
@@ -1249,6 +1278,9 @@ export default function ScorecardPage() {
                 {hasRecord && (
                   <ProfileModule
                     id="module-record"
+                    open={openModules.has("module-record")}
+                    onToggle={() => toggleModule("module-record")}
+                    sources={<SourcesButton scope="record" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.record") })} />}
                     title={t("scorecard.sections.riskTitle")}
                     takeaway={takeaways.record}
                     action={ctx.violations && ctx.violations.total > 0
@@ -1288,6 +1320,9 @@ export default function ScorecardPage() {
                 {modulePresence["module-area"] && (
                   <ProfileModule
                     id="module-area"
+                    open={openModules.has("module-area")}
+                    onToggle={() => toggleModule("module-area")}
+                    sources={<SourcesButton scope="area" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.area") })} />}
                     title={t("scorecard.neighborhoodContext.title")}
                     takeaway={data.community_area_name
                       ? t("scorecard.neighborhoodContext.scope", { area: data.community_area_name })
@@ -1316,11 +1351,23 @@ export default function ScorecardPage() {
                       </span>
                     )}
                   </div>
-                  {data.data_dates && data.data_dates.length > 0 && (
-                    <p className="text-micro text-text-muted leading-relaxed" data-testid="data-dates">
-                      {data.data_dates.map((d) => dataDatePhrase(d, tc)).join(" · ")}
-                    </p>
-                  )}
+                  <SourcesButton
+                    scope="all"
+                    provenance={data.provenance}
+                    title={t("scorecard.sources.pageTitle")}
+                    label={t("scorecard.sources.pageButton")}
+                    extra={<>
+                      {data.data_dates && data.data_dates.length > 0 && (
+                        <div>
+                          <h4 className="text-title text-text-primary mb-1">{t("scorecard.sources.dates")}</h4>
+                          <p className="leading-relaxed" data-testid="data-dates">
+                            {data.data_dates.map((d) => dataDatePhrase(d, tc)).join(" · ")}
+                          </p>
+                        </div>
+                      )}
+                      <CoverageNotes notes={ctx.coverage_notes ?? null} codeCurrency={ctx.code_currency ?? null} />
+                    </>}
+                  />
                   {verdict && <VerdictMethodology verdict={verdict} />}
                 </div>
               </div>
