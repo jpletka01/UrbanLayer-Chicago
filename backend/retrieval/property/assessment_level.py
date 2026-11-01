@@ -35,6 +35,32 @@ def assessment_level_for_class(bldg_class: str | None) -> float | None:
     return _LEVEL_BY_PREFIX.get(code[0])
 
 
+# A nominal assessment is a placeholder, not a valuation: the County carries common areas and remnants of
+# divided lots at a token amount (Illinois lists a qualifying subdivision common area at $1 a year and
+# counts its value in the lots that share it, 35 ILCS 200/10-35). 2,533 of the 882,328 indexed parcels sit
+# at $1-$99 (2026-11-01, decision Item 46). Market value, tax and $/ft² divided out of such a number are
+# meaningless, so every surface states the fact instead of showing the figure.
+NOMINAL_ASSESSED_BELOW = 100.0
+# A real prior value that fell more than 99% is the same placeholder arriving mid-history.
+NOMINAL_DROP_SHARE = 0.01
+NOMINAL_PRIOR_MIN = 10_000.0
+
+
+def is_nominal_assessment(
+    total: float | None, bldg_class: str | None = None, *, prior_total: float | None = None
+) -> bool:
+    """True when ``total`` is a token assessment rather than a value: under $100, or under 1% of a prior
+    real total (≥ $10,000). Exempt (EX) and railroad (RR) classes have their own states and never qualify."""
+    if total is None:
+        return False
+    code = str(bldg_class or "").strip().upper()
+    if code.startswith(("EX", "RR")):
+        return False
+    if total < NOMINAL_ASSESSED_BELOW:
+        return True
+    return bool(prior_total and prior_total >= NOMINAL_PRIOR_MIN and total < prior_total * NOMINAL_DROP_SHARE)
+
+
 # The Profile's "class norm" effective tax rate = CLASS_NORM_RATE_PER_LEVEL x the class's assessment level
 # (frontend ScorecardPage.tsx holds the same constant; a test pins them together). It is the Chicago
 # composite rate (the most common one, 6.995%) times the state equalizer (3.0163), both for tax year 2023,

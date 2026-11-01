@@ -257,7 +257,8 @@
         "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date.",
         "zoningUnchecked": "The City's zoning map didn't answer today, so this read can't say what district the parcel is in or what that district allows.",
         "floodUnchecked": "The FEMA flood zone couldn't be checked today (FEMA's flood map didn't answer), so this verdict can't rule out a floodplain constraint.",
-        "landmarkDesignationPassed": "A Chicago Landmark designation listing this address passed {{date}} and the City's map doesn't show it for this parcel — a Commission on Chicago Landmarks review may apply that this read can't rule out."
+        "landmarkDesignationPassed": "A Chicago Landmark designation listing this address passed {{date}} and the City's map doesn't show it for this parcel — a Commission on Chicago Landmarks review may apply that this read can't rule out.",
+        "nominal": "The County carries this parcel at a nominal assessment (often a shared common area or the remainder of a divided lot), so no value or tax is shown."
       },
       "next": {
         "strong": {
@@ -402,7 +403,9 @@
       "taxRate": "{{rate}}% effective",
       "assessedFlat": "flat since {{year}}",
       "mvBenchmark": "Mkt ≈ ${{psf}}/ft² land · area median ${{median}}/ft²",
-      "taxNorm": "class norm ≈{{norm}}%"
+      "taxNorm": "class norm ≈{{norm}}%",
+      "nominalValue": "Nominal",
+      "nominalSub": "Not a market value"
     },
     "sections": {
       "capacityTitle": "What you can build",
@@ -512,7 +515,8 @@
       "rentArea": "Median monthly gross rent (rent plus utilities) of the community area's renter households, summed from Census rent brackets for each tract in the area. A survey estimate, not a count; there is no area figure by bedroom count.",
       "rentTract": "Median monthly gross rent (rent plus utilities) of renter households in this census tract, as the Census Bureau publishes it. A survey estimate with a margin of error.",
       "rentAssessor": "The Assessor's model of what apartments in this community area earn: potential gross income per unit per month, before vacancy, taken from its valuation of buildings with 7 or more units in the latest city-wide reassessment. A model, not a rent anyone asked or paid, and not comparable with the Census figures. There is no figure by bedroom count.",
-      "rentBedroom": "Median monthly gross rent for units this size, as the Census Bureau publishes it for this census tract. Where the tract's figure is missing or too uncertain, the PUMA's is shown: a larger statistical area of several neighborhoods."
+      "rentBedroom": "Median monthly gross rent for units this size, as the Census Bureau publishes it for this census tract. Where the tract's figure is missing or too uncertain, the PUMA's is shown: a larger statistical area of several neighborhoods.",
+      "nominalTile": "The County assesses this parcel at a nominal amount, not a market value. Parcels like this are usually a development's shared common area or the remainder of a divided lot. Under Illinois law (35 ILCS 200/10-35), a qualifying common area is listed at $1 a year and its value is counted in the assessments of the lots that share it; we have not confirmed that this parcel qualifies."
     },
     "walkDesc": {
       "walker_s_paradise": "Walker's Paradise",

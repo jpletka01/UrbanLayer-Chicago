@@ -30,7 +30,7 @@ import time
 from datetime import datetime, timezone
 
 from backend.config import get_settings
-from backend.retrieval.property.assessment_level import assessment_level_for_class
+from backend.retrieval.property.assessment_level import assessment_level_for_class, is_nominal_assessment
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +83,8 @@ def _scan_index(path: str) -> dict[int, dict]:
             a["n"] += 1
             av = attrs.get("total_assessed_value")
             land = attrs.get("land_sqft")
-            if isinstance(av, (int, float)) and av > 0:
+            # A $1 common area or remnant is a placeholder, not a value: it would drag the median down.
+            if isinstance(av, (int, float)) and av > 0 and not is_nominal_assessment(float(av), attrs.get("class")):
                 a["av"].append(float(av))
                 level = assessment_level_for_class(attrs.get("class"))
                 if level and isinstance(land, (int, float)) and land > 0:

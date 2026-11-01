@@ -120,6 +120,11 @@
       "class": "Código de clase del Condado de Cook — fija el nivel de tasación e indica el uso (1xx baldío, 2xx residencial, 5xx comercial).",
       "assessorPermits": "Permisos que el Tasador del Condado de Cook tiene registrados para este PIN. Distinto del feed de permisos de la ciudad: está vinculado a la parcela y registra un costo declarado y si el tasador considera que el trabajo es evaluable, es decir, capaz de cambiar la tasación y por tanto el impuesto.",
       "appeals": "Apelaciones de tasación de esta parcela (etapas del Tasador y la Junta de Revisión) y cómo les va a las apelaciones en esta cuadra — señal de si apelar aquí funciona."
+    },
+    "nominal": {
+      "value": "Nominal",
+      "short": "No es un valor de mercado",
+      "note": "El Condado avalúa esta parcela con un monto nominal, no con un valor de mercado. Las parcelas así suelen ser el área común de un desarrollo o el remanente de un terreno subdividido. Conforme a la ley de Illinois (35 ILCS 200/10-35), un área común que califica se registra en $1 al año y su valor se cuenta en el avalúo de los lotes que la comparten; no hemos confirmado que esta parcela califique."
     }
   },
   "regulatory": {

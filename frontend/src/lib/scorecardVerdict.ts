@@ -322,6 +322,8 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   if (complexSqft)
     caveats.push(t("scorecard.verdict.caveat.complexBldg", { n: data.context?.property?.complex_member_pins?.length ?? 0, sqft: complexSqft.toLocaleString() }));
   if (data.zone_definition?.is_fallback) caveats.push(t("scorecard.verdict.caveat.fallbackZone"));
+  // A $1 common area or remnant is often not a buildable lot on its own (Item 46).
+  if (data.context?.property?.nominal_assessment) caveats.push(t("scorecard.verdict.caveat.nominal"));
   // A friction overlay the City map couldn't answer for is unknown, not clear: the
   // verdict can't read clean while landmark / PD / district review is unruled-out.
   const reg = data.context?.regulatory ?? null;

@@ -591,6 +591,16 @@ export default function ScorecardPage() {
         caption: showBench ? <ConfidenceCaption entry={benchEntry} size="micro" omit={["scope"]} /> : undefined,
       });
     }
+    if (ctx.property?.nominal_assessment) {
+      // A token assessment is a statement, not a figure: no amount, no market value, no tax (Item 46).
+      tiles.push({
+        anchor: "property",
+        label: t("scorecard.tiles.assessed"),
+        value: t("scorecard.tiles.nominalValue"),
+        tip: t("scorecard.tips.nominalTile"),
+        sub: t("scorecard.tiles.nominalSub"),
+      });
+    }
     if (estTax != null) {
       const rate = ctx.property?.effective_tax_rate;
       const level = ctx.property?.assessment_level;
