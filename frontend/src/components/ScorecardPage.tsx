@@ -849,7 +849,12 @@ export default function ScorecardPage() {
   // Sections start collapsed (Q3, decision Item 51); a jump opens its section first, then scrolls once it
   // has rendered. A new parcel starts collapsed again.
   const [openModules, setOpenModules] = useState<Set<ModuleId>>(() => new Set());
-  useEffect(() => { setOpenModules(new Set()); }, [data]);
+  // Adjusted during render (React's pattern for resetting state on a prop change), not in an effect.
+  const [modulesFor, setModulesFor] = useState(data);
+  if (modulesFor !== data) {
+    setModulesFor(data);
+    setOpenModules(new Set());
+  }
   const toggleModule = (id: ModuleId) => setOpenModules((prev) => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
