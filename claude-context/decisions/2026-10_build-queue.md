@@ -2263,7 +2263,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 45: the what-if card stacked 7-13 times on every Profile (duplicate sibling keys), and a guard for the whole class (2026-10-31)
 
-**Status (2026-10-31): open as a PR, not merged.** A bug fix; no design change.
+**Status: merged and deployed 2026-10-31 (#161, `87c9fca`); the live Profile showed one what-if card after the deploy.** A bug fix; no design change.
 
 **What happened.** #156 (Item 41) keyed `CapacityMap` and #158 (Item 43) keyed `WhatIfCard` with the same expression, `key={data.resolved_pin ?? data.address}`, as siblings in the Profile's Build module. React cannot tell same-keyed siblings apart. The Profile re-renders as you scroll (scroll-spy and the condensed-verdict band), and each re-render added another what-if card. Found by the redesign case study (`plans/2026-11-01_profile-discovery-redesign-plan.md` §0) after Jack's 2026-10-31 review named "all of these what-if questions". Each card's own vitest renders it alone, and the live sweep does not scroll, so nothing saw it.
 
@@ -2284,6 +2284,65 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Gates | vitest 867 passed (80 files); lint 0 errors; build OK; phone suite Profile 5 of 5 devices | `npx vitest run`, `npm run lint`, `npm run build`, `-g scorecard` |
 
 **Not measured:** the live Profile after deploy (checked after merge); whether other pages re-render enough to show a duplicate if one is ever added (the guard makes that moot).
+
+## Item 46: a nominal assessment ($1 common area or remnant) is a statement, not a value (2026-11-01)
+
+**Status: merged and deployed 2026-11-01 (#162, `a3b5080`); live API and bundle verified.** A correctness fix from Jack's 2026-10-31 review (item 1): PIN 14-28-319-102-0000 showed "$1 assessed, $0 tax", with a $10 implied market value, beside a $2.0M comps median.
+
+**What the County record says.** The Assessor's certified and Board of Review totals for that PIN are $1 (class 100) every year we hold (2022-2026); the 2024 *mailed* value was $2,142,695. It sits among ten class-100 lots carrying $2,142,695 each and ~456 condo units: a divided development.
+
+**Decision 1: a nominal state, decided once on the server.** `assessment_level.is_nominal_assessment(total, class, prior_total=)` is true when the total is under $100, or under 1% of the prior year's real total (≥ $10,000). Exempt (EX) and railroad (RR) classes have their own states and never qualify. `property._build_summary` then sets `nominal_assessment`, keeps the County's number in `nominal_assessed_value`, and sets `total_assessed_value`, `implied_market_value`, `estimated_annual_tax`, `effective_tax_rate` and `tax_breakdown` to empty. So every consumer that shows a value only when it has one shows none, and nothing divides a token amount. *Alternative:* keep `total_assessed_value` and check the flag at every surface; rejected because each forgotten check would show "$1" again (the report's tax resolver already falls back to the history, which is the same $1).
+
+**Decision 2: say what it is, conditionally.** Every surface shows the same sentence: the County assesses this parcel at a nominal amount, not a market value; parcels like this are usually a shared common area or the remainder of a divided lot; under 35 ILCS 200/10-35 a qualifying common area is listed at $1 a year and its value is counted in the lots that share it; *we have not confirmed that this parcel qualifies*. The statute was read on 2026-11-01 (ILGA blocks automated reads; FindLaw's copy of the section: (a) the $1 listing and the proportional share in the lots, (b) Cook County requires an application to the Assessor, (c) the $1 continues while ownership and use are unchanged). We never estimate a replacement value from neighbors: that would be our guess presented as a record.
+- Profile: the Assessed tile reads "Nominal · Not a market value" with the sentence as its tooltip; Tax & assessment shows the sentence; the flat timeline and the history table are hidden; an appeal row reducing a value to the token amount reads "→ Nominal".
+- Verdict: a caveat ("nominal assessment, often a common area or a remnant, so no value or tax is shown"), since such a parcel is often not a buildable lot on its own.
+- Chat: prompt rule 40 (never state the amount as a value, never derive market value/tax/$ per ft² from it, never estimate one, statute only as a conditional); the rail card shows the sentence and hides the history table.
+- Report: "Nominal (not a market value)" in the assessed row, the sentence as a section note, no assessment history; `_resolve_market_value_and_tax` returns nothing for a nominal parcel instead of recovering the $1 from history.
+- CSV: "Nominal (not a market value)" in the assessed-value column.
+
+**Decision 3: out of the benchmarks.** `area_stats._scan_index` drops nominal parcels from the area median assessed value and the $/ft² medians (no rebuild: the scan runs daily over the index). Discovery's sort-only key (`derive_sort_fields`, computed at load) skips them too, so a $1 lot no longer tops an ascending assessed-value sort. **`value_percentile` needs no change:** it ranks sale price per ft² and never reads the assessment. The Discovery *row* still shows the stored value ($1); wording it belongs with the Discovery rows cleanup (redesign plan step 7). A first attempt nulled it, and `test_exempt_and_zero_assessed_sort_last` caught that this erases the difference between $0 and missing data.
+
+**Finding: the outline is current but belongs to the whole development.** The County's current parcel layer (MapServer 44, `geom_year` 2024) draws the same ~143,900 ft² polygon for this PIN and 20 neighbors on the block (townhouse 295s, vacant 100s, condo 299s); ptaxsim's 2016-2024 boundary matches it. So the drawn outline is not stale, but it is not this PIN's own lot, and the 143,032 ft² land area the Profile shows is the development's. Across PIN10s whose ptaxsim boundary runs to 2024 (prefixes 01-33, a rough cut of the city), 3,399 share an identical polygon with another PIN10, in 973 groups (largest 372). **Not fixed here**: a shared-polygon flag on land area, the outline and Discovery's geometry land fill is a follow-up on Jack's list.
+
+**Revisit if** a real assessment under $100 appears (none known: a parcel worth under $1,000 at the 10% level); the County changes how it carries common areas; or Jack wants the Discovery row worded before the rows cleanup.
+
+**Numbers** (measured 2026-11-01)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Index parcels assessed $1-$99 (pruned citywide index, 882,328 rows) | 2,533 (0.29%); classes 2xx 1,340, 1xx 857, 5xx 274 | `sqlite3 <index> "select count(*) from parcels where json_extract(attrs,'$.total_assessed_value')>0 and json_extract(attrs,'$.total_assessed_value')<100"` |
+| Most common token values | $1 (768), $3 (578), $2 (276), $93 (189), $5 (165), $10 (74) | same, grouped by value |
+| Non-exempt parcels at $0 (also nominal) | 35; EX 49,343 and RR 2,854 at $0 keep their own states | same, by class |
+| `/api/scorecard?pin=14-28-319-102-0000`, local | `total_assessed_value` null, `nominal_assessment` true, market value/tax/rate null | curl |
+| 1601 N Milwaukee, local (control) | unchanged: $398,120 assessed, $1.59M market, $82,586 tax | curl |
+| PIN10s sharing an identical current polygon | 3,399 in 973 groups (max 372) | `pin_geometry_raw where end_year=2024`, grouped by geometry |
+| Tests | 19 backend (`test_nominal_assessment.py`), 2 vitest (`ScorecardPropertyCard.nominal.test.tsx`); backend 2,590 passed, vitest 869 passed (81 files) | `pytest backend/tests -m "not integration"`, `npx vitest run` |
+
+**Not measured:** the PDF itself (the template change is covered by the resolver test, not a render); the chat answer (rule 40 needs a production-credit run); how many nominal parcels are residential common areas versus commercial remnants.
+
+## Item 47: the Profile's map key is collapsed by default and never covers the map (2026-11-01)
+
+**Status: merged and deployed 2026-11-01 (#163, `14968ef`); live key verified on desktop and phone.** Jack's 2026-10-31 review, item 2 and second-pass item 3: the zoning key "covers ~80% of the map". On desktop it was always open (`w-[22rem] max-w-[65%]`, nearly full height, no collapse); at 1601 N Milwaukee it listed 26 districts with a count on every row.
+
+**Decision 1: one collapsed chip on every screen size.** "Key · B3-2 + 25 others": the parcel's own district (new `ParcelMap` prop `subjectKey`, the zoning map passes `zone_definition.zone_class`) or the first row, plus how many others. Open, the parcel's district is listed first, bold, marked "This parcel".
+
+**Decision 2: open, the key sits next to the map, never on it.** Desktop: a column beside the map when the map's box is at least 768 px wide (`KEY_BESIDE_MIN_PX`; the 256 px column leaves the map ≥ 2/3), otherwise under the map. The Profile's zoning map sits in a half-width column, so on the Profile it opens under the map; a beside column there left a sliver of map (seen in the first local screenshot). Mapbox is told to `resize()` when the box changes. Phone: a solid sheet over the lower map, held above the Mapbox attribution (bottom-left; the phone audit checks they don't overlap) and below the chip, with a close button; Escape closes it and returns focus to the chip on both. *Alternative:* a key permanently below the map; rejected because it adds height to every Profile for something most visitors don't open.
+
+**Decision 3: counts and withheld lines move to one footer.** "26 districts in view · 2 features not shown"; per source on the boundaries map. Rule §4.8 still holds: a withheld feature is never drawn and the key gives its count. The On/Dim/Off controls stay in the open key.
+
+**Not done (later plan steps):** the plan's grouping by family (B / C / M / R / PD / POS) and the single analysis map with one key (plan step 5) replace this component later; the capacity map keeps its own `<details>` key until then. The boundaries map has no "own" row (the key cannot tell which overlay feature holds the parcel without a point-in-polygon pass).
+
+**Numbers** (measured 2026-11-01, local, 1601 N Milwaukee)
+
+| Measure | Before | After | Reproduce |
+|---|---|---|---|
+| Map area covered by the key, desktop, default | ~65% wide × nearly full height | 0 (a 32 px chip) | `plans/2026-11-01_redesign-assets/mapkey-desktop-{closed,open}.png` |
+| Phone, default | "Layers" button | "Key · B3-2 + 25 others" chip | `mapkey-phone-{closed,open}.png` |
+| Phone audit | — | 75 passed, 20 skipped, 5 devices | `npm run test:mobile` |
+| Tests | 7 in `ParcelMap.test.tsx` | 11 (collapsed default, own district first, footer counts, Escape returns focus) | `npx vitest run src/components/scorecard/ParcelMap.test.tsx` |
+| Gates | | vitest 870 passed (80 files), lint 0 errors, build OK | `npx vitest run`, `npm run lint`, `npm run build` |
+
+**Not measured:** the dark theme (both themes share the tokens, not screenshotted); a screen reader pass.
 
 ## Item 48: the Discovery test flake was a real race: a search could go out before the default sort (2026-11-01)
 

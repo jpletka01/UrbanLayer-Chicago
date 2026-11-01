@@ -257,7 +257,8 @@
         "passedNotOnMap": "El {{date}} se aprobó una rezonificación que incluye esta dirección y el mapa de la Ciudad aún no la refleja; el distrito en que se basa esta lectura podría estar desactualizado.",
         "zoningUnchecked": "Hoy el mapa de zonificación de la Ciudad no respondió, por lo que esta lectura no puede indicar en qué distrito está la parcela ni qué permite ese distrito.",
         "floodUnchecked": "Hoy no se pudo verificar la zona de inundación de FEMA (el mapa de inundación de FEMA no respondió), por lo que este veredicto no puede descartar una restricción por zona inundable.",
-        "landmarkDesignationPassed": "El {{date}} se aprobó una designación de Monumento de Chicago que incluye esta dirección y el mapa de la Ciudad no la muestra para esta parcela; puede aplicar una revisión de la Comisión de Monumentos de Chicago que esta lectura no puede descartar."
+        "landmarkDesignationPassed": "El {{date}} se aprobó una designación de Monumento de Chicago que incluye esta dirección y el mapa de la Ciudad no la muestra para esta parcela; puede aplicar una revisión de la Comisión de Monumentos de Chicago que esta lectura no puede descartar.",
+        "nominal": "El Condado registra esta parcela con un avalúo nominal (a menudo un área común o el remanente de un terreno subdividido), por lo que no se muestra valor ni impuesto."
       },
       "next": {
         "strong": {
@@ -402,7 +403,9 @@
       "taxRate": "{{rate}}% efectivo",
       "assessedFlat": "sin cambio desde {{year}}",
       "mvBenchmark": "Mercado ≈ ${{psf}}/ft² terreno · mediana del área ${{median}}/ft²",
-      "taxNorm": "norma de clase ≈{{norm}}%"
+      "taxNorm": "norma de clase ≈{{norm}}%",
+      "nominalValue": "Nominal",
+      "nominalSub": "No es un valor de mercado"
     },
     "sections": {
       "capacityTitle": "Qué puede construir",
@@ -488,6 +491,18 @@
         "overlays": "límites de propósito especial",
         "tif": "distritos TIF",
         "ez": "Zonas Empresariales"
+      },
+      "key": "Leyenda",
+      "keyClose": "Cerrar la leyenda",
+      "keyChip_one": "Leyenda · {{first}} y {{count}} más",
+      "keyChip_other": "Leyenda · {{first}} y {{count}} más",
+      "keyChipOnly": "Leyenda · {{first}}",
+      "keyChipEmpty": "Leyenda",
+      "countInView": {
+        "district_one": "{{count}} distrito a la vista",
+        "district_other": "{{count}} distritos a la vista",
+        "feature_one": "{{count}} elemento a la vista",
+        "feature_other": "{{count}} elementos a la vista"
       }
     },
     "crimeCurrent": "Período actual",
@@ -512,7 +527,8 @@
       "rentArea": "Renta bruta mensual mediana (renta más servicios) de los hogares inquilinos del área comunitaria, sumada a partir de los rangos de renta del Censo de cada tramo del área. Es una estimación de encuesta, no un conteo; no hay cifra del área por número de recámaras.",
       "rentTract": "Renta bruta mensual mediana (renta más servicios) de los hogares inquilinos de este tramo censal, tal como la publica la Oficina del Censo. Es una estimación de encuesta con un margen de error.",
       "rentAssessor": "El modelo del Tasador de lo que ganan los departamentos de esta área comunitaria: ingreso bruto potencial por unidad al mes, antes de la vacancia, tomado de su valuación de edificios de 7 o más unidades en la reevaluación más reciente de toda la ciudad. Es un modelo, no una renta que alguien haya pedido o pagado, y no es comparable con las cifras del Censo. No hay cifra por número de recámaras.",
-      "rentBedroom": "Renta bruta mensual mediana de unidades de este tamaño, tal como la Oficina del Censo la publica para este tramo censal. Cuando falta la cifra del tramo o es demasiado incierta, se muestra la del PUMA: un área estadística más grande que abarca varios vecindarios."
+      "rentBedroom": "Renta bruta mensual mediana de unidades de este tamaño, tal como la Oficina del Censo la publica para este tramo censal. Cuando falta la cifra del tramo o es demasiado incierta, se muestra la del PUMA: un área estadística más grande que abarca varios vecindarios.",
+      "nominalTile": "El Condado avalúa esta parcela con un monto nominal, no con un valor de mercado. Las parcelas así suelen ser el área común de un desarrollo o el remanente de un terreno subdividido. Conforme a la ley de Illinois (35 ILCS 200/10-35), un área común que califica se registra en $1 al año y su valor se cuenta en el avalúo de los lotes que la comparten; no hemos confirmado que esta parcela califique."
     },
     "walkDesc": {
       "walker_s_paradise": "Paraíso del peatón",

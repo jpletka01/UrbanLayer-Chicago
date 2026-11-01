@@ -109,6 +109,12 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
   return (
     <CollapsibleCard title={t("property.title")} icon={BuildingIcon}>
       <div className="space-y-3">
+        {data.nominal_assessment && (
+          <div data-testid="nominal-assessment" className="text-micro text-text-secondary py-1">
+            <span className="font-medium text-text-primary">{t("property.assessedValue")}: {t("property.nominal.value")}</span>
+            {" · "}{t("property.nominal.note")}
+          </div>
+        )}
         {hasFinancials && (
           <div className="grid grid-cols-3 gap-2 py-1">
             <StatBox label={t("property.assessedValue")} value={assessed != null ? fmtDollar(assessed) : null}
@@ -143,7 +149,7 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
           <KV label={t("property.buildingAge")} value={data.bldg_age != null ? `${data.bldg_age} ${t("property.yrs")}` : null} />
         </div>
 
-        {data.assessment_history.length > 0 && (
+        {data.assessment_history.length > 0 && !data.nominal_assessment && (
           <div>
             <button
               onClick={() => setShowAssessments(a => !a)}

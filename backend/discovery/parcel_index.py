@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+from backend.retrieval.property.assessment_level import is_nominal_assessment
+
 log = logging.getLogger(__name__)
 
 
@@ -257,9 +259,15 @@ def derive_sort_fields(attrs: dict[str, Any]) -> dict[str, Any]:
     left intact, so the `assessed_value` *filter* (field `total_assessed_value`) still
     matches exempt/$0 by their true value, and a ResultRow still shows the true value
     (exempt rows stay identifiable via `land_use_class == "exempt"`).
+
+    A nominal assessment ($1 common area, remnant of a divided lot; decision Item 46) gets no
+    sort key either, so it can't top an ascending assessed-value sort as the "cheapest" parcel.
     """
     av = attrs.get("total_assessed_value")
-    if attrs.get("land_use_class") == "exempt" or av == 0 or av is None:
+    if (
+        attrs.get("land_use_class") == "exempt" or av == 0 or av is None
+        or is_nominal_assessment(av, attrs.get("class"))
+    ):
         return attrs  # no sort key → comparator treats the sort field as missing (last)
     return {**attrs, "total_assessed_value_sortkey": av}
 

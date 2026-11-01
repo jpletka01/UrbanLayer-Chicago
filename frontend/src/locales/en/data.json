@@ -120,6 +120,11 @@
       "class": "Cook County property class code — it sets the assessment level and signals the property's use (1xx vacant, 2xx residential, 5xx commercial).",
       "assessorPermits": "Permits the Cook County Assessor has on file for this PIN. Separate from the city permit feed: it is parcel-keyed and records a declared cost plus whether the assessor considers the work assessable — able to change the assessment, and so the tax bill.",
       "appeals": "Assessment appeals filed for this parcel (Assessor and Board of Review stages) plus how appeals fare on this block — a signal of whether appealing here works."
+    },
+    "nominal": {
+      "value": "Nominal",
+      "short": "Not a market value",
+      "note": "The County assesses this parcel at a nominal amount, not a market value. Parcels like this are usually a development's shared common area or the remainder of a divided lot. Under Illinois law (35 ILCS 200/10-35), a qualifying common area is listed at $1 a year and its value is counted in the assessments of the lots that share it; we have not confirmed that this parcel qualifies."
     }
   },
   "regulatory": {
