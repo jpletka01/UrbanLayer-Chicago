@@ -181,6 +181,15 @@
     "ai": "IA",
     "moeMethod": {
       "acs_handbook_median": "Suma de los rangos de renta del Censo"
+    },
+    "kind": {
+      "estimate": "Estimación",
+      "low": "Confianza baja",
+      "not_checked": "Sin verificar",
+      "none_found": "No se encontró",
+      "withheld": "No se muestra",
+      "na": "No aplica",
+      "explain": "Por qué: {{label}}"
     }
   },
   "dataDates": {

@@ -2322,7 +2322,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 47: the Profile's map key is collapsed by default and never covers the map (2026-11-01)
 
-**Status (2026-11-01): open as a PR, not merged.** Jack's 2026-10-31 review, item 2 and second-pass item 3: the zoning key "covers ~80% of the map". On desktop it was always open (`w-[22rem] max-w-[65%]`, nearly full height, no collapse); at 1601 N Milwaukee it listed 26 districts with a count on every row.
+**Status: merged and deployed 2026-11-01 (#163, `14968ef`); live key verified on desktop and phone.** Jack's 2026-10-31 review, item 2 and second-pass item 3: the zoning key "covers ~80% of the map". On desktop it was always open (`w-[22rem] max-w-[65%]`, nearly full height, no collapse); at 1601 N Milwaukee it listed 26 districts with a count on every row.
 
 **Decision 1: one collapsed chip on every screen size.** "Key · B3-2 + 25 others": the parcel's own district (new `ParcelMap` prop `subjectKey`, the zoning map passes `zone_definition.zone_class`) or the first row, plus how many others. Open, the parcel's district is listed first, bold, marked "This parcel".
 
@@ -2343,3 +2343,118 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Gates | | vitest 870 passed (80 files), lint 0 errors, build OK | `npx vitest run`, `npm run lint`, `npm run build` |
 
 **Not measured:** the dark theme (both themes share the tokens, not screenshotted); a screen reader pass.
+
+## Item 48: the Discovery test flake was a real race: a search could go out before the default sort (2026-11-01)
+
+**Status: shipped 2026-11-01 in the combined release PR (with Items 49-51; #164 superseded).** Two `DiscoveryPage.test.tsx` tests each failed CI once and passed on re-run ("keeps the previous results … dimmed" blocked a deploy after #157; "offers one-click restore of a removed chip", `Unable to find … remove-tif`, failed on #161's PR).
+
+**Cause (reproduced, not guessed).** The hook fills the draft's default sort in a `useEffect` that runs after the registry arrives. The tests' `readyPage()` waits only for the Search button to enable, which happens in the render where the registry lands, before that passive effect runs. Under load the click falls in that gap: the search goes out with `sort: null`; the effect then sets the sort; when the response lands, the draft's signature no longer matches the issued one, so `reconcileWithResponse` is skipped and the response's three filters show as **removed** chips ("restore-tif"). Every test that clicks `remove-*` after `pageWithResults()` can hit it. The failing run's DOM dump showed all three chips `data-state="removed"`. The same gap exists for a real user, though a click inside one scheduler tick is unlikely.
+
+**Decision: fix the product, not the test.** `apply()` now writes the default sort into the draft before it reads it, so no search goes out without a sort and the response always matches the draft it was issued from. The effect stays (the sort control still needs a value before any search). No assertion was loosened and no retry was added. *Alternative:* make `readyPage()` also wait for the sort select's value; rejected because it hides a real ordering bug behind a longer wait.
+
+**Regression test:** `useDiscoverySearch.test.tsx` "never sends a search without the default sort …" sets the draft's sort to null, applies, and asserts the request carries the default and the chip reconciles to `applied`. It fails on `main`'s hook and passes with the fix.
+
+**`useDiscoverySearch.test.tsx` ~174** ("keeps the previous results, count and dots while a refresh runs") was read: it drives the hook through `renderHook`/`act`, so effects are flushed before each step, and it resolves its deferred promises inside `act`. No race found; it ran in every loop below.
+
+**Numbers** (measured 2026-11-01, this Mac, 6 runs of the files in parallel to imitate a loaded CI runner)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| `DiscoveryPage.test.tsx` on `main`, looped | 1 failure in 48 runs (`remove-tif` not found; chips `removed`) | 8 × 6 parallel `npx vitest run src/discovery/DiscoveryPage.test.tsx` |
+| Both Discovery files with the fix, looped | 0 failures in 108 runs (two batches of 54; 79 tests each) | 9 × 6 parallel `npx vitest run src/discovery/DiscoveryPage.test.tsx src/discovery/useDiscoverySearch.test.tsx` |
+| New test against `main`'s hook / with the fix | fails / passes | `npx vitest run src/discovery/useDiscoverySearch.test.tsx` |
+
+**Not measured:** the flake rate on GitHub's runners (1 in 48 locally is a weak baseline; the loop proves the race is closed, not the old CI rate).
+
+## Item 49: the redesign foundation: color roles, a shape grammar, one ConfidenceState (2026-11-01)
+
+**Status: shipped 2026-11-01 in the combined release PR (#165 superseded).** Step 2 of the approved Profile redesign (`plans/2026-11-01_profile-discovery-redesign-plan.md` §4 principles 4, 6, 7 and 8). Little visible change on its own; the first-screen PR builds on it.
+
+**Decision 1: a semantic role layer over Bento Pro.** New tokens: `status-{success,warning,danger,info,neutral}` (each a text/glyph color and a `-subtle` fill), `premium` (alias of `highlight`), `text-disabled`. success/warning/danger reuse the existing `state-*` values, so nothing that already uses `state-*` changes color. Rules: amber = act or check; red (never orange) = a blocker; a verdict category is neutral. *Alternative:* rename `state-*`; rejected as churn across ~60 call sites for no visible gain (migrating them is a later sweep).
+
+**Decision 2: a lint against hues, starting green.** The interface inventory found **0** raw palette classes in `components/scorecard/` and `ScorecardPage.tsx` (Bento Pro already removed them); the yellow verdict and green/amber pills come from `state-*` and `Chip` tones chosen per call site. `palette.test.ts` keeps raw hues out; it cannot judge whether a `state-warning` is deserved, which is what the first-screen PR's budget (≤3 amber items) does. *Alternative:* an ESLint rule; rejected because the class strings are built in many shapes (template literals, maps) and a regex test over files is simpler and already the repo's pattern (`siblingKeys.test.ts`).
+
+**Decision 3: the shape grammar as two components.** `Button`: `rounded-lg` (8px), `h-9`/`h-10`, hover/pressed, a 2px focus ring, pointer; `primary` = the one solid orange element and carries `data-solid-action` so the page budget can count it. `StatusLabel`: `h-5` (20px), 3px radius, tinted fill + glyph, no border, not focusable, `cursor-default`. A test asserts they differ in at least three of radius, height, focusability, cursor and focus ring (all five today). Every tone has a glyph (WCAG 1.4.1).
+
+**Decision 4: one `ConfidenceState`.** Estimate ≈, Low confidence ≈ (amber; the guide's one amber phrase), Not checked ◌, None found ∅, Withheld ⊘, N/A –. A verified figure gets no label. The explanation opens in a `Toggletip` (a real button named "Why: <figure>", click/tap, Escape returns focus, click outside closes). `confidenceStateFor(entry)` maps the backend's `confidence` and tier and never recomputes it (guide §3, rule 6). The existing `ConfidenceCaption`/`ConfidenceValue` stay until the first-screen and disclosure PRs move each figure over.
+
+**Revisit if** a status needs more than five tones; info (sky) reads as off-brand once used (it is defined, unused today); the five words test badly with users.
+
+**Numbers** (measured 2026-11-01)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Raw palette classes in the Profile's components | 0 | `npx vitest run src/components/scorecard/palette.test.ts` |
+| Button vs StatusLabel property differences | 5 of 5 checked | `npx vitest run src/components/ui/foundation.test.tsx` |
+| New tests | 11 (`foundation.test.tsx` 9, `palette.test.ts` 2) | same |
+| Existing confidence suites (`Confidence`, `KpiStrip`, card confidence tests) | unchanged, passing | `npx vitest run` |
+
+**Not measured:** contrast of the `-subtle` fills against both surfaces with a checker (the text colors are the existing AA-checked `state-*` values); a screen-reader pass on the toggletip.
+
+## Item 50: the Profile's first screen: one answer, three panels, one sticky band (2026-11-01)
+
+**Status: shipped 2026-11-01 in the combined release PR (#166 superseded).** Step 3 of the approved redesign (`plans/2026-11-01_profile-discovery-redesign-plan.md` §4, §6a-6c). Answers Jack's second-pass complaint list item by item (below).
+
+**Decision 1: the header is the address alone.** Area, ward, PIN (with Copy and the Assessor link) and the match method/distance move behind one "Parcel details ▾" (`ProfileHeader`). The candidate-parcel list inside it renders flat (`ParcelResolution flat`), so no disclosure nests in another. An approximate match or an unconfirmed PIN stays visible as one amber `StatusLabel` with ⓘ; an exact match carries no check mark (a verified identity, like a verified figure, needs no label). PIN visibility follows the research report; it is **untested with attorneys** (no interview contacts).
+
+**Decision 2: one answer = a neutral label + one deterministic sentence.** `lib/answerSentence.ts`: templates per verdict state from the verdict's own signals and `unit_yield`, e.g. "B3-2 allows about 1.7× today's floor area, up to 11 units by lot area; it is in a landmark district, so new construction needs Commission approval." The verdict category is a neutral label (Q6: names kept, never yellow). A ratio the verdict doesn't trust (low-confidence building area) is never stated. The blocker order: nominal assessment, landmark building, landmark district, historic district, PD, flood zone, lakefront, National Register. The verdict's caveats move behind one ⓘ after the sentence ("What this answer rests on"); the "Unverified" chip is gone; the verdict logic is untouched. **Jack reviews the template wording once in the PR (Q2).**
+
+**Decision 3: three panels replace the KPI strip and the reason pills.** Build (district, FAR used of allowed, units by lot area, lot), In the way (rows only for what changes the answer: blockers, a passed rezoning or landmark designation not on the map, flood or overlay maps not checked; "None found" with what was checked when nothing applies), Value & cost (assessed, est. tax with the tax year visible beside ⏱, comps median). The benchmark lines, assessed year, market value and rate move into ⓘ/⏱ toggletips (Q4). Every figure carries `ConfidenceState` (Estimate on our calculations and the tax model; Withheld = "—" + the backend's own short reason); amber rows are capped at 3 with "+N more". *Alternative:* keep market value as a fourth Value figure; moved into the Assessed ⓘ to meet the word budget, since it is our derivation of the assessed value.
+
+**Decision 4: no report CTA, one action.** The report button, sample link and "coming soon" are gone while purchases are off; the code keeps the violet report button for when they launch (it shows locally because the dev user has report access). "Ask the analyst" is a secondary `Button`; the dock's orange launcher stays the one solid-orange element on desktop.
+
+**Decision 5: one sticky band.** The floating verdict strip and the left section rail are removed. `SectionBand`: the section nav sticks under the site nav; the verdict label joins it only after the answer has scrolled out of view (say it once). Phones: a bottom action bar (verdict label + "Ask the analyst", the solid orange) and the dock launcher hides below `md`.
+
+**Jack's second-pass complaints → this PR**
+1. Header check marks / area-ward-PIN / "Matched by…" → address alone + Parcel details ▾. **Closed.**
+2. "Constrained upside" yellow, info thrown in → neutral label + one sentence + panels. **Closed.**
+3. Map key covers the map → Item 47 (#163). **Closed there.**
+4. Report "purchase coming soon" → removed. **Closed.**
+5. Buttons look like warnings → `Button` vs `StatusLabel` (Item 49). **Closed on the first screen**; modules below still use the old chips (Item 51).
+6. Dates and amendment codes everywhere → ⏱/ⓘ on the first screen. **Closed on the first screen**; module dates are Item 51.
+7. Floating bar covers the section nav → one sticky band. **Closed.**
+8. Only yellow and green → roles + neutral verdict. **Closed on the first screen.**
+
+**Numbers** (measured 2026-11-01 with `plans/2026-11-01_redesign-assets/firstscreen.cjs`: initial viewport, no scroll, site nav/maps/footer excluded; "answer zone" = above the sticky section band. Before = production `main` @ `87c9fca`; after = local)
+
+| Parcel, view | Words before → after (answer zone) | Amber before → after | Solid orange |
+|---|---|---|---|
+| 2541 N Spaulding, desktop | 167 → 109 (164 → 83) | 3 → 0 | 1 → 1 |
+| 1601 N Milwaukee, desktop | 185 → 121 (182 → 97) | 6 → 3 | 1 → 1 |
+| 233 S Wacker, desktop | 181 → 110 (181 → 84) | 3 → 0 | 1 → 1 |
+| PIN 14-28-319-102-0000, desktop | 150 → 131 (150 → 85) | 6 → 4 (answer zone 3) | 1 → 1 |
+| phones (390×844), all four | 96-132 → 69-71 | 3-6 → 0-3 | 1 → 1 |
+
+- **Budget:** phone ≤ 90 met on all four; desktop answer zone ≤ 120 met on all four. The whole desktop viewport is ≤ 120 on two of four: on Milwaukee (121) and the $1 parcel (131, plus a fourth amber item, "Upcoming zoning filings couldn't be checked") the extra words are the first module's heading and disclaimer showing below the band. Item 51 collapses the modules to one-line summaries and adds the ratcheting gate.
+- **Tests:** `answerSentence.test.ts` 6, `AnswerPanels.test.tsx` 6 (withheld "—" + reason, Low confidence / Estimate tags, Not checked ≠ None found, amber cap, explanation behind a click, header disclosure).
+- **Checks:** grayscale and blur screenshots, before and after (`check-{before,after}-milwaukee-{grayscale,blur}.png`).
+
+**Not measured:** real users (the Top Tasks vote and 5-user tests need contacts Jack doesn't have); the dark theme screenshots; a screen-reader pass; the Spanish layout (longer strings).
+
+## Item 51: sections collapse to one line, provenance moves to Sources sheets, and a ratcheting page budget (2026-11-01)
+
+**Status: shipped 2026-11-01 in the combined release PR (#167 superseded).** Step 4 of the approved redesign (plan §4 principles 2, 3, 10; §6a L2-L3).
+
+**Decision 1: sections start collapsed (Q3).** `ProfileModule` gains `open`/`onToggle`: closed, a section is one button, its title and its existing takeaway sentence truncated to one line, with ▾; open, the full detail with its Ask chip and a Sources button. Reverses July's "nothing hides behind a closed toggle", which was made at a third of today's content. Every jump (a panel's "Details", the sticky band, a verdict link) opens its section and scrolls once it has rendered (`MODULE_OF_CARD`). A new parcel starts collapsed again. Lazy maps inside a closed section never mount. *Alternative:* single-open accordions; kept for phones in the next step (plan step 6), since desktop readers compare sections.
+
+**Decision 2: provenance in one place per section, and one page sheet.** `SourcesButton`/`SourcesSheet`: a dialog listing each figure's five fields from the backend's `provenance` map (`sourceBullets`), with its ConfidenceState; sections take their facts by id prefix (`factsFor`). The footer's "Sources & coverage" opens the page sheet: every entry, the dated source list (moved out of the footer) and the "What this page doesn't cover" notes (moved out of the Zoning card, plan §6c). A dialog rather than a nested disclosure keeps the two-level rule. The Zoning card's "record last updated / code current through" stamps move behind ⏱ "Dates" (Jack's item 6 inside the modules). The footer keeps its visible "Checked <date>".
+
+**Decision 3: the page has an owner: a ratcheting Playwright budget.** `e2e/profile-budget.spec.ts` + `e2e/profile-budget.baseline.json`: on the four reference parcels, desktop 1440×900 and phone 390×844, the first screen's words, amber items and solid-orange elements, the default page height in desktop screens, no heading twice, no figure with two confidence states. A count above its baseline fails; a baseline above the hard caps (120/90 words, 3 amber, 1 orange, 4 screens) fails; `BUDGET_UPDATE=1` lowers entries and never raises one, so raising a budget is a reviewed hand edit. Verified: lowering Milwaukee's word baseline to 100 makes it fail with "118 is above its baseline 100". **Where it runs:** part of `npm run test:mobile` (it runs once, in the "Pixel 3" project), not a CI job: CI has no backend or live data to render a Profile, and the overflow audit already lives there. It is part of the definition of done for any Profile PR. *Alternative:* a CI job against production after deploy; rejected for now because it would gate merges on the live site's state.
+
+**Not done here (recorded):** the caveat triage inside the open sections (the Upcoming and Pending disclaimers, per-block "Checked" lines, rent method lines) is unchanged; they are one click down now, but still paragraphs. The capacity map and the what-if keep their own blocks until the single analysis map (plan step 5). Phones keep multi-open sections until plan step 6.
+
+**Numbers** (measured 2026-11-01, local, live data; the budget spec's own output)
+
+| Parcel | Desktop words / amber / orange / page screens | Phone words / amber / orange |
+|---|---|---|
+| 2541 N Spaulding | 107 / 0 / 1 / 1.6 | 71 / 0 / 1 |
+| 1601 N Milwaukee | 118 / 3 / 1 / 1.7 | 71 / 3 / 1 |
+| 233 S Wacker | 105 / 0 / 1 / 1.7 | 69 / 0 / 1 |
+| PIN 14-28-319-102-0000 | 93 / 3 / 1 / 1.6 | 69 / 3 / 1 |
+
+- **All four parcels are within every cap** on the whole first screen, on both views.
+- **Default page height:** 1.6-1.7 desktop screens, from 9.1-11.4 measured by the case study (§1a).
+- **Checks:** no duplicate headings; no figure with two states.
+- **Tests:** vitest 903 passed; three existing tests now open the ⏱ "Dates" toggletip before asserting the same stamps. `npm run test:mobile` 79 passed / 36 skipped; the overflow audit now opens every Profile section before its scroll, so it still covers everything that can render.
+
+**Not measured:** the whole page's word count with every section open (the plan's "~3,000 words" is unchanged when expanded: nothing was deleted); dark theme; a screen reader.

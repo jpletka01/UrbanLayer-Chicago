@@ -196,7 +196,8 @@
       "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows.",
       "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF).",
       "unitYield606Applied": "In the Predominance of the Block (606) district: a two-unit building at 1,500 sq ft of lot per unit raises this from {{base}} to {{units}} (§17-2-0303-B.1).",
-      "unitYield606Unchecked": "We could not check whether this parcel is in the Predominance of the Block (606) district. There, RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1)."
+      "unitYield606Unchecked": "We could not check whether this parcel is in the Predominance of the Block (606) district. There, RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1).",
+      "datesLabel": "Dates"
     },
     "verdict": {
       "inTif": "in {{name}} TIF",
@@ -682,6 +683,80 @@
       "pdCurrent": "Set by its own ordinance",
       "noLot": "The lot area is unknown, so floor area and units are not shown.",
       "note": "This is the district table's arithmetic, not a forecast. A rezoning needs City Council approval. Parking, setbacks for this lot's shape and other rules can allow less."
+    },
+    "answer": {
+      "noZone": "The zoning district couldn't be checked today",
+      "ownOrdinance": "{{zone}} sets its own rules by ordinance; there is no table maximum",
+      "mostlyUnbuilt": "{{zone}} allows a floor-area ratio of {{far}} on a lot that is mostly unbuilt",
+      "atCap": "{{zone}} is built to about its limit ({{pct}}% of the allowed floor area)",
+      "headroom": "{{zone}} allows about {{x}}× today's floor area",
+      "allowsFar": "{{zone}} allows a floor-area ratio of {{far}}",
+      "units_one": ", up to {{count}} unit by lot area",
+      "units_other": ", up to {{count}} units by lot area",
+      "blocker": {
+        "nominal": "it carries a nominal assessment, so it may not be a buildable lot on its own",
+        "landmark_bldg": "it is a designated landmark, so changes need Landmarks Commission approval",
+        "landmark_dist": "it is in a landmark district, so new construction needs Commission approval",
+        "historic": "it is in a historic district, so exterior changes are reviewed",
+        "pd_overlay": "it is inside a Planned Development, whose ordinance sets the rules",
+        "flood": "it is in a FEMA flood zone",
+        "lakefront": "it is in the Lakefront Protection District, so most work needs City review",
+        "natl_register": "it is on the National Register of Historic Places"
+      },
+      "caveatsLabel": "What this answer rests on"
+    },
+    "header": {
+      "details": "Parcel details",
+      "copyPin": "Copy PIN",
+      "copied": "Copied",
+      "assessor": "Assessor record",
+      "ask": "Ask the analyst"
+    },
+    "panels": {
+      "build": "Build",
+      "inTheWay": "In the way",
+      "value": "Value & cost",
+      "moreRows_one": "+{{count}} more under Rules & overlays",
+      "moreRows_other": "+{{count}} more under Rules & overlays",
+      "zoning": "District",
+      "far": "FAR",
+      "farOf": "{{used}} of {{allowed}}",
+      "farAllowed": "{{allowed}} allowed",
+      "farDetail": "Today's building floor area divided by the lot area, against the district's maximum in the Title 17 table.",
+      "ownOrdinance": "Set by ordinance",
+      "units": "Units",
+      "lot": "Lot",
+      "exempt": "Tax-exempt",
+      "assessedYear": "Assessment year {{year}}",
+      "blocker": {
+        "nominal": "Nominal assessment",
+        "landmark_bldg": "Landmark building",
+        "landmark_dist": "Landmark district",
+        "historic": "Historic district",
+        "pd_overlay": "Planned Development",
+        "flood": "FEMA flood zone",
+        "lakefront": "Lakefront Protection",
+        "natl_register": "National Register"
+      },
+      "passedNotOnMap": "Rezoning passed, not on the map yet",
+      "designationPassed": "Landmark designation passed",
+      "notChecked": {
+        "flood": "FEMA flood zone",
+        "overlays": "Landmark and PD maps"
+      },
+      "noneFound": "No landmark, PD, flood or lakefront rules",
+      "noneFoundDetail": "We checked the City's landmark, historic district, Planned Development and Lakefront Protection maps and FEMA's flood map for this parcel. None applies.",
+      "more": "Details",
+      "marketLine": "Market value ≈ {{value}} (our calculation: assessed value ÷ the class's assessment level)"
+    },
+    "sources": {
+      "button": "Sources",
+      "open": "Open the source",
+      "pageTitle": "Sources & coverage",
+      "pageButton": "Sources & coverage",
+      "sectionTitle": "Sources: {{section}}",
+      "dates": "Data dates",
+      "coverage": "What this page doesn't cover"
     }
   },
   "discovery": {

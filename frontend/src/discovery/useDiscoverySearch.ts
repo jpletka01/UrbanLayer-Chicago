@@ -244,6 +244,13 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
    * do not search. If it cannot be asked, search anyway: the gate must never be what breaks
    * search. A draft with panel filters, or no text, searches at once as before. */
   const apply = useCallback(() => {
+    // The default sort is filled in by an effect after the registry arrives. A search issued before
+    // that effect has run would go out with no sort, and the effect would then change the draft under
+    // it, so the response would no longer match the draft and its filters would never be reconciled
+    // (they showed as removed chips: the Discovery test flake of 2026-10-31). Fill it here first.
+    if (registry && draftRef.current.sort === null) {
+      updateDraft((d) => ({ ...d, sort: registry.defaultSort }));
+    }
     const draftNow = draftRef.current;
     const text = draftNow.text.trim();
     const seq = ++applySeqRef.current;
@@ -261,7 +268,7 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
       }
       void issue(toInputs(draftNow));
     })();
-  }, [issue]);
+  }, [issue, registry, updateDraft]);
 
   // Recipe click: replace the draft with the recipe's presets and run it (the click is the
   // explicit "search this"). The backend does not re-expand the topic; presets travel as

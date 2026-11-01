@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { fetchReport, checkReportAccess, fetchAreaStats, fetchParcelMapLayers, type ScorecardResponse } from "../lib/api";
@@ -14,17 +14,25 @@ import { ScorecardComparablesCard } from "./scorecard/ScorecardComparablesCard";
 import { ScorecardRegulatoryCard } from "./scorecard/ScorecardRegulatoryCard";
 import { PendingTextImpactsCard } from "./scorecard/PendingTextImpactsCard";
 import { UpcomingZoningCard } from "./scorecard/UpcomingZoningCard";
-import { ParcelResolution } from "./scorecard/ParcelResolution";
 import { ScorecardZoningCard } from "./scorecard/ScorecardZoningCard";
 import { WhatIfCard } from "./scorecard/WhatIfCard";
 import { ScorecardIncentivesCard } from "./scorecard/ScorecardIncentivesCard";
 import { ScorecardViolationsCard } from "./scorecard/ScorecardViolationsCard";
 import { ScorecardEnvironmentCard } from "./scorecard/ScorecardEnvironmentCard";
 import { ProfileModule, SubSection } from "./scorecard/ProfileModule";
-import { KpiStrip, type KpiTile } from "./scorecard/KpiStrip";
+import type { KpiTile } from "./scorecard/KpiStrip";
+import { AnswerPanels, type PanelFigure, type PanelRow } from "./scorecard/AnswerPanels";
+import { SourcesButton } from "./scorecard/SourcesSheet";
+import { CoverageNotes } from "./scorecard/CoverageNotes";
+import { ProfileHeader } from "./scorecard/ProfileHeader";
+import { SectionBand } from "./scorecard/SectionBand";
+import { Button } from "./ui/Button";
+import { StatusLabel } from "./ui/StatusLabel";
+import { Toggletip } from "./ui/Toggletip";
+import { answerSentence, blockersFor } from "../lib/answerSentence";
 import type { NeighborhoodSummary } from "../lib/types";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
-import { VerdictBand, VerdictMethodology, verdictDotClass } from "./VerdictBand";
+import { VerdictMethodology } from "./VerdictBand";
 import { InfoTooltip } from "./InfoTooltip";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { formatDay, humanizeShoutyCase } from "../lib/format";
@@ -36,7 +44,7 @@ import { AddressInput } from "./AddressInput";
 import { ScorecardFeedback } from "./ScorecardFeedback";
 import { ProvenanceProvider } from "../contexts/ProvenanceContext";
 import type { Provenance } from "../lib/api";
-import { displayState, wantsCaption } from "../lib/confidence";
+import { captionParts, confidenceStateFor, displayState, wantsCaption } from "../lib/confidence";
 import { ConfidenceCaption, SourceTooltip } from "./ui/Confidence";
 import { RentBlock } from "./scorecard/RentBlock";
 import { useFact } from "../lib/provenanceContext";
@@ -328,6 +336,11 @@ function ScorecardSkeleton({ address }: { address: string }) {
 
 // Dashboard section registry — nav labels + presence drive the sticky rail.
 const MODULE_IDS = ["module-build", "module-economics", "module-market", "module-record", "module-area"] as const;
+// Which section holds each card a first-screen link points at.
+const MODULE_OF_CARD: Record<string, (typeof MODULE_IDS)[number]> = {
+  zoning: "module-build", regulatory: "module-build", incentives: "module-economics", property: "module-economics",
+  comparables: "module-market", violations: "module-record",
+};
 type ModuleId = (typeof MODULE_IDS)[number];
 
 export default function ScorecardPage() {
@@ -518,20 +531,14 @@ export default function ScorecardPage() {
     n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
     : n >= 1_000 ? `$${Math.round(n / 1_000)}K`
     : `$${Math.round(n)}`;
-  const tiles: KpiTile[] = [];
+  // The first screen's figures (redesign step 3, decision Item 50): the old KPI tiles, now read by the
+  // answer panels. Each keeps its value, tooltip, benchmark lines and confidence caption; the panels put
+  // the extras behind ⓘ/⏱ instead of on the page.
+  let assessedTile: KpiTile | null = null;
+  let taxTile: KpiTile | null = null;
+  let compsTile: KpiTile | null = null;
   const prov: Record<string, Provenance> = data?.provenance ?? {};
   if (verdict && ctx) {
-    if (zoning) {
-      tiles.push({
-        anchor: "zoning",
-        label: t("scorecard.tiles.zoning"),
-        value: zoning.zone_class,
-        tip: t("scorecard.tips.zoningTile"),
-        sub: verdict.signals.allowedFar != null
-          ? t("scorecard.tiles.zoningFar", { far: verdict.signals.allowedFar.toFixed(1) })
-          : t("scorecard.verdict.signal.entitlementDefined"),
-      });
-    }
     const av = ctx.property?.total_assessed_value;
     const estTax = ctx.property?.estimated_annual_tax;
     if (av != null) {
@@ -563,7 +570,7 @@ export default function ScorecardPage() {
       const benchState = displayState(benchEntry);
       const showBench = mvPsf != null && medPsf != null && medPsf > 0;
       const assessedYear = prov["property.assessed_value"]?.period;
-      tiles.push({
+      assessedTile = ({
         anchor: "property",
         label: t("scorecard.tiles.assessed"),
         value: fmtMoneyCompact(av),
@@ -593,7 +600,7 @@ export default function ScorecardPage() {
     }
     if (ctx.property?.nominal_assessment) {
       // A token assessment is a statement, not a figure: no amount, no market value, no tax (Item 46).
-      tiles.push({
+      assessedTile = ({
         anchor: "property",
         label: t("scorecard.tiles.assessed"),
         value: t("scorecard.tiles.nominalValue"),
@@ -607,7 +614,7 @@ export default function ScorecardPage() {
       const norm = level != null ? level * EFF_RATE_PER_ASSESSMENT_LEVEL : null;
       const taxEntry = prov["property.tax_estimate"];
       const taxYear = taxEntry?.period ?? (ctx.property?.tax_year != null ? String(ctx.property.tax_year) : null);
-      tiles.push({
+      taxTile = ({
         anchor: "property",
         label: t("scorecard.tiles.tax"),
         value: `${fmtMoneyCompact(estTax)}/yr`,
@@ -634,7 +641,7 @@ export default function ScorecardPage() {
       // payload) the plain count stays.
       const compsEntry = prov["property.comps.median_price"];
       const compsState = displayState(compsEntry);
-      tiles.push({
+      compsTile = ({
         anchor: "comparables",
         label: t("scorecard.tiles.comps"),
         value: compsState === "withheld" ? "—" : fmtMoneyCompact(data.comparables.median_sale_price),
@@ -701,21 +708,166 @@ export default function ScorecardPage() {
     takeaways.record = recParts.join(" ") || null;
   }
 
-  // Sticky condensed verdict: once the lead scrolls out of view, a compact strip
-  // (tone dot + headline + tile values) keeps the conclusion and a way back in
-  // reach on a long page.
-  const bandRef = useRef<HTMLDivElement | null>(null);
-  const [bandAway, setBandAway] = useState(false);
+  // ── First screen (redesign step 3, decision Item 50) ─────────────────────────────────────────
+  // One answer: a neutral verdict label + a deterministic sentence (lib/answerSentence.ts). Then three
+  // panels, ≤ 8 figures and ≤ 3 amber rows, each figure with its confidence STATE as a label and its
+  // explanation behind ⓘ/⏱. Built from the same values the KPI tiles had; nothing new is fetched.
+  const answer = data && verdict ? answerSentence(data, verdict, t) : "";
+  // The sticky band repeats the verdict label only after the answer has scrolled out of view.
+  const answerRef = useRef<HTMLElement | null>(null);
+  const [answerAway, setAnswerAway] = useState(false);
   useEffect(() => {
-    const el = bandRef.current;
+    const el = answerRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => setBandAway(!e.isIntersecting && e.boundingClientRect.top < 0));
+    const io = new IntersectionObserver(([e]) => setAnswerAway(!e.isIntersecting && e.boundingClientRect.top < 0));
     io.observe(el);
     return () => io.disconnect();
   }, [data]);
+  const verdictExplain = verdict ? t(`scorecard.verdict.explain.${verdict.category}`, { defaultValue: "" }) : "";
+  const tileDetail = (tile: KpiTile | null, extra?: ReactNode) => tile ? (
+    <div className="space-y-1.5">
+      {extra}
+      <p>{tile.tip}</p>
+      {tile.sub && <div>{tile.sub}</div>}
+      {tile.caption}
+    </div>
+  ) : undefined;
+  const buildFigures: PanelFigure[] = [];
+  const valueFigures: PanelFigure[] = [];
+  const inTheWayRows: PanelRow[] = [];
+  if (data && ctx && verdict) {
+    const sig = verdict.signals;
+    const zoneClass = (zdef?.zone_class as string | undefined) ?? sig.zoneClass;
+    if (zoneClass) {
+      const zoneName = [zdef?.name, zdef?.code_section].filter(Boolean).join(" · ");
+      buildFigures.push({
+        key: "zoning", label: t("scorecard.panels.zoning"), value: zoneClass,
+        detail: zoneName ? <p>{zoneName}</p> : undefined,
+      });
+    }
+    if (sig.allowedFar != null) {
+      buildFigures.push({
+        key: "far", label: t("scorecard.panels.far"),
+        value: sig.existingFar != null
+          ? t("scorecard.panels.farOf", { used: sig.existingFar.toFixed(2), allowed: sig.allowedFar.toFixed(1) })
+          : t("scorecard.panels.farAllowed", { allowed: sig.allowedFar.toFixed(1) }),
+        state: sig.existingFar != null ? confidenceStateFor(prov["property.far_used"]) : null,
+        detail: <p>{t("scorecard.panels.farDetail")}</p>,
+      });
+    } else if (verdict.category === "entitlement_defined") {
+      buildFigures.push({ key: "far", label: t("scorecard.panels.far"), value: t("scorecard.panels.ownOrdinance") });
+    }
+    const uy = ctx.unit_yield;
+    if (uy && uy.units > 0) {
+      buildFigures.push({
+        key: "units", label: t("scorecard.panels.units"), value: `≤ ${uy.units}`,
+        state: { kind: "estimate", low: false },
+        detail: <div className="space-y-1.5"><p className="font-mono">{uy.arithmetic}</p><p>{uy.caveat}</p></div>,
+      });
+    }
+    const land = ctx.property?.land_sqft;
+    if (land) {
+      buildFigures.push({
+        key: "lot", label: t("scorecard.panels.lot"), value: `${land.toLocaleString()} ft²`,
+        state: confidenceStateFor(prov["property.land_sqft"]),
+      });
+    }
 
+    const prop = ctx.property;
+    if (prop?.nominal_assessment) {
+      valueFigures.push({
+        key: "assessed", label: t("scorecard.tiles.assessed"), value: t("scorecard.tiles.nominalValue"),
+        detail: <p>{t("scorecard.tips.nominalTile")}</p>,
+      });
+    } else if (prop?.tax_exempt) {
+      valueFigures.push({ key: "assessed", label: t("scorecard.tiles.assessed"), value: t("scorecard.panels.exempt") });
+    } else if (assessedTile) {
+      const year = prov["property.assessed_value"]?.period;
+      const mv = prop?.implied_market_value;
+      valueFigures.push({
+        key: "assessed", label: assessedTile.label, value: assessedTile.value,
+        detail: tileDetail(assessedTile, <>
+          {year && <p>{t("scorecard.panels.assessedYear", { year })}</p>}
+          {mv != null && <p>{t("scorecard.panels.marketLine", { value: fmtMoneyCompact(mv) })}</p>}
+        </>),
+      });
+    }
+    if (taxTile) {
+      const taxYear = prov["property.tax_estimate"]?.period ?? (prop?.tax_year != null ? String(prop.tax_year) : undefined);
+      valueFigures.push({
+        key: "tax", label: taxTile.label, value: taxTile.value,
+        state: confidenceStateFor(prov["property.tax_estimate"]),
+        detailKind: "date", detailVisible: taxYear, detail: tileDetail(taxTile),
+      });
+    }
+    if (compsTile) {
+      const compsEntry = prov["property.comps.median_price"];
+      const state = confidenceStateFor(compsEntry);
+      valueFigures.push({
+        key: "comps", label: compsTile.label, value: compsTile.value, state,
+        withheldReason: state?.kind === "withheld" ? captionParts(compsEntry, tc).withheld ?? undefined : undefined,
+        detail: state?.kind === "withheld" ? undefined : tileDetail(compsTile),
+      });
+    }
+
+    // In the way: only what changes the build answer, most decisive first; amber is rationed (≤ 3).
+    const sentence = (k: string) => {
+      const c = t(`scorecard.answer.blocker.${k}`);
+      return `${c.charAt(0).toUpperCase()}${c.slice(1)}.`;
+    };
+    for (const k of blockersFor(data, verdict)) {
+      inTheWayRows.push({ key: k, tone: "warning", text: t(`scorecard.panels.blocker.${k}`), detail: <p>{sentence(k)}</p> });
+    }
+    const notOnMap = ctx.passed_not_on_map?.[0];
+    if (notOnMap) {
+      inTheWayRows.push({ key: "passed-not-on-map", tone: "warning", text: t("scorecard.panels.passedNotOnMap"),
+        detail: <p>{t("scorecard.verdict.caveat.passedNotOnMap", { date: notOnMap.passed_on })}</p> });
+    }
+    const designated = ctx.passed_landmark_designations?.[0];
+    if (designated) {
+      inTheWayRows.push({ key: "designation", tone: "warning", text: t("scorecard.panels.designationPassed"),
+        detail: <p>{t("scorecard.verdict.caveat.landmarkDesignationPassed", { date: designated.passed_on })}</p> });
+    }
+    const reg = ctx.regulatory;
+    const floodFailed = (data.failed_sources ?? []).some((f) => f.key === "flood");
+    if (reg?.flood_unchecked || floodFailed) {
+      inTheWayRows.push({ key: "flood-unchecked", tone: "warning", state: "not_checked", text: t("scorecard.panels.notChecked.flood"),
+        detail: <p>{t("scorecard.verdict.caveat.floodUnchecked")}</p> });
+    }
+    if ((reg?.unchecked_overlays ?? []).length > 0) {
+      inTheWayRows.push({ key: "overlays-unchecked", tone: "warning", state: "not_checked", text: t("scorecard.panels.notChecked.overlays"),
+        detail: <p>{t("scorecard.verdict.caveat.overlayUnchecked")}</p> });
+    }
+    if (inTheWayRows.length === 0) {
+      inTheWayRows.push(reg
+        ? { key: "none-found", tone: "neutral", state: "none_found", text: t("scorecard.panels.noneFound"),
+            detail: <p>{t("scorecard.panels.noneFoundDetail")}</p> }
+        : { key: "overlays-not-checked", tone: "neutral", state: "not_checked", text: t("scorecard.panels.notChecked.overlays") });
+    }
+  }
+
+  // Sections start collapsed (Q3, decision Item 51); a jump opens its section first, then scrolls once it
+  // has rendered. A new parcel starts collapsed again.
+  const [openModules, setOpenModules] = useState<Set<ModuleId>>(() => new Set());
+  // Adjusted during render (React's pattern for resetting state on a prop change), not in an effect.
+  const [modulesFor, setModulesFor] = useState(data);
+  if (modulesFor !== data) {
+    setModulesFor(data);
+    setOpenModules(new Set());
+  }
+  const toggleModule = (id: ModuleId) => setOpenModules((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const openThenScroll = (moduleId: ModuleId, elementId: string) => {
+    setOpenModules((prev) => (prev.has(moduleId) ? prev : new Set(prev).add(moduleId)));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      (document.getElementById(elementId) ?? document.getElementById(moduleId))?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+  };
   const scrollToCard = (anchor: CardId | string) => {
-    document.getElementById(`scorecard-card-${anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    openThenScroll(MODULE_OF_CARD[anchor] ?? "module-build", `scorecard-card-${anchor}`);
   };
 
   // Module presence — drives both rendering and the sticky section rail.
@@ -763,9 +915,7 @@ export default function ScorecardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, navSections.join(",")]);
 
-  const jumpToModule = (id: ModuleId) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const jumpToModule = (id: ModuleId) => openThenScroll(id, id);
 
   // Quick-chat dock: every on-page ask (module ask chips, verdict next-step,
   // the header ask button) opens/sends in the dock instead of navigating away.
@@ -773,20 +923,6 @@ export default function ScorecardPage() {
   const [dockSignal, setDockSignal] = useState<DockSignal | null>(null);
   const askDock = (question: string | null) =>
     setDockSignal({ question, id: Date.now() });
-
-  const verdictChat = (question: string) => {
-    track("investigate_click", { card_name: "verdict" });
-    askDock(question);
-  };
-
-  // The verdict's next step, run from the hero action row (the step itself
-  // moved out of VerdictBand so the hero has exactly ONE filled CTA).
-  const runNextStep = () => {
-    if (!verdict) return;
-    const step = verdict.nextStep;
-    if (step.kind === "chat" && step.question) verdictChat(step.question);
-    else if (step.kind === "scroll" && step.cardAnchor) scrollToCard(step.cardAnchor);
-  };
 
   // ONE ask affordance per module (replaces the per-card chip sprawl) — the
   // module's most useful grounded question, opened in the dock. Each chip says
@@ -911,136 +1047,74 @@ export default function ScorecardPage() {
         {data && ctx && !loading && (
           <ProvenanceProvider value={data.provenance}>
           <div>
-            {/* ── Hero: the place, the read, the map — nothing else ─────────
-                Provenance compresses into ONE meta line; feedback lives in the
-                page footer; ask/CSV chips are gone (dock FAB + nav export). */}
-            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,42%)] lg:gap-10 mb-8">
+            {/* ── First screen (redesign, decision Item 50): the address, ONE answer (a neutral verdict
+                label + a deterministic sentence), the three answer panels, the place map beside them.
+                Identity details, dates, code references and caveats sit one click down (Parcel details
+                ▾, ⏱, ⓘ). No report button until purchases launch; "Ask the analyst" is the action. */}
+            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,36%)] lg:gap-8 mb-8">
               <div className="min-w-0">
-                {/* Identity: address + resolution badge (a circled glyph, meaning
-                    on hover/tap), PIN in the subline with area · ward. */}
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <h2 className="text-section text-text-primary min-w-0">
-                    {data.address || ctx.property?.address ||
-                      (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
-                  </h2>
-                  {parcel && (parcel.pin !== null && parcel.confidence === "authoritative" ? (
-                    <InfoTooltip plain content={{ label: t("scorecard.badges.exact"), description: t("scorecard.badges.exactTitle"), bullets: [] }}>
-                      <span
-                        className="inline-flex w-5 h-5 items-center justify-center rounded-full border border-state-positive/40 bg-state-positive/10 text-state-positive shrink-0"
-                        aria-label={t("scorecard.badges.exact")}
-                      >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                      </span>
-                    </InfoTooltip>
-                  ) : (
-                    <InfoTooltip
-                      plain
-                      content={{
-                        label: t(parcel.pin === null ? "scorecard.badges.unconfirmed" : "scorecard.badges.approximate"),
-                        description: t(parcel.pin === null ? "scorecard.badges.unconfirmedTitle" : "scorecard.badges.approximateTitle"),
-                        bullets: [],
-                      }}
-                    >
-                      <span
-                        className="inline-flex w-5 h-5 items-center justify-center rounded-full border border-state-warning/40 bg-state-warning/10 text-state-warning shrink-0 text-caption font-semibold leading-none"
-                        aria-label={t(parcel.pin === null ? "scorecard.badges.unconfirmed" : "scorecard.badges.approximate")}
-                      >
-                        !
-                      </span>
-                    </InfoTooltip>
-                  ))}
-                </div>
-                <div className="text-body text-text-muted mt-1">
-                  {[
-                    data.community_area_name,
-                    ctx.neighborhood?.ward ? t("scorecard.wardLabel", { ward: ctx.neighborhood.ward.ward }) : null,
-                  ].filter(Boolean).join(" · ")}
-                  {parcel?.pin && (
-                    <>
-                      {(data.community_area_name || ctx.neighborhood?.ward) && " · "}
-                      <a
-                        href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-caption text-text-secondary hover:text-accent transition-colors"
-                      >
-                        PIN {formatPin(parcel.pin)} ↗
-                      </a>
-                    </>
-                  )}
-                </div>
-                <ParcelResolution resolution={data.resolution} />
+                <ProfileHeader
+                  title={data.address || ctx.property?.address ||
+                    (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
+                  pin={parcel?.pin ?? null}
+                  identity={!parcel ? null : parcel.pin === null ? "unconfirmed" : parcel.confidence === "authoritative" && !data.nearest_parcel_unverified ? "exact" : "approximate"}
+                  areaName={data.community_area_name}
+                  ward={ctx.neighborhood?.ward?.ward ?? null}
+                  resolution={data.resolution}
+                />
 
-                {/* Verdict lead — the conclusion, phrase explained on hover */}
                 {verdict && (
-                  <div ref={bandRef} className="mt-6">
-                    <VerdictBand verdict={verdict} onScrollTo={scrollToCard} />
-                  </div>
+                  <section ref={answerRef} className="mt-5" aria-label={t("scorecard.verdict.ariaLabel")} data-testid="answer">
+                    <div className="flex items-center gap-1">
+                      <StatusLabel tone="neutral" glyph={null}>{verdict.headline}</StatusLabel>
+                      {verdictExplain && <Toggletip label={verdict.headline}>{verdictExplain}</Toggletip>}
+                    </div>
+                    <p className="mt-2 max-w-2xl text-subtitle font-medium leading-snug text-text-primary" data-testid="answer-sentence">
+                      {answer}
+                      {verdict.caveats.length > 0 && (
+                        <>
+                          {" "}
+                          <Toggletip label={t("scorecard.answer.caveatsLabel")}>
+                            <ul className="space-y-1.5">
+                              {verdict.caveats.map((c, i) => <li key={i}>{c}</li>)}
+                            </ul>
+                          </Toggletip>
+                        </>
+                      )}
+                    </p>
+                  </section>
                 )}
 
-                {/* ONE action row, ONE filled CTA: the violet money action
-                    leads, the verdict's next step rides along as a chip (the
-                    page-action idiom), the sample stays a quiet link. Two
-                    filled buttons never stack in the hero. */}
-                <div className="flex flex-wrap items-center gap-3 mt-5">
-                  {purchasesOff ? (
-                    <span className="px-4 py-2 rounded-lg border border-dark-border text-text-muted text-title cursor-default">
-                      {t("scorecard.reportCTA.title")} · {t("payments.comingSoon", { ns: "common" })}
-                    </span>
-                  ) : (
-                  <button
-                    type="button"
-                    onClick={handleDownloadPdf}
-                    disabled={downloading}
-                    className={
-                      reportDemoted
-                        ? "px-4 py-2 rounded-lg border border-highlight/40 text-highlight hover:border-highlight transition-colors text-title disabled:opacity-60"
-                        : "px-4 py-2 rounded-lg bg-highlight-fill text-highlight-fg hover:opacity-90 transition-opacity text-title disabled:opacity-60"
-                    }
-                  >
-                    {downloading
-                      ? t("scorecard.reportCTA.generating")
-                      : hasReportAccess
-                        ? t("scorecard.reportCTA.download")
-                        : `${t("scorecard.reportCTA.title")} · $25`}
-                  </button>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <Button variant="secondary" onClick={() => askDock(null)}>{t("scorecard.header.ask")}</Button>
+                  {/* The $25 report returns as the page's one violet element when purchases launch
+                      (Jack, 2026-10-31: no "coming soon" on the first screen). */}
+                  {!purchasesOff && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadPdf}
+                      disabled={downloading}
+                      className={
+                        reportDemoted
+                          ? "h-9 px-3.5 rounded-lg border border-highlight/40 text-highlight hover:border-highlight transition-colors text-caption font-medium disabled:opacity-60"
+                          : "h-9 px-3.5 rounded-lg bg-highlight-fill text-highlight-fg hover:opacity-90 transition-opacity text-caption font-medium disabled:opacity-60"
+                      }
+                    >
+                      {downloading
+                        ? t("scorecard.reportCTA.generating")
+                        : hasReportAccess
+                          ? t("scorecard.reportCTA.download")
+                          : `${t("scorecard.reportCTA.title")} · $25`}
+                    </button>
                   )}
-                  {/* Sample rides DIRECTLY beside the report button, always —
-                      they are one offer; the ask chip is a separate action. */}
-                  <a
-                    href="/sample-report.pdf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => track("sample_report_click", { source: "hero_link" })}
-                    className="text-caption text-text-muted hover:text-text-secondary transition-colors"
-                  >
-                    {t("scorecard.reportCTA.viewSample")} ↗
-                  </a>
                   {reportDemoted && !purchasesOff && (
                     <p className="basis-full text-caption text-text-muted">{t("scorecard.reportCTA.unverifiedNote")}</p>
                   )}
-                  {verdict && (
-                    <button
-                      type="button"
-                      onClick={runNextStep}
-                      className="ml-auto sm:ml-3 inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
-                    >
-                      {verdict.nextStep.label}
-                    </button>
-                  )}
                 </div>
 
-                {data.partial_failures.length > 0 && (
-                  <div className="mt-4 text-micro text-state-warning">
-                    {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
-                  </div>
-                )}
-
-                {/* Identity/provenance moved out of the meta line: the badge sits
-                    on the address, PIN in the subline, data-as-of + "how we
-                    scored this" live in the page footer (the provenance zone). */}
+                <div className="mt-6">
+                  <AnswerPanels build={buildFigures} inTheWay={inTheWayRows} value={valueFigures} onScrollTo={scrollToCard} />
+                </div>
               </div>
 
               {/* The place map — satellite default, parcel outline, comps, transit */}
@@ -1059,55 +1133,17 @@ export default function ScorecardPage() {
               </div>
             </div>
 
-            {/* KPI band — the level-1 numbers row */}
-            <KpiStrip tiles={tiles} onScrollTo={scrollToCard} />
+            {/* ONE sticky band (the section nav + a compact verdict label; on phones a bottom action bar). */}
+            <SectionBand
+              verdictLabel={answerAway ? verdict?.headline ?? null : null}
+              sections={navSections}
+              active={activeSection}
+              onJump={jumpToModule}
+              onAsk={() => askDock(null)}
+            />
 
-            {/* Condensed verdict strip — appears when the lead scrolls away */}
-            {verdict && bandAway && (
-              <div className="fixed top-[4.25rem] left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-7xl">
-                <button
-                  type="button"
-                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                  aria-label={t("scorecard.backToVerdict")}
-                  className="w-full flex items-center gap-3 rounded-lg border border-dark-border bg-dark-surface/95 backdrop-blur px-4 py-2 shadow-card text-left hover:border-dark-border-strong transition-colors"
-                >
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${verdictDotClass(verdict.category)}`} aria-hidden />
-                  <span className="text-caption text-text-primary truncate">{verdict.headline}</span>
-                  <span className="ml-auto hidden md:flex items-center gap-4 shrink-0">
-                    {tiles.slice(0, 4).map((tile) => (
-                      <span key={tile.label} className="text-caption text-text-secondary">
-                        {tile.value} <span className="text-text-muted">{tile.label}</span>
-                      </span>
-                    ))}
-                  </span>
-                  <span aria-hidden className="text-text-muted shrink-0">↑</span>
-                </button>
-              </div>
-            )}
-
-            {/* ── Level 2: the evidence modules + sticky section rail ─────── */}
-            <div className="lg:grid lg:grid-cols-[8.5rem_minmax(0,1fr)] lg:gap-10">
-              {/* Section rail — wayfinding for the dashboard (desktop only;
-                  the condensed verdict strip covers mobile). */}
-              <nav aria-label={t("scorecard.sectionsNav")} className="hidden lg:block">
-                <div className="sticky top-24 space-y-1">
-                  {navSections.map((id) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => jumpToModule(id)}
-                      className={`block w-full text-left text-caption rounded-md px-2.5 py-1.5 transition-colors ${
-                        activeSection === id
-                          ? "text-text-primary bg-dark-elevated"
-                          : "text-text-muted hover:text-text-secondary"
-                      }`}
-                    >
-                      {t(`scorecard.moduleNav.${id.replace("module-", "")}`)}
-                    </button>
-                  ))}
-                </div>
-              </nav>
-
+            {/* ── Level 2: the evidence modules ─────── */}
+            <div>
               <div className="min-w-0">
                 {/* §1 — What you can build: standards beside the zoning quilt,
                     overlay rows beside the boundary map — every spatial claim
@@ -1115,6 +1151,9 @@ export default function ScorecardPage() {
                 {hasBuild && (
                   <ProfileModule
                     id="module-build"
+                    open={openModules.has("module-build")}
+                    onToggle={() => toggleModule("module-build")}
+                    sources={<SourcesButton scope="build" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.build") })} />}
                     title={t("scorecard.sections.capacityTitle")}
                     takeaway={takeaways.build}
                     action={moduleAsk("build", "scorecard.ask.build", zdef
@@ -1197,6 +1236,9 @@ export default function ScorecardPage() {
                 {hasEconomics && (
                   <ProfileModule
                     id="module-economics"
+                    open={openModules.has("module-economics")}
+                    onToggle={() => toggleModule("module-economics")}
+                    sources={<SourcesButton scope="economics" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.economics") })} />}
                     title={t("scorecard.sections.economicsTitle")}
                     takeaway={takeaways.costs}
                     action={moduleAsk("economics", "scorecard.ask.costs", `Tell me about the building, taxes, and assessment history at ${addr}`)}
@@ -1221,6 +1263,9 @@ export default function ScorecardPage() {
                 {hasMarket && (
                   <ProfileModule
                     id="module-market"
+                    open={openModules.has("module-market")}
+                    onToggle={() => toggleModule("module-market")}
+                    sources={<SourcesButton scope="market" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.market") })} />}
                     title={t("scorecard.sections.marketTitle")}
                     takeaway={takeaways.market}
                     action={moduleAsk("market", "scorecard.ask.market", `What are the recent comparable sales near ${addr} and what do they suggest about property values?`)}
@@ -1238,6 +1283,9 @@ export default function ScorecardPage() {
                 {hasRecord && (
                   <ProfileModule
                     id="module-record"
+                    open={openModules.has("module-record")}
+                    onToggle={() => toggleModule("module-record")}
+                    sources={<SourcesButton scope="record" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.record") })} />}
                     title={t("scorecard.sections.riskTitle")}
                     takeaway={takeaways.record}
                     action={ctx.violations && ctx.violations.total > 0
@@ -1277,6 +1325,9 @@ export default function ScorecardPage() {
                 {modulePresence["module-area"] && (
                   <ProfileModule
                     id="module-area"
+                    open={openModules.has("module-area")}
+                    onToggle={() => toggleModule("module-area")}
+                    sources={<SourcesButton scope="area" provenance={data.provenance} title={t("scorecard.sources.sectionTitle", { section: t("scorecard.moduleNav.area") })} />}
                     title={t("scorecard.neighborhoodContext.title")}
                     takeaway={data.community_area_name
                       ? t("scorecard.neighborhoodContext.scope", { area: data.community_area_name })
@@ -1305,11 +1356,23 @@ export default function ScorecardPage() {
                       </span>
                     )}
                   </div>
-                  {data.data_dates && data.data_dates.length > 0 && (
-                    <p className="text-micro text-text-muted leading-relaxed" data-testid="data-dates">
-                      {data.data_dates.map((d) => dataDatePhrase(d, tc)).join(" · ")}
-                    </p>
-                  )}
+                  <SourcesButton
+                    scope="all"
+                    provenance={data.provenance}
+                    title={t("scorecard.sources.pageTitle")}
+                    label={t("scorecard.sources.pageButton")}
+                    extra={<>
+                      {data.data_dates && data.data_dates.length > 0 && (
+                        <div>
+                          <h4 className="text-title text-text-primary mb-1">{t("scorecard.sources.dates")}</h4>
+                          <p className="leading-relaxed" data-testid="data-dates">
+                            {data.data_dates.map((d) => dataDatePhrase(d, tc)).join(" · ")}
+                          </p>
+                        </div>
+                      )}
+                      <CoverageNotes notes={ctx.coverage_notes ?? null} codeCurrency={ctx.code_currency ?? null} />
+                    </>}
+                  />
                   {verdict && <VerdictMethodology verdict={verdict} />}
                 </div>
               </div>
@@ -1324,7 +1387,7 @@ export default function ScorecardPage() {
       {/* Quick-chat dock — keyed per parcel so a new address opens fresh
           (ephemeral by design; escalation carries the transcript out). */}
       {data && ctx && !loading && (
-        <MiniChatDock key={data.resolved_pin ?? data.address ?? "parcel"} data={data} signal={dockSignal} />
+        <MiniChatDock key={data.resolved_pin ?? data.address ?? "parcel"} data={data} signal={dockSignal} launcherBelowMd={false} />
       )}
 
       {showPurchasePrompt && data && parcel && (

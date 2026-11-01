@@ -171,6 +171,20 @@ describe("useDiscoverySearch: draft and apply", () => {
     expect(hook.result.current.applied?.dataVersion).toBe("v2");
   });
 
+  it("never sends a search without the default sort, so the response still reconciles the draft", async () => {
+    // A search issued before the default-sort effect had run went out with sort null; the effect then
+    // changed the draft, the response no longer matched it, and its filters showed as removed chips
+    // (the 2026-10-31 Discovery test flake).
+    const hook = setup();
+    act(() => hook.result.current.setSort(null));
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "first", withFilters(["tif", TIF])));
+    act(() => hook.result.current.editPanel("tif", TIF));
+    act(() => hook.result.current.apply());
+    expect(mocks.runSearch.mock.calls[0][0].sort).toEqual(REG.defaultSort);
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    expect(hook.result.current.chips.map((c) => [c.id, c.state])).toEqual([["tif", "applied"]]);
+  });
+
   it("keeps the previous results, count and dots while a refresh runs", async () => {
     const hook = setup();
     await firstSearch(hook);
