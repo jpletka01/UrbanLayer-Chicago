@@ -91,6 +91,17 @@ interface ParcelMapProps {
   lazy?: boolean;
   /** The key row describing this parcel itself (its zoning class), listed first and marked in the key. */
   subjectKey?: string | null;
+  /** The phone's place-map strip (decision Item 56): a still picture, no controls or key; a tap opens the full map. */
+  bare?: boolean;
+}
+
+/** Whether a module map has something to draw (or an outage to name). The analysis map's layer switch offers
+    only the layers that pass. */
+export function parcelMapHasContent(variant: ParcelMapVariant, layers?: ParcelMapLayers | null): boolean {
+  if (variant === "place") return true;
+  if (unavailableParcelMapSources(variant, layers?.availability).length > 0) return true;
+  if (variant === "zoning") return !!layers?.zoning?.features?.length;
+  return !!(layers?.overlays?.features?.length || layers?.tif || layers?.ez);
 }
 
 export function ParcelMap(props: ParcelMapProps) {
@@ -112,15 +123,8 @@ export function ParcelMap(props: ParcelMapProps) {
   const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   if (!token) return null;
 
-  const unavailable = unavailableParcelMapSources(props.variant, props.layers?.availability);
-
   // Content gate: module maps render only when they have something to show.
-  if (props.variant === "zoning"
-    && !(props.layers?.zoning?.features?.length)
-    && unavailable.length === 0) return null;
-  if (props.variant === "boundaries"
-    && !(props.layers?.overlays?.features?.length || props.layers?.tif || props.layers?.ez)
-    && unavailable.length === 0) return null;
+  if (!parcelMapHasContent(props.variant, props.layers)) return null;
 
   return (
     <div ref={sentinelRef} className={props.className}>
@@ -146,6 +150,7 @@ function ParcelMapInner({
   showTransit,
   parcelConfidence,
   subjectKey,
+  bare,
 }: ParcelMapProps) {
   const { t } = useTranslation("pages");
   const { resolvedTheme } = useThemeContext();
@@ -233,7 +238,7 @@ function ParcelMapInner({
   } = useMapboxOverlay({
     center: [lon, lat],
     zoom,
-    interactive: true,
+    interactive: !bare,
     clickToActivate: true,
     style: initialStyle,
     pickingRadius: 14,
@@ -467,9 +472,9 @@ function ParcelMapInner({
   return (
     <div
       ref={frameRef}
-      className={`flex w-full h-full min-h-[16rem] rounded-lg overflow-hidden border border-dark-border ${keyBeside ? "flex-row" : "flex-col"}`}
+      className={`flex w-full h-full ${bare ? "" : "min-h-[16rem]"} rounded-lg overflow-hidden border border-dark-border ${keyBeside ? "flex-row" : "flex-col"}`}
     >
-    <div className="relative min-w-0 min-h-[16rem] flex-1">
+    <div className={`relative min-w-0 flex-1 ${bare ? "" : "min-h-[16rem]"}`}>
       <div ref={containerRef} className="absolute inset-0" />
       {unavailable.length > 0 && (
         <div
@@ -481,7 +486,7 @@ function ParcelMapInner({
           })}
         </div>
       )}
-      {variant === "place" && (
+      {variant === "place" && !bare && (
         <div className="absolute top-2 left-2 flex rounded-md overflow-hidden border border-dark-border bg-dark-surface/90 backdrop-blur text-micro">
           <button
             type="button"
@@ -512,7 +517,7 @@ function ParcelMapInner({
       {hasKey && keyOpen && (
         <ParcelMapKeySheet id={`${keyId}-sheet`} sources={controlSources} subjectKey={subjectKey} onChange={setLayerState} onClose={closeKey} />
       )}
-      {variant === "place" && legend.length > 0 && (
+      {variant === "place" && !bare && legend.length > 0 && (
         <div className="absolute top-2 right-2 max-w-[55%] max-h-[calc(100%-1rem)] overflow-y-auto rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5">
           {legend.map((row) => (
             <div key={row.key} className="flex items-center gap-1.5 text-micro text-text-secondary leading-tight">

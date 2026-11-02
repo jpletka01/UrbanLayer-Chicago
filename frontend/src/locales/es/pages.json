@@ -504,7 +504,10 @@
         "district_other": "{{count}} distritos a la vista",
         "feature_one": "{{count}} elemento a la vista",
         "feature_other": "{{count}} elementos a la vista"
-      }
+      },
+      "expand": "Abrir el mapa completo",
+      "placeTitle": "Dónde está la parcela",
+      "close": "Cerrar el mapa"
     },
     "crimeCurrent": "Período actual",
     "crimePrior": "Año anterior",
@@ -661,6 +664,14 @@
       "sources": "Superficies construidas: Tasador del Condado de Cook (revaluación {{year}}) y el índice de parcelas (creado {{built}}). Formas de las parcelas: PTAXSIM. Distritos: mapa de zonificación de la Ciudad de Chicago.",
       "notColoredCount_one": "Sin color: {{count}} parcela",
       "notColoredCount_other": "Sin color: {{count}} parcelas"
+    },
+    "analysisMap": {
+      "switchLabel": "Capa del mapa",
+      "layer": {
+        "zoning": "Zonificación",
+        "overlays": "Superposiciones e incentivos",
+        "capacity": "Construido vs. permitido"
+      }
     },
     "whatIf": {
       "title": "¿Y si se cambiara la zonificación?",

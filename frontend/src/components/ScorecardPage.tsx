@@ -51,7 +51,9 @@ import { RentBlock } from "./scorecard/RentBlock";
 import { useFact } from "../lib/provenanceContext";
 import { MiniChatDock, type DockSignal } from "./MiniChatDock";
 import { ParcelMap, type ParcelMapLayers } from "./scorecard/ParcelMap";
-import { CapacityMap } from "./scorecard/CapacityMap";
+import { AnalysisMap } from "./scorecard/AnalysisMap";
+import { PlaceMapStrip } from "./scorecard/PlaceMapStrip";
+import { useIsPhone } from "../lib/useIsPhone";
 
 // Classify a failed address-resolution input: did the user type an address
 // (a typo to fix here) or a code question (redirect to the analyst)? Computed
@@ -863,13 +865,19 @@ export default function ScorecardPage() {
     setModulesFor(parcelKey);
     setOpenModules(new Set());
   }
+  // Phones open one section at a time (decision Item 56): opening one closes the rest, so the page never
+  // stacks two long sections the reader has to scroll past.
+  const isPhone = useIsPhone();
   const toggleModule = (id: ModuleId) => setOpenModules((prev) => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
+    if (prev.has(id)) {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    }
+    return isPhone ? new Set([id]) : new Set(prev).add(id);
   });
   const openThenScroll = (moduleId: ModuleId, elementId: string) => {
-    setOpenModules((prev) => (prev.has(moduleId) ? prev : new Set(prev).add(moduleId)));
+    setOpenModules((prev) => (prev.has(moduleId) ? prev : isPhone ? new Set([moduleId]) : new Set(prev).add(moduleId)));
     requestAnimationFrame(() => requestAnimationFrame(() => {
       (document.getElementById(elementId) ?? document.getElementById(moduleId))?.scrollIntoView({ behavior: "smooth", block: "start" });
     }));
@@ -1132,20 +1140,36 @@ export default function ScorecardPage() {
                 </div>
               </div>
 
-              {/* The place map — satellite default, parcel outline, comps, transit */}
-              <div className="mt-6 lg:mt-0 h-72 lg:h-auto lg:min-h-[24rem]">
-                <ParcelMap
-                  variant="place"
-                  lat={data.resolved_lat ?? data.lat}
-                  lon={data.resolved_lon ?? data.lon}
-                  parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
-                  profileKey={data.resolved_pin ?? data.address}
-                  parcelConfidence={data.resolved_confidence}
-                  comps={data.comparables?.sales}
-                  showTransit
-                  className="h-full"
-                />
-              </div>
+              {/* The place map — satellite default, parcel outline, comps, transit. Phones get a 160 px strip in
+                  its place, after the panels so the In-the-way rows stay on the first screen (decision Item 56). */}
+              {isPhone ? (
+                <div className="mt-6">
+                  <PlaceMapStrip
+                    key={data.resolved_pin ?? data.address}
+                    lat={data.resolved_lat ?? data.lat}
+                    lon={data.resolved_lon ?? data.lon}
+                    parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                    profileKey={data.resolved_pin ?? data.address}
+                    parcelConfidence={data.resolved_confidence}
+                    comps={data.comparables?.sales}
+                    showTransit
+                  />
+                </div>
+              ) : (
+                <div className="mt-6 lg:mt-0 h-72 lg:h-auto lg:min-h-[24rem]">
+                  <ParcelMap
+                    variant="place"
+                    lat={data.resolved_lat ?? data.lat}
+                    lon={data.resolved_lon ?? data.lon}
+                    parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                    profileKey={data.resolved_pin ?? data.address}
+                    parcelConfidence={data.resolved_confidence}
+                    comps={data.comparables?.sales}
+                    showTransit
+                    className="h-full"
+                  />
+                </div>
+              )}
             </div>
 
             {/* ONE sticky band (the section nav + a compact verdict label; on phones a bottom action bar). */}
@@ -1160,9 +1184,8 @@ export default function ScorecardPage() {
             {/* ── Level 2: the evidence modules ─────── */}
             <div>
               <div className="min-w-0">
-                {/* §1 — What you can build: standards beside the zoning quilt,
-                    overlay rows beside the boundary map — every spatial claim
-                    is SHOWN next to the row that makes it. */}
+                {/* §1 — What you can build: the standards and overlay rows beside ONE analysis map whose layer
+                    switch shows each spatial claim (decision Item 55). */}
                 {hasBuild && (
                   <ProfileModule
                     id="module-build"
@@ -1178,72 +1201,53 @@ export default function ScorecardPage() {
                     {unchecked.build.length > 0 && <UncheckedRow labels={unchecked.build} href={ZONING_MAP_URL} className="mb-6" />}
                     {ctx.upcoming_zoning && <UpcomingZoningCard data={ctx.upcoming_zoning} />}
                     {ctx.upcoming_zoning?.text_review && <PendingTextImpactsCard data={ctx.upcoming_zoning} />}
-                    <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch">
-                      {zdef && (
-                        <div id="scorecard-card-zoning" className="scroll-mt-28 flex flex-col">
-                          <ScorecardZoningCard
-                            def={zdef}
-                            mapUrl={zoning?.zoning_map_url}
-                            existingFar={verdict?.signals.existingFar}
-                            allowedFar={verdict?.signals.allowedFar}
-                            ordinanceNum={zoning?.ordinance_num}
-                            unitYield={ctx.unit_yield ?? null}
-                            freshness={zoning ?? null}
-                            codeVintage={ctx.code_vintage ?? null}
-                            codeCurrency={ctx.code_currency ?? null}
-                            provenance={data.provenance ?? null}
-                            coverageNotes={ctx.coverage_notes ?? null}
-                            passedNotOnMap={ctx.passed_not_on_map ?? null}
-                          />
-                        </div>
-                      )}
-                      <ParcelMap
-                        variant="zoning"
-                        lazy
-                        subjectKey={zdef?.zone_class ?? null}
+                    {/* Standards, the what-if and the overlay rows on the left; ONE analysis map on the right with a
+                        layer switch (decision Item 55), held in view while the left column scrolls. */}
+                    <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-start">
+                      <div className="flex min-w-0 flex-col gap-8">
+                        {zdef && (
+                          <div id="scorecard-card-zoning" className="scroll-mt-28 flex flex-col gap-6">
+                            <ScorecardZoningCard
+                              def={zdef}
+                              mapUrl={zoning?.zoning_map_url}
+                              existingFar={verdict?.signals.existingFar}
+                              allowedFar={verdict?.signals.allowedFar}
+                              ordinanceNum={zoning?.ordinance_num}
+                              unitYield={ctx.unit_yield ?? null}
+                              freshness={zoning ?? null}
+                              codeVintage={ctx.code_vintage ?? null}
+                              codeCurrency={ctx.code_currency ?? null}
+                              provenance={data.provenance ?? null}
+                              coverageNotes={ctx.coverage_notes ?? null}
+                              passedNotOnMap={ctx.passed_not_on_map ?? null}
+                            />
+                            <WhatIfCard
+                              key={`what-if:${data.resolved_pin ?? data.address}`}
+                              currentDistrict={zdef.zone_class}
+                              lotSqft={ctx.property?.land_sqft ?? null}
+                              in606={ctx.unit_yield?.rule_606 === "applied" ? true : ctx.unit_yield?.rule_606 === "not_in_district" ? false : null}
+                            />
+                          </div>
+                        )}
+                        {ctx.regulatory && (
+                          <div id="scorecard-card-regulatory" className="scroll-mt-28 flex flex-col">
+                            <ScorecardRegulatoryCard data={ctx.regulatory} adu={ctx.adu ?? null} designations={ctx.passed_landmark_designations ?? null} tod={ctx.tod_benefits ?? null} />
+                          </div>
+                        )}
+                      </div>
+                      <AnalysisMap
+                        key={`analysis:${data.resolved_pin ?? data.address}`}
+                        className="md:sticky md:top-28"
                         lat={data.resolved_lat ?? data.lat}
                         lon={data.resolved_lon ?? data.lon}
+                        pin={data.resolved_pin ?? null}
                         parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
                         profileKey={data.resolved_pin ?? data.address}
                         parcelConfidence={data.resolved_confidence}
                         layers={mapLayers}
-                        className="min-h-[16rem]"
+                        subjectKey={zdef?.zone_class ?? null}
                       />
                     </div>
-                    {zdef && (
-                      <WhatIfCard
-                        key={`what-if:${data.resolved_pin ?? data.address}`}
-                        currentDistrict={zdef.zone_class}
-                        lotSqft={ctx.property?.land_sqft ?? null}
-                        in606={ctx.unit_yield?.rule_606 === "applied" ? true : ctx.unit_yield?.rule_606 === "not_in_district" ? false : null}
-                      />
-                    )}
-                    {ctx.regulatory && (
-                      <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch mt-8">
-                        <div id="scorecard-card-regulatory" className="scroll-mt-28 flex flex-col">
-                          <ScorecardRegulatoryCard data={ctx.regulatory} adu={ctx.adu ?? null} designations={ctx.passed_landmark_designations ?? null} tod={ctx.tod_benefits ?? null} />
-                        </div>
-                        <ParcelMap
-                          variant="boundaries"
-                          lazy
-                          lat={data.resolved_lat ?? data.lat}
-                          lon={data.resolved_lon ?? data.lon}
-                          parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
-                          profileKey={data.resolved_pin ?? data.address}
-                          parcelConfidence={data.resolved_confidence}
-                          layers={mapLayers}
-                          className="min-h-[16rem]"
-                        />
-                      </div>
-                    )}
-                    <CapacityMap
-                      key={`capacity:${data.resolved_pin ?? data.address}`}
-                      pin={data.resolved_pin ?? null}
-                      lat={data.resolved_lat ?? data.lat}
-                      lon={data.resolved_lon ?? data.lon}
-                      profileKey={data.resolved_pin ?? data.address}
-                      className="mt-10"
-                    />
                   </ProfileModule>
                 )}
 

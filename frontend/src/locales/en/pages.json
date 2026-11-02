@@ -504,7 +504,10 @@
         "district_other": "{{count}} districts in view",
         "feature_one": "{{count}} feature in view",
         "feature_other": "{{count}} features in view"
-      }
+      },
+      "expand": "Open the full map",
+      "placeTitle": "Where the parcel is",
+      "close": "Close the map"
     },
     "crimeCurrent": "Current period",
     "crimePrior": "Prior year",
@@ -661,6 +664,14 @@
       "sources": "Building areas: Cook County Assessor ({{year}} reassessment) and the parcel index (built {{built}}). Parcel shapes: PTAXSIM. Districts: City of Chicago zoning map.",
       "notColoredCount_one": "Not colored: {{count}} parcel",
       "notColoredCount_other": "Not colored: {{count}} parcels"
+    },
+    "analysisMap": {
+      "switchLabel": "Map layer",
+      "layer": {
+        "zoning": "Zoning",
+        "overlays": "Overlays & incentives",
+        "capacity": "Built vs allowed"
+      }
     },
     "whatIf": {
       "title": "What if this were rezoned?",
