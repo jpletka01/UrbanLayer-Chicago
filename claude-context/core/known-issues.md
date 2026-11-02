@@ -8,6 +8,9 @@
 
 ## Known Limitations
 
+- **Shared-polygon land area.** ~3,400 PIN10s in 973 groups share one ptaxsim parcel polygon (condo/multi-PIN sites), so each PIN's "lot area" is the whole site's. Not yet split or flagged; affects lot-area figures, unit yield and capacity for those parcels.
+- **Discovery rows print a nominal "$1" assessment.** The Profile/report treat <$100 or >99%-drop values as `nominal_assessment` (2026-11-01), but Discovery result rows still print the raw figure. Fix with the redesign's rows cleanup (plan step 7).
+
 **Desktop map legend clips at the sidebar map's right edge** (noticed 2026-07-03 during chat-usability verification): with many crime-type rows, `MapLegend`'s right column renders flush against/past the map edge (e.g. "Criminal trespass" clipped). Cosmetic; sidebar-width map + legend/date-slider stacking. Untouched by the 2026-07-03 mobile-map pass (legend is desktop-only).
 
 **Loading an EMPTY conversation at `/c/:id` renders the splash**: if a conversation row exists but has zero messages (created but first send never persisted — e.g. an aborted request), `getConversation` succeeds with `messages: []` → `active=false` → splash renders at the conversation URL. Edge case; a "conversation not found / start fresh" state would be more honest.

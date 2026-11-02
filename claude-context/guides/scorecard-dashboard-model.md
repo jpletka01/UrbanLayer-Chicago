@@ -1,5 +1,7 @@
 # Scorecard as a Property Dashboard — design model (2026-07-01)
 
+> **SUPERSEDED 2026-11-02 for layout:** the Profile now follows `guides/page-design.md` (one answer first, three panels, collapsed sections, tool tray, page budget; decision Items 46-54). Keep this file for the history of the July model only.
+
 > **2026-07-07 IMPLEMENTED on branch `feat/property-profile`** (Jack-approved direction:
 > cards out, dashboard hierarchy, interactive viz, rename to **Property Profile** en /
 > **Ficha** es). What shipped vs this model: identity bar + de-carded verdict + 6-tile
