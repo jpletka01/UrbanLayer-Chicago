@@ -218,5 +218,12 @@
     "sinceAging_one": "(+{{count}} later zoning amendment as of {{d}})",
     "sinceAging_other": "(+{{count}} later zoning amendments as of {{d}})",
     "sinceUnknown": "(couldn't check recently for later amendments)"
+  },
+  "tools": {
+    "dates": "Dates: {{label}}",
+    "code": "Code section: {{label}}",
+    "source": "Official record: {{label}}",
+    "explain": "What this means: {{label}}",
+    "ask": "Ask about: {{label}}"
   }
 }

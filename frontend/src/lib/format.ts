@@ -92,3 +92,16 @@ export function amendmentStatus(a: Pick<Amendment, "review_status" | "product_ef
   if (a.review_status !== "reviewed" || a.product_effect === "pending" || !a.product_effect) return "pending";
   return a.product_effect === "applied" ? "applied" : "none";
 }
+
+/** "100 N STATE ST" → "100 N State St": an all-caps record address in title case, with compass
+    directions kept as capitals. */
+export function titleCaseAddress(value: string): string {
+  return value
+    .split(/\s+/)
+    .map((w) => {
+      if (/^[NSEW]$/i.test(w)) return w.toUpperCase();
+      if (/^\d/.test(w)) return w.toLowerCase(); // 1600-1610, 21st
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    })
+    .join(" ");
+}

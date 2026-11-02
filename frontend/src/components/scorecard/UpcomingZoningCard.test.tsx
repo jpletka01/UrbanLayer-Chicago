@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { UpcomingZoningFiling, UpcomingZoningSummary } from "../../lib/types";
 import { UpcomingZoningCard } from "./UpcomingZoningCard";
 
@@ -40,17 +40,29 @@ const base = (over: Partial<UpcomingZoningSummary> = {}): UpcomingZoningSummary 
 describe("UpcomingZoningCard", () => {
   it("renders a healthy checked zero separately from unavailable", () => {
     const { rerender } = render(<UpcomingZoningCard data={base()} />);
-    expect(screen.getByText(/No placeable current zoning filings found/)).toBeTruthy();
+    const none = screen.getByTestId("upcoming-none");
+    expect(none.textContent).toContain("None found");
+    expect(none.textContent).toContain("within 0.5 mi");
+    // the disclaimer sits behind the card's Explain tool (decision Item 54)
+    expect(screen.queryByText(/Applicant filings are proposals, not approvals/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^What this means: Upcoming zoning/ }));
     expect(screen.getByText(/Applicant filings are proposals, not approvals/)).toBeTruthy();
 
     rerender(<UpcomingZoningCard data={base({ status: "unavailable", placement_status: "partial" })} />);
+    expect(document.querySelector('[data-confidence-state="not_checked"]')).not.toBeNull();
+    expect(screen.queryByTestId("upcoming-none")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Why: Upcoming zoning/ }));
     expect(screen.getByText(/couldn't be checked right now/)).toBeTruthy();
-    expect(screen.queryByText(/No placeable current zoning filings found/)).toBeNull();
   });
 
   it("keeps stale and partial warnings explicit", () => {
     render(<UpcomingZoningCard data={base({ status: "stale", placement_status: "partial", unplaced_count: 3 })} />);
+    expect(screen.getByText("Showing the last good check")).toBeTruthy();
+    expect(screen.getByText("3 filings couldn't be placed")).toBeTruthy();
+    const explains = screen.getAllByRole("button", { name: /^What this means: Upcoming zoning/ });
+    fireEvent.click(explains[1]);
     expect(screen.getByText(/latest refresh did not complete/)).toBeTruthy();
+    fireEvent.click(explains[2]);
     expect(screen.getByText(/3 current filing\(s\) could not be placed/)).toBeTruthy();
   });
 
@@ -63,6 +75,10 @@ describe("UpcomingZoningCard", () => {
     expect(screen.getByText("subject match")).toBeTruthy();
     expect(screen.getByText("Nearby within 0.5 mi")).toBeTruthy();
     expect(screen.getByText("0.12 mi away")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "O-SUBJECT" }).getAttribute("href")).toBe("https://clerk.example/O-SUBJECT");
+    expect(screen.getByText("10 N State St")).toBeTruthy(); // a place, not a Clerk number
+    expect(screen.queryByText("O-SUBJECT")).toBeNull();
+    const link = screen.getByRole("link", { name: "Official record: 10 N State St" });
+    expect(link.getAttribute("href")).toBe("https://clerk.example/O-SUBJECT");
+    expect(link.getAttribute("title")).toContain("O-SUBJECT");
   });
 });

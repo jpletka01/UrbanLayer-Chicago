@@ -145,7 +145,12 @@
       "empty": "No placeable current zoning filings found for this property or within {{radius}} mi.",
       "stale": "The latest refresh did not complete. Showing the last successful check; verify the Clerk record before relying on it.",
       "unavailable": "Upcoming zoning filings couldn't be checked right now. This is not a finding of none.",
-      "partial": "Placement is partial: {{count}} current filing(s) could not be placed from the official title. The list below may be incomplete."
+      "partial": "Placement is partial: {{count}} current filing(s) could not be placed from the official title. The list below may be incomplete.",
+      "staleShort": "Showing the last good check",
+      "partialShort_one": "{{count}} filing couldn't be placed",
+      "partialShort_other": "{{count}} filings couldn't be placed",
+      "noneNear": "None on this property or within {{radius}} mi",
+      "proposedStatus": "Proposed · {{status}}"
     },
     "adu": {
       "allowed_by_right": "Coach houses and conversion units permitted by right",
@@ -233,7 +238,21 @@
       "untested": "Can't be tested for this property",
       "summaryToggle": "What the proposal says",
       "official": "Official record ↗",
-      "valueOf": "{{label}}: {{value}}"
+      "valueOf": "{{label}}: {{value}}",
+      "todayValue": "today {{value}}",
+      "proposedStatus": "Proposed · {{status}}",
+      "count_one": "{{count}} proposal before City Council could change a rule on this page",
+      "count_other": "{{count}} proposals before City Council could change rules on this page",
+      "dateIntroduced": "Introduced at City Council",
+      "dateLastAction": "City Council last acted",
+      "dateReviewed": "We read the ordinance text",
+      "dateChecked": "We checked the Clerk's list",
+      "notChecked": "Couldn't check today",
+      "staleShort": "Showing the last good check",
+      "incompleteShort_one": "{{count}} proposal not yet reviewed",
+      "incompleteShort_other": "{{count}} proposals not yet reviewed",
+      "noneApply_one": "{{count}} reviewed; it doesn't apply here",
+      "noneApply_other": "{{count}} reviewed; none applies here"
     }
   },
   "incentives": {

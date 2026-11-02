@@ -2484,3 +2484,42 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Decision: one allowance (`MAX_AMBER` = 3) for the whole first screen.** A figure's "Low confidence" label is a truth rule (guide §3) and always shows; so does an approximate or unconfirmed parcel match in the header (`amberElsewhere`). The In-the-way rows get what is left, in blocker order, and the rest fold into "+N more". The top blocker is already named in the answer sentence, so folding a row hides nothing the reader needs first. *Alternative:* render the Low-confidence tag neutral on the first screen; rejected because the guide makes it the one amber phrase, and a weak figure should look weak.
 
 **Numbers:** a unit test reproduces the production case (3 rows + 1 low label → 2 rows + label + "+1 more"; with an approximate match → 1 row + "+2 more"). Locally the $1 parcel's comps median is not low today, so the page measured 3 amber either way. **Not measured:** the production page with this change (after the next release).
+
+## Item 54: evidence behind a fixed set of Lucide tool icons; orange-outlined secondary buttons (2026-11-02)
+
+**Status (2026-11-02): open as a PR, not merged; built for Jack's visual review (he chose Lucide and will judge the look).** Jack (2026-11-02): even after the first-screen redesign, an opened section "bores me... I don't know where to look". The research's own rule (strong signifiers on dense pages) was broken by dark-on-dark secondary buttons. Measured on production: the opened "What you can build" section printed **919–1,085 words, 10–13 dates, 19–26 code/record IDs and 10–13 inline links**. "Pending zoning-code changes" alone was 540–630 words, with Clerk record numbers as headlines and two unexplained dates ("Updated" = City Council's last action; "Reviewed" = when we read the ordinance).
+
+**Decision 1: one icon library, Lucide.** `lucide-react` pinned at **1.59.0** (published 2026-10-17; 1.66.0 was two days old), ISC licence, tree-shaken React components. Jack's choice of library. It replaces every text glyph I had used as an icon (ⓘ ⏱ ▾ ≈ ◌ ∅ ⊘ ▲ ↓ ✕): those rendered differently per font. Jack: no emoji, and dates are a calendar, not a clock. *Alternative:* Heroicons (the site's hand-pasted SVGs are Heroicons); rejected because ~300 icons lacks the status set (`CircleDashed`, `EqualApproximately`). New and touched icons use Lucide; the remaining hand-pasted Heroicons migrate as their cards are touched.
+
+**Decision 2: a fixed tool tray, one meaning per icon, one order.** `ToolTray`: Dates (`Calendar`, each date with its plain meaning via `DateLine`) · Code (`Scale`) · Official record (`SquareArrowOutUpRight`) · Explain (`Info`) · Ask (`MessageCircleQuestion`). Neutral, orange on hover/focus, real buttons with names ("Dates: Minimum lot area per unit"). Status labels keep their icons and stay visible (`TriangleAlert`, `CircleDashed`, `CircleCheck`, `EqualApproximately`, `CircleSlash`, `CircleMinus`).
+
+**Decision 3: the Build section's cards print a headline, key figures and status labels only.**
+- Pending code changes: one line per proposal ("Minimum lot area per dwelling unit for RS-3 · today 2,500 sq ft · Proposed · In Committee Referred"); Clerk number + official title, three dates, sections and the could-change / today-unchanged explanation behind the tools. The Clerk stage number ("4-") is dropped.
+- Upcoming zoning: the filing's address (title-cased) and distance, "Proposed · stage"; the rest behind tools.
+- Zoning: § refs under figures become `Scale` buttons (the code viewer still opens; the section stays as screen-reader text); uses, lot-area note, record/code dates, chapter section and the City map link go into the card's tray; unit-yield arithmetic + caveat behind its own Explain.
+- What-if: a visible "Arithmetic, not a forecast" label; intro + approval caveat behind Explain.
+- Regulatory: constraint rows' type/requirement/definition behind Explain and their link behind Official record; opportunity notes (printed a second time under the pills) move into each pill's Explain.
+- Capacity map: method, sources' dates and the key footnote behind the title's tools; "Not colored, and why" becomes one counted line ("Not colored: 59 parcels") with the breakdown behind Explain (rule §4.8 kept: the key states the count).
+- Truth states never move behind a tool: Not checked, None found, stale, incomplete, partial and Proposed stay visible labels; only their explanations move. Every changed test checks the same guarantee by opening the tool as a user would.
+
+**Decision 4: secondary buttons are orange-outlined.** `Button` secondary and the module "Ask about…" chips: `border-link text-link` (≈9:1 on dark, ≈5:1 on light; the old dark outline matched the surface). One solid orange per viewport still holds.
+
+**Decision 5: the budget covers the opened Build section,** cap 500 words, ratcheting with the 8-word state allowance; codified with the rest in the new project skill `page-design-rules` and plan principle 11.
+
+**Decision 6: a citywide "couldn't be placed" note is neutral, not amber.** Upcoming zoning's partial placement (283 filings citywide) showed amber on every Profile; amber is for what changes this decision, so it is a neutral label with the explanation behind Explain.
+
+**Numbers** (2026-11-02; production before; local after, with a local Clerk snapshot from `python -m backend.legislation.sync`: 921 pending matters, 48 Title 17, same as production; `buildwords.cjs` and the budget spec)
+
+| Opened "What you can build" | Before (prod) | After | Change |
+|---|---|---|---|
+| 1601 N Milwaukee | 1,085 words | 348 | −68% |
+| PIN 25-04-400-090-0000 | 919 | 237 | −74% |
+| Pending code changes card | 542–627 | 45–49 | −92% |
+| Zoning card | 124–139 | 33–46 | |
+| Budget baseline (4 parcels) | — | 275–364 (cap 500) | |
+
+**Also fixed (found by the new opened-section budget):** an opened section snapped shut ~10 s later when a second response for the same parcel arrived (dev mode's doubled mount effect fires two identical requests; any same-parcel refetch would do it). Item 51's reset compared response objects; it now keys on the parcel (`resolved_pin`, else address, else coordinates). The budget's measurement now waits for the opened section and fails on an empty one instead of recording 0.
+
+**Known wrinkle:** a pending row's "today" value comes from the backend as a bare number, so "Transit-served benefits · today 100" lacks its "%". Adding units per fact is a backend follow-up.
+
+**Not measured:** a screen reader pass on the trays; real users on the icon set (Jack reviews the look).

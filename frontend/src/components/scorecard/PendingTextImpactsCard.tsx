@@ -1,10 +1,8 @@
 import { useTranslation } from "react-i18next";
-import type {
-  PendingTextAffectedFact,
-  PendingTextEffect,
-  PendingTextImpact,
-  UpcomingZoningSummary,
-} from "../../lib/types";
+import type { PendingTextImpact, UpcomingZoningSummary } from "../../lib/types";
+import { ConfidenceState } from "../ui/ConfidenceState";
+import { StatusLabel } from "../ui/StatusLabel";
+import { DateLine, ToolTray } from "../ui/ToolTray";
 import { ShowMore, SubSection } from "./ProfileModule";
 
 const ChangeIcon = (
@@ -28,86 +26,65 @@ function dateOnly(value: string): string {
     .format(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
 }
 
-function FactToday({ fact }: { fact: PendingTextAffectedFact }) {
-  const { t } = useTranslation("data");
-  if (fact.current_value != null && fact.current_value !== "") {
-    return (
-      <li className="break-words">
-        {t("regulatory.pendingText.valueOf", { label: fact.label, value: String(fact.current_value) })}
-        {fact.section && <span className="text-text-muted"> (§{fact.section})</span>}
-      </li>
-    );
-  }
-  return (
-    <li className="break-words">
-      <span className="text-text-primary">{fact.label}.</span> {fact.current_law}
-    </li>
-  );
+/** "4-In Committee Referred" → "In Committee Referred": the Clerk's stage number is not for people. */
+function stage(status: string): string {
+  return status.replace(/^\d+\s*-\s*/, "");
 }
 
-function Effect({ effect }: { effect: PendingTextEffect }) {
-  const { t } = useTranslation("data");
-  return (
-    <div className="mt-3 grid gap-2 sm:grid-cols-2 sm:gap-4">
-      <div className="rounded-lg border border-state-warning/30 bg-state-warning/5 px-3 py-2.5 min-w-0">
-        <h6 className="text-caption font-medium uppercase tracking-wide text-text-muted mb-1">
-          {t("regulatory.pendingText.couldChange")}
-        </h6>
-        <p className="text-body text-text-secondary leading-snug break-words first-letter:uppercase">{effect.could_change}</p>
-        <p className="text-caption text-text-muted mt-1.5 break-words">
-          {t("regulatory.pendingText.sections")}: {effect.sections.map((s) => `§${s}`).join(", ")}
-        </p>
-        {effect.reach === "untested" && (
-          <p className="text-caption text-text-secondary mt-1.5 break-words">
-            <span className="font-medium">{t("regulatory.pendingText.untested")}.</span>{" "}
-            {effect.reach_note}
-          </p>
-        )}
-      </div>
-      <div className="rounded-lg border border-dark-border bg-dark-elevated/40 px-3 py-2.5 min-w-0">
-        <h6 className="text-caption font-medium uppercase tracking-wide text-text-muted mb-1">
-          {t("regulatory.pendingText.today")}
-        </h6>
-        <ul className="text-body text-text-secondary leading-snug space-y-1">
-          {effect.affected.map((fact) => <FactToday key={fact.fact_id} fact={fact} />)}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
+// One proposal = one line (decision Item 54): the rule it would change, in words, and today's value.
+// The Clerk number, the official title, the dates, the code sections and the explanation sit behind the
+// tool tray instead of being printed. "Proposed" stays a visible label: a proposal is never law.
 function ImpactRow({ impact }: { impact: PendingTextImpact }) {
   const { t } = useTranslation("data");
-  const when = day(impact.latest_action_at ?? impact.introduced_at);
+  const fact = impact.effects[0]?.affected[0];
+  const headline = fact?.label ?? impact.title;
+  const today = fact && fact.current_value != null && fact.current_value !== "" ? String(fact.current_value) : null;
+  const sections = [...new Set(impact.effects.flatMap((e) => e.sections))];
+  const untested = impact.effects.some((e) => e.reach === "untested");
   return (
-    <li className="rounded-lg border border-dark-border px-3 py-3 min-w-0">
-      <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
-        <a href={impact.url} target="_blank" rel="noopener noreferrer"
-          className="text-body font-medium text-text-primary hover:text-accent transition-colors break-all">
-          {impact.record_number}
-        </a>
-        <span className="text-caption text-text-muted">
-          {t("regulatory.pendingText.pending", { status: impact.sub_status || impact.status })}
+    <li className="flex min-w-0 items-start justify-between gap-3 border-t border-dark-border py-2.5 first:border-t-0" data-impact={impact.record_number}>
+      <span className="min-w-0">
+        <span className="block text-body text-text-primary break-words">{headline}</span>
+        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-text-secondary">
+          {today && <span>{t("regulatory.pendingText.todayValue", { value: today })}</span>}
+          <StatusLabel tone="neutral" glyph={null}>{t("regulatory.pendingText.proposedStatus", { status: stage(impact.sub_status || impact.status) })}</StatusLabel>
+          {untested && <StatusLabel tone="neutral" glyph={null}>{t("regulatory.pendingText.untested")}</StatusLabel>}
         </span>
-        {when && <span className="text-caption text-text-muted">{t("regulatory.pendingText.updated", { date: when })}</span>}
-      </div>
-      <p className="text-body text-text-secondary leading-snug mt-1 break-words">{impact.title}</p>
-      {impact.effects.map((effect) => <Effect key={effect.id} effect={effect} />)}
-      {impact.summary && (
-        <details className="mt-3 text-caption text-text-secondary">
-          <summary className="cursor-pointer text-text-muted hover:text-text-secondary">
-            {t("regulatory.pendingText.summaryToggle")}
-          </summary>
-          <p className="mt-1.5 leading-snug break-words">{impact.summary}</p>
-        </details>
-      )}
-      <p className="text-caption text-text-muted mt-2.5">
-        {t("regulatory.pendingText.reviewed", { date: dateOnly(impact.reviewed_on) })}
-        {" · "}
-        <a href={impact.url} target="_blank" rel="noopener noreferrer" className="hover:text-text-secondary underline underline-offset-2">
-          {t("regulatory.pendingText.official")}
-        </a>
-      </p>
+      </span>
+      <ToolTray
+        label={headline}
+        dates={
+          <span className="block space-y-1">
+            <DateLine what={t("regulatory.pendingText.dateIntroduced")} when={day(impact.introduced_at)} />
+            <DateLine what={t("regulatory.pendingText.dateLastAction")} when={day(impact.latest_action_at)} />
+            <DateLine what={t("regulatory.pendingText.dateReviewed")} when={dateOnly(impact.reviewed_on)} />
+          </span>
+        }
+        code={sections.length ? <span className="font-mono">{sections.map((s) => `§${s}`).join(", ")}</span> : undefined}
+        source={{ href: impact.url, title: `${impact.record_number}: ${impact.title}` }}
+        explain={
+          <span className="block space-y-2">
+            {impact.effects.map((effect) => (
+              <span key={effect.id} className="block">
+                <span className="block font-medium text-text-primary">{t("regulatory.pendingText.couldChange")}</span>
+                <span className="block first-letter:uppercase">{effect.could_change}</span>
+                {effect.reach === "untested" && effect.reach_note && <span className="mt-1 block text-text-muted">{effect.reach_note}</span>}
+              </span>
+            ))}
+            <span className="block">
+              <span className="block font-medium text-text-primary">{t("regulatory.pendingText.today")}</span>
+              {impact.effects.flatMap((e) => e.affected).map((f) => (
+                <span key={f.fact_id} className="block break-words">
+                  {f.current_value != null && f.current_value !== ""
+                    ? t("regulatory.pendingText.valueOf", { label: f.label, value: String(f.current_value) })
+                    : <><span className="text-text-primary">{f.label}.</span> {f.current_law}</>}
+                </span>
+              ))}
+            </span>
+            {impact.summary && <span className="block text-text-muted">{impact.summary}</span>}
+          </span>
+        }
+      />
     </li>
   );
 }
@@ -119,64 +96,81 @@ export function PendingTextImpactsCard({ data }: { data: UpcomingZoningSummary }
   const review = data.text_review;
   if (!review) return null;
   const impacts = data.text_impacts ?? [];
-  const checked = day(data.checked_at);
   const unavailable = review.status === "unavailable";
+  const title = t("regulatory.pendingText.title");
 
   return (
     <SubSection
       icon={ChangeIcon}
-      title={t("regulatory.pendingText.title")}
-      meta={checked ? t("regulatory.pendingText.checked", { date: checked }) : undefined}
+      title={title}
+      meta={
+        <ToolTray
+          label={title}
+          dates={<DateLine what={t("regulatory.pendingText.dateChecked")} when={day(data.checked_at)} />}
+          explain={t("regulatory.pendingText.disclaimer")}
+        />
+      }
       className="mb-8"
     >
-      <p className="text-caption text-text-muted mb-3">{t("regulatory.pendingText.disclaimer")}</p>
-
       {unavailable && (
-        <div className="rounded-lg border border-state-warning/30 bg-state-warning/5 px-3 py-2.5 text-body text-text-secondary">
-          {t("regulatory.pendingText.unavailable")}
-        </div>
+        <p className="flex items-center gap-1.5 text-caption text-text-secondary">
+          <ConfidenceState kind="not_checked" tone="warning" explanation={t("regulatory.pendingText.unavailable")} explainLabel={title} />
+        </p>
       )}
 
       {!unavailable && (
         <>
           {data.status === "stale" && (
-            <div className="rounded-lg border border-state-warning/30 bg-state-warning/5 px-3 py-2.5 text-body text-text-secondary mb-3">
-              {t("regulatory.pendingText.stale")}
-            </div>
+            <p className="mb-2 flex items-center gap-1.5 text-caption text-text-secondary">
+              <StatusLabel tone="warning">{t("regulatory.pendingText.staleShort")}</StatusLabel>
+              <ToolTray label={title} explain={t("regulatory.pendingText.stale")} align="start" />
+            </p>
           )}
           {review.status === "incomplete" && (
-            <div className="rounded-lg border border-state-warning/30 bg-state-warning/5 px-3 py-2.5 text-body text-text-secondary mb-3">
-              <p>{t("regulatory.pendingText.incomplete", { count: review.unreviewed.length })}</p>
-              <ul className="mt-1.5 space-y-1 text-caption text-text-muted">
-                {review.unreviewed.map((u) => (
-                  <li key={u.record_number} className="break-words">
-                    <a href={u.url} target="_blank" rel="noopener noreferrer"
-                      className="text-text-secondary hover:text-accent break-all">{u.record_number}</a>
-                    {" — "}
-                    {u.reason === "outdated" ? t("regulatory.pendingText.reasonOutdated") : t("regulatory.pendingText.reasonUnreviewed")}
-                    {u.waiting_days != null && ` (${t("regulatory.pendingText.waiting", { days: u.waiting_days })})`}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="mb-2 flex flex-wrap items-center gap-1.5 text-caption text-text-secondary">
+              <StatusLabel tone="warning">{t("regulatory.pendingText.incompleteShort", { count: review.unreviewed.length })}</StatusLabel>
+              <ToolTray
+                label={title}
+                align="start"
+                explain={
+                  <span className="block space-y-1">
+                    <span className="block">{t("regulatory.pendingText.incomplete", { count: review.unreviewed.length })}</span>
+                    {review.unreviewed.map((u) => (
+                      <span key={u.record_number} className="block break-words">
+                        <a href={u.url} target="_blank" rel="noopener noreferrer" className="text-link hover:underline">{u.record_number}</a>
+                        {" — "}
+                        {u.reason === "outdated" ? t("regulatory.pendingText.reasonOutdated") : t("regulatory.pendingText.reasonUnreviewed")}
+                        {u.waiting_days != null && ` (${t("regulatory.pendingText.waiting", { days: u.waiting_days })})`}
+                      </span>
+                    ))}
+                  </span>
+                }
+              />
+            </p>
           )}
           {impacts.length === 0 && review.status === "complete" && (
-            <div className="rounded-lg border border-dark-border bg-dark-elevated/40 px-3 py-2.5 text-body text-text-secondary">
-              {review.pending_count === 0
-                ? t("regulatory.pendingText.emptyNone")
-                : t("regulatory.pendingText.empty", { count: review.pending_count })}
-            </div>
+            <p className="flex flex-wrap items-center gap-1.5 text-caption text-text-secondary" data-testid="pending-none">
+              <ConfidenceState kind="none_found" />
+              <span>
+                {review.pending_count === 0
+                  ? t("regulatory.pendingText.emptyNone")
+                  : t("regulatory.pendingText.noneApply", { count: review.pending_count })}
+              </span>
+            </p>
           )}
           {impacts.length > 0 && (
-            <ShowMore
-              items={impacts}
-              limit={3}
-              render={(visible) => (
-                <ul className="space-y-3">
-                  {visible.map((impact) => <ImpactRow key={impact.record_number} impact={impact} />)}
-                </ul>
-              )}
-            />
+            <>
+              <p className="mb-1 text-caption text-text-secondary">{t("regulatory.pendingText.count", { count: impacts.length })}</p>
+              <ShowMore
+                items={impacts}
+                limit={3}
+                render={(visible) => (
+                  <ul>
+                    {visible.map((impact) => <ImpactRow key={impact.record_number} impact={impact} />)}
+                  </ul>
+                )}
+              />
+            </>
           )}
         </>
       )}

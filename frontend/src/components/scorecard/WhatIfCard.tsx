@@ -5,6 +5,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchWhatIf, type WhatIfFigures, type WhatIfResponse } from "../../lib/api";
+import { StatusLabel } from "../ui/StatusLabel";
+import { ToolTray } from "../ui/ToolTray";
 
 interface WhatIfCardProps {
   currentDistrict: string;
@@ -41,9 +43,20 @@ export function WhatIfCard({ currentDistrict, lotSqft, in606 }: WhatIfCardProps)
 
   return (
     <section className="space-y-4 mt-8 max-w-3xl" data-testid="what-if">
-      <div>
+      {/* One title, one visible label, and the explanation behind Explain (decision Item 54). */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <h3 className="text-title text-text-primary">{t("scorecard.whatIf.title")}</h3>
-        <p className="text-caption text-text-secondary mt-1">{t("scorecard.whatIf.intro", { district: currentDistrict })}</p>
+        <StatusLabel tone="neutral" glyph={null}>{t("scorecard.whatIf.notForecast")}</StatusLabel>
+        <ToolTray
+          label={t("scorecard.whatIf.title")}
+          align="start"
+          explain={
+            <span className="block space-y-1.5" data-testid="what-if-explain">
+              <span className="block">{t("scorecard.whatIf.intro", { district: currentDistrict })}</span>
+              <span className="block">{t("scorecard.whatIf.note")}</span>
+            </span>
+          }
+        />
       </div>
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("scorecard.whatIf.choose")}>
         {lists.suggestions.map((d) => (
@@ -73,7 +86,6 @@ export function WhatIfCard({ currentDistrict, lotSqft, in606 }: WhatIfCardProps)
       {load.status === "loading" && <p className="text-caption text-text-muted">{t("scorecard.whatIf.loading")}</p>}
       {load.status === "failed" && <p role="status" className="text-caption text-text-secondary">{t("scorecard.whatIf.failed")}</p>}
       {data?.target && <Comparison current={data.current ?? null} target={data.target} currentLabel={currentDistrict} lot={data.lot_sqft ?? null} nf={nf} />}
-      <p className="text-micro text-text-muted leading-relaxed">{t("scorecard.whatIf.note")}</p>
     </section>
   );
 }

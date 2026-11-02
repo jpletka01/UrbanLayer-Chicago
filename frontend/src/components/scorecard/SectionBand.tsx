@@ -4,6 +4,7 @@
 // the sticky element is a bottom action bar (verdict label + Ask the analyst) and the dock's floating
 // launcher hides below `md`, so there is still one.
 import { useTranslation } from "react-i18next";
+import { MessageCircleQuestion } from "lucide-react";
 import { Button } from "../ui/Button";
 import { StatusLabel } from "../ui/StatusLabel";
 
@@ -53,7 +54,7 @@ export function SectionBand<Id extends string>({
         style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}
       >
         {verdictLabel && <StatusLabel tone="neutral" glyph={null} className="min-w-0">{verdictLabel}</StatusLabel>}
-        <Button variant="primary" size="lg" className="ml-auto" onClick={onAsk}>
+        <Button variant="primary" size="lg" className="ml-auto" icon={<MessageCircleQuestion className="h-4 w-4" strokeWidth={2} />} onClick={onAsk}>
           {t("scorecard.header.ask")}
         </Button>
       </div>

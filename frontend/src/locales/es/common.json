@@ -218,5 +218,12 @@
     "sinceAging_one": "(+{{count}} enmienda de zonificación posterior, al {{d}})",
     "sinceAging_other": "(+{{count}} enmiendas de zonificación posteriores, al {{d}})",
     "sinceUnknown": "(no se pudo verificar recientemente si hay enmiendas posteriores)"
+  },
+  "tools": {
+    "dates": "Fechas: {{label}}",
+    "code": "Sección del código: {{label}}",
+    "source": "Registro oficial: {{label}}",
+    "explain": "Qué significa: {{label}}",
+    "ask": "Preguntar sobre: {{label}}"
   }
 }

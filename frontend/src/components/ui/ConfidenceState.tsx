@@ -3,23 +3,25 @@
 // STATE is a short visible label with its own glyph, and the explanation (method, source, date,
 // why it is withheld) opens in a click toggletip instead of a paragraph on the page.
 //
-//   Estimate ≈ · Low confidence ≈ (amber, the one amber phrase) · Not checked ◌ · None found ∅ ·
-//   Withheld ⊘ (the value itself shows "—" plus a reason of 8 words or fewer) · N/A –
+//   Estimate (equal-approximately) · Low confidence (same icon, amber: the one amber phrase) ·
+//   Not checked (circle-dashed) · None found (circle-check) · Withheld (circle-slash; the value shows "—"
+//   plus a reason of 8 words or fewer) · N/A (circle-minus). Lucide icons (decision Item 54).
 //
 // A verified, standard figure renders nothing. "Not checked" and "None found" never share a word
 // or a glyph: "nothing" never reads as "no".
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { CircleCheck, CircleDashed, CircleMinus, CircleSlash, EqualApproximately, type LucideIcon } from "lucide-react";
 import type { ConfidenceKind } from "../../lib/confidence";
 import { StatusLabel, type StatusTone } from "./StatusLabel";
 import { Toggletip } from "./Toggletip";
 
-const GLYPH: Record<ConfidenceKind, string> = {
-  estimate: "≈",
-  not_checked: "◌",
-  none_found: "∅",
-  withheld: "⊘",
-  na: "–",
+const GLYPH: Record<ConfidenceKind, LucideIcon> = {
+  estimate: EqualApproximately,
+  not_checked: CircleDashed,
+  none_found: CircleCheck,
+  withheld: CircleSlash,
+  na: CircleMinus,
 };
 
 export function ConfidenceState({

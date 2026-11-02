@@ -3,13 +3,18 @@
 // method) opens on click or tap from a real button, stays open while read, and closes with Escape
 // (focus returns to the trigger), a second click, or a click outside.
 //
-// One icon, one meaning, everywhere: ⓘ = a source or code reference, ⏱ = a date, ▾ = more.
-// A date that changes the decision keeps its year visible beside the icon (`visible`).
+// One icon, one meaning, everywhere (see ICON). A date that changes the decision keeps its year visible
+// beside the calendar (`visible`).
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Calendar, ChevronDown, Info, Scale, SquareArrowOutUpRight, type LucideIcon } from "lucide-react";
 
-export type ToggletipKind = "info" | "date" | "more";
+export type ToggletipKind = "info" | "date" | "code" | "source" | "more";
 
-const ICON: Record<ToggletipKind, string> = { info: "ⓘ", date: "⏱", more: "▾" };
+// The page's tool icons (Lucide; decision Item 54), one meaning each: info = explain, date = every date
+// for this item, code = the Municipal Code rule, source = the official record, more = more detail.
+const ICON: Record<ToggletipKind, LucideIcon> = {
+  info: Info, date: Calendar, code: Scale, source: SquareArrowOutUpRight, more: ChevronDown,
+};
 
 export function Toggletip({
   kind = "info",
@@ -55,10 +60,10 @@ export function Toggletip({
             setOpen(false);
           }
         }}
-        className="inline-flex items-center gap-0.5 rounded px-0.5 text-text-muted cursor-pointer transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="inline-flex items-center gap-0.5 rounded px-0.5 text-text-muted cursor-pointer transition-colors hover:text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         {visible != null && <span className="text-caption text-text-secondary">{visible}</span>}
-        <span aria-hidden className="text-caption leading-none">{ICON[kind]}</span>
+        {(() => { const Icon = ICON[kind]; return <Icon aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />; })()}
       </button>
       {open && (
         <span
@@ -71,7 +76,7 @@ export function Toggletip({
             setOpen(false);
             buttonRef.current?.focus();
           }}
-          className={`absolute top-full z-30 mt-1 w-64 max-w-[80vw] rounded-lg border border-dark-border bg-dark-surface p-3 text-left text-caption font-normal normal-case tracking-normal text-text-secondary shadow-modal ${align === "end" ? "right-0" : "left-0"}`}
+          className={`absolute top-full z-30 mt-1 w-72 max-w-[80vw] rounded-lg border border-dark-border bg-dark-surface p-3 text-left text-caption font-normal normal-case tracking-normal text-text-secondary shadow-modal ${align === "end" ? "right-0" : "left-0"}`}
         >
           {children}
         </span>

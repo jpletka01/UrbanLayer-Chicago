@@ -11,6 +11,7 @@ import type { CardId } from "../../lib/scorecardVerdict";
 import { ConfidenceState } from "../ui/ConfidenceState";
 import { StatusLabel, type StatusTone } from "../ui/StatusLabel";
 import { Toggletip, type ToggletipKind } from "../ui/Toggletip";
+import { ArrowDown } from "lucide-react";
 
 export interface PanelFigure {
   key: string;
@@ -101,7 +102,7 @@ function Panel({
         onClick={onMore}
         className="mt-3 self-start rounded text-caption text-link cursor-pointer hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
-        {more} <span aria-hidden>↓</span>
+        {more} <ArrowDown aria-hidden className="inline h-3.5 w-3.5" strokeWidth={2} />
       </button>
     </section>
   );

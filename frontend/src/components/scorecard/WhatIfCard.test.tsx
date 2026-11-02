@@ -33,7 +33,9 @@ describe("WhatIfCard", () => {
     expect(table.textContent).toContain("If RT-4");
     expect(table.textContent).toContain("3,750 sq ft");
     expect(fetchWhatIf).toHaveBeenLastCalledWith("RS-3", "RT-4", 3125, false);
-    expect(screen.getByTestId("what-if").textContent).toContain("City Council approval");
+    // the approval caveat sits behind the card's Explain tool (decision Item 54)
+    fireEvent.click(screen.getByRole("button", { name: "What this means: What if this were rezoned?" }));
+    expect(screen.getByTestId("what-if-explain").textContent).toContain("City Council approval");
     expect(screen.getByTestId("what-if").textContent).not.toMatch(/you can build/i);
   });
 

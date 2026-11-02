@@ -26,6 +26,7 @@ import { SourcesButton } from "./scorecard/SourcesSheet";
 import { CoverageNotes } from "./scorecard/CoverageNotes";
 import { ProfileHeader } from "./scorecard/ProfileHeader";
 import { SectionBand } from "./scorecard/SectionBand";
+import { MessageCircleQuestion } from "lucide-react";
 import { Button } from "./ui/Button";
 import { StatusLabel } from "./ui/StatusLabel";
 import { Toggletip } from "./ui/Toggletip";
@@ -854,9 +855,12 @@ export default function ScorecardPage() {
   // has rendered. A new parcel starts collapsed again.
   const [openModules, setOpenModules] = useState<Set<ModuleId>>(() => new Set());
   // Adjusted during render (React's pattern for resetting state on a prop change), not in an effect.
-  const [modulesFor, setModulesFor] = useState(data);
-  if (modulesFor !== data) {
-    setModulesFor(data);
+  // Keyed on the PARCEL, not the response object: a second response for the same parcel (a refetch,
+  // or dev mode's doubled mount effect) must not snap open sections shut.
+  const parcelKey = data ? (data.resolved_pin ?? data.address ?? `${data.lat},${data.lon}`) : null;
+  const [modulesFor, setModulesFor] = useState(parcelKey);
+  if (modulesFor !== parcelKey) {
+    setModulesFor(parcelKey);
     setOpenModules(new Set());
   }
   const toggleModule = (id: ModuleId) => setOpenModules((prev) => {
@@ -1090,7 +1094,7 @@ export default function ScorecardPage() {
                 )}
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Button variant="secondary" onClick={() => askDock(null)}>{t("scorecard.header.ask")}</Button>
+                  <Button variant="secondary" icon={<MessageCircleQuestion className="h-4 w-4" strokeWidth={2} />} onClick={() => askDock(null)}>{t("scorecard.header.ask")}</Button>
                   {/* The $25 report returns as the page's one violet element when purchases launch
                       (Jack, 2026-10-31: no "coming soon" on the first screen). */}
                   {!purchasesOff && (

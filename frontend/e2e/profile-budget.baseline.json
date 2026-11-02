@@ -9,7 +9,7 @@
     "orange": 1
   },
   "milwaukee/desktop": {
-    "words": 118,
+    "words": 115,
     "orange": 1,
     "screens": 1.7
   },
@@ -34,5 +34,17 @@
   "pin1/phone": {
     "words": 69,
     "orange": 1
+  },
+  "twoflat/build": {
+    "words": 364
+  },
+  "milwaukee/build": {
+    "words": 348
+  },
+  "downtown/build": {
+    "words": 313
+  },
+  "pin1/build": {
+    "words": 275
   }
 }
