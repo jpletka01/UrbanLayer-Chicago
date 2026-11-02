@@ -189,6 +189,10 @@ Confidence computes only `age_days` and the static 24-month display rule. Stalen
 9. **Test it:** the entry validates against `ProvenanceEntry`, its `source_id` resolves, and threshold boundaries are pinned if the figure can be faded or withheld.
 10. **Don't bypass the gates.** If a figure is `withheld`, it must not reach the chat context or the PDF by another route. In chat that means a place for it in `provenance._clear_figure` (a test pins every figure the rules can withhold).
 
+## Display (2026-11-02)
+
+On the Property Profile the states are shown by `ui/ConfidenceState` (Estimate, Low confidence, Not checked, None found, Withheld, N/A) and their explanation, dates and sources sit behind the tool tray (`guides/page-design.md`). The rule itself is unchanged: the **state** stays visible beside its figure; only the explanation moved one click away.
+
 ## Rollout
 Status 2026-10-21: step 3 (schema v2) is in `backend/provenance.py`: `ProvenanceEntry`, `make_entry()`, `confidence_state()`, `FACTS`, `resolve_as_of()`. The nine existing fact kinds are upgraded; the UI doesn't read the new fields yet (step 5).
 
