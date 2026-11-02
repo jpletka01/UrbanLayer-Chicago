@@ -8,7 +8,7 @@
 // map fits the first result, and later results only while the user has not moved the camera
 // since; otherwise a "Zoom to results" button appears.
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { useThemeContext } from "../contexts/ThemeContext";
@@ -108,23 +108,36 @@ export function DiscoveryMap({
   // Dots from the previous search describe nothing the user can act on yet.
   const pickableNow = !stale;
 
-  // The dot preview (decision Item 57): hover previews on a mouse, a click or tap pins it.
-  const [preview, setPreview] = useState<{ point: PinPoint; x: number; y: number; pinned: boolean } | null>(null);
+  // The dot preview (decision Item 57): hover previews on a mouse, a click or tap pins it. Its position is
+  // worked out when the pointer event arrives, beside the dot and inside the map.
+  type Preview = { point: PinPoint; left: number; top: number; pinned: boolean };
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const placeAt = useCallback((point: PinPoint, x: number, y: number, pinned: boolean): Preview => {
+    const box = containerRef.current;
+    return { point, pinned, ...popoverPosition(x, y, box?.clientWidth ?? 800, box?.clientHeight ?? 600) };
+  }, [containerRef]);
   const closePreview = useCallback(() => {
     setPreview(null);
     onSelectPin(null);
   }, [onSelectPin]);
-  onMapClickRef.current = (info) => {
-    if (!pickableNow) return;
-    if (info.object) {
-      setPreview({ point: info.object, x: info.x ?? 0, y: info.y ?? 0, pinned: true });
-      onSelectPin(info.object.pin);
-    } else if (preview) {
-      closePreview();
-    }
-  };
-  // A new result set, or a refresh, closes the preview: its dot may be gone.
-  useEffect(() => { setPreview(null); }, [points, stale]);
+  useEffect(() => {
+    onMapClickRef.current = (info) => {
+      if (!pickableNow) return;
+      if (info.object) {
+        setPreview(placeAt(info.object, info.x ?? 0, info.y ?? 0, true));
+        onSelectPin(info.object.pin);
+      } else if (preview) {
+        closePreview();
+      }
+    };
+  });
+  // A new result set, or a refresh, closes the preview: its dot may be gone. Adjusted during render (React's
+  // pattern for resetting state on a prop change), not in an effect.
+  const [previewFor, setPreviewFor] = useState({ points, stale });
+  if (previewFor.points !== points || previewFor.stale !== stale) {
+    setPreviewFor({ points, stale });
+    setPreview(null);
+  }
   useEffect(() => {
     if (!preview?.pinned) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closePreview(); };
@@ -132,29 +145,27 @@ export function DiscoveryMap({
     return () => document.removeEventListener("keydown", onKey);
   }, [preview?.pinned, closePreview]);
 
-  // The preview's row: the list's, else one row by PIN (cached per PIN and sort key).
+  // The preview's row: the list's, else one row by PIN (kept per PIN and sort key).
   const rowsByPin = useMemo(() => new Map(rows.map((r) => [r.pin, r])), [rows]);
-  const fetchedRef = useRef(new Map<string, ResultRow | null>());
-  const [fetchTick, setFetchTick] = useState(0);
+  const [fetched, setFetched] = useState<ReadonlyMap<string, ResultRow | null>>(() => new Map());
   const previewPin = preview?.point.pin ?? null;
   const cacheKey = previewPin ? `${previewPin}|${sortKey}` : null;
   const listRow = previewPin ? rowsByPin.get(previewPin) ?? null : null;
+  const haveFetched = cacheKey != null && fetched.has(cacheKey);
   useEffect(() => {
-    if (!previewPin || !cacheKey || listRow || fetchedRef.current.has(cacheKey)) return;
+    if (!previewPin || !cacheKey || listRow || haveFetched) return;
     const ctrl = new AbortController();
     // A short wait so sweeping the pointer across dots doesn't fire a request per dot.
     const timer = setTimeout(() => {
       fetchParcelRow(previewPin, sortKey, ctrl.signal).then((row) => {
         if (ctrl.signal.aborted) return;
-        fetchedRef.current.set(cacheKey, row);
-        setFetchTick((n) => n + 1);
+        setFetched((prev) => new Map(prev).set(cacheKey, row));
       });
     }, 150);
     return () => { clearTimeout(timer); ctrl.abort(); };
-  }, [previewPin, cacheKey, listRow, sortKey]);
-  const previewRow = listRow ?? (cacheKey ? fetchedRef.current.get(cacheKey) ?? null : null);
-  const previewLoading = !!cacheKey && !listRow && !fetchedRef.current.has(cacheKey);
-  void fetchTick;
+  }, [previewPin, cacheKey, listRow, sortKey, haveFetched]);
+  const previewRow = listRow ?? (cacheKey ? fetched.get(cacheKey) ?? null : null);
+  const previewLoading = !!cacheKey && !listRow && !haveFetched;
 
   const layers = useMemo(() => {
     if (!renderPoints.length) return [];
@@ -174,11 +185,11 @@ export function DiscoveryMap({
         ? (info) => {
             const object = info.object as PinPoint | undefined;
             onHoverPin(object ? object.pin : null);
-            // A mouse previews on hover; touch has no hover (a tap pins through onClick).
-            if (coarse) return;
+            // A mouse previews on hover. A tap sends a move and then a click, so on touch the click pins the
+            // same preview at once.
             setPreview((current) => {
               if (current?.pinned) return current;
-              return object ? { point: object, x: info.x, y: info.y, pinned: false } : null;
+              return object ? placeAt(object, info.x, info.y, false) : null;
             });
           }
         : undefined,
@@ -199,7 +210,7 @@ export function DiscoveryMap({
       pickable: false,
     });
     return [pointsLayer, highlightLayer];
-  }, [renderPoints, highlightedPoint, colorBy, pickableNow, stale, onHoverPin, coarse]);
+  }, [renderPoints, highlightedPoint, colorBy, pickableNow, stale, onHoverPin, coarse, placeAt]);
 
   const legendTitle = colorBy === "upside" ? t("discovery.legendUpside") : t("discovery.legendLandUse");
 
@@ -362,7 +373,7 @@ export function DiscoveryMap({
           onOpen={onOpenParcel}
           onClose={closePreview}
           variant={isPhone ? "sheet" : "popover"}
-          style={popoverPosition(preview.x, preview.y, containerRef.current)}
+          style={{ left: preview.left, top: preview.top }}
           // Moving the pointer into the hover preview keeps it (and pins it), as a toggletip does.
           onPointerEnter={() => setPreview((current) => (current && !current.pinned ? { ...current, pinned: true } : current))}
         />
@@ -463,9 +474,7 @@ export function DiscoveryMap({
 }
 
 /** The popover beside its dot, kept inside the map (a 288 px card, about 220 px tall). */
-function popoverPosition(x: number, y: number, container: HTMLElement | null): CSSProperties {
-  const width = container?.clientWidth ?? 800;
-  const height = container?.clientHeight ?? 600;
+function popoverPosition(x: number, y: number, width: number, height: number): { left: number; top: number } {
   const left = x + 300 < width ? x + 12 : Math.max(8, x - 300);
   const top = Math.min(Math.max(8, y - 24), Math.max(8, height - 232));
   return { left, top };

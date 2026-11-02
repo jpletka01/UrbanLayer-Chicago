@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import i18n from "i18next";
-import { rowFigures } from "./DiscoveryResults";
+import { rowFigures } from "./rowFigures";
 import type { ResultRow } from "./types";
 
 const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts });

@@ -9,7 +9,8 @@ vi.mock("./ParcelMap", async (orig) => {
 });
 vi.mock("./CapacityMap", () => ({ CapacityMap: () => <div data-testid="mounted">capacity</div> }));
 
-import { AnalysisMap, availableLayers } from "./AnalysisMap";
+import { AnalysisMap } from "./AnalysisMap";
+import { availableLayers } from "./analysisLayers";
 import type { ParcelMapLayers } from "./ParcelMap";
 
 const square: GeoJSON.Polygon = { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]] };

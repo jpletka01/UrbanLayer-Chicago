@@ -65,3 +65,12 @@ export function unavailableParcelMapSources(
     : ["overlays", "tif", "ez"];
   return sources.filter((source) => availability[source] === "unavailable");
 }
+
+/** Whether a module map has something to draw (or an outage to name). The analysis map's layer switch offers
+    only the layers that pass. */
+export function parcelMapHasContent(variant: ParcelMapVariant, layers?: ParcelMapLayers | null): boolean {
+  if (variant === "place") return true;
+  if (unavailableParcelMapSources(variant, layers?.availability).length > 0) return true;
+  if (variant === "zoning") return !!layers?.zoning?.features?.length;
+  return !!(layers?.overlays?.features?.length || layers?.tif || layers?.ez);
+}

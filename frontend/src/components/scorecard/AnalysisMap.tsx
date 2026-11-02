@@ -5,10 +5,9 @@
 // section holds one GL context instead of three. A layer with nothing to draw is not offered.
 import { useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ParcelMap, parcelMapHasContent, type ParcelMapLayers } from "./ParcelMap";
+import { ParcelMap, type ParcelMapLayers } from "./ParcelMap";
+import { availableLayers, type AnalysisLayer } from "./analysisLayers";
 import { CapacityMap } from "./CapacityMap";
-
-export type AnalysisLayer = "zoning" | "overlays" | "capacity";
 
 interface AnalysisMapProps {
   lat: number;
@@ -23,15 +22,6 @@ interface AnalysisMapProps {
   /** The parcel's own district, listed first in the zoning key. */
   subjectKey?: string | null;
   className?: string;
-}
-
-/** The layers this parcel can show, in the switch's order. Built vs allowed fetches its own data, so it is always offered. */
-export function availableLayers(layers: ParcelMapLayers | null): AnalysisLayer[] {
-  const out: AnalysisLayer[] = [];
-  if (layers && parcelMapHasContent("zoning", layers)) out.push("zoning");
-  if (layers && parcelMapHasContent("boundaries", layers)) out.push("overlays");
-  out.push("capacity");
-  return out;
 }
 
 export function AnalysisMap({ lat, lon, pin, parcelGeometry, profileKey, parcelConfidence, layers, subjectKey, className }: AnalysisMapProps) {

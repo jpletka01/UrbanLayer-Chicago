@@ -17,6 +17,7 @@ export function PlaceMapStrip(props: PlaceProps) {
 
   useEffect(() => {
     if (!open) return;
+    const strip = stripRef.current;
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("keydown", onKey);
@@ -25,7 +26,7 @@ export function PlaceMapStrip(props: PlaceProps) {
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = overflow;
-      stripRef.current?.focus();
+      strip?.focus();
     };
   }, [open]);
 

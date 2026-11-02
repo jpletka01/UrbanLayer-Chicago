@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowRight, X } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { StatusLabel } from "../components/ui/StatusLabel";
-import { rowFigures, rowTitle } from "./DiscoveryResults";
+import { rowFigures, rowTitle } from "./rowFigures";
 import type { PinPoint, ResultRow } from "./types";
 
 export interface DotPreviewProps {

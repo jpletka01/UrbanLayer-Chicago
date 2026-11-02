@@ -33,7 +33,7 @@ async function open(browser: Browser, baseURL: string, view: keyof typeof VIEWS)
   const ctx = await browser.newContext({ ...VIEWS[view], colorScheme: "light", reducedMotion: "reduce" });
   const page = await ctx.newPage();
   await page.goto(baseURL + "/discovery", { waitUntil: "load", timeout: 120_000 });
-  await page.getByTestId("start-panel").waitFor({ timeout: 60_000 });
+  await page.getByTestId("discovery-start-panel").waitFor({ timeout: 60_000 });
   await page.waitForTimeout(800);
   return page;
 }
@@ -46,17 +46,17 @@ async function runRecipe(page: Page): Promise<void> {
   await page.waitForTimeout(1200);
 }
 
-/** The dot preview's printed words: hover the first dot's row so the map rings it, then pin it from the map. */
+/** The dot preview's printed words: move the pointer across the map until a dot answers with a preview. */
 async function previewWords(page: Page): Promise<number> {
-  const map = page.getByTestId("discovery-map-container");
-  await map.waitFor();
-  const box = (await map.boundingBox())!;
-  // Sweep the map until a dot answers with a preview (dots sit where the results are; the camera fits them).
-  for (let i = 0; i < 400; i++) {
-    const x = box.x + 20 + ((i * 37) % Math.max(1, box.width - 40));
-    const y = box.y + 20 + ((Math.floor((i * 37) / Math.max(1, box.width - 40)) * 29) % Math.max(1, box.height - 40));
-    await page.mouse.move(x, y);
-    if (await page.getByTestId("dot-preview").count()) break;
+  await page.getByTestId("discovery-map-container").waitFor();
+  // Real pointer moves across the map until a dot answers (the camera fits the results, so dots are in view).
+  const box = (await page.getByTestId("discovery-map-container").boundingBox())!;
+  const step = 12;
+  sweep: for (let y = box.y + step; y < box.y + box.height - step; y += step) {
+    for (let x = box.x + step; x < box.x + box.width - step; x += step) {
+      await page.mouse.move(x, y);
+      if (await page.getByTestId("dot-preview").count()) break sweep;
+    }
   }
   const preview = page.getByTestId("dot-preview");
   if (!(await preview.count())) throw new Error("no dot answered with a preview");
