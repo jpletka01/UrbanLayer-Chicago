@@ -10,6 +10,7 @@ import { confidenceStateFor, sourceBullets } from "../../lib/confidence";
 import { factsFor, type SourceScope } from "../../lib/sourceScopes";
 import { ConfidenceState } from "../ui/ConfidenceState";
 import { Modal } from "../ui/Modal";
+import { FileText } from "lucide-react";
 
 export function SourcesButton({
   scope,
@@ -38,7 +39,7 @@ export function SourcesButton({
         data-testid={`sources-${scope}`}
         className="inline-flex items-center gap-1 rounded text-caption text-text-muted cursor-pointer hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <span aria-hidden>ⓘ</span> {label ?? t("scorecard.sources.button")}
+        <FileText aria-hidden className="h-3.5 w-3.5" strokeWidth={2} /> {label ?? t("scorecard.sources.button")}
       </button>
       {open && (
         <Modal onClose={() => setOpen(false)} title={title} size="lg">

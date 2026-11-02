@@ -5,12 +5,12 @@
 // Data shape unchanged — presentation only.
 import { useTranslation } from "react-i18next";
 import type { PropertySummary } from "../../lib/types";
-import { formatDate } from "../../lib/format";
-import { InfoTooltip } from "../InfoTooltip";
+import { formatDate, formatDay } from "../../lib/format";
 import { ConfidenceCaption, SourceTooltip } from "../ui/Confidence";
 import { useFact } from "../../lib/provenanceContext";
 import { PropertyTimeline } from "./PropertyTimeline";
 import { SubSection, ShowMore } from "./ProfileModule";
+import { ToolTray } from "../ui/ToolTray";
 
 function fmtDollar(n: number | null | undefined): string {
   if (n == null) return "—";
@@ -178,49 +178,60 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
               </div>
             )}
 
-            {/* Appeal history — "appealing here works" is direct-dollars context. */}
-            {(data.appeals?.records?.length || data.appeals?.nearby_appeal_count) ? (
-              <div>
-                <div className="text-caption text-text-muted mb-1">
-                  <InfoTooltip content={{ label: t("property.appeals.title"), description: t("property.tips.appeals"), bullets: [] }}>
+            {/* Appeal history: one summary line; the rows and the nearby record sit behind Explain
+                (decision Item 54). "Appealing here works" is direct-dollars context. */}
+            {(data.appeals?.records?.length || data.appeals?.nearby_appeal_count) ? (() => {
+              const records = data.appeals.records ?? [];
+              const won = records.filter((r) => r.reduction_pct != null).length;
+              return (
+                <div data-testid="appeals">
+                  <div className="flex items-center gap-1 text-caption text-text-muted mb-1">
                     {t("property.appeals.title")}
-                  </InfoTooltip>
-                </div>
-                <div className="space-y-1">
-                  {(data.appeals.records ?? []).slice(0, 3).map((r, i) => (
-                    <div key={i} className="text-caption text-text-secondary">
-                      {r.year ?? "—"} · {r.stage === "board_of_review"
-                        ? t("property.appeals.stageBor") : t("property.appeals.stageAssessor")} ·{" "}
-                      {r.reduction_pct != null ? (
-                        <span className="text-state-positive">
-                          {t("property.appeals.won", {
-                            before: fmtDollar(r.before_total),
-                            // A reduction to the token amount reads as the state, not as "$1" (Item 46).
-                            after: data.nominal_assessment && r.after_total != null && r.after_total < 100
-                              ? t("property.nominal.value") : fmtDollar(r.after_total),
-                            pct: r.reduction_pct,
-                          })}
+                    <ToolTray
+                      label={t("property.appeals.title")}
+                      align="start"
+                      explain={
+                        <span className="block space-y-1" data-testid="appeals-explain">
+                          {records.slice(0, 3).map((r, i) => (
+                            <span key={i} className="block">
+                              {r.year ?? "—"} · {r.stage === "board_of_review"
+                                ? t("property.appeals.stageBor") : t("property.appeals.stageAssessor")} ·{" "}
+                              {r.reduction_pct != null
+                                ? t("property.appeals.won", {
+                                  before: fmtDollar(r.before_total),
+                                  // A reduction to the token amount reads as the state, not as "$1" (Item 46).
+                                  after: data.nominal_assessment && r.after_total != null && r.after_total < 100
+                                    ? t("property.nominal.value") : fmtDollar(r.after_total),
+                                  pct: r.reduction_pct,
+                                })
+                                : t("property.appeals.noChange")}
+                            </span>
+                          ))}
+                          {data.appeals.nearby_appeal_count > 0 && (
+                            <span className="block text-text-muted">
+                              {t("property.appeals.nearby", {
+                                count: data.appeals.nearby_capped
+                                  ? `${data.appeals.nearby_appeal_count}+`
+                                  : data.appeals.nearby_appeal_count,
+                                reduced: data.appeals.nearby_reduced_count,
+                              })}
+                              {data.appeals.nearby_median_reduction_pct != null &&
+                                ` ${t("property.appeals.nearbyMedian", { pct: data.appeals.nearby_median_reduction_pct })}`}
+                            </span>
+                          )}
+                          <span className="block text-text-muted">{t("property.tips.appeals")}</span>
                         </span>
-                      ) : (
-                        <span>{t("property.appeals.noChange")}</span>
-                      )}
-                    </div>
-                  ))}
-                  {data.appeals.nearby_appeal_count > 0 && (
-                    <p className="text-caption text-text-muted">
-                      {t("property.appeals.nearby", {
-                        count: data.appeals.nearby_capped
-                          ? `${data.appeals.nearby_appeal_count}+`
-                          : data.appeals.nearby_appeal_count,
-                        reduced: data.appeals.nearby_reduced_count,
-                      })}
-                      {data.appeals.nearby_median_reduction_pct != null &&
-                        ` ${t("property.appeals.nearbyMedian", { pct: data.appeals.nearby_median_reduction_pct })}`}
-                    </p>
-                  )}
+                      }
+                    />
+                  </div>
+                  <p className="text-caption text-text-secondary">
+                    {records.length > 0
+                      ? t("property.appeals.summary", { count: records.length, won })
+                      : t("property.appeals.noneHere")}
+                  </p>
                 </div>
-              </div>
-            ) : null}
+              );
+            })() : null}
 
             {/* Assessor permit record. The city permit feed elsewhere on the page is
                 address-keyed and has no cost or reassessment signal; this is PIN-keyed
@@ -228,10 +239,27 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                 a tax increase already attached to the parcel, so it leads. */}
             {data.assessor_permits && data.assessor_permits.count > 0 && (
               <div>
-                <div className="text-caption text-text-muted mb-1">
-                  <InfoTooltip content={{ label: t("property.assessorPermits.title"), description: t("property.tips.assessorPermits"), bullets: [] }}>
-                    {t("property.assessorPermits.title")}
-                  </InfoTooltip>
+                <div className="flex items-center gap-1 text-caption text-text-muted mb-1">
+                  {t("property.assessorPermits.title")}
+                  <ToolTray
+                    label={t("property.assessorPermits.title")}
+                    align="start"
+                    explain={
+                      <span className="block space-y-1" data-testid="permits-explain">
+                        {data.assessor_permits.permits.slice(0, 3).map((pm, i) => (
+                          <span key={i} className="block">
+                            {pm.date_issued ? formatDay(pm.date_issued) : "—"}
+                            {pm.status ? ` · ${pm.status.charAt(0) + pm.status.slice(1).toLowerCase()}` : ""}
+                            {pm.amount != null ? ` · ${fmtDollar(pm.amount)}` : ""}
+                            {pm.work_description && (
+                              <span className="block text-text-muted">{pm.work_description.charAt(0) + pm.work_description.slice(1, 140).toLowerCase()}{pm.work_description.length > 140 ? "…" : ""}</span>
+                            )}
+                          </span>
+                        ))}
+                        <span className="block text-text-muted">{t("property.tips.assessorPermits")}</span>
+                      </span>
+                    }
+                  />
                 </div>
                 {data.assessor_permits.assessable_pending && (
                   <p className="text-caption text-state-warning mb-1">
@@ -248,19 +276,6 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                       amount: fmtDollar(data.assessor_permits.total_declared_amount),
                     })}`}
                 </p>
-                <div className="space-y-1 mt-1">
-                  {data.assessor_permits.permits.slice(0, 3).map((pm, i) => (
-                    <div key={i} className="text-caption text-text-secondary">
-                      {pm.date_issued ?? "—"}
-                      {pm.status ? ` · ${pm.status}` : ""}
-                      {pm.amount != null ? ` · ${fmtDollar(pm.amount)}` : ""}
-                      {pm.work_description && (
-                        <span className="text-text-muted"> — {pm.work_description.slice(0, 90)}
-                          {pm.work_description.length > 90 ? "…" : ""}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </div>

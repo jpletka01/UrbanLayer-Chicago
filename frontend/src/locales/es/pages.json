@@ -658,7 +658,9 @@
       },
       "tip": "{{share}}% de lo permitido construido (FAR {{existing}} de {{allowed}})",
       "lowTip": "Cerca del límite de un distrito: menor confianza",
-      "sources": "Superficies construidas: Tasador del Condado de Cook (revaluación {{year}}) y el índice de parcelas (creado {{built}}). Formas de las parcelas: PTAXSIM. Distritos: mapa de zonificación de la Ciudad de Chicago."
+      "sources": "Superficies construidas: Tasador del Condado de Cook (revaluación {{year}}) y el índice de parcelas (creado {{built}}). Formas de las parcelas: PTAXSIM. Distritos: mapa de zonificación de la Ciudad de Chicago.",
+      "notColoredCount_one": "Sin color: {{count}} parcela",
+      "notColoredCount_other": "Sin color: {{count}} parcelas"
     },
     "whatIf": {
       "title": "¿Y si se cambiara la zonificación?",
@@ -682,7 +684,8 @@
       "noUnits": "Sin unidades de vivienda",
       "pdCurrent": "Lo fija su propia ordenanza",
       "noLot": "No se conoce el área del lote, así que no se muestran la superficie ni las unidades.",
-      "note": "Esto es la aritmética de la tabla del distrito, no un pronóstico. Un cambio de zonificación requiere la aprobación del Concejo Municipal. El estacionamiento, los retiros según la forma de este lote y otras normas pueden permitir menos."
+      "note": "Esto es la aritmética de la tabla del distrito, no un pronóstico. Un cambio de zonificación requiere la aprobación del Concejo Municipal. El estacionamiento, los retiros según la forma de este lote y otras normas pueden permitir menos.",
+      "notForecast": "Cálculo, no pronóstico"
     },
     "answer": {
       "noZone": "Hoy no se pudo verificar el distrito de zonificación",

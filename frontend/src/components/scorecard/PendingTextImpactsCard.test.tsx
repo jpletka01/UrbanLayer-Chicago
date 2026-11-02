@@ -73,27 +73,42 @@ describe("PendingTextImpactsCard", () => {
     expect(container.textContent).toBe("");
   });
 
+  // The row is one line; its evidence sits behind the tool tray (decision Item 54). Tests open the tools
+  // the way a user would and check the same guarantees as before.
+  const open = (name: RegExp) => fireEvent.click(screen.getAllByRole("button", { name })[0]);
+
   it("keeps a proposal beside current law: 'could change' versus 'today, unchanged', with the official link", () => {
     render(<PendingTextImpactsCard data={base({ text_impacts: [impact()] })} />);
+    // one human line: the rule it would change, today's value, and a visible "Proposed" label
+    expect(screen.getByText("Minimum lot area per dwelling unit for RT-4")).toBeTruthy();
+    expect(screen.getByText("Today: 1,000 sq ft")).toBeTruthy();
+    expect(screen.getByText(/Proposed · Referred/)).toBeTruthy();
+    // the disclaimer, the dates and the code sit behind tools, not on the page
+    expect(screen.queryByText(/not adopted law/)).toBeNull();
+    open(/^What this means: Pending zoning-code changes/);
     expect(screen.getByText(/not adopted law/)).toBeTruthy();
+    open(/^What this means: Minimum lot area/);
     expect(screen.getByText("Proposed — could change")).toBeTruthy();
     expect(screen.getByText(/which the proposal would eliminate/)).toBeTruthy();
     expect(screen.getByText("Today · current law, unchanged")).toBeTruthy();
     expect(screen.getByText(/Minimum lot area per dwelling unit for RT-4: 1,000 sq ft/)).toBeTruthy();
-    expect(screen.getByText(/§17-2-0303-A/, { selector: "span" })).toBeTruthy();
-    expect(screen.getByText(/Pending · Referred/)).toBeTruthy();
-    const link = screen.getByRole("link", { name: "O2026-0028842" });
+    open(/^Code section: Minimum lot area/);
+    expect(screen.getByText(/§17-2-0303-A/)).toBeTruthy();
+    open(/^Dates: Minimum lot area/);
+    expect(screen.getByText("We read the ordinance text")).toBeTruthy();
+    expect(screen.getByText("Introduced at City Council")).toBeTruthy();
+    const link = screen.getByRole("link", { name: /^Official record: Minimum lot area/ });
     expect(link.getAttribute("href")).toBe("https://clerk.example/matter/O2026-0028842");
-    expect(screen.getByText(/Read from the ordinance text/)).toBeTruthy();
+    expect(link.getAttribute("title")).toContain("O2026-0028842");
     // never implies adoption
     expect(screen.queryByText(/approved|adopted by|takes effect|will change/i)).toBeNull();
   });
 
-  it("wraps a very long official title instead of letting it widen the card", () => {
+  it("never prints the Clerk number or the long official title as the row's headline", () => {
     render(<PendingTextImpactsCard data={base({ text_impacts: [impact()] })} />);
-    const title = screen.getByText(LONG_TITLE);
-    expect(title.className).toContain("break-words");
-    expect(screen.getByRole("link", { name: "O2026-0028842" }).className).toContain("break-all");
+    expect(screen.queryByText("O2026-0028842")).toBeNull();
+    expect(screen.queryByText(LONG_TITLE)).toBeNull();
+    expect(screen.getByText("Minimum lot area per dwelling unit for RT-4").className).toContain("break-words");
   });
 
   it("says plainly when the reach cannot be tested rather than claiming it", () => {
@@ -105,7 +120,8 @@ describe("PendingTextImpactsCard", () => {
       }],
     });
     render(<PendingTextImpactsCard data={base({ text_impacts: [untested] })} />);
-    expect(screen.getByText(/Can't be tested for this property/)).toBeTruthy();
+    expect(screen.getByText(/Can't be tested for this property/)).toBeTruthy(); // visible label
+    open(/^What this means: Coach houses/);
     expect(screen.getByText(/needs map geometry/)).toBeTruthy();
   });
 
@@ -119,18 +135,22 @@ describe("PendingTextImpactsCard", () => {
       }],
     });
     render(<PendingTextImpactsCard data={base({ text_impacts: [street] })} />);
+    expect(screen.queryByText(/^Today: /)).toBeNull(); // no value to show, none invented
+    open(/^What this means: TOD street status/);
     expect(screen.getByText(/lists the TOD streets in force today/)).toBeTruthy();
   });
 
   it("a complete review with nothing relevant is the only 'none map to this property' state", () => {
     render(<PendingTextImpactsCard data={base()} />);
-    expect(screen.getByText(/None of the 48 pending Title 17 proposals we reviewed maps to this property/)).toBeTruthy();
+    const none = screen.getByTestId("pending-none");
+    expect(none.textContent).toContain("None found");
+    expect(none.textContent).toContain("48 reviewed; none applies here");
   });
 
   it("an empty docket reads as such, not as 'reviewed none'", () => {
     render(<PendingTextImpactsCard data={base({ text_review: review({ pending_count: 0, reviewed_count: 0 }) })} />);
     expect(screen.getByText(/No pending Title 17 text proposals are on the Clerk's docket/)).toBeTruthy();
-    expect(screen.queryByText(/None of the/)).toBeNull();
+    expect(screen.queryByText(/reviewed; none applies/)).toBeNull();
   });
 
   it("an incomplete review never says none and lists what is missing, still showing reviewed impacts", () => {
@@ -144,11 +164,13 @@ describe("PendingTextImpactsCard", () => {
         ],
       }),
     })} />);
+    expect(screen.getByText("2 proposals not yet reviewed")).toBeTruthy(); // visible amber label
+    expect(screen.queryByTestId("pending-none")).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: /^What this means: Pending zoning-code changes/ })[1]);
     expect(screen.getByText(/2 pending Title 17 proposals haven't been reviewed/)).toBeTruthy();
     expect(screen.getByText(/A newer version replaced the one we reviewed/)).toBeTruthy();
     expect(screen.getByText(/introduced 16 days ago/)).toBeTruthy();
-    expect(screen.queryByText(/None of the/)).toBeNull();
-    expect(screen.getByText("Proposed — could change")).toBeTruthy();
+    expect(screen.getByText("Minimum lot area per dwelling unit for RT-4")).toBeTruthy();
   });
 
   it("unavailable is its own state: no none, no list, no counts", () => {
@@ -156,25 +178,27 @@ describe("PendingTextImpactsCard", () => {
       status: "unavailable", checked_at: null,
       text_review: review({ status: "unavailable", pending_count: 0, reviewed_count: 0 }),
     })} />);
-    expect(screen.getByText(/couldn't be checked right now. This is not a finding of none/)).toBeTruthy();
-    expect(screen.queryByText(/None of the/)).toBeNull();
+    expect(document.querySelector('[data-confidence-state="not_checked"]')).not.toBeNull();
+    expect(screen.queryByTestId("pending-none")).toBeNull();
     expect(screen.queryByText(/No pending Title 17/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Why: Pending zoning-code changes/ }));
+    expect(screen.getByText(/couldn't be checked right now. This is not a finding of none/)).toBeTruthy();
   });
 
   it("stale keeps the reviewed list with the explicit last-good warning", () => {
     render(<PendingTextImpactsCard data={base({ status: "stale", text_impacts: [impact()] })} />);
+    expect(screen.getByText("Showing the last good check")).toBeTruthy();
+    expect(screen.getByText("Minimum lot area per dwelling unit for RT-4")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: /^What this means: Pending zoning-code changes/ })[1]);
     expect(screen.getByText(/latest refresh did not complete/)).toBeTruthy();
-    expect(screen.getByText("Proposed — could change")).toBeTruthy();
   });
 
-  it("bounds the list with the page's one disclosure idiom and keeps the summary keyboard reachable", () => {
+  it("bounds the list with the page's one disclosure idiom", () => {
     const many = ["A", "B", "C", "D"].map((x) => impact({ record_number: `O2026-000${x}`, url: `https://clerk.example/${x}` }));
     render(<PendingTextImpactsCard data={base({ text_impacts: many })} />);
-    expect(screen.getAllByRole("link", { name: /^O2026-000/ }).length).toBe(3);
-    fireEvent.click(screen.getByRole("button"));
-    expect(screen.getAllByRole("link", { name: /^O2026-000/ }).length).toBe(4);
-    const summary = screen.getAllByText("What the proposal says")[0];
-    expect(summary.tagName).toBe("SUMMARY");
+    expect(document.querySelectorAll("[data-impact]").length).toBe(3);
+    fireEvent.click(screen.getByRole("button", { name: /more/i }));
+    expect(document.querySelectorAll("[data-impact]").length).toBe(4);
   });
 
   it("the free payload type carries no attachment or EDS field", () => {

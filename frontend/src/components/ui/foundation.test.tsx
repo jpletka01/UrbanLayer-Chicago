@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Button } from "./Button";
 import { ConfidenceState } from "./ConfidenceState";
 import { StatusLabel } from "./StatusLabel";
@@ -49,10 +49,11 @@ describe("shape grammar: buttons and status labels differ in at least three prop
     expect(document.querySelectorAll("[data-solid-action]")).toHaveLength(1);
   });
 
-  it("gives every status tone a glyph, so color is never the only signal", () => {
-    for (const tone of ["neutral", "info", "success", "warning", "danger"] as const) {
-      const { container, unmount } = render(<StatusLabel tone={tone}>x</StatusLabel>);
-      expect(container.querySelector("[aria-hidden]")?.textContent?.trim()).not.toBe("");
+  it("gives every non-neutral tone an icon, so color is never the only signal", () => {
+    const icons: Record<string, string> = { info: "lucide-info", success: "lucide-circle-check", warning: "lucide-triangle-alert", danger: "lucide-octagon-alert" };
+    for (const [tone, icon] of Object.entries(icons)) {
+      const { container, unmount } = render(<StatusLabel tone={tone as "info"}>x</StatusLabel>);
+      expect(container.querySelector(`svg.${icon}`), tone).not.toBeNull();
       unmount();
     }
   });
@@ -70,7 +71,8 @@ describe("ConfidenceState", () => {
     const b = document.querySelector('[data-confidence-state="none_found"]')!;
     expect(a.textContent).toContain("Not checked");
     expect(b.textContent).toContain("None found");
-    expect(a.querySelector("[aria-hidden]")!.textContent).not.toBe(b.querySelector("[aria-hidden]")!.textContent);
+    expect(a.querySelector("svg.lucide-circle-dashed")).not.toBeNull();
+    expect(b.querySelector("svg.lucide-circle-check")).not.toBeNull();
   });
 
   it("renders the five states and the low estimate in amber", () => {
@@ -114,15 +116,42 @@ describe("ConfidenceState", () => {
 });
 
 describe("Toggletip", () => {
-  it("uses one icon per meaning and keeps a visible year beside the date icon", () => {
+  it("uses one Lucide icon per meaning and keeps a visible year beside the calendar", () => {
     render(
       <>
         <Toggletip kind="info" label="Source">§17-3-0403</Toggletip>
         <Toggletip kind="date" label="Tax year" visible="2024">Bill year 2024, from the Clerk.</Toggletip>
       </>,
     );
-    expect(screen.getByRole("button", { name: "Source" }).textContent).toBe("ⓘ");
-    expect(screen.getByRole("button", { name: "Tax year" }).textContent).toBe("2024⏱");
+    const info = screen.getByRole("button", { name: "Source" });
+    expect(info.querySelector("svg.lucide-info")).not.toBeNull();
+    const date = screen.getByRole("button", { name: "Tax year" });
+    expect(date.querySelector("svg.lucide-calendar")).not.toBeNull(); // a calendar, never a clock
+    expect(date.textContent).toBe("2024");
+  });
+
+  it("previews on mouse hover, stays while the pointer is over it, and a click pins it", async () => {
+    render(<div><span>outside</span><Toggletip label="Source">detail</Toggletip></div>);
+    const wrap = document.querySelector("[data-toggletip]")!;
+    fireEvent.pointerEnter(wrap, { pointerType: "mouse" });
+    expect(screen.getByRole("dialog").textContent).toBe("detail");
+    fireEvent.pointerLeave(wrap, { pointerType: "mouse" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // hover, then click: it stays after the pointer leaves
+    fireEvent.pointerEnter(wrap, { pointerType: "mouse" });
+    fireEvent.click(screen.getByRole("button", { name: "Source" }));
+    fireEvent.pointerLeave(wrap, { pointerType: "mouse" });
+    await new Promise((r) => setTimeout(r, 250));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("ignores a touch 'hover': a tap opens it once", () => {
+    render(<Toggletip label="Source">detail</Toggletip>);
+    const wrap = document.querySelector("[data-toggletip]")!;
+    fireEvent.pointerEnter(wrap, { pointerType: "touch" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Source" }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
   it("closes on a click outside", () => {

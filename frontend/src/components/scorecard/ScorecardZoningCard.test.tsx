@@ -38,8 +38,11 @@ describe("ScorecardZoningCard — the binding number (F3)", () => {
     expect(screen.getByText("700 ft²")).toBeTruthy();
     const box = screen.getByTestId("unit-yield");
     expect(box.textContent).toContain("Max units by lot area");
-    expect(box.textContent).toContain("3,191 sq ft ÷ 700 sq ft per unit = 4.6 → 4 units");
-    expect(box.textContent).toContain("one limit"); // never presented as the final unit count
+    // the arithmetic and the caveat sit behind the row's Explain tool (decision Item 54)
+    fireEvent.click(screen.getByRole("button", { name: "What this means: Max units by lot area" }));
+    const explain = screen.getByTestId("unit-yield-explain");
+    expect(explain.textContent).toContain("3,191 sq ft ÷ 700 sq ft per unit = 4.6 → 4 units");
+    expect(explain.textContent).toContain("one limit"); // never presented as the final unit count
   });
 
   it("renders no yield block (and no per-unit row) when the district has none", () => {
@@ -64,6 +67,7 @@ describe("ScorecardZoningCard — the binding number (F3)", () => {
 
   it("shows the 606-style exemption note when the district has one", () => {
     render(<ScorecardZoningCard def={{ ...rm45, zone_class: "RS-3", lot_area_note: "Reduced to 1,500 sq ft per unit in the 606 district." }} />);
+    fireEvent.click(screen.getByRole("button", { name: "What this means: Zoning" }));
     expect(screen.getByText(/1,500 sq ft per unit in the 606/)).toBeTruthy();
   });
 
@@ -76,12 +80,12 @@ describe("ScorecardZoningCard — the binding number (F3)", () => {
       />,
     );
     // the dates sit behind ⏱ (decision Item 51); the stamps themselves are unchanged
-    fireEvent.click(screen.getByRole("button", { name: "Dates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Dates: Zoning" }));
     const stamps = screen.getByTestId("freshness-stamps");
     expect(stamps.textContent).toContain("Zoning record last updated");
-    expect(stamps.textContent).toContain("2021-10-27");
+    expect(stamps.textContent).toContain("Oct 27, 2021"); // readable, like every other date on the page
     expect(stamps.textContent).toContain("Municipal Code current through");
-    expect(stamps.textContent).toContain("2026-03-18");
+    expect(stamps.textContent).toContain("Mar 18, 2026");
     expect(screen.queryByTestId("recently-rezoned")).toBeNull(); // 2007 is not recent
   });
 

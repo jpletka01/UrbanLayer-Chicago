@@ -400,3 +400,9 @@ def test_current_figures_carry_the_units_the_profile_value_omits():
     assert impacts._shown("zoning.unit_yield", 30) == "30 units by lot area"
     assert impacts._shown("zoning.far", 1.2) == 1.2  # no unit rule: shown as the Profile has it
     assert impacts._shown("zoning.min_lot_area_per_unit", "no minimum") == "no minimum"
+    # A bare number or code word never reaches the page (Jack, 2026-11-02: "today 100" meant nothing).
+    assert impacts._shown("zoning.tod_benefits", 100) == "parking can be cut by up to 100%"
+    assert impacts._shown("zoning.tod_benefits", "none") == "no parking reduction"
+    assert impacts._shown("zoning.adu", "not_allowed") == "coach houses not allowed"
+    assert impacts._shown("zoning.adu", "allowed_by_right") == "coach houses allowed by right"
+    assert impacts._shown("overlay.adu_area", True) == "in an ADU-allowed area"

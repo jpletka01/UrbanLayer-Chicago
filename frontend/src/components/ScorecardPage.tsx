@@ -26,6 +26,7 @@ import { SourcesButton } from "./scorecard/SourcesSheet";
 import { CoverageNotes } from "./scorecard/CoverageNotes";
 import { ProfileHeader } from "./scorecard/ProfileHeader";
 import { SectionBand } from "./scorecard/SectionBand";
+import { MessageCircleQuestion } from "lucide-react";
 import { Button } from "./ui/Button";
 import { StatusLabel } from "./ui/StatusLabel";
 import { Toggletip } from "./ui/Toggletip";
@@ -712,6 +713,10 @@ export default function ScorecardPage() {
   // One answer: a neutral verdict label + a deterministic sentence (lib/answerSentence.ts). Then three
   // panels, ≤ 8 figures and ≤ 3 amber rows, each figure with its confidence STATE as a label and its
   // explanation behind ⓘ/⏱. Built from the same values the KPI tiles had; nothing new is fetched.
+  // How sure we are of the parcel itself: the header shows an amber label unless it is exact.
+  const identity: "exact" | "approximate" | "unconfirmed" | null = !parcel ? null
+    : parcel.pin === null ? "unconfirmed"
+    : parcel.confidence === "authoritative" && !data?.nearest_parcel_unverified ? "exact" : "approximate";
   const answer = data && verdict ? answerSentence(data, verdict, t) : "";
   // The sticky band repeats the verdict label only after the answer has scrolled out of view.
   const answerRef = useRef<HTMLElement | null>(null);
@@ -850,9 +855,12 @@ export default function ScorecardPage() {
   // has rendered. A new parcel starts collapsed again.
   const [openModules, setOpenModules] = useState<Set<ModuleId>>(() => new Set());
   // Adjusted during render (React's pattern for resetting state on a prop change), not in an effect.
-  const [modulesFor, setModulesFor] = useState(data);
-  if (modulesFor !== data) {
-    setModulesFor(data);
+  // Keyed on the PARCEL, not the response object: a second response for the same parcel (a refetch,
+  // or dev mode's doubled mount effect) must not snap open sections shut.
+  const parcelKey = data ? (data.resolved_pin ?? data.address ?? `${data.lat},${data.lon}`) : null;
+  const [modulesFor, setModulesFor] = useState(parcelKey);
+  if (modulesFor !== parcelKey) {
+    setModulesFor(parcelKey);
     setOpenModules(new Set());
   }
   const toggleModule = (id: ModuleId) => setOpenModules((prev) => {
@@ -1057,7 +1065,7 @@ export default function ScorecardPage() {
                   title={data.address || ctx.property?.address ||
                     (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
                   pin={parcel?.pin ?? null}
-                  identity={!parcel ? null : parcel.pin === null ? "unconfirmed" : parcel.confidence === "authoritative" && !data.nearest_parcel_unverified ? "exact" : "approximate"}
+                  identity={identity}
                   areaName={data.community_area_name}
                   ward={ctx.neighborhood?.ward?.ward ?? null}
                   resolution={data.resolution}
@@ -1086,7 +1094,8 @@ export default function ScorecardPage() {
                 )}
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Button variant="secondary" onClick={() => askDock(null)}>{t("scorecard.header.ask")}</Button>
+                  {/* On phones the bottom action bar is the Ask (say it once); the hero button is for desktop. */}
+                  <Button variant="secondary" className="hidden md:inline-flex" icon={<MessageCircleQuestion className="h-4 w-4" strokeWidth={2} />} onClick={() => askDock(null)}>{t("scorecard.header.ask")}</Button>
                   {/* The $25 report returns as the page's one violet element when purchases launch
                       (Jack, 2026-10-31: no "coming soon" on the first screen). */}
                   {!purchasesOff && (
@@ -1113,7 +1122,13 @@ export default function ScorecardPage() {
                 </div>
 
                 <div className="mt-6">
-                  <AnswerPanels build={buildFigures} inTheWay={inTheWayRows} value={valueFigures} onScrollTo={scrollToCard} />
+                  <AnswerPanels
+                    build={buildFigures}
+                    inTheWay={inTheWayRows}
+                    value={valueFigures}
+                    onScrollTo={scrollToCard}
+                    amberElsewhere={identity === "approximate" || identity === "unconfirmed" ? 1 : 0}
+                  />
                 </div>
               </div>
 

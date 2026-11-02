@@ -10,7 +10,8 @@ import { formatDay, localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
 import { CodeSourceModal } from "./CodeSourceModal";
-import { Toggletip } from "../ui/Toggletip";
+import { Scale } from "lucide-react";
+import { ToolTray } from "../ui/ToolTray";
 import { ConfidenceCaption } from "../ui/Confidence";
 import { useFact } from "../../lib/provenanceContext";
 import { displayState } from "../../lib/confidence";
@@ -94,7 +95,46 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
     <SubSection
       icon={ZoningIcon}
       title={t("scorecard.zoningCard.title")}
-      meta={<Chip tone="accent" mono size="sm">{def.zone_class}</Chip>}
+      meta={
+        <span className="inline-flex items-center gap-2">
+          <Chip tone="accent" mono size="sm">{def.zone_class}</Chip>
+          {/* The card's evidence, one click away (decision Item 54): dates, the chapter, the City's map,
+              and what the district allows in words. */}
+          <ToolTray
+            label={t("scorecard.zoningCard.title")}
+            dates={(freshness?.map_updated || codeVintage) ? (
+              <dl className="space-y-0.5" data-testid="freshness-stamps">
+                {freshness?.map_updated && (
+                  <div className="flex justify-between gap-3">
+                    <dt>{t("scorecard.zoningCard.zoningRecordUpdated")}</dt>
+                    <dd className="text-text-primary">{formatDay(freshness.map_updated)}</dd>
+                  </div>
+                )}
+                {codeVintage && (
+                  <div className="flex justify-between gap-3">
+                    <dt>{t("scorecard.zoningCard.codeCurrentThrough")}</dt>
+                    <dd className="text-text-primary">
+                      {formatDay(codeVintage.current_through)}
+                      {laterAmendments > 0 && (
+                        <span data-testid="later-amendments">{" · "}{t("scorecard.zoningCard.laterAmendments", { count: laterAmendments })}</span>
+                      )}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            ) : undefined}
+            code={def.code_section ? <span className="font-mono">{def.code_section}</span> : undefined}
+            source={mapUrl ? { href: mapUrl, title: t("scorecard.zoningCard.viewMap") } : undefined}
+            explain={(def.uses || def.lot_area_note || def.notes) ? (
+              <span className="block space-y-1.5">
+                {def.uses && <span className="block">{def.uses}</span>}
+                {def.lot_area_note && <span className="block text-text-muted">{def.lot_area_note}</span>}
+                {def.notes && <span className="block text-text-muted">{def.notes}</span>}
+              </span>
+            ) : undefined}
+          />
+        </span>
+      }
       className="flex-1"
     >
       <div className="space-y-4">
@@ -107,10 +147,14 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
                 <dt className="text-caption text-text-muted">{s.label}</dt>
                 <dd className="text-body text-text-primary mt-0.5">{s.value}</dd>
                 {s.prov && provenance?.[s.prov]?.section && (
+                  // The rule's code text, behind the Scale icon (decision Item 54); the section stays as
+                  // screen-reader text and in the tooltip.
                   <button type="button" onClick={() => setOpenSection(provenance[s.prov!].section)}
-                    className="text-caption font-mono text-text-secondary hover:text-accent transition-colors mt-0.5"
-                    title={t("scorecard.codeSource.open")} data-testid={`source-${s.prov}`}>
-                    §{provenance[s.prov!].section}
+                    aria-label={`${t("tools.code", { ns: "common", label: s.label })} §${provenance[s.prov!].section}`}
+                    className="mt-0.5 inline-flex items-center rounded text-text-muted cursor-pointer transition-colors hover:text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    title={`§${provenance[s.prov!].section} · ${t("scorecard.codeSource.open")}`} data-testid={`source-${s.prov}`}>
+                    <Scale aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                    <span className="sr-only">§{provenance[s.prov!].section}</span>
                   </button>
                 )}
               </div>
@@ -125,10 +169,21 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
         {unitYield && (
           <div className="rounded-lg border border-border-subtle bg-surface-raised/40 px-3 py-2.5" data-testid="unit-yield">
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-caption text-text-muted">{t("scorecard.zoningCard.maxUnitsByLotArea")}</span>
+              <span className="inline-flex items-center gap-1 text-caption text-text-muted">
+                {t("scorecard.zoningCard.maxUnitsByLotArea")}
+                <ToolTray
+                  label={t("scorecard.zoningCard.maxUnitsByLotArea")}
+                  align="start"
+                  explain={
+                    <span className="block space-y-1.5" data-testid="unit-yield-explain">
+                      <span className="block font-mono">{unitYield.arithmetic}</span>
+                      <span className="block">{t("scorecard.zoningCard.unitYieldCaveat")}</span>
+                    </span>
+                  }
+                />
+              </span>
               <span className="text-body font-medium text-text-primary">{unitYield.units}</span>
             </div>
-            <p className="text-caption text-text-secondary mt-1">{unitYield.arithmetic}</p>
             {unitYield.rule_606 === "applied" && unitYield.base_units != null && unitYield.units > unitYield.base_units && (
               <p className="text-caption text-text-secondary mt-1" data-testid="unit-yield-606">
                 {t("scorecard.zoningCard.unitYield606Applied", { base: unitYield.base_units, units: unitYield.units })}
@@ -139,14 +194,9 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
                 {t("scorecard.zoningCard.unitYield606Unchecked")}
               </p>
             )}
-            <p className="text-caption text-text-muted mt-1 leading-relaxed">{t("scorecard.zoningCard.unitYieldCaveat")}</p>
           </div>
         )}
 
-        {def.lot_area_note && <p className="text-caption text-text-muted leading-relaxed">{def.lot_area_note}</p>}
-
-        {def.uses && <p className="text-caption text-text-secondary leading-relaxed">{def.uses}</p>}
-        {def.notes && <p className="text-caption text-text-muted leading-relaxed">{def.notes}</p>}
 
         {(passedNotOnMap ?? []).map((hit) => (
           <p key={hit.record} className="text-caption text-text-primary rounded-lg border border-state-warning/40 bg-state-warning/10 px-3 py-2" data-testid="passed-not-on-map">
@@ -174,44 +224,8 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
           </p>
         )}
 
-        {/* Dates sit behind ⏱ (Jack's second pass, item 6; decision Item 51): one icon, one meaning. */}
-        {(freshness?.map_updated || codeVintage) && (
-          <div className="text-caption text-text-muted">
-            <Toggletip kind="date" label={t("scorecard.zoningCard.datesLabel")} visible={t("scorecard.zoningCard.datesLabel")}>
-          <dl className="text-caption text-text-muted space-y-0.5" data-testid="freshness-stamps">
-            {freshness?.map_updated && (
-              <div className="flex justify-between gap-3">
-                <dt>{t("scorecard.zoningCard.zoningRecordUpdated")}</dt>
-                <dd className="text-text-secondary">{freshness.map_updated}</dd>
-              </div>
-            )}
-            {codeVintage && (
-              <div className="flex justify-between gap-3">
-                <dt>{t("scorecard.zoningCard.codeCurrentThrough")}</dt>
-                <dd className="text-text-secondary">
-                  {codeVintage.current_through}
-                  {laterAmendments > 0 && (
-                    <span data-testid="later-amendments">{" · "}{t("scorecard.zoningCard.laterAmendments", { count: laterAmendments })}</span>
-                  )}
-                </dd>
-              </div>
-            )}
-          </dl>
-            </Toggletip>
-          </div>
-        )}
-
         {/* "What this page doesn't cover" moved to the page's Sources & coverage sheet (decision Item 51). */}
 
-        <div className="flex items-center justify-between gap-2 text-caption text-text-muted">
-          <span className="font-mono">{def.code_section}</span>
-          {mapUrl && (
-            <a href={mapUrl} target="_blank" rel="noopener noreferrer"
-              className="text-text-secondary hover:text-accent transition-colors">
-              {t("scorecard.zoningCard.viewMap")}
-            </a>
-          )}
-        </div>
       </div>
       {openSection && <CodeSourceModal sectionId={openSection} onClose={() => setOpenSection(null)} />}
     </SubSection>

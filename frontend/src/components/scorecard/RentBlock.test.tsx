@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within, fireEvent } from "@testing-library/react";
 import { RentBlock } from "./RentBlock";
 import { ProvenanceProvider } from "../../contexts/ProvenanceContext";
 import type { Provenance } from "../../lib/api";
@@ -135,6 +135,8 @@ describe("RentBlock", () => {
       const acs = within(screen.getByTestId("rent-acs"));
       const sec = within(screen.getByTestId("rent-assessor"));
       expect(sec.getByText("Assessor model")).toBeTruthy();
+      // what the series is sits behind the title's Explain tool (decision Item 54); the tile caption still dates it
+      fireEvent.click(sec.getByRole("button", { name: "What this means: Assessor model" }));
       expect(sec.getByText(/2024 city reassessment model of apartment income, a separate series from the Census rents above\. Not an asking or achieved rent\./)).toBeTruthy();
       const tile = within(screen.getByTestId("rent-tile-assessor-model"));
       expect(tile.getByText(/\$2,300/)).toBeTruthy();

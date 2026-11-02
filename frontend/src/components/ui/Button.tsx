@@ -16,7 +16,9 @@ const BASE =
 
 const VARIANT: Record<Variant, string> = {
   primary: "bg-action text-action-fg hover:bg-action-hover active:bg-action-hover",
-  secondary: "border border-dark-border-strong bg-dark-surface text-text-primary hover:border-accent hover:text-link active:bg-dark-hover",
+  // An orange outline and orange text (the link token clears 3:1 on both themes): the near-black
+  // outline it had matched the dark surface, so it didn't read as clickable (Jack, 2026-11-02).
+  secondary: "border border-link bg-transparent text-link hover:bg-accent-muted active:bg-accent-muted",
   ghost: "text-link hover:bg-dark-hover active:bg-dark-elevated",
 };
 

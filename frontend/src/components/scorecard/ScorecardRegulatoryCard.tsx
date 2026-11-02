@@ -6,6 +6,7 @@ import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import type { AduStatus, PassedLandmarkDesignation, RegulatorySummary, TodBenefits } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
+import { ToolTray } from "../ui/ToolTray";
 import { ConfidenceCaption } from "../ui/Confidence";
 import { useFact } from "../../lib/provenanceContext";
 import { humanizeShoutyCase } from "../../lib/format";
@@ -96,19 +97,26 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
   const tone = TONE[row.severity];
   // A layer's own entry speaks only when it is stale, low or not the publisher's word (default-quiet).
   const entry = useFact(`overlay.${row.term}`);
+  const definition = getTermInfo(row.term)?.description;
+  // The title stays; what the layer is and what it requires sit behind Explain, its record behind the
+  // external-link tool (decision Item 54).
+  const explain = [row.type, row.detail, definition].filter(Boolean);
   return (
     <div className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 ${tone.row}`}>
       {tone.icon}
-      <div className="min-w-0">
-        <div className="text-body text-text-primary leading-snug">
-          <InfoTooltip term={row.term}>{row.title}</InfoTooltip>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-body text-text-primary leading-snug">{row.title}</span>
+          <ToolTray
+            label={row.title}
+            source={row.link ? { href: row.link } : undefined}
+            explain={explain.length ? (
+              <span className="block space-y-1.5" data-testid="overlay-explain">
+                {explain.map((x, i) => <span key={i} className={`block ${i === 0 && row.type ? "font-medium text-text-primary" : ""}`}>{x}</span>)}
+              </span>
+            ) : undefined}
+          />
         </div>
-        {(row.type || row.detail) && (
-          <div className="text-caption text-text-muted mt-0.5 leading-snug">
-            {[row.type, row.detail].filter(Boolean).join(" — ")}
-          </div>
-        )}
-        {row.link && <SourceLink href={row.link} />}
         <ConfidenceCaption entry={entry} size="micro" />
       </div>
     </div>
@@ -252,26 +260,32 @@ export function ScorecardRegulatoryCard({ data, adu, designations, tod }: {
             {/* Pills, not rows: opportunities are context, and full rows made this
                 card the page's height driver. Definitions stay on the tooltip. */}
             <div className="flex flex-wrap gap-1.5">
-              {others.map((r) => (
-                <span key={r.key}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-state-positive/25 bg-state-positive/5 px-2.5 py-1 text-caption text-text-primary">
-                  <svg className="w-3.5 h-3.5 text-state-positive shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <InfoTooltip term={r.term}>{r.title}</InfoTooltip>
-                </span>
-              ))}
+              {others.map((r) => {
+                const definition = getTermInfo(r.term)?.description;
+                const explain = [r.type, r.detail, definition].filter(Boolean);
+                return (
+                  <span key={r.key}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-state-positive/25 bg-state-positive/5 px-2.5 py-1 text-caption text-text-primary">
+                    <svg className="w-3.5 h-3.5 text-state-positive shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {r.title}
+                    {/* What the opportunity allows, with its code sections, sits behind Explain; it is
+                        no longer printed again under the pills (decision Item 54). */}
+                    <ToolTray
+                      label={r.title}
+                      align="start"
+                      source={r.link ? { href: r.link } : undefined}
+                      explain={explain.length ? (
+                        <span className="block space-y-1.5" data-testid="overlay-explain">
+                          {explain.map((x, i) => <span key={i} className="block">{x}</span>)}
+                        </span>
+                      ) : undefined}
+                    />
+                  </span>
+                );
+              })}
             </div>
-            {others.some((r) => r.detail || r.link) && (
-              <ul className="mt-2.5 space-y-1.5" data-testid="overlay-notes">
-                {others.filter((r) => r.detail || r.link).map((r) => (
-                  <li key={r.key} className="text-caption text-text-muted leading-snug">
-                    <span className="text-text-secondary">{r.title}: </span>{r.detail}
-                    {r.link && <> <SourceLink href={r.link} /></>}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         )}
 

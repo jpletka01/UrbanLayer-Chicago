@@ -9,6 +9,7 @@ import type { ParcelResolutionRecord } from "../../lib/api";
 import { StatusLabel } from "../ui/StatusLabel";
 import { Toggletip } from "../ui/Toggletip";
 import { ParcelResolution } from "./ParcelResolution";
+import { ChevronDown } from "lucide-react";
 
 function formatPin(pin: string): string {
   const d = pin.replace(/\D/g, "");
@@ -69,7 +70,7 @@ export function ProfileHeader({
         className="mt-1 inline-flex items-center gap-1 rounded text-caption text-text-secondary cursor-pointer hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         {t("scorecard.header.details")}
-        <span aria-hidden className={`transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+        <ChevronDown aria-hidden className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
       </button>
       {open && (
         <div id={regionId} className="mt-2 max-w-xl space-y-1.5 rounded-lg border border-dark-border bg-dark-surface p-3 text-caption text-text-secondary" data-testid="parcel-details">

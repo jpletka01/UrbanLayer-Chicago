@@ -658,7 +658,9 @@
       },
       "tip": "{{share}}% of the allowance built (FAR {{existing}} of {{allowed}})",
       "lowTip": "Near a district boundary: lower confidence",
-      "sources": "Building areas: Cook County Assessor ({{year}} reassessment) and the parcel index (built {{built}}). Parcel shapes: PTAXSIM. Districts: City of Chicago zoning map."
+      "sources": "Building areas: Cook County Assessor ({{year}} reassessment) and the parcel index (built {{built}}). Parcel shapes: PTAXSIM. Districts: City of Chicago zoning map.",
+      "notColoredCount_one": "Not colored: {{count}} parcel",
+      "notColoredCount_other": "Not colored: {{count}} parcels"
     },
     "whatIf": {
       "title": "What if this were rezoned?",
@@ -682,7 +684,8 @@
       "noUnits": "No dwelling units",
       "pdCurrent": "Set by its own ordinance",
       "noLot": "The lot area is unknown, so floor area and units are not shown.",
-      "note": "This is the district table's arithmetic, not a forecast. A rezoning needs City Council approval. Parking, setbacks for this lot's shape and other rules can allow less."
+      "note": "This is the district table's arithmetic, not a forecast. A rezoning needs City Council approval. Parking, setbacks for this lot's shape and other rules can allow less.",
+      "notForecast": "Arithmetic, not a forecast"
     },
     "answer": {
       "noZone": "The zoning district couldn't be checked today",

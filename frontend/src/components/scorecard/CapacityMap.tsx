@@ -22,6 +22,7 @@ import {
   type CapacityMapResponse,
   type DrawnFeature,
 } from "./capacityMapModel";
+import { ToolTray } from "../ui/ToolTray";
 
 const DASH_EXTENSION = new PathStyleExtension({ dash: true });
 const TIP_STYLE: Record<string, string> = {
@@ -87,8 +88,27 @@ export function CapacityMap({ pin, lat, lon, profileKey, className }: CapacityMa
   return (
     <section ref={sentinelRef} className={`grid md:grid-cols-2 gap-x-10 gap-y-6 md:items-stretch ${className ?? ""}`} data-testid="capacity-map">
       <div className="flex flex-col gap-3">
-        <h3 className="text-title text-text-primary">{t("scorecard.capacity.title")}</h3>
-        <p className="text-caption text-text-secondary">{t("scorecard.capacity.method", { radius })}</p>
+        {/* The method, the sources' dates and the key's footnote sit behind the title's tools (decision Item 54). */}
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-title text-text-primary">{t("scorecard.capacity.title")}</h3>
+          <ToolTray
+            label={t("scorecard.capacity.title")}
+            dates={data ? (
+              <span className="block" data-testid="capacity-sources">
+                {t("scorecard.capacity.sources", {
+                  year: data.sources?.commercial_valuation?.year ?? "—",
+                  built: data.sources?.index?.built_at ? formatDay(data.sources.index.built_at) : "—",
+                })}
+              </span>
+            ) : undefined}
+            explain={
+              <span className="block space-y-1.5" data-testid="capacity-explain">
+                <span className="block">{t("scorecard.capacity.method", { radius })}</span>
+                <span className="block text-text-muted">{t("scorecard.capacity.keyNote")}</span>
+              </span>
+            }
+          />
+        </div>
         <CoverageLine load={load} model={model} pct={pct} />
         {model.total > 0 && (
           <>
@@ -98,14 +118,6 @@ export function CapacityMap({ pin, lat, lon, profileKey, className }: CapacityMa
             </details>
             <div className="hidden md:block"><CapacityKey model={model} /></div>
           </>
-        )}
-        {data && (
-          <p className="text-micro text-text-muted" data-testid="capacity-sources">
-            {t("scorecard.capacity.sources", {
-              year: data.sources?.commercial_valuation?.year ?? "—",
-              built: data.sources?.index?.built_at ? formatDay(data.sources.index.built_at) : "—",
-            })}
-          </p>
         )}
       </div>
       {token && model.total > 0 ? (
@@ -178,14 +190,23 @@ function CapacityKey({ model }: { model: CapacityMapModel }) {
         </div>
       )}
       {model.uncolored.length > 0 && (
-        <div>
-          <p className="text-micro uppercase tracking-wide text-text-muted mb-1">{t("scorecard.capacity.keyNotColored")}</p>
-          <ul className="space-y-1">
-            {model.uncolored.map((row) => <KeyRow key={row.key} row={row} label={t(`scorecard.capacity.state.${row.key}`)} />)}
-          </ul>
-        </div>
+        // One counted line; the reasons sit behind Explain (decision Item 54). Rule §4.8 still holds:
+        // the key gives the count of every parcel it doesn't color.
+        <p className="flex items-center justify-between gap-2 text-caption text-text-secondary" data-testid="capacity-uncolored">
+          <span className="inline-flex items-center gap-1">
+            {t("scorecard.capacity.notColoredCount", { count: model.uncolored.reduce((n, r) => n + r.count, 0) })}
+            <ToolTray
+              label={t("scorecard.capacity.keyNotColored")}
+              align="start"
+              explain={
+                <ul className="space-y-1" data-testid="capacity-uncolored-reasons">
+                  {model.uncolored.map((row) => <KeyRow key={row.key} row={row} label={t(`scorecard.capacity.state.${row.key}`)} />)}
+                </ul>
+              }
+            />
+          </span>
+        </p>
       )}
-      <p className="text-micro text-text-muted">{t("scorecard.capacity.keyNote")}</p>
     </div>
   );
 }

@@ -22,6 +22,8 @@ const CAPS = {
   desktop: { words: 120, amber: 3, orange: 1, screens: 4 },
   phone: { words: 90, amber: 3, orange: 1, screens: 1000 },
 } as const;
+/** The opened "What you can build" section (decision Item 54): ~1,000 words before the tool tray. */
+const BUILD_WORDS_CAP = 500;
 /** Words a live source state can add to the first screen (decision Item 52). */
 const WORD_STATE_SLACK = 8;
 const PARCELS: Array<[string, string]> = [
@@ -91,6 +93,39 @@ async function measure(browser: Browser, baseURL: string, url: string, view: key
   return counts;
 }
 
+async function buildSectionWords(browser: Browser, baseURL: string, url: string): Promise<number> {
+  const ctx = await browser.newContext({ ...VIEWS.desktop, colorScheme: "light", reducedMotion: "reduce" });
+  const page = await ctx.newPage();
+  await page.goto(baseURL + url, { waitUntil: "load", timeout: 120_000 });
+  await page.waitForSelector("[data-testid=answer-panels]", { timeout: 120_000 });
+  await page.click("#module-build > button");
+  // Measure only an opened section: a body that never rendered would read as 0 words and pass.
+  await page.waitForSelector("#module-build-body", { timeout: 30_000 });
+  for (let y = 0; y < 12_000; y += 600) {
+    await page.evaluate((v) => window.scrollTo(0, v), y);
+    await page.waitForTimeout(120);
+  }
+  await page.waitForTimeout(2000);
+  const words = await page.evaluate(() => {
+    const body = document.querySelector("#module-build-body");
+    if (!body) return -1;
+    let n = 0;
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const el = node.parentElement;
+      if (!el || el.closest(".mapboxgl-map, .sr-only, [role=dialog], [aria-hidden=true]")) continue;
+      const s = getComputedStyle(el);
+      if (s.display === "none" || s.visibility === "hidden") continue;
+      n += (node.textContent ?? "").split(/\s+/).filter((w) => /[\p{L}\p{N}$]/u.test(w)).length;
+    }
+    return n;
+  });
+  await ctx.close();
+  if (words <= 0) throw new Error(`the opened Build section had no text to measure at ${url}`);
+  return words;
+}
+
 test.describe("Property Profile page budget", () => {
   // Serial: each test rewrites the shared baseline file under BUDGET_UPDATE.
   test.describe.configure({ mode: "serial" });
@@ -98,7 +133,7 @@ test.describe("Property Profile page budget", () => {
   for (const [name, url] of PARCELS) {
     test(`budget: ${name}`, async ({ browser, baseURL }) => {
       test.skip(test.info().project.name !== "Pixel 3", "runs once, in its own desktop and phone contexts");
-      const baseline: Record<string, Partial<Record<"words" | "amber" | "orange" | "screens", number>>> =
+      const baseline: Record<string, Partial<Record<"words" | "orange" | "screens", number>>> =
         JSON.parse(fs.readFileSync(BASELINE, "utf8"));
       for (const view of Object.keys(VIEWS) as Array<keyof typeof VIEWS>) {
         const key = `${name}/${view}`;
@@ -122,6 +157,18 @@ test.describe("Property Profile page budget", () => {
           expect(got[metric], `${key}.${metric}: ${got[metric]} is above its baseline ${b}${metric === "words" ? ` (+${WORD_STATE_SLACK} for live state rows)` : ""}; the budget only ratchets down`).toBeLessThanOrEqual(allowed);
           if (process.env.BUDGET_UPDATE === "1" && got[metric] < b) base![metric] = got[metric];
         }
+      }
+      // The opened Build section: its printed words only (tool popovers, screen-reader text and maps excluded).
+      {
+        const key = `${name}/build`;
+        const words = await buildSectionWords(browser, baseURL ?? "http://localhost:5173", url);
+        const b = baseline[key]?.words;
+        console.log(`${key}: ${JSON.stringify({ words })}`);
+        expect(b, `${key} has no baseline entry`).toBeDefined();
+        expect(b!, `${key}.words: baseline ${b} is above the hard cap ${BUILD_WORDS_CAP}`).toBeLessThanOrEqual(BUILD_WORDS_CAP);
+        expect(words, `${key}.words: ${words} is above its baseline ${b} (+${WORD_STATE_SLACK} for live state rows); the budget only ratchets down`)
+          .toBeLessThanOrEqual(Math.min(b! + WORD_STATE_SLACK, BUILD_WORDS_CAP));
+        if (process.env.BUDGET_UPDATE === "1" && words < b!) baseline[key]!.words = words;
       }
       if (process.env.BUDGET_UPDATE === "1") fs.writeFileSync(BASELINE, JSON.stringify(baseline, null, 2) + "\n");
     });

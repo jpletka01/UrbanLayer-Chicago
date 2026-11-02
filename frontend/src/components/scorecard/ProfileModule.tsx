@@ -4,6 +4,7 @@
 // unbounded texture of rules. Interiors stay de-carded (quiet SubSections).
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { ChevronDown } from "lucide-react";
 
 /** Top-level dashboard band: title + optional takeaway + right-side action.
     The takeaway is parcel-specific computed insight ("the so-what"), NOT
@@ -37,7 +38,7 @@ export function ProfileModule({ id, title, takeaway, action, children, open, onT
             {/* a scope line written to follow the title ("— describes West Town…") stands alone here */}
             {takeaway && <p className={`mt-0.5 text-caption text-text-secondary ${open ? "" : "truncate"}`}>{takeaway.replace(/^[—–-]\s*/, "")}</p>}
           </span>
-          <span aria-hidden className={`shrink-0 text-text-muted transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+          <ChevronDown aria-hidden className={`h-5 w-5 shrink-0 text-text-muted transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
         </button>
         {open && (
           <div id={id ? `${id}-body` : undefined} className="px-5 pb-6 md:px-7 md:pb-7">

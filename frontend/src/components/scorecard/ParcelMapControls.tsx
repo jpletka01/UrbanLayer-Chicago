@@ -5,6 +5,7 @@ import type {
   ParcelMapLayerState,
   ParcelMapSource,
 } from "../../lib/parcelMap";
+import { ChevronDown, X } from "lucide-react";
 
 export interface ParcelMapLegendRow {
   key: string;
@@ -225,7 +226,7 @@ export function ParcelMapKeyChip({
         <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5L12 12.75l5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0L12 17.25l-5.571-3" />
       </svg>
       <span className="truncate">{keyChipLabel(sources, subjectKey, t)}</span>
-      <span aria-hidden className={`shrink-0 text-text-muted transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+      <ChevronDown aria-hidden className={`h-3.5 w-3.5 shrink-0 text-text-muted transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
     </button>
   );
 }
@@ -320,7 +321,7 @@ function KeyHeader({ onClose }: { onClose: () => void }) {
         aria-label={t("scorecard.map.keyClose")}
         className="inline-flex h-7 w-7 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-dark-elevated hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <span aria-hidden>✕</span>
+        <X aria-hidden className="h-4 w-4" strokeWidth={2} />
       </button>
     </div>
   );

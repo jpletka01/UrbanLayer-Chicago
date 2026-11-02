@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ScorecardRegulatoryCard } from "./ScorecardRegulatoryCard";
 import type { AduStatus, RegulatorySummary, TodBenefits } from "../../lib/types";
 
@@ -25,7 +25,9 @@ describe("ScorecardRegulatoryCard — overlays named, with what they require (F7
   it("RS parcel in an ADU zone: names Zone 10 and states its annual-limit and owner-occupancy limits (kit P6)", () => {
     render(<ScorecardRegulatoryCard data={{ ...base, in_adu_area: true, overlays: [zone10] }} adu={aduWithLimits} />);
     expect(screen.getAllByText(/Zone 10/).length).toBeGreaterThan(0);
-    const notes = screen.getByTestId("overlay-notes");
+    // what the zone allows, with its sections, sits behind the pill's Explain tool (decision Item 54)
+    fireEvent.click(screen.getAllByRole("button", { name: /^What this means: .*Zone 10/ })[0]);
+    const notes = screen.getByTestId("overlay-explain");
     expect(notes.textContent).toContain("Annual Limits, Owner Occupancy Limits");
     expect(notes.textContent).toContain("§17-7-0570");
   });
@@ -49,8 +51,9 @@ describe("ScorecardRegulatoryCard — overlays named, with what they require (F7
     };
     render(<ScorecardRegulatoryCard data={{ ...base, in_special_district: true, overlays: [sd] }} />);
     expect(screen.getAllByText(/Predominance of the Block \(606\) District/).length).toBeGreaterThan(0);
-    const link = screen.getByTestId("overlay-notes").querySelector("a");
-    expect(link?.getAttribute("href")).toBe("https://codelibrary.amlegal.com/x");
+    // the code link is the pill's Official record tool (decision Item 54)
+    const link = screen.getByRole("link", { name: /^Official record: Predominance of the Block/ });
+    expect(link.getAttribute("href")).toBe("https://codelibrary.amlegal.com/x");
   });
 
   it("links the Planned Development ordinance PDF and says the standards live there (kit P4)", () => {
@@ -61,7 +64,9 @@ describe("ScorecardRegulatoryCard — overlays named, with what they require (F7
     };
     const { container } = render(<ScorecardRegulatoryCard data={{ ...base, in_planned_development: true, overlays: [pd] }} />);
     expect(screen.getAllByText(/Planned Development 835/).length).toBeGreaterThan(0);
-    expect(container.textContent).toContain("bulk table");
+    // what the PD requires sits behind the row's Explain tool (decision Item 54)
+    fireEvent.click(screen.getByRole("button", { name: /^What this means: Planned Development 835/ }));
+    expect(screen.getByTestId("overlay-explain").textContent).toContain("bulk table");
     expect(container.querySelector('a[href$="PD835.pdf"]')).not.toBeNull();
   });
 
@@ -72,6 +77,7 @@ describe("ScorecardRegulatoryCard — overlays named, with what they require (F7
       link: null,
     };
     const { container } = render(<ScorecardRegulatoryCard data={{ ...base, is_landmark_building: true, overlays: [lm] }} />);
+    fireEvent.click(screen.getByRole("button", { name: /^What this means: Noel State Bank/ }));
     expect(container.textContent).toContain("written approval");
     expect(container.textContent).toContain("§2-120-740");
     expect(container.textContent?.toLowerCase()).not.toContain("design review");
@@ -110,7 +116,8 @@ describe("ScorecardRegulatoryCard — what transit-served status changes (kit P5
 
   it("states the parking amount and the absent density bonus on the transit row", () => {
     render(<ScorecardRegulatoryCard data={{ ...base, in_tod_area: true, overlays: [tod] }} tod={benefits} />);
-    const notes = screen.getByTestId("overlay-notes").textContent ?? "";
+    fireEvent.click(screen.getByRole("button", { name: /^What this means: Transit-Oriented Development \(CTA\)/ }));
+    const notes = screen.getByTestId("overlay-explain").textContent ?? "";
     expect(notes).toContain("up to 100%");
     expect(notes).toContain("No density, FAR or height bonus at B3-2");
   });
@@ -118,7 +125,8 @@ describe("ScorecardRegulatoryCard — what transit-served status changes (kit P5
   it("says it once even when both a CTA and a Metra overlay are present", () => {
     const metra = { ...tod, layer_type: "tod_metra", name: "Transit-Oriented Development (Metra)" };
     render(<ScorecardRegulatoryCard data={{ ...base, in_tod_area: true, overlays: [tod, metra] }} tod={benefits} />);
-    expect((screen.getByTestId("overlay-notes").textContent ?? "").split("up to 100%").length - 1).toBe(1);
+    screen.getAllByRole("button", { name: /^What this means: Transit-Oriented/ }).forEach((b) => fireEvent.click(b));
+    expect((document.body.textContent ?? "").split("up to 100%").length - 1).toBe(1);
   });
 
   it("older payloads without tod_benefits render as before", () => {

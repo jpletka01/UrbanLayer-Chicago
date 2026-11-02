@@ -51,7 +51,10 @@
       "won": "reducido {{before}} → {{after}} (−{{pct}}%)",
       "noChange": "sin cambio",
       "nearby": "{{count}} apelaciones a una cuadra recientemente — {{reduced}} lograron reducciones",
-      "nearbyMedian": "(mediana −{{pct}}%)"
+      "nearbyMedian": "(mediana −{{pct}}%)",
+      "summary_one": "{{count}} apelación registrada · {{won}} ganada(s)",
+      "summary_other": "{{count}} apelaciones registradas · {{won}} ganada(s)",
+      "noneHere": "Ninguna registrada para esta parcela"
     },
     "rooms": "Habitaciones",
     "bedrooms": "Dormitorios",
@@ -145,7 +148,12 @@
       "empty": "No se encontraron solicitudes de zonificación vigentes que se puedan ubicar para esta propiedad ni dentro de {{radius}} mi.",
       "stale": "La última actualización no se completó. Se muestra la última verificación exitosa; confirme el registro de la Secretaría Municipal antes de basarse en él.",
       "unavailable": "No se pudieron verificar las solicitudes de zonificación en trámite en este momento. Esto no significa que no existan.",
-      "partial": "La ubicación es parcial: no se pudo ubicar {{count}} solicitud(es) vigente(s) a partir del título oficial. La lista siguiente puede estar incompleta."
+      "partial": "La ubicación es parcial: no se pudo ubicar {{count}} solicitud(es) vigente(s) a partir del título oficial. La lista siguiente puede estar incompleta.",
+      "staleShort": "Se muestra la última verificación correcta",
+      "partialShort_one": "{{count}} solicitud no se pudo ubicar",
+      "partialShort_other": "{{count}} solicitudes no se pudieron ubicar",
+      "noneNear": "Ninguna en esta propiedad ni a menos de {{radius}} mi",
+      "proposedStatus": "Propuesta · {{status}}"
     },
     "adu": {
       "allowed_by_right": "Casas de carruaje y unidades de conversión permitidas por derecho",
@@ -233,7 +241,21 @@
       "untested": "No se puede evaluar para esta propiedad",
       "summaryToggle": "Qué dice la propuesta",
       "official": "Registro oficial ↗",
-      "valueOf": "{{label}}: {{value}}"
+      "valueOf": "{{label}}: {{value}}",
+      "todayValue": "Hoy: {{value}}",
+      "proposedStatus": "Propuesta · {{status}}",
+      "count_one": "{{count}} propuesta ante el Concejo Municipal podría cambiar una regla de esta página",
+      "count_other": "{{count}} propuestas ante el Concejo Municipal podrían cambiar reglas de esta página",
+      "dateIntroduced": "Presentada ante el Concejo Municipal",
+      "dateLastAction": "Última acción del Concejo Municipal",
+      "dateReviewed": "Leímos el texto de la ordenanza",
+      "dateChecked": "Revisamos la lista del Secretario",
+      "notChecked": "Hoy no se pudo verificar",
+      "staleShort": "Se muestra la última verificación correcta",
+      "incompleteShort_one": "{{count}} propuesta aún sin revisar",
+      "incompleteShort_other": "{{count}} propuestas aún sin revisar",
+      "noneApply_one": "{{count}} revisada; no aplica aquí",
+      "noneApply_other": "{{count}} revisadas; ninguna aplica aquí"
     }
   },
   "incentives": {

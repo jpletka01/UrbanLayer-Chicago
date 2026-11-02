@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import i18n from "i18next";
 
 vi.mock("../../lib/api", () => ({ fetchCapacityMap: vi.fn() }));
@@ -52,8 +52,12 @@ describe("CapacityMap", () => {
     render(<CapacityMap pin="17-09-100-001-0000" lat={41.9} lon={-87.68} />);
     expect((await screen.findByTestId("capacity-coverage")).textContent).toContain("Colored: 2 of 3 parcels (67%).");
     const key = screen.getAllByTestId("capacity-key")[0];
+    expect(within(key).getByTestId("capacity-uncolored").textContent).toContain("Not colored: 1 parcel");
+    fireEvent.click(within(key).getByRole("button", { name: /^What this means: Not colored/ }));
     expect(within(key).getByText("Part of a multi-parcel complex (its total area covers several lots)")).toBeTruthy();
     expect(within(key).getByText("Under 25%")).toBeTruthy();
+    // the sources' dates sit behind the title's Dates tool (decision Item 54)
+    fireEvent.click(screen.getByRole("button", { name: /^Dates: How much of what/ }));
     expect((screen.getByTestId("capacity-sources")).textContent).toContain("2024 reassessment");
     expect(fetchCapacityMap).toHaveBeenCalledWith("17-09-100-001-0000", 41.9, -87.68);
   });

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { MessageCircleQuestion } from "lucide-react";
 import { track } from "../lib/tracking";
 
 // Two shapes: "inline" (compact text link — chat sidebar contexts) and "chip"
@@ -6,7 +7,9 @@ import { track } from "../lib/tracking";
 // feature and micro links under-sold it).
 const VARIANT = {
   inline: "group inline-flex items-center gap-1 text-micro text-text-secondary hover:text-accent transition-colors",
-  chip: "group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors",
+  // The Profile's secondary button (decision Item 54): an orange outline and orange text, so it reads as
+  // clickable against the dark card. The near-black border it had matched the surface.
+  chip: "group inline-flex h-9 items-center gap-1.5 rounded-lg border border-link px-3 text-caption font-medium text-link cursor-pointer hover:bg-accent-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
 } as const;
 
 export function InvestigateButton({ question, label, cardName, pin, variant = "inline", onAsk }: {
@@ -19,11 +22,8 @@ export function InvestigateButton({ question, label, cardName, pin, variant = "i
 }) {
   const inner = (
     <>
-      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-      </svg>
+      <MessageCircleQuestion aria-hidden className={variant === "chip" ? "h-4 w-4" : "h-3 w-3"} strokeWidth={2} />
       {label}
-      <span aria-hidden className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
     </>
   );
   if (onAsk) {
