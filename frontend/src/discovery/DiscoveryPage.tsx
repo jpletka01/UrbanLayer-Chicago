@@ -13,6 +13,7 @@ import UpgradePrompt from "./../components/UpgradePrompt";
 import { AddFilterMenu, type FilterPopoverView } from "./AddFilterMenu";
 import { Chips, chipLabel } from "./chips";
 import { CoverageBanner } from "./CoverageBanner";
+import { coverageOf } from "./coverage";
 import { DescribeBox } from "./DescribeBox";
 import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
@@ -23,6 +24,7 @@ import { StartPanel, type StartChoice } from "./StartPanel";
 import { TextFeedback } from "./TextFeedback";
 import { clearLastSearch, loadLastSearch, saveLastSearch, type SavedSearch } from "./lastSearch";
 import { track } from "../lib/tracking";
+import { ToolTray } from "../components/ui/ToolTray";
 import { loadRegistry } from "./registryClient";
 import { summarize, seamPrompt } from "./summary";
 import { useDiscoverySearch } from "./useDiscoverySearch";
@@ -54,6 +56,8 @@ export default function DiscoveryPage() {
   // Kept separate from row-origin hover/focus so only a Pro map hover may ask
   // an already-loaded result row to scroll into view.
   const [mapHoveredPin, setMapHoveredPin] = useState<string | null>(null);
+  // A pinned dot preview (decision Item 57): the list scrolls to its row and marks it, on every tier.
+  const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   // The "+ Add filter" menu / in-place filter editor (null = closed).
   const [popover, setPopover] = useState<FilterPopoverView>(null);
@@ -313,31 +317,28 @@ export default function DiscoveryPage() {
                 />
               )}
 
-              {/* Evaluated sentence (INV-4): dims with the rest of the previous results. Sort sits
-                  here, next to the list it orders. */}
+              {/* Evaluated sentence (INV-4) and the index date sit behind one tool tray, beside Sort (decision
+                  Item 57): the chips already say what was searched, so the sentence that restated them is
+                  evidence now. Screen readers still get it in line; it dims with the previous results. */}
               {response && (
-                <div className={`order-6 flex items-start justify-between gap-3 md:order-5 ${expanded ? "" : "max-md:hidden"}`}>
+                <div className={`order-6 flex items-center justify-between gap-3 md:order-5 ${expanded ? "" : "max-md:hidden"}`}>
                   <p
-                    className={`min-w-0 text-body text-text-secondary transition-opacity ${refreshing ? "opacity-[0.55]" : ""}`}
+                    className={`sr-only transition-opacity ${refreshing ? "opacity-[0.55]" : ""}`}
                     aria-busy={refreshing}
                     data-testid="discovery-summary"
                   >
                     {summarize(response.cqs, registry)}
                   </p>
+                  <ToolTray
+                    label={t("discovery.theseResults")}
+                    align="start"
+                    dates={coverageOf(registry).mode !== "none" && coverageOf(registry).asOf ? <IndexAsOf registry={registry} /> : undefined}
+                    explain={<span className="block">{summarize(response.cqs, registry)}</span>}
+                    onAsk={response.result.total > 0 && !refreshing ? onAskArea : undefined}
+                  />
                   {draft.sort && <SortControl registry={registry} sort={draft.sort} onChange={search.setSort} />}
                 </div>
               )}
-              {/* Quiet seam — subordinate to the ranked list; the chat door is secondary to it. */}
-              {response && response.result.total > 0 && !refreshing && (
-                <button
-                  type="button"
-                  onClick={onAskArea}
-                  className={`touch-target order-7 w-fit rounded-lg border border-dark-border bg-dark-surface px-2.5 py-1 text-caption text-text-secondary transition-colors hover:border-accent/50 hover:text-accent md:order-6 ${expanded ? "" : "max-md:hidden"}`}
-                >
-                  {t("discovery.askAnalystArea")} <span aria-hidden className="ml-1.5">→</span>
-                </button>
-              )}
-              <IndexAsOf registry={registry} className={`order-8 md:order-7 ${expanded ? "" : "max-md:hidden"}`} />
             </div>
           )}
 
@@ -363,8 +364,8 @@ export default function DiscoveryPage() {
                     onLoadMore={search.loadMore}
                     onRelax={search.removeFilter}
                     onOpenParcel={onOpenParcel}
-                    hoveredPin={hoveredPin}
-                    scrollToPin={isPro ? mapHoveredPin : null}
+                    hoveredPin={selectedPin ?? hoveredPin}
+                    scrollToPin={selectedPin ?? (isPro ? mapHoveredPin : null)}
                     onHoverPin={onRowHoverPin}
                     onExport={search.exportApplied}
                     exportLocked={!isPro}
@@ -387,11 +388,13 @@ export default function DiscoveryPage() {
             points={map.points}
             truncated={map.truncated}
             total={map.total}
-            hoveredPin={hoveredPin}
+            hoveredPin={selectedPin ?? hoveredPin}
             onHoverPin={onMapHoverPin}
             onOpenParcel={onOpenParcel}
             colorBy={isPro ? "upside" : "land_use"}
-            interactive={isPro}
+            rows={rows}
+            sortKey={response?.cqs.sort.key ?? "lot_size"}
+            onSelectPin={setSelectedPin}
             status={map.status}
             stale={refreshing}
             visible={(!showStart && mobileTab === "map") || wideLayout}

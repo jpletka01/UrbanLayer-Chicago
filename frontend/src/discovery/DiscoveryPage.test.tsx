@@ -468,6 +468,8 @@ describe("DiscoveryPage Start panel", () => {
     await screen.findByTestId("start-panel");
     expect(screen.queryByTestId("discovery-index-as-of")).toBeNull(); // the (stubbed) panel owns it
     fireEvent.click(screen.getByText("start-all"));
+    // after a search the date sits behind the results' Dates tool (decision Item 57)
+    fireEvent.click(await screen.findByRole("button", { name: "Dates: These results" }));
     await screen.findByTestId("discovery-index-as-of");
     expect(screen.getAllByTestId("discovery-index-as-of")).toHaveLength(1);
   });

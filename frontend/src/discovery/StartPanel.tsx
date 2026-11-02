@@ -104,7 +104,7 @@ export function StartPanel({
                   key={topic.id}
                   type="button"
                   onClick={() => onChoose({ kind: "recipe", topic })}
-                  title={status.title}
+                  title={[status.title, t("discovery.start.filtersLine", { list: filtersLine(topic) })].filter(Boolean).join("\n")}
                   data-testid={`discovery-start-recipe-${topic.id}`}
                   className={`rounded-lg border border-dark-border p-3 text-left transition-colors hover:border-dark-border-strong ${
                     status.live ? "" : "opacity-70"
@@ -121,7 +121,9 @@ export function StartPanel({
                       {t(`discovery.topic.${topic.id}.description`, topic.description)}
                     </p>
                   )}
-                  <p className="mt-1 text-micro text-text-muted" data-testid={`discovery-start-filters-${topic.id}`}>
+                  {/* The filters show as chips the moment the recipe runs; here they are the card's hover title and
+                      screen-reader text, not a printed line (decision Item 57; plan §6f). */}
+                  <p className="sr-only" data-testid={`discovery-start-filters-${topic.id}`}>
                     {t("discovery.start.filtersLine", { list: filtersLine(topic) })}
                   </p>
                 </button>

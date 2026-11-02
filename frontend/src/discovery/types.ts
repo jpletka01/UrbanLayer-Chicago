@@ -201,6 +201,11 @@ export interface ResultRow {
   value_percentile: number | null;
   upside_score: number | null;
   is_teardown_candidate: boolean;
+  // Zoning family + table FAR from the index (the exact class awaits index enrichment) and the nominal-$1
+  // flag (decision Item 57). Optional: an older backend omits them.
+  zoning_group?: string | null;
+  allowed_far?: number | null;
+  nominal_assessment?: boolean;
   sortValue: number | string | null; // value of the active sort key, for row display
 }
 

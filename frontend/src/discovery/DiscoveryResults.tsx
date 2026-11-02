@@ -9,10 +9,11 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Chip } from "../components/ui/Chip";
+import { StatusLabel } from "../components/ui/StatusLabel";
 import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import { coverageOf, isPopulated } from "./coverage";
 import { summarize } from "./summary";
-import { humanizeShoutyCase } from "../lib/format";
+import { titleCaseAddress } from "../lib/format";
 import { upsideColor } from "./upsideColor";
 import type { Registry, ResultRow, SearchResponse } from "./types";
 
@@ -471,48 +472,20 @@ function ResultCard({
   useEffect(() => {
     if (scrollRequested) rowRef.current?.scrollIntoView({ block: "nearest" });
   }, [scrollRequested]);
-  // A "~" prefix marks an approximate (nearest) address — shown as "near <addr>".
-  const title = row.address
-    ? row.address.startsWith("~")
-      ? t("discovery.near", { addr: humanizeShoutyCase(row.address.slice(1)) })
-      : humanizeShoutyCase(row.address)
-    : row.pin;
+  const { title, approx } = rowTitle(row);
+  // One line of plain words: the land use and units. The class code ("1-00") and the PIN moved to the
+  // dot preview and the row's hover (decision Item 57).
   const useLine = [
     row.land_use ? t(`discovery.enum.land_use.${row.land_use}`, { defaultValue: humanize(row.land_use) }) : null,
-    row.class,
     row.units != null ? t("discovery.unitsCount", { count: row.units }) : null,
   ].filter(Boolean);
+  const { primary, primaryLabel, secondary, sortKeyShown } = rowFigures(row, activeSortKey, t);
+  // Each size figure once: the one the list is sorted by is already the row's headline figure.
   const sizeLine = [
-    row.lot_sqft != null ? t("discovery.lot", { n: fmtNum(row.lot_sqft) }) : null,
-    row.bldg_sqft != null ? t("discovery.bldg", { n: fmtNum(row.bldg_sqft) }) : null,
-    row.year_built != null ? String(row.year_built) : null,
+    row.lot_sqft != null && sortKeyShown !== "lot_size" ? t("discovery.lot", { n: fmtNum(row.lot_sqft) }) : null,
+    row.bldg_sqft != null && sortKeyShown !== "building_size" ? t("discovery.bldg", { n: fmtNum(row.bldg_sqft) }) : null,
+    row.year_built != null && sortKeyShown !== "year_built" ? String(row.year_built) : null,
   ].filter(Boolean);
-
-  // Right rail leads with "what you sorted by" — the ranked metric IS the row's
-  // reason for its position. Falls back to $/sqft, then AV, when the sort key has
-  // no row field (pin, recency) or the value is missing.
-  const assessed = fmtMoney(row.assessed_value);
-  const ppsf = row.price_per_sf != null ? t("discovery.perSqft", { money: fmtMoney(row.price_per_sf) }) : null;
-  const sortValueByKey: Record<string, string | null> = {
-    assessed_value: assessed,
-    price_per_sf: ppsf,
-    lot_size: row.lot_sqft != null ? t("discovery.lot", { n: fmtNum(row.lot_sqft) }) : null,
-    building_size: row.bldg_sqft != null ? t("discovery.bldg", { n: fmtNum(row.bldg_sqft) }) : null,
-    year_built: row.year_built != null ? String(row.year_built) : null,
-  };
-  const sortValue = sortValueByKey[activeSortKey] ?? null;
-  const primary = sortValue ?? ppsf ?? assessed;
-  const primaryLabel = sortValue != null
-    ? t(`discovery.sort.${activeSortKey}`, activeSortKey.replace(/_/g, " "))
-    : primary === ppsf && ppsf != null
-      ? t("discovery.metricPerSqft")
-      : t("discovery.metricAssessed");
-  const secondary =
-    assessed && primary !== assessed
-      ? t("discovery.av", { money: assessed })
-      : ppsf && primary !== ppsf
-        ? ppsf
-        : null;
 
   return (
     <button
@@ -520,6 +493,7 @@ function ResultCard({
       type="button"
       data-testid="discovery-result-row"
       data-pin={row.pin}
+      title={t("discovery.pinTitle", { pin: row.pin })}
       onClick={() => onOpenParcel(row.pin)}
       onMouseEnter={() => onHoverPin?.(row.pin)}
       onMouseLeave={(event) => {
@@ -535,8 +509,14 @@ function ResultCard({
       {hovered && <span aria-hidden className="absolute inset-y-0 left-0 w-0.5 bg-accent" />}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-body text-text-primary">{title}</div>
-          {row.address && <div className="font-mono text-micro text-text-muted">{row.pin}</div>}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-body text-text-primary">{title}</span>
+            {approx && (
+              <span title={t("discovery.approxTip")} className="shrink-0">
+                <StatusLabel tone="neutral" glyph={null}>{t("discovery.approx")}</StatusLabel>
+              </span>
+            )}
+          </div>
           {useLine.length > 0 && (
             <div className="mt-0.5 text-caption text-text-secondary">{useLine.join(" · ")}</div>
           )}
@@ -557,6 +537,43 @@ function ResultCard({
       </div>
     </button>
   );
+}
+
+/** The row's address, title-cased; a "~" prefix (nearest address on record) becomes an "Approx." label. */
+export function rowTitle(row: ResultRow): { title: string; approx: boolean } {
+  if (!row.address) return { title: row.pin, approx: false };
+  const approx = row.address.startsWith("~");
+  return { title: titleCaseAddress(approx ? row.address.slice(1) : row.address), approx };
+}
+
+/** The row's figures: what the list is sorted by first (the reason for its position), else $/ft², then the
+    assessed value. A nominal ($1) assessment reads "Nominal", never "$1" (decision Items 46, 57); $0 stays
+    "$0" and a missing value stays missing. */
+export function rowFigures(row: ResultRow, activeSortKey: string, t: TFn) {
+  const nominal = row.nominal_assessment === true;
+  const assessed = nominal ? t("discovery.nominal") : fmtMoney(row.assessed_value);
+  const ppsf = !nominal && row.price_per_sf != null ? t("discovery.perSqft", { money: fmtMoney(row.price_per_sf) }) : null;
+  const sortValueByKey: Record<string, string | null> = {
+    assessed_value: assessed,
+    price_per_sf: ppsf,
+    lot_size: row.lot_sqft != null ? t("discovery.lot", { n: fmtNum(row.lot_sqft) }) : null,
+    building_size: row.bldg_sqft != null ? t("discovery.bldg", { n: fmtNum(row.bldg_sqft) }) : null,
+    year_built: row.year_built != null ? String(row.year_built) : null,
+  };
+  const sortValue = sortValueByKey[activeSortKey] ?? null;
+  const primary = sortValue ?? ppsf ?? assessed;
+  const primaryLabel = sortValue != null
+    ? t(`discovery.sort.${activeSortKey}`, { defaultValue: activeSortKey.replace(/_/g, " ") })
+    : primary === ppsf && ppsf != null
+      ? t("discovery.metricPerSqft")
+      : t("discovery.metricAssessed");
+  const secondary =
+    assessed && primary !== assessed
+      ? nominal ? t("discovery.nominalAv") : t("discovery.av", { money: assessed })
+      : ppsf && primary !== ppsf
+        ? ppsf
+        : null;
+  return { primary, primaryLabel, secondary, sortKeyShown: sortValue != null ? activeSortKey : null };
 }
 
 /** Upside score pill, colored from the SAME ramp as the map dots (upsideColor) so the

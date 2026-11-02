@@ -1,0 +1,7 @@
+{
+  "start/desktop": { "words": 260, "orange": 1 },
+  "start/phone": { "words": 200, "orange": 1 },
+  "results/desktop": { "words": 220, "orange": 1 },
+  "results/phone": { "words": 160, "orange": 1 },
+  "preview/desktop": { "words": 40, "orange": 1 }
+}

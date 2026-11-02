@@ -2,12 +2,13 @@
 // The envelope carries raw inputs (userFilters + topicId + text + sort + scope) — the
 // backend compiles, merges, evaluates, and echoes back the canonical CQS.
 
-import { discoveryExportCsv, discoverySearch, discoverySearchPins, discoveryTextPreview } from "../lib/api";
+import { discoveryExportCsv, discoveryParcelRow, discoverySearch, discoverySearchPins, discoveryTextPreview } from "../lib/api";
 import { compilePanel } from "./uiCompiler";
 import type {
   PanelState,
   PinsResponse,
   Registry,
+  ResultRow,
   SearchRequest,
   SearchResponse,
   SortSpec,
@@ -71,4 +72,9 @@ export async function previewText(text: string, signal?: AbortSignal): Promise<T
  * export is exactly what was filtered, in the same order. */
 export async function exportCsv(inputs: SearchInputs, registry: Registry): Promise<boolean> {
   return discoveryExportCsv(buildRequest(inputs, registry));
+}
+
+/** One row by PIN for the dot preview (decision Item 57); the active sort key picks the row's sort figure. */
+export async function fetchParcelRow(pin: string, sortKey: string, signal?: AbortSignal): Promise<ResultRow | null> {
+  return discoveryParcelRow(pin, sortKey, signal);
 }

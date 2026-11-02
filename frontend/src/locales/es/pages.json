@@ -777,7 +777,7 @@
     "teaserCount": "{{total}} parcelas coinciden — usted está viendo {{shown}}.",
     "teaserUnlock": "Desbloquee la lista completa, el mapa de potencial, el refinado y la exportación — Pro, $99/mes.",
     "unlockCta": "Desbloquear con Pro — $99/mes",
-    "askAnalystArea": "Pregunte al analista sobre esta zona",
+    "theseResults": "Estos resultados",
     "orAskAnalystArea": "O pregunte al analista sobre esta zona — gratis",
     "seamCrit": "propiedades",
     "seamPromptArea": "Estoy investigando {{crit}} en {{area}}. ¿Qué impulsa el desarrollo allí y qué debo saber antes de considerar estas propiedades?",
@@ -898,7 +898,9 @@
     "zeroTooTight": "Sin coincidencias. Intente quitar:",
     "loadingMore": "Cargando más…",
     "scrollMore": "Desplácese para ver más",
-    "near": "cerca de {{addr}}",
+    "approx": "Aprox.",
+    "approxTip": "La dirección registrada más cercana, no una coincidencia exacta",
+    "pinTitle": "PIN {{pin}}",
     "unitsCount_one": "{{count}} unidad",
     "unitsCount_other": "{{count}} unidades",
     "lot": "Lote {{n}}",
@@ -906,6 +908,8 @@
     "perSqft": "{{money}}/pie²",
     "upsideShort": "Potencial {{n}}",
     "av": "VA {{money}}",
+    "nominal": "Nominal",
+    "nominalAv": "Avalúo nominal",
     "comingSoon": "Disponible en la próxima actualización de datos",
     "notAvailable": "Aún no disponible",
     "flagAny": "Cualquiera",
@@ -1081,7 +1085,16 @@
     "restoreFilterAria": "Restaurar filtro {{name}}",
     "restoreFilterTitle": "Quitado, aún sin aplicar. Haga clic para restaurar.",
     "mapStale": "Resultados anteriores, actualizando",
-    "mapZoomToResults": "Ajustar a los resultados"
+    "mapZoomToResults": "Ajustar a los resultados",
+    "preview": {
+      "parcel": "Parcela",
+      "zoningFar": "Zonificación {{group}}, FAR {{far}}",
+      "loading": "Cargando esta parcela…",
+      "lot": "Lote",
+      "also": "Además",
+      "open": "Abrir la ficha",
+      "close": "Cerrar la vista previa"
+    }
   },
   "settings": {
     "title": "Configuración",
