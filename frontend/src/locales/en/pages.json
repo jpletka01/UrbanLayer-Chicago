@@ -504,7 +504,10 @@
         "district_other": "{{count}} districts in view",
         "feature_one": "{{count}} feature in view",
         "feature_other": "{{count}} features in view"
-      }
+      },
+      "expand": "Open the full map",
+      "placeTitle": "Where the parcel is",
+      "close": "Close the map"
     },
     "crimeCurrent": "Current period",
     "crimePrior": "Prior year",
@@ -662,6 +665,14 @@
       "notColoredCount_one": "Not colored: {{count}} parcel",
       "notColoredCount_other": "Not colored: {{count}} parcels"
     },
+    "analysisMap": {
+      "switchLabel": "Map layer",
+      "layer": {
+        "zoning": "Zoning",
+        "overlays": "Overlays & incentives",
+        "capacity": "Built vs allowed"
+      }
+    },
     "whatIf": {
       "title": "What if this were rezoned?",
       "intro": "Compare what the zoning table allows on this lot in {{district}} with another district.",
@@ -766,7 +777,7 @@
     "teaserCount": "{{total}} parcels match — you're seeing {{shown}}.",
     "teaserUnlock": "Unlock the full ranked list, the upside map, refine, and export — Pro, $99/mo.",
     "unlockCta": "Unlock with Pro — $99/mo",
-    "askAnalystArea": "Ask the analyst about this area",
+    "theseResults": "These results",
     "orAskAnalystArea": "Or ask the analyst about this area — free",
     "seamCrit": "properties",
     "seamPromptArea": "I'm researching {{crit}} in {{area}}. What's driving development there, and what should I know before pursuing these properties?",
@@ -887,7 +898,9 @@
     "zeroTooTight": "No matches. Try removing:",
     "loadingMore": "Loading more…",
     "scrollMore": "Scroll for more",
-    "near": "near {{addr}}",
+    "approx": "Approx.",
+    "approxTip": "Nearest address on record, not an exact match",
+    "pinTitle": "PIN {{pin}}",
     "unitsCount_one": "{{count}} unit",
     "unitsCount_other": "{{count}} units",
     "lot": "Lot {{n}}",
@@ -895,6 +908,8 @@
     "perSqft": "{{money}}/sqft",
     "upsideShort": "Upside {{n}}",
     "av": "AV {{money}}",
+    "nominal": "Nominal",
+    "nominalAv": "Nominal assessment",
     "comingSoon": "Coming with the next data update",
     "notAvailable": "Not available yet",
     "flagAny": "Any",
@@ -1070,7 +1085,16 @@
     "restoreFilterAria": "Restore {{name}} filter",
     "restoreFilterTitle": "Removed, not applied yet. Click to restore.",
     "mapStale": "Previous results, updating",
-    "mapZoomToResults": "Zoom to results"
+    "mapZoomToResults": "Zoom to results",
+    "preview": {
+      "parcel": "Parcel",
+      "zoningFar": "{{group}} zoning, FAR {{far}}",
+      "loading": "Loading this parcel…",
+      "lot": "Lot",
+      "also": "Also",
+      "open": "Open profile",
+      "close": "Close the preview"
+    }
   },
   "settings": {
     "title": "Settings",

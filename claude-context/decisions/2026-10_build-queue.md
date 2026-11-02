@@ -2532,3 +2532,60 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Known wrinkle:** a pending row's "today" value comes from the backend as a bare number, so "Transit-served benefits · today 100" lacks its "%". Adding units per fact is a backend follow-up.
 
 **Not measured:** a screen reader pass on the trays; real users on the icon set (Jack reviews the look).
+
+## Item 55: one analysis map with a layer switch; the what-if inline (2026-11-02)
+
+**Status (2026-11-02): on the release branch `release/2026-11-02-redesign-5-7`, not merged.** Redesign plan step 5 (§6a L2 §2, §6c). The opened "What you can build" section held three maps (zoning, boundaries and the capacity map) at half width each, and a separate what-if card.
+
+**Decision 1: one map slot, three layers.** `scorecard/AnalysisMap.tsx`: a radio group (one tab stop, arrow keys) over Zoning · Overlays & incentives · Built vs allowed. Only the chosen layer mounts, so the section holds one GL context instead of three. Each layer keeps its own render adapter (`parcelMapModel` / `capacityMapModel`) and its own collapsed key; `parcelMapHasContent` (moved to `lib/parcelMap.ts`) decides which layers are offered, and an outage is still offered so the map can say it couldn't load (empty and unavailable stay distinct). The page keys the map by parcel, so a new parcel starts on Zoning. *Alternative:* one GL instance swapping Deck layers; rejected for now because the three layers have different tooltips, keys and data loads, and a remount on a switch costs well under a second.
+
+**Decision 2: the layout pairs rows with the map.** Left column: the zoning standards, the what-if, the overlay rows; right column: the analysis map, `md:sticky` so it stays beside the rows as they scroll.
+
+**Decision 3: Built vs allowed is a layer, not a panel.** `CapacityMap` lost its title (the switch names it) and its two-column panel: the map first, then the coverage line with the tools (dates, method), then the key in one collapsed "Map key" on every screen size. Rule §4.8 holds: the key still counts every uncolored parcel.
+
+**Decision 4: the what-if is one compare row under the standards.** "What if this were rezoned? [RT-3.5] [RT-4] [Any district…]" plus the Explain tool; the "Arithmetic, not a forecast" label appears with the comparison it qualifies, not before one exists.
+
+**Numbers** (local, 2026-11-02, `profile-budget.spec.ts`): opened Build section 1601 N Milwaukee 359 → 291 words, 2541 N Spaulding 364 → 303, 233 S Wacker 313 → 249, PIN 14-28-319-102 275 → 206. First screens: phone 69-71 → 66-68 (the shared counter now skips screen-reader-only text), PIN 14-28-319-102 desktop 93 → 89, the rest unchanged. Baselines lowered with `BUDGET_UPDATE=1`; none raised.
+
+**The caveat triage Item 51 left is closed.** With every section open on 1601 N Milwaukee, the printed small text of more than eight words is either a finding ("4 proposals before City Council could change rules on this page", "Today: parking can be cut by up to 100%", "90-day demolition hold applies") or the rent tiles' method · margin · area captions, which the truth rules keep visible (guide `source-confidence.md` §4.4/§4.6; Item 54). Nothing paragraph-length is left to move.
+
+**Also fixed (found by the phone audit at 360 px):** the Built vs allowed layer was 4 px wider than a Galaxy S24 screen; the map column and the coverage line now carry `min-w-0`.
+
+## Item 56: the phone Profile: one open section at a time and a place-map strip (2026-11-02)
+
+**Status (2026-11-02): on the release branch, not merged.** Redesign plan step 6 (§6g).
+
+**Decision 1: single-open sections below `md`.** Opening a section closes the others (`useIsPhone`, `toggleModule`, `openThenScroll`); desktop keeps any number open. The phone audit (`mobile-overflow.spec.ts`) now opens each section in turn, asserts only that one is open, and audits it scrolled through.
+
+**Decision 2: a 160 px still strip in place of the full place map.** `PlaceMapStrip`: a non-interactive map (no controls, no key, no zoom buttons: `useMapboxOverlay` adds none to a non-interactive map), the whole strip one button, opening the full place map in a full-screen dialog (Escape or Close returns focus to the strip). One GL context at a time: the strip's map unmounts while the dialog is open.
+
+**Decision 3: the strip sits after the panels, not above them.** The plan drew it between the answer and the panels. Measured on a 390×844 phone with the strip above: Milwaukee's first-screen amber went 3 → 0, because the "In the way" rows (landmark district) and the Build figures fell below the fold. Hiding answer-changing caveats is the wrong trade, so the strip takes the old map's place after the panels. *Revisit when* the panels get compact phone rows (plan §6g "three compact rows"), which would leave room above them.
+
+**Decision 4: the bottom action bar stays the only sticky Profile element on a phone.** The audit now asserts it (the site nav is the only other element that stays on screen); the analysis map's sticky column is `md:` only.
+
+## Item 57: Discovery: a dot preview for every tier, rows and header behind the tool tray, the nominal "$1", a page budget (2026-11-02)
+
+**Status (2026-11-02): on the release branch, not merged.** Redesign plan step 7 (§6e, §6f), Q1 answered "the full preview for everyone".
+
+**Decision 1: a dot preview.** `DotPreview`: address (title case, "Approx." label for a nearest-address stand-in), land use, zoning family + table FAR, the figure the list is sorted by, the lot (once), the assessed value, and "Open profile" (orange-outlined). Desktop: hover previews it beside the dot, moving into it or clicking pins it (a dialog with Close); Escape or a click on empty map closes it. Phone: a peek sheet across the bottom of the map. A pinned dot scrolls the list to its row and marks it, on every tier. The deck PIN-and-upside tooltip is gone.
+- **Every tier can pick a dot** (free dots were inert). Pro keeps the upside coloring, the list past the teaser and export.
+- **Bigger targets:** `radiusMinPixels` 2 → 3 (4 on a coarse pointer) and a picking radius of 8 px for a mouse, 22 px (a 44 px target) for touch. Hover is not gated on the pointer type: a tap sends a move and then a click, which pins the same preview. (Headless Chromium reports `pointer: coarse`, which is how a first version that skipped hover on coarse pointers was caught.)
+
+**Decision 2: one row by PIN, no new data.** `GET /api/discovery/parcel?pin=&sort=` returns the same `ResultRow` as a `/search` row from the current snapshot, for dots outside the loaded list window (a free search loads 10 rows). Rows gain `zoning_group`, `allowed_far` (the index's `density_band`) and `nominal_assessment`. The exact zoning class is not in the index; it waits on the index-enrichment wave.
+
+**Decision 3: rows and header.** Rows: title-cased addresses (`titleCaseAddress`; `humanizeShoutyCase` sentence-cased them), "Approx." instead of "near", no class code and no PIN line (the PIN is the row's hover title and in the preview), each size figure once. Header: the evaluated sentence that restated the chips, the index date and "Ask the analyst about this area" become one tool tray ("These results": Dates · Explain · Ask); the sentence stays as screen-reader text. Start panel: each recipe's "Filters:" line is screen-reader text and part of the card's hover title (the chips show the filters once it runs).
+
+**Decision 4: a nominal assessment reads "Nominal", never "$1".** `nominal_assessment` is true for a $1–$99 assessment on a taxable, non-exempt parcel (Item 46's `is_nominal_assessment`). $0 stays "$0" and a missing value stays missing (`rowFigures.test.ts` pins both).
+
+**Decision 5: Discovery gets a page budget.** `e2e/discovery-budget.spec.ts` + baseline, in `npm run test:mobile`: the first screen of the Start panel and of a recipe's results (desktop and phone) and the dot preview's words; words and solid orange ratchet down, amber is capped at 3. The Profile's first-screen counter moved to `e2e/budgetMeasure.ts` (shared) and now skips screen-reader-only text, as the Build counter already did.
+
+**Numbers** (local, 6-area index, recipe "Vacant land in residential zoning near transit", same counter): Start desktop 192 → 161 words; results desktop 163 → 136; results phone 117; preview 23.
+
+## Item 58: Discovery's giant "vacant lots" measured (Q7), no filter yet (2026-11-02)
+
+**Status: measurement only; the filter is Jack's call.** Citywide index copy (2026-10-29, 882,328 parcels, read-only):
+- 32,437 vacant parcels; 30,514 under 10,000 sq ft, 1,392 up to an acre, 292 up to 100,000 sq ft, **239 at 100,000 sq ft or more (0.7%)**.
+- Of those 239: **205 (86%) have no address of their own** (the index's "~" nearest-address stand-in); classes 1-00 (204) and 1-90 (35); zoning manufacturing 146, planned development 68, residential 13, commercial 6, business 3, downtown 1, none 2.
+- In the residential recipe, 13 are 100,000 sq ft or more and 44 are over an acre (39 of those 44 without their own address). The 186,214 sq ft "9171 S Harvard Ave" is one.
+
+**Reading:** a parcel with no address of its own is the strongest signal we hold of a rail, utility or park strip; the index has no rail or right-of-way layer to confirm it. **Options for Jack:** (a) a "has its own street address" filter, on by default in the vacant recipes; (b) demote stand-in-address parcels in lot-size sorts; (c) cap the vacant recipes at one acre; (d) nothing (the "Approx." label now flags them). Recommendation: (a), because it is visible and reversible.

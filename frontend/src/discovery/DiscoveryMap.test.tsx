@@ -8,7 +8,7 @@ const mapMocks = vi.hoisted(() => ({
   styleRevision: 0,
   styleLoad: null as (() => void) | null,
   moveStart: null as ((e: { originalEvent?: unknown }) => void) | null,
-  hookOptions: null as { style?: string; interleaved?: boolean } | null,
+  hookOptions: null as { style?: string; interleaved?: boolean; pickingRadius?: number; onClick?: (info: unknown) => void } | null,
   map: {
     resize: vi.fn(),
     fitBounds: vi.fn(),
@@ -54,6 +54,8 @@ vi.mock("../contexts/ThemeContext", () => ({
   }),
 }));
 
+vi.mock("./searchClient", () => ({ fetchParcelRow: vi.fn(async () => null) }));
+
 vi.mock("@deck.gl/layers", () => ({
   ScatterplotLayer: class ScatterplotLayer {
     constructor(public props: unknown) {}
@@ -78,7 +80,9 @@ function props(over: Partial<React.ComponentProps<typeof DiscoveryMap>> = {}) {
     onHoverPin: noop,
     onOpenParcel: noop,
     colorBy: "land_use" as const,
-    interactive: false,
+    rows: [],
+    sortKey: "lot_size",
+    onSelectPin: noop,
     status: "ready" as const,
     visible: true,
     ...over,
@@ -163,8 +167,8 @@ describe("DiscoveryMap request states and sizing", () => {
     );
   });
 
-  it("keeps free dots non-pickable while row focus renders a separate accent ring", async () => {
-    render(<DiscoveryMap {...props({ hoveredPin: "one", interactive: false })} />);
+  it("free dots are pickable too (Q1), and row focus renders a separate accent ring", async () => {
+    render(<DiscoveryMap {...props({ hoveredPin: "one" })} />);
     await waitFor(() => expect(mapMocks.overlay.setProps).toHaveBeenCalled());
     const latest = mapMocks.overlay.setProps.mock.calls.at(-1)?.[0] as {
       layers: Array<{ props: Record<string, unknown> }>;
@@ -172,9 +176,9 @@ describe("DiscoveryMap request states and sizing", () => {
     const base = latest.layers.find((layer) => layer.props.id === "discovery-pins")!;
     const ring = latest.layers.find((layer) => layer.props.id === "discovery-pin-highlight")!;
 
-    expect(base.props.pickable).toBe(false);
-    expect(base.props.onHover).toBeUndefined();
-    expect(base.props.onClick).toBeUndefined();
+    expect(base.props.pickable).toBe(true);
+    expect(base.props.radiusMinPixels as number).toBeGreaterThanOrEqual(3); // bigger than the old 2 px
+    expect(mapMocks.hookOptions?.pickingRadius).toBeGreaterThanOrEqual(8);
     expect(base.props.autoHighlight).toBe(false);
     expect(ring.props.pickable).toBe(false);
     expect(ring.props.filled).toBe(false);
@@ -183,20 +187,39 @@ describe("DiscoveryMap request states and sizing", () => {
     expect((base.props.getFillColor as (entry: typeof datum) => number[])(datum)).toEqual(datum.fillColor);
   });
 
-  it("preserves Pro map hover and click handlers", async () => {
+  it("hover previews a dot; a click pins it, selects its row and opens the profile from the card", async () => {
     const onHoverPin = vi.fn();
     const onOpenParcel = vi.fn();
-    render(<DiscoveryMap {...props({ interactive: true, onHoverPin, onOpenParcel })} />);
+    const onSelectPin = vi.fn();
+    const row = {
+      pin: "one", lat: 41.9, lon: -87.7, address: "9171 S HARVARD AVE", community_area: 49, land_use: "vacant",
+      class: "1-00", lot_sqft: 186214, bldg_sqft: null, year_built: null, units: null, assessed_value: 90000,
+      price_per_sf: null, last_sale_price: null, last_sale_date: null, improvement_ratio: null, value_percentile: null,
+      upside_score: null, is_teardown_candidate: false, zoning_group: "residential", allowed_far: 0.9, sortValue: 186214,
+    };
+    render(<DiscoveryMap {...props({ onHoverPin, onOpenParcel, onSelectPin, rows: [row] })} />);
     await waitFor(() => expect(mapMocks.overlay.setProps).toHaveBeenCalled());
     const latest = mapMocks.overlay.setProps.mock.calls.at(-1)?.[0] as {
       layers: Array<{ props: Record<string, unknown> }>;
     };
     const base = latest.layers.find((layer) => layer.props.id === "discovery-pins")!;
-    expect(base.props.pickable).toBe(true);
-    (base.props.onHover as (info: { object: PinPoint | null }) => void)({ object: props().points[0] });
-    (base.props.onClick as (info: { object: PinPoint | null }) => void)({ object: props().points[0] });
+    act(() => (base.props.onHover as (info: { object: PinPoint | null; x: number; y: number }) => void)({ object: props().points[0], x: 40, y: 40 }));
     expect(onHoverPin).toHaveBeenCalledWith("one");
+    const preview = screen.getByTestId("dot-preview");
+    expect(preview.getAttribute("role")).toBe("tooltip");
+    expect(preview.textContent).toContain("9171 S Harvard Ave");
+    expect(preview.textContent).toContain("Residential (R) zoning, FAR 0.9");
+    expect(preview.textContent).toContain("Lot 186,214");
+
+    act(() => mapMocks.hookOptions?.onClick?.({ object: props().points[0], x: 40, y: 40 }));
+    expect(onSelectPin).toHaveBeenCalledWith("one");
+    expect(screen.getByTestId("dot-preview").getAttribute("role")).toBe("dialog");
+    fireEvent.click(screen.getByTestId("dot-preview-open"));
     expect(onOpenParcel).toHaveBeenCalledWith("one");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("dot-preview")).toBeNull();
+    expect(onSelectPin).toHaveBeenLastCalledWith(null);
   });
 
   it("switches theme style, restores the camera, and reapplies layers after style.load", async () => {
@@ -285,7 +308,7 @@ describe("Phase 0: previous dots while a refresh runs", () => {
   it("keeps the dots and the counted key but makes them dimmed and NOT pickable, even for Pro", async () => {
     const onHoverPin = vi.fn();
     const onOpenParcel = vi.fn();
-    render(<DiscoveryMap {...props({ interactive: true, stale: true, hoveredPin: "one", onHoverPin, onOpenParcel })} />);
+    render(<DiscoveryMap {...props({ stale: true, hoveredPin: "one", onHoverPin, onOpenParcel })} />);
     const latest = await latestLayers();
     const base = latest.layers.find((layer) => layer.props.id === "discovery-pins")!;
     expect(base).toBeTruthy(); // dots stay
@@ -302,9 +325,9 @@ describe("Phase 0: previous dots while a refresh runs", () => {
   });
 
   it("restores picking at full opacity when the refresh ends", async () => {
-    const { rerender } = render(<DiscoveryMap {...props({ interactive: true, stale: true })} />);
+    const { rerender } = render(<DiscoveryMap {...props({ stale: true })} />);
     await latestLayers();
-    rerender(<DiscoveryMap {...props({ interactive: true, stale: false })} />);
+    rerender(<DiscoveryMap {...props({ stale: false })} />);
     await waitFor(() => {
       const latest = mapMocks.overlay.setProps.mock.calls.at(-1)?.[0] as { layers: Array<{ props: Record<string, unknown> }> };
       expect(latest.layers[0].props.pickable).toBe(true);

@@ -1,7 +1,8 @@
-// CapacityMap — the Profile's fourth module map: "How much of what's allowed is built" (WS8 Phase 1, decision
-// Item 41). Each parcel within the radius is colored by built floor area ÷ (lot area × allowed FAR) only when the
-// backend could compute it; every other parcel is drawn neutral and named in the key. The panel says how much of
-// the view could be colored, and when that is too little it says why instead of drawing bins.
+// CapacityMap — the "Built vs allowed" layer of the Build section's one analysis map (WS8 Phase 1, decision
+// Item 41; a layer since Item 55: the map first, then the coverage line and the collapsed key). Each parcel within
+// the radius is colored by built floor area ÷ (lot area × allowed FAR) only when the backend could compute it;
+// every other parcel is drawn neutral and named in the key. The coverage line says how much of the view could be
+// colored, and when that is too little it says why instead of drawing bins.
 //
 // Data: `/api/capacity-map` (backend/capacity_map.py), fetched once when the block scrolls near the viewport.
 // Colors and counts come from `capacityMapModel` only.
@@ -85,45 +86,42 @@ export function CapacityMap({ pin, lat, lon, profileKey, className }: CapacityMa
   const pct = (x: number) => new Intl.NumberFormat(i18n.language === "es" ? "es-MX" : "en-US", { style: "percent", maximumFractionDigits: 0 }).format(x);
   const radius = data?.radius_mi ?? 0.1;
 
+  const tools = (
+    <ToolTray
+      label={t("scorecard.capacity.title")}
+      dates={data ? (
+        <span className="block" data-testid="capacity-sources">
+          {t("scorecard.capacity.sources", {
+            year: data.sources?.commercial_valuation?.year ?? "—",
+            built: data.sources?.index?.built_at ? formatDay(data.sources.index.built_at) : "—",
+          })}
+        </span>
+      ) : undefined}
+      explain={
+        <span className="block space-y-1.5" data-testid="capacity-explain">
+          <span className="block">{t("scorecard.capacity.method", { radius })}</span>
+          <span className="block text-text-muted">{t("scorecard.capacity.keyNote")}</span>
+        </span>
+      }
+    />
+  );
+
   return (
-    <section ref={sentinelRef} className={`grid md:grid-cols-2 gap-x-10 gap-y-6 md:items-stretch ${className ?? ""}`} data-testid="capacity-map">
-      <div className="flex flex-col gap-3">
-        {/* The method, the sources' dates and the key's footnote sit behind the title's tools (decision Item 54). */}
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-title text-text-primary">{t("scorecard.capacity.title")}</h3>
-          <ToolTray
-            label={t("scorecard.capacity.title")}
-            dates={data ? (
-              <span className="block" data-testid="capacity-sources">
-                {t("scorecard.capacity.sources", {
-                  year: data.sources?.commercial_valuation?.year ?? "—",
-                  built: data.sources?.index?.built_at ? formatDay(data.sources.index.built_at) : "—",
-                })}
-              </span>
-            ) : undefined}
-            explain={
-              <span className="block space-y-1.5" data-testid="capacity-explain">
-                <span className="block">{t("scorecard.capacity.method", { radius })}</span>
-                <span className="block text-text-muted">{t("scorecard.capacity.keyNote")}</span>
-              </span>
-            }
-          />
-        </div>
-        <CoverageLine load={load} model={model} pct={pct} />
-        {model.total > 0 && (
-          <>
-            <details className="md:hidden rounded-lg border border-dark-border px-3 py-2">
-              <summary className="text-caption text-text-secondary cursor-pointer touch-target">{t("scorecard.capacity.keyToggle")}</summary>
-              <CapacityKey model={model} />
-            </details>
-            <div className="hidden md:block"><CapacityKey model={model} /></div>
-          </>
-        )}
-      </div>
+    <section ref={sentinelRef} className={`flex min-w-0 flex-col gap-3 ${className ?? ""}`} data-testid="capacity-map">
       {token && model.total > 0 ? (
-        <CapacityMapCanvas key={profileKey ?? `${lat}:${lon}`} model={model} lat={lat} lon={lon} theme={theme} />
-      ) : (
-        <div className="hidden md:block" />
+        <div className="h-[22rem] lg:h-[26rem]">
+          <CapacityMapCanvas key={profileKey ?? `${lat}:${lon}`} model={model} lat={lat} lon={lon} theme={theme} />
+        </div>
+      ) : null}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0"><CoverageLine load={load} model={model} pct={pct} /></div>
+        {tools}
+      </div>
+      {model.total > 0 && (
+        <details className="rounded-lg border border-dark-border px-3 py-2">
+          <summary className="text-caption text-text-secondary cursor-pointer touch-target">{t("scorecard.capacity.keyToggle")}</summary>
+          <CapacityKey model={model} />
+        </details>
       )}
     </section>
   );

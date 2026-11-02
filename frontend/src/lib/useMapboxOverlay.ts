@@ -71,7 +71,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
       preserveDrawingBuffer: true,
     });
 
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
+    if (optsRef.current.interactive ?? true) map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
 
     if (optsRef.current.clickToActivate) {
       map.scrollZoom.disable();

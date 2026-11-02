@@ -89,7 +89,7 @@ describe("DiscoveryResults zero states (PR4-aware)", () => {
 });
 
 describe("DiscoveryResults row-cards", () => {
-  it("renders address-first with the PIN demoted", () => {
+  it("renders address-first; the PIN and class code move to the hover and the preview (Item 57)", () => {
     const response = resp(
       { land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" } },
       { result: { rows: [rowFixture], total: 1, nextOffset: null } },
@@ -98,8 +98,22 @@ describe("DiscoveryResults row-cards", () => {
       <DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} />,
     );
     expect(screen.getByText("1840 W Erie St")).toBeTruthy();
-    expect(screen.getByText("17-06-426-013-0000")).toBeTruthy(); // PIN still present, demoted
+    const row = screen.getByTestId("discovery-result-row");
+    expect(row.getAttribute("title")).toBe("PIN 17-06-426-013-0000");
+    expect(row.textContent).not.toContain("17-06-426-013-0000");
+    expect(row.textContent).not.toContain("3-13");
     expect(screen.getByText(/Upside 86/)).toBeTruthy();
+  });
+
+  it("shows the sorted-by figure once and an approximate address as a label", () => {
+    const approxRow = { ...rowFixture, address: "~9171 S HARVARD AVE", sortValue: 3125 };
+    const response = resp({}, { result: { rows: [approxRow], total: 1, nextOffset: null } });
+    render(<DiscoveryResults {...baseProps} registry={reg()} rows={[approxRow]} response={{ ...response, cqs: { ...response.cqs, sort: { key: "lot_size", dir: "desc" } } }} onRelax={noop} />);
+    const row = screen.getByTestId("discovery-result-row");
+    expect(row.textContent).toContain("9171 S Harvard Ave");
+    expect(row.textContent).toContain("Approx.");
+    expect(row.textContent).not.toMatch(/near/i);
+    expect(row.textContent!.match(/Lot 3,125/g)).toHaveLength(1);
   });
 
   it("shows the Export CSV button (with results) and fires onExport", () => {

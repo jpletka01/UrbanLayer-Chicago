@@ -85,7 +85,9 @@ These states never move behind a tool (`guides/source-confidence.md`): only thei
 opened Build section to a baseline that only ratchets down (words with an 8-word allowance for live
 state rows; amber ≤ 3 cap; one solid orange; page height). Raising a baseline is a hand edit with a
 reason in the PR and a decision Item. Measure before/after with
-`plans/2026-11-01_redesign-assets/firstscreen.cjs` (run from `frontend/`).
+`plans/2026-11-01_redesign-assets/firstscreen.cjs` (run from `frontend/`). Discovery has the same ratchet
+(`frontend/e2e/discovery-budget.spec.ts`: the Start panel's and a recipe's results' first screen, desktop and
+phone, and the dot preview's words; decision Item 57).
 
 ## Checklist for a change
 

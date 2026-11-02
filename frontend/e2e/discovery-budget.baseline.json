@@ -1,0 +1,22 @@
+{
+  "start/desktop": {
+    "words": 161,
+    "orange": 1
+  },
+  "start/phone": {
+    "words": 149,
+    "orange": 1
+  },
+  "results/desktop": {
+    "words": 136,
+    "orange": 1
+  },
+  "results/phone": {
+    "words": 117,
+    "orange": 0
+  },
+  "preview/desktop": {
+    "words": 23,
+    "orange": 1
+  }
+}

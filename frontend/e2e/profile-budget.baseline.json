@@ -5,7 +5,7 @@
     "screens": 1.6
   },
   "twoflat/phone": {
-    "words": 71,
+    "words": 68,
     "orange": 1
   },
   "milwaukee/desktop": {
@@ -14,7 +14,7 @@
     "screens": 1.7
   },
   "milwaukee/phone": {
-    "words": 71,
+    "words": 68,
     "orange": 1
   },
   "downtown/desktop": {
@@ -23,28 +23,28 @@
     "screens": 1.7
   },
   "downtown/phone": {
-    "words": 69,
+    "words": 66,
     "orange": 1
   },
   "pin1/desktop": {
-    "words": 93,
+    "words": 89,
     "orange": 1,
     "screens": 1.6
   },
   "pin1/phone": {
-    "words": 69,
+    "words": 66,
     "orange": 1
   },
   "twoflat/build": {
-    "words": 364
+    "words": 303
   },
   "milwaukee/build": {
-    "words": 359
+    "words": 291
   },
   "downtown/build": {
-    "words": 313
+    "words": 249
   },
   "pin1/build": {
-    "words": 275
+    "words": 206
   }
 }

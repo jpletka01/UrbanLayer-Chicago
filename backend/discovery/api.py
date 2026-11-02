@@ -15,7 +15,7 @@ import re
 from datetime import datetime, timezone
 from typing import Iterator
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,6 +38,7 @@ from backend.discovery.evaluator import EvalResult
 from backend.discovery.result_cache import cached_evaluate
 from backend.discovery.registry import Coverage, Registry
 from backend.discovery.registry import load as load_registry
+from backend.retrieval.property.assessment_level import is_nominal_assessment
 
 log = logging.getLogger(__name__)
 
@@ -104,6 +105,12 @@ class ResultRow(BaseModel):
     value_percentile: float | None = None
     upside_score: float | None = None
     is_teardown_candidate: bool = False
+    # The district's family and table FAR, already in the index (the exact class awaits the index
+    # enrichment wave); the dot preview shows them (decision Item 57).
+    zoning_group: str | None = None
+    allowed_far: float | None = None
+    # A nominal assessment ($1 common area; decision Item 46): the row says "Nominal", never "$1".
+    nominal_assessment: bool = False
     # The value of the ACTIVE sort key for this row — so the list can always surface
     # "what you sorted by" even when that field is not one of the displayed columns.
     sortValue: float | str | None = None
@@ -204,6 +211,12 @@ def _display_sort_value(parcel: parcel_mod.Parcel, sort_field: str) -> float | s
     return parcel.get(sort_field)
 
 
+def _nominal(av: float | None, cls: str | None, land_use: str | None) -> bool:
+    """A $1-$99 token assessment on a taxable parcel (decision Item 46). $0 and exempt rows keep their own
+    display: $0 is a value the County carries, not a placeholder to explain (the list's $0-vs-missing rule)."""
+    return bool(av) and av > 0 and land_use != "exempt" and is_nominal_assessment(av, cls)
+
+
 def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
     g = parcel.get
     return ResultRow(
@@ -228,6 +241,9 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         value_percentile=g("value_percentile"),
         upside_score=g("upside_score"),
         is_teardown_candidate=bool(g("is_teardown_candidate")),
+        zoning_group=g("zoning_group"),
+        allowed_far=g("density_band"),
+        nominal_assessment=_nominal(g("total_assessed_value"), g("class"), g("land_use_class")),
         sortValue=_display_sort_value(parcel, sort_field),
     )
 
@@ -302,6 +318,22 @@ def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) ->
         diagnostics=diagnostics,
         pins=_pins_payload(result, data_version) if req.includePins else None,
     )
+
+
+@router.get("/parcel", response_model=ResultRow)
+def parcel_row(pin: str, sort: str = Query("lot_size")) -> ResultRow:
+    """One result row by PIN, for the map's dot preview (decision Item 57): a dot outside the loaded list
+    window still opens a preview. The same fields as a /search row, from the current snapshot; every
+    tier gets it (Q1: the full preview for everyone). Pro keeps the list past the teaser, export and
+    the upside coloring."""
+    parcel = _pin_lookup(parcel_source.current_version()).get(pin)
+    if parcel is None:
+        raise HTTPException(status_code=404, detail="parcel not in the index")
+    try:
+        sort_field = load_registry().sort_field(sort)
+    except KeyError:  # an unknown sort key reads the default rather than failing the preview
+        sort_field = load_registry().sort_field("lot_size")
+    return _row_from_parcel(parcel, sort_field)
 
 
 @router.post("/search/pins", response_model=PinsResponse)

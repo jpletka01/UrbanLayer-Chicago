@@ -5,6 +5,7 @@ import { parseSSE } from "./sse";
 import { flush, getVisitorId, track } from "./tracking";
 import type {
   PinsResponse as DiscoveryPinsResponse,
+  ResultRow as DiscoveryResultRow,
   Registry as DiscoveryRegistry,
   SearchRequest as DiscoverySearchRequest,
   TextPreview as DiscoveryTextPreview,
@@ -1189,6 +1190,17 @@ export async function discoverySearchPins(
       body: JSON.stringify(req),
       signal,
     });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+// One result row by PIN, for the map's dot preview (decision Item 57). null when the parcel is not in the
+// current index or the request fails; the preview then shows what the dot itself carries.
+export async function discoveryParcelRow(pin: string, sort: string, signal?: AbortSignal): Promise<DiscoveryResultRow | null> {
+  try {
+    const qs = new URLSearchParams({ pin, sort });
+    const resp = await authFetch(`${API_BASE}/api/discovery/parcel?${qs}`, { signal });
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }

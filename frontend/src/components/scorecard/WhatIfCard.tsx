@@ -1,7 +1,8 @@
-// WhatIfCard — "What if this were rezoned?" (WS5 PR2, decision Item 43). For small developers who are not very
-// tech savvy: one plain question, a short choice list of the plausible next districts (plus "any district"), and
-// a two-column comparison of what each district's table allows on THIS lot. Arithmetic, not a forecast: the copy
-// says a rezoning needs City Council approval and names what the table cannot know. Never "you can build".
+// WhatIfCard — "What if this were rezoned?" (WS5 PR2, decision Item 43; inline in the Zoning column since Item 55).
+// For small developers who are not very tech savvy: one plain question, a short choice list of the plausible next
+// districts (plus "any district"), and a two-column comparison of what each district's table allows on THIS lot.
+// Arithmetic, not a forecast: the label says so beside the comparison, and the explanation (City Council approval,
+// what the table cannot know) sits behind Explain. Never "you can build".
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchWhatIf, type WhatIfFigures, type WhatIfResponse } from "../../lib/api";
@@ -42,23 +43,10 @@ export function WhatIfCard({ currentDistrict, lotSqft, in606 }: WhatIfCardProps)
   const data = load.status === "ready" ? load.data : null;
 
   return (
-    <section className="space-y-4 mt-8 max-w-3xl" data-testid="what-if">
-      {/* One title, one visible label, and the explanation behind Explain (decision Item 54). */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <h3 className="text-title text-text-primary">{t("scorecard.whatIf.title")}</h3>
-        <StatusLabel tone="neutral" glyph={null}>{t("scorecard.whatIf.notForecast")}</StatusLabel>
-        <ToolTray
-          label={t("scorecard.whatIf.title")}
-          align="start"
-          explain={
-            <span className="block space-y-1.5" data-testid="what-if-explain">
-              <span className="block">{t("scorecard.whatIf.intro", { district: currentDistrict })}</span>
-              <span className="block">{t("scorecard.whatIf.note")}</span>
-            </span>
-          }
-        />
-      </div>
+    <section className="space-y-3 border-t border-dark-border pt-5" data-testid="what-if">
+      {/* One compact compare row under the standards; the label appears with the comparison it qualifies. */}
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("scorecard.whatIf.choose")}>
+        <h4 className="text-body font-medium text-text-primary mr-1">{t("scorecard.whatIf.title")}</h4>
         {lists.suggestions.map((d) => (
           <button
             key={d}
@@ -82,9 +70,20 @@ export function WhatIfCard({ currentDistrict, lotSqft, in606 }: WhatIfCardProps)
             {others.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </label>
+        <ToolTray
+          label={t("scorecard.whatIf.title")}
+          align="start"
+          explain={
+            <span className="block space-y-1.5" data-testid="what-if-explain">
+              <span className="block">{t("scorecard.whatIf.intro", { district: currentDistrict })}</span>
+              <span className="block">{t("scorecard.whatIf.note")}</span>
+            </span>
+          }
+        />
       </div>
       {load.status === "loading" && <p className="text-caption text-text-muted">{t("scorecard.whatIf.loading")}</p>}
       {load.status === "failed" && <p role="status" className="text-caption text-text-secondary">{t("scorecard.whatIf.failed")}</p>}
+      {data?.target && <StatusLabel tone="neutral" glyph={null}>{t("scorecard.whatIf.notForecast")}</StatusLabel>}
       {data?.target && <Comparison current={data.current ?? null} target={data.target} currentLabel={currentDistrict} lot={data.lot_sqft ?? null} nf={nf} />}
     </section>
   );

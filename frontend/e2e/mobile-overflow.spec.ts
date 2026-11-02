@@ -290,16 +290,40 @@ for (const pageDef of PAGES) {
       }
     }
 
-    const topAudit = await auditOverflow(page);
+    let topAudit = await auditOverflow(page);
 
-    // The Profile's sections start collapsed (decision Item 51): open every one so the audit below
-    // covers everything that can render, as before the redesign.
+    // The Profile's sections start collapsed (decision Item 51) and a phone opens one at a time (Item 56):
+    // open each in turn, check the others closed, and audit it scrolled through, so the audit still covers
+    // everything that can render. The last one opened is Build, for the map checks below.
     if (pageDef.id === "scorecard") {
-      const closed = page.locator('[data-module-open="false"] > button[aria-expanded="false"]');
-      while (await closed.count()) {
-        await closed.first().click();
+      const ids = await page.locator("[data-module-open]").evaluateAll((els) => els.map((e) => e.id));
+      const order = [...ids.filter((id) => id !== "module-build"), ...ids.filter((id) => id === "module-build")];
+      for (const id of order) {
+        await page.locator(`#${id} > button`).click();
         await page.waitForTimeout(150);
+        expect(
+          await page.locator('[data-module-open="true"]').evaluateAll((els) => els.map((e) => e.id)),
+          "a phone opens one section at a time",
+        ).toEqual([id]);
+        await page.evaluate(async (sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return;
+          const end = el.getBoundingClientRect().bottom + window.scrollY;
+          for (let y = el.getBoundingClientRect().top + window.scrollY; y < end; y += window.innerHeight * 0.8) {
+            window.scrollTo(0, y);
+            await new Promise((r) => setTimeout(r, 120));
+          }
+        }, `#${id}`);
+        topAudit = mergeAudits(topAudit, await auditOverflow(page));
       }
+      // The bottom action bar is the Profile's one sticky band on a phone (decision Items 50, 56); the site
+      // nav is the only other element that stays on screen.
+      const stuck = await page.evaluate(() => [...document.querySelectorAll("body *")].filter((e) => {
+        const p = getComputedStyle(e).position;
+        const r = e.getBoundingClientRect();
+        return (p === "sticky" || p === "fixed") && r.width > 0 && r.height > 0 && !e.closest("header, nav, [role=dialog], .mapboxgl-map") && !e.querySelector("nav");
+      }).map((e) => e.getAttribute("data-testid") ?? e.className.toString().slice(0, 60)));
+      expect(stuck.filter((x) => x !== "phone-action-bar"), "no sticky element on a phone Profile but the action bar").toEqual([]);
     }
 
     // Sticky strips and lazy sections can introduce overflow further down.
@@ -323,8 +347,10 @@ for (const pageDef of PAGES) {
     // M3 parcel-map control: audit the responsive Layers surface while it is
     // actually open, including the Mapbox-owned bottom-left attribution area.
     if (pageDef.id === "scorecard") {
+      // The zoning layer mounts when the analysis map nears the viewport and its layers have loaded.
+      await page.getByTestId("analysis-map").scrollIntoViewIfNeeded();
       const layersButton = page.getByTestId("parcel-map-layers-button").first();
-      await expect(layersButton).toBeVisible();
+      await expect(layersButton).toBeVisible({ timeout: 30_000 });
       await layersButton.scrollIntoViewIfNeeded();
       await layersButton.click();
       const popover = page.getByTestId("parcel-map-controls-mobile").first();
@@ -350,8 +376,10 @@ for (const pageDef of PAGES) {
       // After the full scroll (re-renders included) each Build card exists once: same-keyed
       // siblings once stacked the what-if card 7-13 times (2026-10-31).
       expect(await page.getByTestId("what-if").count(), "one what-if card").toBeLessThanOrEqual(1);
-      expect(await page.getByTestId("capacity-map").count(), "one capacity map").toBe(1);
 
+      // Built vs allowed is a layer of the one analysis map (decision Item 55): switch to it first.
+      expect(await page.getByTestId("analysis-map").count(), "one analysis map").toBe(1);
+      await page.getByTestId("analysis-layer-capacity").click();
       const capacity = page.getByTestId("capacity-map");
       await capacity.scrollIntoViewIfNeeded();
       await expect(page.getByTestId("capacity-coverage").or(page.getByTestId("capacity-unchecked")).first()).toBeVisible({ timeout: 30_000 });

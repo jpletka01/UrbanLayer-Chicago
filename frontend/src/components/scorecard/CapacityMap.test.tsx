@@ -95,6 +95,7 @@ describe("CapacityMap", () => {
     vi.mocked(fetchCapacityMap).mockResolvedValue(resp());
     render(<CapacityMap lat={41.9} lon={-87.68} />);
     expect((await screen.findByTestId("capacity-coverage")).textContent).toContain("Coloreadas: 2 de 3 parcelas");
-    expect(screen.getByText("Cuánto de lo permitido está construido")).toBeTruthy();
+    // the layer switch names the layer; the title survives as the tools' accessible name (decision Item 55)
+    expect(screen.getByRole("button", { name: "Fechas: Cuánto de lo permitido está construido" })).toBeTruthy();
   });
 });

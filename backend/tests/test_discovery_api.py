@@ -654,3 +654,42 @@ def test_include_pins_keeps_the_free_tier_cap_and_the_uncapped_map():
         _restore_tier()
         parcel_source._current_version = None
         default_source.clear()
+
+
+# --- GET /api/discovery/parcel (the map's dot preview, decision Item 57) ----------
+
+
+@pytest.fixture
+def preview_client():
+    parcel_source.set_snapshot(VERSION, [
+        DictParcel("n1", {"address": "1 W Example St", "land_use_class": "residential", "class": "2-99",
+                          "total_assessed_value": 1, "land_sqft": 143900, "zoning_group": "residential",
+                          "density_band": 1.2}),
+        DictParcel("z0", {"land_use_class": "residential", "class": "2-03", "total_assessed_value": 0}),
+        DictParcel("v1", {"land_use_class": "residential", "class": "2-03", "total_assessed_value": 25000}),
+    ])
+    yield TestClient(app)
+    parcel_source._current_version = None
+    default_source.clear()
+
+
+def test_parcel_row_for_preview(preview_client):
+    r = preview_client.get("/api/discovery/parcel", params={"pin": "n1", "sort": "lot_size"})
+    assert r.status_code == 200
+    row = r.json()
+    assert row["pin"] == "n1" and row["address"] == "1 W Example St"
+    assert row["zoning_group"] == "residential" and row["allowed_far"] == 1.2
+    assert row["sortValue"] == 143900
+    # the $1 placeholder is flagged so the row says "Nominal", never "$1"
+    assert row["nominal_assessment"] is True
+
+
+def test_parcel_row_zero_and_real_values_are_not_nominal(preview_client):
+    assert preview_client.get("/api/discovery/parcel", params={"pin": "z0"}).json()["nominal_assessment"] is False
+    assert preview_client.get("/api/discovery/parcel", params={"pin": "v1"}).json()["nominal_assessment"] is False
+
+
+def test_parcel_row_unknown_pin_and_sort(preview_client):
+    assert preview_client.get("/api/discovery/parcel", params={"pin": "nope"}).status_code == 404
+    # an unknown sort key falls back rather than failing the preview
+    assert preview_client.get("/api/discovery/parcel", params={"pin": "v1", "sort": "bogus"}).status_code == 200
