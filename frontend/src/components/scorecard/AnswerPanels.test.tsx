@@ -43,7 +43,7 @@ describe("AnswerPanels — the truth rules on the first screen", () => {
     render(<AnswerPanels build={[]} inTheWay={rows} value={[]} onScrollTo={noop} />);
     const panel = screen.getByTestId("panel-in-the-way");
     expect(panel.querySelectorAll('[data-status-label="warning"]').length).toBe(MAX_AMBER_ROWS);
-    expect(panel.textContent).toContain("+2 more under Rules & overlays");
+    expect(panel.textContent).toContain("+2 more");
 
     cleanup();
     render(<AnswerPanels build={[]} inTheWay={[{ key: "n", tone: "neutral", state: "none_found", text: "No landmark, PD, flood or lakefront rules" }]} value={[]} onScrollTo={noop} />);

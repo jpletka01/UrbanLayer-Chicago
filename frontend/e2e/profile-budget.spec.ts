@@ -3,7 +3,8 @@
 // its word, amber and solid-orange counts; the default page may not exceed 4 desktop screens; no heading
 // may appear twice; no figure may carry more than one confidence state.
 //
-// Ratchet: the numbers in profile-budget.baseline.json may only go DOWN. A run fails when any count is
+// Ratchet: the word, solid-orange and page-height numbers in profile-budget.baseline.json may only go
+// DOWN (amber is held to its cap only: it moves with live source states; decision Item 52). A run fails when any count is
 // above its baseline, and the baseline itself may not exceed the hard caps below. `BUDGET_UPDATE=1`
 // lowers baseline entries that improved and never raises one: raising a budget is a hand edit of the
 // JSON, reviewed in its PR. Live data, so a source state can move a count (a "couldn't check" row);
@@ -21,6 +22,8 @@ const CAPS = {
   desktop: { words: 120, amber: 3, orange: 1, screens: 4 },
   phone: { words: 90, amber: 3, orange: 1, screens: 1000 },
 } as const;
+/** Words a live source state can add to the first screen (decision Item 52). */
+const WORD_STATE_SLACK = 8;
 const PARCELS: Array<[string, string]> = [
   ["twoflat", "/scorecard?address=2541%20N%20Spaulding%20Ave"],
   ["milwaukee", "/scorecard?address=1601%20N%20Milwaukee%20Ave"],
@@ -105,12 +108,18 @@ test.describe("Property Profile page budget", () => {
         console.log(`${key}: ${JSON.stringify(got)}`);
         expect(got.duplicateHeadings, `${key}: a heading appears twice`).toEqual([]);
         expect(got.multiStateFigures, `${key}: a figure carries two confidence states`).toEqual([]);
-        for (const metric of ["words", "amber", "orange", "screens"] as const) {
+        // Amber follows live source and sample states (a source that is down today, a comp set that
+        // is thin), so it is held to the hard cap only; the counts that grow by accretion ratchet.
+        expect(got.amber, `${key}.amber: ${got.amber} is above the cap ${CAPS[view].amber}`).toBeLessThanOrEqual(CAPS[view].amber);
+        for (const metric of ["words", "orange", "screens"] as const) {
           const cap = CAPS[view][metric];
           const b = base![metric];
           if (b == null) continue;
           expect(b, `${key}.${metric}: baseline ${b} is above the hard cap ${cap}`).toBeLessThanOrEqual(cap);
-          expect(got[metric], `${key}.${metric}: ${got[metric]} is above its baseline ${b} (the budget only ratchets down)`).toBeLessThanOrEqual(b);
+          // Words carry a small allowance for live state rows ("◌ Not checked: FEMA flood zone" is 4-6
+          // words); a new card or caveat is tens. The hard cap above still binds without any allowance.
+          const allowed = metric === "words" ? Math.min(b + WORD_STATE_SLACK, cap) : b;
+          expect(got[metric], `${key}.${metric}: ${got[metric]} is above its baseline ${b}${metric === "words" ? ` (+${WORD_STATE_SLACK} for live state rows)` : ""}; the budget only ratchets down`).toBeLessThanOrEqual(allowed);
           if (process.env.BUDGET_UPDATE === "1" && got[metric] < b) base![metric] = got[metric];
         }
       }
