@@ -107,22 +107,28 @@ a verdict category is `neutral`. `components/scorecard/palette.test.ts` fails on
 (`text-amber-400`) in the Profile. **`Button`** (8px radius, 36-40px, hover/focus/pointer;
 `data-solid-action` on primary) vs **`StatusLabel`** (≤22px, 3px radius, tint + glyph, inert): they
 differ in radius, height, focusability and cursor (pinned by `ui/foundation.test.tsx`). **`Toggletip`**:
-click/tap to open, Escape returns focus, click-outside closes; one icon per meaning: ⓘ source/code,
-⏱ date (year may stay visible), ▾ more. **`ConfidenceState`**: the five visible states (Estimate /
-Low confidence / Not checked ◌ / None found ∅ / Withheld ⊘ / N/A) with the explanation behind ⓘ; a
-verified figure has no label; `confidenceStateFor(entry)` reads the backend's state, never recomputes it.
+hover previews on a mouse (moving in keeps it open), a click pins, a tap opens on touch, Escape returns
+focus, click-outside closes. **`ToolTray`** (2026-11-02, Item 54) is the ONE way to show evidence: Lucide
+`Calendar` dates (each with its meaning, `DateLine`) · `Scale` code · `SquareArrowOutUpRight` official record
+· `Info` explain · `MessageCircleQuestion` ask, always in that order; icons only from `lucide-react` (pinned
+1.59.0), never glyphs or emoji. Every `<a href>` opens a new tab (`linksOpenNewTab.test.ts`). Values carry
+units. **`ConfidenceState`**: the visible states (Estimate / Low confidence / Not checked / None found /
+Withheld / N/A, Lucide icons) with the explanation behind the tray; a verified figure has no label; `confidenceStateFor(entry)` reads the backend's state, never recomputes it.
 
 **Profile first screen + disclosure (2026-11-01, decision Items 50-51).** `ScorecardPage` opens with
 `ProfileHeader` (address alone; area/ward/PIN/match behind "Parcel details ▾"; an approximate match is one
 amber label), a neutral verdict label + ONE deterministic sentence (`lib/answerSentence.ts`, templates, no
 LLM), `AnswerPanels` (Build · In the way · Value & cost; ≤8 figures, ≤3 amber rows, each figure's
-`ConfidenceState` + ⓘ/⏱), the place map, then ONE `SectionBand` (sticky section nav; a bottom action bar on
+`ConfidenceState` + tool tray), the place map, then ONE `SectionBand` (sticky section nav; a bottom action bar on
 phones, where the dock launcher hides). No report button while purchases are off. `ProfileModule`s start
 collapsed to one line (`open`/`onToggle`); jumps open then scroll (`MODULE_OF_CARD`). Provenance lives in
 `SourcesSheet` (per section + the footer's "Sources & coverage", which also holds the data dates and the
 "what this page doesn't cover" notes). **The page budget** `e2e/profile-budget.spec.ts` (+ baseline JSON,
 ratchets down only, runs in `npm run test:mobile`) fails a Profile PR that adds first-screen words, amber or
-orange. KpiStrip/VerdictBand's band are no longer rendered on the Profile (VerdictMethodology still is).
+orange. KpiStrip/VerdictBand's band are no longer rendered on the Profile (VerdictMethodology still is). The budget
+also caps the opened Build section (≤500 words) and gives words an 8-word live-state allowance; amber is
+cap-only (≤3, shared across rows and labels via `AnswerPanels` `MAX_AMBER`). **Full rules, reasons and
+file map: `claude-context/guides/page-design.md`; checklist: skill `page-design-rules`.**
 
 **Primitives** (`src/components/ui/`): `Card` (flex-col, `className` pass-through — equal-height
 section grids stretch cards via `flex-1`), `Chip`, `Modal`. Use these; don't hand-roll chrome.

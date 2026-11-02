@@ -1,5 +1,7 @@
 # Bento Pro Frontend Redesign — Handoff
 
+> **2026-11-02:** components now pick a color ROLE (`status-*`, `action`, `link`, `premium`) layered over these tokens, plus a Button/StatusLabel shape grammar and Lucide tool icons. Rules: `guides/page-design.md`. The status lines below are historical (this branch merged 2026-07-02).
+
 **Status:** in progress on branch `feat/bento-pro` (NOT merged, NOT pushed).
 **Started:** 2026-06-30 · **Last updated:** 2026-07-01 (evening — Scorecard restructure + Discovery pass 1 done; see `bento-pro-phase3-app-surfaces.md`).
 **⚠️ Pushing `feat/bento-pro` → `main` deploys to prod.** Do not push without Jack's OK. Commit freely on the branch.

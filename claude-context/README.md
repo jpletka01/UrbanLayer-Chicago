@@ -22,13 +22,14 @@ reusable lesson, not the full narrative.
 - `guides/data-health.md` — **the data-source registry and checker** (`backend/data_health/`): one `SourceSpec` per source, how each date is read, statuses, acks, `check --dry-run`, how to add a source. Read before adding any data source.
 - `guides/code-refresh.md` — **the monthly municipal-code routine**: review what Council passed (`code_amendments.json`), when and how to ingest a new American Legal export, push the index to prod, what each red signal asks of you. Read when the reminder email arrives or before touching `ingestion/` or `backend/legislation/`.
 - `guides/parcel-resolution-truth-model.md` — the canonical address→PIN contract (who may write parcel identity; approximate/nearest-unverified rules).
-- `guides/scorecard-dashboard-model.md` — the Scorecard's dashboard+chat model and card architecture.
+- `guides/scorecard-dashboard-model.md` — **HISTORICAL layout** (July 2026 dashboard model); superseded by `guides/page-design.md` for what the Profile shows and where.
 - `guides/deployment.md` — server ops, `.env` template, deploy commands, monitoring, DB backups.
 - `guides/ptaxsim-prod-seeding.md` — seeding the ptaxsim tax DB on prod (the "0 tax data since launch" runbook).
 - `guides/auth-and-conversations.md` — Google OAuth + JWT, conversation persistence, sharing.
 - `guides/latency-reduction.md` — completed + planned perf work, pipeline timing reference.
 
 ### Design system — **canonical: "Bento Pro"**
+- `guides/page-design.md` — **what a page shows and how (2026-11-02, canonical)**: one answer first, evidence behind the Lucide tool tray, color by role, Button vs StatusLabel, the ratcheting page budget, measured effect, file map. Checklist form = skill `page-design-rules`. Read before ANY Profile/Discovery UI change.
 - `guides/bento-pro-redesign.md` — the token system + landing (source of truth for color/type/radius/primitives).
 - `guides/bento-pro-phase3-app-surfaces.md` — Scorecard/Discovery Bento Pro surfaces (the 2026-10 Discovery redesign shipped; see `archive/2026-10-30_discovery-redesign.md`).
 - `guides/dot-matrix.md` — the LED dot-matrix halftone renderer (hero skyline backdrop + reusable image→dot art + the in-browser Playwright probe workflow).
@@ -54,7 +55,7 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
 - `strategy/2026-07-02_data-expansion-candidates.md` — **live backlog** of available-but-unintegrated data, ranked (Tier 0–2; items 1–2 + appeals/ward shipped in the lot-info arc; CPS/Divvy tail remains).
 
 ## Archive & Audits (pointers — full stories on the About page)
-- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Full list in `decisions/README.md`; the largest: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phases 0–1, WS5 PR1/PR2/PR4; Items 1–44) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
+- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Full list in `decisions/README.md`; the largest: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phases 0–1, WS5 PR1/PR2/PR4, Profile redesign; Items 1–54) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
 - `archive/*` — one-paragraph markers for each shipped feature/incident (deployment, expansion, revenue, i18n,
   a-la-carte reports, coherence steps 1–3, selected-parcel, scorecard-ux, report-oom-reranker,
   `2026-06-report-saga` [V3→V6 + R5–R7], pin-resolution-seam, scorecard-chat-grounding, verdict-grounding-ux,
@@ -79,6 +80,9 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   **`2026-10-30_discovery-redesign`** [Discovery Phases 0–4: explicit "Update results", Start panel, text gate, Add filter
   menu, results column + map, phone layout; Phase 1 backend speed; Mexican-Spanish usted pass; prod index pruned
   949,020 → 882,328 rows],
+  **`2026-11-02_profile-redesign`** [Profile steps 1-4 (Items 46-54, #162/#163/#174/#175/#177): nominal-value fix,
+  role tokens + shape grammar, first screen + collapsed sections + Sources sheets, page budget, Lucide tool tray;
+  rules live in `guides/page-design.md`; steps 5-7 open],
   **`2026-10-31_ws8-capacity-map`** [WS8 Phase 1: free "how much of what's allowed is built" Profile map, `/api/capacity-map`,
   committed commercial building-area artifact; every uncolored parcel named],
   **`2026-10-31_ws5-small-developer-calculators`** [606 rule in the unit yield; free "What if this were rezoned?" card;
