@@ -243,7 +243,23 @@ def conditions_met(when: dict, parcel: ParcelFacts) -> bool:
 
 
 # Units the Profile's own provenance value omits ("1000"); applied only to a plain number.
-_UNITS = {"zoning.min_lot_area_per_unit": "{:,} sq ft", "zoning.unit_yield": "{:,} units by lot area"}
+_UNITS = {
+    "zoning.min_lot_area_per_unit": "{:,} sq ft",
+    "zoning.unit_yield": "{:,} units by lot area",
+    # The provenance value is the maximum parking reduction in percent (bare "100" read as nothing; Jack,
+    # 2026-11-02).
+    "zoning.tod_benefits": "parking can be cut by up to {}%",
+}
+# Facts whose value is a code word, said in plain words beside a proposal.
+_WORDS = {
+    "zoning.tod_benefits": {"none": "no parking reduction"},
+    "zoning.adu": {
+        "not_allowed": "coach houses not allowed",
+        "allowed_by_right": "coach houses allowed by right",
+        "allowed_with_limits": "coach houses allowed with this zone's limits",
+    },
+    "overlay.adu_area": {True: "in an ADU-allowed area", False: "not in an ADU-allowed area"},
+}
 
 
 def _scalar(value):
@@ -253,6 +269,9 @@ def _scalar(value):
 def _shown(fact_id: str, value):
     """The current figure as the Profile words it, so a proposal sits beside the same number."""
     value = _scalar(value)
+    words = _WORDS.get(fact_id, {})
+    if isinstance(value, (str, bool)) and value in words:
+        return words[value]
     template = _UNITS.get(fact_id)
     if template and isinstance(value, (int, float)) and not isinstance(value, bool):
         return template.format(int(value) if float(value).is_integer() else value)

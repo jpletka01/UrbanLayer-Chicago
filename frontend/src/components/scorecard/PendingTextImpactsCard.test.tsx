@@ -81,7 +81,7 @@ describe("PendingTextImpactsCard", () => {
     render(<PendingTextImpactsCard data={base({ text_impacts: [impact()] })} />);
     // one human line: the rule it would change, today's value, and a visible "Proposed" label
     expect(screen.getByText("Minimum lot area per dwelling unit for RT-4")).toBeTruthy();
-    expect(screen.getByText("today 1,000 sq ft")).toBeTruthy();
+    expect(screen.getByText("Today: 1,000 sq ft")).toBeTruthy();
     expect(screen.getByText(/Proposed · Referred/)).toBeTruthy();
     // the disclaimer, the dates and the code sit behind tools, not on the page
     expect(screen.queryByText(/not adopted law/)).toBeNull();
@@ -135,7 +135,7 @@ describe("PendingTextImpactsCard", () => {
       }],
     });
     render(<PendingTextImpactsCard data={base({ text_impacts: [street] })} />);
-    expect(screen.queryByText(/^today /)).toBeNull(); // no value to show, none invented
+    expect(screen.queryByText(/^Today: /)).toBeNull(); // no value to show, none invented
     open(/^What this means: TOD street status/);
     expect(screen.getByText(/lists the TOD streets in force today/)).toBeTruthy();
   });

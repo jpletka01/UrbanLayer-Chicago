@@ -50,7 +50,7 @@ export function AnsweredOnNote({ createdAt, note, profileHref, onAskAgain }: Pro
           )}
           <div className="mt-2 flex flex-wrap gap-2">
             {profileHref && (
-              <a href={profileHref} className="px-2.5 py-1 rounded-md border border-dark-border text-caption text-text-secondary hover:text-accent hover:border-accent/40 transition-colors">
+              <a href={profileHref} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded-md border border-dark-border text-caption text-text-secondary hover:text-accent hover:border-accent/40 transition-colors">
                 {t("sinceThen.openProfile")}
               </a>
             )}

@@ -55,8 +55,15 @@ or emoji as an icon. Icons come from **`lucide-react`** only.
 
 Tools are neutral gray and turn orange on hover/focus. Each is a real button or link with an accessible
 name ("Dates: Minimum lot area per unit"). A year that changes the decision may stay visible beside the
-calendar (`datesVisible`, e.g. the tax year). Popovers open on click/tap, close on Escape (focus returns)
-and click-outside — never hover-only.
+calendar (`datesVisible`, e.g. the tax year). On a mouse, hovering previews a popover (moving into it keeps
+it open) and a click pins it; on touch a tap opens it; Escape (focus returns), a second click or a click
+outside closes it. Never hover-only.
+
+**Links open in a new tab.** Every `<a href>` that opens a page gets `target="_blank" rel="noopener
+noreferrer"` (`components/linksOpenNewTab.test.ts` enforces it). In-app navigation uses router links.
+
+**Values carry their units.** Never print a bare number or a code word ("100", "not_allowed"): say what it
+is ("parking can be cut by up to 100%", "coach houses not allowed").
 
 ## 4. Status labels vs buttons (shape grammar)
 

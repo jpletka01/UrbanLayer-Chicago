@@ -11,12 +11,13 @@ import type { Provenance } from "../../lib/api";
 import { useFact } from "../../lib/provenanceContext";
 import type { AssessorModelRent, BedroomRent, NeighborhoodSummary } from "../../lib/types";
 import { ConfidenceCaption, ConfidenceValue, SourceTooltip } from "../ui/Confidence";
+import { ToolTray } from "../ui/ToolTray";
 
 const BEDROOMS = ["1_bedroom", "2_bedrooms", "3_bedrooms"] as const;
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 
-function Tile({ testId, label, tip, entry, value, sub, note, suffix }: {
+function Tile({ testId, label, tip, entry, value, sub, note, suffix, omitPeriod = true }: {
   testId: string;
   label: string;
   tip: string;
@@ -27,6 +28,8 @@ function Tile({ testId, label, tip, entry, value, sub, note, suffix }: {
   note?: string;
   /** What follows the amount; defaults to "/mo". */
   suffix?: string;
+  /** The Census tiles' period is in their block header; a tile whose header gives none keeps it. */
+  omitPeriod?: boolean;
 }) {
   const { t } = useTranslation("pages");
   return (
@@ -43,7 +46,10 @@ function Tile({ testId, label, tip, entry, value, sub, note, suffix }: {
       </div>
       {sub && <div className="text-caption text-text-muted mt-0.5 leading-snug">{sub}</div>}
       {note && <div className="text-caption text-text-muted mt-0.5 leading-snug">{note}</div>}
-      <ConfidenceCaption entry={entry} size="micro" unit="usd" />
+      {/* Method, margin and area stay on every tile (guide §4.4, §4.6: an area figure names its area,
+          a PUMA is never passed off as a tract); the period sits once in the block header instead of
+          five repeats (decision Item 54). */}
+      <ConfidenceCaption entry={entry} size="micro" unit="usd" omit={omitPeriod ? ["period"] : undefined} />
     </div>
   );
 }
@@ -94,6 +100,7 @@ function AssessorModelTile({ model, unchecked }: { model: AssessorModelRent | nu
     <Tile
       testId={testId} label={label} tip={tip} entry={entry} value={model.median_per_unit_month}
       suffix={t("scorecard.rent.assessor.perUnit")}
+      omitPeriod={false}
       sub={entry?.confidence === "withheld" ? undefined : t("scorecard.rent.assessor.sub", { buildings: model.priced.toLocaleString("en-US") })}
     />
   );
@@ -144,12 +151,19 @@ export function RentBlock({ data }: { data: NeighborhoodSummary }) {
       {(model || modelUnchecked) && (
         <div className="space-y-3" data-testid="rent-assessor">
           <div>
-            <div className="text-overline uppercase tracking-wider text-text-muted">{t("scorecard.rent.assessor.title")}</div>
-            <p className="text-caption text-text-muted leading-snug mt-0.5">
-              {model
-                ? t("scorecard.rent.assessor.scope", { year: model.year, cycle: model.cycle })
-                : t("scorecard.rent.assessor.unchecked")}
-            </p>
+            <div className="flex items-center gap-1 text-overline uppercase tracking-wider text-text-muted">
+              {t("scorecard.rent.assessor.title")}
+              {model && (
+                <ToolTray
+                  label={t("scorecard.rent.assessor.title")}
+                  align="start"
+                  explain={<span className="block normal-case tracking-normal" data-testid="assessor-explain">{t("scorecard.rent.assessor.scope", { year: model.year, cycle: model.cycle })}</span>}
+                />
+              )}
+            </div>
+            {!model && (
+              <p className="text-caption text-text-muted leading-snug mt-0.5">{t("scorecard.rent.assessor.unchecked")}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4">
             <AssessorModelTile model={model} unchecked={modelUnchecked} />

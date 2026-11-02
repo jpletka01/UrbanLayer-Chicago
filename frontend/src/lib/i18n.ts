@@ -28,4 +28,12 @@ i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
+// The page's language must follow the UI's, or a screen reader reads Spanish with an English voice
+// (found 2026-11-02: <html lang> stayed "en" in Spanish).
+const setDocumentLang = (lng: string) => {
+  if (typeof document !== "undefined") document.documentElement.lang = lng.split("-")[0] === "es" ? "es-MX" : lng;
+};
+setDocumentLang(i18n.language);
+i18n.on("languageChanged", setDocumentLang);
+
 export default i18n;

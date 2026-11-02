@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Button } from "./Button";
 import { ConfidenceState } from "./ConfidenceState";
 import { StatusLabel } from "./StatusLabel";
@@ -128,6 +128,30 @@ describe("Toggletip", () => {
     const date = screen.getByRole("button", { name: "Tax year" });
     expect(date.querySelector("svg.lucide-calendar")).not.toBeNull(); // a calendar, never a clock
     expect(date.textContent).toBe("2024");
+  });
+
+  it("previews on mouse hover, stays while the pointer is over it, and a click pins it", async () => {
+    render(<div><span>outside</span><Toggletip label="Source">detail</Toggletip></div>);
+    const wrap = document.querySelector("[data-toggletip]")!;
+    fireEvent.pointerEnter(wrap, { pointerType: "mouse" });
+    expect(screen.getByRole("dialog").textContent).toBe("detail");
+    fireEvent.pointerLeave(wrap, { pointerType: "mouse" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // hover, then click: it stays after the pointer leaves
+    fireEvent.pointerEnter(wrap, { pointerType: "mouse" });
+    fireEvent.click(screen.getByRole("button", { name: "Source" }));
+    fireEvent.pointerLeave(wrap, { pointerType: "mouse" });
+    await new Promise((r) => setTimeout(r, 250));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("ignores a touch 'hover': a tap opens it once", () => {
+    render(<Toggletip label="Source">detail</Toggletip>);
+    const wrap = document.querySelector("[data-toggletip]")!;
+    fireEvent.pointerEnter(wrap, { pointerType: "touch" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Source" }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
   it("closes on a click outside", () => {

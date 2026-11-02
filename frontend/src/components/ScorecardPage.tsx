@@ -1094,7 +1094,8 @@ export default function ScorecardPage() {
                 )}
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Button variant="secondary" icon={<MessageCircleQuestion className="h-4 w-4" strokeWidth={2} />} onClick={() => askDock(null)}>{t("scorecard.header.ask")}</Button>
+                  {/* On phones the bottom action bar is the Ask (say it once); the hero button is for desktop. */}
+                  <Button variant="secondary" className="hidden md:inline-flex" icon={<MessageCircleQuestion className="h-4 w-4" strokeWidth={2} />} onClick={() => askDock(null)}>{t("scorecard.header.ask")}</Button>
                   {/* The $25 report returns as the page's one violet element when purchases launch
                       (Jack, 2026-10-31: no "coming soon" on the first screen). */}
                   {!purchasesOff && (

@@ -2520,6 +2520,15 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 **Also fixed (found by the new opened-section budget):** an opened section snapped shut ~10 s later when a second response for the same parcel arrived (dev mode's doubled mount effect fires two identical requests; any same-parcel refetch would do it). Item 51's reset compared response objects; it now keys on the parcel (`resolved_pin`, else address, else coordinates). The budget's measurement now waits for the opened section and fails on an empty one instead of recording 0.
 
+**Follow-ups from Jack's review of the local build (2026-11-02), in the same PR:**
+- **Hover preview.** On a mouse, hovering a tool previews it; moving into the popover keeps it open; a click pins it; Escape, a second click or a click outside closes it. Touch ignores hover (a tap opens). WCAG 1.4.13 (hoverable, persistent, dismissible) holds.
+- **Links open in a new tab.** Every `<a href>` that opens a page has `target="_blank"` (the chat's "Open today's Property Profile" was the one that didn't); `linksOpenNewTab.test.ts` fails on a new one. mailto: links and in-app navigation (router links; sign-in and Stripe checkout redirects, which must return) stay in place.
+- **"today 100" fixed in the backend** (`legislation/impacts._shown`): the parking fact reads "parking can be cut by up to 100%" ("no parking reduction" for none), the ADU facts in words, and the row prefix is "Today:".
+- **Costs and Neighborhood get the same treatment:** appeals and Assessor permits become one summary line each with the rows behind Explain (the "assessable permit still open" warning stays visible); the five Census rent tiles drop the period they repeated (the block header has it) but keep method, margin and area (guide §4.4, §4.6); the Assessor-model note moves behind Explain and its tile keeps its date. Opened Costs 195–264 → 170–192 words; Neighborhood ~225 → ~196; Market (~35) and Record (58–85) were already short.
+- **Screen-reader check (scripted, no axe):** on PIN 25-04-400-090 with every section open, 81 controls all have accessible names, no status label is focusable, all 33 tool controls carry descriptive names, and a keyboard-only run opens a tool with Enter and closes it with Escape, focus returning to the button.
+- **One budget baseline raised (reviewed):** `milwaukee/build` 348 → 359 words, because the parking row now says "Today: parking can be cut by up to 100%" instead of "today 100" (Jack asked for the units). Still well under the 500 cap.
+- **Spanish layout:** no horizontal overflow on desktop, 360 px or 393 px with every section open (`es-*` screenshots). It found that `<html lang>` stayed "en" in Spanish; it now follows the UI language (`es-MX`). On phones the hero "Ask the analyst" hides because the bottom bar is the Ask.
+
 **Known wrinkle:** a pending row's "today" value comes from the backend as a bare number, so "Transit-served benefits · today 100" lacks its "%". Adding units per fact is a backend follow-up.
 
 **Not measured:** a screen reader pass on the trays; real users on the icon set (Jack reviews the look).

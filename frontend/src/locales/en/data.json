@@ -51,7 +51,10 @@
       "won": "reduced {{before}} → {{after}} (−{{pct}}%)",
       "noChange": "no change",
       "nearby": "{{count}} appeals within a block recently — {{reduced}} won reductions",
-      "nearbyMedian": "(median −{{pct}}%)"
+      "nearbyMedian": "(median −{{pct}}%)",
+      "summary_one": "{{count}} appeal on record · {{won}} won",
+      "summary_other": "{{count}} appeals on record · {{won}} won",
+      "noneHere": "None on record for this parcel"
     },
     "rooms": "Rooms",
     "bedrooms": "Bedrooms",
@@ -239,7 +242,7 @@
       "summaryToggle": "What the proposal says",
       "official": "Official record ↗",
       "valueOf": "{{label}}: {{value}}",
-      "todayValue": "today {{value}}",
+      "todayValue": "Today: {{value}}",
       "proposedStatus": "Proposed · {{status}}",
       "count_one": "{{count}} proposal before City Council could change a rule on this page",
       "count_other": "{{count}} proposals before City Council could change rules on this page",

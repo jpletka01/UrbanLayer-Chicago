@@ -58,3 +58,12 @@ describe("answer sentence", () => {
     expect(answerSentence(data({ unit_yield: { units: 11 } }), v, t).toLowerCase()).not.toContain("you can build");
   });
 });
+
+describe("page language", () => {
+  it("follows the UI language so a screen reader uses the right voice", async () => {
+    await i18n.changeLanguage("es");
+    expect(document.documentElement.lang).toBe("es-MX");
+    await i18n.changeLanguage("en");
+    expect(document.documentElement.lang).toBe("en");
+  });
+});
