@@ -2458,3 +2458,21 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 - **Tests:** vitest 903 passed; three existing tests now open the ⏱ "Dates" toggletip before asserting the same stamps. `npm run test:mobile` 79 passed / 36 skipped; the overflow audit now opens every Profile section before its scroll, so it still covers everything that can render.
 
 **Not measured:** the whole page's word count with every section open (the plan's "~3,000 words" is unchanged when expanded: nothing was deleted); dark theme; a screen reader.
+
+## Item 52: the page budget must hold during a source outage (2026-11-02)
+
+**Status (2026-11-02): open as a PR, not merged.** Found by the post-deploy check of #174: on production FEMA's flood lookup was not answering (`failed_sources: flood` on all three parcels checked). So the two-flat and 233 S Wacker each showed an honest amber "◌ Not checked: FEMA flood zone" row. 1601 N Milwaukee's fourth amber row folded into "+1 more under Rules & overlays", which took its desktop first screen to 122 words (cap 120).
+
+**Decision 1: the fold line is "+N more".** The panel's "Details ↓" link already says where they are. -4 words.
+
+**Decision 2: amber is held to the hard cap, not ratcheted per parcel.** The first fix raised four amber baselines from 0 to 1. A local run with FEMA faulted (`DATA_HEALTH_FAULT=source:fed.fema.nfhl`) then showed the two-flat at 2: a "≈ Low confidence" label had appeared on one of its figures with today's data. Amber follows live source and sample states that legitimately move day to day: a source that is down, a comp set that is thin. A per-parcel ratchet on it fails on the truth rules working. The spec now checks amber against the cap (3) only, and the baseline no longer stores it. Words still ratchet, with an allowance of 8 words over the baseline for live state rows: Milwaukee's outage row took it from 118 to 120, and a Not-checked row is 4-6 words, while a new card or caveat adds tens. The hard cap (120 desktop / 90 phone) binds with no allowance. Solid orange and page height ratchet exactly. *Alternative:* not count Not-checked or Low rows as amber; rejected, because the reader sees them as amber and the budget measures what the reader sees.
+
+**Numbers** (2026-11-02)
+
+| | Production, FEMA down, before this PR | Local, FEMA faulted, with this PR |
+|---|---|---|
+| 2541 N Spaulding, desktop | 102 words / 1 amber | 99 / 2 (Not checked + Low confidence) |
+| 1601 N Milwaukee, desktop | **122** / 3 | **120** / 3 |
+| 233 S Wacker, desktop | 100 / 1 | 101 / 1 |
+| PIN 14-28-319-102-0000, desktop | 97 / 3 | 95 / 3 |
+| phones, all four | 65-75 / 1-3 | 66-73 / 1-3 |
