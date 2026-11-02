@@ -42,7 +42,7 @@ export function AnalysisMap({ lat, lon, pin, parcelGeometry, profileKey, parcelC
     (e.currentTarget.querySelector(`[data-layer="${next}"]`) as HTMLButtonElement | null)?.focus();
   };
   return (
-    <section className={`flex flex-col gap-3 ${className ?? ""}`} data-testid="analysis-map">
+    <section className={`flex min-w-0 flex-col gap-3 ${className ?? ""}`} data-testid="analysis-map">
       <div
         role="radiogroup"
         aria-label={t("scorecard.analysisMap.switchLabel")}

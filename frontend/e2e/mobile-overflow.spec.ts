@@ -347,8 +347,10 @@ for (const pageDef of PAGES) {
     // M3 parcel-map control: audit the responsive Layers surface while it is
     // actually open, including the Mapbox-owned bottom-left attribution area.
     if (pageDef.id === "scorecard") {
+      // The zoning layer mounts when the analysis map nears the viewport and its layers have loaded.
+      await page.getByTestId("analysis-map").scrollIntoViewIfNeeded();
       const layersButton = page.getByTestId("parcel-map-layers-button").first();
-      await expect(layersButton).toBeVisible();
+      await expect(layersButton).toBeVisible({ timeout: 30_000 });
       await layersButton.scrollIntoViewIfNeeded();
       await layersButton.click();
       const popover = page.getByTestId("parcel-map-controls-mobile").first();

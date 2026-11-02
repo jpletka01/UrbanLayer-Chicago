@@ -1,6 +1,6 @@
 # Page design: how a UrbanLayer page shows information
 
-**Status: living, canonical (2026-11-02).** The Property Profile was rebuilt around these rules in decision Items 46-54 (`decisions/2026-10_build-queue.md`), shipped by #162, #163, #174, #175 and #177. Discovery and every other app page follow them as they are touched. The checklist form is the project skill **`page-design-rules`** (`.claude/skills/page-design-rules/SKILL.md`); load it before any UI change. This guide holds the reasons, the evidence and the file map.
+**Status: living, canonical (2026-11-02).** The Property Profile was rebuilt around these rules in decision Items 46-54 (`decisions/2026-10_build-queue.md`), shipped by #162, #163, #174, #175 and #177; Items 55-58 (one analysis map, the phone layout, Discovery's dot preview and rows) follow in the next release PR. Every other app page follow them as they are touched. The checklist form is the project skill **`page-design-rules`** (`.claude/skills/page-design-rules/SKILL.md`); load it before any UI change. This guide holds the reasons, the evidence and the file map.
 
 Supersedes the layout parts of `guides/scorecard-dashboard-model.md` (July 2026). Sits on top of the Bento Pro tokens (`guides/bento-pro-redesign.md`), which still own the palette, type and radius. Does not change the truth rules (`guides/source-confidence.md`); it changes only where their words go.
 
@@ -62,13 +62,14 @@ Role tokens over Bento Pro (`tailwind.config.js`, `src/index.css`): `status-{suc
 - **`ui/StatusLabel`**: ≤ 22 px, 3 px radius, tint + Lucide icon (`TriangleAlert`, `OctagonAlert`, `CircleCheck`, `Info`; neutral has none), not focusable, no pointer. `ui/foundation.test.tsx` pins 5 differences between the two.
 - **`ui/ConfidenceState`**: the five visible states: Estimate (`EqualApproximately`), Low confidence (same icon, amber), Not checked (`CircleDashed`), None found (`CircleCheck`), Withheld (`CircleSlash`; the value shows "—" + a reason ≤ 8 words), N/A (`CircleMinus`). A verified figure has no label. `confidenceStateFor(entry)` reads the backend's state and never recomputes it. **These states never move behind a tool**; only their explanation does.
 
-### 6. The page has an owner: a ratcheting budget
+### 6. The page has an owner: a ratcheting budget (Profile and Discovery)
 `frontend/e2e/profile-budget.spec.ts` + `profile-budget.baseline.json`, run by `npm run test:mobile` (once, in the "Pixel 3" project, opening its own desktop and phone contexts). Not in CI: CI has no backend or live data to render a Profile.
 - **What it checks**, on four reference parcels: 2541 N Spaulding (two-flat), 1601 N Milwaukee (commercial, landmark district), 233 S Wacker (downtown) and PIN 14-28-319-102-0000 (the $1 parcel).
   - First screen, desktop 1440×900 and phone 390×844: words ≤ 120 / 90; amber ≤ 3; solid orange ≤ 1; default page ≤ 4 desktop screens; no heading twice; no figure with two confidence states.
   - The opened "What you can build" section: words ≤ 500.
 - **Ratchet**: words, orange and page height may only go down. Words get an **8-word allowance for live state rows**: a source outage adds an honest "Not checked" row, as FEMA's did on 2026-11-02. Amber is held to the cap only, because it follows live states. `BUDGET_UPDATE=1` lowers a baseline and never raises one; raising one is a hand edit with its reason in the PR and the decision log (Item 54 raised `milwaukee/build` 348 → 359 for the clearer parking wording).
 - The measurement fails on an empty section rather than recording 0 (that bug once wrote a 0 baseline).
+- **Discovery** (Item 57): `e2e/discovery-budget.spec.ts` + `discovery-budget.baseline.json` hold the first screen of the Start panel and of a recipe's results (desktop and phone), and the dot preview's words, to the same ratchet.
 - **Ad-hoc measuring**: `plans/2026-11-01_redesign-assets/firstscreen.cjs <base> <label>` (local-only; run from `frontend/`).
 
 ## Measured effect (production before → after)
@@ -91,7 +92,9 @@ Nothing was deleted: everything is one click away.
   - first screen: `ScorecardPage.tsx` (derivations), `scorecard/ProfileHeader.tsx`, `AnswerPanels.tsx`, `SectionBand.tsx`, `lib/answerSentence.ts`;
   - sections: `scorecard/ProfileModule.tsx` (collapsible), `SourcesSheet.tsx` + `lib/sourceScopes.ts`;
   - cards with tool trays: `PendingTextImpactsCard`, `UpcomingZoningCard`, `ScorecardZoningCard`, `WhatIfCard`, `ScorecardRegulatoryCard`, `CapacityMap`, `ScorecardPropertyCard` (appeals, permits), `RentBlock`.
-- **Guards**: `ui/foundation.test.tsx`, `scorecard/palette.test.ts`, `components/linksOpenNewTab.test.ts`, `components/siblingKeys.test.ts`, `e2e/profile-budget.spec.ts`.
+- **Build section** (Item 55): `scorecard/AnalysisMap.tsx` (one map, a layer switch; `analysisLayers.ts`), `CapacityMap` (a layer), `WhatIfCard` (an inline compare row). **Phone** (Item 56): `lib/useIsPhone.ts` (one open section at a time), `scorecard/PlaceMapStrip.tsx`.
+- **Discovery** (Item 57): `discovery/DotPreview.tsx`, `rowFigures.ts` (row title and figures, "Nominal"), the results header's tool tray in `DiscoveryPage.tsx`; `GET /api/discovery/parcel`.
+- **Guards**: `ui/foundation.test.tsx`, `scorecard/palette.test.ts`, `components/linksOpenNewTab.test.ts`, `components/siblingKeys.test.ts`, `e2e/profile-budget.spec.ts`, `e2e/discovery-budget.spec.ts` (both count with `e2e/budgetMeasure.ts`).
 
 ## Lessons worth keeping
 1. **Per-PR review cannot see the page.** Only a whole-page, ratcheting measurement stops accretion.
@@ -102,7 +105,8 @@ Nothing was deleted: everything is one click away.
 6. **A test that pins a printed string pins the clutter.** When a fact moves behind a tool, the test opens the tool and checks the same guarantee. Never delete the guarantee.
 
 ## Not done (as of 2026-11-02)
-- Plan steps 5-7: one analysis map with a layer switch and the what-if inline; phone single-open sections and a map strip; the Discovery dot preview (free users get the full preview, Q1) and rows cleanup. Discovery rows still print a nominal "$1".
-- The tool-tray pass on Discovery, the chat rail cards and the $25 report.
+- Compact phone panel rows (plan §6g). They would let the place-map strip move above the panels (Item 56).
+- The exact zoning class in Discovery's dot preview (it shows the family and FAR until the index carries the class).
+- The tool-tray pass on the chat rail cards and the $25 report.
 - About page story for the redesign.
 - Native Mexican-Spanish read of every new string; no real-user tests of the icon set.

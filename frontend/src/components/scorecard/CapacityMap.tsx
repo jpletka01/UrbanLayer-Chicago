@@ -107,14 +107,14 @@ export function CapacityMap({ pin, lat, lon, profileKey, className }: CapacityMa
   );
 
   return (
-    <section ref={sentinelRef} className={`flex flex-col gap-3 ${className ?? ""}`} data-testid="capacity-map">
+    <section ref={sentinelRef} className={`flex min-w-0 flex-col gap-3 ${className ?? ""}`} data-testid="capacity-map">
       {token && model.total > 0 ? (
         <div className="h-[22rem] lg:h-[26rem]">
           <CapacityMapCanvas key={profileKey ?? `${lat}:${lon}`} model={model} lat={lat} lon={lon} theme={theme} />
         </div>
       ) : null}
       <div className="flex items-start justify-between gap-2">
-        <CoverageLine load={load} model={model} pct={pct} />
+        <div className="min-w-0"><CoverageLine load={load} model={model} pct={pct} /></div>
         {tools}
       </div>
       {model.total > 0 && (

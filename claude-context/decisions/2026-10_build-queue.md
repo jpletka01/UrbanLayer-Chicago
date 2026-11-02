@@ -2545,7 +2545,11 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 **Decision 4: the what-if is one compare row under the standards.** "What if this were rezoned? [RT-3.5] [RT-4] [Any district…]" plus the Explain tool; the "Arithmetic, not a forecast" label appears with the comparison it qualifies, not before one exists.
 
-**Numbers** (local, 2026-11-02, `profile-budget.spec.ts`): opened Build section 1601 N Milwaukee 359 → 291 words, 2541 N Spaulding 364 → 303, 233 S Wacker 313 → 249, PIN 14-28-319-102 275 → 206. Baselines lowered with `BUDGET_UPDATE=1`.
+**Numbers** (local, 2026-11-02, `profile-budget.spec.ts`): opened Build section 1601 N Milwaukee 359 → 291 words, 2541 N Spaulding 364 → 303, 233 S Wacker 313 → 249, PIN 14-28-319-102 275 → 206. First screens: phone 69-71 → 66-68 (the shared counter now skips screen-reader-only text), PIN 14-28-319-102 desktop 93 → 89, the rest unchanged. Baselines lowered with `BUDGET_UPDATE=1`; none raised.
+
+**The caveat triage Item 51 left is closed.** With every section open on 1601 N Milwaukee, the printed small text of more than eight words is either a finding ("4 proposals before City Council could change rules on this page", "Today: parking can be cut by up to 100%", "90-day demolition hold applies") or the rent tiles' method · margin · area captions, which the truth rules keep visible (guide `source-confidence.md` §4.4/§4.6; Item 54). Nothing paragraph-length is left to move.
+
+**Also fixed (found by the phone audit at 360 px):** the Built vs allowed layer was 4 px wider than a Galaxy S24 screen; the map column and the coverage line now carry `min-w-0`.
 
 ## Item 56: the phone Profile: one open section at a time and a place-map strip (2026-11-02)
 
