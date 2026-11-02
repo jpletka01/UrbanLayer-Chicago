@@ -37,8 +37,10 @@ export interface PanelRow {
   detail?: ReactNode;
 }
 
-/** Amber rows beyond this many collapse into "+N more" (plan §4 check 5: ≤3 amber items). */
-export const MAX_AMBER_ROWS = 3;
+/** The first screen's amber allowance (plan §4 check 5: ≤3 amber items). "Low confidence" labels on
+    figures and the header's approximate-match label share it with the In-the-way rows; the rows give
+    way, folding into "+N more" (decision Item 53). */
+export const MAX_AMBER = 3;
 
 function Figure({ f }: { f: PanelFigure }) {
   const withheld = f.state?.kind === "withheld";
@@ -110,16 +112,23 @@ export function AnswerPanels({
   inTheWay,
   value,
   onScrollTo,
+  amberElsewhere = 0,
 }: {
   build: PanelFigure[];
   inTheWay: PanelRow[];
   value: PanelFigure[];
   onScrollTo: (anchor: CardId) => void;
+  /** Amber labels outside the panels on the first screen (the header's approximate-match label). */
+  amberElsewhere?: number;
 }) {
   const { t } = useTranslation("pages");
-  // Amber is rationed: the first three warning rows show, the rest fold into one neutral "+N more".
+  // Amber is rationed across the first screen. A figure's "Low confidence" label is a truth rule and
+  // always shows; so does an approximate match. The In-the-way rows get what is left, most decisive
+  // first, and the rest fold into one neutral "+N more" (the top blocker is already in the sentence).
+  const lowLabels = [...build, ...value].filter((f) => f.state?.kind === "estimate" && f.state.low).length;
+  const rowAllowance = Math.max(0, MAX_AMBER - lowLabels - amberElsewhere);
   const amber = inTheWay.filter((r) => r.tone === "warning" || r.tone === "danger");
-  const shownAmber = new Set(amber.slice(0, MAX_AMBER_ROWS).map((r) => r.key));
+  const shownAmber = new Set(amber.slice(0, rowAllowance).map((r) => r.key));
   const rows = inTheWay.filter((r) => (r.tone !== "warning" && r.tone !== "danger") || shownAmber.has(r.key));
   const hidden = amber.length - shownAmber.size;
 

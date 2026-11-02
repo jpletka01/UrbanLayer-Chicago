@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { AnswerPanels, MAX_AMBER_ROWS, type PanelFigure, type PanelRow } from "./AnswerPanels";
+import { AnswerPanels, MAX_AMBER, type PanelFigure, type PanelRow } from "./AnswerPanels";
 import { ProfileHeader } from "./ProfileHeader";
 
 afterEach(cleanup);
@@ -42,7 +42,7 @@ describe("AnswerPanels — the truth rules on the first screen", () => {
     ];
     render(<AnswerPanels build={[]} inTheWay={rows} value={[]} onScrollTo={noop} />);
     const panel = screen.getByTestId("panel-in-the-way");
-    expect(panel.querySelectorAll('[data-status-label="warning"]').length).toBe(MAX_AMBER_ROWS);
+    expect(panel.querySelectorAll('[data-status-label="warning"]').length).toBe(MAX_AMBER);
     expect(panel.textContent).toContain("+2 more");
 
     cleanup();
@@ -51,6 +51,26 @@ describe("AnswerPanels — the truth rules on the first screen", () => {
     expect(none.querySelector('[data-confidence-state="none_found"]')).not.toBeNull();
     expect(none.textContent).toContain("None found");
     expect(none.textContent).not.toContain("Not checked");
+  });
+
+  it("shares the amber allowance with Low confidence labels and an approximate match", () => {
+    // The $1 parcel on 2026-11-02: three blockers plus a low-confidence comps median made four amber items.
+    const rows: PanelRow[] = [
+      { key: "nominal", tone: "warning", text: "Nominal assessment" },
+      { key: "pd", tone: "warning", text: "Planned Development" },
+      { key: "lake", tone: "warning", text: "Lakefront Protection" },
+    ];
+    const value: PanelFigure[] = [{ key: "comps", label: "Comps median", value: "$2.0M", state: { kind: "estimate", low: true } }];
+    render(<AnswerPanels build={[]} inTheWay={rows} value={value} onScrollTo={noop} />);
+    const all = () => document.querySelectorAll('[data-status-label="warning"]').length;
+    expect(all()).toBe(MAX_AMBER); // 2 rows + the Low confidence label
+    expect(screen.getByTestId("panel-in-the-way").textContent).toContain("+1 more");
+    expect(screen.getByTestId("panel-in-the-way").textContent).toContain("Nominal assessment"); // most decisive kept
+
+    cleanup();
+    render(<AnswerPanels build={[]} inTheWay={rows} value={value} onScrollTo={noop} amberElsewhere={1} />);
+    expect(all()).toBe(MAX_AMBER - 1); // 1 row + the label; the header's approximate label is the third
+    expect(screen.getByTestId("panel-in-the-way").textContent).toContain("+2 more");
   });
 
   it("puts a figure's explanation behind a click, not on the page", () => {

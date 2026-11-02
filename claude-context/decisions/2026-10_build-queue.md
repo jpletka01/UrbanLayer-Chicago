@@ -2461,7 +2461,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 52: the page budget must hold during a source outage (2026-11-02)
 
-**Status (2026-11-02): open as a PR, not merged.** Found by the post-deploy check of #174: on production FEMA's flood lookup was not answering (`failed_sources: flood` on all three parcels checked). So the two-flat and 233 S Wacker each showed an honest amber "◌ Not checked: FEMA flood zone" row. 1601 N Milwaukee's fourth amber row folded into "+1 more under Rules & overlays", which took its desktop first screen to 122 words (cap 120).
+**Status: merged and deployed 2026-11-02 (#175, `4c72653`); production budget re-run: Milwaukee 119 words with FEMA down.** Found by the post-deploy check of #174: on production FEMA's flood lookup was not answering (`failed_sources: flood` on all three parcels checked). So the two-flat and 233 S Wacker each showed an honest amber "◌ Not checked: FEMA flood zone" row. 1601 N Milwaukee's fourth amber row folded into "+1 more under Rules & overlays", which took its desktop first screen to 122 words (cap 120).
 
 **Decision 1: the fold line is "+N more".** The panel's "Details ↓" link already says where they are. -4 words.
 
@@ -2476,3 +2476,11 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | 233 S Wacker, desktop | 100 / 1 | 101 / 1 |
 | PIN 14-28-319-102-0000, desktop | 97 / 3 | 95 / 3 |
 | phones, all four | 65-75 / 1-3 | 66-73 / 1-3 |
+
+## Item 53: the first screen's amber allowance is shared, not per panel (2026-11-02)
+
+**Status (2026-11-02): open as a PR, not merged; batched for the next release (Jack).** Found by the production budget run after #175: the $1 parcel (PIN 14-28-319-102-0000) showed **4** amber items against the cap of 3. Its three In-the-way rows (Nominal assessment, Planned Development, Lakefront Protection) plus a "≈ Low confidence" label on the comps median (`small_sample`, the backend's call). The panel rationed its own rows to 3 but did not count amber labels elsewhere on the first screen.
+
+**Decision: one allowance (`MAX_AMBER` = 3) for the whole first screen.** A figure's "Low confidence" label is a truth rule (guide §3) and always shows; so does an approximate or unconfirmed parcel match in the header (`amberElsewhere`). The In-the-way rows get what is left, in blocker order, and the rest fold into "+N more". The top blocker is already named in the answer sentence, so folding a row hides nothing the reader needs first. *Alternative:* render the Low-confidence tag neutral on the first screen; rejected because the guide makes it the one amber phrase, and a weak figure should look weak.
+
+**Numbers:** a unit test reproduces the production case (3 rows + 1 low label → 2 rows + label + "+1 more"; with an approximate match → 1 row + "+2 more"). Locally the $1 parcel's comps median is not low today, so the page measured 3 amber either way. **Not measured:** the production page with this change (after the next release).

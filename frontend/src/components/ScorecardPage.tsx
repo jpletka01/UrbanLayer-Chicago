@@ -712,6 +712,10 @@ export default function ScorecardPage() {
   // One answer: a neutral verdict label + a deterministic sentence (lib/answerSentence.ts). Then three
   // panels, ≤ 8 figures and ≤ 3 amber rows, each figure with its confidence STATE as a label and its
   // explanation behind ⓘ/⏱. Built from the same values the KPI tiles had; nothing new is fetched.
+  // How sure we are of the parcel itself: the header shows an amber label unless it is exact.
+  const identity: "exact" | "approximate" | "unconfirmed" | null = !parcel ? null
+    : parcel.pin === null ? "unconfirmed"
+    : parcel.confidence === "authoritative" && !data?.nearest_parcel_unverified ? "exact" : "approximate";
   const answer = data && verdict ? answerSentence(data, verdict, t) : "";
   // The sticky band repeats the verdict label only after the answer has scrolled out of view.
   const answerRef = useRef<HTMLElement | null>(null);
@@ -1057,7 +1061,7 @@ export default function ScorecardPage() {
                   title={data.address || ctx.property?.address ||
                     (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
                   pin={parcel?.pin ?? null}
-                  identity={!parcel ? null : parcel.pin === null ? "unconfirmed" : parcel.confidence === "authoritative" && !data.nearest_parcel_unverified ? "exact" : "approximate"}
+                  identity={identity}
                   areaName={data.community_area_name}
                   ward={ctx.neighborhood?.ward?.ward ?? null}
                   resolution={data.resolution}
@@ -1113,7 +1117,13 @@ export default function ScorecardPage() {
                 </div>
 
                 <div className="mt-6">
-                  <AnswerPanels build={buildFigures} inTheWay={inTheWayRows} value={valueFigures} onScrollTo={scrollToCard} />
+                  <AnswerPanels
+                    build={buildFigures}
+                    inTheWay={inTheWayRows}
+                    value={valueFigures}
+                    onScrollTo={scrollToCard}
+                    amberElsewhere={identity === "approximate" || identity === "unconfirmed" ? 1 : 0}
+                  />
                 </div>
               </div>
 
