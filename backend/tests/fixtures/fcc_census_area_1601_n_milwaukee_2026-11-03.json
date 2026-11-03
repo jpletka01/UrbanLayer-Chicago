@@ -1,0 +1,36 @@
+{
+ "input": {
+  "lat": 41.91011,
+  "lon": -87.67727,
+  "censusYear": "2020"
+ },
+ "results": [
+  {
+   "block_fips": "170312414001004",
+   "bbox": [
+    -87.677463,
+    41.908621,
+    -87.675264,
+    41.91047
+   ],
+   "county_fips": "17031",
+   "county_name": "Cook County",
+   "state_fips": "17",
+   "state_code": "IL",
+   "state_name": "Illinois",
+   "block_pop_2020": 96,
+   "amt": "AMT005",
+   "bea": "BEA064",
+   "bta": "BTA078",
+   "cma": "CMA003",
+   "eag": "EAG704",
+   "ivm": "IVM003",
+   "mea": "MEA018",
+   "mta": "MTA003",
+   "pea": "PEA003",
+   "rea": "REA003",
+   "rpc": "RPC003",
+   "vpc": "VPC005"
+  }
+ ]
+}

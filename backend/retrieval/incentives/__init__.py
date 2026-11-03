@@ -10,6 +10,7 @@ import logging
 
 import httpx
 
+from backend.data_health.failures import INCENTIVE_GAPS
 from backend.models import IncentivesSummary
 from backend.retrieval.incentives.enterprise_zones import check_enterprise_zone
 from backend.retrieval.incentives.grant_programs import grant_programs_by_community_area
@@ -68,36 +69,37 @@ async def _incentives_by_point(
     workflow: str = "general",
     client: httpx.AsyncClient,
 ) -> IncentivesSummary:
-    """Full point-based incentive lookup (TIF + EZ + OZ + grants)."""
-    tif_task = check_tif(lat, lon, client=client)
-    ez_task = check_enterprise_zone(lat, lon, client=client)
-    tract_task = resolve_census_tract(lat, lon, client=client)
+    """Full point-based incentive lookup (TIF + EZ + OZ + QCT + NMTC + grants).
 
-    phase_a_tasks = [tif_task, ez_task, tract_task]
+    Every program that failed is recorded in ``unchecked`` (and as a ``data_gaps`` label), so it reads
+    "not checked" instead of "not in one"; a failed tract lookup leaves QCT and NMTC unchecked
+    (decision Item 65). OZ is checked by the point, not the tract (see ``opportunity_zones``).
+    """
+    phase_a_tasks = {
+        "tif": check_tif(lat, lon, client=client),
+        "ez": check_enterprise_zone(lat, lon, client=client),
+        "tract": resolve_census_tract(lat, lon, client=client),
+        "oz": check_opportunity_zone(lat=lat, lon=lon, client=client),
+    }
     if ca_name:
-        phase_a_tasks.append(
-            grant_programs_by_community_area(ca_name, client=client)
-        )
+        phase_a_tasks["grants"] = grant_programs_by_community_area(ca_name, client=client)
 
-    phase_a = await asyncio.gather(
-        *phase_a_tasks, return_exceptions=True,
-    )
+    done_a = await asyncio.gather(*phase_a_tasks.values(), return_exceptions=True)
+    phase_a: dict[str, object] = {}
+    failed: set[str] = set()
+    for key, value in zip(phase_a_tasks.keys(), done_a):
+        if isinstance(value, Exception):
+            log.warning("Incentives %s lookup failed: %s", key, value)
+            failed.add(key)
+            phase_a[key] = None
+        else:
+            phase_a[key] = value
 
-    tif_result = phase_a[0] if not isinstance(phase_a[0], Exception) else None
-    ez_result = phase_a[1] if not isinstance(phase_a[1], Exception) else None
-    tract_fips = phase_a[2] if not isinstance(phase_a[2], Exception) else None
-    grant_data = None
-    if len(phase_a) > 3:
-        grant_data = phase_a[3] if not isinstance(phase_a[3], Exception) else None
-        if isinstance(phase_a[3], Exception):
-            log.warning("Grant programs query failed: %s", phase_a[3])
-
-    if isinstance(phase_a[0], Exception):
-        log.warning("TIF boundary check failed: %s", phase_a[0])
-    if isinstance(phase_a[1], Exception):
-        log.warning("Enterprise Zone check failed: %s", phase_a[1])
-    if isinstance(phase_a[2], Exception):
-        log.warning("Census tract resolution failed: %s", phase_a[2])
+    tif_result = phase_a["tif"]
+    tract_fips = phase_a["tract"]
+    if "tract" in failed or not tract_fips:
+        # No tract (failed, or the FCC placed the point in none): the tract-keyed programs went unasked.
+        failed.update({"qct", "nmtc"})
 
     phase_b_tasks: dict[str, asyncio.Task] = {}
 
@@ -111,9 +113,6 @@ async def _incentives_by_point(
         )
 
     if tract_fips:
-        phase_b_tasks["oz"] = asyncio.create_task(
-            check_opportunity_zone(tract_fips, client=client)
-        )
         phase_b_tasks["qct"] = asyncio.create_task(
             check_qct(tract_fips, client=client)
         )
@@ -127,21 +126,33 @@ async def _incentives_by_point(
         for key, value in zip(phase_b_tasks.keys(), done):
             if isinstance(value, Exception):
                 log.warning("Incentives phase B %s failed: %s", key, value)
+                failed.add(key)
                 phase_b_results[key] = None
             else:
                 phase_b_results[key] = value
 
     summary = _build_summary(
-        tif_result, ez_result, tract_fips,
+        tif_result, phase_a["ez"], tract_fips,
         phase_b_results.get("financials"),
-        phase_b_results.get("oz"),
+        phase_a["oz"],
         fund_analysis=phase_b_results.get("fund_analysis"),
-        grant_data=grant_data,
+        grant_data=phase_a.get("grants"),
         qct_result=phase_b_results.get("qct"),
         nmtc_result=phase_b_results.get("nmtc"),
     )
-    summary.enterprise_zone_unchecked = isinstance(phase_a[1], Exception)
+    _mark_unchecked(summary, failed)
     return summary
+
+
+def _mark_unchecked(summary: IncentivesSummary, failed: set[str]) -> None:
+    """Record the programs that weren't checked, in ``INCENTIVE_GAPS`` order."""
+    programs = [k for k in INCENTIVE_GAPS if k not in ("tif_finances",) and k in failed]
+    summary.unchecked = programs
+    summary.enterprise_zone_unchecked = "ez" in failed
+    gaps = list(programs)
+    if failed & {"financials", "fund_analysis"}:
+        gaps.append("tif_finances")
+    summary.data_gaps = [INCENTIVE_GAPS[k] for k in gaps]
 
 
 async def _incentives_by_community_area(
@@ -151,11 +162,13 @@ async def _incentives_by_community_area(
     client: httpx.AsyncClient,
 ) -> IncentivesSummary:
     """Neighborhood-level lookup: list TIF districts covering the community area."""
+    tif_failed = False
     try:
         tif_list = await tif_districts_by_community_area(ca, client=client)
     except Exception as exc:
         log.warning("TIF community area lookup failed: %s", exc)
         tif_list = []
+        tif_failed = True
 
     grant_data = None
     if ca_name:
@@ -185,11 +198,14 @@ async def _incentives_by_community_area(
     from backend.assembler import _grant_program_summary
     grants_summary = _grant_program_summary(grant_data) if grant_data else None
 
-    return IncentivesSummary(
+    summary = IncentivesSummary(
         in_tif_district=len(tif_list) > 0,
         tif_districts_in_area=tif_list if tif_list else None,
         grant_programs=grants_summary,
     )
+    if tif_failed:
+        _mark_unchecked(summary, {"tif"})
+    return summary
 
 
 def _safe_float(val: object) -> float | None:

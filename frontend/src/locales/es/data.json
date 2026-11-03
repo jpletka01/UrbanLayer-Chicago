@@ -281,6 +281,13 @@
     "notInEnterpriseZone": "No en zona empresarial",
     "enterpriseZoneNotChecked": "Zona Empresarial: no verificada",
     "ezUnchecked": "El mapa de Zonas Empresariales de la Ciudad no respondió, así que no pudimos verificar si esta parcela está en una. Esto no es un «no».",
+    "notChecked": "{{program}}: sin verificar",
+    "unchecked": {
+      "tif": "El mapa de distritos TIF de la Ciudad no respondió, así que no pudimos verificar si esta parcela está en uno. Esto no es un «no».",
+      "oz": "El mapa de Zonas de Oportunidad de HUD no respondió, así que no pudimos verificar si esta parcela está en una. Esto no es un «no».",
+      "qct": "No pudimos consultar el distrito censal de esta parcela ni la lista de HUD de distritos censales calificados, así que no pudimos verificar si está en uno. Esto no es un «no».",
+      "nmtc": "No pudimos consultar el distrito censal de esta parcela ni la lista de HUD del Crédito Fiscal para Nuevos Mercados (NMTC), así que no pudimos verificar si califica. Esto no es un «no»."
+    },
     "cityGrantPrograms": "Programas de subsidios municipales",
     "totalProjects": "Total de proyectos",
     "totalFunding": "Financiamiento total",

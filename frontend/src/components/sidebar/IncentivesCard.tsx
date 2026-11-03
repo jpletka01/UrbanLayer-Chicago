@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { IncentivesSummary } from "../../lib/types";
+import type { IncentiveProgram, IncentivesSummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 import { InfoTooltip } from "../InfoTooltip";
 import { ReportTeaser } from "./ReportTeaser";
@@ -48,13 +48,17 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
   const [showFinancials, setShowFinancials] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
 
+  // A program whose source didn't answer says "not checked", never "Not in" (Item 65).
+  const notIn = (key: IncentiveProgram, missLabel: string) =>
+    (data.unchecked ?? []).includes(key) ? t("incentives.notChecked", { program: t(`incentives.short.${key}`) }) : missLabel;
+
   const hasAnyIncentive = data.in_tif_district || data.in_opportunity_zone || data.in_enterprise_zone || data.in_qct || data.in_nmtc || !!data.property_tax_class;
 
   return (
     <CollapsibleCard title={t("incentives.title")} icon={DollarIcon}>
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Badge active={data.in_tif_district} label={data.in_tif_district ? t("incentives.inTif") : t("incentives.notInTif")} termKey="tif_district" />
+          <Badge active={data.in_tif_district} label={data.in_tif_district ? t("incentives.inTif") : notIn("tif", t("incentives.notInTif"))} termKey="tif_district" />
           {data.in_tif_district && data.tif_name && (
             <div className="rounded-lg bg-state-positive/5 border border-state-positive/15 px-3 py-2 space-y-0.5">
               <KV label={t("incentives.tifName")} value={data.tif_name} />
@@ -137,7 +141,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
         <div className="space-y-1">
           <Badge
             active={data.in_opportunity_zone}
-            label={data.in_opportunity_zone ? t("incentives.opportunityZone") : t("incentives.notInOpportunityZone")}
+            label={data.in_opportunity_zone ? t("incentives.opportunityZone") : notIn("oz", t("incentives.notInOpportunityZone"))}
             termKey="opportunity_zone"
           />
           {data.in_opportunity_zone && data.oz_tract && (
@@ -161,7 +165,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
           <Badge
             active={data.in_enterprise_zone}
             label={data.in_enterprise_zone ? t("incentives.enterpriseZone")
-              : data.enterprise_zone_unchecked ? t("incentives.enterpriseZoneNotChecked") : t("incentives.notInEnterpriseZone")}
+              : data.enterprise_zone_unchecked ? t("incentives.enterpriseZoneNotChecked") : notIn("ez", t("incentives.notInEnterpriseZone"))}
             termKey="enterprise_zone"
           />
           {data.in_enterprise_zone && data.enterprise_zone_name && (
@@ -172,7 +176,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
         <div className="space-y-1">
           <Badge
             active={data.in_qct}
-            label={data.in_qct ? t("incentives.qct") : t("incentives.notInQct")}
+            label={data.in_qct ? t("incentives.qct") : notIn("qct", t("incentives.notInQct"))}
             termKey="qct"
           />
           {data.in_qct && data.qct_tract && (
@@ -193,7 +197,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
         <div className="space-y-1">
           <Badge
             active={data.in_nmtc}
-            label={data.in_nmtc ? t("incentives.nmtcEligible") : t("incentives.notNmtcEligible")}
+            label={data.in_nmtc ? t("incentives.nmtcEligible") : notIn("nmtc", t("incentives.notNmtcEligible"))}
             termKey="nmtc"
           />
           {data.in_nmtc && (

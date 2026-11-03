@@ -969,7 +969,7 @@ async def _retrieve(
             else:
                 results[key] = value
 
-    partial_failures.extend(_domain_data_gaps(results, ("property", "regulatory")))
+    partial_failures.extend(_domain_data_gaps(results, ("property", "regulatory", "incentives")))
 
     code_chunks = []
     if "vector_search" in plan.sources and plan.search_query:
@@ -1016,6 +1016,12 @@ async def _retrieve(
             ctx.property = sc.property
         if sc.incentives is not None:
             ctx.incentives = sc.incentives
+            # Same for the incentive programs the Profile couldn't check: labels from our table, keyed by the
+            # program ids it sent (never its text), so an unknown id adds nothing.
+            for key in sc.incentives.unchecked:
+                gap = failures.INCENTIVE_GAPS.get(key)
+                if gap and gap not in ctx.partial_failures:
+                    ctx.partial_failures.append(gap)
         ctx.comparables = sc.comparables
         ctx.zone_definition = sc.zone_definition
         ctx.verdict = sc.verdict
@@ -1902,7 +1908,7 @@ async def _fetch_scorecard_data(
 
     # Overlay layers the City map couldn't answer: unknown, not "not in it". And the Assessor/PTAXSIM calls that
     # failed (not the figures a source simply has no record of): a Profile that lost its sales history says so.
-    partial_failures.extend(_domain_data_gaps(results, ("regulatory",)))
+    partial_failures.extend(_domain_data_gaps(results, ("regulatory", "incentives")))
     partial_failures.extend(
         g for g in (getattr(results.get("property"), "failed_calls", None) or []) if g not in partial_failures
     )

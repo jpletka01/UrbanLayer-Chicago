@@ -2,7 +2,7 @@
 // rows with their detail; the inactive set collapses to ONE muted line ("Not in:
 // TIF · OZ · …") instead of five gray lead badges. Same data, inverted emphasis.
 import { useTranslation } from "react-i18next";
-import type { IncentivesSummary } from "../../lib/types";
+import type { IncentiveProgram, IncentivesSummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { SubSection, ShowMore } from "./ProfileModule";
 import { ConfidenceCaption } from "../ui/Confidence";
@@ -63,14 +63,19 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
   const { t } = useTranslation("data");
   const grantsEntry = useFact("incentive.grants");
 
-  const inactive: string[] = [];
-  if (!data.in_tif_district) inactive.push(t("incentives.short.tif"));
-  if (!data.in_opportunity_zone) inactive.push(t("incentives.short.oz"));
-  // An unchecked Enterprise Zone is neither active nor "Not in": it gets its own Not-checked line.
-  const ezUnchecked = !data.in_enterprise_zone && !!data.enterprise_zone_unchecked;
-  if (!data.in_enterprise_zone && !ezUnchecked) inactive.push(t("incentives.short.ez"));
-  if (!data.in_qct) inactive.push(t("incentives.short.qct"));
-  if (!data.in_nmtc) inactive.push(t("incentives.short.nmtc"));
+  // A program whose source didn't answer is neither active nor "Not in": it gets its own Not-checked line
+  // (Items 64-65). `unchecked` is the general list; `enterprise_zone_unchecked` predates it.
+  const programs: { key: IncentiveProgram; active: boolean }[] = [
+    { key: "tif", active: data.in_tif_district },
+    { key: "oz", active: data.in_opportunity_zone },
+    { key: "ez", active: data.in_enterprise_zone },
+    { key: "qct", active: data.in_qct },
+    { key: "nmtc", active: data.in_nmtc },
+  ];
+  const isUnchecked = (key: IncentiveProgram) =>
+    (data.unchecked ?? []).includes(key) || (key === "ez" && !!data.enterprise_zone_unchecked);
+  const unchecked = programs.filter((p) => !p.active && isUnchecked(p.key)).map((p) => p.key);
+  const inactive = programs.filter((p) => !p.active && !isUnchecked(p.key)).map((p) => t(`incentives.short.${p.key}`));
   const activeCount = [data.in_tif_district, data.in_opportunity_zone, data.in_enterprise_zone, data.in_qct, data.in_nmtc]
     .filter(Boolean).length;
 
@@ -212,12 +217,16 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
             {t("incentives.notInLine", { list: inactive.join(" · ") })}
           </p>
         )}
-        {ezUnchecked && (
-          <div className="flex items-center gap-2 text-caption text-text-muted" data-testid="ez-unchecked">
-            {t("incentives.short.ez")}
-            <ConfidenceState kind="not_checked" explanation={t("incentives.ezUnchecked")} explainLabel={t("incentives.short.ez")} />
+        {unchecked.map((key) => (
+          <div key={key} className="flex items-center gap-2 text-caption text-text-muted" data-testid={`unchecked-${key}`}>
+            {t(`incentives.short.${key}`)}
+            <ConfidenceState
+              kind="not_checked"
+              explanation={t(key === "ez" ? "incentives.ezUnchecked" : `incentives.unchecked.${key}`)}
+              explainLabel={t(`incentives.short.${key}`)}
+            />
           </div>
-        )}
+        ))}
         {data.property_tax_class === "standard" && (
           <p className="text-caption text-text-muted">{t("incentives.standardClassDescription")}</p>
         )}

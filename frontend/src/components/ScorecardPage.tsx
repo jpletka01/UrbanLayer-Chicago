@@ -898,11 +898,12 @@ export default function ScorecardPage() {
   // Module presence — drives both rendering and the sticky section rail.
   // A module whose source didn't answer still renders, saying so (WS6 M7): missing reads as "nothing here".
   // The overlay layers have their own "couldn't check" row inside the Regulatory card, so a regulatory
-  // failure only needs the module-level row when that card has nothing to hang it on.
+  // failure only needs the module-level row when that card has nothing to hang it on (same for incentives).
   const failed = data?.failed_sources;
   const unchecked = {
     build: failedIn(failed, "build").filter((f) => f.key !== "regulatory" || !ctx?.regulatory).flatMap((f) => f.labels),
-    economics: failedLabels(failed, "economics"),
+    // likewise the Incentives card says which program it couldn't check, row by row (Item 65)
+    economics: [...new Set(failedIn(failed, "economics").filter((f) => f.key !== "incentives" || !ctx?.incentives).flatMap((f) => f.labels))],
     market: failedLabels(failed, "market"),
     // the flood zone says so inside its own Environment card (like the overlay rows), not at the module head
     record: failedIn(failed, "record").filter((f) => f.key !== "flood").flatMap((f) => f.labels),

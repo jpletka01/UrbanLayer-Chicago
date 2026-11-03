@@ -43,8 +43,9 @@ async def test_check_qct_error():
     mock_client = AsyncMock()
     mock_client.get.side_effect = Exception("HUD down")
 
-    result = await check_qct("17031829402", client=mock_client)
-    assert result is None
+    # A failure raises (the orchestrator says "not checked"), never "not a QCT" (Item 65).
+    with pytest.raises(Exception, match="HUD down"):
+        await check_qct("17031829402", client=mock_client)
 
 
 @pytest.mark.asyncio

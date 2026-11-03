@@ -1301,15 +1301,15 @@ a.glossary-link {
   {% if inc %}
   <dl class="info-grid">
     <dt><a href="#glossary-tif" class="glossary-link">TIF</a> {{ t("fin.tif_district") }}</dt>
-    <dd>{% if inc.in_tif_district %}<span class="status-yes">{{ inc.tif_name or t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if inc.in_tif_district %}<span class="status-yes">{{ inc.tif_name or t("reg.yes") }}</span>{% elif "tif" in (inc.unchecked or []) %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-oz" class="glossary-link">{{ t("fin.opportunity_zone") }}</a></dt>
-    <dd>{% if inc.in_opportunity_zone %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.oz_tract or t("common.na") }}){% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if inc.in_opportunity_zone %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.oz_tract or t("common.na") }}){% elif "oz" in (inc.unchecked or []) %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-ez" class="glossary-link">{{ t("fin.enterprise_zone") }}</a></dt>
     <dd>{% if inc.in_enterprise_zone %}<span class="status-yes">{{ inc.enterprise_zone_name or t("reg.yes") }}</span>{% elif inc.enterprise_zone_unchecked %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-qct" class="glossary-link">{{ t("fin.qct") }}</a></dt>
-    <dd>{% if inc.in_qct %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.qct_tract or t("common.na") }}){% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if inc.in_qct %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.qct_tract or t("common.na") }}){% elif "qct" in (inc.unchecked or []) %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-nmtc" class="glossary-link">{{ t("fin.nmtc") }}</a></dt>
-    <dd>{% if inc.in_nmtc %}<span class="status-yes">{{ t("reg.yes") }}</span>{% if inc.nmtc_severe_distress %} <span class="status-warn">{{ t("fin.severely_distressed") }}</span>{% endif %}{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if inc.in_nmtc %}<span class="status-yes">{{ t("reg.yes") }}</span>{% if inc.nmtc_severe_distress %} <span class="status-warn">{{ t("fin.severely_distressed") }}</span>{% endif %}{% elif "nmtc" in (inc.unchecked or []) %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     {% if inc.property_tax_class %}<dt>{{ t("fin.tax_incentive_class") }}</dt><dd>{{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</dd>{% endif %}
   </dl>
 

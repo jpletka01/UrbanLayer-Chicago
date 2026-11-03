@@ -463,6 +463,9 @@ export interface PropertySummary {
   assessor_permits: AssessorPermitSummary | null;
 }
 
+/** The incentive programs the Profile checks one by one (backend `failures.INCENTIVE_GAPS`). */
+export type IncentiveProgram = "tif" | "oz" | "ez" | "qct" | "nmtc";
+
 export interface IncentivesSummary {
   in_tif_district: boolean;
   tif_name: string | null;
@@ -483,6 +486,10 @@ export interface IncentivesSummary {
   enterprise_zone_name: string | null;
   /** The Enterprise Zone layer failed or came back empty: "not checked", never "not in one". */
   enterprise_zone_unchecked?: boolean;
+  /** Programs whose source failed or came back empty (Item 65): each is "not checked", never "not in one". */
+  unchecked?: IncentiveProgram[];
+  /** The same gaps as `partial_failures` labels. */
+  data_gaps?: string[];
   in_qct: boolean;
   qct_tract: string | null;
   in_nmtc: boolean;

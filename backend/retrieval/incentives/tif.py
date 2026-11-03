@@ -1,4 +1,10 @@
-"""TIF district boundary check and financial data retrieval."""
+"""TIF district boundary check and financial data retrieval.
+
+A failed or empty source raises, never returns "not in a TIF" or "no financial reports": the
+boundary layer used to cache an empty response as ``[]`` and ``check_tif`` swallowed a load failure
+into ``None``, so an outage read as a checked miss (the bug decision Item 64 fixed for Enterprise
+Zones; Item 65 here). The orchestrator turns the raise into "not checked".
+"""
 
 import asyncio
 import logging
@@ -58,6 +64,12 @@ async def _load_tif_boundaries(
             except Exception:
                 continue
 
+        if not boundaries:
+            # An empty layer is a failed source, never "no TIF here"; not cached, so the next call retries.
+            raise RuntimeError(
+                f"TIF boundary response has no usable geometry ({len(fc['features'])} features)"
+            )
+
         _tif_boundaries = boundaries
         log.info("Loaded %d TIF district boundaries", len(boundaries))
         return _tif_boundaries
@@ -71,13 +83,10 @@ async def check_tif(
 ) -> dict | None:
     """Check if a point is within a TIF district.
 
-    Returns ``{"tif_name": "...", "properties": {...}}`` or ``None``.
+    Returns ``{"tif_name": "...", "properties": {...}}`` or ``None`` (checked, not in an active TIF).
+    A boundary-load failure raises, so the caller can say "not checked" rather than "not in one".
     """
-    try:
-        boundaries = await _load_tif_boundaries(client=client)
-    except Exception as exc:
-        log.warning("Failed to load TIF boundaries: %s", exc)
-        return None
+    boundaries = await _load_tif_boundaries(client=client)
 
     point = Point(lon, lat)
     for name, props, poly, _geom in boundaries:
@@ -128,12 +137,11 @@ async def _active_tif_boundaries_for_ca(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> list[tuple[str, dict, Any, dict]]:
-    """Return boundary tuples for all active TIF districts overlapping a community area."""
-    try:
-        boundaries = await _load_tif_boundaries(client=client)
-    except Exception as exc:
-        log.warning("Failed to load TIF boundaries for CA lookup: %s", exc)
-        return []
+    """Return boundary tuples for all active TIF districts overlapping a community area.
+
+    A boundary-load failure raises: ``[]`` is reserved for an area with no active TIF.
+    """
+    boundaries = await _load_tif_boundaries(client=client)
 
     ca_str = str(ca)
     hits: list[tuple[str, dict, Any, dict]] = []
@@ -194,15 +202,12 @@ async def fetch_tif_fund_analysis(
         "$order": "report_year DESC",
         "$limit": settings.limit_tif_fund_analysis,
     }
-    try:
-        return await socrata_get(
-            settings.dataset_tif_fund_analysis,
-            params,
-            client=client,
-        )
-    except Exception as exc:
-        log.warning("TIF fund analysis query failed for %r: %s", tif_name, exc)
-        return []
+    # A failed query raises: [] is reserved for a district with no reports on record.
+    return await socrata_get(
+        settings.dataset_tif_fund_analysis,
+        params,
+        client=client,
+    )
 
 
 async def fetch_tif_financials(
@@ -217,15 +222,12 @@ async def fetch_tif_financials(
         "$order": "report_year DESC",
         "$limit": settings.limit_tif_financials,
     }
-    try:
-        return await socrata_get(
-            settings.dataset_tif_financials,
-            params,
-            client=client,
-        )
-    except Exception as exc:
-        log.warning("TIF financials query failed for %r: %s", tif_name, exc)
-        return []
+    # A failed query raises: [] is reserved for a district with no reports on record.
+    return await socrata_get(
+        settings.dataset_tif_financials,
+        params,
+        client=client,
+    )
 
 
 async def preload(*, client: httpx.AsyncClient | None = None) -> None:

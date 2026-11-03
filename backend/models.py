@@ -530,7 +530,14 @@ class IncentivesSummary(BaseModel):
     in_enterprise_zone: bool = False
     enterprise_zone_name: str | None = None
     # The Enterprise Zone layer failed or came back empty: "not checked", never "not in one".
+    # Kept for stored contexts and the report template; ``unchecked`` is the general form.
     enterprise_zone_unchecked: bool = False
+    # Programs whose source failed or came back empty (``INCENTIVE_PROGRAMS`` keys: tif, oz, ez, qct,
+    # nmtc): each is "not checked", never "not in one". A failed tract lookup leaves qct and nmtc
+    # unchecked (decision Item 65). ``in_*`` stays False for them; read it with this list.
+    unchecked: list[str] = Field(default_factory=list)
+    # The same gaps (plus TIF finances) as ``partial_failures`` labels (data_health/failures.py).
+    data_gaps: list[str] = Field(default_factory=list)
     in_qct: bool = False
     qct_tract: str | None = None
     in_nmtc: bool = False

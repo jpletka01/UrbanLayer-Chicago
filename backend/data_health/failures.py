@@ -57,6 +57,16 @@ MODULES: dict[str, str] = {
 
 # Sub-sources a domain reports as ``data_gaps`` (it succeeded, one part did not).
 _GAP_PROPERTY = {"property characteristics", "property assessments", "property sales history", "property tax estimate"}
+# The incentive programs the orchestrator checks one by one (decision Item 65): key -> the gap label.
+INCENTIVE_GAPS: dict[str, str] = {
+    "tif": "TIF district",
+    "tif_finances": "TIF district finances",
+    "oz": "Opportunity Zone",
+    "ez": "Enterprise Zone",
+    "qct": "Qualified Census Tract",
+    "nmtc": "New Markets Tax Credit tract",
+}
+_GAP_INCENTIVES = set(INCENTIVE_GAPS.values())
 _OVERLAY_SUFFIX = "(City zoning map didn't answer)"
 
 _BY_LABEL = {label: key for key, label in LABELS.items()}
@@ -80,6 +90,8 @@ def key_for_label(text: str) -> str | None:
         return "regulatory"
     if text in _GAP_PROPERTY:
         return "property"
+    if text in _GAP_INCENTIVES:
+        return "incentives"
     return None
 
 

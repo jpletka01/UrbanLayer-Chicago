@@ -260,7 +260,10 @@ async def resolve_census_tract(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> str | None:
-    """Resolve lat/lon to an 11-character census tract FIPS code via the FCC API."""
+    """Resolve lat/lon to an 11-character (2020) census tract FIPS code via the FCC API.
+
+    ``None`` = the FCC placed the point in no tract; a failed request raises.
+    """
     key = f"tract:{round(lat, 5)}:{round(lon, 5)}"
     cached = _tract_cache.get(key)
     if cached is _TRACT_NOT_FOUND:
@@ -277,7 +280,9 @@ async def resolve_census_tract(
         )
         resp.raise_for_status()
         data = resp.json()
-        results = data.get("results", [])
+        results = data.get("results") if isinstance(data, dict) else None
+        if not isinstance(results, list):
+            raise RuntimeError("FCC census tract response has no results list")
         if not results:
             _tract_cache.set(key, _TRACT_NOT_FOUND)
             return None
@@ -289,5 +294,7 @@ async def resolve_census_tract(
         _tract_cache.set(key, _TRACT_NOT_FOUND)
         return None
     except Exception as exc:
+        # Raises, caching nothing: the tract-keyed checks (QCT, NMTC, tract demographics) then read
+        # "not checked" instead of "not in one" (decision Item 65).
         log.warning("FCC census tract resolution failed for (%s, %s): %s", lat, lon, exc)
-        return None
+        raise

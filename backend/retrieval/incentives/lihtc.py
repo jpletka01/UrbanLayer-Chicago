@@ -5,6 +5,7 @@ import logging
 import httpx
 
 from backend.retrieval.cache import TTLCache
+from backend.retrieval.incentives._hud_tracts import tract_features
 
 log = logging.getLogger(__name__)
 
@@ -47,8 +48,7 @@ async def check_qct(
     try:
         resp = await client.get(HUD_QCT_URL, params=params)
         resp.raise_for_status()
-        data = resp.json()
-        features = data.get("features", [])
+        features = tract_features(resp.json(), "Qualified Census Tracts")
         if not features:
             _qct_cache.set(cache_key, _NOT_FOUND)
             return None
@@ -60,9 +60,6 @@ async def check_qct(
         }
         _qct_cache.set(cache_key, result)
         return result
-    except Exception as exc:
-        log.warning("HUD QCT query failed for tract %s: %s", tract_fips, exc)
-        return None
     finally:
         if owns:
             await client.aclose()
