@@ -129,7 +129,7 @@ class Settings(BaseSettings):
     dataset_tif_boundaries: str = "eejr-xtfb"
     dataset_tif_financials: str = "72uz-ikdv"
     dataset_tif_fund_analysis: str = "qm7s-3ctt"
-    dataset_enterprise_zones: str = "64xf-pyvh"
+    dataset_enterprise_zones: str = "bwpt-y235"  # the map 64xf-pyvh lost its geometry (Item 64)
     dataset_sbif: str = "etqr-sz5x"
     dataset_nof_large: str = "j7ew-b73u"
     dataset_nof_small: str = "rym7-49n8"

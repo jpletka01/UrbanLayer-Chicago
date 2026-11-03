@@ -529,6 +529,8 @@ class IncentivesSummary(BaseModel):
     oz_tract: str | None = None
     in_enterprise_zone: bool = False
     enterprise_zone_name: str | None = None
+    # The Enterprise Zone layer failed or came back empty: "not checked", never "not in one".
+    enterprise_zone_unchecked: bool = False
     in_qct: bool = False
     qct_tract: str | None = None
     in_nmtc: bool = False

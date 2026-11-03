@@ -6,6 +6,7 @@ import type { IncentivesSummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { SubSection, ShowMore } from "./ProfileModule";
 import { ConfidenceCaption } from "../ui/Confidence";
+import { ConfidenceState } from "../ui/ConfidenceState";
 import { useFact } from "../../lib/provenanceContext";
 
 const DollarIcon = (
@@ -65,10 +66,13 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
   const inactive: string[] = [];
   if (!data.in_tif_district) inactive.push(t("incentives.short.tif"));
   if (!data.in_opportunity_zone) inactive.push(t("incentives.short.oz"));
-  if (!data.in_enterprise_zone) inactive.push(t("incentives.short.ez"));
+  // An unchecked Enterprise Zone is neither active nor "Not in": it gets its own Not-checked line.
+  const ezUnchecked = !data.in_enterprise_zone && !!data.enterprise_zone_unchecked;
+  if (!data.in_enterprise_zone && !ezUnchecked) inactive.push(t("incentives.short.ez"));
   if (!data.in_qct) inactive.push(t("incentives.short.qct"));
   if (!data.in_nmtc) inactive.push(t("incentives.short.nmtc"));
-  const activeCount = 5 - inactive.length;
+  const activeCount = [data.in_tif_district, data.in_opportunity_zone, data.in_enterprise_zone, data.in_qct, data.in_nmtc]
+    .filter(Boolean).length;
 
   return (
     <SubSection
@@ -207,6 +211,12 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
           <p className="text-caption text-text-muted">
             {t("incentives.notInLine", { list: inactive.join(" · ") })}
           </p>
+        )}
+        {ezUnchecked && (
+          <div className="flex items-center gap-2 text-caption text-text-muted" data-testid="ez-unchecked">
+            {t("incentives.short.ez")}
+            <ConfidenceState kind="not_checked" explanation={t("incentives.ezUnchecked")} explainLabel={t("incentives.short.ez")} />
+          </div>
         )}
         {data.property_tax_class === "standard" && (
           <p className="text-caption text-text-muted">{t("incentives.standardClassDescription")}</p>

@@ -1,4 +1,10 @@
-"""Enterprise Zone boundary check via Socrata GeoJSON."""
+"""Enterprise Zone boundary check via Socrata GeoJSON.
+
+The source is the map's backing dataset (``bwpt-y235``), not the map view ``64xf-pyvh``: since the
+City's 2026-02-23 republish the view's GeoJSON returns its 6 features with ``geometry: null`` and no
+properties (decision Item 64). A response with no usable polygon raises like any failed source, so
+the Profile says "Not checked" instead of "Not in an Enterprise Zone".
+"""
 
 import asyncio
 import logging
@@ -45,25 +51,40 @@ async def _load_ez_boundaries(
 
         boundaries: list[tuple[str, dict, Any, dict]] = []
         for feat in fc.get("features", []):
-            props = feat.get("properties", {})
+            props = feat.get("properties") or {}
             geom = feat.get("geometry")
             if not geom:
                 continue
-            name = (
-                props.get("zone_name")
-                or props.get("name")
-                or props.get("ez_name")
-                or "Unknown Enterprise Zone"
-            )
             try:
                 poly = shape(geom)
-                boundaries.append((name, props, poly, geom))
             except Exception:
                 continue
+            if poly.is_empty:
+                continue
+            boundaries.append((_zone_name(props), props, poly, geom))
+
+        if not boundaries:
+            # An empty layer is a failed source, never "no zone here"; not cached, so the next call retries.
+            raise RuntimeError(
+                f"Enterprise Zone response has no usable geometry ({len(fc['features'])} features)"
+            )
 
         _ez_boundaries = boundaries
         log.info("Loaded %d Enterprise Zone boundaries", len(boundaries))
         return _ez_boundaries
+
+
+def _zone_name(props: dict) -> str:
+    """The zone's name; the City's layer names Chicago's six zones by number ("5")."""
+    name = props.get("zone_name") or props.get("name") or props.get("ez_name")
+    if not name:
+        return "Unknown Enterprise Zone"
+    name = str(name).strip()
+    try:
+        number = float(name)
+    except ValueError:
+        return name
+    return f"Chicago Enterprise Zone {int(number)}" if number.is_integer() else name
 
 
 async def check_enterprise_zone(
@@ -74,13 +95,10 @@ async def check_enterprise_zone(
 ) -> dict | None:
     """Check if a point is within an Enterprise Zone.
 
-    Returns ``{"zone_name": "..."}`` or ``None``.
+    Returns ``{"zone_name": "..."}`` or ``None`` (checked, not in a zone). A boundary-load
+    failure raises, so the caller can report the zone as not checked rather than "not in one".
     """
-    try:
-        boundaries = await _load_ez_boundaries(client=client)
-    except Exception as exc:
-        log.warning("Failed to load Enterprise Zone boundaries: %s", exc)
-        return None
+    boundaries = await _load_ez_boundaries(client=client)
 
     point = Point(lon, lat)
     for name, _props, poly, _geom in boundaries:

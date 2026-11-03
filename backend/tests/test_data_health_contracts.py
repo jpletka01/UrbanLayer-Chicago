@@ -133,8 +133,8 @@ def test_every_socrata_source_with_a_reading_module_has_a_fields_read_entry():
         if s.kind != "socrata" or s.retired or s.id in entries:
             continue
         without.append(s.id)
-    # sources whose module names no column of the dataset: the community-area boundary set and the enterprise zones
-    assert set(without) <= {"chi.community_areas", "chi.enterprise_zones", "chi.socioeconomic_2008_2012"} | {
+    # sources whose module names no column of the dataset: the community-area boundary set
+    assert set(without) <= {"chi.community_areas", "chi.socioeconomic_2008_2012"} | {
         s.id for s in SOURCES if s.kind == "socrata" and s.retired}, without
 
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import datetime
 import sqlite3
 
+import pytest
+
 from shapely.geometry import Polygon
 
 from backend.discovery import index_build as ib
@@ -75,7 +77,6 @@ def test_is_vacant():
 def test_resolve_cas_modes(monkeypatch):
     import argparse
 
-    import pytest
 
     from backend.discovery import parcel_index
     from backend.discovery.parcel_index import IndexMeta
@@ -186,6 +187,27 @@ def test_assemble_minimal_parcel_no_joins_no_layers():
     assert "cta_rail_distance_mi" not in attrs    # empty station list
     assert "address" not in attrs                 # no address-points row
     assert regions == ["neighborhood:24"]
+
+
+def test_unavailable_layer_leaves_its_flag_unset():
+    """A layer that failed to load (None) is NULL, never False: an empty Enterprise Zone source
+    must not read as "no parcel is in a zone" (decision Item 64)."""
+    spine = {"pin": "p-1", "class": "299", "lat": 41.0, "lon": -88.0}
+    _, _, _, attrs, _ = _assemble(spine, ez_polys=None, tif_polys=None)
+    assert attrs["in_enterprise_zone"] is None
+    assert attrs["in_tif_district"] is None
+
+
+@pytest.mark.asyncio
+async def test_safe_polys_returns_none_on_failure():
+    async def broken(*, client):
+        raise RuntimeError("Enterprise Zone response has no usable geometry (6 features)")
+
+    async def ok(*, client):
+        return [("Zone 1", {}, _box_around(41.0, -88.0), {})]
+
+    assert await ib._safe_polys(broken, "enterprise zone", None) is None
+    assert len(await ib._safe_polys(ok, "enterprise zone", None)) == 1
 
 
 def test_assemble_geometry_land_fills_only_the_hole():
@@ -484,7 +506,7 @@ async def test_build_index_writes_loadable_index(tmp_path, monkeypatch):
 
 
 async def test_build_index_degrades_when_a_layer_fails(tmp_path, monkeypatch):
-    """A transient layer failure leaves its flag False instead of aborting the build."""
+    """A transient layer failure leaves its flag unset (NULL, "not checked") instead of aborting the build."""
     async def boom(*a, **k):
         raise RuntimeError("503 Service Temporarily Unavailable")
 
@@ -513,7 +535,7 @@ async def test_build_index_degrades_when_a_layer_fails(tmp_path, monkeypatch):
     data_version, total = await ib.build_index([24], as_of=AS_OF)
     assert total == 1  # build did not abort
     _, parcels = read_index(tmp_path / "idx.db")
-    assert parcels[0].get("in_tif_district") is False  # flag degraded, not crashed
+    assert parcels[0].get("in_tif_district") is None  # flag unset, not crashed and not a "no" (Item 64)
 
 
 # --- suburban points are dropped, not tagged to the bbox's community area ----

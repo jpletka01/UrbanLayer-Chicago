@@ -72,6 +72,8 @@ def summarize_turn(
             programs.append("Opportunity Zone")
         if inc.in_enterprise_zone:
             programs.append(f"EZ: {inc.enterprise_zone_name}")
+        elif inc.enterprise_zone_unchecked:
+            programs.append("EZ: not checked (source unavailable)")
         if inc.in_qct:
             programs.append("QCT (LIHTC)")
         if inc.in_nmtc:

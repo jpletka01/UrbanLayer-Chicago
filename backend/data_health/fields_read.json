@@ -82,6 +82,9 @@
   "site_eui_kbtu_sq_ft",
   "year_built"
  ],
+ "chi.enterprise_zones": [
+  "name"
+ ],
  "chi.food_inspections": [
   "dba_name",
   "facility_type",

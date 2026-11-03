@@ -95,6 +95,31 @@ async def test_no_incentives(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund,
     assert result.in_qct is False
     assert result.in_nmtc is False
     assert result.census_tract == "17031111111"
+    assert result.enterprise_zone_unchecked is False
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
+@patch("backend.retrieval.incentives.check_opportunity_zone")
+@patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
+@patch("backend.retrieval.incentives.fetch_tif_financials")
+@patch("backend.retrieval.incentives.resolve_census_tract")
+@patch("backend.retrieval.incentives.check_enterprise_zone")
+@patch("backend.retrieval.incentives.check_tif")
+async def test_ez_source_failure_reads_as_unchecked(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
+    """An empty or failed Enterprise Zone layer is "not checked", never "not in a zone" (Item 64)."""
+    mock_tif.return_value = None
+    mock_ez.side_effect = RuntimeError("Enterprise Zone response has no usable geometry (6 features)")
+    mock_tract.return_value = None
+    mock_fin.return_value = []
+    mock_fund.return_value = []
+
+    result = await incentives_domain(41.93, -87.65, client=AsyncMock())
+
+    assert result.in_enterprise_zone is False
+    assert result.enterprise_zone_name is None
+    assert result.enterprise_zone_unchecked is True
 
 
 @pytest.mark.asyncio
