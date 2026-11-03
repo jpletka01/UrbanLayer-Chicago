@@ -649,8 +649,27 @@ export interface RentEvidence {
   tract_name?: string | null;
   puma_geoid?: string | null;
   puma_name?: string | null;
-  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent" | "assessor_model">;
+  /** WS4 PR4 (Item 62): which way rent and sale prices moved in the community area. */
+  trend?: RentTrend | null;
+  sales_trend?: SalesTrend | null;
+  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent" | "assessor_model" | "rent_trend">;
 }
+
+export interface RentTrendPeriod { period: string; median: number; moe?: number | null; households?: number | null }
+
+export interface RentTrend {
+  community_area: number;
+  earlier: RentTrendPeriod;
+  later: RentTrendPeriod;
+  change_pct: number;
+  real_change_pct: number;
+  /** The Census test: the change exceeds the combined 90% margin; null when a margin is missing. */
+  significant?: boolean | null;
+}
+
+export interface SaleYear { year: string; median?: number | null; n: number }
+
+export interface SalesTrend { community_area: number; years: string[]; groups: Partial<Record<"single_family" | "two_to_six" | "condo", SaleYear[]>> }
 
 export interface NeighborhoodSummary {
   demographics: DemographicsSummary | null;

@@ -55,6 +55,8 @@ COPY ingestion/data/zoning_cache.json /app/ingestion/data/zoning_cache.json
 COPY ingestion/data/chrs_orange_red.json.gz /app/ingestion/data/chrs_orange_red.json.gz
 COPY ingestion/data/rent_by_area.json /app/ingestion/data/rent_by_area.json
 COPY ingestion/data/rent_by_area.meta.json /app/ingestion/data/rent_by_area.meta.json
+COPY ingestion/data/rent_trend_by_area.json /app/ingestion/data/rent_trend_by_area.json
+COPY ingestion/data/rent_trend_by_area.meta.json /app/ingestion/data/rent_trend_by_area.meta.json
 COPY ingestion/data/assessor_model_by_area.json /app/ingestion/data/assessor_model_by_area.json
 COPY ingestion/data/assessor_model_by_area.meta.json /app/ingestion/data/assessor_model_by_area.meta.json
 COPY ingestion/data/commercial_bldg_by_pin.json.gz /app/ingestion/data/commercial_bldg_by_pin.json.gz

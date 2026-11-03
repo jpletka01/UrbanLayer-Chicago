@@ -13,6 +13,7 @@ Checked here (all from files in the repo, no network):
   code text's (``_meta.code_vintage``, written by ``zoning_cache_build``);
 - ``ingestion/data/transit_stations.json``: build date from its ``.meta.json`` sidecar (180 / 365 days);
 - ``ingestion/data/rent_by_area.json``: build date from its ``.meta.json`` sidecar (400 / 730 days);
+- ``ingestion/data/rent_trend_by_area.json``: build date from its sidecar (400 / 730 days, as the rent artifact);
 - ``ingestion/data/assessor_model_by_area.json``: build date from its sidecar (1095 / 1460 days) and the Assessor's
   assessment year (a new city-wide reassessment is due three years on);
 - ``ingestion/data/commercial_bldg_by_pin.json.gz``: the same two rules, from ``commercial_bldg_by_pin.meta.json``;
@@ -148,6 +149,18 @@ def check_rent(today: date, root: Path = REPO) -> Check:
                  f"rent by community area built {built} from ACS {side.get('acs_period', '?')} ({age} days old; warn after {RENT_DAYS[0]})", age)
 
 
+def check_rent_trend(today: date, root: Path = REPO) -> Check:
+    path = "ingestion/data/rent_trend_by_area.json"
+    side = _read(root / "ingestion/data/rent_trend_by_area.meta.json")
+    built = _iso(side.get("built_at")) if side else None
+    if built is None:
+        return Check("rent and sale-price trends", path, "warn", "no rent_trend_by_area.meta.json sidecar with a built_at date")
+    age = _age(built, today)
+    years = side.get("sales_years") or ["?", "?"]
+    return Check("rent and sale-price trends", path, _grade(age, RENT_DAYS),
+                 f"rent and sale-price trends built {built} (sales {years[0]}-{years[-1]}; {age} days old; warn after {RENT_DAYS[0]})", age)
+
+
 def _check_reassessment_artifact(name: str, path: str, side_name: str, label: str, today: date, root: Path) -> Check:
     """An artifact built from one Assessor city-wide reassessment: its build age, and a warning once the next
     reassessment is due."""
@@ -213,7 +226,7 @@ def check_hand_table(today: date, root: Path = REPO) -> Check:
 
 def run_checks(today: date | None = None, root: Path = REPO) -> list[Check]:
     today = today or date.today()
-    return [f(today, root) for f in (check_code_vintage, check_zoning_cache, check_transit, check_rent, check_assessor_model, check_commercial_bldg, check_kit_key, check_benchmark, check_hand_table)]
+    return [f(today, root) for f in (check_code_vintage, check_zoning_cache, check_transit, check_rent, check_rent_trend, check_assessor_model, check_commercial_bldg, check_kit_key, check_benchmark, check_hand_table)]
 
 
 def annotation(c: Check) -> str:

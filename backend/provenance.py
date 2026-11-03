@@ -430,6 +430,11 @@ FACTS.update({
         "community_area", "official_estimate"),
     "area.rent.community_area": FactSpec(
         "Community-area median gross rent", "artifact.rent_by_area", "bracket_median", "community_area", "our_calculation"),
+    "area.rent.trend": FactSpec(
+        "Change in community-area median gross rent", "artifact.rent_trend_by_area", "bracket_median", "community_area",
+        "our_calculation"),
+    "area.sales.trend": FactSpec(
+        "Median sale price by year", "artifact.rent_trend_by_area", "calculation", "community_area", "our_calculation"),
     **{
         f"area.rent.{g}": FactSpec(f"Median gross rent, {label}", "census.reporter.acs", "survey_estimate", "tract", "official_estimate")
         for g, label in (("1_bedroom", "1 bedroom"), ("2_bedrooms", "2 bedrooms"), ("3_bedrooms", "3 bedrooms"))

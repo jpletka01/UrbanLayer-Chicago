@@ -773,6 +773,22 @@
       "sectionTitle": "Fuentes: {{section}}",
       "dates": "Fechas de los datos",
       "coverage": "Lo que esta página no cubre"
+    },
+    "trend": {
+      "title": "Hacia dónde se movieron los precios",
+      "rentMethod": "Renta bruta mediana del área comunitaria en dos periodos quinquenales del Censo que no se traslapan ({{a}} y {{b}}), cada uno sumado de sus propios sectores censales. \"Sin cambio claro\" significa que la diferencia está dentro de los dos márgenes de error. El ajuste por inflación usa el índice de precios al consumidor de Chicago.",
+      "salesMethod": "El precio de venta mediano en condiciones de mercado de lo que se vendió cada año, no un índice de precios: la mezcla de inmuebles vendidos cambia de un año a otro. No se muestra un año con menos de {{min}} ventas.",
+      "rent": "Renta del área desde {{period}}",
+      "realChange": "{{pct}} descontando la inflación",
+      "notClear": "Sin cambio claro",
+      "salesSince": "mediana de {{year}} · {{from}} en {{first}}",
+      "salesIn": "mediana de {{year}}",
+      "tooFew": "Muy pocas ventas ({{n}}; se necesitan {{min}})",
+      "group": {
+        "two_to_six": "Edificios de 2 a 6 unidades",
+        "single_family": "Casas unifamiliares",
+        "condo": "Condominios"
+      }
     }
   },
   "discovery": {

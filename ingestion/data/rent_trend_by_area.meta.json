@@ -1,0 +1,14 @@
+{
+  "builder": "ingestion/build_rent_trend_artifact.py",
+  "built_at": "2026-11-02",
+  "community_areas": 77,
+  "rent_periods": [
+    "2015\u20132019",
+    "2020\u20132024"
+  ],
+  "sales": 177691,
+  "sales_years": [
+    "2020",
+    "2025"
+  ]
+}
