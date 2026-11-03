@@ -57,7 +57,7 @@ function afterPaint(fn: () => void) {
 }
 
 function toInputs(draft: DiscoveryDraft, topicId: string | null = draft.topicId): SearchInputs {
-  return { panelState: draft.panelState, text: draft.text, sort: draft.sort, topicId };
+  return { panelState: draft.panelState, text: draft.text, sort: draft.sort, topicId, includeUnusual: !!draft.includeUnusual };
 }
 
 export interface DiscoverySearchOptions {
@@ -366,6 +366,20 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
     [updateDraft],
   );
 
+  // "Show" / "Hide" for the unusual parcels the server hides by default (Item 60): an explicit search,
+  // like a recipe click, so it runs at once with the rest of the draft.
+  const setIncludeUnusual = useCallback(
+    (include: boolean) => {
+      const next: DiscoveryDraft = { ...draftRef.current, includeUnusual: include };
+      applySeqRef.current += 1;
+      setTextNotice(null);
+      draftRef.current = next;
+      setDraft(next);
+      void issue(toInputs(next));
+    },
+    [issue],
+  );
+
   const removeFilter = useCallback(
     (id: FilterId) =>
       updateDraft((d) =>
@@ -490,6 +504,7 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
     setSort,
     removeFilter,
     restoreFilter,
+    setIncludeUnusual,
     clearAll,
     discardChanges,
     startOver,

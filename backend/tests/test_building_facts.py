@@ -111,12 +111,26 @@ async def test_member_of_a_multi_pin_complex_does_not_get_the_complex_total():
 
 
 @pytest.mark.asyncio
-async def test_the_keypin_of_a_multi_pin_complex_keeps_the_area():
+async def test_the_keypin_of_a_complex_spanning_several_lots_gets_no_lot_area_either():
+    """Decision Item 61 (Jack, 2026-11-03): the keypin's lot is one of three; the complex's area is no lot's."""
     with patch("backend.retrieval.property.building_facts.socrata_get",
                new=AsyncMock(return_value=STRIP_CENTER)):
         facts = await get_commercial_facts("14171060120000")
-    assert facts["bldg_sqft"] == 43790 and "complex_bldg_sqft" not in facts
+    assert facts.get("bldg_sqft") is None
+    assert facts["complex_bldg_sqft"] == 43790
     assert len(facts["member_pins"]) == 3
+
+
+@pytest.mark.asyncio
+async def test_the_keypin_of_a_unit_on_one_lot_keeps_the_area():
+    """Unit PINs of one building share a base parcel: the area is that lot's."""
+    rows = [{
+        "bldgsf": "52000", "yearbuilt": "1999", "year": "2024", "keypin": "17-09-100-001-0000",
+        "pins": "17-09-100-001-0000, 17-09-100-001-1001, 17-09-100-001-1002",
+    }]
+    with patch("backend.retrieval.property.building_facts.socrata_get", new=AsyncMock(return_value=rows)):
+        facts = await get_commercial_facts("17091000010000")
+    assert facts["bldg_sqft"] == 52000 and "complex_bldg_sqft" not in facts
 
 
 @pytest.mark.asyncio

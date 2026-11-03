@@ -30,10 +30,11 @@ export function DotPreview({ point, row, loading, sortKey, pinned, onOpen, onClo
   const nf = (n: number) => Math.round(n).toLocaleString();
   const { title, approx } = row ? rowTitle(row) : { title: t("discovery.preview.parcel"), approx: false };
   const landUse = row?.land_use ?? point.landUse;
-  const zoning = row?.zoning_group
-    ? row.allowed_far != null
-      ? t("discovery.preview.zoningFar", { group: t(`discovery.enum.zoning_group.${row.zoning_group}`, { defaultValue: row.zoning_group }), far: row.allowed_far })
-      : t(`discovery.enum.zoning_group.${row.zoning_group}`, { defaultValue: row.zoning_group })
+  // The exact district once the index carries it (Item 59), else the zoning family.
+  const district = row?.zone_class
+    ?? (row?.zoning_group ? t(`discovery.enum.zoning_group.${row.zoning_group}`, { defaultValue: row.zoning_group }) : null);
+  const zoning = district
+    ? row?.allowed_far != null ? t("discovery.preview.zoningFar", { group: district, far: row.allowed_far }) : district
     : null;
   const figures = row ? rowFigures(row, sortKey, t) : null;
   const lot = row?.lot_sqft != null && figures?.sortKeyShown !== "lot_size" ? t("discovery.lot", { n: nf(row.lot_sqft) }) : null;

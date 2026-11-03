@@ -980,7 +980,8 @@
       "f311_redflags": "311 red-flag complaints",
       "floodplain": "Floodplain",
       "brownfield": "Near brownfield",
-      "crime_index": "Crime index"
+      "crime_index": "Crime index",
+      "hide_unusual": "Hide unusual parcels"
     },
     "enum": {
       "land_use": {
@@ -1096,6 +1097,15 @@
       "also": "Also",
       "open": "Open profile",
       "close": "Close the preview"
+    },
+    "unusual": {
+      "label": "Unusual parcels",
+      "hidden_one": "{{n}} unusual parcel hidden",
+      "hidden_other": "{{n}} unusual parcels hidden",
+      "including": "Including unusual parcels",
+      "show": "Show",
+      "hide": "Hide them",
+      "explain": "Vacant lots over an acre with no street address of their own, and parcels whose outline is a whole development's. Most are rail, utility or common land, not a buildable lot. Show them only if you know what you're looking for."
     }
   },
   "settings": {

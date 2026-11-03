@@ -110,6 +110,7 @@ class ResultRow(BaseModel):
     # The district's family and table FAR, already in the index (the exact class awaits the index
     # enrichment wave); the dot preview shows them (decision Item 57).
     zoning_group: str | None = None
+    zone_class: str | None = None  # the exact district, once the index carries it (Item 59)
     allowed_far: float | None = None
     # A nominal assessment ($1 common area; decision Item 46): the row says "Nominal", never "$1".
     nominal_assessment: bool = False
@@ -245,6 +246,7 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         upside_score=g("upside_score"),
         is_teardown_candidate=bool(g("is_teardown_candidate")),
         zoning_group=g("zoning_group"),
+        zone_class=g("zone_class"),
         allowed_far=g("density_band"),
         nominal_assessment=_nominal(g("total_assessed_value"), g("class"), g("land_use_class")),
         sortValue=_display_sort_value(parcel, sort_field),

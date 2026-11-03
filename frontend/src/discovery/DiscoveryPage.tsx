@@ -371,6 +371,7 @@ export default function DiscoveryPage() {
                     exportLocked={!isPro}
                     onUpgrade={onUpgrade}
                     onAskArea={onAskArea}
+                    onSetIncludeUnusual={search.setIncludeUnusual}
                   />
                 )}
               </div>

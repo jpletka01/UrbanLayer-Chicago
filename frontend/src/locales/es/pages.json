@@ -980,7 +980,8 @@
       "f311_redflags": "Solicitudes 311 de alerta",
       "floodplain": "Zona inundable",
       "brownfield": "Cerca de sitio contaminado",
-      "crime_index": "Índice de delincuencia"
+      "crime_index": "Índice de delincuencia",
+      "hide_unusual": "Ocultar parcelas inusuales"
     },
     "enum": {
       "land_use": {
@@ -1096,6 +1097,15 @@
       "also": "Además",
       "open": "Abrir la ficha",
       "close": "Cerrar la vista previa"
+    },
+    "unusual": {
+      "label": "Parcelas inusuales",
+      "hidden_one": "{{n}} parcela inusual oculta",
+      "hidden_other": "{{n}} parcelas inusuales ocultas",
+      "including": "Incluye parcelas inusuales",
+      "show": "Mostrar",
+      "hide": "Ocultarlas",
+      "explain": "Terrenos baldíos de más de un acre sin dirección propia y parcelas cuyo contorno es el de todo un desarrollo. La mayoría son vías férreas, servicios públicos o áreas comunes, no un lote edificable. Muéstrelas solo si sabe lo que busca."
     }
   },
   "settings": {

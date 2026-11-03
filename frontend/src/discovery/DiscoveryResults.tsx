@@ -14,6 +14,8 @@ import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import { coverageOf, isPopulated } from "./coverage";
 import { summarize } from "./summary";
 import { rowFigures, rowTitle } from "./rowFigures";
+import { HIDE_UNUSUAL } from "./draftModel";
+import { ToolTray } from "../components/ui/ToolTray";
 import { upsideColor } from "./upsideColor";
 import type { Registry, ResultRow, SearchResponse } from "./types";
 
@@ -57,6 +59,8 @@ interface ResultsProps {
   exportLocked?: boolean; // free tier — show the Export button as a Pro conversion lever
   onUpgrade?: () => void; // teaser CTA + locked-export click
   onAskArea?: () => void; // #6 seam: free "Ask the analyst about this area" (teaser fork)
+  /** Show (true) or hide again (false) the parcels the server hides by default (Item 60). */
+  onSetIncludeUnusual?: (include: boolean) => void;
 }
 
 export function DiscoveryResults({
@@ -81,6 +85,7 @@ export function DiscoveryResults({
   exportLocked = false,
   onUpgrade,
   onAskArea,
+  onSetIncludeUnusual,
 }: ResultsProps) {
   const { t } = useTranslation("pages");
   if (!response) {
@@ -109,6 +114,9 @@ export function DiscoveryResults({
   const { result, diagnostics } = response;
   const activeSortKey = response.cqs.sort.key;
   const excludedTotal = Object.values(diagnostics.excludedUnknown).reduce((a, b) => a + b, 0);
+  const hiddenUnusual = diagnostics.hiddenUnusual ?? 0;
+  // The evaluated query has no default hide only when the search opted in (an older backend sends neither).
+  const includingUnusual = diagnostics.hiddenUnusual !== undefined && !(HIDE_UNUSUAL in response.cqs.filters);
 
   return (
     <div className="flex h-full flex-col">
@@ -210,6 +218,25 @@ export function DiscoveryResults({
         {excludedTotal > 0 && (
           <p className="text-micro text-text-muted">
             {t("discovery.excludedMissing", { count: excludedTotal.toLocaleString() })}
+          </p>
+        )}
+        {/* Unusual parcels are hidden by default and the count is said, never silent (decision Item 60). */}
+        {onSetIncludeUnusual && (hiddenUnusual > 0 || includingUnusual) && (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-text-muted" data-testid="discovery-unusual">
+            <span>
+              {includingUnusual
+                ? t("discovery.unusual.including")
+                : t("discovery.unusual.hidden", { count: hiddenUnusual, n: hiddenUnusual.toLocaleString() })}
+            </span>
+            <button
+              type="button"
+              onClick={() => onSetIncludeUnusual(!includingUnusual)}
+              className="touch-target text-link transition-colors hover:text-accent-hover"
+              data-testid="discovery-unusual-toggle"
+            >
+              {includingUnusual ? t("discovery.unusual.hide") : t("discovery.unusual.show")}
+            </button>
+            <ToolTray label={t("discovery.unusual.label")} align="start" explain={<span className="block">{t("discovery.unusual.explain")}</span>} />
           </p>
         )}
       </div>
