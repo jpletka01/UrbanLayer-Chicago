@@ -2604,6 +2604,10 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 **Discovery:** the dot preview shows the exact district once the index has it (`ResultRow.zone_class`).
 
+**One budget baseline raised by hand (reviewed):** `pin1/desktop` 89 → 97 words and `pin1/phone` 66 → 69: the $1 parcel's lot is now a visible withheld state ("—" + "Outline shared by a whole development"), a permanent truth state, not a live outage, so it must not use up the 8-word outage allowance. Lowered in the same run: `milwaukee/desktop` 115 → 108 (Item 61's complex rule drops the "≈1.3 built" figure), `milwaukee/phone` 68 → 66, `milwaukee/build` 291 → 279.
+
+**Rebuild check (6-area dev index, 2026-11-03):** 187,945 parcels; `zone_class` on 187,943; `units` on 44,400 (was 0); `shared_outline` on 12,224 (11,254 of them condo units, see Item 60); `multi_pin_member` on 6,790.
+
 ## Item 60: unusual parcels are hidden from Discovery by default, and the page says how many (2026-11-03)
 
 **Status: on the release branch, not merged.** Jack changed the recommendation (Item 58 proposed a visible filter, on by default, that users switch off): "it'd be very intuitive to have [these] hidden" by default, with an advanced opt-in "at your own risk".
