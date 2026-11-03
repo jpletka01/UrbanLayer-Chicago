@@ -2589,3 +2589,59 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 - In the residential recipe, 13 are 100,000 sq ft or more and 44 are over an acre (39 of those 44 without their own address). The 186,214 sq ft "9171 S Harvard Ave" is one.
 
 **Reading:** a parcel with no address of its own is the strongest signal we hold of a rail, utility or park strip; the index has no rail or right-of-way layer to confirm it. **Options for Jack:** (a) a "has its own street address" filter, on by default in the vacant recipes; (b) demote stand-in-address parcels in lot-size sorts; (c) cap the vacant recipes at one acre; (d) nothing (the "Approx." label now flags them). Recommendation: (a), because it is visible and reversible.
+
+## Item 59: the Discovery index gains the exact district, unit counts, commercial area and shared outlines (2026-11-03)
+
+**Status (2026-11-03): on the release branch `release/2026-11-03-decisions`, not merged.** Jack's answer to the index-enrichment question (plan `plans/2026-11-03_decisions-build-plan.md`): yes.
+
+**Decision 1: one builder change, picked up by the next rebuild.** `index_build.assemble_parcel` adds `zone_class` (the district at the parcel's point), `own_address`, `shared_outline`, `multi_pin_member`, and fills `bldg_sqft` for base parcels from the committed Commercial Valuation artifact (`commercial_artifact.building_area`) where the Assessor's residential characteristics have none. Every build writes a new `data_version`, so there is no separate bump; production picks it up at the monthly rebuild (or an off-box `--refresh`, Jack's call).
+
+**Finding: `units` was empty in every index ever built.** The Assessor writes `char_apts` as a word ("Two".."Six", "None"); `_int()` turned every one into None without an error (747,530 residential and multifamily parcels in the 2026-10-29 citywide copy, 0 with units). `_units_from_chars` decodes it with the block-face panel's rules ("None" on a single-card parcel = 1; a second card = unknown). *Lesson:* after a build, measure how full each field is, not only whether the build passed.
+
+**Decision 2: a shared outline is no lot's area.** The County draws one outline for a divided development on every member PIN (Item 46: 3,399 PIN10s in 973 groups, up to 372). The builder groups the community area's PIN10s by their newest PTAXSIM boundary; a PIN10 sharing it with another gets `shared_outline` and NO geometry land area (an Assessor-stated land area still stands). *Alternative rejected:* dividing the area among the members, which invents a lot size no record gives.
+
+**Profile:** `parcel_geometry.get_parcel_geometry_facts` counts the other PIN10s on the same block (first 7 digits) with the identical newest outline, a primary-key range query measured at 0.8 ms on the $1 parcel (29 others). A shared outline never becomes `land_sqft`; `PropertySummary.shared_outline_with` carries the count; provenance makes the land fact **withheld** with the new reason `shared_outline` ("Not shown: this outline is a whole development's, shared with 29 other parcels."), the Build panel shows "—" with "Outline shared by a whole development", and the place map's key says "Development outline (shared)". Unit yield, FAR used and the what-if's lot figures follow from the missing land area.
+
+**Discovery:** the dot preview shows the exact district once the index has it (`ResultRow.zone_class`).
+
+## Item 60: unusual parcels are hidden from Discovery by default, and the page says how many (2026-11-03)
+
+**Status: on the release branch, not merged.** Jack changed the recommendation (Item 58 proposed a visible filter, on by default, that users switch off): "it'd be very intuitive to have [these] hidden" by default, with an advanced opt-in "at your own risk".
+
+**Scoping measured first** (citywide copy, 2026-11-03): 218,608 of 882,328 parcels (25%) have no street address of their own (residential 124,996; unknown use 41,301; vacant 25,452; commercial 23,751). "No address" alone would hide a quarter of the city. Among vacant parcels without an address: 21,095 under 5,000 sq ft, 2,730 to 10,000, 1,163 to an acre, 259 to 100,000 sq ft, 205 above. **The rule:** `unusual` = shared outline, or vacant AND no own address AND over one acre (464 vacant parcels citywide, plus shared outlines). Jack can move the threshold (`UNUSUAL_VACANT_MIN_SQFT`).
+
+**Decision: the hide is a filter in the canonical CQS, never a post-filter.** Registry filter `hide_unusual` (flag on the index field `unusual`, `unknownPolicy: include`, so an index without the field hides nothing). `compile_merge.merge` adds it as `source: "default"` unless the request sets `includeUnusual`; the evaluator, the recipe counts, the pins and the export all see the same query (INV-1/INV-4). `diagnostics.hiddenUnusual` = |evaluate(CQS \ hide)| − |result| (the black box again, one more cached evaluation per new query). A default filter is not one the user chose: it doesn't count toward "broad", isn't offered in the zero-result diagnosis, isn't in the export filename, the text preview or the sentence. **Frontend:** "464 unusual parcels hidden · Show" under the count (and "Including unusual parcels · Hide them" when opted in), with Explain; never a chip, a carried filter or an Add-filter entry; `includeUnusual` rides the draft and the request.
+
+## Item 61: a building spanning several lots gives none of them its area, keypin included (2026-11-03)
+
+**Status: on the release branch, not merged.** Jack took the recommendation (the stricter rule now; whole-building assemblage later).
+
+**Before:** `building_facts.get_commercial_facts` gave a Commercial Valuation unit's total building area to the unit's keypin. At 1601 N Milwaukee (a unit across 14-31-332-016, -017, -018) the verdict read "FAR 2.2 allowed vs ≈1.3 built" (three lots' building over one lot) while the capacity map called the same parcel a multi-parcel member and did not color it.
+
+**Decision:** when a unit's member PINs span more than one base parcel (PIN10), no member gets the total, the keypin included: `bldg_sqft` stays empty and the total rides as `complex_bldg_sqft` with the member PINs, which the verdict already words ("Building area is recorded for a 3-parcel complex …, so existing floor area is unknown"). Members on ONE PIN10 (a building's unit PINs) still share it. The $25 report reads the same facts, so it agrees. `test_building_facts.py` replaces the test that pinned the old keypin behavior with one for each case.
+
+**Revisit when** the WS5 multi-PIN assemblage lands (sum the member lots and give the building one FAR).
+
+## Item 62: rent and sale-price trends by community area (WS4 PR4) (2026-11-03)
+
+**Status: on the release branch, not merged.** Jack: go (plan `plans/2026-10-30_ws4-pr4-pr5-plan.md`).
+
+**Method (committed artifact, built offline):** `ingestion/build_rent_trend_artifact.py` → `ingestion/data/rent_trend_by_area.json` (+ sidecar).
+- **Rent:** median gross rent (B25063, summed brackets, interpolated median, Handbook margin; the PR2 method) in **two non-overlapping periods**: 2015–19 on 2010 tracts (via the City's `74p9-q2aq` tract→community-area table; the Parcel Universe now keeps only the current year, so it can't give the old tracts) and 2020–24 from `rent_by_area.json`. **Significant** only when |b − a| > √(moe_a² + moe_b²) (the Census test for two estimates at 90%). After inflation: BLS Chicago CPI-U `CUURS23ASA0`; the keyless v1 API returns monthly values only (no M13), so each year's average is the mean of its 12 months (2019: 241.181; 2024: 292.225).
+- **Sale prices:** 177,691 arm's-length sales 2020–2025 (the comps' filters) in the City triad (townships 70–77), joined to community areas by PIN10 through the Parcel Universe; median and n per area × group (2–6 unit, single-family, condo) × year. Not a price index: the caption says the mix changes.
+
+**Numbers:** West Town $1,564 → $2,054 (+31.3%, +8.4% after inflation, significant). Of 77 areas, 37 changed beyond the margins and 40 did not ("Not a clear change").
+
+**Shown:** the Profile's Neighborhood rent block gets "Which way prices moved": the rent change and the change after inflation, "Not a clear change" as a visible label; per property group the latest year's median with the first year's beside it, each needing 30+ sales (`DISPLAY_THRESHOLDS.hideNBelow`), else "Too few sales (n, needs 30)"; the method and every year's median and n behind Explain. Facts `area.rent.trend`, `area.sales.trend`. Registered in `.gitignore`, `.dockerignore`, the Dockerfile COPY, the data-health registry (`artifact.rent_trend_by_area`) and the artifact age check.
+
+**Not done:** chat and report use of the trends; an index of repeat sales (would separate price change from mix change).
+
+## Item 63: report PDFs of a deleted account leave the backups too (2026-11-03)
+
+**Status: on the release branch, not merged.** Jack chose privacy over write-once for the off-box copy; the server's own nightly mirror had the same gap and is fixed with it.
+
+**Decision:** the backup database just taken is the authority. Account deletion removes a user's PDFs and their `report_renders` rows together, so a mirrored original the fresh backup no longer lists belongs to a deleted account and is removed, in `scripts/backup_db.sh` (the server mirror) and `scripts/pull_backups.sh` (the Mac copy). **Guards:** nothing is pruned when the list can't be read (older schema, failed query), and a run that would remove more than `PRUNE_MAX` (10) files removes none and warns (an alarm on the Mac). The database copies themselves still roll off on their own schedules (7 on the server, 60 on the Mac). Tests: `test_backup_script.py` runs the script for real (a deleted account's PDF leaves, a listed one stays, a 12-file prune is refused).
+
+**Takes effect:** on the server at the next deploy (cron runs the repo's script); on the Mac when its checkout is back on `main` (launchd runs from it).
+
+**Item 26 (AI ordinance reader) stays off** (Jack, 2026-11-03). **The CHA payment standards (Jack: CHA, no revenue line) wait on a source:** CHA publishes no ZIP table; its standards are HUD's metro Fair Market Rent with exceptions up to 150% in Mobility Areas (community areas). Building it needs CHA's participant guide PDF (thecha.org, 5.9 MB) or HUD's FMR file, which needs Jack's OK to download.

@@ -39,6 +39,7 @@ const SECTIONS = [
   { id: "design-system", title: "Design System" },
   { id: "testing", title: "Testing" },
   { id: "build-log", title: "Build Log: October 2026" },
+  { id: "challenges", title: "Engineering Challenges" },
   { id: "decisions", title: "Design Decisions" },
   { id: "scale", title: "At Scale" },
 ];
@@ -2774,6 +2775,92 @@ Consumers → Property Profile (renders pin + confidence badge)
           </P>
 
           {/* ── 21. Design Decisions ── */}
+          <SectionHeading id="challenges">Engineering Challenges</SectionHeading>
+          <P>
+            The hardest problems here were rarely algorithms. They were places where a correct-looking number was
+            quietly wrong, or where every change was right on its own and the whole still got worse. Each entry: the
+            problem, what we measured, what we chose, and what it cost. The full record of each is a numbered Item in
+            the decision log.
+          </P>
+
+          <Sub>A page that grew one honest sentence at a time</Sub>
+          <P>
+            Every workstream added a correct caveat, date or method note to the Property Profile, and each passed
+            review on its own. Measured as a whole, the page had reached about 3,000 words at equal weight, and the
+            opened "What you can build" section alone printed 1,085 words with 10–13 dates and 19–26 record numbers.
+            Per-PR review can't see a page, so the page got an owner: a Playwright budget on four reference parcels
+            that counts first-screen words, amber items and solid-orange buttons, and may only ratchet down. Evidence
+            moved one click away behind a fixed set of icons. Result: the opened section went from 1,085 to 291
+            words with nothing deleted. Cost: a test that fails on a live source outage unless it allows a few words
+            for honest "not checked" rows (Items 49–55).
+          </P>
+
+          <Sub>One outline drawn for a whole development</Sub>
+          <P>
+            A $1 parcel showed a 143,032 sq ft lot. The County draws one outline for a divided development (the
+            townhouses, the common area, the condo buildings) and puts it on every member PIN, so each one's "lot"
+            is the development's. 3,399 base parcels in 973 groups share an outline, the largest group 372. Splitting
+            the area among them would invent a lot size no record gives, so the area is withheld with its reason, and
+            everything computed from it goes with it. The check had to be cheap on the request path: the members sit
+            on one block, so a primary-key range over the block's PINs finds them in about a millisecond (Items 46,
+            59).
+          </P>
+
+          <Sub>A field that was silently empty in every build</Sub>
+          <P>
+            The Discovery index has always had a "units" field, and it was empty for all 747,530 residential parcels.
+            The Assessor writes the apartment count as a word ("Two" to "Six"), and an integer parse turned every
+            one into nothing without an error. It surfaced only when a block-face test needed it and a measurement
+            found the source 99% filled. The fix is a decoder; the lesson is to measure how full each field is after
+            a build, not just whether the build passed (Item 59).
+          </P>
+
+          <Sub>A building that belonged to three lots</Sub>
+          <P>
+            The Profile said 1601 N Milwaukee was built to about 1.3 of an allowed 2.2 floor-area ratio, while the
+            new capacity map refused to color the same parcel. Both read the same Assessor record: a commercial
+            building recorded across three base parcels. The verdict divided the whole building by the keypin's one
+            lot. We took the map's stricter rule: a building spanning several lots gives none of them its total, and
+            the verdict says the existing floor area is unknown. Two surfaces of one page should never disagree
+            (Items 40, 61).
+          </P>
+
+          <Sub>Hiding noise without hiding anything silently</Sub>
+          <P>
+            Discovery's largest "vacant lots" were 100,000+ sq ft strips, and 86% had no street address of their own:
+            rail, utility and common land. The first idea, hiding every parcel without its own address, would have
+            hidden 25% of the city (218,608 parcels, most of them ordinary lots). Scoped by measurement, the default
+            hides vacant no-address lots over an acre and shared outlines: 464 parcels. The rule lives in the
+            canonical query, not as a post-filter, so the evaluator, the sentence and the count all see it, and the
+            page always says how many were hidden with a one-click "Show" (Items 58, 60).
+          </P>
+
+          <Sub>Is rent really up, or is that survey noise?</Sub>
+          <P>
+            Comparing rents over time from the Census survey has three traps: overlapping 5-year periods share years,
+            the two periods use different tract boundaries (2010 and 2020), and every median carries a margin of error.
+            The trend compares two non-overlapping periods, each summed from its own vintage's tracts, applies the
+            Census test for a significant difference, and adjusts for Chicago inflation. Result: 40 of 77 community
+            areas show "not a clear change", which is the honest answer rather than a number to over-read (Item 62).
+          </P>
+
+          <Sub>A reranker that hung the paid report</Sub>
+          <P>
+            The $25 report timed out because five parallel searches each ran a CPU cross-encoder on a 4-vCPU box. A
+            concurrency and batch fix cut the native time from 35.7 s to 12.4 s, but one 20-pair pass still took about
+            40 s on the production CPUs. Instead of tuning further, the report stopped needing the reranker: zoning
+            standards are extracted once, offline, from the complete code sections, with the ordinance's own table
+            authoritative over the model's reading. 57 of 59 districts read at high confidence with zero FAR errors.
+          </P>
+
+          <Sub>Testing a hover in a browser with no hover</Sub>
+          <P>
+            The Discovery dot preview worked by hand and failed in automation. Headless Chromium reports a coarse
+            pointer, and the first version skipped hover previews on coarse pointers, so the test never saw one. A tap
+            sends a move and then a click anyway, so hover is no longer gated on the pointer type, and the budget test
+            now finds a dot by sweeping real pointer moves across the map (Item 57).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}
