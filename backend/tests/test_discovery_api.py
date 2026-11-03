@@ -37,7 +37,7 @@ def test_registry_endpoint(client):
     assert r.status_code == 200
     body = r.json()
     assert body["version"]
-    assert len(body["filters"]) == 32
+    assert len(body["filters"]) == 33
     assert body["defaultSort"] == {"key": "assessed_value", "dir": "asc"}
     # PR4 critical default: the api fixture loads a snapshot with NO meta, so coverage is
     # "none" and populatedFields is empty — the page reads fully dormant, never "all".
@@ -693,3 +693,33 @@ def test_parcel_row_unknown_pin_and_sort(preview_client):
     assert preview_client.get("/api/discovery/parcel", params={"pin": "nope"}).status_code == 404
     # an unknown sort key falls back rather than failing the preview
     assert preview_client.get("/api/discovery/parcel", params={"pin": "v1", "sort": "bogus"}).status_code == 200
+
+
+# --- unusual parcels hidden by default, with the count said (decision Item 60) --------------------
+
+
+@pytest.fixture
+def unusual_client():
+    parcel_source.set_snapshot(VERSION, [
+        DictParcel("rail", {"land_use_class": "vacant", "is_vacant": True, "land_sqft": 186214, "unusual": True}),
+        DictParcel("lot", {"land_use_class": "vacant", "is_vacant": True, "land_sqft": 3125, "unusual": False}),
+        DictParcel("old", {"land_use_class": "vacant", "is_vacant": True, "land_sqft": 4000}),  # older index: no field
+    ])
+    yield TestClient(app)
+    parcel_source._current_version = None
+    default_source.clear()
+
+
+def test_unusual_parcels_hidden_by_default_and_counted(unusual_client):
+    body = unusual_client.post("/api/discovery/search", json={"userFilters": {}}).json()
+    assert sorted(_pins(body)) == ["lot", "old"]  # a parcel without the field is kept, never guessed
+    assert body["diagnostics"]["hiddenUnusual"] == 1
+    assert body["cqs"]["filters"]["hide_unusual"]["source"] == "default"
+    assert body["diagnostics"]["appliedFilters"] == 0  # the default is not a filter the user chose
+
+
+def test_including_unusual_parcels_is_an_opt_in(unusual_client):
+    body = unusual_client.post("/api/discovery/search", json={"userFilters": {}, "includeUnusual": True}).json()
+    assert sorted(_pins(body)) == ["lot", "old", "rail"]
+    assert "hide_unusual" not in body["cqs"]["filters"]
+    assert body["diagnostics"]["hiddenUnusual"] == 0

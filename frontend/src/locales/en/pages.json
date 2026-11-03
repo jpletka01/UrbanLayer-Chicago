@@ -507,7 +507,8 @@
       },
       "expand": "Open the full map",
       "placeTitle": "Where the parcel is",
-      "close": "Close the map"
+      "close": "Close the map",
+      "keyParcelShared": "Development outline (shared)"
     },
     "crimeCurrent": "Current period",
     "crimePrior": "Prior year",
@@ -761,7 +762,8 @@
       "noneFound": "No landmark, PD, flood or lakefront rules",
       "noneFoundDetail": "We checked the City's landmark, historic district, Planned Development and Lakefront Protection maps and FEMA's flood map for this parcel. None applies.",
       "more": "Details",
-      "marketLine": "Market value ≈ {{value}} (our calculation: assessed value ÷ the class's assessment level)"
+      "marketLine": "Market value ≈ {{value}} (our calculation: assessed value ÷ the class's assessment level)",
+      "sharedOutline": "Outline shared by a whole development"
     },
     "sources": {
       "button": "Sources",
@@ -771,6 +773,22 @@
       "sectionTitle": "Sources: {{section}}",
       "dates": "Data dates",
       "coverage": "What this page doesn't cover"
+    },
+    "trend": {
+      "title": "Which way prices moved",
+      "rentMethod": "Median gross rent for the community area in two 5-year Census periods that do not overlap ({{a}} and {{b}}), each summed from its own tracts. \"Not a clear change\" means the difference is within the two margins of error. After inflation uses the Chicago consumer price index.",
+      "salesMethod": "The median arm's-length sale price of what sold each year, not a price index: the mix of homes sold changes year to year. A year with fewer than {{min}} sales is not shown.",
+      "rent": "Area rent since {{period}}",
+      "realChange": "{{pct}} after inflation",
+      "notClear": "Not a clear change",
+      "salesSince": "{{year}} median · {{from}} in {{first}}",
+      "salesIn": "{{year}} median",
+      "tooFew": "Too few sales ({{n}}, needs {{min}})",
+      "group": {
+        "two_to_six": "2–6 unit buildings",
+        "single_family": "Single-family homes",
+        "condo": "Condos"
+      }
     }
   },
   "discovery": {
@@ -978,7 +996,8 @@
       "f311_redflags": "311 red-flag complaints",
       "floodplain": "Floodplain",
       "brownfield": "Near brownfield",
-      "crime_index": "Crime index"
+      "crime_index": "Crime index",
+      "hide_unusual": "Hide unusual parcels"
     },
     "enum": {
       "land_use": {
@@ -1094,6 +1113,15 @@
       "also": "Also",
       "open": "Open profile",
       "close": "Close the preview"
+    },
+    "unusual": {
+      "label": "Unusual parcels",
+      "hidden_one": "{{n}} unusual parcel hidden",
+      "hidden_other": "{{n}} unusual parcels hidden",
+      "including": "Including unusual parcels",
+      "show": "Show",
+      "hide": "Hide them",
+      "explain": "Vacant land over an acre with no street address of its own, and vacant common land on a development's shared outline. Most is rail, utility or common land, not a buildable lot. Show it only if you know what you're looking for."
     }
   },
   "settings": {

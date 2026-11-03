@@ -161,6 +161,8 @@ export interface Diagnostics {
   conflicts: Conflict[];
   droppedInvalid: DroppedInvalid[];
   excludedUnknown: Record<string, number>;
+  /** Parcels the default `hide_unusual` filter kept out of this result (Item 60); absent from an older backend. */
+  hiddenUnusual?: number;
   mostRestrictive: MostRestrictive[];
 }
 
@@ -176,6 +178,7 @@ export interface SearchRequest {
   limit?: number; // page-window size (default server-side); infinite scroll fetches more
   offset?: number; // window start into the ordered result
   includePins?: boolean; // also return the map's points from this same evaluation (SearchResponse.pins)
+  includeUnusual?: boolean; // opt in to the parcels the default `hide_unusual` filter keeps out (Item 60)
 }
 
 // One hydrated result parcel. `pin` is the frozen identity; the rest is hydrated from the
@@ -204,6 +207,8 @@ export interface ResultRow {
   // Zoning family + table FAR from the index (the exact class awaits index enrichment) and the nominal-$1
   // flag (decision Item 57). Optional: an older backend omits them.
   zoning_group?: string | null;
+  /** The exact district (e.g. RS-3), once the index carries it (Item 59). */
+  zone_class?: string | null;
   allowed_far?: number | null;
   nominal_assessment?: boolean;
   sortValue: number | string | null; // value of the active sort key, for row display

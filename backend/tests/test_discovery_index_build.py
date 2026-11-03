@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import sqlite3
 
 import pytest
 
@@ -754,3 +755,76 @@ def test_ensure_loaded_reads_built_index(tmp_path, monkeypatch):
     finally:
         parcel_source._current_version = None
         parcel_source.default_source.clear()
+
+
+# --- 2026-11-03 enrichment (decision Item 59) --------------------------------------------------
+
+
+_SPINE59 = {"pin": "14283191020000", "class": "100", "lat": 41.93, "lon": -87.64}
+
+
+def test_units_from_chars_reads_the_assessor_words():
+    from backend.discovery.index_build import _units_from_chars
+    assert _units_from_chars({"char_apts": "Two"}) == 2
+    assert _units_from_chars({"char_apts": "Six"}) == 6
+    assert _units_from_chars({"char_apts": "None", "pin_num_cards": "1"}) == 1
+    # a second card (a coach house) has dwellings the row doesn't count
+    assert _units_from_chars({"char_apts": "None", "pin_num_cards": "2"}) is None
+    assert _units_from_chars({"char_apts": None}) is None
+    assert _units_from_chars({}) is None
+
+
+def test_assemble_zone_class_and_own_address():
+    _, _, _, attrs, _ = _assemble(_SPINE59, address="1747 N KEDZIE AVE")
+    assert attrs["own_address"] is True
+    _, _, _, attrs, _ = _assemble(_SPINE59, address="~1825 E 130TH ST")
+    assert attrs["own_address"] is False
+    _, _, _, attrs, _ = _assemble(_SPINE59, address=None)
+    assert attrs["own_address"] is False
+
+
+def test_shared_outline_keeps_assessor_land_but_not_the_polygon():
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=None, geom_land_sqft=143_032.0, shared_outline=True)
+    assert attrs["shared_outline"] is True
+    assert "land_sqft" not in attrs  # the development's polygon is no lot's area
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars={"char_land_sf": "2100"}, geom_land_sqft=143_032.0, shared_outline=True)
+    assert attrs["land_sqft"] == 2100.0  # the Assessor's own figure stands
+
+
+def test_commercial_area_fills_building_or_flags_a_complex():
+    from backend.retrieval.property.commercial_artifact import MultiPinMember, UnitArea
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=None, commercial=UnitArea(42_000.0, ("17000000000000",), "2024"))
+    assert attrs["bldg_sqft"] == 42_000.0
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=None, commercial=MultiPinMember(90_000.0, ("1", "2"), "2024"))
+    assert attrs["multi_pin_member"] is True
+    assert attrs.get("bldg_sqft") is None
+
+
+def test_shared_outline_pin10s_groups_identical_newest_boundaries(tmp_path):
+    from backend.discovery.index_build import _shared_outline_pin10s
+    db = tmp_path / "ptaxsim.db"
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE pin_geometry_raw (pin10 TEXT, start_year INT, end_year INT, geometry TEXT)")
+    dev = "POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))"
+    own = "POLYGON((2 2, 3 2, 3 3, 2 3, 2 2))"
+    conn.executemany("INSERT INTO pin_geometry_raw VALUES (?,?,?,?)", [
+        ("1428319102", 2016, 2024, dev), ("1428319103", 2016, 2024, dev),
+        ("1428319104", 2010, 2015, dev), ("1428319104", 2016, 2024, own),  # newest boundary is its own
+    ])
+    conn.commit()
+    conn.close()
+    assert _shared_outline_pin10s(db, {"1428319102", "1428319103", "1428319104"}) == {"1428319102", "1428319103"}
+
+
+def test_unusual_is_vacant_land_only():
+    """Item 60: a vacant no-address lot over an acre, or vacant land on a shared outline; never a building."""
+    big = {"char_land_sf": "186214"}
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=big, address="~9171 S HARVARD AVE")
+    assert attrs["unusual"] is True
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=big, address="9171 S HARVARD AVE")
+    assert attrs["unusual"] is False  # its own address
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=None, shared_outline=True, address="~2520 N LAKEVIEW AVE")
+    assert attrs["unusual"] is True   # a development's common land
+    condo = {"pin": "14211010541670", "class": "299", "lat": 41.94, "lon": -87.64}
+    _, _, _, attrs, _ = _assemble(condo, chars=None, shared_outline=True, address="~3150 N SHERIDAN RD")
+    assert attrs["unusual"] is False  # a condo unit on a shared outline is a home

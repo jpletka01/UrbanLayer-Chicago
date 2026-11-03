@@ -56,6 +56,12 @@ function phrase(id: string, p: Predicate, def?: FilterDef): string {
   }
 }
 
+/** The filters the user or the text chose, sorted: the server's default `hide_unusual` (Item 60) is said by the
+ *  results' hidden count, not in the sentence. */
+function chosenIds(cqs: CQS): string[] {
+  return Object.keys(cqs.filters).filter((id) => cqs.filters[id].source !== "default").sort();
+}
+
 /**
  * A chat-handoff question for the current result set (#6 Discovery→chat seam).
  * Names the area (so the chat router scopes the community area from the text) and
@@ -66,7 +72,7 @@ function phrase(id: string, p: Predicate, def?: FilterDef): string {
  */
 export function seamPrompt(cqs: CQS, registry: Registry): string {
   const defs = new Map(registry.filters.map((f) => [f.id, f]));
-  const ids = Object.keys(cqs.filters).sort();
+  const ids = chosenIds(cqs);
   const regions: string[] = [];
   const criteria: string[] = [];
   for (const id of ids) {
@@ -92,7 +98,7 @@ export function seamPrompt(cqs: CQS, registry: Registry): string {
 /** Deterministic plain-language description of an evaluated CQS (in the active language). */
 export function summarize(cqs: CQS, registry: Registry): string {
   const defs = new Map(registry.filters.map((f) => [f.id, f]));
-  const ids = Object.keys(cqs.filters).sort();
+  const ids = chosenIds(cqs);
   const parts = ids.map((id) => phrase(id, cqs.filters[id].predicate, defs.get(id)));
 
   const base = parts.length

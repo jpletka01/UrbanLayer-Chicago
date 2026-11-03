@@ -9,12 +9,12 @@
     "orange": 1
   },
   "milwaukee/desktop": {
-    "words": 115,
+    "words": 108,
     "orange": 1,
     "screens": 1.7
   },
   "milwaukee/phone": {
-    "words": 68,
+    "words": 66,
     "orange": 1
   },
   "downtown/desktop": {
@@ -27,19 +27,19 @@
     "orange": 1
   },
   "pin1/desktop": {
-    "words": 89,
+    "words": 97,
     "orange": 1,
     "screens": 1.6
   },
   "pin1/phone": {
-    "words": 66,
+    "words": 69,
     "orange": 1
   },
   "twoflat/build": {
     "words": 303
   },
   "milwaukee/build": {
-    "words": 291
+    "words": 279
   },
   "downtown/build": {
     "words": 249

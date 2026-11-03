@@ -41,6 +41,12 @@ from backend.discovery.parcel_index import (
 from backend.discovery.registry import load as load_registry
 from backend.retrieval.geo import community_area_bounds, community_area_by_point
 from backend.retrieval.utils import format_pin
+from backend.retrieval.property.commercial_artifact import (
+    CapacityArtifactError,
+    MultiPinMember,
+    UnitArea,
+    building_area,
+)
 from backend.retrieval.incentives.enterprise_zones import _load_ez_boundaries
 from backend.retrieval.incentives.tif import _load_tif_boundaries
 from backend.retrieval.socrata import socrata_get
@@ -50,6 +56,7 @@ from backend.retrieval.zoning_definitions import get_zone_definition
 log = logging.getLogger(__name__)
 
 _BATCH = 100  # PINs per chunked `pin in (...)` join query
+UNUSUAL_VACANT_MIN_SQFT = 43_560  # one acre: the size above which a no-address vacant lot is "unusual" (Item 60)
 
 _LAND_USE_BY_PREFIX = {
     "0": "exempt", "1": "vacant", "2": "residential",
@@ -72,6 +79,25 @@ def _num(v: Any) -> float | None:
 def _int(v: Any) -> int | None:
     n = _num(v)
     return int(n) if n is not None else None
+
+
+# The Assessor's residential characteristics spell the apartment count as a word ("Two".."Six"); "None" on a
+# single-card parcel is one dwelling. `_int` read every one of them as None, so `units` was empty in every built
+# index until 2026-11-03 (decision Item 59). Same rules as eval/blockface_panel.py.
+_APT_WORDS = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5, "Six": 6}
+
+
+def _units_from_chars(chars: dict) -> int | None:
+    """Dwelling units on the parcel from its Assessor characteristics row, or None when the row can't say."""
+    apts = chars.get("char_apts")
+    if isinstance(apts, str):
+        apts = apts.strip()
+        if apts in _APT_WORDS:
+            return _APT_WORDS[apts]
+        if apts == "None":
+            # A second card (often a coach house) has its own dwellings the row doesn't count.
+            return 1 if (_int(chars.get("pin_num_cards")) or 1) <= 1 else None
+    return _int(apts)
 
 
 def _land_use(class_code: str | None) -> str | None:
@@ -157,6 +183,52 @@ def _load_geometry_land(db_path, pin10s: set[str]) -> dict[str, float]:
     return out
 
 
+def _shared_outline_pin10s(db_path, pin10s: set[str]) -> set[str]:
+    """The pin10s whose newest PTAXSIM boundary is identical to another pin10's in the set (decision Item 59).
+
+    The County carries a divided development (townhouses, a common area, condo buildings) as ONE outline on
+    every member PIN, so each one's polygon area is the development's (Item 46: 3,399 PIN10s in 973 groups,
+    up to 372). Compared within the community area being built, which holds a block's neighbours.
+    """
+    if not pin10s:
+        return set()
+    newest: dict[str, str] = {}
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        log.warning("discovery index: pin_geometry unavailable (%s); shared outlines not checked", exc)
+        return set()
+    try:
+        pins = sorted(pin10s)
+        for i in range(0, len(pins), 900):
+            chunk = pins[i:i + 900]
+            marks = ",".join("?" * len(chunk))
+            for pin10, wkt in conn.execute(
+                f"SELECT pin10, geometry FROM pin_geometry_raw "
+                f"WHERE pin10 IN ({marks}) AND geometry IS NOT NULL ORDER BY end_year ASC",
+                chunk,
+            ):
+                newest[pin10] = wkt
+    except sqlite3.Error as exc:
+        log.warning("discovery index: shared-outline scan failed (%s)", exc)
+    finally:
+        conn.close()
+    by_shape: dict[str, list[str]] = defaultdict(list)
+    for pin10, wkt in newest.items():
+        by_shape[wkt].append(pin10)
+    return {p for group in by_shape.values() if len(group) > 1 for p in group}
+
+
+def _commercial_area(pin14: str) -> "UnitArea | MultiPinMember | None":
+    """The Commercial Valuation building area on file for this PIN; None when there is none or the artifact
+    can't be read (the build goes on: the index's building area just stays as the residential chars left it)."""
+    try:
+        return building_area(pin14)
+    except CapacityArtifactError as exc:
+        log.warning("discovery index: commercial artifact unreadable (%s)", exc)
+        return None
+
+
 def _point_in_any(polys: Iterable[Any] | None, lat: float, lon: float) -> bool | None:
     """None when the layer could not be loaded: the flag stays NULL (not populated), never False."""
     if polys is None:
@@ -207,6 +279,8 @@ def assemble_parcel(
     *,
     address: str | None = None,
     geom_land_sqft: float | None = None,
+    shared_outline: bool = False,
+    commercial: "UnitArea | MultiPinMember | None" = None,
     zoning_polys: list[tuple[str, Any]],
     tif_polys: Iterable[Any] | None,
     ez_polys: Iterable[Any] | None,
@@ -236,15 +310,29 @@ def assemble_parcel(
         # Display-only street address (Address Points; a "~" prefix marks an approximate
         # nearest-address for parcels with none of their own). Never read by the evaluator.
         attrs["address"] = address
+    # Whether the parcel has a street address of its own (a building's base-PIN address counts); the
+    # default "unusual parcels" rule reads it (Item 60).
+    attrs["own_address"] = bool(address) and not str(address).startswith("~")
     imp_share: float | None = None  # building's share of total assessed value (0-1), for derived fields
 
     if chars:
         attrs["land_sqft"] = _num(chars.get("char_land_sf"))
         attrs["bldg_sqft"] = _num(chars.get("char_bldg_sf"))
         attrs["year_built"] = _int(chars.get("char_yrblt"))
-        attrs["units"] = _int(chars.get("char_apts"))
-    if attrs.get("land_sqft") is None and geom_land_sqft and geom_land_sqft > 0:
+        attrs["units"] = _units_from_chars(chars)
+    if shared_outline:
+        # The County draws one outline for a whole divided development: this PIN's polygon is the
+        # development's, so its area describes no single lot and is not used as the land area (Item 59).
+        # An Assessor-stated land area still stands; without one, every land-based figure stays NULL.
+        attrs["shared_outline"] = True
+    elif attrs.get("land_sqft") is None and geom_land_sqft and geom_land_sqft > 0:
         attrs["land_sqft"] = float(round(geom_land_sqft))
+    # The Assessor's Commercial Valuation area fills the building area the residential chars lack; a member of
+    # a multi-parcel complex gets a flag instead (the area on file is the whole complex's, Item 40).
+    if isinstance(commercial, MultiPinMember):
+        attrs["multi_pin_member"] = True
+    elif isinstance(commercial, UnitArea) and commercial.bldg_sqft > 0 and attrs.get("bldg_sqft") is None:
+        attrs["bldg_sqft"] = float(round(commercial.bldg_sqft))
 
     if assess:
         attrs["total_assessed_value"] = _num(
@@ -272,6 +360,7 @@ def assemble_parcel(
     attrs["in_enterprise_zone"] = _point_in_any(ez_polys, lat, lon)
     zone = _zone_at(zoning_polys, lat, lon)
     if zone:
+        attrs["zone_class"] = zone
         attrs["zoning_group"] = _zoning_group(zone)
         zdef = get_zone_definition(zone)
         attrs["density_band"] = zdef.far if zdef else None
@@ -301,6 +390,17 @@ def assemble_parcel(
         attrs["upside_score"] = round(
             100 * (_UPSIDE_FAR_WEIGHT * far_headroom + _UPSIDE_LAND_WEIGHT * land_share)
         )
+
+    # "Unusual" parcels are hidden from Discovery by default (Jack, 2026-11-03; decision Item 60): VACANT land
+    # that is either over an acre with no street address of its own (rail, utility and common land: 86% of the
+    # 100,000 sq ft vacant lots had none) or on a development's shared outline (a common area, like the $1 parcel).
+    # Never a building: condo units and townhomes share outlines too (11,254 condo units in six areas) and are
+    # ordinary homes; with no geometry land area they just fall out of lot-size filters.
+    vacant = bool(attrs.get("is_vacant"))
+    attrs["unusual"] = vacant and (
+        bool(attrs.get("shared_outline"))
+        or (not attrs["own_address"] and (attrs.get("land_sqft") or 0) > UNUSUAL_VACANT_MIN_SQFT)
+    )
 
     regions = [f"neighborhood:{neighborhood_ca}"] if neighborhood_ca is not None else []
     return spine["pin"], lat, lon, attrs, regions
@@ -743,9 +843,11 @@ async def _assemble_ca(
 
     # Geometry land for BASE parcels only (suffix 0000) — see assemble_parcel.
     geom_land: dict[str, float] = {}
+    shared: set[str] = set()
     if settings.ptaxsim_enabled and settings.ptaxsim_db_path.exists():
         base10s = {p[:10] for p in pins if p[10:] == "0000"}
         geom_land = _load_geometry_land(settings.ptaxsim_db_path, base10s)
+        shared = _shared_outline_pin10s(settings.ptaxsim_db_path, {p[:10] for p in pins})
 
     rows: list[tuple] = []
     for s, ca_real in spine_ca:
@@ -756,6 +858,9 @@ async def _assemble_ca(
                 pd, s["lat"], s["lon"], addrs, base_addrs, addr_tree, addr_list
             ),
             geom_land_sqft=geom_land.get(pd[:10]) if pd[10:] == "0000" else None,
+            shared_outline=pd[:10] in shared,
+            # Base parcels only, as for the land fill: a unit-PIN would claim the whole building.
+            commercial=_commercial_area(pd) if pd[10:] == "0000" else None,
             zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
             rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
         ))

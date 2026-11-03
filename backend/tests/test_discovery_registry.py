@@ -9,11 +9,11 @@ from pydantic import ValidationError
 
 from backend.discovery import registry as reg
 
-# The 32 filters (29 original + PR2's value_percentile/upside_score/is_teardown_candidate),
-# grouped by category.
+# The 33 filters (29 original + PR2's value_percentile/upside_score/is_teardown_candidate + Item 60's
+# hide_unusual default), grouped by category.
 EXPECTED_BY_CATEGORY = {
     "location": {"neighborhood", "ward", "radius", "transit_proximity"},
-    "property_use": {"land_use", "vacancy", "lot_size", "building_size", "year_built", "units"},
+    "property_use": {"land_use", "vacancy", "hide_unusual", "lot_size", "building_size", "year_built", "units"},
     "zoning_dev": {
         "zoning_group", "density_band", "overlay", "adu_eligible", "aro_zone",
         "upside_score", "is_teardown_candidate"
@@ -30,7 +30,7 @@ EXPECTED_BY_CATEGORY = {
 
 EXPECTED_KINDS = {
     "neighborhood": "region", "ward": "region", "radius": "region",
-    "transit_proximity": "range", "land_use": "enum", "vacancy": "flag",
+    "transit_proximity": "range", "land_use": "enum", "vacancy": "flag", "hide_unusual": "flag",
     "lot_size": "range", "building_size": "range", "year_built": "range", "units": "range",
     "zoning_group": "enum", "density_band": "range", "overlay": "enum",
     "adu_eligible": "flag", "aro_zone": "flag", "tif": "flag", "opportunity_zone": "flag",
@@ -53,7 +53,7 @@ def test_shipped_registry_loads_and_validates():
     r = reg.load()
     assert r.version
     # 4 location + 6 property_use + 7 zoning_dev + 4 incentives + 6 financial + 5 condition_risk
-    assert len(r.filters) == 32
+    assert len(r.filters) == 33
 
 
 def test_all_expected_filters_present_with_correct_category_and_kind():

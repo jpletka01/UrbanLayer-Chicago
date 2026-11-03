@@ -420,6 +420,10 @@ class PropertySummary(BaseModel):
     # units: "assessor" (decoded 2xx chars) | "commercial_valuation" (CCAO
     #   valuation tot_units — filled only for single-PIN economic units).
     land_sqft_source: str | None = None
+    # Set when the parcel's polygon is the same outline as this many other PIN10s on its block: a divided
+    # development drawn once (decision Items 46, 59). The polygon's area is then not used as the land area,
+    # and the outline drawn is the development's.
+    shared_outline_with: int | None = None
     bldg_sqft_source: str | None = None
     # The Commercial Valuation vintage (assessment year) behind any field whose source is
     # "commercial_valuation"; None when no field came from it.
@@ -711,6 +715,42 @@ class BedroomRent(BaseModel):
     tract_fallback: str | None = None
 
 
+class RentTrendPeriod(BaseModel):
+    period: str
+    median: int
+    moe: int | None = None
+    households: int | None = None
+
+
+class RentTrend(BaseModel):
+    """Which way the community area's median gross rent moved between two NON-overlapping ACS 5-year periods
+    (WS4 PR4, decision Item 62). ``significant`` is the Census test (the change exceeds the combined 90% margin);
+    None when a margin is missing. ``real_change_pct`` is after Chicago CPI-U inflation."""
+
+    community_area: int
+    earlier: RentTrendPeriod
+    later: RentTrendPeriod
+    change_pct: float
+    real_change_pct: float
+    significant: bool | None = None
+    cpi_series: str = "CUURS23ASA0"
+
+
+class SaleYear(BaseModel):
+    year: str
+    median: int | None = None
+    n: int = 0
+
+
+class SalesTrend(BaseModel):
+    """Median arm's-length sale price per year by property group in the community area (WS4 PR4). A median of
+    what sold that year, not a price index; a year under 30 sales is withheld at serve time."""
+
+    community_area: int
+    groups: dict[str, list[SaleYear]] = Field(default_factory=dict)
+    years: list[str] = Field(default_factory=list)
+
+
 class RentEvidence(BaseModel):
     """Current official rent for a parcel's area (WS4 PR2): the community area's overall median, and the
     published bedroom medians for its tract (else PUMA). ``unchecked`` names the parts that could not be
@@ -724,6 +764,9 @@ class RentEvidence(BaseModel):
     tract_name: str | None = None
     puma_geoid: str | None = None
     puma_name: str | None = None
+    # WS4 PR4 (decision Item 62): which way rent and sale prices moved in the community area.
+    trend: RentTrend | None = None
+    sales_trend: SalesTrend | None = None
     unchecked: list[str] = Field(default_factory=list)
 
 

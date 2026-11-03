@@ -163,7 +163,9 @@
       "low_coverage": "Not shown: the data covers {{pct}}% here (needs {{min}}%).",
       "not_comparable": "Not shown: the model counts {{pct}}% of this area's renter households, so it is not a comparable set of homes.",
       "high_cv": "Not shown: the margin of error is {{cv}}% of the estimate.",
-      "generic": "Not shown: too little data."
+      "generic": "Not shown: too little data.",
+      "shared_outline_one": "Not shown: this outline is a whole development's, shared with {{count}} other parcel.",
+      "shared_outline_other": "Not shown: this outline is a whole development's, shared with {{count}} other parcels."
     },
     "field": {
       "authority": "Published by: {{value}}",

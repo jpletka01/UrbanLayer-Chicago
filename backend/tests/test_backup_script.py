@@ -61,3 +61,40 @@ def test_no_reports_directory_is_not_an_error_and_leaves_an_empty_mirror(tmp_pat
     make_db(data / "chicago.db")
     out = run(data / "chicago.db", backups)
     assert "mirrored" not in out and (backups / "reports").is_dir() and not any((backups / "reports").iterdir())
+
+
+def make_listing_db(path: Path, listed: list[str]) -> None:
+    rows = "; ".join(f"insert into report_renders values ('original', '{p}')" for p in listed)
+    subprocess.run(["sqlite3", str(path), f"create table report_renders(kind text, pdf_path text); {rows};"], check=True)
+
+
+def test_a_deleted_accounts_original_leaves_the_mirror(tmp_path):
+    """Decision Item 63 (Jack, 2026-11-03): account deletion removes the PDF and its row; the mirror follows."""
+    data, backups = tmp_path / "data", tmp_path / "backups"
+    for rel in ("7/1.pdf", "8/2.pdf"):
+        (data / "reports" / rel).parent.mkdir(parents=True, exist_ok=True)
+        (data / "reports" / rel).write_bytes(b"%PDF")
+    make_listing_db(data / "chicago.db", ["7/1.pdf", "8/2.pdf"])
+    run(data / "chicago.db", backups)
+    assert (backups / "reports" / "8" / "2.pdf").exists()
+    # account 8 is deleted: its PDF and its render row go
+    (data / "reports" / "8" / "2.pdf").unlink()
+    subprocess.run(["sqlite3", str(data / "chicago.db"), "delete from report_renders where pdf_path = '8/2.pdf';"], check=True)
+    out = run(data / "chicago.db", backups)
+    assert "removed from the mirror: 1" in out
+    assert not (backups / "reports" / "8").exists()
+    assert (backups / "reports" / "7" / "1.pdf").exists()
+
+
+def test_a_prune_larger_than_the_cap_removes_nothing(tmp_path):
+    data, backups = tmp_path / "data", tmp_path / "backups"
+    (data / "reports" / "7").mkdir(parents=True)
+    for i in range(12):
+        (data / "reports" / "7" / f"{i}.pdf").write_bytes(b"%PDF")
+    make_listing_db(data / "chicago.db", [f"7/{i}.pdf" for i in range(12)])
+    run(data / "chicago.db", backups)
+    subprocess.run(["sqlite3", str(data / "chicago.db"), "delete from report_renders;"], check=True)
+    out = subprocess.run(["bash", str(SCRIPT), str(data / "chicago.db"), str(backups), "3"], capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0
+    assert "nothing pruned" in out.stderr
+    assert len(list((backups / "reports" / "7").glob("*.pdf"))) == 12

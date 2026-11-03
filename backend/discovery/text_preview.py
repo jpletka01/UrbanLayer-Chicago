@@ -50,7 +50,8 @@ class TextPreviewResponse(BaseModel):
 @router.post("/text-preview", response_model=TextPreviewResponse)
 def text_preview(req: TextPreviewRequest) -> TextPreviewResponse:
     text_frag = parse(req.text)
-    cqs, dropped = merge(CqsFragment(), text_frag)
+    # Only what the TEXT compiled: no default filter is "understood" from a phrase (Item 60).
+    cqs, dropped = merge(CqsFragment(), text_frag, include_unusual=True)
     return TextPreviewResponse(
         understood=[
             UnderstoodFilter(filterId=fid, predicate=a.predicate) for fid, a in cqs.filters.items()

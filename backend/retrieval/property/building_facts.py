@@ -107,8 +107,10 @@ async def get_commercial_facts(
     Field semantics (verified live 2026-07-07):
     - bldg_sqft: sum of ``bldgsf`` over the latest valuation year — the economic
       UNIT's building area (provenance "commercial_valuation" discloses this).
-      Attributed to THIS parcel only when the unit is a single PIN or this PIN is
-      the unit's keypin. For any other member of a multi-PIN unit the total
+      Attributed to THIS parcel only when the unit is a single PIN, or this PIN is
+      the keypin of a unit whose members share one base parcel (PIN10). For any
+      other member of a multi-PIN unit, and for the keypin of one spanning several
+      lots (decision Item 61), the total
       describes the whole complex, not this lot (kit P3: a 7-PIN strip center's
       43,790 sq ft shown against a 4,347 sq ft lot → existing FAR 10.07), so
       ``bldg_sqft`` is None and the total rides as ``complex_bldg_sqft`` with
@@ -203,8 +205,13 @@ async def get_commercial_facts(
         if r.get("keypin"):
             keypins.add(str(r["keypin"]).strip())
     multi_pin = len(members) > 1
+    # A unit spanning several base parcels (PIN10s) is a complex: its total area belongs to no single lot,
+    # the keypin's included (decision Item 61, matching the capacity map's `multi_pin_member`, Item 40).
+    # Before 2026-11-03 the keypin kept the total, so 1601 N Milwaukee read "FAR 2.2 allowed vs ≈1.3 built"
+    # from three lots' building over one lot. Members on one PIN10 (a building's unit PINs) still share it.
+    spans_lots = len({m[:13] for m in members}) > 1
     complex_sqft = None
-    if sqft and multi_pin and dashed not in keypins:
+    if sqft and multi_pin and (dashed not in keypins or spans_lots):
         complex_sqft, sqft = sqft, None
 
     if not (sqft or complex_sqft or year_built or units):

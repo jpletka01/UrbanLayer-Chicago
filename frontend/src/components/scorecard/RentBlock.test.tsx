@@ -182,3 +182,34 @@ describe("RentBlock", () => {
     });
   });
 });
+
+describe("Which way prices moved (WS4 PR4, decision Item 62)", () => {
+  const trend = {
+    community_area: 49,
+    earlier: { period: "2015–2019", median: 1013, moe: 144 },
+    later: { period: "2020–2024", median: 1226, moe: 199 },
+    change_pct: 21.0, real_change_pct: -0.1, significant: false,
+  };
+  const sales = {
+    community_area: 49, years: ["2020", "2021", "2025"],
+    groups: {
+      single_family: [{ year: "2020", median: 160000, n: 431 }, { year: "2021", median: 175000, n: 520 }, { year: "2025", median: 210000, n: 480 }],
+      condo: [{ year: "2020", n: 0 }, { year: "2021", median: 90000, n: 1 }, { year: "2025", median: 95000, n: 1 }],
+    },
+  };
+
+  it("says the rent change, after inflation, and labels a change within the margins", () => {
+    renderBlock(hood(rent({ trend, sales_trend: sales })));
+    const row = screen.getByTestId("trend-rent");
+    expect(row.textContent).toContain("+21%");
+    expect(row.textContent).toContain("+21%0% after inflation");
+    expect(row.textContent).toContain("Not a clear change");
+  });
+
+  it("gives each group its first and last year with enough sales, and withholds a thin group with the reason", () => {
+    renderBlock(hood(rent({ trend, sales_trend: sales })));
+    expect(screen.getByTestId("trend-sales-single_family").textContent).toMatch(/\$210,000.*2025 median.*\$160,000 in 2020/);
+    expect(screen.getByTestId("trend-sales-condo").textContent).toContain("Too few sales (1, needs 30)");
+    expect(screen.getByTestId("trend-sales-condo").textContent).not.toContain("$95,000");
+  });
+});

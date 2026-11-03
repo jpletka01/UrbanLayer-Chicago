@@ -9,9 +9,11 @@
 import { useTranslation } from "react-i18next";
 import type { Provenance } from "../../lib/api";
 import { useFact } from "../../lib/provenanceContext";
-import type { AssessorModelRent, BedroomRent, NeighborhoodSummary } from "../../lib/types";
+import type { AssessorModelRent, BedroomRent, NeighborhoodSummary, RentEvidence, SaleYear } from "../../lib/types";
 import { ConfidenceCaption, ConfidenceValue, SourceTooltip } from "../ui/Confidence";
 import { ToolTray } from "../ui/ToolTray";
+import { StatusLabel } from "../ui/StatusLabel";
+import { DISPLAY_THRESHOLDS } from "../../lib/confidence";
 
 const BEDROOMS = ["1_bedroom", "2_bedrooms", "3_bedrooms"] as const;
 
@@ -106,6 +108,82 @@ function AssessorModelTile({ model, unchecked }: { model: AssessorModelRent | nu
   );
 }
 
+const SALE_GROUPS = ["two_to_six", "single_family", "condo"] as const;
+
+/** Which way rent and sale prices moved in the community area (WS4 PR4, decision Item 62). The rent change between
+ *  two non-overlapping ACS periods, labeled when it is within the margins; and per property group the median sale
+ *  price of the first and last year with enough sales. The method and the year-by-year series sit behind Explain. */
+function TrendBlock({ rent }: { rent: RentEvidence }) {
+  const { t, i18n } = useTranslation("pages");
+  const nf = new Intl.NumberFormat(i18n.language === "es" ? "es-MX" : "en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  const pct = (x: number) => { const r = Math.round(x); return `${r > 0 ? "+" : ""}${r === 0 ? 0 : r}%`; };
+  const tr = rent.trend;
+  const st = rent.sales_trend;
+  const min = DISPLAY_THRESHOLDS.hideNBelow;
+  const enough = (c: SaleYear) => c.median != null && c.n >= min;
+  return (
+    <div className="space-y-3" data-testid="rent-trend">
+      <div className="flex items-center gap-1 text-overline uppercase tracking-wider text-text-muted">
+        {t("scorecard.trend.title")}
+        <ToolTray
+          label={t("scorecard.trend.title")}
+          align="start"
+          explain={
+            <span className="block space-y-1.5 normal-case tracking-normal" data-testid="trend-explain">
+              {tr && <span className="block">{t("scorecard.trend.rentMethod", { a: tr.earlier.period, b: tr.later.period })}</span>}
+              {st && <span className="block">{t("scorecard.trend.salesMethod", { min })}</span>}
+              {st && SALE_GROUPS.filter((g) => st.groups[g]).map((g) => (
+                <span key={g} className="block font-mono text-micro">
+                  {t(`scorecard.trend.group.${g}`)}: {st.groups[g]!.map((c) => `${c.year} ${enough(c) ? nf.format(c.median!) : "—"} (n ${c.n})`).join(" · ")}
+                </span>
+              ))}
+            </span>
+          }
+        />
+      </div>
+      <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+        {tr && (
+          <div data-testid="trend-rent">
+            <dt className="text-caption text-text-muted">{t("scorecard.trend.rent", { period: tr.earlier.period })}</dt>
+            <dd className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-subtitle tabular-nums text-text-primary">{pct(tr.change_pct)}</span>
+              <span className="text-caption text-text-secondary">{t("scorecard.trend.realChange", { pct: pct(tr.real_change_pct) })}</span>
+              {tr.significant === false && <StatusLabel tone="neutral" glyph={null}>{t("scorecard.trend.notClear")}</StatusLabel>}
+            </dd>
+          </div>
+        )}
+        {st && SALE_GROUPS.filter((g) => st.groups[g]).map((g) => {
+          const cells = st.groups[g]!;
+          const first = cells.find(enough);
+          const last = [...cells].reverse().find(enough);
+          const latest = cells[cells.length - 1];
+          return (
+            <div key={g} data-testid={`trend-sales-${g}`}>
+              <dt className="text-caption text-text-muted">{t(`scorecard.trend.group.${g}`)}</dt>
+              <dd className="mt-0.5">
+                {last ? (
+                  <>
+                    <span className="text-subtitle tabular-nums text-text-primary">{nf.format(last.median!)}</span>
+                    <span className="ml-2 text-caption text-text-secondary">
+                      {first && first.year !== last.year
+                        ? t("scorecard.trend.salesSince", { year: last.year, from: nf.format(first.median!), first: first.year })
+                        : t("scorecard.trend.salesIn", { year: last.year })}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-caption text-text-muted" data-withheld-reason>
+                    {t("scorecard.trend.tooFew", { n: latest?.n ?? 0, min })}
+                  </span>
+                )}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+    </div>
+  );
+}
+
 export function RentBlock({ data }: { data: NeighborhoodSummary }) {
   const { t } = useTranslation("pages");
   const rent = data.rent;
@@ -148,6 +226,7 @@ export function RentBlock({ data }: { data: NeighborhoodSummary }) {
         </div>
       </div>
       )}
+      {(rent.trend || rent.sales_trend) && <TrendBlock rent={rent} />}
       {(model || modelUnchecked) && (
         <div className="space-y-3" data-testid="rent-assessor">
           <div>

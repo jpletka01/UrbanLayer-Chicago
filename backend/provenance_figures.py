@@ -391,6 +391,27 @@ def _rent_figures(rent, put, qd: str, ca_name: str | None) -> None:
             note=(f"The Assessor's model of potential gross income (before vacancy) per unit per month, median of "
                   f"{am.priced:,} apartment buildings ({am.units:,} units) in the {am.year} {am.cycle}. "
                   "Not an asking or achieved rent."))
+    tr = rent.trend
+    if tr is not None:
+        # The change between two non-overlapping periods; the margin shown is the combined one the Census test uses.
+        combined = ((tr.earlier.moe or 0) ** 2 + (tr.later.moe or 0) ** 2) ** 0.5 if tr.earlier.moe and tr.later.moe else None
+        put("area.rent.trend", tr.change_pct, geography=ca_name, period=f"{tr.earlier.period} to {tr.later.period}",
+            dates={"as_of": _period_end(tr.later.period, qd), "as_of_basis": "period_end"},
+            precision=({"moe": round(combined), "moe_level": 0.9} if combined else None),
+            inputs=["census.reporter.acs"], basis_tier="official_estimate",
+            method_params={"significant": tr.significant, "real_change_pct": tr.real_change_pct, "cpi": tr.cpi_series},
+            note=(f"Median gross rent ${tr.earlier.median:,} ({tr.earlier.period}, 2010 tracts) to ${tr.later.median:,} "
+                  f"({tr.later.period}, 2020 tracts): {tr.change_pct:+.1f}%, {tr.real_change_pct:+.1f}% after Chicago CPI-U "
+                  "inflation. Two 5-year periods that do not overlap, as the Census advises."))
+    st = rent.sales_trend
+    if st is not None:
+        total = sum(c.n for cells in st.groups.values() for c in cells)
+        put("area.sales.trend", len(st.years), geography=ca_name, period=f"{st.years[0]}-{st.years[-1]}" if st.years else None,
+            dates={"as_of": f"{st.years[-1]}-12-31" if st.years else qd, "as_of_basis": "period_end"},
+            coverage={"n": total, "unit": "sales", "sample": "area_sample"},
+            inputs=["cook.assessor.sales"], basis_tier="official_record",
+            note=("Median arm's-length sale price per year by property group. A median of what sold that year, not a "
+                  "price index: the mix of homes sold changes year to year. A year with fewer than 30 sales is not shown."))
     for b in rent.bedrooms:
         if b.estimate is None:
             continue
@@ -578,6 +599,10 @@ def expected_fact_ids(payload: dict) -> set[str]:
         want.add("area.rent.community_area")
     if (rent.get("assessor_model") or {}).get("median_per_unit_month") is not None:
         want.add("area.rent.assessor_model")
+    if rent.get("trend"):
+        want.add("area.rent.trend")
+    if rent.get("sales_trend"):
+        want.add("area.sales.trend")
     for b in rent.get("bedrooms") or []:
         if b.get("estimate") is not None:
             want.add(f"area.rent.{b['bedrooms']}")
