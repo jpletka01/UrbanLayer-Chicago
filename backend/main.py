@@ -969,7 +969,7 @@ async def _retrieve(
             else:
                 results[key] = value
 
-    partial_failures.extend(_domain_data_gaps(results, ("property", "regulatory", "incentives")))
+    partial_failures.extend(_domain_data_gaps(results, ("property", "regulatory", "incentives", "neighborhood")))
 
     code_chunks = []
     if "vector_search" in plan.sources and plan.search_query:
@@ -1012,6 +1012,8 @@ async def _retrieve(
             # the footer must say so. The label is ours, never client text.
             if sc.regulatory.flood_unchecked and failures.label("flood") not in ctx.partial_failures:
                 ctx.partial_failures.append(failures.label("flood"))
+            if sc.regulatory.brownfield_unchecked and failures.label("brownfield") not in ctx.partial_failures:
+                ctx.partial_failures.append(failures.label("brownfield"))
         if sc.property is not None:
             ctx.property = sc.property
         if sc.incentives is not None:
@@ -1059,6 +1061,8 @@ def _domain_data_gaps(results: dict[str, Any], keys: tuple[str, ...]) -> list[st
         gaps.extend(getattr(summary, "data_gaps", None) or [])
         if getattr(summary, "flood_unchecked", False):
             gaps.append(failures.label("flood"))
+        if getattr(summary, "brownfield_unchecked", False):
+            gaps.append(failures.label("brownfield"))
     return gaps
 
 
@@ -1908,7 +1912,7 @@ async def _fetch_scorecard_data(
 
     # Overlay layers the City map couldn't answer: unknown, not "not in it". And the Assessor/PTAXSIM calls that
     # failed (not the figures a source simply has no record of): a Profile that lost its sales history says so.
-    partial_failures.extend(_domain_data_gaps(results, ("regulatory", "incentives")))
+    partial_failures.extend(_domain_data_gaps(results, ("regulatory", "incentives", "neighborhood")))
     partial_failures.extend(
         g for g in (getattr(results.get("property"), "failed_calls", None) or []) if g not in partial_failures
     )

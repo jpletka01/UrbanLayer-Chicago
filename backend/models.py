@@ -267,6 +267,8 @@ class RegulatorySummary(BaseModel):
     # None = UNKNOWN (FEMA's flood map didn't answer, ``flood_unchecked``); never state "not in" for it.
     in_special_flood_hazard: bool | None = False
     flood_unchecked: bool = False
+    # EPA's brownfield search didn't answer: "not checked", never "no sites nearby" (decision Item 65).
+    brownfield_unchecked: bool = False
     brownfield_sites: list[dict] = Field(default_factory=list)
     aro_housing: AROHousingSummary | None = None
     # Overlay layer types the City map couldn't answer for (timeout, HTTP error, 200 +
@@ -786,6 +788,9 @@ class NeighborhoodSummary(BaseModel):
     ward: WardInfo | None = None
     traffic: TrafficSummary | None = None
     divvy: DivvyAccess | None = None
+    # Parts whose source failed (``failures.NEIGHBORHOOD_GAPS`` labels): "not checked", never "none near"
+    # (decision Item 65). A part that answered with nothing nearby is just absent.
+    data_gaps: list[str] = Field(default_factory=list)
 
 
 class TurnSummary(BaseModel):

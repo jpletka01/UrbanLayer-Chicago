@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from backend.models import WalkScoreSummary
-from backend.retrieval.neighborhood.walkscore import _cache, fetch_walkscore
+from backend.retrieval.neighborhood.walkscore import WalkScoreError, _cache, fetch_walkscore
 
 MOCK_SUCCESS = {
     "status": 1,
@@ -73,46 +73,30 @@ async def test_cached_result():
     assert client.get.call_count == 1
 
 
+# Every answer that isn't a score raises and is never cached (decision Item 65): the Profile then says
+# Walk Score wasn't checked instead of dropping the tile. A bad key used to be cached for 48 hours.
+@pytest.mark.parametrize("status", [2, 30, 31, 40, 41, None])
 @pytest.mark.asyncio
-async def test_not_found_cached():
+async def test_a_status_that_is_not_a_score_raises_and_is_not_cached(status):
     client = AsyncMock(spec=httpx.AsyncClient)
-    client.get.return_value = _mock_response({"status": 30})
+    client.get.return_value = _mock_response({"status": status})
 
-    r1 = await fetch_walkscore(41.0, -87.0, "Bad Address", client=client)
-    r2 = await fetch_walkscore(41.0, -87.0, "Bad Address", client=client)
-
-    assert r1 is None
-    assert r2 is None
-    assert client.get.call_count == 1
-
-
-@pytest.mark.asyncio
-async def test_api_down():
-    client = AsyncMock(spec=httpx.AsyncClient)
-    client.get.side_effect = httpx.ConnectError("Connection refused")
-
-    result = await fetch_walkscore(41.9, -87.6, "123 Main St", client=client)
-    assert result is None
-
-
-@pytest.mark.asyncio
-async def test_quota_exceeded():
-    client = AsyncMock(spec=httpx.AsyncClient)
-    client.get.return_value = _mock_response({"status": 41})
-
-    result = await fetch_walkscore(41.9, -87.6, "123 Main St", client=client)
-    assert result is None
+    for _ in range(2):
+        with pytest.raises(WalkScoreError, match=f"status {status}"):
+            await fetch_walkscore(41.0, -87.0, "123 Main St", client=client)
+    assert client.get.call_count == 2
     assert len(_cache._store) == 0
 
 
 @pytest.mark.asyncio
-async def test_bad_key():
+async def test_api_down_raises_without_the_api_key_in_the_message():
     client = AsyncMock(spec=httpx.AsyncClient)
-    client.get.return_value = _mock_response({"status": 40})
+    client.get.side_effect = httpx.ConnectError("GET https://api.walkscore.com/score?wsapikey=fake-key-for-tests")
 
-    result = await fetch_walkscore(41.9, -87.6, "123 Main St", client=client)
-    assert result is None
-    assert len(_cache._store) == 1
+    with pytest.raises(WalkScoreError) as err:
+        await fetch_walkscore(41.9, -87.6, "123 Main St", client=client)
+    assert "fake-key-for-tests" not in str(err.value) and err.value.__cause__ is None
+    assert len(_cache._store) == 0
 
 
 @pytest.mark.asyncio

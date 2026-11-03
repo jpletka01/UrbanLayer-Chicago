@@ -546,11 +546,11 @@ a.glossary-link {
       <span class="tl-topic">{{ t("topic.environmental") }}</span>
       <span class="tl-detail">{{ t("tl.env_flood_zone", zone=reg.flood_zone) }}</span>
     </div>
-    {% elif reg and reg.flood_unchecked %}
+    {% elif reg and (reg.flood_unchecked or reg.brownfield_unchecked) %}
     <div class="tl-item tl-yellow">
       <span class="tl-pill tl-pill-yellow">{{ t("pill.unchecked") }}</span>
       <span class="tl-topic">{{ t("topic.environmental") }}</span>
-      <span class="tl-detail">{{ t("tl.env_flood_unchecked") }}</span>
+      <span class="tl-detail">{% if reg.flood_unchecked %}{{ t("tl.env_flood_unchecked") }}{% endif %}{% if reg.flood_unchecked and reg.brownfield_unchecked %}; {% endif %}{% if reg.brownfield_unchecked %}{{ t("tl.env_brownfield_unchecked") }}{% endif %}</span>
     </div>
     {% else %}
     <div class="tl-item tl-green">
@@ -1484,7 +1484,7 @@ a.glossary-link {
         <li style="color: #047857;">&#10003; {{ t("site.check_zoning") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_overlay") }}</li>
         {% if not (reg and reg.flood_unchecked) %}<li style="color: #047857;">&#10003; {{ t("site.check_flood") }}</li>{% endif %}
-        <li style="color: #047857;">&#10003; {{ t("site.check_brownfield") }}</li>
+        {% if not (reg and reg.brownfield_unchecked) %}<li style="color: #047857;">&#10003; {{ t("site.check_brownfield") }}</li>{% endif %}
         <li style="color: #047857;">&#10003; {{ t("site.check_tax") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_comps") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_permits") }}</li>
@@ -1496,6 +1496,7 @@ a.glossary-link {
       <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 1.6;">
         <li>&#9744; {{ t("site.todo_title") }}</li>
         <li>&#9744; {{ t("site.todo_survey") }}</li>
+        {% if reg and reg.brownfield_unchecked %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_brownfield_unchecked") }}</li>{% endif %}
         {% if reg and reg.brownfield_sites %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_esa_brownfield") }}</li>{% else %}<li>&#9744; {{ t("site.todo_esa") }}</li>{% endif %}
         <li>&#9744; {{ t("site.todo_utility") }}</li>
         <li>&#9744; {{ t("site.todo_soil") }}</li>

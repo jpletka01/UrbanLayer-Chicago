@@ -18,6 +18,7 @@ LABELS: dict[str, str] = {
     "property": "property records",
     "regulatory": "regulatory overlays",
     "flood": "FEMA flood zone",
+    "brownfield": "EPA brownfield sites",
     "zoning": "parcel zoning",
     "incentives": "incentive zones",
     "neighborhood": "demographics and transit",
@@ -51,6 +52,7 @@ MODULES: dict[str, str] = {
     "comparables": "market", "nearby_construction": "market",
     "violations": "record", "address_311": "record", "address_permits": "record", "address_violations": "record",
     "flood": "record",  # the flood zone is shown on the Environment card, in "what to watch for"
+    "brownfield": "record",  # brownfields too (Item 65)
     "crime": "area", "crime_yoy": "area", "neighborhood": "area", "aro_housing": "area", "311": "area",
     "permits": "area", "business": "area", "vacant": "area", "food_inspections": "area",
 }
@@ -67,6 +69,18 @@ INCENTIVE_GAPS: dict[str, str] = {
     "nmtc": "New Markets Tax Credit tract",
 }
 _GAP_INCENTIVES = set(INCENTIVE_GAPS.values())
+# The neighborhood parts that can fail on their own (Item 65): task name -> the gap label.
+NEIGHBORHOOD_GAPS: dict[str, str] = {
+    "demographics": "community area demographics",
+    "census_tract": "census tract figures",
+    "stations": "nearest CTA stations",
+    "tod": "transit-served location check",
+    "walkscore": "Walk Score",
+    "traffic": "traffic counts",
+    "divvy": "Divvy stations",
+    "rent": "official rent figures",
+}
+_GAP_NEIGHBORHOOD = set(NEIGHBORHOOD_GAPS.values())
 _OVERLAY_SUFFIX = "(City zoning map didn't answer)"
 
 _BY_LABEL = {label: key for key, label in LABELS.items()}
@@ -92,6 +106,8 @@ def key_for_label(text: str) -> str | None:
         return "property"
     if text in _GAP_INCENTIVES:
         return "incentives"
+    if text in _GAP_NEIGHBORHOOD:
+        return "neighborhood"
     return None
 
 

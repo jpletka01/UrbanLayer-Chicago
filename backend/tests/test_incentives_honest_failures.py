@@ -278,3 +278,73 @@ def test_a_healthy_report_has_no_unchecked_incentive_rows():
 def test_the_spanish_report_says_it_in_spanish():
     rows = _financial_rows(render_report_html(_report(["tif"]), "es", report_date="3 de noviembre de 2026"))
     assert "No se pudo verificar hoy" in rows
+
+
+# --- the neighborhood parts ---------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_a_failed_neighborhood_part_is_a_named_gap_and_the_rest_still_answers():
+    from backend.retrieval.neighborhood import neighborhood_domain
+    from backend.retrieval.neighborhood.walkscore import WalkScoreError
+
+    settings = MagicMock(walkscore_api_key="k")
+    with patch("backend.retrieval.neighborhood.get_settings", return_value=settings), \
+         patch("backend.retrieval.neighborhood.fetch_walkscore", AsyncMock(side_effect=WalkScoreError("status 41"))), \
+         patch("backend.retrieval.neighborhood.find_nearest_stations", AsyncMock(return_value=None)), \
+         patch("backend.retrieval.neighborhood.check_tod_eligibility", AsyncMock(return_value=None)), \
+         patch("backend.retrieval.neighborhood._fetch_census_tract", AsyncMock(return_value=None)), \
+         patch("backend.retrieval.neighborhood.traffic.get_traffic_context", AsyncMock(return_value=None)), \
+         patch("backend.retrieval.neighborhood.divvy.find_nearest_divvy", AsyncMock(side_effect=RuntimeError("down"))), \
+         patch("backend.retrieval.neighborhood.ward_by_point", return_value=None):
+        summary = await neighborhood_domain(41.91, -87.67, address="1601 N Milwaukee Ave", client=AsyncMock())
+    assert summary.data_gaps == ["Walk Score", "Divvy stations"]  # in NEIGHBORHOOD_GAPS order
+    assert summary.walkscore is None and summary.divvy is None
+    assert [failures.key_for_label(g) for g in summary.data_gaps] == ["neighborhood", "neighborhood"]
+    assert failures.MODULES["neighborhood"] == "area"
+
+
+# --- brownfields, ARO housing, nearby construction ----------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_an_epa_error_body_raises_and_the_regulatory_domain_marks_brownfields_unchecked():
+    from backend.retrieval.regulatory import environmental, regulatory_domain
+    from backend.retrieval.regulatory.overlays import OverlayResults
+
+    with pytest.raises(RuntimeError, match="no feature list"):
+        await environmental.query_brownfield_sites(41.91, -87.67, client=_client(_recorded(ERROR_BODY)))
+
+    with patch("backend.retrieval.regulatory.query_overlays_checked", AsyncMock(return_value=OverlayResults())), \
+         patch("backend.retrieval.regulatory.query_flood_zone", AsyncMock(return_value=None)), \
+         patch("backend.retrieval.regulatory.query_brownfield_sites", AsyncMock(side_effect=RuntimeError("EPA down"))):
+        reg = await regulatory_domain(41.91, -87.67, client=AsyncMock())
+    assert reg.brownfield_unchecked is True and reg.brownfield_sites == []
+    assert _domain_data_gaps({"regulatory": reg}, ("regulatory",)) == ["EPA brownfield sites"]
+    assert failures.MODULES["brownfield"] == "record"
+
+
+def test_the_report_does_not_claim_a_brownfield_search_that_did_not_answer():
+    from backend.models import RegulatorySummary
+
+    r = _report([])
+    r.context.regulatory = RegulatorySummary(brownfield_unchecked=True)
+    page = render_report_html(r, "en", report_date="November 3, 2026")
+    assert "EPA brownfield sites could not be checked" in page
+    assert "Check EPA brownfield sites nearby" in page
+    assert "EPA brownfield proximity search" not in page  # the "completed" checklist line
+    assert "No flood/brownfield risk" not in page
+
+
+@pytest.mark.asyncio
+async def test_aro_and_nearby_construction_raise_instead_of_returning_none():
+    from backend.retrieval import buildings
+    from backend.retrieval.regulatory import aro_housing
+
+    with patch("backend.retrieval.regulatory.aro_housing.socrata_get", AsyncMock(side_effect=RuntimeError("down"))), \
+            pytest.raises(RuntimeError):
+        await aro_housing.aro_housing_by_community_area(24)
+    with patch("backend.retrieval.buildings.socrata_get", AsyncMock(side_effect=RuntimeError("down"))), \
+            patch("backend.retrieval.buildings.socrata_aggregate", AsyncMock(side_effect=RuntimeError("down"))), \
+            pytest.raises(RuntimeError):
+        await buildings.nearby_new_construction(41.91, -87.67)

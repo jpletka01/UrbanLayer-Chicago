@@ -96,8 +96,9 @@ async def find_nearest_divvy(
             app_token=settings.socrata_app_token or None,
         )
     except Exception as exc:
+        # Raises, caching nothing: the Profile then says Divvy wasn't checked, not that no station is near.
         log.warning("Divvy lookup failed for %s,%s: %s", lat, lon, exc)
-        return None
+        raise
 
     if not rows:
         _cache.set(key, False)

@@ -286,6 +286,8 @@ export interface RegulatorySummary {
   /** FEMA's flood map didn't answer, so `flood_zone` is null because it is UNKNOWN, not because the parcel is clear. */
   flood_unchecked?: boolean;
   brownfield_sites: Record<string, unknown>[];
+  /** EPA's brownfield search didn't answer: an empty `brownfield_sites` is UNKNOWN, not "none nearby" (Item 65). */
+  brownfield_unchecked?: boolean;
   aro_housing: AROHousingSummary | null;
   /** Overlay layer types the City map couldn't answer for. Their in_* flags are
    *  false because they're UNKNOWN — never render them as "not in". */

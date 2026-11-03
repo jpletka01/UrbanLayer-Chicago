@@ -781,6 +781,8 @@ _EN: dict[str, str] = {
     "data.unchecked_section_body": "{items} did not answer when this report was generated, so the figures that depend on it are missing or incomplete here. That is not the same as none on record.",
     "pill.unchecked": "NOT CHECKED",
     "tl.env_flood_unchecked": "FEMA flood zone could not be checked",
+    "tl.env_brownfield_unchecked": "EPA brownfield sites could not be checked",
+    "site.todo_brownfield_unchecked": "Check EPA brownfield sites nearby (the search did not answer when this report was generated)",
     "reg.flood_unchecked": "Not checked: FEMA's flood map did not answer when this report was generated, so the flood zone is unknown. Look the parcel up on FEMA's Flood Map Service Center (msc.fema.gov) before relying on this section.",
     "site.todo_flood_unchecked": "Check the FEMA flood zone (the lookup did not answer when this report was generated)",
 }
@@ -1513,6 +1515,8 @@ _ES: dict[str, str] = {
     "data.unchecked_section_body": "{items} no respondió cuando se generó este informe, por lo que las cifras que dependen de esa fuente faltan o están incompletas aquí. Eso no es lo mismo que «no hay registros».",
     "pill.unchecked": "NO VERIFICADO",
     "tl.env_flood_unchecked": "No se pudo verificar la zona inundable de FEMA",
+    "tl.env_brownfield_unchecked": "No se pudieron verificar los sitios contaminados (brownfields) de la EPA",
+    "site.todo_brownfield_unchecked": "Verificar los sitios contaminados de la EPA cercanos (la búsqueda no respondió cuando se generó este informe)",
     "reg.flood_unchecked": "No verificado: el mapa de inundación de FEMA no respondió cuando se generó este informe, por lo que se desconoce la zona inundable. Busque la parcela en el Flood Map Service Center de FEMA (msc.fema.gov) antes de basarse en esta sección.",
     "site.todo_flood_unchecked": "Verificar la zona inundable de FEMA (la consulta no respondió cuando se generó este informe)",
 }

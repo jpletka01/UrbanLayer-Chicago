@@ -44,5 +44,6 @@ async def aro_housing_by_community_area(
         _cache.set(key, rows)
         return rows
     except Exception as exc:
+        # Raises, caching nothing: the caller lists "affordable housing data" as not checked (Item 65).
         log.warning("ARO housing query failed for CA %s: %s", community_area_number, exc)
-        return []
+        raise

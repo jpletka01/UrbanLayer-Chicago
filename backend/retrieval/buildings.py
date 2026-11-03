@@ -336,6 +336,7 @@ async def nearby_new_construction(
         _construction_cache.set(key, result)
         return result
     except Exception as exc:
+        # Raises, caching nothing: zeros here read as "no construction nearby" (Item 65); the report lists
+        # "nearby construction activity" as not checked instead.
         log.warning("Nearby construction failed for (%s, %s): %s", lat, lon, exc)
-        return {"new_construction_count": 0, "demolition_count": 0,
-                "new_construction_cost": 0.0, "recent_projects": []}
+        raise

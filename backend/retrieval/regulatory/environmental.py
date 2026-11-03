@@ -70,7 +70,10 @@ async def query_brownfield_sites(
         resp = await client.get(EPA_BROWNFIELDS_URL, params=params)
         resp.raise_for_status()
         data = resp.json()
-        features = data.get("features", [])
+        if not isinstance(data, dict) or data.get("error") or not isinstance(data.get("features"), list):
+            # ArcGIS answers a failed query with HTTP 200 and an error body: not "no sites" (Item 65).
+            raise RuntimeError(f"EPA brownfield response has no feature list: {str(data)[:200]}")
+        features = data["features"]
         sites: list[dict] = []
         for feat in features:
             attrs = feat.get("attributes", {})
@@ -87,5 +90,6 @@ async def query_brownfield_sites(
         _cache.set(key, sites)
         return sites
     except Exception as exc:
+        # Raises, caching nothing: the regulatory domain marks brownfields "not checked" (Item 65).
         log.warning("EPA brownfield query failed for (%s, %s): %s", lat, lon, exc)
-        return []
+        raise

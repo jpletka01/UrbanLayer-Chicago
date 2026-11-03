@@ -68,5 +68,6 @@ class TestAROHousingRetrieval:
             new_callable=AsyncMock,
             side_effect=Exception("API error"),
         ):
-            result = await aro_housing_by_community_area(21)
-            assert result == []
+            # Raises (the caller lists it as not checked), never "no ARO projects" (Item 65).
+            with pytest.raises(Exception, match="API error"):
+                await aro_housing_by_community_area(21)

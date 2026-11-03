@@ -86,7 +86,9 @@ async def regulatory_domain(
         flood_unchecked = isinstance(results_map["flood"], Exception)
         flood_result = None if flood_unchecked else results_map["flood"]
         brownfield_result = results_map.get("brownfield")
-        if isinstance(brownfield_result, Exception):
+        # A brownfield search that raised is UNKNOWN, never "no sites nearby" (decision Item 65).
+        brownfield_unchecked = isinstance(brownfield_result, Exception)
+        if brownfield_unchecked:
             log.warning("Brownfield query failed: %s", brownfield_result)
             brownfield_result = []
         elif brownfield_result is None:
@@ -100,6 +102,7 @@ async def regulatory_domain(
         return _build_summary(
             overlay_results.hits, flood_result, brownfield_result,
             failed_layers=overlay_results.failed, flood_unchecked=flood_unchecked,
+            brownfield_unchecked=brownfield_unchecked,
         )
     finally:
         if owns:
@@ -113,6 +116,7 @@ def _build_summary(
     *,
     failed_layers: list[int] | None = None,
     flood_unchecked: bool = False,
+    brownfield_unchecked: bool = False,
 ) -> RegulatorySummary:
     overlays: list[OverlayDistrict] = []
     flags: dict[str, bool | str] = {}
@@ -209,5 +213,6 @@ def _build_summary(
         flood_zone_subtype=flood_zone_subtype,
         in_special_flood_hazard=None if flood_unchecked else in_sfha,
         flood_unchecked=flood_unchecked,
+        brownfield_unchecked=brownfield_unchecked,
         brownfield_sites=brownfield_sites,
     )

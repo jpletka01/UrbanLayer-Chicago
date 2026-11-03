@@ -19,6 +19,10 @@ log = logging.getLogger(__name__)
 _cache = TTLCache(ttl_seconds=3600, maxsize=512, name="parcels")
 _NOT_FOUND = object()
 
+
+class ParcelLookupError(RuntimeError):
+    """The Socrata fallback couldn't answer: "couldn't check", never "no parcel here" (decision Item 65)."""
+
 def _esri_to_geojson(esri_geom: dict | None) -> dict | None:
     """Convert Esri JSON rings to GeoJSON Polygon."""
     if not esri_geom:
@@ -78,6 +82,9 @@ async def lookup_parcel(
 
     result = await _lookup_parcel_gis(lat, lon, client=client)
     if result is None:
+        # GIS's empty answer is not trusted (broken spatial index), so only Socrata's empty answer is a
+        # checked "no parcel". Its failure raises (ParcelLookupError) and nothing is cached: both tiers
+        # used to return None on failure, which cached an outage as "no parcel here" for an hour.
         result = await _lookup_parcel_socrata(lat, lon, client=client)
     if result is None:
         _cache.set(key, _NOT_FOUND)
@@ -218,6 +225,9 @@ async def _lookup_parcel_socrata(
     is always in the window regardless of how dense the block is. If the ordered
     query is rejected (older SoQL), we fall back to an unordered bbox and **refuse
     on a full cap** rather than return a guess that may not be the real nearest.
+
+    ``None`` = no parcel in the bbox. A failed query and the full-cap refusal raise
+    ``ParcelLookupError``: neither is an answer.
     """
     settings = get_settings()
     where = (
@@ -256,12 +266,10 @@ async def _lookup_parcel_socrata(
                 "$where": where, "$select": select, "$limit": settings.limit_ccao_parcels,
             })
             if rows and len(rows) >= settings.limit_ccao_parcels:
-                log.warning(
-                    "Parcel bbox fallback hit the %d-row cap at (%s, %s) without distance "
-                    "ordering; refusing to guess a nearest parcel (dense/condo area).",
-                    settings.limit_ccao_parcels, lat, lon,
+                raise ParcelLookupError(
+                    f"parcel bbox fallback hit the {settings.limit_ccao_parcels}-row cap without "
+                    "distance ordering; refusing to guess a nearest parcel (dense/condo area)"
                 )
-                return None
 
         if not rows:
             return None
@@ -284,9 +292,11 @@ async def _lookup_parcel_socrata(
             "nbhd_code": closest.get("nbhd_code"),
             "tax_code": closest.get("tax_code"),
         }
+    except ParcelLookupError:
+        raise
     except Exception as exc:
         log.warning("Socrata parcel fallback failed for (%s, %s): %s", lat, lon, exc)
-        return None
+        raise ParcelLookupError(f"Socrata parcel fallback failed: {exc}") from exc
 
 
 def _distance_sq(lat: float, lon: float, row: dict) -> float:

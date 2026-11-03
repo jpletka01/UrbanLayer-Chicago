@@ -10,6 +10,7 @@ from backend.retrieval.property.parcels import (
     _lookup_parcel_gis,
     _lookup_parcel_socrata,
     PARCEL_QUERY_URL,
+    ParcelLookupError,
 )
 
 
@@ -202,7 +203,7 @@ async def test_socrata_fallback_refuses_guess_when_unordered_query_hits_cap():
     """If server-side ordering is rejected (older SoQL) the fallback runs an
     unordered bbox — where truncation IS a hazard. When that result hits the row
     cap, the true nearest may have been evicted, so the fallback must refuse to
-    guess (return None) rather than surface a possibly-wrong neighbor."""
+    guess (raise ParcelLookupError, never "no parcel") rather than surface a possibly-wrong neighbor."""
     from backend.config import get_settings
 
     cap = get_settings().limit_ccao_parcels
@@ -219,11 +220,12 @@ async def test_socrata_fallback_refuses_guess_when_unordered_query_hits_cap():
             raise Exception("query.soql.no-such-function: $order expression unsupported")
         return full_box                   # unordered retry → full cap, truncated
 
-    with patch("backend.retrieval.property.parcels.socrata_get", side_effect=_spy):
-        result = await _lookup_parcel_socrata(41.9307, -87.6411)
+    # A capped unordered result is not an answer: it raises, never "no parcel here" (Item 65).
+    with patch("backend.retrieval.property.parcels.socrata_get", side_effect=_spy), \
+            pytest.raises(ParcelLookupError, match="cap"):
+        await _lookup_parcel_socrata(41.9307, -87.6411)
 
     assert calls["n"] == 2, "should retry unordered after the ordered query is rejected"
-    assert result is None, "a capped unordered result must not be trusted as the nearest"
 
 
 @pytest.mark.asyncio
@@ -257,9 +259,29 @@ async def test_socrata_fallback_empty_box():
 
 @pytest.mark.asyncio
 async def test_socrata_fallback_handles_error():
-    with patch("backend.retrieval.property.parcels.socrata_get", side_effect=Exception("timeout")):
-        result = await _lookup_parcel_socrata(41.9307, -87.6411)
-    assert result is None
+    with patch("backend.retrieval.property.parcels.socrata_get", side_effect=Exception("timeout")), \
+            pytest.raises(ParcelLookupError, match="timeout"):
+        await _lookup_parcel_socrata(41.9307, -87.6411)
+
+
+@pytest.mark.asyncio
+async def test_both_tiers_failing_raises_and_caches_nothing():
+    """An outage of both tiers used to be cached as "no parcel here" for an hour (Item 65)."""
+    with patch("backend.retrieval.property.parcels._lookup_parcel_gis", AsyncMock(return_value=None)), \
+            patch("backend.retrieval.property.parcels.socrata_get", side_effect=Exception("timeout")) as soc:
+        for _ in range(2):
+            with pytest.raises(ParcelLookupError):
+                await lookup_parcel(41.9307, -87.6411)
+    assert soc.call_count == 4  # ordered + unordered, twice: nothing remembered
+
+
+@pytest.mark.asyncio
+async def test_a_checked_empty_bbox_is_cached_as_no_parcel():
+    with patch("backend.retrieval.property.parcels._lookup_parcel_gis", AsyncMock(return_value=None)), \
+            patch("backend.retrieval.property.parcels.socrata_get", AsyncMock(return_value=[])) as soc:
+        assert await lookup_parcel(41.9307, -87.6411) is None
+        assert await lookup_parcel(41.9307, -87.6411) is None
+    assert soc.call_count == 1
 
 
 @pytest.mark.asyncio

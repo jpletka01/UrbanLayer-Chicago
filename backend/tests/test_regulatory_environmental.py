@@ -81,8 +81,9 @@ async def test_handles_http_error():
         return_value=_mock_response({"error": "fail"}, status_code=500)
     )
 
-    result = await query_brownfield_sites(41.93, -87.65, client=client)
-    assert result == []
+    # Raises (the domain marks brownfields not checked), never "no sites nearby" (Item 65).
+    with pytest.raises(httpx.HTTPStatusError):
+        await query_brownfield_sites(41.93, -87.65, client=client)
 
 
 @pytest.mark.asyncio
@@ -90,8 +91,8 @@ async def test_handles_connection_error():
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = AsyncMock(side_effect=httpx.ConnectError("timeout"))
 
-    result = await query_brownfield_sites(41.93, -87.65, client=client)
-    assert result == []
+    with pytest.raises(httpx.ConnectError):
+        await query_brownfield_sites(41.93, -87.65, client=client)
 
 
 @pytest.mark.asyncio
