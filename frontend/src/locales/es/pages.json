@@ -1121,7 +1121,7 @@
       "including": "Incluye parcelas inusuales",
       "show": "Mostrar",
       "hide": "Ocultarlas",
-      "explain": "Terrenos baldíos de más de un acre sin dirección propia y parcelas cuyo contorno es el de todo un desarrollo. La mayoría son vías férreas, servicios públicos o áreas comunes, no un lote edificable. Muéstrelas solo si sabe lo que busca."
+      "explain": "Terrenos baldíos de más de un acre sin dirección propia y áreas comunes baldías dentro del contorno compartido de un desarrollo. La mayoría son vías férreas, servicios públicos o áreas comunes, no un lote edificable. Muéstrelos solo si sabe lo que busca."
     }
   },
   "settings": {

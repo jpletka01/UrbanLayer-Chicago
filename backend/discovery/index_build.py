@@ -388,11 +388,15 @@ def assemble_parcel(
             100 * (_UPSIDE_FAR_WEIGHT * far_headroom + _UPSIDE_LAND_WEIGHT * land_share)
         )
 
-    # "Unusual" parcels are hidden from Discovery by default (Jack, 2026-11-03; decision Item 60): a vacant lot
-    # over an acre with no street address of its own (rail, utility and common land: 86% of the 100,000 sq ft
-    # vacant lots had none), or a lot whose outline is a whole development's.
-    attrs["unusual"] = bool(attrs.get("shared_outline")) or (
-        bool(attrs.get("is_vacant")) and not attrs["own_address"] and (attrs.get("land_sqft") or 0) > UNUSUAL_VACANT_MIN_SQFT
+    # "Unusual" parcels are hidden from Discovery by default (Jack, 2026-11-03; decision Item 60): VACANT land
+    # that is either over an acre with no street address of its own (rail, utility and common land: 86% of the
+    # 100,000 sq ft vacant lots had none) or on a development's shared outline (a common area, like the $1 parcel).
+    # Never a building: condo units and townhomes share outlines too (11,254 condo units in six areas) and are
+    # ordinary homes; with no geometry land area they just fall out of lot-size filters.
+    vacant = bool(attrs.get("is_vacant"))
+    attrs["unusual"] = vacant and (
+        bool(attrs.get("shared_outline"))
+        or (not attrs["own_address"] and (attrs.get("land_sqft") or 0) > UNUSUAL_VACANT_MIN_SQFT)
     )
 
     regions = [f"neighborhood:{neighborhood_ca}"] if neighborhood_ca is not None else []

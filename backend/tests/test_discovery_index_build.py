@@ -792,3 +792,17 @@ def test_shared_outline_pin10s_groups_identical_newest_boundaries(tmp_path):
     conn.commit()
     conn.close()
     assert _shared_outline_pin10s(db, {"1428319102", "1428319103", "1428319104"}) == {"1428319102", "1428319103"}
+
+
+def test_unusual_is_vacant_land_only():
+    """Item 60: a vacant no-address lot over an acre, or vacant land on a shared outline; never a building."""
+    big = {"char_land_sf": "186214"}
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=big, address="~9171 S HARVARD AVE")
+    assert attrs["unusual"] is True
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=big, address="9171 S HARVARD AVE")
+    assert attrs["unusual"] is False  # its own address
+    _, _, _, attrs, _ = _assemble(_SPINE59, chars=None, shared_outline=True, address="~2520 N LAKEVIEW AVE")
+    assert attrs["unusual"] is True   # a development's common land
+    condo = {"pin": "14211010541670", "class": "299", "lat": 41.94, "lon": -87.64}
+    _, _, _, attrs, _ = _assemble(condo, chars=None, shared_outline=True, address="~3150 N SHERIDAN RD")
+    assert attrs["unusual"] is False  # a condo unit on a shared outline is a home

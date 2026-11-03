@@ -2830,7 +2830,10 @@ Consumers → Property Profile (renders pin + confidence badge)
             Discovery's largest "vacant lots" were 100,000+ sq ft strips, and 86% had no street address of their own:
             rail, utility and common land. The first idea, hiding every parcel without its own address, would have
             hidden 25% of the city (218,608 parcels, most of them ordinary lots). Scoped by measurement, the default
-            hides vacant no-address lots over an acre and shared outlines: 464 parcels. The rule lives in the
+            hides vacant land over an acre with no address of its own (464 parcels citywide) and vacant common land on
+            a development's shared outline. A first version also hid every parcel on a shared outline; the rebuilt
+            index showed that was 11,254 condo units in six neighborhoods alone, so buildings were taken out of the
+            rule. The rule lives in the
             canonical query, not as a post-filter, so the evaluator, the sentence and the count all see it, and the
             page always says how many were hidden with a one-click "Show" (Items 58, 60).
           </P>
