@@ -197,7 +197,15 @@
       "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF).",
       "unitYield606Applied": "In the Predominance of the Block (606) district: a two-unit building at 1,500 sq ft of lot per unit raises this from {{base}} to {{units}} (§17-2-0303-B.1).",
       "unitYield606Unchecked": "We could not check whether this parcel is in the Predominance of the Block (606) district. There, RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1).",
-      "datesLabel": "Dates"
+      "datesLabel": "Dates",
+      "typicalLot": "Typical lot here",
+      "typicalLotExplain_one": "The median of {{n}} {{zone}} lot in {{area}}; the middle half run {{p25}} to {{p75}}.",
+      "typicalLotExplain_other": "The median of {{n}} {{zone}} lots in {{area}}; the middle half run {{p25}} to {{p75}}.",
+      "typicalLotThisArea": "this community area",
+      "typicalLotThisLot": "This lot: {{lot}}.",
+      "typicalLotMethod": "From the Assessor's land areas and the County's parcel outlines; outlines shared by a whole development are left out.",
+      "unitYieldBlockFaceApplied": "60% or more of the lots on this block face have two or more units, which raises this from {{base}} to {{units}} (§17-2-0303-B.1).",
+      "unitYieldBlockFaceUnchecked": "We could not check the block-face rule, which can allow a two-unit building here (§17-2-0303-B.1)."
     },
     "verdict": {
       "inTif": "in {{name}} TIF",

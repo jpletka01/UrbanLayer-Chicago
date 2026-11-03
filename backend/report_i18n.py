@@ -157,6 +157,8 @@ _EN: dict[str, str] = {
     "dev.unit_capacity_tail": " — permitted units are further limited by minimum lot area, rear-yard open space, FAR, height, parking, and unit mix.",
     "dev.unit_capacity_606": " The parcel is in the Predominance of the Block (606) district, where RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1).",
     "dev.unit_capacity_606_unchecked": " We could not check whether the parcel is in the Predominance of the Block (606) district; there, RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1).",
+    "dev.unit_capacity_block_face": " By the Assessor's records, 60% or more of the lots on this block face hold two or more units, so RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1); whether each was lawfully improved is not on record.",
+    "dev.unit_capacity_block_face_unchecked": " We could not check the block-face rule (60% or more of the block face with two or more units allows a two-unit building at 1,500 sq ft of lot per unit, §17-2-0303-B.1).",
     "dev.opps_constraints": "Opportunities & Constraints",
 
     # Zoning section
@@ -891,6 +893,8 @@ _ES: dict[str, str] = {
     "dev.unit_capacity_tail": " — las unidades permitidas están además limitadas por el área mínima del lote, el espacio abierto del patio trasero, el FAR, la altura, el estacionamiento y la mezcla de unidades.",
     "dev.unit_capacity_606": " La parcela está en el distrito de Predominio de la Cuadra (606), donde RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1).",
     "dev.unit_capacity_606_unchecked": " No pudimos revisar si la parcela está en el distrito de Predominio de la Cuadra (606); ahí, RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1).",
+    "dev.unit_capacity_block_face": " Según los registros del Asesor, el 60% o más de los lotes de este frente de cuadra tienen dos o más unidades, así que RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1); el registro no dice si cada uno se construyó conforme a la ley.",
+    "dev.unit_capacity_block_face_unchecked": " No pudimos revisar la regla del frente de cuadra (si el 60% o más de los lotes tienen dos o más unidades, se permite un edificio de dos unidades con 1,500 pies² de lote por unidad, §17-2-0303-B.1).",
     "dev.opps_constraints": "Oportunidades y Limitaciones",
 
     # Zoning section

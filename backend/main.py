@@ -1027,6 +1027,7 @@ async def _retrieve(
         ctx.comparables = sc.comparables
         ctx.zone_definition = sc.zone_definition
         ctx.verdict = sc.verdict
+        ctx.block_face = sc.block_face
         # Address-scoped violation tri-state rides in its own field — it never
         # touches ctx.violations (the area feed, which still augments if the
         # router asked for it). The prompt rule prioritizes this for parcel-level
@@ -1997,6 +1998,19 @@ async def _fetch_scorecard_data(
             log.warning("Scorecard comparable sales failed: %s", exc)
             partial_failures.append(failures.label("comparables"))
 
+    # The RS-3 block-face test (§17-2-0303-B.1, Item 67): only RS-3 uses it, so only RS-3 pays for it. A failure is
+    # "unchecked" in the unit yield, never "not met".
+    if ctx.parcel_zoning and (ctx.parcel_zoning.zone_class or "").strip().upper() == "RS-3" and resolved_address:
+        from backend.models import BlockFaceTest
+        from backend.retrieval.property.block_face import block_face_test
+
+        try:
+            ctx.block_face = await _limited(block_face_test(resolved_address))
+        except Exception as exc:
+            log.warning("Scorecard block-face test failed: %s", exc)
+            ctx.block_face = BlockFaceTest(state="unchecked")
+            partial_failures.append(failures.label("block_face"))
+
     # Tri-state for the violations card: a present summary (ctx.violations), a
     # confirmed-zero ("no violations on record"), or an unconfirmed lookup
     # (address didn't parse / fetch failed → card omitted). Without this the
@@ -2022,7 +2036,7 @@ async def _fetch_scorecard_data(
 
 
 @app.get("/api/area-stats")
-async def area_stats(ca: int) -> dict:
+async def area_stats(ca: int, zone_class: str | None = None) -> dict:
     """Community-area benchmark aggregates for the Property Profile KPI band.
     Served from a daily in-process scan of the Discovery index; every stat is
     None/empty when the index is absent — the UI then renders no benchmark."""
@@ -2038,11 +2052,17 @@ async def area_stats(ca: int) -> dict:
             "median_mv_per_land_sqft": None,
             "n_mv_psf": 0,
             "by_land_use": {},
+            "lot_size_by_zone_class": {},
         }
-    from backend.provenance_figures import area_benchmark_entry
+    from backend.provenance_figures import area_benchmark_entry, typical_lot_entry
 
     entry = area_benchmark_entry(stats)
-    return {**stats, "provenance": {"area.benchmarks.market_value_per_land_sqft": entry} if entry else {}}
+    provenance = {"area.benchmarks.market_value_per_land_sqft": entry} if entry else {}
+    # The typical lot for the parcel's own district (WS5 PR3, Item 66), with its own entry.
+    lot_entry = typical_lot_entry(stats, zone_class) if zone_class else None
+    if lot_entry:
+        provenance["area.benchmarks.typical_lot_sqft"] = lot_entry
+    return {**stats, "provenance": provenance}
 
 
 _parcel_map_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="parcel_map")

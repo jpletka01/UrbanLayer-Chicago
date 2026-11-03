@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field, replace
+from typing import Any
 
 # The code vintage (code_vintage.json:current_through) this table was last checked against.
 # Evidence is test_zoning_ordinance_parity.py, which compares every value here with the
@@ -542,8 +543,15 @@ def _units_word(n: int) -> str:
     return f"{n} unit{'s' if n != 1 else ''}"
 
 
+def _face_words(face: Any) -> str:
+    """ "the block face (odd side of N AVERS AVE, W BELDEN AVE to W FULLERTON AVE)" """
+    if face.street and face.from_street and face.to_street:
+        return f"the block face ({face.side} side of {face.street}, {face.from_street} to {face.to_street})"
+    return "the block face"
+
+
 def max_units_by_lot_area(
-    zone_class: str | None, lot_sqft: float | int | None, *, in_606: bool | None = None,
+    zone_class: str | None, lot_sqft: float | int | None, *, in_606: bool | None = None, block_face: Any = None,
 ) -> dict | None:
     """Maximum dwelling units the lot's AREA allows, with the arithmetic shown.
 
@@ -556,6 +564,9 @@ def max_units_by_lot_area(
     the two (a 7,500 sq ft RS-3 lot keeps its 3 units).  ``rule_606`` says what happened: ``applied`` (in the
     district; ``units`` may or may not have changed), ``not_in_district``, ``unchecked`` (the base number
     stands and the response says the 606 check failed), or None for any other district.
+
+    ``block_face`` is the other trigger of the same rule (Item 67): a ``BlockFaceTest`` (or None when not run).
+    ``met`` opens the same two-unit path; ``rule_block_face`` repeats its state, and the arithmetic names the face.
     """
     mla = min_lot_area_per_unit(zone_class)
     if not mla or not lot_sqft or lot_sqft <= 0:
@@ -588,11 +599,32 @@ def max_units_by_lot_area(
         else:
             rule_606 = "not_in_district"
             caveat += " Not in a Predominance of the Block (606) district, so its two-unit rule (§17-2-0303-B.1) does not apply."
+    rule_block_face: str | None = None
+    if zone == "RS-3" and block_face is not None:
+        rule_block_face = block_face.state
+        face = _face_words(block_face)
+        if block_face.state == "met":
+            via_face = RULE_606_MAX_UNITS if lot >= RULE_606_MLA * RULE_606_MAX_UNITS else 0
+            arithmetic += (f"; {face}: {block_face.two_plus} of {block_face.lots} lots hold two or more units by the "
+                           f"Assessor's records (60% or more), so a two-unit building may use {RULE_606_MLA:,} sq ft per unit "
+                           "(§17-2-0303-B.1; whether each was lawfully improved is not on record)")
+            if via_face > units:
+                arithmetic += f": {lot:,} ÷ {RULE_606_MLA:,} = {lot / RULE_606_MLA:.1f} → {_units_word(via_face)}"
+                units = via_face
+        elif block_face.state == "not_met":
+            arithmetic += f"; {face}: {block_face.two_plus} of {block_face.lots} lots hold two or more units, under the 60% the block-face rule needs"
+        elif block_face.state == "not_computable":
+            arithmetic += (f"; {face}: too few lots with a unit count on record to apply the block-face rule"
+                           if block_face.lots else "; the block-face rule could not be applied (no block face found)")
+        else:
+            caveat += (" We could not check the block-face rule (60% of the block face with two or more units allows a "
+                       "two-unit building at 1,500 sq ft per unit, §17-2-0303-B.1).")
     return {
         "units": units,
         "base_units": base_units,
         "lot_sqft": lot,
         "min_lot_area_per_unit": mla if units == base_units else RULE_606_MLA,
+        "rule_block_face": rule_block_face,
         "arithmetic": arithmetic,
         "basis": "Minimum lot area per dwelling unit for the district",
         "caveat": caveat,

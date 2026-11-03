@@ -766,6 +766,8 @@ export interface ScorecardContext {
   // Nearest counted street segment (Tier-2 traffic chip) — lat/lon-scoped, not
   // parcel identity, so it ships in both tiers.
   traffic?: TrafficSummary | null;
+  // The RS-3 block-face test the page ran (Item 67), so a grounded unit yield matches the page.
+  block_face?: BlockFaceTest | null;
 }
 
 // Parcel-scoped (address-keyed) building-violation tri-state shipped in grounding.
@@ -819,6 +821,23 @@ export interface UnitYield {
   base_units?: number;
   /** RS-3 only: whether the Predominance of the Block (606) rule applied, was not in play, or could not be checked. */
   rule_606?: "applied" | "not_in_district" | "unchecked" | null;
+  /** RS-3 only: the block-face test (Item 67), the rule's other trigger; null when it didn't run. */
+  rule_block_face?: BlockFaceTest["state"] | null;
+}
+
+/** The RS-3 "60% of the block face" test (§17-2-0303-B.1, Item 67), from the Assessor's records. */
+export interface BlockFaceTest {
+  state: "met" | "not_met" | "not_computable" | "unchecked";
+  reason?: string | null;
+  lots: number;
+  counted: number;
+  two_plus: number;
+  street?: string | null;
+  side?: "odd" | "even" | null;
+  from_number?: number | null;
+  to_number?: number | null;
+  from_street?: string | null;
+  to_street?: string | null;
 }
 
 /** One "what this page does not cover" note for this parcel (backend coverage_notes). */
@@ -970,6 +989,7 @@ export interface ContextObject {
   code_currency?: CodeCurrency | null;
   tod_benefits?: TodBenefits | null;
   unit_yield?: UnitYield | null;
+  block_face?: BlockFaceTest | null;
   community_area: number | null;
   community_area_name: string | null;
   resolved_address: string | null;

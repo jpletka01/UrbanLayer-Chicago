@@ -34,6 +34,7 @@ LABELS: dict[str, str] = {
     "vacant": "vacant buildings",
     "food_inspections": "food inspections",
     "adjacent_zoning": "adjacent zoning",
+    "block_face": "block-face unit count",
     "address_permits": "address-specific permits",
     "address_violations": "address-specific violations",
     "nearby_construction": "nearby construction activity",
@@ -47,7 +48,7 @@ ALIASES: dict[str, str] = {"zoning_lookup": "zoning", "comparable_sales": "compa
 # nearby sales, ``record`` = violations, 311 and permits at the address, and the flood zone, ``area`` = the neighborhood. These are the
 # Profile's module ids (``module-<name>``), so the frontend table must match (a pytest pins it).
 MODULES: dict[str, str] = {
-    "zoning": "build", "regulatory": "build", "adjacent_zoning": "build",
+    "zoning": "build", "regulatory": "build", "adjacent_zoning": "build", "block_face": "build",
     "property": "economics", "incentives": "economics",
     "comparables": "market", "nearby_construction": "market",
     "violations": "record", "address_311": "record", "address_permits": "record", "address_violations": "record",

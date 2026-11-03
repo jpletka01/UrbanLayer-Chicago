@@ -779,6 +779,26 @@ class RentEvidence(BaseModel):
     unchecked: list[str] = Field(default_factory=list)
 
 
+class BlockFaceTest(BaseModel):
+    """The RS-3 "60% of the block face" test (§17-2-0303-B.1, decision Item 67; ``retrieval/property/block_face.py``).
+
+    ``state``: ``met`` (60% or more of the face's lots hold two or more units, from the Assessor's records),
+    ``not_met``, ``not_computable`` (fewer than 4 lots, under 90% of them with a count, or no face found;
+    ``reason`` says which) or ``unchecked`` (a source failed). Never "lawfully improved": a record can't say."""
+
+    state: Literal["met", "not_met", "not_computable", "unchecked"]
+    reason: str | None = None
+    lots: int = 0
+    counted: int = 0
+    two_plus: int = 0
+    street: str | None = None
+    side: Literal["odd", "even"] | None = None
+    from_number: int | None = None
+    to_number: int | None = None
+    from_street: str | None = None
+    to_street: str | None = None
+
+
 class NeighborhoodSummary(BaseModel):
     demographics: DemographicsSummary | None = None
     census_tract: CensusTractDemographics | None = None
@@ -1056,6 +1076,9 @@ class ContextObject(BaseModel):
     # so the chat affirms the SAME at-address fact the page shows. PARCEL-scoped —
     # distinct from the area-level `violations` above (never merge the two).
     address_violations: AddressViolations | None = None
+    # The RS-3 block-face test (§17-2-0303-B.1, Item 67): the Profile computes it for RS-3 parcels; unit_yield
+    # reads it, so the Profile, the report and a grounded chat agree. None = not run (not RS-3, or this path).
+    block_face: BlockFaceTest | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
     partial_failures: list[str] = Field(default_factory=list)
@@ -1196,7 +1219,7 @@ class ContextObject(BaseModel):
         from backend.retrieval.zoning_definitions import max_units_by_lot_area
 
         return max_units_by_lot_area(self.parcel_zoning.zone_class, self.property.land_sqft,
-                                     in_606=in_606_district(self.regulatory))
+                                     in_606=in_606_district(self.regulatory), block_face=self.block_face)
 
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property
@@ -1283,6 +1306,8 @@ class ScorecardContext(BaseModel):
     # "what's the traffic like here" answers from the number the page shows.
     # Scoped to the nearest measured street — not a parcel attribute.
     traffic: TrafficSummary | None = None
+    # The block-face test the Profile ran (Item 67), so a grounded chat turn's unit yield matches the page.
+    block_face: BlockFaceTest | None = None
 
 
 class ChatRequest(BaseModel):

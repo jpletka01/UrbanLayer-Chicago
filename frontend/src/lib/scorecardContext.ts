@@ -119,6 +119,8 @@ export function buildScorecardContext(resp: ScorecardResponse | null): Scorecard
     // Nearest measured street (lat/lon-scoped, identity-independent) — lets a
     // grounded "what's the traffic like here" answer from the page's number.
     traffic: resp.context.neighborhood?.traffic ?? null,
+    // Address-scoped (the street's block face), so it ships in both tiers like the zoning it qualifies.
+    block_face: resp.context.block_face ?? null,
   };
 
   // Zoning-only tier. DO NOT add property/comparables here: with no verified PIN

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { fetchReport, checkReportAccess, fetchAreaStats, fetchParcelMapLayers, type ScorecardResponse } from "../lib/api";
+import { fetchReport, checkReportAccess, fetchAreaStats, fetchParcelMapLayers, type ScorecardResponse, type TypicalLot } from "../lib/api";
 import type { ParcelQuery } from "../lib/types";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useSelectedParcel } from "../contexts/SelectedParcelContext";
@@ -88,6 +88,7 @@ interface AreaStats {
   n_assessed: number;
   median_mv_per_land_sqft: number | null;
   n_mv_psf: number;
+  lot_size_by_zone_class?: Record<string, TypicalLot>;
   provenance?: Record<string, Provenance>;
 }
 
@@ -492,7 +493,7 @@ export default function ScorecardPage() {
     if (!data) { setAreaStats(null); setMapLayers(null); return; }
     let cancelled = false;
     if (data.community_area != null) {
-      fetchAreaStats(data.community_area).then((s) => { if (!cancelled) setAreaStats(s); });
+      fetchAreaStats(data.community_area, data.zone_definition?.zone_class).then((s) => { if (!cancelled) setAreaStats(s); });
     }
     const mlat = data.resolved_lat ?? data.lat;
     const mlon = data.resolved_lon ?? data.lon;
@@ -1232,6 +1233,10 @@ export default function ScorecardPage() {
                               provenance={data.provenance ?? null}
                               coverageNotes={ctx.coverage_notes ?? null}
                               passedNotOnMap={ctx.passed_not_on_map ?? null}
+                              typicalLot={areaStats?.lot_size_by_zone_class?.[zdef.zone_class.trim().toUpperCase()] ?? null}
+                              typicalLotEntry={areaStats?.provenance?.["area.benchmarks.typical_lot_sqft"]}
+                              lotSqft={ctx.property?.land_sqft ?? null}
+                              areaName={data.community_area_name ?? null}
                             />
                             <WhatIfCard
                               key={`what-if:${data.resolved_pin ?? data.address}`}

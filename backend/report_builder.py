@@ -2415,7 +2415,12 @@ def _compute_unit_yield(report: "ReportData") -> dict | None:
         "land_sqft": uy["lot_sqft"],
         "zone_class": zoning.zone_class.strip().upper(),
         "rule_606": uy.get("rule_606"),
-        "raised_by_606": uy["units"] > uy.get("base_units", uy["units"]),
+        "rule_block_face": uy.get("rule_block_face"),
+        # Which trigger of §17-2-0303-B.1 raised the number: the 606 district first (it needs no count), else the
+        # block face (Item 67).
+        "raised_by_606": uy.get("rule_606") == "applied" and uy["units"] > uy.get("base_units", uy["units"]),
+        "raised_by_block_face": uy.get("rule_606") != "applied" and uy.get("rule_block_face") == "met"
+        and uy["units"] > uy.get("base_units", uy["units"]),
     }
 
 
