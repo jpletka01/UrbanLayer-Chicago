@@ -55,7 +55,7 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
 - `strategy/2026-07-02_data-expansion-candidates.md` — **live backlog** of available-but-unintegrated data, ranked (Tier 0–2; items 1–2 + appeals/ward shipped in the lot-info arc; CPS/Divvy tail remains).
 
 ## Archive & Audits (pointers — full stories on the About page)
-- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Full list in `decisions/README.md`; the largest: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phases 0–1, WS5 PR1/PR2/PR4, Profile redesign; Items 1–54) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
+- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Full list in `decisions/README.md`; the largest: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phases 0–1, WS5 PR1/PR2/PR4, Profile redesign, decisions build, Enterprise Zone source; Items 1–64) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
 - `archive/*` — one-paragraph markers for each shipped feature/incident (deployment, expansion, revenue, i18n,
   a-la-carte reports, coherence steps 1–3, selected-parcel, scorecard-ux, report-oom-reranker,
   `2026-06-report-saga` [V3→V6 + R5–R7], pin-resolution-seam, scorecard-chat-grounding, verdict-grounding-ux,
@@ -85,6 +85,8 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   rules live in `guides/page-design.md`; steps 5-7 open],
   **`2026-10-31_ws8-capacity-map`** [WS8 Phase 1: free "how much of what's allowed is built" Profile map, `/api/capacity-map`,
   committed commercial building-area artifact; every uncolored parcel named],
+  **`2026-11-03_enterprise-zone-source`** [EZ boundaries from `bwpt-y235` after the `64xf-pyvh` map view lost its geometry;
+  an empty layer reads "Not checked"; Discovery index rebuild still pending],
   **`2026-10-31_ws5-small-developer-calculators`** [606 rule in the unit yield; free "What if this were rezoned?" card;
   block-face test measured as computable; PR3 and building the block-face test still active and unapproved]).
   `archive/TEMPLATE.md` is the archivation template.

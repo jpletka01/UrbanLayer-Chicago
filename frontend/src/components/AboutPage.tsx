@@ -2864,6 +2864,16 @@ Consumers → Property Profile (renders pin + confidence badge)
             now finds a dot by sweeping real pointer moves across the map (Item 57).
           </P>
 
+          <Sub>A source that went blank without failing</Sub>
+          <P>
+            The City republished its Enterprise Zone dataset as a map view, and the old address kept answering: six
+            features, every geometry null, no columns. Nothing errored, so the loader built zero zones and every
+            parcel read "not in an Enterprise Zone", and the citywide Discovery index marked all 882,328 parcels
+            outside one. The data had moved to the map's backing dataset, found through the catalog's own link. The
+            lasting fix is the rule: a source that returns nothing usable now fails like any outage, so the page says
+            "Not checked" instead of "no", and Discovery leaves the field empty rather than false (Item 64).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}

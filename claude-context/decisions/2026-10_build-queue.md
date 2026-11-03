@@ -2652,7 +2652,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 64: Enterprise Zones come from `bwpt-y235`; an empty boundary layer reads "Not checked" (2026-11-03)
 
-**Status: PR open, not merged.** Found while rebuilding the Discovery index for PR #180.
+**Status: merged #181 (`b61d91b`, 2026-11-03), deployed.** Found while rebuilding the Discovery index for PR #180.
 
 **What broke.** `64xf-pyvh` ("Boundaries - Enterprise Zones") became a map view when the City republished it on 2026-02-23. Its GeoJSON now returns 6 features with `geometry: null` and no properties, and `/api/views` lists no columns. The loader skipped every feature and cached an empty list, so: the Profile, report and chat said "Not in an Enterprise Zone" for every parcel (from an empty source, against the truth rule in `guides/source-confidence.md`), and the citywide Discovery index has `in_enterprise_zone` false on all 882,328 parcels (the filter matches nothing).
 
@@ -2665,3 +2665,5 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Data health.** The registry entry now points at `bwpt-y235`, with a contract on the `name` column and an exact count band of 6.
 
 **Needs:** a Discovery index rebuild after merge to fill `in_enterprise_zone` (the current prod index has it false everywhere). **Revisit if** the City republishes the map again (the count band alarms on a row-count change; a null-geometry republish of `bwpt-y235` would surface as "Not checked" on the Profile rather than as a wrong "no").
+
+**Production (2026-11-03).** CI test/lint/deploy green. `/api/scorecard?lat=41.92341&lon=-87.75603` → in "Chicago Enterprise Zone 5"; `?lat=41.85295&lon=-87.6871` → "Chicago Enterprise Zone 1"; `?address=1601 N Milwaukee Ave` → not in a zone, `enterprise_zone_unchecked` false (checked, not failed). **Not done:** the production Discovery index rebuild (Jack: "not now"); until then the `enterprise_zone` filter matches nothing. **Not verified:** the Profile's "Not checked" row on the live site (it shows only during an outage; covered by vitest).
