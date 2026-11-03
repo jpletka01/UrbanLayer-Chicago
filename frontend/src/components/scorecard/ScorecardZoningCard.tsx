@@ -53,7 +53,7 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, passedNotOnMap, typicalLot, typicalLotEntry, lotSqft, areaName }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, passedNotOnMap, typicalLot, lotSqft, areaName }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
@@ -74,7 +74,6 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   passedNotOnMap?: PassedNotOnMap[] | null;
   /** The district's typical lot in this community area (WS5 PR3, Item 66); null when too few lots. */
   typicalLot?: TypicalLot | null;
-  typicalLotEntry?: Provenance;
   /** This parcel's lot area, for the comparison behind the Info tool. */
   lotSqft?: number | null;
   areaName?: string | null;
@@ -170,7 +169,8 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
         )}
 
         {typicalLot && (
-          // One figure; the sample, the middle half and this lot's own area sit behind the Info tool (Item 66).
+          // One figure; the sample, the middle half and this lot's own area sit behind the Info tool (Item 66). No
+          // caption: the backend shows it only at n >= 50, so it is always standard, and its n is in the tool.
           <div data-testid="typical-lot">
             <div className="flex items-baseline justify-between gap-3">
               <span className="inline-flex items-center gap-1 text-caption text-text-muted">
@@ -194,7 +194,6 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
               </span>
               <span className="text-body text-text-primary">{ft2(typicalLot.median_lot_sqft)}</span>
             </div>
-            <ConfidenceCaption entry={typicalLotEntry} size="micro" />
           </div>
         )}
 

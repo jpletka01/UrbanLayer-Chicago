@@ -91,6 +91,7 @@ retrieval/
 │   │                       # the whole lot). Median prefers land-only comps, discloses `buildable_median_basis`.
 │   │                       # ⚠️ annotates COPIES — nearby_comparable_sales returns a CACHED dict. /api/scorecard only;
 │   │                       # the $25 report path is deliberately unchanged
+│   ├── block_face.py       # RS-3 "60% of the block face" test (§17-2-0303-B.1, Item 67): the code's block face from the City's street centerlines (pr57-gg9e, segments chained to the two nearest intersecting streets), every base parcel on that side in any district, units from the index else the Assessor (x54s); judged at ≥90% coverage / ≥4 lots; feeds max_units_by_lot_area(block_face=) beside the 606 rule; failure = BlockFaceError → "unchecked"
 │   └── chrs.py             # CHRS orange/red (1996, frozen; API asset 403s but /download/ works) from committed artifact ingestion/data/chrs_orange_red.json.gz (build: ingestion.build_chrs_artifact; COLOR_ID 1=orange 2=red, verified vs known red landmarks). Lazy shapely STRtree PIP → ParcelFlags.chrs_rating ("90-day demolition hold"). A committed data artifact needs THREE allowlist lines: .gitignore, .dockerignore, AND a per-file COPY in backend/Dockerfile (all three bit on this artifact)
 ├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood (raises FloodLookupError when FEMA doesn't answer; None = no mapped zone), environmental] all parallel + aro_housing.py (ARO affordable housing projects by CA, triggered by any domain not just regulatory)
 ├── incentives/             # Orchestrator: point-based [TIF, EZ, grants] parallel → conditional [financials, OZ]; OR community-area-based TIF + grants. grant_programs.py queries SBIF + NOF
@@ -101,8 +102,9 @@ retrieval/
 
 - **New Socrata module**: copy `business.py` — same `socrata_get()` pattern with `community_area` filter.
 - **New ArcGIS module**: copy `zoning.py` — same spatial query pattern, change endpoint + layer ID.
+- **A failed or empty source raises; nothing partial is cached (Item 65).** Never return the value a checked "no" returns (`None`, `[]`, zero counts) on a failure: raise, and let the domain orchestrator name the gap (`data_gaps` → `partial_failures` → the Profile's "couldn't check" rows and the chat footer). ArcGIS answers a failed query with HTTP 200 and an `error` body: check for a feature list (`incentives/_hud_tracts.tract_features`).
 - **Domain orchestrator**: `asyncio.gather(return_exceptions=True)` → build summary → graceful degradation on failures.
-- **External queries**: always use TTLCache, `httpx.AsyncClient`, return `None` on failure. All modules use shared HTTP clients (module-level `_get_X_client()` pattern, same as `socrata.py:get_shared_client()`). Functions accept optional `client` parameter for testing.
+- **External queries**: always use TTLCache, `httpx.AsyncClient`; `None` means a checked miss, a failure raises (Item 65). All modules use shared HTTP clients (module-level `_get_X_client()` pattern, same as `socrata.py:get_shared_client()`). Functions accept optional `client` parameter for testing.
 - **Tests**: mock external APIs in unit tests, `@pytest.mark.integration` for real-API tests. Cache-clearing autouse fixture in `conftest.py`.
 
 ## Property Discovery (`discovery/`)

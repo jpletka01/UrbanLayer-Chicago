@@ -2667,3 +2667,82 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Needs:** a Discovery index rebuild after merge to fill `in_enterprise_zone` (the current prod index has it false everywhere). **Revisit if** the City republishes the map again (the count band alarms on a row-count change; a null-geometry republish of `bwpt-y235` would surface as "Not checked" on the Profile rather than as a wrong "no").
 
 **Production (2026-11-03).** CI test/lint/deploy green. `/api/scorecard?lat=41.92341&lon=-87.75603` → in "Chicago Enterprise Zone 5"; `?lat=41.85295&lon=-87.6871` → "Chicago Enterprise Zone 1"; `?address=1601 N Milwaukee Ave` → not in a zone, `enterprise_zone_unchecked` false (checked, not failed). **Not done:** the production Discovery index rebuild (Jack: "not now"); until then the `enterprise_zone` filter matches nothing. **Not verified:** the Profile's "Not checked" row on the live site (it shows only during an outage; covered by vitest).
+
+## Item 65: the honest-failure sweep — a failed or empty source says "not checked", never "none" (2026-11-03)
+
+**Status: built on `release/2026-11-03-honest-failures-ws5` (one release PR with Items 66-67).** Jack chose wave A (2026-11-03). Audited the `except Exception` blocks in `backend/retrieval/` (70 on `main` at the start) for one pattern: a failure, an outage or an empty response that comes back as the same value as a checked "no". Fixed, in Jack's order:
+
+**Decision 1: the incentive layers raise, and the orchestrator says which program it couldn't check.** TIF had Item 64's bug: an empty layer cached `[]`, `check_tif` turned a load failure into `None` ("not in a TIF"), the area lookup into `[]`, and the fund/financial queries into `[]`. All four raise now. `IncentivesSummary.unchecked` (`tif`/`oz`/`ez`/`qct`/`nmtc`) and `data_gaps` (labels in `failures.INCENTIVE_GAPS`, key `incentives`, module `economics`) carry it to the Profile card (a "Not checked" row per program, out of the "Not in" line), the chat rail badges, the chat footer and turn summary, and the report rows. `enterprise_zone_unchecked` stays (stored contexts, report). A grounded chat turn rebuilds the labels from the program ids the page sent, never its text.
+
+**Decision 2: HUD's tract layers fail with HTTP 200.** ArcGIS answers a failed query with `200` and `{"error": ...}`; the OZ, QCT and NMTC loaders read that as "no features" and cached "not designated" for 24 hours. `incentives/_hud_tracts.tract_features` raises `HudLayerError` unless the body has a feature list (recorded error body: `fixtures/hud_arcgis_error_body_2026-11-03.json`, an invalid-field query). A failed FCC tract lookup raises too (it returned `None`, which skipped QCT/NMTC and read as "not in one"); QCT and NMTC are then unchecked.
+
+**Decision 3: Opportunity Zones by point, not tract id.** OZs were designated in 2018 on **2010** tracts (`GEOID10`); the FCC returns the 2020 tract. Where a tract was split or renumbered, the id match read a designated parcel as "not designated". `check_opportunity_zone(lat=, lon=)` is a point-in-polygon query on the designated tracts' own outlines (verified live: points inside 17031540101 and 17031440201 hit, a Gold Coast point misses). It no longer waits for the tract. The tract-id path stays for callers with no point. *Not measured:* how many Chicago parcels the id match got wrong.
+
+**Decision 4: NMTC lists every tract**, so a tract it doesn't list is "not checked", not "not eligible" (1,331 Cook County tracts in NMTC20, 708 not qualifying; 418 in the QCT layer, 181 in the OZ layer; counted 2026-11-03).
+
+**Decision 5: Walk Score, Divvy, traffic.** Walk Score cached a bad key (status 40) and any unknown status as "not found" for 48 hours and returned `None` on quota or "still calculating"; every non-score answer now raises `WalkScoreError` and nothing is cached. The message carries only the exception type: httpx's text includes the request URL, which carries the API key. Divvy and traffic raise instead of `None`. The neighborhood orchestrator lists each part that raised in `NeighborhoodSummary.data_gaps` (`failures.NEIGHBORHOOD_GAPS`, key `neighborhood`, module `area`), so the Profile's Neighborhood module shows its existing "couldn't check" row and the chat footer names it. No per-tile change.
+
+**Decision 6: the parcel lookup.** `lookup_parcel` cached "no parcel here" for an hour whenever both tiers returned `None`, and both returned `None` on failure. GIS's empty answer is still not trusted (its spatial index is broken), so the Socrata fallback is the one that must be honest: a failed query, or its full-cap refusal on an unordered bbox, raises `ParcelLookupError` and nothing is cached; the property domain then reports "property records" as not checked. The Address Points and Assessor lookups were left as they are: each returns `None` on failure without caching, which falls through to the next tier, and `parcel_address_matches` returning False on failure withholds the PIN (the conservative side).
+
+**Decision 7: three more found by the audit.** EPA brownfields returned `[]` on failure and the report then listed "EPA brownfield proximity search" as completed and could say "No flood/brownfield risk"; it raises now, `RegulatorySummary.brownfield_unchecked` + failure key `brownfield` (module `record`), and the report says "EPA brownfield sites could not be checked" with a to-do. ARO housing returned `[]` and nearby construction returned zero counts on failure; both raise into their existing failure labels.
+
+**Left as is (a failure there omits a figure; nothing says "none"):** building-facts fallbacks, energy benchmarking, parcel geometry, assessor permits, CHRS artifact load, area stats (a failed scan shows no benchmark), demographics/tract figures (already withheld on failure), vector search, the GIS tier.
+
+**Also:** the report's `reg.unchecked` / `reg.unchecked_note` were English in the Spanish catalog (from before #181); translated.
+
+**Revisit if** a new retrieval module lands: the pattern to copy is "raise, cache nothing, the orchestrator names the gap" (`enterprise_zones.py`, `_hud_tracts.py`).
+
+**Numbers**
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| `except Exception` blocks in `backend/retrieval/` before / after | 70 / 65 (15 that returned a "none" now raise; the rest re-raise, fall through to the next tier, or omit a figure) | `rg -n "except Exception" backend/retrieval \| wc -l` |
+| Backend unit suite | 2,699 passed | `python -m pytest backend/tests -m "not integration"` |
+| New tests (recorded HUD, FCC, EPA error bodies) | `test_incentives_honest_failures.py` (26), parcel/neighborhood/brownfield updates | same |
+
+## Item 66 (WS5 PR3): typical lot size for the parcel's district in its community area (2026-11-03)
+
+**Status: built on the release branch.** Jack chose wave B (2026-11-03); the plan is `plans/2026-10-30_ws5-calculators-plan.md` PR3, option (b) (exact district, now that Item 59 put `zone_class` in the index).
+
+**Decision 1: base parcels in the exact district only.** `area_stats._scan_index` (the existing daily pass) adds `lot_size_by_zone_class`: per community area and exact zoning class, the median and the 25th/75th percentile of `land_sqft` over parcels whose PIN ends in 0000 (a condo unit PIN would claim the whole lot), leaving out shared outlines (Item 59) and "unusual" parcels (Item 60). Shown only at n ≥ 50 (`MIN_LOT_N`, the Profile's `MIN_BENCHMARK_N`); a thinner district is withheld, not shown thin.
+
+**Decision 2: one figure on the page.** The zoning card gets one row, "Typical lot here · 3,150 ft²"; the sample size, the middle half, this lot's own area and the method sit behind its Info tool (`page-design-rules`). No confidence caption: the figure only exists at n ≥ 50, so it is always standard, and its n is in the tool. `/api/area-stats?zone_class=` adds its provenance entry `area.benchmarks.typical_lot_sqft` (our calculation on the Discovery index; inputs Assessor characteristics, PTAXSIM outlines, the zoning map).
+
+**Needs:** `zone_class` in the production index, i.e. the next index rebuild (Jack: not now, 2026-11-03; the monthly timer). Until then production returns an empty `lot_size_by_zone_class` and the row doesn't render.
+
+**Numbers** (a two-area index built for this, 2026-11-03: CAs 22 and 24, 74,689 parcels, every one with `zone_class`; `DISCOVERY_INDEX_PATH=<scratch> python -m backend.discovery.index_build --community-areas 22,24`)
+
+| Measure | Result |
+|---|---:|
+| Eligible lots (base parcel, land area, district, not shared/unusual) | 37,856 of 74,689 rows |
+| Logan Square: districts shown / lots in them | 17 / 12,284; RS-3 median 3,150 ft² (3,000–3,750, n = 8,389), RT-4 2,770 ft² (n = 1,407) |
+| West Town: districts shown / lots in them | 27 / 14,156; RS-3 3,046 ft² (2,904–3,150, n = 5,505), RT-4 3,000 ft² (n = 3,747) |
+| Scan time for both areas | 0.35 s |
+
+**Not measured:** citywide coverage (no citywide index with `zone_class` yet); whether a median of Assessor land areas matches surveyed lots.
+
+## Item 67 (WS5 PR4): the RS-3 "60% of the block face" rule, from the code's own definition (2026-11-03)
+
+**Status: built on the release branch.** Item 44 measured it and left two questions open; reading the code (the local Title 17 corpus) answered both:
+
+**Decision 1: the block face is the code's, from the City's street centerlines.** §17-2-0303-B.1 says "the zoning lots fronting on the same side of the street between the two nearest intersecting streets", and §17-17-0221 defines a block face the same way. Item 44's stand-in (street + hundred block + parity) is replaced by the City's Street Center Lines (`pr57-gg9e`): each segment has its address range per side and the street it meets at each end (`f_cross_st`/`t_cross_st`, `0` = no street). `block_face.face_range` chains segments through street-less nodes (whichever way each was digitized) until both ends meet a real street. Checked live: 2307 N Avers = 2301-2359, Belden to Fullerton; 2541 N Spaulding = Altgeld to Wrightwood; 2014 W Cortland = Damen to Hoyne; on N Avers the 2500 block is two segments joined at a street-less node, and the walk joins them (recorded fixture `centerlines_n_avers_ave_2026-11-03.json`).
+
+**Decision 2: every lot on the face counts, in any district.** The code counts the zoning lots fronting the face; Item 44 counted only RS-3 lots, which is wrong for a face whose corner lots are B or RT. A base PIN10 with its own Assessor address stands in for a zoning lot (a zoning lot can span several PINs; we can't see that). Lots without an address of their own (the index's `~` tier, often vacant) are not on the list, so a face with many unaddressed vacant lots can read "met" when the City's count would differ: stated in the method.
+
+**Decision 3: units from the index first, then the Assessor.** The index's `units` (Item 59) where present, else one query to the Assessor's characteristics for the lots it lacks; decoded by Item 44's rules; a PIN10 with unit PINs on it is a condo building (two or more). Production's index has no `units` until its rebuild, so production asks the Assessor for every lot (one Socrata query per face, cached a day).
+
+**Decision 4: the gate and the wording.** Judged only at ≥ 4 lots and ≥ 90% of them with a count (Jack, 2026-10-31); "met" at 60% or more with two or more units; an unknown lot counts as not two-plus. "Lawfully improved" is not on any record we read, so the arithmetic says so. A met face opens the same two-unit path as the 606 district inside `max_units_by_lot_area` (`rule_block_face`), so the Profile, the $25 report (`raised_by_block_face`) and a grounded chat (`ScorecardContext.block_face`) agree. The 606 district is credited first when both apply. The Profile adds one line only when the face raises the number, or a "couldn't check" line when the test failed (new failure key `block_face`, module `build`); a face that isn't met adds no visible text (its counts are in the arithmetic behind the Info tool).
+
+**Cost on production:** one street-centerline query per street (cached 7 days), one Assessor query per face (cached a day), RS-3 parcels only; the street index over the in-memory Discovery index is built once per index version in a thread (0.14 s for two areas; the citywide build and its memory were not measured).
+
+**Numbers** (the two-area index above; 60 RS-3 parcels with their own address, seed 31; live centerlines and Assessor records, 2026-11-03)
+
+| Measure | Result |
+|---|---:|
+| Faces met / not met / not computable | 29 / 24 / 7 |
+| Time per test (first call per street; cached after) | 0.1-1.1 s |
+| Tests | `test_block_face.py` (35) |
+
+**Not measured:** citywide; a check against the City's own determination for any parcel; how often unaddressed lots change the answer; the street index's memory on the full 882k-parcel index.
+
+**Revisit if** the City publishes zoning lots, or the index gains a reliable "lot with no address" list for faces.

@@ -1234,7 +1234,6 @@ export default function ScorecardPage() {
                               coverageNotes={ctx.coverage_notes ?? null}
                               passedNotOnMap={ctx.passed_not_on_map ?? null}
                               typicalLot={areaStats?.lot_size_by_zone_class?.[zdef.zone_class.trim().toUpperCase()] ?? null}
-                              typicalLotEntry={areaStats?.provenance?.["area.benchmarks.typical_lot_sqft"]}
                               lotSqft={ctx.property?.land_sqft ?? null}
                               areaName={data.community_area_name ?? null}
                             />
