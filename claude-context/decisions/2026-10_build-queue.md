@@ -2697,7 +2697,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 | Measure | Result | Reproduce |
 |---|---:|---|
 | `except Exception` blocks in `backend/retrieval/` before / after | 70 / 65 (15 that returned a "none" now raise; the rest re-raise, fall through to the next tier, or omit a figure) | `rg -n "except Exception" backend/retrieval \| wc -l` |
-| Backend unit suite | 2,699 passed | `python -m pytest backend/tests -m "not integration"` |
+| Backend unit suite (`make test`) | 2,694 passed; eval scorers 188; vitest 942 | `python -m pytest backend/tests -m "not integration"` |
 | New tests (recorded HUD, FCC, EPA error bodies) | `test_incentives_honest_failures.py` (26), parcel/neighborhood/brownfield updates | same |
 
 ## Item 66 (WS5 PR3): typical lot size for the parcel's district in its community area (2026-11-03)
