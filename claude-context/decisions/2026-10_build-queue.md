@@ -2649,3 +2649,19 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Takes effect:** on the server at the next deploy (cron runs the repo's script); on the Mac when its checkout is back on `main` (launchd runs from it).
 
 **Item 26 (AI ordinance reader) stays off** (Jack, 2026-11-03). **The CHA payment standards (Jack: CHA, no revenue line) wait on a source:** CHA publishes no ZIP table; its standards are HUD's metro Fair Market Rent with exceptions up to 150% in Mobility Areas (community areas). Building it needs CHA's participant guide PDF (thecha.org, 5.9 MB) or HUD's FMR file, which needs Jack's OK to download.
+
+## Item 64: Enterprise Zones come from `bwpt-y235`; an empty boundary layer reads "Not checked" (2026-11-03)
+
+**Status: PR open, not merged.** Found while rebuilding the Discovery index for PR #180.
+
+**What broke.** `64xf-pyvh` ("Boundaries - Enterprise Zones") became a map view when the City republished it on 2026-02-23. Its GeoJSON now returns 6 features with `geometry: null` and no properties, and `/api/views` lists no columns. The loader skipped every feature and cached an empty list, so: the Profile, report and chat said "Not in an Enterprise Zone" for every parcel (from an empty source, against the truth rule in `guides/source-confidence.md`), and the citywide Discovery index has `in_enterprise_zone` false on all 882,328 parcels (the filter matches nothing).
+
+**Decision 1: read the map's backing dataset.** The catalog shows the map's `modifyingViewUid` is `bwpt-y235` ("Enterprise_Zones", DPD, updated 2026-02-23): 6 MultiPolygon features, columns `name` (the zone number "1"–"6"), `enterprise`, `objectid`, `shape_area`, `shape_leng`, `the_geom`. Checked 2026-11-03. The zone number is shown as "Chicago Enterprise Zone N". Alternatives: the deprecated `y9xh-uwte` (Oct 2021 boundaries, stale) and a DCEO file (needs a download and Jack's OK; not needed while the City's data works).
+
+**Decision 2: an empty layer is a failed source.** `_load_ez_boundaries` raises when no feature has usable geometry and caches nothing (the next call retries). `check_enterprise_zone` no longer swallows a load failure into `None`; the incentives orchestrator sets the new `IncentivesSummary.enterprise_zone_unchecked`. The Profile's incentives card takes Enterprise Zone out of the "Not in" line and shows it with the `ConfidenceState` "Not checked" label (explanation behind its info button); the chat rail badge reads "Enterprise Zone: not checked"; the report prints "Couldn't check today"; chat grounding says "EZ: not checked". Regression test: a recorded copy of the null-geometry response (`backend/tests/fixtures/enterprise_zones_64xf_null_geometry_2026-11-03.geojson`).
+
+**Decision 3: Discovery leaves an unavailable layer's flag NULL.** `_safe_polys` returns `None` (was `[]`) on a failed load and `_point_in_any(None, …)` is `None`, so the field drops out of `populated_fields` and the filter reads as not having data rather than matching nothing. This applies to the TIF layer too (same pattern).
+
+**Data health.** The registry entry now points at `bwpt-y235`, with a contract on the `name` column and an exact count band of 6.
+
+**Needs:** a Discovery index rebuild after merge to fill `in_enterprise_zone` (the current prod index has it false everywhere). **Revisit if** the City republishes the map again (the count band alarms on a row-count change; a null-geometry republish of `bwpt-y235` would surface as "Not checked" on the Profile rather than as a wrong "no").
