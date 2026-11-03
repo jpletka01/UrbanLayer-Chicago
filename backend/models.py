@@ -420,6 +420,10 @@ class PropertySummary(BaseModel):
     # units: "assessor" (decoded 2xx chars) | "commercial_valuation" (CCAO
     #   valuation tot_units — filled only for single-PIN economic units).
     land_sqft_source: str | None = None
+    # Set when the parcel's polygon is the same outline as this many other PIN10s on its block: a divided
+    # development drawn once (decision Items 46, 59). The polygon's area is then not used as the land area,
+    # and the outline drawn is the development's.
+    shared_outline_with: int | None = None
     bldg_sqft_source: str | None = None
     # The Commercial Valuation vintage (assessment year) behind any field whose source is
     # "commercial_valuation"; None when no field came from it.

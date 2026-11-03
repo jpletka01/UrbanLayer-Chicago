@@ -19,6 +19,7 @@ from typing import Callable
 from pydantic import BaseModel, Field
 
 from backend.discovery import parcel as parcel_mod
+from backend.discovery.compile_merge import HIDE_UNUSUAL
 from backend.discovery.cqs import CQS, DroppedInvalid
 from backend.discovery.evaluator import EvalResult
 from backend.discovery.predicates import satisfies, within_scope
@@ -48,6 +49,10 @@ class Diagnostics(BaseModel):
     droppedInvalid: list[DroppedInvalid] = Field(default_factory=list)
     excludedUnknown: dict[str, int] = Field(default_factory=dict)
     mostRestrictive: list[MostRestrictive] = Field(default_factory=list)
+    # How many parcels the default `hide_unusual` filter kept out of this result (decision Item 60): the page
+    # says so ("N unusual parcels hidden · Show"), so the default never hides anything silently. 0 when the
+    # filter isn't applied (the request opted in).
+    hiddenUnusual: int = 0
 
 
 def _without(cqs: CQS, filter_id: str) -> CQS:
@@ -118,7 +123,8 @@ def _most_restrictive(
     """
     rows = [
         MostRestrictive(filterId=fid, countWithoutIt=evaluate(_without(cqs, fid), data_version).total)
-        for fid in cqs.filters
+        for fid, a in cqs.filters.items()
+        if a.source != "default"  # a default filter is reported by `hiddenUnusual`, not offered for removal
     ]
     rows.sort(key=lambda r: (-r.countWithoutIt, r.filterId))
     return rows
@@ -142,7 +148,8 @@ def build(
     if result is None:
         result = evaluate(cqs, data_version)
 
-    applied_count = len(cqs.filters)
+    # A default filter is not one the user chose: it doesn't make a query less "broad" (D1).
+    applied_count = sum(1 for a in cqs.filters.values() if a.source != "default")
     diag = Diagnostics(
         resultCount=result.total,
         broad=applied_count < registry.broadMinFilters,  # D1
@@ -153,4 +160,6 @@ def build(
     )
     if result.total == 0:  # D5 — only when zero results
         diag.mostRestrictive = _most_restrictive(cqs, data_version, evaluate)
+    if HIDE_UNUSUAL in cqs.filters:  # the black box again, never a second filtering path (INV-1)
+        diag.hiddenUnusual = evaluate(_without(cqs, HIDE_UNUSUAL), data_version).total - result.total
     return diag

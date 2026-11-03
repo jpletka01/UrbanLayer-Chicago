@@ -414,6 +414,8 @@ export interface PropertySummary {
   /** Provenance labels ("assessor" | "gis" | "geometry" | "condo_unit" |
       "commercial_valuation" | "footprint") — absent when the field is null. */
   land_sqft_source?: string | null;
+  /** The parcel's outline is a whole development's, shared with this many other PIN10s (Item 59). */
+  shared_outline_with?: number | null;
   bldg_sqft_source?: string | null;
   /** Set when this parcel is one of several in a commercial "economic unit" whose
       building-area total is the WHOLE complex's, not this lot's (bldg_sqft stays null). */
@@ -686,6 +688,7 @@ export interface ComparableSale {
   far: number | null;
   price_per_buildable_sqft: number | null;
   land_sqft_source: string | null;
+  shared_outline_with?: number | null;
   deed_type: string | null;
   sale_type: string | null;
   distance_mi: number | null;

@@ -74,6 +74,8 @@ class SearchRequest(BaseModel):
     offset: int = 0  # window start into the ordered result
     # Also return the map's coordinate set from this same evaluation (see SearchResponse.pins).
     includePins: bool = False
+    # Opt in to the parcels the default `hide_unusual` filter keeps out (decision Item 60).
+    includeUnusual: bool = False
 
 
 class ResultRow(BaseModel):
@@ -197,7 +199,8 @@ def _resolve(req: SearchRequest) -> tuple[CQS, EvalResult, list[DroppedInvalid],
     )
     text_frag = parse(req.text or "")
     cqs, dropped = merge(
-        user_frag, text_frag, sort=req.sort, scope=req.scope, topic_id=req.topicId
+        user_frag, text_frag, sort=req.sort, scope=req.scope, topic_id=req.topicId,
+        include_unusual=req.includeUnusual,
     )
     data_version = parcel_source.current_version()
     result = cached_evaluate(cqs, data_version)  # the single evaluator, memoised (INV-2)
@@ -396,7 +399,7 @@ def _csv_cell(row: ResultRow, attr: str) -> object:
 def _export_filename(cqs: CQS, data_version: str) -> str:
     # Slug from the canonical CQS filter ids — the same source the FE summarize() reads, so
     # the filename reflects exactly what was filtered. Plus dataVersion + date.
-    ids = sorted(cqs.filters.keys())
+    ids = sorted(fid for fid, a in cqs.filters.items() if a.source != "default")  # the default hide is not a choice
     raw = "-".join(ids) if ids else "all"
     slug = re.sub(r"[^a-z0-9]+", "-", raw.lower()).strip("-") or "all"
     date = datetime.now(timezone.utc).date().isoformat()

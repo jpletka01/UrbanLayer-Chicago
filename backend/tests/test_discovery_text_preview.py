@@ -63,7 +63,7 @@ def test_the_preview_equals_what_a_search_derives_from_the_same_text(client):
         cqs, _result, dropped, _v = _resolve(SearchRequest(text=text))
         body = _preview(client, text)
         assert {u["filterId"]: u["predicate"] for u in body["understood"]} == {
-            fid: a.predicate.model_dump() for fid, a in cqs.filters.items()
+            fid: a.predicate.model_dump() for fid, a in cqs.filters.items() if a.source != "default"
         }
         assert body["residual"] == cqs.meta.textResidual
         assert [d["filterId"] for d in body["droppedInvalid"]] == [d.filterId for d in dropped]

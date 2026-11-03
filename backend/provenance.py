@@ -228,6 +228,9 @@ class ProvenanceEntry(BaseModel):
     basis_tier: Tier | None = None
     # AI readings: a deterministic check agreed (guide §3)
     corroborated: bool | None = None
+    # A lot area from a parcel outline the County draws once for a whole divided development, shared with
+    # this many other PIN10s on the block (decision Item 59): no lot's own area, so the figure is withheld.
+    shared_outline_with: int | None = None
     # derived, set once by make_entry
     confidence: Confidence = "standard"
     confidence_reasons: list[str] = Field(default_factory=list)
@@ -517,6 +520,8 @@ def confidence_state(entry: ProvenanceEntry | dict) -> tuple[str, list[str]]:
     hide: list[str] = []
     fade: list[str] = []
 
+    if e.get("shared_outline_with"):
+        hide.append("shared_outline")
     if share is not None:
         if share > HIDE_COVERAGE_ABOVE:
             hide.append("not_comparable")
@@ -752,6 +757,15 @@ def build_provenance(
             ("land_sqft", "Lot area", prop.land_sqft, prop.land_sqft_source),
             ("bldg_sqft", "Building area", prop.bldg_sqft, prop.bldg_sqft_source),
         ):
+            if not value and fact == "land_sqft" and prop.shared_outline_with:
+                # Withheld, not absent: the parcel has an outline, but it is a whole development's (Item 59).
+                out["property.land_sqft"] = make_entry(
+                    "property.land_sqft", query_date=qd, label=label,
+                    source=_AREA_SOURCES.get("geometry", "Cook County parcel boundary"),
+                    record_id=prop.pin14, shared_outline_with=prop.shared_outline_with,
+                    **{**_vintage_for("geometry", prop, qd), **_area_basis(fact, "geometry")},
+                )
+                continue
             if value:
                 out[f"property.{fact}"] = make_entry(
                     f"property.{fact}", query_date=qd, label=label,

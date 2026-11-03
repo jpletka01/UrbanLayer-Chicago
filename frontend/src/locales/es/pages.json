@@ -507,7 +507,8 @@
       },
       "expand": "Abrir el mapa completo",
       "placeTitle": "Dónde está la parcela",
-      "close": "Cerrar el mapa"
+      "close": "Cerrar el mapa",
+      "keyParcelShared": "Contorno del desarrollo (compartido)"
     },
     "crimeCurrent": "Período actual",
     "crimePrior": "Año anterior",
@@ -761,7 +762,8 @@
       "noneFound": "Sin reglas de monumentos, DP, inundación ni del lago",
       "noneFoundDetail": "Revisamos para esta parcela los mapas de la Ciudad de monumentos, distritos históricos, Desarrollos Planificados y Protección del Lago, y el mapa de inundación de FEMA. Ninguno aplica.",
       "more": "Detalles",
-      "marketLine": "Valor de mercado ≈ {{value}} (nuestro cálculo: valor de avalúo ÷ el nivel de avalúo de la clase)"
+      "marketLine": "Valor de mercado ≈ {{value}} (nuestro cálculo: valor de avalúo ÷ el nivel de avalúo de la clase)",
+      "sharedOutline": "Contorno compartido por todo un desarrollo"
     },
     "sources": {
       "button": "Fuentes",

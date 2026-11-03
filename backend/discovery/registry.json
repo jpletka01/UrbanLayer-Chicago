@@ -85,6 +85,8 @@
       "enumLabels": { "vacant": "Vacant land", "residential": "Residential", "multi_family": "Multifamily", "commercial": "Commercial", "industrial": "Industrial", "mixed_use": "Mixed-use", "institutional": "Institutional", "exempt": "Tax-exempt" } },
     { "id": "vacancy", "category": "property_use", "tier": "essential", "kind": "flag", "field": "is_vacant", "unknownPolicy": "exclude", "contradicts": ["building_size"],
       "label": "Vacant", "help": "No building of record on the parcel." },
+    { "id": "hide_unusual", "category": "property_use", "tier": "more", "kind": "flag", "field": "unusual", "unknownPolicy": "include",
+      "label": "Hide unusual parcels", "help": "Vacant lots over an acre with no street address of their own (most are rail, utility or common land), and parcels whose outline is a whole development's. Hidden by default; the results say how many." },
     { "id": "lot_size", "category": "property_use", "tier": "essential", "kind": "range", "field": "land_sqft", "unit": "sqft", "unknownPolicy": "exclude",
       "label": "Lot size", "range": { "domain": [0, 50000], "step": 100, "boundMode": "both", "display": "number" } },
     { "id": "building_size", "category": "property_use", "tier": "more", "kind": "range", "field": "bldg_sqft", "unit": "sqft", "unknownPolicy": "exclude",

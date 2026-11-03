@@ -82,7 +82,7 @@ def _polygon_area_sqft(wkt: str) -> tuple[float, dict] | None:
 
 
 async def get_parcel_geometry_facts(pin14: str) -> dict | None:
-    """Return {"land_sqft_geom": int, "parcel_geometry": geojson, "geom_year": int}
+    """Return {"land_sqft_geom": int, "parcel_geometry": geojson, "geom_year": int, "shared_outline_with": int}
     for the parcel's most recent boundary, or None (disabled/missing/not found).
     """
     settings = get_settings()
@@ -119,10 +119,26 @@ async def get_parcel_geometry_facts(pin14: str) -> dict | None:
         return None
 
     area_sqft, geojson = parsed
+    # A divided development (townhouses, a common area, condo buildings) is drawn as ONE outline on every
+    # member PIN10 (decision Items 46, 59): its area is the development's, no single lot's. They sit on one
+    # block, so a primary-key range over the block's PIN10s (same first 7 digits) finds them in ~1 ms.
+    shared = 0
+    try:
+        block = pin10[:7]
+        async with conn.execute(
+            "SELECT COUNT(*) FROM pin_geometry_raw WHERE pin10 >= ? AND pin10 < ? AND pin10 != ? "
+            "AND end_year = ? AND geometry = ?",
+            (block + "000", block + "999~", pin10, row["end_year"], row["geometry"]),
+        ) as cursor:
+            shared = (await cursor.fetchone())[0]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("shared-outline check failed for %s: %s", pin10, exc)
     result = {
         "land_sqft_geom": int(round(area_sqft)),
         "parcel_geometry": geojson,
         "geom_year": row["end_year"],
+        # How many other PIN10s on the block carry this exact outline (0 = the lot's own).
+        "shared_outline_with": shared,
     }
     _cache.set(pin10, result)
     return result

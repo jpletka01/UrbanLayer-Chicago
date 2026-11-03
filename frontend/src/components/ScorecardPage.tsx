@@ -773,10 +773,19 @@ export default function ScorecardPage() {
       });
     }
     const land = ctx.property?.land_sqft;
+    const landEntry = prov["property.land_sqft"];
     if (land) {
       buildFigures.push({
         key: "lot", label: t("scorecard.panels.lot"), value: `${land.toLocaleString()} ft²`,
-        state: confidenceStateFor(prov["property.land_sqft"]),
+        state: confidenceStateFor(landEntry),
+      });
+    } else if (landEntry?.confidence === "withheld") {
+      // The outline is a whole development's (Item 59): "—", a short reason, the full sentence behind Explain.
+      buildFigures.push({
+        key: "lot", label: t("scorecard.panels.lot"), value: "—",
+        state: confidenceStateFor(landEntry),
+        withheldReason: t("scorecard.panels.sharedOutline"),
+        detail: <p>{captionParts(landEntry, tc).withheld}</p>,
       });
     }
 
@@ -1151,6 +1160,7 @@ export default function ScorecardPage() {
                     parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
                     profileKey={data.resolved_pin ?? data.address}
                     parcelConfidence={data.resolved_confidence}
+                    outlineShared={!!ctx.property?.shared_outline_with}
                     comps={data.comparables?.sales}
                     showTransit
                   />
@@ -1164,6 +1174,7 @@ export default function ScorecardPage() {
                     parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
                     profileKey={data.resolved_pin ?? data.address}
                     parcelConfidence={data.resolved_confidence}
+                    outlineShared={!!ctx.property?.shared_outline_with}
                     comps={data.comparables?.sales}
                     showTransit
                     className="h-full"
@@ -1244,6 +1255,7 @@ export default function ScorecardPage() {
                         parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
                         profileKey={data.resolved_pin ?? data.address}
                         parcelConfidence={data.resolved_confidence}
+                    outlineShared={!!ctx.property?.shared_outline_with}
                         layers={mapLayers}
                         subjectKey={zdef?.zone_class ?? null}
                       />

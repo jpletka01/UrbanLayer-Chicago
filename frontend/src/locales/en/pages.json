@@ -507,7 +507,8 @@
       },
       "expand": "Open the full map",
       "placeTitle": "Where the parcel is",
-      "close": "Close the map"
+      "close": "Close the map",
+      "keyParcelShared": "Development outline (shared)"
     },
     "crimeCurrent": "Current period",
     "crimePrior": "Prior year",
@@ -761,7 +762,8 @@
       "noneFound": "No landmark, PD, flood or lakefront rules",
       "noneFoundDetail": "We checked the City's landmark, historic district, Planned Development and Lakefront Protection maps and FEMA's flood map for this parcel. None applies.",
       "more": "Details",
-      "marketLine": "Market value ≈ {{value}} (our calculation: assessed value ÷ the class's assessment level)"
+      "marketLine": "Market value ≈ {{value}} (our calculation: assessed value ÷ the class's assessment level)",
+      "sharedOutline": "Outline shared by a whole development"
     },
     "sources": {
       "button": "Sources",
