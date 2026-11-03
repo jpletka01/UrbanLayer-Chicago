@@ -131,7 +131,7 @@ async def _incentives_by_point(
             else:
                 phase_b_results[key] = value
 
-    return _build_summary(
+    summary = _build_summary(
         tif_result, ez_result, tract_fips,
         phase_b_results.get("financials"),
         phase_b_results.get("oz"),
@@ -140,6 +140,8 @@ async def _incentives_by_point(
         qct_result=phase_b_results.get("qct"),
         nmtc_result=phase_b_results.get("nmtc"),
     )
+    summary.enterprise_zone_unchecked = isinstance(phase_a[1], Exception)
+    return summary
 
 
 async def _incentives_by_community_area(

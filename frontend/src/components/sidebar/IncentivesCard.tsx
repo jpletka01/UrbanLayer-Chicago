@@ -160,7 +160,8 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
         <div className="space-y-1">
           <Badge
             active={data.in_enterprise_zone}
-            label={data.in_enterprise_zone ? t("incentives.enterpriseZone") : t("incentives.notInEnterpriseZone")}
+            label={data.in_enterprise_zone ? t("incentives.enterpriseZone")
+              : data.enterprise_zone_unchecked ? t("incentives.enterpriseZoneNotChecked") : t("incentives.notInEnterpriseZone")}
             termKey="enterprise_zone"
           />
           {data.in_enterprise_zone && data.enterprise_zone_name && (

@@ -157,7 +157,10 @@ def _load_geometry_land(db_path, pin10s: set[str]) -> dict[str, float]:
     return out
 
 
-def _point_in_any(polys: Iterable[Any], lat: float, lon: float) -> bool:
+def _point_in_any(polys: Iterable[Any] | None, lat: float, lon: float) -> bool | None:
+    """None when the layer could not be loaded: the flag stays NULL (not populated), never False."""
+    if polys is None:
+        return None
     point = Point(lon, lat)
     return any(poly.contains(point) for poly in polys)
 
@@ -205,8 +208,8 @@ def assemble_parcel(
     address: str | None = None,
     geom_land_sqft: float | None = None,
     zoning_polys: list[tuple[str, Any]],
-    tif_polys: Iterable[Any],
-    ez_polys: Iterable[Any],
+    tif_polys: Iterable[Any] | None,
+    ez_polys: Iterable[Any] | None,
     rail_stations: list[tuple[float, float]],
     neighborhood_ca: int | None,
     as_of: datetime.date,
@@ -311,13 +314,17 @@ def _chunks(seq: list[str], n: int) -> Iterable[list[str]]:
         yield seq[i : i + n]
 
 
-async def _safe_polys(loader, label: str, client) -> list[Any]:
-    """Load a global shapely layer's polygons, returning [] (and warning) on failure."""
+async def _safe_polys(loader, label: str, client) -> list[Any] | None:
+    """Load a global shapely layer's polygons, returning None (and warning) on failure.
+
+    None, not []: an unavailable layer leaves its flag NULL, so `populated_fields` drops it and the
+    filter reads "not checked" instead of matching nothing (decision Item 64).
+    """
     try:
         return [b[2] for b in await loader(client=client)]
     except Exception as exc:
-        log.warning("discovery index: %s layer unavailable (%s); its flag stays False", label, exc)
-        return []
+        log.warning("discovery index: %s layer unavailable (%s); its flag stays unset", label, exc)
+        return None
 
 
 async def _fetch_spine(ca: int, *, client: httpx.AsyncClient | None) -> list[dict]:
@@ -867,7 +874,7 @@ async def build_index(
     settings = get_settings()
     as_of = as_of or datetime.date.today()
 
-    # Graceful degradation: a transient failure of a global layer leaves its flag False
+    # Graceful degradation: a transient failure of a global layer leaves its flag unset (NULL)
     # rather than aborting the whole (possibly 77-CA) build.
     tif_polys = await _safe_polys(_load_tif_boundaries, "TIF", client)
     ez_polys = await _safe_polys(_load_ez_boundaries, "enterprise zone", client)

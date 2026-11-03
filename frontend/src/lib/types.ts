@@ -479,6 +479,8 @@ export interface IncentivesSummary {
   oz_tract: string | null;
   in_enterprise_zone: boolean;
   enterprise_zone_name: string | null;
+  /** The Enterprise Zone layer failed or came back empty: "not checked", never "not in one". */
+  enterprise_zone_unchecked?: boolean;
   in_qct: boolean;
   qct_tract: string | null;
   in_nmtc: boolean;

@@ -279,6 +279,8 @@
     "tract": "Tramo censal",
     "enterpriseZone": "Zona empresarial",
     "notInEnterpriseZone": "No en zona empresarial",
+    "enterpriseZoneNotChecked": "Zona Empresarial: no verificada",
+    "ezUnchecked": "El mapa de Zonas Empresariales de la Ciudad no respondió, así que no pudimos verificar si esta parcela está en una. Esto no es un «no».",
     "cityGrantPrograms": "Programas de subsidios municipales",
     "totalProjects": "Total de proyectos",
     "totalFunding": "Financiamiento total",

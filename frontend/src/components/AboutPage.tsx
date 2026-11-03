@@ -419,7 +419,7 @@ export function AboutPage() {
             rows={[
               ["TIF Boundaries", "eejr-xtfb", "Point-in-polygon TIF district membership"],
               ["TIF Financial Reports", "72uz-ikdv", "Fund balance, expenditures, tax increment by year"],
-              ["Enterprise Zones", "64xf-pyvh", "EZ boundary check + zone name"],
+              ["Enterprise Zones", "bwpt-y235", "EZ boundary check + zone name"],
               ["SBIF Projects", "etqr-sz5x", "Small Business Improvement Fund grants by CA"],
               ["NOF Large Grants", "j7ew-b73u", "Neighborhood Opportunity Fund (large)"],
               ["NOF Small Grants", "rym7-49n8", "Neighborhood Opportunity Fund (small)"],

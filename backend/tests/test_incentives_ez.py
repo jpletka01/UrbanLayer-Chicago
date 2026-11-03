@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -67,12 +69,60 @@ async def test_check_ez_miss(mock_client_cls):
 
 
 @pytest.mark.asyncio
-async def test_check_ez_load_failure():
+async def test_check_ez_load_failure_raises():
+    """A failed load is "not checked", never "not in a zone": it must not come back as None."""
     mock_client = AsyncMock()
     mock_client.get.side_effect = Exception("Connection refused")
 
-    result = await ez.check_enterprise_zone(41.93, -87.65, client=mock_client)
-    assert result is None
+    with pytest.raises(Exception, match="Connection refused"):
+        await ez.check_enterprise_zone(41.93, -87.65, client=mock_client)
+
+
+# Recorded 2026-11-03 from the map view 64xf-pyvh: 6 features, every geometry null, no properties.
+_NULL_GEOMETRY_FIXTURE = Path(__file__).parent / "fixtures" / "enterprise_zones_64xf_null_geometry_2026-11-03.geojson"
+
+
+def _client_returning(body):
+    resp = MagicMock()
+    resp.raise_for_status = MagicMock()
+    resp.json.return_value = body
+    client = AsyncMock()
+    client.get.return_value = resp
+    return client
+
+
+@pytest.mark.asyncio
+async def test_null_geometry_response_raises_and_is_not_cached():
+    body = json.loads(_NULL_GEOMETRY_FIXTURE.read_text())
+    assert len(body["features"]) == 6 and all(f["geometry"] is None for f in body["features"])
+    client = _client_returning(body)
+
+    with pytest.raises(RuntimeError, match="no usable geometry"):
+        await ez.check_enterprise_zone(41.93, -87.65, client=client)
+    with pytest.raises(RuntimeError, match="no usable geometry"):
+        await ez.ez_geojson_feature(41.93, -87.65, client=client)
+    assert ez._ez_boundaries is None
+    assert client.get.await_count == 2  # retried, not served from a cached empty list
+
+
+@pytest.mark.asyncio
+async def test_empty_feature_collection_raises():
+    with pytest.raises(RuntimeError, match="no usable geometry"):
+        await ez.check_enterprise_zone(41.93, -87.65, client=_client_returning(_make_geojson([])))
+
+
+@pytest.mark.asyncio
+async def test_numbered_zone_gets_a_readable_name():
+    """bwpt-y235 names Chicago's zones by number ("5"); the Profile shows "Chicago Enterprise Zone 5"."""
+    feat = _make_feature("ignored", (-87.65, 41.93))
+    feat["properties"] = {"name": "5", "enterprise": "5.0", "objectid": "2"}
+    result = await ez.check_enterprise_zone(41.93, -87.65, client=_client_returning(_make_geojson([feat])))
+    assert result == {"zone_name": "Chicago Enterprise Zone 5"}
+
+
+def test_zone_name_keeps_a_text_name():
+    assert ez._zone_name({"zone_name": "Calumet"}) == "Calumet"
+    assert ez._zone_name({}) == "Unknown Enterprise Zone"
 
 
 @pytest.mark.asyncio
@@ -147,19 +197,12 @@ async def test_ez_name_fallback(mock_client_cls):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_ez_boundaries_load_live():
-    """Verify Enterprise Zone GeoJSON loads from Socrata.
-
-    Note: The Socrata dataset may return features with null geometry,
-    in which case zero boundaries are loaded. This is a data-quality
-    issue on the Socrata side, not a code bug.
-    """
+    """Chicago's six Enterprise Zones load with geometry (an empty layer raises; decision Item 64)."""
     ez._ez_boundaries = None  # ensure fresh fetch
     boundaries = await ez._load_ez_boundaries()
-    assert isinstance(boundaries, list)
-    if len(boundaries) == 0:
-        pytest.skip("EZ dataset returned no valid geometries (Socrata data-quality issue)")
-    name, props, poly, geom = boundaries[0]
-    assert isinstance(name, str) and name
+    assert len(boundaries) == 6
+    names = sorted(b[0] for b in boundaries)
+    assert names == [f"Chicago Enterprise Zone {n}" for n in range(1, 7)]
 
 
 @pytest.mark.integration

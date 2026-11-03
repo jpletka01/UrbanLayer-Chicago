@@ -279,6 +279,8 @@
     "tract": "Tract",
     "enterpriseZone": "Enterprise Zone",
     "notInEnterpriseZone": "Not in Enterprise Zone",
+    "enterpriseZoneNotChecked": "Enterprise Zone: not checked",
+    "ezUnchecked": "The City's Enterprise Zone map didn't answer, so we couldn't check whether this parcel is in one. This isn't a \"no\".",
     "cityGrantPrograms": "City Grant Programs",
     "totalProjects": "Total Projects",
     "totalFunding": "Total Funding",

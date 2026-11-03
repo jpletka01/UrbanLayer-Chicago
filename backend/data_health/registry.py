@@ -414,7 +414,8 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         fact_keys=("incentive.tif",), cadence_days=365, warn_days=400, alarm_days=540,
     ),
     _socrata(
-        CITY, "64xf-pyvh", "chi.enterprise_zones", "Boundaries - Enterprise Zones", "DPD",
+        # bwpt-y235 is the data behind the map 64xf-pyvh, whose GeoJSON lost its geometry in 2026 (Item 64).
+        CITY, "bwpt-y235", "chi.enterprise_zones", "Enterprise_Zones (Boundaries - Enterprise Zones)", "DPD",
         "backend/retrieval/incentives/enterprise_zones.py", surfaces=("profile", "chat"),
         fact_keys=("incentive.enterprise_zone",), warn_days=400, alarm_days=700,
     ),
@@ -688,9 +689,11 @@ _VALUE_CONTRACTS: dict[str, tuple[ValueSpec, ...]] = {
     "chi.zoning.overlay.historic_district": (ValueSpec("LANDMARK", allowed=("Y", "N")),),
     "cook.address_points": (ValueSpec("st_predir", allowed=("NORTH", "SOUTH", "EAST", "WEST"), where="inc_muni='Chicago'"),),
 }
-# Datasets whose row count is fixed by law or by the map: the wards (50), community areas (77), ward offices.
+# Datasets whose row count is fixed by law or by the map: the wards (50), community areas (77), ward offices,
+# Chicago's six Enterprise Zones.
 _COUNT_BANDS: dict[str, tuple[int, int]] = {
     "chi.wards": (50, 50), "chi.community_areas": (77, 77), "chi.ward_offices": (45, 55),
+    "chi.enterprise_zones": (6, 6),
 }
 
 FIELDS_READ_PATH = Path(__file__).with_name("fields_read.json")
