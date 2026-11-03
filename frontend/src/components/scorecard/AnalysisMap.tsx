@@ -17,6 +17,8 @@ interface AnalysisMapProps {
   /** Stable Property Profile identity (the page also keys this component by it, so a new parcel starts on Zoning). */
   profileKey?: string | null;
   parcelConfidence?: "authoritative" | "approximate" | null;
+  /** The parcel's outline is a whole development's (Item 59). */
+  outlineShared?: boolean;
   /** `/api/parcel-map` layers; null while loading (Zoning and Overlays wait for them). */
   layers: ParcelMapLayers | null;
   /** The parcel's own district, listed first in the zoning key. */
@@ -24,14 +26,14 @@ interface AnalysisMapProps {
   className?: string;
 }
 
-export function AnalysisMap({ lat, lon, pin, parcelGeometry, profileKey, parcelConfidence, layers, subjectKey, className }: AnalysisMapProps) {
+export function AnalysisMap({ lat, lon, pin, parcelGeometry, profileKey, parcelConfidence, outlineShared, layers, subjectKey, className }: AnalysisMapProps) {
   const { t } = useTranslation("pages");
   const offered = availableLayers(layers);
   const [chosen, setChosen] = useState<AnalysisLayer>("zoning");
   // Until the parcel-map layers arrive, hold the Zoning slot rather than jumping to Built vs allowed.
   const layer: AnalysisLayer = offered.includes(chosen) ? chosen : layers ? offered[0] : chosen;
 
-  const common = { lat, lon, parcelGeometry, profileKey, parcelConfidence, layers };
+  const common = { lat, lon, parcelGeometry, profileKey, parcelConfidence, outlineShared, layers };
   // A radio group: one tab stop, arrow keys move the choice (and the focus) along the switch.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;

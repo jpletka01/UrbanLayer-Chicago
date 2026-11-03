@@ -9,6 +9,7 @@
 // "soon" with no code change. Registry order is kept inside each group.
 
 import { isPopulated } from "./coverage";
+import { HIDE_UNUSUAL } from "./draftModel";
 import type { FilterDef, Registry } from "./types";
 
 export interface MenuGroups {
@@ -22,6 +23,8 @@ export function menuGroups(registry: Registry, query: string, nameOf: (def: Filt
   const q = query.trim().toLowerCase();
   const out: MenuGroups = { essentials: [], more: [], soon: [] };
   for (const def of registry.filters) {
+    // The unusual-parcels default is switched with its own Show/Hide control, not added as a filter (Item 60).
+    if (def.id === HIDE_UNUSUAL) continue;
     if (q && !nameOf(def).toLowerCase().includes(q)) continue;
     if (!isPopulated(registry, def.id)) out.soon.push(def);
     else if (def.tier === "essential") out.essentials.push(def);

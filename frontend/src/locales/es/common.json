@@ -163,7 +163,9 @@
       "low_coverage": "No se muestra: los datos cubren el {{pct}}% aquí (se requiere {{min}}%).",
       "not_comparable": "No se muestra: el modelo cuenta el {{pct}}% de los hogares inquilinos de esta área, por lo que no es un conjunto comparable de viviendas.",
       "high_cv": "No se muestra: el margen de error es del {{cv}}% de la estimación.",
-      "generic": "No se muestra: hay muy pocos datos."
+      "generic": "No se muestra: hay muy pocos datos.",
+      "shared_outline_one": "No se muestra: este contorno es el de todo un desarrollo y lo comparte con {{count}} parcela más.",
+      "shared_outline_other": "No se muestra: este contorno es el de todo un desarrollo y lo comparte con {{count}} parcelas más."
     },
     "field": {
       "authority": "Publicado por: {{value}}",

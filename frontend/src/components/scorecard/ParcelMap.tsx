@@ -94,6 +94,8 @@ interface ParcelMapProps {
   subjectKey?: string | null;
   /** The phone's place-map strip (decision Item 56): a still picture, no controls or key; a tap opens the full map. */
   bare?: boolean;
+  /** The parcel's outline is a whole development's, shared with other parcels (decision Item 59). */
+  outlineShared?: boolean;
 }
 
 export function ParcelMap(props: ParcelMapProps) {
@@ -143,6 +145,7 @@ function ParcelMapInner({
   parcelConfidence,
   subjectKey,
   bare,
+  outlineShared,
 }: ParcelMapProps) {
   const { t } = useTranslation("pages");
   const { resolvedTheme } = useThemeContext();
@@ -407,7 +410,10 @@ function ParcelMapInner({
   // Map key (top-RIGHT — the Mapbox wordmark owns the bottom-left corner, so
   // that space stays empty on every map): one row per encoding on the map.
   const legend: Array<{ key: string; swatchCSS: string; label: string; kind: "line" | "fill" | "dot" }> = [];
-  legend.push({ key: "parcel", swatchCSS: "rgb(249,164,116)", label: t("scorecard.map.keyParcel"), kind: "line" });
+  legend.push({
+    key: "parcel", swatchCSS: "rgb(249,164,116)", kind: "line",
+    label: outlineShared ? t("scorecard.map.keyParcelShared") : t("scorecard.map.keyParcel"),
+  });
   if (variant === "place") {
     if (compsInView.length) {
       legend.push({

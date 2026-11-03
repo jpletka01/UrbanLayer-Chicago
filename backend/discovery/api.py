@@ -74,6 +74,8 @@ class SearchRequest(BaseModel):
     offset: int = 0  # window start into the ordered result
     # Also return the map's coordinate set from this same evaluation (see SearchResponse.pins).
     includePins: bool = False
+    # Opt in to the parcels the default `hide_unusual` filter keeps out (decision Item 60).
+    includeUnusual: bool = False
 
 
 class ResultRow(BaseModel):
@@ -108,6 +110,7 @@ class ResultRow(BaseModel):
     # The district's family and table FAR, already in the index (the exact class awaits the index
     # enrichment wave); the dot preview shows them (decision Item 57).
     zoning_group: str | None = None
+    zone_class: str | None = None  # the exact district, once the index carries it (Item 59)
     allowed_far: float | None = None
     # A nominal assessment ($1 common area; decision Item 46): the row says "Nominal", never "$1".
     nominal_assessment: bool = False
@@ -197,7 +200,8 @@ def _resolve(req: SearchRequest) -> tuple[CQS, EvalResult, list[DroppedInvalid],
     )
     text_frag = parse(req.text or "")
     cqs, dropped = merge(
-        user_frag, text_frag, sort=req.sort, scope=req.scope, topic_id=req.topicId
+        user_frag, text_frag, sort=req.sort, scope=req.scope, topic_id=req.topicId,
+        include_unusual=req.includeUnusual,
     )
     data_version = parcel_source.current_version()
     result = cached_evaluate(cqs, data_version)  # the single evaluator, memoised (INV-2)
@@ -242,6 +246,7 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         upside_score=g("upside_score"),
         is_teardown_candidate=bool(g("is_teardown_candidate")),
         zoning_group=g("zoning_group"),
+        zone_class=g("zone_class"),
         allowed_far=g("density_band"),
         nominal_assessment=_nominal(g("total_assessed_value"), g("class"), g("land_use_class")),
         sortValue=_display_sort_value(parcel, sort_field),
@@ -396,7 +401,7 @@ def _csv_cell(row: ResultRow, attr: str) -> object:
 def _export_filename(cqs: CQS, data_version: str) -> str:
     # Slug from the canonical CQS filter ids — the same source the FE summarize() reads, so
     # the filename reflects exactly what was filtered. Plus dataVersion + date.
-    ids = sorted(cqs.filters.keys())
+    ids = sorted(fid for fid, a in cqs.filters.items() if a.source != "default")  # the default hide is not a choice
     raw = "-".join(ids) if ids else "all"
     slug = re.sub(r"[^a-z0-9]+", "-", raw.lower()).strip("-") or "all"
     date = datetime.now(timezone.utc).date().isoformat()

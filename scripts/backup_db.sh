@@ -56,6 +56,24 @@ if [ -d "$REPORTS_DIR" ] && [ -n "$(ls -A "$REPORTS_DIR" 2>/dev/null)" ]; then
     echo "Report originals mirrored: $(find "$BACKUP_DIR/reports" -type f -name '*.pdf' | wc -l | tr -d ' ') PDFs in $BACKUP_DIR/reports"
 fi
 
+# Account deletion reaches the mirror (Jack, 2026-11-03; decision Item 63). Deleting an account removes the user's
+# PDFs and their report_renders rows together, so a mirrored original that the backup just taken no longer lists
+# belongs to a deleted account and is removed. Nothing is pruned when the list can't be read (an older schema, a
+# failed query), and a run that would remove more than PRUNE_MAX files stops with a warning instead: a deletion
+# that large is a bug or an incident to look at, never a routine prune.
+PRUNE_MAX="${PRUNE_MAX:-10}"
+if LISTED=$(sqlite3 -readonly "$BACKUP_FILE" "SELECT pdf_path FROM report_renders WHERE kind = 'original' AND pdf_path IS NOT NULL;" 2>/dev/null); then
+    STALE=$(cd "$BACKUP_DIR/reports" && find . -type f -name '*.pdf' | sed 's|^\./||' | sort | comm -23 - <(printf '%s\n' "$LISTED" | sed '/^$/d' | sort))
+    COUNT=$(printf '%s' "$STALE" | grep -c . || true)
+    if [ "$COUNT" -gt "$PRUNE_MAX" ]; then
+        echo "WARNING: $COUNT mirrored report PDFs are not in the backup's list (more than $PRUNE_MAX): nothing pruned, check by hand" >&2
+    elif [ "$COUNT" -gt 0 ]; then
+        printf '%s\n' "$STALE" | while IFS= read -r REL; do rm -f "$BACKUP_DIR/reports/$REL"; done
+        find "$BACKUP_DIR/reports" -mindepth 1 -type d -empty -delete
+        echo "Report originals of deleted accounts removed from the mirror: $COUNT"
+    fi
+fi
+
 # Tell the data-health checker (WS6 M2). It runs in a container that cannot see $BACKUP_DIR, so
 # the report goes beside the database, on the backend_data volume it does mount. Written last and
 # atomically (temp + rename): the file existing at all means a backup just completed, and its age

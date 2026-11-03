@@ -27,7 +27,10 @@ from pathlib import Path
 import httpx
 
 from backend.config import get_settings
-from backend.models import AssessorModelRent, BedroomRent, CensusTractDemographics, CommunityAreaRent, RentCell, RentEvidence
+from backend.models import (
+    AssessorModelRent, BedroomRent, CensusTractDemographics, CommunityAreaRent, RentCell, RentEvidence, RentTrend,
+    RentTrendPeriod, SalesTrend, SaleYear,
+)
 from backend.retrieval.cache import TTLCache
 from backend.retrieval.neighborhood.census_tract import _cv, rent_cells
 
@@ -35,6 +38,7 @@ log = logging.getLogger(__name__)
 
 ARTIFACT_FILENAME = "rent_by_area.json"
 ASSESSOR_FILENAME = "assessor_model_by_area.json"
+TREND_FILENAME = "rent_trend_by_area.json"
 # What the Profile shows. The studio and 4+ bedroom cells are published too, but the method proof only
 # measured these three at PUMA level (20 of 20 standard).
 BEDROOM_GROUPS = ("1_bedroom", "2_bedrooms", "3_bedrooms")
@@ -43,6 +47,7 @@ _puma_cache = TTLCache(ttl_seconds=86400, maxsize=64, name="census_puma_rent")
 _lock = threading.Lock()
 _artifact: dict | None = None
 _assessor: dict | None = None
+_trend: dict | None = None
 
 
 class RentArtifactError(RuntimeError):
@@ -84,11 +89,56 @@ def load_assessor_artifact() -> dict:
         return _assessor
 
 
+def load_trend_artifact() -> dict:
+    """The rent and sale-price trend artifact (WS4 PR4), read once per process. Raises ``RentArtifactError``."""
+    global _trend
+    with _lock:
+        if _trend is None:
+            path = get_settings().data_dir / TREND_FILENAME
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if not isinstance(data.get("community_areas"), dict) or "rent" not in data or "sales" not in data:
+                    raise ValueError("missing community_areas / rent / sales")
+            except (OSError, ValueError) as exc:
+                raise RentArtifactError(f"{TREND_FILENAME} is unreadable: {exc}") from exc
+            _trend = data
+        return _trend
+
+
 def reset_artifact() -> None:
     """Forget the loaded artifacts (tests)."""
-    global _artifact, _assessor
+    global _artifact, _assessor, _trend
     with _lock:
-        _artifact = _assessor = None
+        _artifact = _assessor = _trend = None
+
+
+def rent_trend(community_area: int) -> RentTrend | None:
+    """The community area's rent change between the two periods; None when either period has no median."""
+    art = load_trend_artifact()
+    row = (art["community_areas"].get(str(community_area)) or {}).get("rent")
+    if not row:
+        return None
+    meta = art["rent"]
+    return RentTrend(
+        community_area=community_area,
+        earlier=RentTrendPeriod(period=meta["earlier"]["period"], **row["earlier"]),
+        later=RentTrendPeriod(period=meta["later"]["period"], **row["later"]),
+        change_pct=row["change_pct"], real_change_pct=row["real_change_pct"], significant=row.get("significant"),
+        cpi_series=(meta.get("cpi") or {}).get("series") or "CUURS23ASA0",
+    )
+
+
+def sales_trend(community_area: int) -> SalesTrend | None:
+    """Median sale price per year by property group; None when the area had no qualifying sales."""
+    art = load_trend_artifact()
+    groups = (art["community_areas"].get(str(community_area)) or {}).get("sales") or {}
+    years = list(art["sales"].get("years") or [])
+    if not groups:
+        return None
+    return SalesTrend(
+        community_area=community_area, years=years,
+        groups={g: [SaleYear(year=y, **(cells.get(y) or {})) for y in years] for g, cells in sorted(groups.items())},
+    )
 
 
 def community_area_rent(community_area: int) -> CommunityAreaRent | None:
@@ -235,6 +285,13 @@ async def rent_evidence(
     except RentArtifactError as exc:
         log.error("%s", exc)
         ev.unchecked.append("assessor_model")
+    try:
+        if community_area is not None:
+            ev.trend = rent_trend(community_area)
+            ev.sales_trend = sales_trend(community_area)
+    except RentArtifactError as exc:
+        log.error("%s", exc)
+        ev.unchecked.append("rent_trend")
 
     if tract is None:
         ev.unchecked.append("tract_rent")

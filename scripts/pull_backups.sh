@@ -79,10 +79,10 @@ fi
 # that and --relative (checked against the server 2026-10-30). The database is
 # captured before the server's mirror runs, so every listed file was mirrored the
 # same night. A file already here is never fetched again (--ignore-existing), so a
-# damaged server copy cannot replace a good local one, and nothing here is ever
-# deleted or pruned (account deletion on the server leaves these copies: a
-# retention question for Jack, not for this script). Then every listed file must
-# match the sha256 it was stored with.
+# damaged server copy cannot replace a good local one. Then every listed file must
+# match the sha256 it was stored with. A local copy the newest database no longer
+# lists belonged to a deleted account and is removed (Jack, 2026-11-03: privacy over
+# write-once; decision Item 63), under the same guards as the server mirror.
 mkdir -p "$DEST/reports"
 MISSING=0; BAD=0; CHECKED=0; FETCHED=0
 while IFS='|' read -r REL SHA; do
@@ -107,6 +107,19 @@ while IFS='|' read -r REL SHA; do
     fi
 done < <(sqlite3 "file:$NEWEST?immutable=1" \
     "SELECT pdf_path, pdf_sha256 FROM report_renders WHERE kind = 'original' AND pdf_path IS NOT NULL;" 2>/dev/null || true)
+PRUNE_MAX="${PRUNE_MAX:-10}"
+if LISTED=$(sqlite3 "file:$NEWEST?immutable=1" \
+        "SELECT pdf_path FROM report_renders WHERE kind = 'original' AND pdf_path IS NOT NULL;" 2>/dev/null); then
+    STALE=$(cd "$DEST/reports" && find . -type f -name '*.pdf' | sed 's|^\./||' | sort | comm -23 - <(printf '%s\n' "$LISTED" | sed '/^$/d' | sort))
+    PRUNED=$(printf '%s' "$STALE" | grep -c . || true)
+    if [ "$PRUNED" -gt "$PRUNE_MAX" ]; then
+        alarm "$PRUNED local report PDFs are not in the newest backup's list (more than $PRUNE_MAX): nothing pruned, check by hand"
+    elif [ "$PRUNED" -gt 0 ]; then
+        printf '%s\n' "$STALE" | while IFS= read -r REL; do rm -f "$DEST/reports/$REL"; done
+        find "$DEST/reports" -mindepth 1 -type d -empty -delete
+        echo "Report originals of deleted accounts removed here: $PRUNED"
+    fi
+fi
 echo "Report originals: $CHECKED listed, $FETCHED fetched now, $((CHECKED - MISSING - BAD)) present and matching"
 if [ "$MISSING" -gt 0 ] || [ "$BAD" -gt 0 ]; then
     alarm "Report PDFs: $MISSING missing, $BAD with a different hash or path, of $CHECKED in the newest backup"

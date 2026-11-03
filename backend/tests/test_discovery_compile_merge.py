@@ -50,7 +50,7 @@ def test_text_fills_field_absent_from_user():
 def test_topic_id_is_telemetry_only_and_does_not_inject_filters():
     # User cleared everything a topic might have pre-filled; only topicId rides along.
     cqs, _ = merge(_frag({}), _frag({}), topic_id="vacant_multifamily")
-    assert cqs.filters == {}
+    assert _chosen(cqs) == {}
     assert cqs.meta.topicId == "vacant_multifamily"
 
 
@@ -108,7 +108,7 @@ def test_inverted_range_is_kept_not_dropped():
 def test_unknown_filter_id_dropped():
     user = _frag({"made_up": _assign(FlagPredicate(value=True))})
     cqs, dropped = merge(user, _frag({}))
-    assert cqs.filters == {}
+    assert _chosen(cqs) == {}
     assert [d.reason for d in dropped] == ["unknown filter"]
 
 
@@ -138,3 +138,25 @@ def test_density_band_kept_with_zoning_group():
     cqs, dropped = merge(user, _frag({}))
     assert "density_band" in cqs.filters
     assert dropped == []
+
+
+
+def _chosen(cqs):
+    """The filters a user or text chose: everything but the default `hide_unusual` (Item 60)."""
+    return {fid: a for fid, a in cqs.filters.items() if a.source != "default"}
+
+
+# --- the default hide_unusual filter (decision Item 60) -------------------------------------------
+
+
+def test_unusual_parcels_hidden_by_default_as_a_default_filter():
+    cqs, dropped = merge(_frag({}), _frag({}))
+    a = cqs.filters["hide_unusual"]
+    assert a.source == "default" and a.predicate == FlagPredicate(value=False)
+    assert dropped == []
+
+
+def test_opting_in_removes_the_default_whatever_the_fragments_say():
+    user = _frag({"hide_unusual": _assign(FlagPredicate(value=False))})
+    cqs, _ = merge(user, _frag({}), include_unusual=True)
+    assert "hide_unusual" not in cqs.filters

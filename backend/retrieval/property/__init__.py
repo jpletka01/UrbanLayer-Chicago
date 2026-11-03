@@ -454,8 +454,11 @@ def _build_summary(
     # polygon-computed area covers every class the assessor datasets don't
     # (commercial/multifamily/exempt/industrial — 0% before 2026-07-02).
     parcel_geometry = parcel.get("geometry")
+    shared_outline_with = int((geometry_facts or {}).get("shared_outline_with") or 0)
     if geometry_facts:
-        if not land_sqft and geometry_facts.get("land_sqft_geom"):
+        # A shared outline is a whole development's (Items 46, 59): its area is no lot's, so it never
+        # becomes the land area. An Assessor-stated area still stands.
+        if not land_sqft and geometry_facts.get("land_sqft_geom") and not shared_outline_with:
             land_sqft = geometry_facts["land_sqft_geom"]
             land_sqft_source = "geometry"
         if parcel_geometry is None:
@@ -608,6 +611,7 @@ def _build_summary(
         bldg_sqft=bldg_sqft,
         land_sqft=land_sqft,
         land_sqft_source=land_sqft_source,
+        shared_outline_with=shared_outline_with or None,
         bldg_sqft_source=bldg_sqft_source,
         commercial_valuation_year=commercial_valuation_year,
         complex_bldg_sqft=complex_bldg_sqft if not bldg_sqft else None,

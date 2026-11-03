@@ -13,7 +13,13 @@ export interface DiscoveryDraft {
   sort: SortSpec | null;
   // Telemetry only; cleared the moment the user edits anything (see the hook).
   topicId: string | null;
+  /** Opt in to the parcels the server's default `hide_unusual` filter keeps out (decision Item 60). */
+  includeUnusual?: boolean;
 }
+
+/** The server's default filter for unusual parcels (decision Item 60): it is not a filter the user chose,
+ *  so it is never a chip, a carried text filter or a draft difference; the results say how many it hid. */
+export const HIDE_UNUSUAL = "hide_unusual";
 
 /** applied = shown as evaluated; added/changed = pending in the draft; removed = evaluated
  *  filter the draft no longer has (shown struck through until applied, restorable). */
@@ -50,16 +56,18 @@ export function carriedFilters(cqs: CQS | null): Record<FilterId, Predicate> {
   const out: Record<FilterId, Predicate> = {};
   if (!cqs) return out;
   for (const [id, assignment] of Object.entries(cqs.filters)) {
-    if (assignment.source !== "user") out[id] = assignment.predicate;
+    if (assignment.source !== "user" && assignment.source !== "default") out[id] = assignment.predicate;
   }
   return out;
 }
 
-/** Every evaluated filter, any source, as plain predicates. */
+/** Every evaluated filter the user or the text chose (not the server's defaults), as plain predicates. */
 export function appliedFilters(cqs: CQS | null): Record<FilterId, Predicate> {
   const out: Record<FilterId, Predicate> = {};
   if (!cqs) return out;
-  for (const [id, assignment] of Object.entries(cqs.filters)) out[id] = assignment.predicate;
+  for (const [id, assignment] of Object.entries(cqs.filters)) {
+    if (assignment.source !== "default") out[id] = assignment.predicate;
+  }
   return out;
 }
 
@@ -115,6 +123,9 @@ export function diffDraft(
   // counted above through the carried filters it takes away.
   if (draft.text.trim() && draft.text.trim() !== appliedText.trim()) pending++;
   if (draft.sort && !sameSort(draft.sort, applied.sort)) pending++;
+  // Opting in is pending until a query without the default hide is evaluated. (A query with neither the hide
+  // nor an opt-in is an older backend's, not a difference.)
+  if (draft.includeUnusual && HIDE_UNUSUAL in applied.filters) pending++;
   return { chips, pendingCount: pending };
 }
 
@@ -123,6 +134,7 @@ export function inputsSignature(inputs: {
   panelState: PanelState;
   text?: string | null;
   sort?: SortSpec | null;
+  includeUnusual?: boolean;
 }): string {
   const filters = compilePanel(inputs.panelState);
   const ids = Object.keys(filters).sort();
@@ -130,6 +142,7 @@ export function inputsSignature(inputs: {
     f: ids.map((id) => [id, predicateKey(filters[id])]),
     t: (inputs.text ?? "").trim(),
     s: inputs.sort ? [inputs.sort.key, inputs.sort.dir] : null,
+    u: !!inputs.includeUnusual,
   });
 }
 

@@ -20,6 +20,7 @@ from backend.discovery.cqs import (
     DroppedInvalid,
     EnumPredicate,
     FilterAssignment,
+    FlagPredicate,
     Predicate,
     QueryMeta,
     RangePredicate,
@@ -29,6 +30,9 @@ from backend.discovery.cqs import (
     predicate_is_valid,
 )
 from backend.discovery.registry import load as load_registry
+
+# The default filter that hides unusual parcels (decision Item 60).
+HIDE_UNUSUAL = "hide_unusual"
 
 
 def _invalid_reason(p: Predicate) -> str:
@@ -48,8 +52,15 @@ def merge(
     sort: SortSpec | None = None,
     scope: SpatialScope | None = None,
     topic_id: str | None = None,
+    include_unusual: bool = False,
 ) -> tuple[CQS, list[DroppedInvalid]]:
-    """Merge fragments → (canonical CQS, dropped). `sort`/`scope` are the user overrides."""
+    """Merge fragments → (canonical CQS, dropped). `sort`/`scope` are the user overrides.
+
+    Unless the request opts in (`include_unusual`), the `hide_unusual` filter is added as a `default`
+    (Jack, 2026-11-03; decision Item 60): parcels that are almost surely not buildable are hidden, in the
+    canonical CQS where the evaluator, the summary and the hidden count all see it (never a silent
+    post-filter). Opting in removes it whatever the fragments said.
+    """
     registry = load_registry()
     valid_ids = {f.id for f in registry.filters}
 
@@ -78,6 +89,11 @@ def merge(
         dropped.append(
             DroppedInvalid(filterId="density_band", reason="density_band requires a zoning_group filter")
         )
+
+    if include_unusual:
+        kept.pop(HIDE_UNUSUAL, None)
+    elif HIDE_UNUSUAL in valid_ids:
+        kept[HIDE_UNUSUAL] = FilterAssignment(predicate=FlagPredicate(kind="flag", value=False), source="default")
 
     final_sort = sort or text_frag.sort or registry.defaultSort
     final_scope = scope or SpatialScope(mode="all")

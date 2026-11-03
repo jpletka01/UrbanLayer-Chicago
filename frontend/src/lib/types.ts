@@ -414,6 +414,8 @@ export interface PropertySummary {
   /** Provenance labels ("assessor" | "gis" | "geometry" | "condo_unit" |
       "commercial_valuation" | "footprint") — absent when the field is null. */
   land_sqft_source?: string | null;
+  /** The parcel's outline is a whole development's, shared with this many other PIN10s (Item 59). */
+  shared_outline_with?: number | null;
   bldg_sqft_source?: string | null;
   /** Set when this parcel is one of several in a commercial "economic unit" whose
       building-area total is the WHOLE complex's, not this lot's (bldg_sqft stays null). */
@@ -647,8 +649,27 @@ export interface RentEvidence {
   tract_name?: string | null;
   puma_geoid?: string | null;
   puma_name?: string | null;
-  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent" | "assessor_model">;
+  /** WS4 PR4 (Item 62): which way rent and sale prices moved in the community area. */
+  trend?: RentTrend | null;
+  sales_trend?: SalesTrend | null;
+  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent" | "assessor_model" | "rent_trend">;
 }
+
+export interface RentTrendPeriod { period: string; median: number; moe?: number | null; households?: number | null }
+
+export interface RentTrend {
+  community_area: number;
+  earlier: RentTrendPeriod;
+  later: RentTrendPeriod;
+  change_pct: number;
+  real_change_pct: number;
+  /** The Census test: the change exceeds the combined 90% margin; null when a margin is missing. */
+  significant?: boolean | null;
+}
+
+export interface SaleYear { year: string; median?: number | null; n: number }
+
+export interface SalesTrend { community_area: number; years: string[]; groups: Partial<Record<"single_family" | "two_to_six" | "condo", SaleYear[]>> }
 
 export interface NeighborhoodSummary {
   demographics: DemographicsSummary | null;
@@ -686,6 +707,7 @@ export interface ComparableSale {
   far: number | null;
   price_per_buildable_sqft: number | null;
   land_sqft_source: string | null;
+  shared_outline_with?: number | null;
   deed_type: string | null;
   sale_type: string | null;
   distance_mi: number | null;

@@ -320,3 +320,37 @@ describe("Phase 4b: zero and error states", () => {
   });
 });
 
+
+describe("unusual parcels hidden by default (decision Item 60)", () => {
+  const hide = { hide_unusual: { predicate: { kind: "flag" as const, value: false }, source: "default" as const } };
+
+  it("says how many were hidden and offers Show", () => {
+    const onSet = vi.fn();
+    const response = resp(hide, {
+      result: { rows: [rowFixture], total: 1, nextOffset: null },
+      diagnostics: { ...EMPTY_DIAG, resultCount: 1, hiddenUnusual: 464 },
+    });
+    render(<DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} onSetIncludeUnusual={onSet} />);
+    expect(screen.getByTestId("discovery-unusual").textContent).toContain("464 unusual parcels hidden");
+    fireEvent.click(screen.getByTestId("discovery-unusual-toggle"));
+    expect(onSet).toHaveBeenCalledWith(true);
+  });
+
+  it("an opted-in search says so and offers to hide them again", () => {
+    const onSet = vi.fn();
+    const response = resp({}, {
+      result: { rows: [rowFixture], total: 1, nextOffset: null },
+      diagnostics: { ...EMPTY_DIAG, resultCount: 1, hiddenUnusual: 0 },
+    });
+    render(<DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} onSetIncludeUnusual={onSet} />);
+    expect(screen.getByTestId("discovery-unusual").textContent).toContain("Including unusual parcels");
+    fireEvent.click(screen.getByTestId("discovery-unusual-toggle"));
+    expect(onSet).toHaveBeenCalledWith(false);
+  });
+
+  it("an older backend (no count) shows nothing", () => {
+    const response = resp({}, { result: { rows: [rowFixture], total: 1, nextOffset: null } });
+    render(<DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} onSetIncludeUnusual={noop} />);
+    expect(screen.queryByTestId("discovery-unusual")).toBeNull();
+  });
+});

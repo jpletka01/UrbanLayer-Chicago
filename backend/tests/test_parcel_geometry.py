@@ -101,3 +101,29 @@ async def test_facts_none_when_db_missing(tmp_path):
         mock_settings.return_value.ptaxsim_db_path = tmp_path / "nope.db"
 
         assert await get_parcel_geometry_facts("14313320180000") is None
+
+
+@pytest.mark.asyncio
+async def test_a_development_outline_shared_on_the_block_is_counted(geometry_db):
+    """Items 46/59: the County draws one outline for a divided development on every member PIN10."""
+    shared = _square_wkt(41.88, -87.63, 30.0)  # the 2016-2024 outline of 1431332018
+    async with aiosqlite.connect(str(geometry_db)) as conn:
+        await conn.execute("INSERT INTO pin_geometry_raw VALUES ('1431332019', 2016, 2024, -87.63, 41.88, ?)", (shared,))
+        await conn.execute("INSERT INTO pin_geometry_raw VALUES ('1431332020', 2016, 2024, -87.63, 41.88, ?)", (shared,))
+        # same outline on another block: not the same development, not counted
+        await conn.execute("INSERT INTO pin_geometry_raw VALUES ('1431333001', 2016, 2024, -87.63, 41.88, ?)", (shared,))
+        await conn.commit()
+    with patch("backend.retrieval.property.parcel_geometry.get_settings") as mock_settings:
+        mock_settings.return_value.ptaxsim_enabled = True
+        mock_settings.return_value.ptaxsim_db_path = geometry_db
+        facts = await get_parcel_geometry_facts("14313320180000")
+        assert facts["shared_outline_with"] == 2
+
+
+@pytest.mark.asyncio
+async def test_a_lots_own_outline_is_not_shared(geometry_db):
+    with patch("backend.retrieval.property.parcel_geometry.get_settings") as mock_settings:
+        mock_settings.return_value.ptaxsim_enabled = True
+        mock_settings.return_value.ptaxsim_db_path = geometry_db
+        facts = await get_parcel_geometry_facts("14313320180000")
+        assert facts["shared_outline_with"] == 0

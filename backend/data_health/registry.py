@@ -604,6 +604,17 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "from rent_by_area.meta.json; a new ACS 5-year release each December makes a rebuild due.",
     ),
     SourceSpec(
+        id="artifact.rent_trend_by_area", name="Rent and sale-price trends by community area (committed)",
+        publisher="UrbanLayer from US Census Bureau ACS, BLS CPI-U and Cook County Assessor sales",
+        tier="official_estimate", kind="artifact", locator="ingestion/data/rent_trend_by_area.json", probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/neighborhood/rent.py", "ingestion/build_rent_trend_artifact.py"),
+        surfaces=("profile",), fact_keys=("area.rent.trend", "area.sales.trend"),
+        cadence_days=365, warn_days=400, alarm_days=730,
+        note="Median gross rent in two non-overlapping ACS 5-year periods (2015-19 on 2010 tracts, 2020-24 on 2020 "
+             "tracts), the change after Chicago CPI-U inflation, and median arm's-length sale prices per year and "
+             "property group for six years (decision Item 62). Rebuild with each ACS release and each new sales year.",
+    ),
+    SourceSpec(
         id="artifact.assessor_model_by_area", name="Assessor's apartment income model by community area (committed)",
         publisher="UrbanLayer from the Cook County Assessor (Commercial Valuation, csik-bsws)",
         tier="official_estimate", kind="artifact", locator="ingestion/data/assessor_model_by_area.json", probe="artifact_sidecar",

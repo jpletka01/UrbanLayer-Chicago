@@ -1005,6 +1005,8 @@ export interface Provenance {
   confidence_reasons?: string[];
   /** The figure as displayed. */
   value?: string | number | boolean | null;
+  /** The lot's outline is a whole development's, shared with this many other parcels (Item 59). */
+  shared_outline_with?: number | null;
 }
 
 export type ProvenanceTier =

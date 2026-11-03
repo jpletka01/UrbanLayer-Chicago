@@ -25,6 +25,7 @@ export interface SearchInputs {
   offset?: number; // infinite-scroll window start (omitted = page 0)
   limit?: number; // window size (omitted = server default)
   includePins?: boolean; // ask for the map's points in the same response (one evaluation)
+  includeUnusual?: boolean; // opt in to the parcels the default `hide_unusual` filter keeps out (Item 60)
 }
 
 /** Build the wire envelope. `userFilters` is the compiled panel (cleared controls dropped). */
@@ -40,6 +41,7 @@ export function buildRequest(inputs: SearchInputs, registry: Registry): SearchRe
   if (inputs.offset != null) req.offset = inputs.offset;
   if (inputs.limit != null) req.limit = inputs.limit;
   if (inputs.includePins) req.includePins = true;
+  if (inputs.includeUnusual) req.includeUnusual = true;
   return req;
 }
 
