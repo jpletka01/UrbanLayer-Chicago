@@ -35,7 +35,7 @@ import type {
 } from "./types";
 import type { ParcelMapLayers } from "./parcelMap";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
+export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
 
 function getCsrfToken(): string {
   const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);

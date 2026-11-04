@@ -2748,3 +2748,32 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Revisit if** the City publishes zoning lots, or the index gains a reliable "lot with no address" list for faces.
 
 **Production (Items 65-67, release #183, 2026-11-03).** CI `test`/`lint`/CodeQL green before merge; the deploy served the new bundle (`index-C-Ko1t6H.js`, it contains "Typical lot here") and the new backend about 5½ minutes after the merge; `/health` ok (data-health alarms 2). Live: `/api/scorecard?address=4027 W Nelson St` → RS-3, `block_face` met (odd side of W Nelson St, N Pulaski Rd to N Karlov Ave, 11 of 14 lots with two or more units, units from the Assessor since the production index has none), unit yield 1 → 2, `rule_block_face: met`; the same face as the local two-area index. `/api/area-stats?ca=22&zone_class=RS-3` → `lot_size_by_zone_class: {}` (expected: the production index has no `zone_class` until it is rebuilt). FEMA's flood lookup was down on production that evening and the Profile listed it in `failed_sources` (Item 65's path, already in place for flood). `npm run sweep:live` clean on desktop and phone. **Not verified on production:** a live "Not checked" incentive row (it shows only during an outage; covered by tests); the typical-lot row (needs the rebuild); the street index's memory on the 882k-parcel index (the first RS-3 Profile per process builds it).
+
+## Item 68 (WS8 Phase 2 prototype): parcel outlines on the Discovery map from our own vector tiles (2026-11-04)
+
+**Status: prototype on branch `ws8/phase2-tiles-prototype`, not merged; behind a local flag (`VITE_DISCOVERY_TILES=1`) and a tile file production doesn't have.** Plan and Jack's open calls: `plans/2026-11-04_ws8-phase2-plan.md` (local).
+
+**Decision 1: write the tiles ourselves.** `backend/discovery/parcel_tiles.py` encodes Mapbox Vector Tiles v2 by hand (varints, zigzag, MoveTo/LineTo/ClosePath; about 120 lines) and uses shapely to clip, simplify (one tile unit per zoom) and orient rings. Alternatives: tippecanoe (a download and a native build on the box and the Mac), `mapbox-vector-tile` from PyPI (a new dependency for one encoder). Evidence: the spec's own worked example (`[9 6 12 18 10 12 24 44 15]`) is a test, a round-trip decode is a test, and Mapbox GL drew the output correctly in the browser.
+
+**Decision 2: tiles hold geometry and the PIN10 only; search matches are feature-state.** The feature id is the PIN10 as an integer; when results arrive the page sets `{match: true}` on each matched PIN. One tile set serves every query and stays valid until the next index rebuild, so tiles cache for a day (Cloudflare can cache them). Alternative: bake the filterable fields into the tiles and filter there (tiles grow with every field, and the filter logic would exist twice, against INV-1).
+
+**Decision 3: one MBTiles file on the `backend/data` volume behind `GET /api/discovery/tiles/{z}/{x}/{y}.mvt`**, not PMTiles behind nginx range requests, and not Cloudflare R2. The citywide file is 26.5 MB (zooms 14-16), so R2 buys nothing; PMTiles would need a protocol library because Mapbox GL has no `addProtocol`, while an `{z}/{x}/{y}` URL is a plain Mapbox vector source: **no new frontend dependency**. No file = 404 = the map keeps its dots.
+
+**Decision 4: outlines from zoom 14.** At 12-13 a parcel is 2-4 px wide and a z12 tile reaches 596 KB; dots read better there.
+
+**Decision 5: a broken source outline is repaired or counted, never fatal.** The citywide run stopped twice on County rings with three points (GEOS refuses to clip them): invalid outlines are repaired with `make_valid` at load (806 citywide), and a piece that still can't be clipped is left out and counted per zoom (1 citywide). Both counts are in the build's output for a future data-health source.
+
+**Numbers** (this Mac; citywide = the pruned 2026-10-29 index, 882,328 rows; local PTAXSIM outlines)
+
+| Measure | Result |
+|---|---:|
+| Outlines citywide / PIN10s with no outline | 604,220 / 854 (0.14%) |
+| Repaired / unclipped pieces | 806 / 1 |
+| Build time / peak memory | 3.2 min / ~1 GB |
+| File, zooms 14-16 | 26.5 MB (z14 avg 31 KB, max 79 KB; z16 avg 3 KB) |
+| Two areas (22, 24): outlines / time / file | 31,324 / 10 s / 1.3 MB |
+| Tests | `test_parcel_tiles.py` (13), `parcelTiles.test.ts` (3) |
+
+**Not measured:** a real phone (desktop Chrome emulation only: page heap 95 → 122 MB; Mapbox's worker memory isn't visible to the page); tile latency from production; the build on the production box.
+
+**Revisit if** the County publishes its own parcel tile service, or Discovery needs outline coloring by a field (then add that field to the tiles or move to a deck.gl MVT layer).

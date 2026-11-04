@@ -1,0 +1,396 @@
+"""Parcel-shape vector tiles for the Discovery map (WS8 Phase 2 prototype, decision Item 68).
+
+Writes Mapbox Vector Tiles (MVT v2) of County parcel outlines into one MBTiles file (SQLite), with no
+tile tool to install: the protobuf encoding is small enough to write by hand, and shapely does the
+clipping and simplification. The tiles hold geometry and the PIN only. Which parcels a search matched
+is NOT baked in: the map colors matches by PIN (Mapbox feature-state), so one tile set serves every
+query and caches forever between index rebuilds.
+
+Sources: parcels (PIN10) from the Discovery index, so the tiles cover exactly what Discovery can return;
+outlines from PTAXSIM ``pin_geometry_raw`` (the latest year per PIN10), the same polygons the Profile
+draws. A PIN10 with no polygon is left out and counted.
+
+Prototype CLI (two community areas, local only):
+
+    PYTHONPATH=. python -m backend.discovery.parcel_tiles --index <discovery_index.db> \\
+        --community-areas 22,24 --out <parcel_tiles.mbtiles>
+"""
+
+from __future__ import annotations
+
+import argparse
+import gzip
+import json
+import logging
+import math
+import sqlite3
+import time
+from collections import defaultdict
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import numpy as np
+import shapely
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
+from shapely import wkt as shapely_wkt
+from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry.polygon import orient
+
+log = logging.getLogger(__name__)
+
+EXTENT = 4096
+# Clip each feature a little past its tile so outline strokes don't show seams at tile edges.
+BUFFER = 64
+MIN_ZOOM = 14  # the map draws outlines from zoom 14; below that it keeps its dots
+MAX_ZOOM = 16
+LAYER = "parcels"
+
+
+# ---------------------------------------------------------------- MVT encoding (protobuf by hand)
+
+
+def _varint(n: int) -> bytes:
+    out = bytearray()
+    while True:
+        b = n & 0x7F
+        n >>= 7
+        if n:
+            out.append(b | 0x80)
+        else:
+            out.append(b)
+            return bytes(out)
+
+
+def _key(field_no: int, wire: int) -> bytes:
+    return _varint((field_no << 3) | wire)
+
+
+def _len_field(field_no: int, payload: bytes) -> bytes:
+    return _key(field_no, 2) + _varint(len(payload)) + payload
+
+
+def _zigzag(n: int) -> int:
+    return (n << 1) ^ (n >> 31)
+
+
+def _command(cmd: int, count: int) -> int:
+    return (count << 3) | cmd
+
+
+def _ring_commands(ring: np.ndarray, cursor: list[int]) -> list[int]:
+    """MoveTo + LineTo... + ClosePath for one ring of integer tile coordinates (closing point dropped)."""
+    pts = ring[:-1] if len(ring) > 1 and (ring[0] == ring[-1]).all() else ring
+    out = [_command(1, 1)]
+    x, y = int(pts[0][0]), int(pts[0][1])
+    out += [_zigzag(x - cursor[0]), _zigzag(y - cursor[1])]
+    cursor[0], cursor[1] = x, y
+    out.append(_command(2, len(pts) - 1))
+    for px, py in pts[1:]:
+        px, py = int(px), int(py)
+        out += [_zigzag(px - cursor[0]), _zigzag(py - cursor[1])]
+        cursor[0], cursor[1] = px, py
+    out.append(_command(7, 1))
+    return out
+
+
+def _clean_ring(coords: np.ndarray) -> np.ndarray | None:
+    """Round to the tile grid and drop repeated points; None when fewer than 3 distinct points remain."""
+    pts = np.rint(coords).astype(np.int64)
+    keep = np.ones(len(pts), dtype=bool)
+    keep[1:] = (pts[1:] != pts[:-1]).any(axis=1)
+    pts = pts[keep]
+    if len(pts) and not (pts[0] == pts[-1]).all():
+        pts = np.vstack([pts, pts[:1]])
+    if len(pts) < 4:
+        return None
+    x, y = pts[:, 0].astype(float), pts[:, 1].astype(float)
+    if abs(np.dot(x[:-1], y[1:]) - np.dot(x[1:], y[:-1])) < 1:  # zero area after rounding
+        return None
+    return pts
+
+
+def _polygon_geometry(geom) -> list[int]:
+    """Encode a (Multi)Polygon already in tile coordinates. MVT wants exterior rings with positive area in
+    tile space (y down), which is shapely's sign=1.0 orientation on these coordinates."""
+    cursor = [0, 0]
+    out: list[int] = []
+    polys = geom.geoms if isinstance(geom, MultiPolygon) else [geom]
+    for poly in polys:
+        if poly.is_empty:
+            continue
+        poly = orient(poly, sign=1.0)
+        ext = _clean_ring(np.asarray(poly.exterior.coords))
+        if ext is None:
+            continue
+        out += _ring_commands(ext, cursor)
+        for hole in poly.interiors:
+            h = _clean_ring(np.asarray(hole.coords))
+            if h is not None:
+                out += _ring_commands(h, cursor)
+    return out
+
+
+def _packed(values: list[int]) -> bytes:
+    return b"".join(_varint(v) for v in values)
+
+
+def encode_layer(features: list[tuple[int, list[int], dict[str, str]]], name: str = LAYER) -> bytes:
+    """One MVT layer from (id, geometry commands, string properties) triples."""
+    keys: dict[str, int] = {}
+    values: dict[str, int] = {}
+    body = bytearray()
+    for fid, geometry, props in features:
+        tags: list[int] = []
+        for k, v in props.items():
+            tags += [keys.setdefault(k, len(keys)), values.setdefault(v, len(values))]
+        feat = _key(1, 0) + _varint(fid)
+        if tags:
+            feat += _len_field(2, _packed(tags))
+        feat += _key(3, 0) + _varint(3)  # POLYGON
+        feat += _len_field(4, _packed(geometry))
+        body += _len_field(2, feat)
+    layer = _key(15, 0) + _varint(2) + _len_field(1, name.encode())
+    layer += bytes(body)
+    for k in keys:
+        layer += _len_field(3, k.encode())
+    for v in values:
+        layer += _len_field(4, _len_field(1, v.encode()))  # Value.string_value
+    layer += _key(5, 0) + _varint(EXTENT)
+    return _len_field(3, layer)  # Tile.layers
+
+
+# ---------------------------------------------------------------- projection and tiling
+
+
+def _to_unit_mercator(coords: np.ndarray) -> np.ndarray:
+    """lon/lat → Web Mercator in [0, 1] (x right, y down), the space every zoom's tile grid divides."""
+    lon, lat = coords[:, 0], np.clip(coords[:, 1], -85.0511, 85.0511)
+    x = (lon + 180.0) / 360.0
+    s = np.sin(np.radians(lat))
+    y = 0.5 - np.log((1 + s) / (1 - s)) / (4 * math.pi)
+    return np.column_stack([x, y])
+
+
+@dataclass
+class Parcel:
+    pin10: str
+    geom: Polygon | MultiPolygon  # unit-Mercator
+    props: dict[str, str]
+
+
+@dataclass
+class BuildStats:
+    parcels: int = 0
+    no_polygon: int = 0
+    unclipped: dict[int, int] = field(default_factory=dict)
+    tiles: dict[int, int] = field(default_factory=dict)
+    bytes_gz: dict[int, int] = field(default_factory=dict)
+    max_tile_gz: dict[int, int] = field(default_factory=dict)
+    seconds: float = 0.0
+
+
+def _clip(geom, rect):
+    """Clip to the tile rectangle. A ring that simplification collapsed below 4 points makes GEOS refuse: retry
+    on the repaired shape, else None (the caller counts it)."""
+    try:
+        return shapely.clip_by_rect(geom, *rect)
+    except shapely.errors.GEOSException:
+        try:
+            fixed = _polygonal(shapely.make_valid(geom))
+            return shapely.clip_by_rect(fixed, *rect) if fixed is not None else None
+        except shapely.errors.GEOSException:
+            return None
+
+
+def tiles_for_zoom(parcels: list[Parcel], z: int) -> tuple[dict[tuple[int, int], bytes], int]:
+    """Gzipped tiles at zoom z, and how many (parcel, tile) pieces could not be clipped and were left out."""
+    n = 1 << z
+    scale = n * EXTENT
+    buf = BUFFER / scale
+    tol = 1.0 / scale  # one tile unit: invisible at this zoom
+    buckets: dict[tuple[int, int], list[int]] = defaultdict(list)
+    simplified: list = []
+    for i, p in enumerate(parcels):
+        g = p.geom.simplify(tol, preserve_topology=True) if z < MAX_ZOOM else p.geom
+        simplified.append(g)
+        minx, miny, maxx, maxy = g.bounds
+        # Include the tiles whose buffer reaches the parcel, so outlines continue across tile edges.
+        for tx in range(int((minx - buf) * n), int((maxx + buf) * n) + 1):
+            for ty in range(int((miny - buf) * n), int((maxy + buf) * n) + 1):
+                buckets[(tx, ty)].append(i)
+    out: dict[tuple[int, int], bytes] = {}
+    skipped = 0
+    for (tx, ty), idxs in buckets.items():
+        x0, y0 = tx / n, ty / n
+        rect = (x0 - buf, y0 - buf, x0 + 1 / n + buf, y0 + 1 / n + buf)
+        feats = []
+        for i in idxs:
+            clipped = _clip(simplified[i], rect)
+            if clipped is None:
+                skipped += 1
+                continue
+            if clipped.is_empty:
+                continue
+            local = shapely.transform(clipped, lambda c, x0=x0, y0=y0: (c - (x0, y0)) * scale)
+            if local.geom_type not in ("Polygon", "MultiPolygon"):
+                local = MultiPolygon([g for g in getattr(local, "geoms", []) if g.geom_type == "Polygon"])
+            geometry = _polygon_geometry(local)
+            if geometry:
+                feats.append((int(parcels[i].pin10), geometry, parcels[i].props))
+        if feats:
+            out[(tx, ty)] = gzip.compress(encode_layer(feats), compresslevel=9)
+    return out, skipped
+
+
+# ---------------------------------------------------------------- inputs and MBTiles output
+
+
+def _polygonal(g):
+    """The polygon parts of a geometry (make_valid can return a collection with lines), or None."""
+    if g.geom_type in ("Polygon", "MultiPolygon"):
+        return g
+    parts = [p for p in getattr(g, "geoms", []) if p.geom_type == "Polygon"]
+    return MultiPolygon(parts) if parts else None
+
+
+def load_parcels(
+    index_path: Path, ptaxsim_path: Path, community_areas: list[int] | None
+) -> tuple[list[Parcel], int, int]:
+    """PIN10s from the Discovery index (optionally a few community areas) with their latest PTAXSIM outline.
+    Returns the parcels, the PIN10s with no usable outline, and the outlines repaired with make_valid."""
+    idx = sqlite3.connect(f"file:{index_path}?mode=ro", uri=True)
+    want: dict[str, dict[str, str]] = {}
+    rows = idx.execute("SELECT pin, attrs, regions FROM parcels")
+    regions_wanted = {f"neighborhood:{ca}" for ca in community_areas} if community_areas else None
+    for pin, attrs, regions in rows:
+        if regions_wanted and not regions_wanted.intersection(json.loads(regions)):
+            continue
+        pin10 = pin.replace("-", "")[:10]
+        if pin10 in want:
+            continue
+        a = json.loads(attrs)
+        want[pin10] = {"g": str(a.get("zoning_group") or "")} if a.get("zoning_group") else {}
+    idx.close()
+
+    geo = sqlite3.connect(f"file:{ptaxsim_path}?mode=ro", uri=True)
+    pins = sorted(want)
+    parcels: list[Parcel] = []
+    repaired = 0
+    for i in range(0, len(pins), 900):
+        chunk = pins[i:i + 900]
+        marks = ",".join("?" * len(chunk))
+        latest: dict[str, str] = {}
+        for pin10, text in geo.execute(
+            f"SELECT pin10, geometry FROM pin_geometry_raw WHERE pin10 IN ({marks}) ORDER BY end_year ASC", chunk
+        ):
+            latest[pin10] = text  # ascending end_year: the last one written wins
+        for pin10, text in latest.items():
+            try:
+                g = shapely_wkt.loads(text)
+                if not g.is_empty and not g.is_valid:
+                    # The County layer has a few broken rings (one with 3 points stops GEOS clipping).
+                    g = _polygonal(shapely.make_valid(g))
+                    repaired += 1
+            except (shapely.errors.GEOSException, ValueError):  # unreadable even after repair: no outline
+                continue
+            if g is None or g.is_empty or g.geom_type not in ("Polygon", "MultiPolygon"):
+                continue
+            g = shapely.transform(g, _to_unit_mercator)
+            parcels.append(Parcel(pin10, g, want[pin10]))
+    geo.close()
+    return parcels, len(want) - len(parcels), repaired
+
+
+def write_mbtiles(out: Path, parcels: list[Parcel], minzoom: int, maxzoom: int) -> BuildStats:
+    stats = BuildStats(parcels=len(parcels))
+    t0 = time.monotonic()
+    out.unlink(missing_ok=True)
+    db = sqlite3.connect(out)
+    db.executescript(
+        "CREATE TABLE metadata (name TEXT, value TEXT);"
+        "CREATE TABLE tiles (zoom_level INTEGER, tile_column INTEGER, tile_row INTEGER, tile_data BLOB);"
+    )
+    for z in range(minzoom, maxzoom + 1):
+        tiles, stats.unclipped[z] = tiles_for_zoom(parcels, z)
+        flip = (1 << z) - 1
+        db.executemany(
+            "INSERT INTO tiles VALUES (?,?,?,?)", [(z, x, flip - y, data) for (x, y), data in tiles.items()]
+        )
+        sizes = [len(d) for d in tiles.values()]
+        stats.tiles[z] = len(sizes)
+        stats.bytes_gz[z] = sum(sizes)
+        stats.max_tile_gz[z] = max(sizes, default=0)
+        log.info("z%d: %d tiles, %.1f MB, max %.0f KB", z, len(sizes), sum(sizes) / 1e6, max(sizes, default=0) / 1e3)
+    meta = {
+        "name": "parcels", "format": "pbf", "minzoom": str(minzoom), "maxzoom": str(maxzoom),
+        "json": json.dumps({"vector_layers": [{"id": LAYER, "fields": {"g": "String"}}]}),
+    }
+    db.executemany("INSERT INTO metadata VALUES (?,?)", list(meta.items()))
+    db.execute("CREATE UNIQUE INDEX tile_index ON tiles (zoom_level, tile_column, tile_row)")
+    db.commit()
+    db.close()
+    stats.seconds = time.monotonic() - t0
+    return stats
+
+
+# ---------------------------------------------------------------- serving
+
+
+router = APIRouter(prefix="/api/discovery", tags=["discovery"])
+
+
+@router.get("/tiles/{z}/{x}/{y}.mvt")
+def parcel_tile(z: int, x: int, y: int) -> Response:
+    """One parcel-outline tile. 404 when no tile file is installed (the map keeps its dots); 204 for a tile
+    with no parcels. The file changes only when it is rebuilt, so a day of caching is safe."""
+    from backend.config import get_settings
+
+    path = get_settings().discovery_tiles_path
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="parcel tiles not installed")
+    if not (0 <= z <= 22 and 0 <= x < (1 << z) and 0 <= y < (1 << z)):
+        raise HTTPException(status_code=400, detail="tile out of range")
+    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        row = db.execute(
+            "SELECT tile_data FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?",
+            (z, x, (1 << z) - 1 - y),
+        ).fetchone()
+    finally:
+        db.close()
+    headers = {"Cache-Control": "public, max-age=86400"}
+    if row is None:
+        return Response(status_code=204, headers=headers)
+    headers["Content-Encoding"] = "gzip"
+    return Response(content=row[0], media_type="application/vnd.mapbox-vector-tile", headers=headers)
+
+
+def main() -> None:
+    from backend.config import get_settings
+
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--index", type=Path, default=None)
+    ap.add_argument("--community-areas", default="")
+    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--minzoom", type=int, default=MIN_ZOOM)
+    ap.add_argument("--maxzoom", type=int, default=MAX_ZOOM)
+    args = ap.parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    settings = get_settings()
+    cas = [int(c) for c in args.community_areas.split(",") if c.strip()] or None
+    t0 = time.monotonic()
+    parcels, missing, repaired = load_parcels(args.index or settings.discovery_index_path, settings.ptaxsim_db_path, cas)
+    load_s = time.monotonic() - t0
+    stats = write_mbtiles(args.out, parcels, args.minzoom, args.maxzoom)
+    print(json.dumps({
+        "parcels_with_outline": stats.parcels, "pin10_without_outline": missing, "outlines_repaired": repaired, "load_seconds": round(load_s, 1),
+        "tile_seconds": round(stats.seconds, 1), "tiles": stats.tiles, "pieces_unclipped": stats.unclipped,
+        "mb_gz": {z: round(b / 1e6, 2) for z, b in stats.bytes_gz.items()},
+        "max_tile_kb_gz": {z: round(b / 1e3, 1) for z, b in stats.max_tile_gz.items()},
+        "file_mb": round(args.out.stat().st_size / 1e6, 2),
+    }, indent=1))
+
+
+if __name__ == "__main__":
+    main()

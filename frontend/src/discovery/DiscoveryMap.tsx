@@ -17,6 +17,8 @@ import { useIsPhone } from "../lib/useIsPhone";
 import { buildDiscoveryMapModel, type DiscoveryMapRenderPoint } from "./discoveryMapModel";
 import { DotPreview } from "./DotPreview";
 import { fetchParcelRow } from "./searchClient";
+import { PARCEL_TILES_ENABLED, addParcelLayers, markMatches } from "./parcelTiles";
+import { API_BASE } from "../lib/api";
 import type { PinPoint, ResultRow } from "./types";
 
 interface DiscoveryMapProps {
@@ -220,6 +222,21 @@ export function DiscoveryMap({
       layers,
     });
   }, [layers, overlayRef, styleRevision]);
+
+  // Parcel outlines under the dots (prototype, Item 68), re-added after a theme's style swap.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!PARCEL_TILES_ENABLED || !map || !mapReady) return;
+    const apply = () => {
+      addParcelLayers(map, API_BASE, resolvedTheme === "light" ? "light" : "dark");
+      markMatches(map, stale ? [] : renderPoints.map((p) => p.pin));
+    };
+    if (map.isStyleLoaded()) apply();
+    map.on("style.load", apply);
+    return () => {
+      map.off("style.load", apply);
+    };
+  }, [mapRef, mapReady, resolvedTheme, renderPoints, stale, styleRevision]);
 
   // Theme changes swap only the Discovery basemap. Mapbox keeps its camera
   // through setStyle(); capture/restore it explicitly and rebuild the Deck
