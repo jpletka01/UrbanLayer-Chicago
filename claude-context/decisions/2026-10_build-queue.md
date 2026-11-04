@@ -2751,7 +2751,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 69 (WS4 PR5): HUD's ZIP-level voucher rent standard on the Profile (2026-11-04)
 
-**Status: branch `ws4/pr5-safmr`, not merged.** Jack's answers (2026-11-04): build PR5 with no revenue line; he copied HUD's table himself.
+**Status: merged and deployed 2026-11-04 (PR #186, `8928fd1`).** Jack's answers (2026-11-04): build PR5 with no revenue line; he copied HUD's table himself.
 
 **Decision 1: HUD's Small Area FMR, not a CHA table.** The plan assumed CHA pays one metro FMR with exceptions up to 150% in its Mobility Areas. HUD's own page for the area (FY 2027) says every Housing Choice Voucher program in the Chicago-Joliet-Naperville HUD Metro FMR Area uses Small Area FMRs by ZIP, and CHA's participant guide (June 2025, read for this) publishes no table: its payment standards are "based on the current Payment Standards issued by HUD". So the figure is HUD's, by ZIP, labeled as the standard CHA sets its own from; we never call it CHA's payment standard (CHA can set a percentage of it).
 
@@ -2774,3 +2774,5 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Not measured:** how often a parcel record has no ZIP (the GIS path and the Parcel Universe fallback both carry one); a native Spanish read of `scorecard.rent.hud.*`.
 
 **Revisit if** CHA publishes its own payment-standard table (then show CHA's figure beside HUD's), or HUD's FY 2028 table appears (each fall: copy it, rebuild, the check stops warning).
+
+**Production (Item 69, PR #186, 2026-11-04).** CI `test`/`lint`/CodeQL green before merge; the deploy job succeeded and the new bundle (`index-ctnGRN-C.js`, it contains "Voucher rent standard") was served within minutes; `/health` ok (data-health alarms 3, unchanged by this release). Live: `/api/scorecard?address=1601 N Milwaukee Ave` → `property.zip_code` 60647, `neighborhood.rent.safmr` FY 2027 studio $2,140 / 1 BR $2,270 / 2 BR $2,570 / 3 BR $3,300 / 4 BR $3,770, five `area.rent.hud_safmr.*` entries at `standard`. `npm run sweep:live` clean (16 views, desktop and phone). Phone audit before merge (local stack): 80 passed, 0 failed.
