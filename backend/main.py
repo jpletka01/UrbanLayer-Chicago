@@ -1831,6 +1831,27 @@ async def _address_violations_data(resolved_address: str | None) -> dict | None:
     }
 
 
+def _attach_safmr(results: dict) -> None:
+    """HUD's voucher rent standard for the parcel's ZIP (WS4 PR5, decision Item 69) onto the neighborhood rent block.
+
+    The ZIP comes from the County's parcel record, so the neighborhood orchestrator can't add it; this runs once
+    both are in. It works on copies: retrieval results are cached objects. No ZIP or no rent block = nothing to
+    attach; an unreadable artifact is named in ``rent.unchecked``, never shown as "HUD lists none"."""
+    nb, prop = results.get("neighborhood"), results.get("property")
+    zip_code = getattr(prop, "zip_code", None)
+    if nb is None or nb.rent is None or not zip_code:
+        return
+    from backend.retrieval.neighborhood.rent import RentArtifactError, safmr_for_zip
+
+    rent = nb.rent.model_copy()
+    try:
+        rent.safmr = safmr_for_zip(zip_code)
+    except RentArtifactError as exc:
+        log.error("%s", exc)
+        rent.unchecked = [*rent.unchecked, "hud_safmr"]
+    results["neighborhood"] = nb.model_copy(update={"rent": rent})
+
+
 async def _fetch_scorecard_data(
     resolved_lat: float,
     resolved_lon: float,
@@ -1919,6 +1940,7 @@ async def _fetch_scorecard_data(
     partial_failures.extend(
         g for g in (getattr(results.get("property"), "failed_calls", None) or []) if g not in partial_failures
     )
+    _attach_safmr(results)
 
     from backend.models import RetrievalPlan, Location
     _source_tags = [

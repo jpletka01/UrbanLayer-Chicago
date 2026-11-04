@@ -663,7 +663,20 @@ export interface RentEvidence {
   /** WS4 PR4 (Item 62): which way rent and sale prices moved in the community area. */
   trend?: RentTrend | null;
   sales_trend?: SalesTrend | null;
-  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent" | "assessor_model" | "rent_trend">;
+  /** WS4 PR5 (Item 69): HUD's voucher rent standard for the parcel's ZIP. */
+  safmr?: SmallAreaFmr | null;
+  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent" | "assessor_model" | "rent_trend" | "hud_safmr">;
+}
+
+/** HUD's Small Area Fair Market Rent for a ZIP: rent plus utilities by bedroom count ("0" = studio .. "4").
+ *  `listed: false` = HUD's table has no row for the ZIP. A voucher standard, never a market rent. */
+export interface SmallAreaFmr {
+  zip_code: string;
+  fy: number;
+  area: string;
+  listed: boolean;
+  by_bedroom: Record<string, number>;
+  retrieved: string;
 }
 
 export interface RentTrendPeriod { period: string; median: number; moe?: number | null; households?: number | null }

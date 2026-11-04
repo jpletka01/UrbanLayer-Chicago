@@ -2777,3 +2777,28 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Not measured:** a real phone (desktop Chrome emulation only: page heap 95 → 122 MB; Mapbox's worker memory isn't visible to the page); tile latency from production; the build on the production box.
 
 **Revisit if** the County publishes its own parcel tile service, or Discovery needs outline coloring by a field (then add that field to the tiles or move to a deck.gl MVT layer).
+## Item 69 (WS4 PR5): HUD's ZIP-level voucher rent standard on the Profile (2026-11-04)
+
+**Status: branch `ws4/pr5-safmr`, not merged.** Jack's answers (2026-11-04): build PR5 with no revenue line; he copied HUD's table himself.
+
+**Decision 1: HUD's Small Area FMR, not a CHA table.** The plan assumed CHA pays one metro FMR with exceptions up to 150% in its Mobility Areas. HUD's own page for the area (FY 2027) says every Housing Choice Voucher program in the Chicago-Joliet-Naperville HUD Metro FMR Area uses Small Area FMRs by ZIP, and CHA's participant guide (June 2025, read for this) publishes no table: its payment standards are "based on the current Payment Standards issued by HUD". So the figure is HUD's, by ZIP, labeled as the standard CHA sets its own from; we never call it CHA's payment standard (CHA can set a percentage of it).
+
+**Decision 2: the table is copied by hand into a TSV, and the builder refuses anything partial.** huduser.gov answers scripts with an empty 202. Jack copied the page in a browser; the TSV keeps the provenance as comment lines; `parse_tsv` refuses a short row, a non-ZIP, amounts that fall with bedrooms (a misaligned paste), a duplicate ZIP, or fewer than 300 ZIPs. Alternative: HUD's API (a token signup; same numbers).
+
+**Decision 3: the ZIP is the County parcel record's.** It was already read by both parcel lookups and dropped; now `PropertySummary.zip_code`. The Profile attaches the figure after the property and neighborhood lookups finish, on a copy. A parcel whose PIN is withheld as a possible neighbor still gets its ZIP (a ZIP is an area, the neighbor's is the same in practice).
+
+**Decision 4: a new provenance scope `zip`; dated by HUD's fiscal year.** `as_of` = October 1 before the FY (`vintage`), not the copy date; the artifact check follows the same calendar (warn when the next FY's table is in force).
+
+**Decision 5: no revenue line, no chat, no report.** As agreed; the figure is a ceiling for one program, not what a unit rents for.
+
+**Numbers**
+
+| Measure | Result |
+|---|---:|
+| ZIPs in the table / Chicago 606xx ZIPs | 370 / 75 |
+| 1601 N Milwaukee Ave (live `/api/scorecard`, local stack) | ZIP 60647: studio $2,140, 1 BR $2,270, 2 BR $2,570, 3 BR $3,300, 4 BR $3,770 |
+| Tests | `test_hud_safmr.py` (28), `RentBlock.test.tsx` (+3) |
+
+**Not measured:** how often a parcel record has no ZIP (the GIS path and the Parcel Universe fallback both carry one); a native Spanish read of `scorecard.rent.hud.*`.
+
+**Revisit if** CHA publishes its own payment-standard table (then show CHA's figure beside HUD's), or HUD's FY 2028 table appears (each fall: copy it, rebuild, the check stops warning).
