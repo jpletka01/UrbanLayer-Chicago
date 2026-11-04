@@ -18,6 +18,7 @@ LABELS: dict[str, str] = {
     "property": "property records",
     "regulatory": "regulatory overlays",
     "flood": "FEMA flood zone",
+    "brownfield": "EPA brownfield sites",
     "zoning": "parcel zoning",
     "incentives": "incentive zones",
     "neighborhood": "demographics and transit",
@@ -33,6 +34,7 @@ LABELS: dict[str, str] = {
     "vacant": "vacant buildings",
     "food_inspections": "food inspections",
     "adjacent_zoning": "adjacent zoning",
+    "block_face": "block-face unit count",
     "address_permits": "address-specific permits",
     "address_violations": "address-specific violations",
     "nearby_construction": "nearby construction activity",
@@ -46,17 +48,40 @@ ALIASES: dict[str, str] = {"zoning_lookup": "zoning", "comparable_sales": "compa
 # nearby sales, ``record`` = violations, 311 and permits at the address, and the flood zone, ``area`` = the neighborhood. These are the
 # Profile's module ids (``module-<name>``), so the frontend table must match (a pytest pins it).
 MODULES: dict[str, str] = {
-    "zoning": "build", "regulatory": "build", "adjacent_zoning": "build",
+    "zoning": "build", "regulatory": "build", "adjacent_zoning": "build", "block_face": "build",
     "property": "economics", "incentives": "economics",
     "comparables": "market", "nearby_construction": "market",
     "violations": "record", "address_311": "record", "address_permits": "record", "address_violations": "record",
     "flood": "record",  # the flood zone is shown on the Environment card, in "what to watch for"
+    "brownfield": "record",  # brownfields too (Item 65)
     "crime": "area", "crime_yoy": "area", "neighborhood": "area", "aro_housing": "area", "311": "area",
     "permits": "area", "business": "area", "vacant": "area", "food_inspections": "area",
 }
 
 # Sub-sources a domain reports as ``data_gaps`` (it succeeded, one part did not).
 _GAP_PROPERTY = {"property characteristics", "property assessments", "property sales history", "property tax estimate"}
+# The incentive programs the orchestrator checks one by one (decision Item 65): key -> the gap label.
+INCENTIVE_GAPS: dict[str, str] = {
+    "tif": "TIF district",
+    "tif_finances": "TIF district finances",
+    "oz": "Opportunity Zone",
+    "ez": "Enterprise Zone",
+    "qct": "Qualified Census Tract",
+    "nmtc": "New Markets Tax Credit tract",
+}
+_GAP_INCENTIVES = set(INCENTIVE_GAPS.values())
+# The neighborhood parts that can fail on their own (Item 65): task name -> the gap label.
+NEIGHBORHOOD_GAPS: dict[str, str] = {
+    "demographics": "community area demographics",
+    "census_tract": "census tract figures",
+    "stations": "nearest CTA stations",
+    "tod": "transit-served location check",
+    "walkscore": "Walk Score",
+    "traffic": "traffic counts",
+    "divvy": "Divvy stations",
+    "rent": "official rent figures",
+}
+_GAP_NEIGHBORHOOD = set(NEIGHBORHOOD_GAPS.values())
 _OVERLAY_SUFFIX = "(City zoning map didn't answer)"
 
 _BY_LABEL = {label: key for key, label in LABELS.items()}
@@ -80,6 +105,10 @@ def key_for_label(text: str) -> str | None:
         return "regulatory"
     if text in _GAP_PROPERTY:
         return "property"
+    if text in _GAP_INCENTIVES:
+        return "incentives"
+    if text in _GAP_NEIGHBORHOOD:
+        return "neighborhood"
     return None
 
 

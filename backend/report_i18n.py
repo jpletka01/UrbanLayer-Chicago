@@ -157,6 +157,8 @@ _EN: dict[str, str] = {
     "dev.unit_capacity_tail": " — permitted units are further limited by minimum lot area, rear-yard open space, FAR, height, parking, and unit mix.",
     "dev.unit_capacity_606": " The parcel is in the Predominance of the Block (606) district, where RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1).",
     "dev.unit_capacity_606_unchecked": " We could not check whether the parcel is in the Predominance of the Block (606) district; there, RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1).",
+    "dev.unit_capacity_block_face": " By the Assessor's records, 60% or more of the lots on this block face hold two or more units, so RS-3 allows a two-unit building at 1,500 sq ft of lot per unit (§17-2-0303-B.1); whether each was lawfully improved is not on record.",
+    "dev.unit_capacity_block_face_unchecked": " We could not check the block-face rule (60% or more of the block face with two or more units allows a two-unit building at 1,500 sq ft of lot per unit, §17-2-0303-B.1).",
     "dev.opps_constraints": "Opportunities & Constraints",
 
     # Zoning section
@@ -781,6 +783,8 @@ _EN: dict[str, str] = {
     "data.unchecked_section_body": "{items} did not answer when this report was generated, so the figures that depend on it are missing or incomplete here. That is not the same as none on record.",
     "pill.unchecked": "NOT CHECKED",
     "tl.env_flood_unchecked": "FEMA flood zone could not be checked",
+    "tl.env_brownfield_unchecked": "EPA brownfield sites could not be checked",
+    "site.todo_brownfield_unchecked": "Check EPA brownfield sites nearby (the search did not answer when this report was generated)",
     "reg.flood_unchecked": "Not checked: FEMA's flood map did not answer when this report was generated, so the flood zone is unknown. Look the parcel up on FEMA's Flood Map Service Center (msc.fema.gov) before relying on this section.",
     "site.todo_flood_unchecked": "Check the FEMA flood zone (the lookup did not answer when this report was generated)",
 }
@@ -889,6 +893,8 @@ _ES: dict[str, str] = {
     "dev.unit_capacity_tail": " — las unidades permitidas están además limitadas por el área mínima del lote, el espacio abierto del patio trasero, el FAR, la altura, el estacionamiento y la mezcla de unidades.",
     "dev.unit_capacity_606": " La parcela está en el distrito de Predominio de la Cuadra (606), donde RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1).",
     "dev.unit_capacity_606_unchecked": " No pudimos revisar si la parcela está en el distrito de Predominio de la Cuadra (606); ahí, RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1).",
+    "dev.unit_capacity_block_face": " Según los registros del Asesor, el 60% o más de los lotes de este frente de cuadra tienen dos o más unidades, así que RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1); el registro no dice si cada uno se construyó conforme a la ley.",
+    "dev.unit_capacity_block_face_unchecked": " No pudimos revisar la regla del frente de cuadra (si el 60% o más de los lotes tienen dos o más unidades, se permite un edificio de dos unidades con 1,500 pies² de lote por unidad, §17-2-0303-B.1).",
     "dev.opps_constraints": "Oportunidades y Limitaciones",
 
     # Zoning section
@@ -948,8 +954,8 @@ _ES: dict[str, str] = {
     "reg.ssa": "SSA",
     "reg.yes": "Sí",
     "reg.no": "No",
-    "reg.unchecked": "Couldn't check today",
-    "reg.unchecked_note": "{items}. This is not a \"no\": confirm on the City's zoning map (gisapps.chicago.gov/ZoningMapWeb) before relying on it.",
+    "reg.unchecked": "No se pudo verificar hoy",
+    "reg.unchecked_note": "{items}. Esto no es un «no»: confírmelo en el mapa de zonificación de la Ciudad (gisapps.chicago.gov/ZoningMapWeb) antes de basarse en ello.",
     "reg.flood_zone_fema": "Zona de Inundación (FEMA)",
     "reg.flood_zone_label": "Zona",
     "reg.flood_sfha": "En Área Especial de Riesgo de Inundación — se requiere seguro contra inundaciones.",
@@ -1513,6 +1519,8 @@ _ES: dict[str, str] = {
     "data.unchecked_section_body": "{items} no respondió cuando se generó este informe, por lo que las cifras que dependen de esa fuente faltan o están incompletas aquí. Eso no es lo mismo que «no hay registros».",
     "pill.unchecked": "NO VERIFICADO",
     "tl.env_flood_unchecked": "No se pudo verificar la zona inundable de FEMA",
+    "tl.env_brownfield_unchecked": "No se pudieron verificar los sitios contaminados (brownfields) de la EPA",
+    "site.todo_brownfield_unchecked": "Verificar los sitios contaminados de la EPA cercanos (la búsqueda no respondió cuando se generó este informe)",
     "reg.flood_unchecked": "No verificado: el mapa de inundación de FEMA no respondió cuando se generó este informe, por lo que se desconoce la zona inundable. Busque la parcela en el Flood Map Service Center de FEMA (msc.fema.gov) antes de basarse en esta sección.",
     "site.todo_flood_unchecked": "Verificar la zona inundable de FEMA (la consulta no respondió cuando se generó este informe)",
 }

@@ -83,8 +83,9 @@ async def test_check_tif_load_failure():
     mock_client = AsyncMock()
     mock_client.get.side_effect = Exception("Connection refused")
 
-    result = await tif.check_tif(41.93, -87.65, client=mock_client)
-    assert result is None
+    # A load failure raises (the orchestrator says "not checked"), never "not in a TIF" (Item 65).
+    with pytest.raises(Exception, match="Connection refused"):
+        await tif.check_tif(41.93, -87.65, client=mock_client)
 
 
 @pytest.mark.asyncio
@@ -140,8 +141,8 @@ async def test_fetch_financials_success(mock_socrata):
 @patch("backend.retrieval.incentives.tif.socrata_get")
 async def test_fetch_financials_error(mock_socrata):
     mock_socrata.side_effect = Exception("Socrata down")
-    result = await tif.fetch_tif_financials("Elston/Armstrong", client=AsyncMock())
-    assert result == []
+    with pytest.raises(Exception, match="Socrata down"):
+        await tif.fetch_tif_financials("Elston/Armstrong", client=AsyncMock())
 
 
 @pytest.mark.asyncio
@@ -262,8 +263,8 @@ async def test_fetch_fund_analysis_success(mock_socrata):
 @patch("backend.retrieval.incentives.tif.socrata_get")
 async def test_fetch_fund_analysis_error(mock_socrata):
     mock_socrata.side_effect = Exception("Socrata down")
-    result = await fetch_tif_fund_analysis("Fullerton/Milwaukee", client=AsyncMock())
-    assert result == []
+    with pytest.raises(Exception, match="Socrata down"):
+        await fetch_tif_fund_analysis("Fullerton/Milwaukee", client=AsyncMock())
 
 
 # --- tif_geojson_by_community_area ---

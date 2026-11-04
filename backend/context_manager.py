@@ -78,6 +78,9 @@ def summarize_turn(
             programs.append("QCT (LIHTC)")
         if inc.in_nmtc:
             programs.append("NMTC")
+        for key in inc.unchecked:
+            if key != "ez":  # said above
+                programs.append(f"{key.upper()}: not checked (source unavailable)")
         if programs:
             facts.append(", ".join(programs))
 

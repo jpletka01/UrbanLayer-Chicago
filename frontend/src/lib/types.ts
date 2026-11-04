@@ -286,6 +286,8 @@ export interface RegulatorySummary {
   /** FEMA's flood map didn't answer, so `flood_zone` is null because it is UNKNOWN, not because the parcel is clear. */
   flood_unchecked?: boolean;
   brownfield_sites: Record<string, unknown>[];
+  /** EPA's brownfield search didn't answer: an empty `brownfield_sites` is UNKNOWN, not "none nearby" (Item 65). */
+  brownfield_unchecked?: boolean;
   aro_housing: AROHousingSummary | null;
   /** Overlay layer types the City map couldn't answer for. Their in_* flags are
    *  false because they're UNKNOWN — never render them as "not in". */
@@ -463,6 +465,9 @@ export interface PropertySummary {
   assessor_permits: AssessorPermitSummary | null;
 }
 
+/** The incentive programs the Profile checks one by one (backend `failures.INCENTIVE_GAPS`). */
+export type IncentiveProgram = "tif" | "oz" | "ez" | "qct" | "nmtc";
+
 export interface IncentivesSummary {
   in_tif_district: boolean;
   tif_name: string | null;
@@ -483,6 +488,10 @@ export interface IncentivesSummary {
   enterprise_zone_name: string | null;
   /** The Enterprise Zone layer failed or came back empty: "not checked", never "not in one". */
   enterprise_zone_unchecked?: boolean;
+  /** Programs whose source failed or came back empty (Item 65): each is "not checked", never "not in one". */
+  unchecked?: IncentiveProgram[];
+  /** The same gaps as `partial_failures` labels. */
+  data_gaps?: string[];
   in_qct: boolean;
   qct_tract: string | null;
   in_nmtc: boolean;
@@ -757,6 +766,8 @@ export interface ScorecardContext {
   // Nearest counted street segment (Tier-2 traffic chip) — lat/lon-scoped, not
   // parcel identity, so it ships in both tiers.
   traffic?: TrafficSummary | null;
+  // The RS-3 block-face test the page ran (Item 67), so a grounded unit yield matches the page.
+  block_face?: BlockFaceTest | null;
 }
 
 // Parcel-scoped (address-keyed) building-violation tri-state shipped in grounding.
@@ -810,6 +821,23 @@ export interface UnitYield {
   base_units?: number;
   /** RS-3 only: whether the Predominance of the Block (606) rule applied, was not in play, or could not be checked. */
   rule_606?: "applied" | "not_in_district" | "unchecked" | null;
+  /** RS-3 only: the block-face test (Item 67), the rule's other trigger; null when it didn't run. */
+  rule_block_face?: BlockFaceTest["state"] | null;
+}
+
+/** The RS-3 "60% of the block face" test (§17-2-0303-B.1, Item 67), from the Assessor's records. */
+export interface BlockFaceTest {
+  state: "met" | "not_met" | "not_computable" | "unchecked";
+  reason?: string | null;
+  lots: number;
+  counted: number;
+  two_plus: number;
+  street?: string | null;
+  side?: "odd" | "even" | null;
+  from_number?: number | null;
+  to_number?: number | null;
+  from_street?: string | null;
+  to_street?: string | null;
 }
 
 /** One "what this page does not cover" note for this parcel (backend coverage_notes). */
@@ -961,6 +989,7 @@ export interface ContextObject {
   code_currency?: CodeCurrency | null;
   tod_benefits?: TodBenefits | null;
   unit_yield?: UnitYield | null;
+  block_face?: BlockFaceTest | null;
   community_area: number | null;
   community_area_name: string | null;
   resolved_address: string | null;

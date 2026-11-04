@@ -2874,6 +2874,29 @@ Consumers → Property Profile (renders pin + confidence badge)
             "Not checked" instead of "no", and Discovery leaves the field empty rather than false (Item 64).
           </P>
 
+          <Sub>An error that came back as a success</Sub>
+          <P>
+            After the Enterprise Zone fix, a sweep of the retrieval layer's 70 catch-all error handlers looked for the
+            same shape: a failure returned as the value a real "no" returns. Fifteen did. The worst was HUD's
+            Opportunity Zone, tax-credit tract and New Markets layers, which answer a failed query with HTTP 200 and an
+            error body; read as "no features", that cached "not designated" for a day. Others: a bad Walk Score key
+            cached for two days, a parcel lookup that remembered an outage as "no parcel here", and a brownfield search
+            the report listed as done when it hadn't answered. The same pass found Opportunity Zones matched by 2020
+            tract numbers against 2010 designations, so it now asks by the parcel's point. Every one now raises, caches
+            nothing, and the page names what it couldn't check (Item 65).
+          </P>
+
+          <Sub>Reading "block face" the way the code does</Sub>
+          <P>
+            An RS-3 lot can hold a two-flat when 60% of the lots on its block face already have two or more units. A
+            first measurement approximated the block face as a hundred-block of one street and counted only RS-3 lots.
+            The code says otherwise: every zoning lot on that side of the street, between the two nearest intersecting
+            streets. The City's street centerlines record which street each segment meets at each end, so the face is
+            built by walking segments until both ends meet a real street, and every lot on it counts whatever its
+            zoning. The result feeds the same unit count the Profile, the report and chat read, and a face we can't
+            judge says so instead of saying no (Items 44, 67).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}

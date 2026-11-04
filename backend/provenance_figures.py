@@ -642,3 +642,27 @@ def area_benchmark_entry(stats: dict, qd: str | None = None) -> dict | None:
         inputs=["cook.assessor.values", "cook.assessor.characteristics"],
         note="Assessed value divided by the class assessment level, per land ft², across parcels with a land area.",
     )
+
+
+def typical_lot_entry(stats: dict, zone_class: str, qd: str | None = None) -> dict | None:
+    """The provenance entry for the typical lot size of ``zone_class`` in a community area (WS5 PR3, Item 66):
+    how many lots the median rests on, and when the index was built. None when the district has no figure."""
+    from datetime import datetime, timezone
+
+    zc = zone_class.strip().upper()
+    row = (stats.get("lot_size_by_zone_class") or {}).get(zc)
+    if not row or not row.get("n"):
+        return None
+    qd = qd or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    built = stats.get("index_built")
+    return make_entry(
+        "area.benchmarks.typical_lot_sqft", query_date=qd,
+        value=_scalar(row["median_lot_sqft"]),
+        as_of=built if built and _ISO.match(built) else None,
+        as_of_basis="source_updated" if built else "queried",
+        geography=f"Community area {stats.get('community_area')}, {zc}",
+        coverage={"n": row["n"], "universe": f"{zc} base parcels in the community area",
+                  "unit": "lots", "sample": "area_sample"},
+        inputs=["cook.assessor.characteristics", "cook.ptaxsim", "chi.zoning.districts"],
+        note="Median land area of base parcels in this district, from the Assessor's land area or the County outline.",
+    )

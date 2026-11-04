@@ -53,7 +53,7 @@ async def test_none_when_no_counted_segments_nearby():
 
 
 @pytest.mark.asyncio
-async def test_none_on_transport_failure():
+async def test_a_transport_failure_raises_so_it_reads_not_checked():
     with patch("backend.retrieval.neighborhood.traffic.socrata_get",
-               new=AsyncMock(side_effect=Exception("boom"))):
-        assert await get_traffic_context(41.75, -87.60) is None
+               new=AsyncMock(side_effect=Exception("boom"))), pytest.raises(Exception, match="boom"):
+        await get_traffic_context(41.75, -87.60)

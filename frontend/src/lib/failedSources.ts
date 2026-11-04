@@ -12,11 +12,11 @@ export interface FailedSource {
 export type ProfileModuleName = "build" | "economics" | "market" | "record" | "area";
 
 export const MODULE_OF: Readonly<Record<string, ProfileModuleName>> = {
-  zoning: "build", regulatory: "build", adjacent_zoning: "build",
+  zoning: "build", regulatory: "build", adjacent_zoning: "build", block_face: "build",
   property: "economics", incentives: "economics",
   comparables: "market", nearby_construction: "market",
   violations: "record", address_311: "record", address_permits: "record", address_violations: "record",
-  flood: "record",
+  flood: "record", brownfield: "record",
   crime: "area", crime_yoy: "area", neighborhood: "area", aro_housing: "area", "311": "area",
   permits: "area", business: "area", vacant: "area", food_inspections: "area",
 };

@@ -85,8 +85,9 @@ async def get_traffic_context(
             app_token=settings.socrata_app_token or None,
         )
     except Exception as exc:
+        # Raises, caching nothing: "not checked", never "no counted street nearby".
         log.warning("Traffic counts lookup failed at (%s, %s): %s", lat, lon, exc)
-        return None
+        raise
 
     # Aggregate per segment: mean daily count + metadata.
     segments: dict[str, dict] = {}

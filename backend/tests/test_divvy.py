@@ -99,13 +99,13 @@ async def test_falls_back_to_total_docks_when_in_service_count_missing():
 
 
 @pytest.mark.asyncio
-async def test_survives_a_failed_lookup():
-    """One dead source must never fail the neighborhood fan-out."""
+async def test_a_failed_lookup_raises_so_it_reads_not_checked():
+    """A dead source raises (the orchestrator records the gap and carries on), never "no station near" (Item 65)."""
     with patch(
         "backend.retrieval.neighborhood.divvy.socrata_get",
         new=AsyncMock(side_effect=RuntimeError("socrata down")),
-    ):
-        assert await find_nearest_divvy(LAT, LON) is None
+    ), pytest.raises(RuntimeError, match="socrata down"):
+        await find_nearest_divvy(LAT, LON)
 
 
 @pytest.mark.asyncio

@@ -18,6 +18,7 @@ from backend.models import (
     WalkScoreSummary,
     WardInfo,
 )
+from backend.data_health.failures import NEIGHBORHOOD_GAPS
 from backend.retrieval.geo import resolve_census_tract
 from backend.retrieval.neighborhood.census_tract import fetch_census_tract
 from backend.retrieval.neighborhood.demographics import fetch_demographics
@@ -83,12 +84,14 @@ async def neighborhood_domain(
                 )
 
         results: dict[str, object] = {}
+        failed: list[str] = []
         if tasks:
             done = await asyncio.gather(*tasks.values(), return_exceptions=True)
             for key, value in zip(tasks.keys(), done):
                 if isinstance(value, Exception):
                     log.warning("Neighborhood %s failed: %s", key, value)
                     results[key] = None
+                    failed.append(key)
                 else:
                     results[key] = value
 
@@ -105,8 +108,9 @@ async def neighborhood_domain(
                 rent = await rent_evidence(community_area, census_tract, client=client)
             except Exception as exc:  # noqa: BLE001 — rent must never take the rest of the area down
                 log.warning("Neighborhood rent failed: %s", exc)
+                failed.append("rent")
 
-        return _build_summary(
+        summary = _build_summary(
             results.get("demographics"),
             results.get("census_tract"),
             results.get("stations"),
@@ -117,6 +121,8 @@ async def neighborhood_domain(
             results.get("divvy"),
             rent,
         )
+        summary.data_gaps = [label for k, label in NEIGHBORHOOD_GAPS.items() if k in failed]
+        return summary
     finally:
         if owns:
             await client.aclose()

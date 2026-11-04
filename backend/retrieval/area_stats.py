@@ -16,6 +16,11 @@ Honesty notes (2026-07-07 audit — the first cut of this file failed all three)
 - Every median ships its own ``n``. The index's ``land_sqft`` is sparse (~4% of
   Uptown), so ``n_parcels`` alone badly overstated the sample behind the $/ft²
   median; the frontend suppresses the line under a floor.
+- Typical lot size per zoning district (WS5 PR3, decision Item 66): median and middle
+  half of the land area of the area's **base** parcels (PIN ending 0000, so a condo unit
+  never claims the whole lot) in that exact district, leaving out shared outlines (one
+  polygon for a whole development, Item 59) and the "unusual" parcels (Item 60). Emitted
+  only at n ≥ ``MIN_LOT_N``; needs ``zone_class`` in the index (Item 59), else empty.
 - No area effective-tax-rate median (the index holds no bills) — that
   comparison is served by the deterministic class-norm constant on the
   frontend. Per-class medians are only emitted at n ≥ 20; below that a
@@ -39,6 +44,8 @@ _TTL_S = 24 * 3600
 # for a whole day — retry soon.
 _FAIL_TTL_S = 300
 _MIN_CLASS_N = 20
+# Lots per district before a "typical lot" is shown (the Profile's MIN_BENCHMARK_N, Item 66).
+MIN_LOT_N = 50
 
 _cache: dict[int, dict] | None = None
 _cache_expires: float = 0.0
@@ -54,6 +61,29 @@ def _median(values: list[float]) -> float | None:
     return values[mid] if n % 2 else (values[mid - 1] + values[mid]) / 2
 
 
+def _quartiles(values: list[float]) -> tuple[float, float, float]:
+    """(25th, 50th, 75th) percentile by linear interpolation between order statistics."""
+    values = sorted(values)
+
+    def at(q: float) -> float:
+        pos = q * (len(values) - 1)
+        lo = int(pos)
+        hi = min(lo + 1, len(values) - 1)
+        return values[lo] + (values[hi] - values[lo]) * (pos - lo)
+
+    return at(0.25), at(0.5), at(0.75)
+
+
+def _typical_lot_eligible(pin: str, attrs: dict) -> float | None:
+    """The parcel's lot area when it may count toward its district's typical lot, else None."""
+    land = attrs.get("land_sqft")
+    if not (isinstance(land, (int, float)) and land > 0 and attrs.get("zone_class")):
+        return None
+    if not str(pin).endswith("0000") or attrs.get("shared_outline") or attrs.get("unusual"):
+        return None
+    return float(land)
+
+
 def _scan_index(path: str) -> dict[int, dict]:
     """Single pass over the discovery index → stats for every community area."""
     conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
@@ -67,7 +97,7 @@ def _scan_index(path: str) -> dict[int, dict]:
         except sqlite3.Error:
             pass
         acc: dict[int, dict] = {}
-        for attrs_json, regions_json in conn.execute("SELECT attrs, regions FROM parcels"):
+        for pin, attrs_json, regions_json in conn.execute("SELECT pin, attrs, regions FROM parcels"):
             try:
                 regions = json.loads(regions_json)
                 ca = next(
@@ -79,8 +109,11 @@ def _scan_index(path: str) -> dict[int, dict]:
                 attrs = json.loads(attrs_json)
             except (ValueError, TypeError, IndexError):
                 continue
-            a = acc.setdefault(ca, {"n": 0, "av": [], "mv_psf": [], "by_use": {}})
+            a = acc.setdefault(ca, {"n": 0, "av": [], "mv_psf": [], "by_use": {}, "lots": {}})
             a["n"] += 1
+            lot = _typical_lot_eligible(pin, attrs)
+            if lot is not None:
+                a["lots"].setdefault(str(attrs["zone_class"]).strip().upper(), []).append(lot)
             av = attrs.get("total_assessed_value")
             land = attrs.get("land_sqft")
             # A $1 common area or remnant is a placeholder, not a value: it would drag the median down.
@@ -111,6 +144,12 @@ def _scan_index(path: str) -> dict[int, dict]:
                     use: {"n": len(vals), "median_mv_per_land_sqft": _median(vals)}
                     for use, vals in a["by_use"].items()
                     if len(vals) >= _MIN_CLASS_N
+                },
+                "lot_size_by_zone_class": {
+                    zc: dict(zip(("p25_lot_sqft", "median_lot_sqft", "p75_lot_sqft"),
+                                 (round(q) for q in _quartiles(vals))), n=len(vals))
+                    for zc, vals in sorted(a["lots"].items())
+                    if len(vals) >= MIN_LOT_N
                 },
             }
         return out

@@ -339,6 +339,11 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         surfaces=("profile",), fact_keys=("neighborhood.divvy",), cadence_days=1, warn_days=3, alarm_days=14,
     ),
     _socrata(
+        CITY, "pr57-gg9e", "chi.street_centerlines", "Street Center Lines", "CDOT",
+        "backend/retrieval/property/block_face.py", surfaces=("profile",), cadence_days=365, warn_days=730,
+        alarm_days=1460, note="Block faces for the RS-3 block-face rule (Item 67); a static layer, updated rarely.",
+    ),
+    _socrata(
         CITY, "gc7y-n4xa", "chi.traffic", "Average Daily Traffic Counts", "CDOT",
         "backend/retrieval/neighborhood/traffic.py", surfaces=("profile", "chat"), fact_keys=("neighborhood.traffic",),
         cadence_days=1, warn_days=14, alarm_days=45,

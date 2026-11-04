@@ -450,6 +450,7 @@ FACTS.update({
     "area.vacant": _rec("Vacant and abandoned buildings", "chi.vacant_buildings", "community_area"),
     "area.food": _rec("Food inspections", "chi.food_inspections", "community_area"),
     "area.benchmarks.market_value_per_land_sqft": _calc("Area median market value per land ft²", "internal.discovery_index", "community_area"),
+    "area.benchmarks.typical_lot_sqft": _calc("Typical lot size for this district in the area", "internal.discovery_index", "community_area"),
     "property.comps.median_price": _calc("Median comparable sale price", "cook.assessor.sales", "radius"),
     "property.comps.median_price_per_land_sqft": _calc("Median comparable price per land ft²", "cook.assessor.sales", "radius"),
     "property.comps.median_price_per_bldg_sqft": _calc("Median comparable price per building ft²", "cook.assessor.sales", "radius"),

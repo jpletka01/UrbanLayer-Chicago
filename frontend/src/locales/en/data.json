@@ -281,6 +281,13 @@
     "notInEnterpriseZone": "Not in Enterprise Zone",
     "enterpriseZoneNotChecked": "Enterprise Zone: not checked",
     "ezUnchecked": "The City's Enterprise Zone map didn't answer, so we couldn't check whether this parcel is in one. This isn't a \"no\".",
+    "notChecked": "{{program}}: not checked",
+    "unchecked": {
+      "tif": "The City's TIF district map didn't answer, so we couldn't check whether this parcel is in one. This isn't a \"no\".",
+      "oz": "HUD's Opportunity Zone map didn't answer, so we couldn't check whether this parcel is in one. This isn't a \"no\".",
+      "qct": "We couldn't look up this parcel's census tract or HUD's Qualified Census Tract list, so we couldn't check whether it's in one. This isn't a \"no\".",
+      "nmtc": "We couldn't look up this parcel's census tract or HUD's New Markets Tax Credit list, so we couldn't check whether it qualifies. This isn't a \"no\"."
+    },
     "cityGrantPrograms": "City Grant Programs",
     "totalProjects": "Total Projects",
     "totalFunding": "Total Funding",

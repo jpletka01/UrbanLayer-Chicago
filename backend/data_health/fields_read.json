@@ -152,6 +152,22 @@
   "location",
   "pin"
  ],
+ "chi.street_centerlines": [
+  "class",
+  "f_cross",
+  "f_cross_st",
+  "fnode_id",
+  "l_f_add",
+  "l_t_add",
+  "pre_dir",
+  "r_f_add",
+  "r_t_add",
+  "street_nam",
+  "street_typ",
+  "t_cross",
+  "t_cross_st",
+  "tnode_id"
+ ],
  "chi.tif.boundaries": [
   "approval_d",
   "comm_area",

@@ -969,7 +969,7 @@ async def _retrieve(
             else:
                 results[key] = value
 
-    partial_failures.extend(_domain_data_gaps(results, ("property", "regulatory")))
+    partial_failures.extend(_domain_data_gaps(results, ("property", "regulatory", "incentives", "neighborhood")))
 
     code_chunks = []
     if "vector_search" in plan.sources and plan.search_query:
@@ -1012,13 +1012,22 @@ async def _retrieve(
             # the footer must say so. The label is ours, never client text.
             if sc.regulatory.flood_unchecked and failures.label("flood") not in ctx.partial_failures:
                 ctx.partial_failures.append(failures.label("flood"))
+            if sc.regulatory.brownfield_unchecked and failures.label("brownfield") not in ctx.partial_failures:
+                ctx.partial_failures.append(failures.label("brownfield"))
         if sc.property is not None:
             ctx.property = sc.property
         if sc.incentives is not None:
             ctx.incentives = sc.incentives
+            # Same for the incentive programs the Profile couldn't check: labels from our table, keyed by the
+            # program ids it sent (never its text), so an unknown id adds nothing.
+            for key in sc.incentives.unchecked:
+                gap = failures.INCENTIVE_GAPS.get(key)
+                if gap and gap not in ctx.partial_failures:
+                    ctx.partial_failures.append(gap)
         ctx.comparables = sc.comparables
         ctx.zone_definition = sc.zone_definition
         ctx.verdict = sc.verdict
+        ctx.block_face = sc.block_face
         # Address-scoped violation tri-state rides in its own field — it never
         # touches ctx.violations (the area feed, which still augments if the
         # router asked for it). The prompt rule prioritizes this for parcel-level
@@ -1053,6 +1062,8 @@ def _domain_data_gaps(results: dict[str, Any], keys: tuple[str, ...]) -> list[st
         gaps.extend(getattr(summary, "data_gaps", None) or [])
         if getattr(summary, "flood_unchecked", False):
             gaps.append(failures.label("flood"))
+        if getattr(summary, "brownfield_unchecked", False):
+            gaps.append(failures.label("brownfield"))
     return gaps
 
 
@@ -1902,7 +1913,7 @@ async def _fetch_scorecard_data(
 
     # Overlay layers the City map couldn't answer: unknown, not "not in it". And the Assessor/PTAXSIM calls that
     # failed (not the figures a source simply has no record of): a Profile that lost its sales history says so.
-    partial_failures.extend(_domain_data_gaps(results, ("regulatory",)))
+    partial_failures.extend(_domain_data_gaps(results, ("regulatory", "incentives", "neighborhood")))
     partial_failures.extend(
         g for g in (getattr(results.get("property"), "failed_calls", None) or []) if g not in partial_failures
     )
@@ -1987,6 +1998,19 @@ async def _fetch_scorecard_data(
             log.warning("Scorecard comparable sales failed: %s", exc)
             partial_failures.append(failures.label("comparables"))
 
+    # The RS-3 block-face test (§17-2-0303-B.1, Item 67): only RS-3 uses it, so only RS-3 pays for it. A failure is
+    # "unchecked" in the unit yield, never "not met".
+    if ctx.parcel_zoning and (ctx.parcel_zoning.zone_class or "").strip().upper() == "RS-3" and resolved_address:
+        from backend.models import BlockFaceTest
+        from backend.retrieval.property.block_face import block_face_test
+
+        try:
+            ctx.block_face = await _limited(block_face_test(resolved_address))
+        except Exception as exc:
+            log.warning("Scorecard block-face test failed: %s", exc)
+            ctx.block_face = BlockFaceTest(state="unchecked")
+            partial_failures.append(failures.label("block_face"))
+
     # Tri-state for the violations card: a present summary (ctx.violations), a
     # confirmed-zero ("no violations on record"), or an unconfirmed lookup
     # (address didn't parse / fetch failed → card omitted). Without this the
@@ -2012,7 +2036,7 @@ async def _fetch_scorecard_data(
 
 
 @app.get("/api/area-stats")
-async def area_stats(ca: int) -> dict:
+async def area_stats(ca: int, zone_class: str | None = None) -> dict:
     """Community-area benchmark aggregates for the Property Profile KPI band.
     Served from a daily in-process scan of the Discovery index; every stat is
     None/empty when the index is absent — the UI then renders no benchmark."""
@@ -2028,11 +2052,17 @@ async def area_stats(ca: int) -> dict:
             "median_mv_per_land_sqft": None,
             "n_mv_psf": 0,
             "by_land_use": {},
+            "lot_size_by_zone_class": {},
         }
-    from backend.provenance_figures import area_benchmark_entry
+    from backend.provenance_figures import area_benchmark_entry, typical_lot_entry
 
     entry = area_benchmark_entry(stats)
-    return {**stats, "provenance": {"area.benchmarks.market_value_per_land_sqft": entry} if entry else {}}
+    provenance = {"area.benchmarks.market_value_per_land_sqft": entry} if entry else {}
+    # The typical lot for the parcel's own district (WS5 PR3, Item 66), with its own entry.
+    lot_entry = typical_lot_entry(stats, zone_class) if zone_class else None
+    if lot_entry:
+        provenance["area.benchmarks.typical_lot_sqft"] = lot_entry
+    return {**stats, "provenance": provenance}
 
 
 _parcel_map_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="parcel_map")

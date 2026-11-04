@@ -1253,21 +1253,32 @@ export async function discoveryExportCsv(req: DiscoverySearchRequest): Promise<b
 
 // --- Property Profile: area benchmarks + module-map layers ---
 
+/** The middle half and median land area of a district's base parcels in a community area (WS5 PR3). */
+export interface TypicalLot {
+  n: number;
+  p25_lot_sqft: number;
+  median_lot_sqft: number;
+  p75_lot_sqft: number;
+}
+
 /** Community-area benchmark aggregates for the Property Profile KPI band.
     All-null stats when the Discovery index is absent — callers render no
     benchmark line. */
-export async function fetchAreaStats(ca: number): Promise<{
+export async function fetchAreaStats(ca: number, zoneClass?: string | null): Promise<{
   community_area: number;
   n_parcels: number;
   median_assessed: number | null;
   n_assessed: number;
   median_mv_per_land_sqft: number | null;
   n_mv_psf: number;
+  /** Typical lot per exact district (WS5 PR3, Item 66); only districts with enough lots. */
+  lot_size_by_zone_class?: Record<string, TypicalLot>;
   /** The benchmark's own entry (n, coverage, index build date): absent when there is no median. */
   provenance?: Record<string, Provenance>;
 } | null> {
   try {
-    const resp = await authFetch(`${API_BASE}/api/area-stats?ca=${ca}`);
+    const zc = zoneClass ? `&zone_class=${encodeURIComponent(zoneClass)}` : "";
+    const resp = await authFetch(`${API_BASE}/api/area-stats?ca=${ca}${zc}`);
     if (!resp.ok) return null;
     return await resp.json();
   } catch {

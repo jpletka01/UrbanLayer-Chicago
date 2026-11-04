@@ -4,7 +4,7 @@
 // ZoneDefinition from the scorecard API + the verdict's FAR signals.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Provenance, ZoneDefinition } from "../../lib/api";
+import type { Provenance, TypicalLot, ZoneDefinition } from "../../lib/api";
 import type { CodeCurrency, CodeVintage, CoverageNote, PassedNotOnMap, UnitYield, ZoningSummary } from "../../lib/types";
 import { formatDay, localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
@@ -53,7 +53,7 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, passedNotOnMap }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, passedNotOnMap, typicalLot, lotSqft, areaName }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
@@ -72,6 +72,11 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   coverageNotes?: CoverageNote[] | null;
   /** Passed rezonings listing this address that the City's map doesn't show yet (WS1 M5). */
   passedNotOnMap?: PassedNotOnMap[] | null;
+  /** The district's typical lot in this community area (WS5 PR3, Item 66); null when too few lots. */
+  typicalLot?: TypicalLot | null;
+  /** This parcel's lot area, for the comparison behind the Info tool. */
+  lotSqft?: number | null;
+  areaName?: string | null;
 }) {
   const { t } = useTranslation("pages");
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -90,6 +95,7 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   if (def.min_lot_area_per_unit != null)
     standards.push({ label: t("scorecard.zoningCard.minLotAreaPerUnit"), value: `${def.min_lot_area_per_unit.toLocaleString()} ft²`, prov: "zoning.min_lot_area_per_unit" });
   if (isPd && ordinanceNum) standards.push({ label: t("scorecard.zoningCard.pdOrdinance"), value: ordinanceNum });
+  const ft2 = (n: number) => `${Math.round(n).toLocaleString()} ft²`;
 
   return (
     <SubSection
@@ -162,6 +168,35 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
           </dl>
         )}
 
+        {typicalLot && (
+          // One figure; the sample, the middle half and this lot's own area sit behind the Info tool (Item 66). No
+          // caption: the backend shows it only at n >= 50, so it is always standard, and its n is in the tool.
+          <div data-testid="typical-lot">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="inline-flex items-center gap-1 text-caption text-text-muted">
+                {t("scorecard.zoningCard.typicalLot")}
+                <ToolTray
+                  label={t("scorecard.zoningCard.typicalLot")}
+                  align="start"
+                  explain={
+                    <span className="block space-y-1.5" data-testid="typical-lot-explain">
+                      <span className="block">
+                        {t("scorecard.zoningCard.typicalLotExplain", {
+                          count: typicalLot.n, n: typicalLot.n.toLocaleString(), zone: def.zone_class, area: areaName ?? t("scorecard.zoningCard.typicalLotThisArea"),
+                          p25: ft2(typicalLot.p25_lot_sqft), p75: ft2(typicalLot.p75_lot_sqft),
+                        })}
+                        {lotSqft != null && lotSqft > 0 && <>{" "}{t("scorecard.zoningCard.typicalLotThisLot", { lot: ft2(lotSqft) })}</>}
+                      </span>
+                      <span className="block text-text-muted">{t("scorecard.zoningCard.typicalLotMethod")}</span>
+                    </span>
+                  }
+                />
+              </span>
+              <span className="text-body text-text-primary">{ft2(typicalLot.median_lot_sqft)}</span>
+            </div>
+          </div>
+        )}
+
         {existingFar != null && allowedFar != null && allowedFar > 0 && (
           <FarMeter existing={existingFar} allowed={allowedFar} />
         )}
@@ -187,6 +222,17 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
             {unitYield.rule_606 === "applied" && unitYield.base_units != null && unitYield.units > unitYield.base_units && (
               <p className="text-caption text-text-secondary mt-1" data-testid="unit-yield-606">
                 {t("scorecard.zoningCard.unitYield606Applied", { base: unitYield.base_units, units: unitYield.units })}
+              </p>
+            )}
+            {unitYield.rule_block_face === "met" && unitYield.rule_606 !== "applied" && unitYield.base_units != null
+              && unitYield.units > unitYield.base_units && (
+              <p className="text-caption text-text-secondary mt-1" data-testid="unit-yield-block-face">
+                {t("scorecard.zoningCard.unitYieldBlockFaceApplied", { base: unitYield.base_units, units: unitYield.units })}
+              </p>
+            )}
+            {unitYield.rule_block_face === "unchecked" && unitYield.rule_606 !== "applied" && (
+              <p className="text-caption text-text-secondary mt-1" data-testid="unit-yield-block-face-unchecked">
+                {t("scorecard.zoningCard.unitYieldBlockFaceUnchecked")}
               </p>
             )}
             {unitYield.rule_606 === "unchecked" && (

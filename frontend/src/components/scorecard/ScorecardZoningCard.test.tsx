@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { ScorecardZoningCard } from "./ScorecardZoningCard";
 import type { ZoneDefinition } from "../../lib/api";
 import type { UnitYield } from "../../lib/types";
@@ -146,5 +146,56 @@ describe("ScorecardZoningCard — the binding number (F3)", () => {
   it("shows no stamps when the API supplies none (older payloads)", () => {
     render(<ScorecardZoningCard def={rm45} />);
     expect(screen.queryByTestId("freshness-stamps")).toBeNull();
+  });
+});
+
+describe("ScorecardZoningCard — typical lot for this district (WS5 PR3, Item 66)", () => {
+  const lotDef = { zone_class: "RS-3", name: "Residential Single-Unit (Detached House)", far: 0.9 } as unknown as ZoneDefinition;
+  const lot = { n: 4210, p25_lot_sqft: 3000, median_lot_sqft: 3125, p75_lot_sqft: 3750 };
+
+  it("shows one figure and keeps the sample and this lot behind the Info tool", () => {
+    render(<ScorecardZoningCard def={lotDef} typicalLot={lot} lotSqft={3750} areaName="Logan Square" />);
+    const row = screen.getByTestId("typical-lot");
+    expect(row.textContent).toContain("Typical lot here");
+    expect(row.textContent).toContain("3,125 ft²");
+    expect(row.textContent).not.toContain("4,210");
+    fireEvent.click(within(row).getByRole("button", { name: "What this means: Typical lot here" }));
+    const explain = screen.getByTestId("typical-lot-explain").textContent ?? "";
+    expect(explain).toContain("4,210 RS-3 lots in Logan Square");
+    expect(explain).toContain("3,000 ft² to 3,750 ft²");
+    expect(explain).toContain("This lot: 3,750 ft².");
+  });
+
+  it("renders nothing when the district has too few lots", () => {
+    render(<ScorecardZoningCard def={lotDef} typicalLot={null} />);
+    expect(screen.queryByTestId("typical-lot")).toBeNull();
+  });
+});
+
+describe("ScorecardZoningCard — the RS-3 block-face rule (Item 67)", () => {
+  const rs3 = { zone_class: "RS-3", name: "Residential Single-Unit (Detached House)", far: 0.9 } as unknown as ZoneDefinition;
+  const yieldWith = (over: Partial<UnitYield>): UnitYield => ({
+    units: 2, base_units: 1, lot_sqft: 3125, min_lot_area_per_unit: 1500, arithmetic: "3,125 sq ft ÷ 2,500 …",
+    basis: "", caveat: "", lot_area_note: "", rule_606: "not_in_district", rule_block_face: "met", ...over,
+  });
+
+  it("says the block face raised the number, once", () => {
+    render(<ScorecardZoningCard def={rs3} unitYield={yieldWith({})} />);
+    expect(screen.getByTestId("unit-yield-block-face").textContent).toContain("from 1 to 2");
+    expect(screen.queryByTestId("unit-yield-606")).toBeNull();
+  });
+
+  it("an unchecked face says so; a face that isn't met adds no line", () => {
+    render(<ScorecardZoningCard def={rs3} unitYield={yieldWith({ units: 1, rule_block_face: "unchecked" })} />);
+    expect(screen.getByTestId("unit-yield-block-face-unchecked")).toBeTruthy();
+    cleanup();
+    render(<ScorecardZoningCard def={rs3} unitYield={yieldWith({ units: 1, rule_block_face: "not_met" })} />);
+    expect(screen.queryByTestId("unit-yield-block-face")).toBeNull();
+    expect(screen.queryByTestId("unit-yield-block-face-unchecked")).toBeNull();
+  });
+
+  it("the 606 district comes first: no block-face line when 606 applied", () => {
+    render(<ScorecardZoningCard def={rs3} unitYield={yieldWith({ rule_606: "applied" })} />);
+    expect(screen.queryByTestId("unit-yield-block-face")).toBeNull();
   });
 });

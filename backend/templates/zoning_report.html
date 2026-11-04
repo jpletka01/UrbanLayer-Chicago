@@ -546,11 +546,11 @@ a.glossary-link {
       <span class="tl-topic">{{ t("topic.environmental") }}</span>
       <span class="tl-detail">{{ t("tl.env_flood_zone", zone=reg.flood_zone) }}</span>
     </div>
-    {% elif reg and reg.flood_unchecked %}
+    {% elif reg and (reg.flood_unchecked or reg.brownfield_unchecked) %}
     <div class="tl-item tl-yellow">
       <span class="tl-pill tl-pill-yellow">{{ t("pill.unchecked") }}</span>
       <span class="tl-topic">{{ t("topic.environmental") }}</span>
-      <span class="tl-detail">{{ t("tl.env_flood_unchecked") }}</span>
+      <span class="tl-detail">{% if reg.flood_unchecked %}{{ t("tl.env_flood_unchecked") }}{% endif %}{% if reg.flood_unchecked and reg.brownfield_unchecked %}; {% endif %}{% if reg.brownfield_unchecked %}{{ t("tl.env_brownfield_unchecked") }}{% endif %}</span>
     </div>
     {% else %}
     <div class="tl-item tl-green">
@@ -651,7 +651,7 @@ a.glossary-link {
     {% if report.unit_yield %}
     {% set uy = report.unit_yield %}
     <div class="detail" style="margin-top: 4pt;">
-      <strong>{{ t("dev.unit_capacity_label") }}</strong>{{ tn("dev.unit_capacity_body", uy.units, units=uy.units, land=uy.land_sqft|fnum, mla=uy.mla_per_unit|fnum, zone=uy.zone_class) }}<strong>{{ t("dev.unit_capacity_emph") }}</strong>{{ t("dev.unit_capacity_tail") }}{% if uy.raised_by_606 %}{{ t("dev.unit_capacity_606") }}{% elif uy.rule_606 == "unchecked" %}{{ t("dev.unit_capacity_606_unchecked") }}{% endif %}
+      <strong>{{ t("dev.unit_capacity_label") }}</strong>{{ tn("dev.unit_capacity_body", uy.units, units=uy.units, land=uy.land_sqft|fnum, mla=uy.mla_per_unit|fnum, zone=uy.zone_class) }}<strong>{{ t("dev.unit_capacity_emph") }}</strong>{{ t("dev.unit_capacity_tail") }}{% if uy.raised_by_606 %}{{ t("dev.unit_capacity_606") }}{% elif uy.raised_by_block_face %}{{ t("dev.unit_capacity_block_face") }}{% elif uy.rule_606 == "unchecked" %}{{ t("dev.unit_capacity_606_unchecked") }}{% endif %}{% if uy.rule_block_face == "unchecked" and not uy.raised_by_606 %}{{ t("dev.unit_capacity_block_face_unchecked") }}{% endif %}
     </div>
     {% endif %}
   </div>
@@ -1301,15 +1301,15 @@ a.glossary-link {
   {% if inc %}
   <dl class="info-grid">
     <dt><a href="#glossary-tif" class="glossary-link">TIF</a> {{ t("fin.tif_district") }}</dt>
-    <dd>{% if inc.in_tif_district %}<span class="status-yes">{{ inc.tif_name or t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if inc.in_tif_district %}<span class="status-yes">{{ inc.tif_name or t("reg.yes") }}</span>{% elif "tif" in (inc.unchecked or []) %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-oz" class="glossary-link">{{ t("fin.opportunity_zone") }}</a></dt>
-    <dd>{% if inc.in_opportunity_zone %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.oz_tract or t("common.na") }}){% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if inc.in_opportunity_zone %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.oz_tract or t("common.na") }}){% elif "oz" in (inc.unchecked or []) %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-ez" class="glossary-link">{{ t("fin.enterprise_zone") }}</a></dt>
     <dd>{% if inc.in_enterprise_zone %}<span class="status-yes">{{ inc.enterprise_zone_name or t("reg.yes") }}</span>{% elif inc.enterprise_zone_unchecked %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-qct" class="glossary-link">{{ t("fin.qct") }}</a></dt>
-    <dd>{% if inc.in_qct %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.qct_tract or t("common.na") }}){% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if inc.in_qct %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.qct_tract or t("common.na") }}){% elif "qct" in (inc.unchecked or []) %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-nmtc" class="glossary-link">{{ t("fin.nmtc") }}</a></dt>
-    <dd>{% if inc.in_nmtc %}<span class="status-yes">{{ t("reg.yes") }}</span>{% if inc.nmtc_severe_distress %} <span class="status-warn">{{ t("fin.severely_distressed") }}</span>{% endif %}{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if inc.in_nmtc %}<span class="status-yes">{{ t("reg.yes") }}</span>{% if inc.nmtc_severe_distress %} <span class="status-warn">{{ t("fin.severely_distressed") }}</span>{% endif %}{% elif "nmtc" in (inc.unchecked or []) %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     {% if inc.property_tax_class %}<dt>{{ t("fin.tax_incentive_class") }}</dt><dd>{{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</dd>{% endif %}
   </dl>
 
@@ -1484,7 +1484,7 @@ a.glossary-link {
         <li style="color: #047857;">&#10003; {{ t("site.check_zoning") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_overlay") }}</li>
         {% if not (reg and reg.flood_unchecked) %}<li style="color: #047857;">&#10003; {{ t("site.check_flood") }}</li>{% endif %}
-        <li style="color: #047857;">&#10003; {{ t("site.check_brownfield") }}</li>
+        {% if not (reg and reg.brownfield_unchecked) %}<li style="color: #047857;">&#10003; {{ t("site.check_brownfield") }}</li>{% endif %}
         <li style="color: #047857;">&#10003; {{ t("site.check_tax") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_comps") }}</li>
         <li style="color: #047857;">&#10003; {{ t("site.check_permits") }}</li>
@@ -1496,6 +1496,7 @@ a.glossary-link {
       <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 1.6;">
         <li>&#9744; {{ t("site.todo_title") }}</li>
         <li>&#9744; {{ t("site.todo_survey") }}</li>
+        {% if reg and reg.brownfield_unchecked %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_brownfield_unchecked") }}</li>{% endif %}
         {% if reg and reg.brownfield_sites %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_esa_brownfield") }}</li>{% else %}<li>&#9744; {{ t("site.todo_esa") }}</li>{% endif %}
         <li>&#9744; {{ t("site.todo_utility") }}</li>
         <li>&#9744; {{ t("site.todo_soil") }}</li>

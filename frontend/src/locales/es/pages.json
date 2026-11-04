@@ -197,7 +197,15 @@
       "passedDistrict": "La ordenanza lo cambia de {{from}} a {{to}} (leído por IA a partir de la ordenanza escaneada; verifique el PDF).",
       "unitYield606Applied": "En el distrito de Predominio de la Cuadra (606): un edificio de dos unidades con 1,500 pies² de lote por unidad eleva esto de {{base}} a {{units}} (§17-2-0303-B.1).",
       "unitYield606Unchecked": "No pudimos revisar si esta parcela está en el distrito de Predominio de la Cuadra (606). Ahí, RS-3 permite un edificio de dos unidades con 1,500 pies² de lote por unidad (§17-2-0303-B.1).",
-      "datesLabel": "Fechas"
+      "datesLabel": "Fechas",
+      "typicalLot": "Lote típico aquí",
+      "typicalLotExplain_one": "La mediana de {{n}} lote {{zone}} en {{area}}; la mitad central va de {{p25}} a {{p75}}.",
+      "typicalLotExplain_other": "La mediana de {{n}} lotes {{zone}} en {{area}}; la mitad central va de {{p25}} a {{p75}}.",
+      "typicalLotThisArea": "esta área comunitaria",
+      "typicalLotThisLot": "Este lote: {{lot}}.",
+      "typicalLotMethod": "Con las superficies de terreno del Asesor y los contornos de parcelas del Condado; se excluyen los contornos compartidos por todo un desarrollo.",
+      "unitYieldBlockFaceApplied": "El 60% o más de los lotes de este frente de cuadra tienen dos o más unidades, lo que sube esto de {{base}} a {{units}} (§17-2-0303-B.1).",
+      "unitYieldBlockFaceUnchecked": "No pudimos revisar la regla del frente de cuadra, que puede permitir aquí un edificio de dos unidades (§17-2-0303-B.1)."
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",

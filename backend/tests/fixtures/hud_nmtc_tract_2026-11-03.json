@@ -1,0 +1,67 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "uniqueIdField": {
+  "name": "OBJECTID",
+  "isSystemMaintained": true
+ },
+ "globalIdFieldName": "",
+ "geometryType": "esriGeometryPolygon",
+ "spatialReference": {
+  "wkid": 4269,
+  "latestWkid": 4269
+ },
+ "fields": [
+  {
+   "name": "GEOID",
+   "type": "esriFieldTypeString",
+   "alias": "GEOID",
+   "sqlType": "sqlTypeOther",
+   "length": 11,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "NMTC_LIC_INC",
+   "type": "esriFieldTypeInteger",
+   "alias": "NMTC_LIC_INC",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "SEVERE_DISTRESS",
+   "type": "esriFieldTypeInteger",
+   "alias": "SEVERE_DISTRESS",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "DEEP_DISTRESS",
+   "type": "esriFieldTypeInteger",
+   "alias": "DEEP_DISTRESS",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "POV_RATE_16_20_ACS",
+   "type": "esriFieldTypeDouble",
+   "alias": "POV_RATE_16_20_ACS",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  }
+ ],
+ "features": [
+  {
+   "attributes": {
+    "GEOID": "17031540101",
+    "NMTC_LIC_INC": 1,
+    "SEVERE_DISTRESS": 1,
+    "DEEP_DISTRESS": 1,
+    "POV_RATE_16_20_ACS": 49.2
+   }
+  }
+ ]
+}

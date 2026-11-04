@@ -331,13 +331,13 @@ def test_the_area_scan_reports_coverage_and_the_index_build_date(tmp_path):
 
     db = tmp_path / "idx.db"
     con = sqlite3.connect(db)
-    con.execute("CREATE TABLE parcels (attrs TEXT, regions TEXT)")
+    con.execute("CREATE TABLE parcels (pin TEXT, attrs TEXT, regions TEXT)")
     con.execute("CREATE TABLE meta (id INTEGER, built_at INTEGER)")
     con.execute("INSERT INTO meta VALUES (1, ?)", (int(datetime(2026, 10, 1, tzinfo=timezone.utc).timestamp()),))
     rows = [({"total_assessed_value": 100000, "land_sqft": 5000, "class": "205"}, ["neighborhood:24"]),
             ({"total_assessed_value": 120000, "class": "205"}, ["neighborhood:24"])]  # no land area
-    for a, r in rows:
-        con.execute("INSERT INTO parcels VALUES (?, ?)", (json.dumps(a), json.dumps(r)))
+    for i, (a, r) in enumerate(rows):
+        con.execute("INSERT INTO parcels VALUES (?, ?, ?)", (f"1431332018{i:04d}", json.dumps(a), json.dumps(r)))
     con.commit()
     con.close()
     stats = area_stats._scan_index(str(db))[24]

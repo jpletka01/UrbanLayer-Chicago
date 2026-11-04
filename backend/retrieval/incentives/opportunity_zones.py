@@ -1,5 +1,11 @@
 """Opportunity Zone lookup via HUD ArcGIS.
 
+Opportunity Zones were designated in 2018 on **2010** census tracts (the layer's key is ``GEOID10``),
+but ``resolve_census_tract`` returns the 2020 tract the FCC places a point in. Where a tract was split
+or renumbered in 2020, matching by id read a designated tract as "not designated". With a point the
+check is a point-in-polygon query against the designated tracts' own outlines, so the tract vintage
+no longer matters (decision Item 65). The tract-id path stays for callers with no point.
+
 Census tract resolution lives in ``backend.retrieval.geo.resolve_census_tract``.
 """
 
@@ -8,6 +14,7 @@ import logging
 import httpx
 
 from backend.retrieval.cache import TTLCache
+from backend.retrieval.incentives._hud_tracts import tract_features
 from backend.retrieval.geo import resolve_census_tract  # noqa: F401 – re-export for back-compat
 
 log = logging.getLogger(__name__)
@@ -25,48 +32,64 @@ HUD_OZ_URL = (
 
 
 async def check_opportunity_zone(
-    tract_fips: str,
+    tract_fips: str | None = None,
     *,
+    lat: float | None = None,
+    lon: float | None = None,
     client: httpx.AsyncClient | None = None,
 ) -> dict | None:
-    """Check if a census tract is a designated Opportunity Zone via HUD ArcGIS.
+    """Check whether a point (or, with no point, a 2010 census tract) is in a designated Opportunity Zone.
 
-    Returns ``{"tract": "17031...", "designated": True}`` or ``None``.
+    Returns ``{"tract": "17031...", "designated": True}`` (``tract`` = the designated 2010 tract) or
+    ``None`` (checked, not designated). A failed or malformed response raises and caches nothing.
     """
-    oz_key = f"oz:{tract_fips}"
+    if lat is not None and lon is not None:
+        oz_key = f"oz:pt:{round(lat, 5)}:{round(lon, 5)}"
+        params = {
+            "geometry": f"{lon},{lat}",
+            "geometryType": "esriGeometryPoint",
+            "inSR": "4326",
+            "spatialRel": "esriSpatialRelIntersects",
+            "outFields": "GEOID10",
+            "returnGeometry": "false",
+            "f": "json",
+        }
+        fallback_tract = tract_fips
+    elif tract_fips:
+        oz_key = f"oz:{tract_fips}"
+        params = {
+            "where": f"GEOID10='{tract_fips}'",
+            "outFields": "GEOID10",
+            "returnGeometry": "false",
+            "f": "json",
+        }
+        fallback_tract = tract_fips
+    else:
+        raise ValueError("check_opportunity_zone needs a point or a tract")
+
     cached = _oz_cache.get(oz_key)
     if cached is _NOT_FOUND:
         return None
     if cached is not None:
         return cached
 
-    params = {
-        "where": f"GEOID10='{tract_fips}'",
-        "outFields": "GEOID10",
-        "returnGeometry": "false",
-        "f": "json",
-    }
     owns = client is None
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
         resp = await client.get(HUD_OZ_URL, params=params)
         resp.raise_for_status()
-        data = resp.json()
-        features = data.get("features", [])
+        features = tract_features(resp.json(), "Opportunity Zones")
         if not features:
             _oz_cache.set(oz_key, _NOT_FOUND)
             return None
         attrs = features[0].get("attributes", {})
         result = {
-            "tract": attrs.get("GEOID10", tract_fips),
+            "tract": attrs.get("GEOID10", fallback_tract),
             "designated": True,
         }
         _oz_cache.set(oz_key, result)
         return result
-    except Exception as exc:
-        log.warning("HUD Opportunity Zone query failed for tract %s: %s", tract_fips, exc)
-        return None
     finally:
         if owns:
             await client.aclose()

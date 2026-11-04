@@ -112,6 +112,7 @@ async def test_ez_source_failure_reads_as_unchecked(mock_tif, mock_ez, mock_trac
     mock_tif.return_value = None
     mock_ez.side_effect = RuntimeError("Enterprise Zone response has no usable geometry (6 features)")
     mock_tract.return_value = None
+    mock_oz.return_value = None
     mock_fin.return_value = []
     mock_fund.return_value = []
 
@@ -216,9 +217,12 @@ async def test_all_fail_returns_empty(mock_tif, mock_ez, mock_tract, mock_fin, m
     mock_tif.side_effect = Exception("fail")
     mock_ez.side_effect = Exception("fail")
     mock_tract.side_effect = Exception("fail")
+    mock_oz.side_effect = Exception("fail")
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
+    # Every program failed: all "not checked", none "not in one" (Item 65).
+    assert result.unchecked == ["tif", "oz", "ez", "qct", "nmtc"]
     assert result.in_tif_district is False
     assert result.in_enterprise_zone is False
     assert result.in_opportunity_zone is False

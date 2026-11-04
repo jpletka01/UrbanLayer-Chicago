@@ -14,7 +14,7 @@ const base = {
 describe("ScorecardIncentivesCard — an Enterprise Zone layer that failed is not 'Not in' (Item 64)", () => {
   it("shows Enterprise Zone as Not checked, and leaves it out of the 'Not in' line", () => {
     render(<ScorecardIncentivesCard data={{ ...base, enterprise_zone_unchecked: true }} />);
-    const row = screen.getByTestId("ez-unchecked");
+    const row = screen.getByTestId("unchecked-ez");
     expect(row.textContent).toContain("Enterprise Zone");
     expect(row.textContent).toContain("Not checked");
     const notIn = screen.getByText(/^Not in:/);
@@ -24,13 +24,39 @@ describe("ScorecardIncentivesCard — an Enterprise Zone layer that failed is no
 
   it("a checked miss stays in the 'Not in' line with no Not-checked row", () => {
     render(<ScorecardIncentivesCard data={base} />);
-    expect(screen.queryByTestId("ez-unchecked")).toBeNull();
+    expect(screen.queryByTestId("unchecked-ez")).toBeNull();
     expect(screen.getByText(/^Not in:/).textContent).toContain("Enterprise Zone");
   });
 
   it("a zone hit shows the zone and no Not-checked row", () => {
     render(<ScorecardIncentivesCard data={{ ...base, in_enterprise_zone: true, enterprise_zone_name: "Chicago Enterprise Zone 5" }} />);
     expect(screen.getByText("Chicago Enterprise Zone 5")).toBeTruthy();
-    expect(screen.queryByTestId("ez-unchecked")).toBeNull();
+    expect(screen.queryByTestId("unchecked-ez")).toBeNull();
+  });
+});
+
+describe("ScorecardIncentivesCard — every program whose source failed is Not checked (Item 65)", () => {
+  it("a failed TIF layer and a failed tract lookup leave those programs out of 'Not in'", () => {
+    render(<ScorecardIncentivesCard data={{ ...base, unchecked: ["tif", "qct", "nmtc"] }} />);
+    for (const key of ["tif", "qct", "nmtc"]) {
+      expect(screen.getByTestId(`unchecked-${key}`).textContent).toContain("Not checked");
+    }
+    const notIn = screen.getByText(/^Not in:/).textContent ?? "";
+    expect(notIn).toContain("Opportunity Zone");
+    expect(notIn).toContain("Enterprise Zone");
+    expect(notIn).not.toContain("TIF");
+    expect(notIn).not.toContain("QCT");
+    expect(notIn).not.toContain("NMTC");
+  });
+
+  it("an active program is never shown as Not checked, even if listed", () => {
+    render(<ScorecardIncentivesCard data={{ ...base, in_tif_district: true, tif_name: "Fullerton/Milwaukee", unchecked: ["tif"] }} />);
+    expect(screen.queryByTestId("unchecked-tif")).toBeNull();
+  });
+
+  it("everything unchecked: no 'Not in' line at all", () => {
+    render(<ScorecardIncentivesCard data={{ ...base, unchecked: ["tif", "oz", "ez", "qct", "nmtc"] }} />);
+    expect(screen.queryByText(/^Not in:/)).toBeNull();
+    expect(screen.getAllByText("Not checked")).toHaveLength(5);
   });
 });

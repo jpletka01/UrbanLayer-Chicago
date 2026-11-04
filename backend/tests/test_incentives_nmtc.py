@@ -2,6 +2,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from backend.retrieval.incentives._hud_tracts import HudLayerError
+
 from backend.retrieval.incentives.nmtc import check_nmtc
 
 
@@ -89,8 +91,9 @@ async def test_check_nmtc_not_found():
     mock_client = AsyncMock()
     mock_client.get.return_value = mock_resp
 
-    result = await check_nmtc("99999999999", client=mock_client)
-    assert result is None
+    # The layer lists every tract, so one it doesn't list is "not checked", never "not eligible" (Item 65).
+    with pytest.raises(HudLayerError, match="not in the layer"):
+        await check_nmtc("99999999999", client=mock_client)
 
 
 @pytest.mark.asyncio
@@ -98,8 +101,8 @@ async def test_check_nmtc_error():
     mock_client = AsyncMock()
     mock_client.get.side_effect = Exception("HUD down")
 
-    result = await check_nmtc("17031540101", client=mock_client)
-    assert result is None
+    with pytest.raises(Exception, match="HUD down"):
+        await check_nmtc("17031540101", client=mock_client)
 
 
 @pytest.mark.asyncio

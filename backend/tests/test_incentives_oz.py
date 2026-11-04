@@ -43,8 +43,9 @@ async def test_resolve_census_tract_error():
     mock_client = AsyncMock()
     mock_client.get.side_effect = Exception("FCC down")
 
-    result = await resolve_census_tract(41.93, -87.65, client=mock_client)
-    assert result is None
+    # Raises, caching nothing: QCT/NMTC then read "not checked" (Item 65).
+    with pytest.raises(Exception, match="FCC down"):
+        await resolve_census_tract(41.93, -87.65, client=mock_client)
 
 
 @pytest.mark.asyncio
@@ -98,8 +99,8 @@ async def test_check_oz_error():
     mock_client = AsyncMock()
     mock_client.get.side_effect = Exception("HUD down")
 
-    result = await check_opportunity_zone("17031839100", client=mock_client)
-    assert result is None
+    with pytest.raises(Exception, match="HUD down"):
+        await check_opportunity_zone("17031839100", client=mock_client)
 
 
 @pytest.mark.asyncio
