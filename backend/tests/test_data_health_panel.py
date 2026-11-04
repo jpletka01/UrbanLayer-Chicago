@@ -189,7 +189,8 @@ def test_the_endpoint_is_admin_only_and_serves_the_panel_and_history(client, db)
     route = next(r for r in main.app.routes if getattr(r, "path", "") == "/api/admin/data-health")
     assert require_admin in [d.call for d in route.dependant.dependencies]
     with Store(db) as s:
-        _rec(s, LIVE[0].id, "alarm", severity="critical", reason="stale")
+        # The endpoint reads the last 90 days by the real clock, so this row is dated by it too (a fixed NOW aged out).
+        _rec(s, LIVE[0].id, "alarm", severity="critical", reason="stale", now=datetime.now(timezone.utc) - timedelta(hours=1))
         _run(s, datetime.now(timezone.utc) - timedelta(hours=1))
         s.commit()
     main.app.dependency_overrides[require_admin] = lambda: {"id": 1, "tier": "admin"}
