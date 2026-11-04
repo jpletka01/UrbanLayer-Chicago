@@ -2670,7 +2670,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 65: the honest-failure sweep — a failed or empty source says "not checked", never "none" (2026-11-03)
 
-**Status: built on `release/2026-11-03-honest-failures-ws5` (one release PR with Items 66-67).** Jack chose wave A (2026-11-03). Audited the `except Exception` blocks in `backend/retrieval/` (70 on `main` at the start) for one pattern: a failure, an outage or an empty response that comes back as the same value as a checked "no". Fixed, in Jack's order:
+**Status: merged and deployed 2026-11-03 in release #183 (`440b448`, with Items 66-67).** Jack chose wave A (2026-11-03). Audited the `except Exception` blocks in `backend/retrieval/` (70 on `main` at the start) for one pattern: a failure, an outage or an empty response that comes back as the same value as a checked "no". Fixed, in Jack's order:
 
 **Decision 1: the incentive layers raise, and the orchestrator says which program it couldn't check.** TIF had Item 64's bug: an empty layer cached `[]`, `check_tif` turned a load failure into `None` ("not in a TIF"), the area lookup into `[]`, and the fund/financial queries into `[]`. All four raise now. `IncentivesSummary.unchecked` (`tif`/`oz`/`ez`/`qct`/`nmtc`) and `data_gaps` (labels in `failures.INCENTIVE_GAPS`, key `incentives`, module `economics`) carry it to the Profile card (a "Not checked" row per program, out of the "Not in" line), the chat rail badges, the chat footer and turn summary, and the report rows. `enterprise_zone_unchecked` stays (stored contexts, report). A grounded chat turn rebuilds the labels from the program ids the page sent, never its text.
 
@@ -2702,7 +2702,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 66 (WS5 PR3): typical lot size for the parcel's district in its community area (2026-11-03)
 
-**Status: built on the release branch.** Jack chose wave B (2026-11-03); the plan is `plans/2026-10-30_ws5-calculators-plan.md` PR3, option (b) (exact district, now that Item 59 put `zone_class` in the index).
+**Status: merged and deployed 2026-11-03 in release #183 (`440b448`).** Jack chose wave B (2026-11-03); the plan is `plans/2026-10-30_ws5-calculators-plan.md` PR3, option (b) (exact district, now that Item 59 put `zone_class` in the index).
 
 **Decision 1: base parcels in the exact district only.** `area_stats._scan_index` (the existing daily pass) adds `lot_size_by_zone_class`: per community area and exact zoning class, the median and the 25th/75th percentile of `land_sqft` over parcels whose PIN ends in 0000 (a condo unit PIN would claim the whole lot), leaving out shared outlines (Item 59) and "unusual" parcels (Item 60). Shown only at n ≥ 50 (`MIN_LOT_N`, the Profile's `MIN_BENCHMARK_N`); a thinner district is withheld, not shown thin.
 
@@ -2723,7 +2723,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 67 (WS5 PR4): the RS-3 "60% of the block face" rule, from the code's own definition (2026-11-03)
 
-**Status: built on the release branch.** Item 44 measured it and left two questions open; reading the code (the local Title 17 corpus) answered both:
+**Status: merged and deployed 2026-11-03 in release #183 (`440b448`).** Item 44 measured it and left two questions open; reading the code (the local Title 17 corpus) answered both:
 
 **Decision 1: the block face is the code's, from the City's street centerlines.** §17-2-0303-B.1 says "the zoning lots fronting on the same side of the street between the two nearest intersecting streets", and §17-17-0221 defines a block face the same way. Item 44's stand-in (street + hundred block + parity) is replaced by the City's Street Center Lines (`pr57-gg9e`): each segment has its address range per side and the street it meets at each end (`f_cross_st`/`t_cross_st`, `0` = no street). `block_face.face_range` chains segments through street-less nodes (whichever way each was digitized) until both ends meet a real street. Checked live: 2307 N Avers = 2301-2359, Belden to Fullerton; 2541 N Spaulding = Altgeld to Wrightwood; 2014 W Cortland = Damen to Hoyne; on N Avers the 2500 block is two segments joined at a street-less node, and the walk joins them (recorded fixture `centerlines_n_avers_ave_2026-11-03.json`).
 
@@ -2746,3 +2746,5 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Not measured:** citywide; a check against the City's own determination for any parcel; how often unaddressed lots change the answer; the street index's memory on the full 882k-parcel index.
 
 **Revisit if** the City publishes zoning lots, or the index gains a reliable "lot with no address" list for faces.
+
+**Production (Items 65-67, release #183, 2026-11-03).** CI `test`/`lint`/CodeQL green before merge; the deploy served the new bundle (`index-C-Ko1t6H.js`, it contains "Typical lot here") and the new backend about 5½ minutes after the merge; `/health` ok (data-health alarms 2). Live: `/api/scorecard?address=4027 W Nelson St` → RS-3, `block_face` met (odd side of W Nelson St, N Pulaski Rd to N Karlov Ave, 11 of 14 lots with two or more units, units from the Assessor since the production index has none), unit yield 1 → 2, `rule_block_face: met`; the same face as the local two-area index. `/api/area-stats?ca=22&zone_class=RS-3` → `lot_size_by_zone_class: {}` (expected: the production index has no `zone_class` until it is rebuilt). FEMA's flood lookup was down on production that evening and the Profile listed it in `failed_sources` (Item 65's path, already in place for flood). `npm run sweep:live` clean on desktop and phone. **Not verified on production:** a live "Not checked" incentive row (it shows only during an outage; covered by tests); the typical-lot row (needs the rebuild); the street index's memory on the 882k-parcel index (the first RS-3 Profile per process builds it).
