@@ -27,6 +27,7 @@ Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Tok
 | Ward Offices | `htai-wnw4` | ward, alderman, ward_phone, email, **website (a `{"url":...}` OBJECT, not a string — normalize)** | Alderman contact joined onto ward lookup at preload |
 | Building Footprints | `syp8-uezg` | stories, year_built, bldg_sq_fo (mostly 0), **bldg_statu** (truncated col name) | Last-resort building facts via `within_circle` (25m), `building_facts.py`. City-maintained, uneven freshness → provenance "footprint" |
 | Divvy Bicycle Stations | `bbyy-e7gq` | station_name, total_docks, docks_in_service, status, location (Point) | Nearest IN-SERVICE station + count within 0.5 mi (`neighborhood/divvy.py`), server-side `distance_in_meters` ordering. Queried live, not a committed artifact — the station list churns. `stations_within_radius` SATURATES at the query limit (50; densest measured half-mile is 28) |
+| Street Center Lines | `pr57-gg9e` | fnode_id, tnode_id, l/r_f_add, l/r_t_add, f/t_cross, f/t_cross_st | The RS-3 block face (§17-17-0221) for `property/block_face.py`: segments of the parcel's street chained through street-less nodes to the two nearest intersecting streets (`*_cross_st` 0 = no street). Queried per street, cached 7 days (Item 67) |
 | Census Tracts 2020 | `4hp8-2i8z` | geometry, tractce20, geoid20 | Tract resolution for OZ lookup |
 
 ## Cook County Open Data (Socrata)
@@ -82,17 +83,18 @@ GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
 
 | Service | Endpoint | Use | Status |
 |---------|----------|-----|--------|
-| Cook County GIS Parcels | `gis.cookcountyil.gov/.../cookVwrDynmc/MapServer/44/query` | lat/lon → PIN14 (layer 44, max 2000 records) | **Intermittent** — spatial index broken, queries can timeout 60s+. Socrata Parcel Universe (`pabr-t5kh`) used as automatic fallback (bounding-box on lat/lon, no polygon geometry). |
+| Cook County GIS Parcels | `gis.cookcountyil.gov/.../cookVwrDynmc/MapServer/44/query` | lat/lon → PIN14 (layer 44, max 2000 records) | **Intermittent** — spatial index broken, queries can timeout 60s+. Socrata Parcel Universe (`pabr-t5kh`) used as automatic fallback (bounding-box on lat/lon, no polygon geometry); a failed fallback raises `ParcelLookupError` and caches nothing (Item 65). |
 | FEMA Flood Zones | `hazards.fema.gov/.../NFHL/MapServer/28/query` | FLD_ZONE, SFHA_TF | Working (occasional 500s) |
-| EPA Brownfields | `geopub.epa.gov/.../FRS_INTERESTS/MapServer/5/query` | SITE_NAME, CLEANUP_STATUS (1km radius) | Working |
-| HUD Opportunity Zones | `services.arcgis.com/.../Opportunity_Zones/FeatureServer/0/query` | GEOID match by tract FIPS | Working |
+| EPA Brownfields | `geopub.epa.gov/.../FRS_INTERESTS/MapServer/5/query` | SITE_NAME, CLEANUP_STATUS (1km radius) | Working. A failure or error body raises → `brownfield_unchecked` (Item 65) |
+| HUD Opportunity Zones | `services.arcgis.com/.../Opportunity_Zones/FeatureServer/13/query` | **Point-in-polygon** at the parcel (designations are on 2010 tracts, `GEOID10`; the FCC returns 2020 tracts); the tract-id path stays for callers with no point | Working |
+| HUD QCT / NMTC | `.../Qualified_Census_Tracts/FeatureServer/0`, `.../NMTC20/FeatureServer/0` | GEOID (2020 tract) | Working. ArcGIS fails with HTTP 200 + `error`: `_hud_tracts.tract_features` raises. NMTC lists every tract, so a missing tract is "not checked" (Item 65) |
 
 ## Other APIs
 
 | API | Auth | Use |
 |-----|------|-----|
 | Census Geocoder | None | Address → lat/lon. Already integrated in `geo.py` |
-| FCC Census Block | None | lat/lon → tract FIPS (~100ms). Used for OZ lookup + census tract demographics |
+| FCC Census Block | None | lat/lon → 2020 tract FIPS (~100ms). Used for QCT/NMTC + census tract demographics (not OZ since Item 65); a failure raises |
 | Census Reporter | None | ACS 5-year data by census tract (age, income, race, education, transportation distributions). 24h TTL cache. Endpoint: `api.censusreporter.org/1.0/data/show/latest` |
 | Walk Score | API key (free, 5K/day) | Walk/Transit/Bike scores (0-100). 48h TTL cache |
 | CTA GTFS (static) | None | Parsed at startup → transit station locations |
