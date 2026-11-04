@@ -115,7 +115,8 @@ AsOfBasis = Literal[
     "source_updated", "record_updated", "current_through", "period_end", "vintage", "tax_year", "queried",
 ]
 # ``puma`` (WS4 PR2): a Public Use Microdata Area, a union of tracts that does not nest in community areas.
-Scope = Literal["parcel", "address", "radius", "tract", "puma", "community_area", "city", "county"]
+# ``zip`` (WS4 PR5): a USPS ZIP code, the unit HUD sets Small Area Fair Market Rents by.
+Scope = Literal["parcel", "address", "radius", "zip", "tract", "puma", "community_area", "city", "county"]
 Confidence = Literal["standard", "low", "withheld"]
 # What kind of n a coverage figure counts, which decides which n rule applies (guide §3):
 # ``area_sample`` = a median/rate from a sample of records; ``comps`` = a comparable-sales set.
@@ -428,6 +429,13 @@ FACTS.update({
     "area.rent.assessor_model": FactSpec(
         "Assessor-modeled apartment income per unit", "artifact.assessor_model_by_area", "government_model",
         "community_area", "official_estimate"),
+    # WS4 PR5: HUD's Small Area Fair Market Rent for the parcel's ZIP, a government standard for vouchers (HUD's
+    # model from ACS rents), one entry per bedroom count; never an asking or market rent.
+    **{
+        f"area.rent.hud_safmr.{b}": FactSpec(f"HUD Fair Market Rent, {label}", "artifact.hud_safmr", "government_model",
+                                             "zip", "official_estimate")
+        for b, label in (("0", "studio"), ("1", "1 bedroom"), ("2", "2 bedrooms"), ("3", "3 bedrooms"), ("4", "4 bedrooms"))
+    },
     "area.rent.community_area": FactSpec(
         "Community-area median gross rent", "artifact.rent_by_area", "bracket_median", "community_area", "our_calculation"),
     "area.rent.trend": FactSpec(

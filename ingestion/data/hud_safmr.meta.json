@@ -1,0 +1,7 @@
+{
+ "builder": "ingestion/build_hud_safmr_artifact.py",
+ "built_at": "2026-11-04",
+ "fy": 2027,
+ "retrieved": "2026-11-04",
+ "zips": 370
+}

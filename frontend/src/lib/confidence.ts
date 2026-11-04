@@ -197,7 +197,7 @@ export function captionParts(entry: Provenance | null | undefined, t: TFunction,
 
   // Where: an area figure says which area.
   if (!opts.omit?.includes("scope") && entry.geography && entry.scope
-    && ["tract", "puma", "community_area", "city", "county"].includes(entry.scope)) {
+    && ["zip", "tract", "puma", "community_area", "city", "county"].includes(entry.scope)) {
     parts.push(entry.geography);
   }
 

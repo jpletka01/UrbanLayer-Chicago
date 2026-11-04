@@ -610,6 +610,19 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "from rent_by_area.meta.json; a new ACS 5-year release each December makes a rebuild due.",
     ),
     SourceSpec(
+        id="artifact.hud_safmr", name="HUD Small Area Fair Market Rents by ZIP, Chicago metro (committed)",
+        publisher="US Department of Housing and Urban Development (HUD User)",
+        tier="official_estimate", kind="artifact", locator="ingestion/data/hud_safmr.json", probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/neighborhood/rent.py", "ingestion/build_hud_safmr_artifact.py"),
+        surfaces=("profile",),
+        fact_keys=tuple(f"area.rent.hud_safmr.{b}" for b in "01234"),
+        cadence_days=365, warn_days=400, alarm_days=540,
+        note="HUD's ZIP-level Fair Market Rents (studio to 4 bedrooms) for the Chicago-Joliet-Naperville HUD Metro FMR "
+             "Area, which every voucher program there uses (decision Item 69). Copied from HUD's FMR Documentation "
+             "System page in a browser (huduser.gov refuses scripts). HUD publishes the next fiscal year's table each "
+             "fall, effective October 1; the artifact check warns from then.",
+    ),
+    SourceSpec(
         id="artifact.rent_trend_by_area", name="Rent and sale-price trends by community area (committed)",
         publisher="UrbanLayer from US Census Bureau ACS, BLS CPI-U and Cook County Assessor sales",
         tier="official_estimate", kind="artifact", locator="ingestion/data/rent_trend_by_area.json", probe="artifact_sidecar",

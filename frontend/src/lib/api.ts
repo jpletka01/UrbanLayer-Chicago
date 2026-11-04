@@ -1014,7 +1014,7 @@ export type ProvenanceTier =
   | "our_calculation" | "ai_extracted" | "non_government";
 export type ProvenanceAsOfBasis =
   | "source_updated" | "record_updated" | "current_through" | "period_end" | "vintage" | "tax_year" | "queried";
-export type ProvenanceScope = "parcel" | "address" | "radius" | "tract" | "puma" | "community_area" | "city" | "county";
+export type ProvenanceScope = "parcel" | "address" | "radius" | "zip" | "tract" | "puma" | "community_area" | "city" | "county";
 export type ProvenanceConfidence = "standard" | "low" | "withheld";
 export type ProvenanceMethodKey =
   | "recorded" | "published_text" | "code_table" | "hand_reviewed"

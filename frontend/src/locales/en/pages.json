@@ -541,7 +541,8 @@
       "rentTract": "Median monthly gross rent (rent plus utilities) of renter households in this census tract, as the Census Bureau publishes it. A survey estimate with a margin of error.",
       "rentAssessor": "The Assessor's model of what apartments in this community area earn: potential gross income per unit per month, before vacancy, taken from its valuation of buildings with 7 or more units in the latest city-wide reassessment. A model, not a rent anyone asked or paid, and not comparable with the Census figures. There is no figure by bedroom count.",
       "rentBedroom": "Median monthly gross rent for units this size, as the Census Bureau publishes it for this census tract. Where the tract's figure is missing or too uncertain, the PUMA's is shown: a larger statistical area of several neighborhoods.",
-      "nominalTile": "The County assesses this parcel at a nominal amount, not a market value. Parcels like this are usually a development's shared common area or the remainder of a divided lot. Under Illinois law (35 ILCS 200/10-35), a qualifying common area is listed at $1 a year and its value is counted in the assessments of the lots that share it; we have not confirmed that this parcel qualifies."
+      "nominalTile": "The County assesses this parcel at a nominal amount, not a market value. Parcels like this are usually a development's shared common area or the remainder of a divided lot. Under Illinois law (35 ILCS 200/10-35), a qualifying common area is listed at $1 a year and its value is counted in the assessments of the lots that share it; we have not confirmed that this parcel qualifies.",
+      "rentHud": "HUD's Fair Market Rent for this ZIP and bedroom count: the rent plus utilities a Housing Choice Voucher is set against here. CHA's own payment standard is set from it and can differ."
     },
     "walkDesc": {
       "walker_s_paradise": "Walker's Paradise",
@@ -616,6 +617,18 @@
         "none": "The Assessor's model includes no apartment buildings in this area",
         "noFigure": "The model has no usable income figure for this area",
         "unchecked": "Couldn't check today"
+      },
+      "hud": {
+        "title": "Voucher rent standard (HUD)",
+        "scope": "HUD's Small Area Fair Market Rent for ZIP {{zip}}, FY {{fy}}: rent plus utilities. Voucher programs in the Chicago area use these ZIP-level figures, and the Chicago Housing Authority sets its payment standards from them. A government standard for what a voucher pays toward, not an asking or market rent.",
+        "line": "FY {{fy}} · ZIP {{zip}} · rent plus utilities",
+        "notListed": "HUD lists no ZIP-level figure for {{zip}}",
+        "unchecked": "Couldn't check today",
+        "br0": "Studio",
+        "br1": "1 bedroom",
+        "br2": "2 bedrooms",
+        "br3": "3 bedrooms",
+        "br4": "4 bedrooms"
       }
     },
     "capacity": {
