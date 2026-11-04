@@ -17,9 +17,9 @@ import { useIsPhone } from "../lib/useIsPhone";
 import { buildDiscoveryMapModel, type DiscoveryMapRenderPoint } from "./discoveryMapModel";
 import { DotPreview } from "./DotPreview";
 import { fetchParcelRow } from "./searchClient";
-import { PARCEL_TILES_ENABLED, addParcelLayers, markMatches } from "./parcelTiles";
+import { MATCH_COLORS, addParcelLayers, markMatches } from "./parcelTiles";
 import { API_BASE } from "../lib/api";
-import type { PinPoint, ResultRow } from "./types";
+import type { ParcelTiles, PinPoint, ResultRow } from "./types";
 
 interface DiscoveryMapProps {
   points: PinPoint[];
@@ -41,6 +41,8 @@ interface DiscoveryMapProps {
   // Previous results are being replaced: dim the dots and make them inert.
   stale?: boolean;
   visible: boolean;
+  /** The registry's tile block (decision Item 68): outlines from its minZoom; null = dots only. */
+  parcelTiles?: ParcelTiles | null;
 }
 
 const HIGHLIGHT_RING: [number, number, number, number] = [249, 164, 116, 255];
@@ -62,6 +64,7 @@ export function DiscoveryMap({
   status,
   stale = false,
   visible,
+  parcelTiles = null,
 }: DiscoveryMapProps) {
   const { t } = useTranslation("pages");
   const { resolvedTheme } = useThemeContext();
@@ -223,20 +226,32 @@ export function DiscoveryMap({
     });
   }, [layers, overlayRef, styleRevision]);
 
-  // Parcel outlines under the dots (prototype, Item 68), re-added after a theme's style swap.
+  // Parcel outlines under the dots (Item 68), re-added after a theme's style swap. The key's "Matching lot" row
+  // shows only once the outlines are on screen.
+  const tileMin = parcelTiles?.minZoom;
+  const tileMax = parcelTiles?.maxZoom;
+  const tileZooms = useMemo(
+    () => (tileMin != null && tileMax != null ? { minZoom: tileMin, maxZoom: tileMax } : null),
+    [tileMin, tileMax],
+  );
+  const [outlinesShown, setOutlinesShown] = useState(false);
   useEffect(() => {
     const map = mapRef.current;
-    if (!PARCEL_TILES_ENABLED || !map || !mapReady) return;
+    if (!tileZooms || !map || !mapReady) return;
     const apply = () => {
-      addParcelLayers(map, API_BASE, resolvedTheme === "light" ? "light" : "dark");
+      addParcelLayers(map, API_BASE, resolvedTheme === "light" ? "light" : "dark", tileZooms);
       markMatches(map, stale ? [] : renderPoints.map((p) => p.pin));
     };
+    const onZoom = () => setOutlinesShown(map.getZoom() >= tileZooms.minZoom);
     if (map.isStyleLoaded()) apply();
+    onZoom();
     map.on("style.load", apply);
+    map.on("zoomend", onZoom);
     return () => {
       map.off("style.load", apply);
+      map.off("zoomend", onZoom);
     };
-  }, [mapRef, mapReady, resolvedTheme, renderPoints, stale, styleRevision]);
+  }, [mapRef, mapReady, resolvedTheme, renderPoints, stale, styleRevision, tileZooms]);
 
   // Theme changes swap only the Discovery basemap. Mapbox keeps its camera
   // through setStyle(); capture/restore it explicitly and rebuild the Deck
@@ -467,6 +482,18 @@ export function DiscoveryMap({
               <span className="tabular-nums text-text-muted">{item.count.toLocaleString()}</span>
             </div>
           ))}
+          {tileZooms && outlinesShown && !stale && (
+            <div className="mt-1 flex items-center gap-2 text-micro text-text-secondary" data-testid="discovery-map-lot-key">
+              <span
+                className="h-2.5 w-2.5 flex-shrink-0 rounded-sm border"
+                style={{
+                  backgroundColor: MATCH_COLORS[resolvedTheme === "light" ? "light" : "dark"].fill,
+                  borderColor: MATCH_COLORS[resolvedTheme === "light" ? "light" : "dark"].line,
+                }}
+              />
+              <span className="min-w-0 flex-1">{t("discovery.mapMatchingLot")}</span>
+            </div>
+          )}
           {/* What the map leaves out is part of the key it counts from (the same model), not a
               separate box: nothing plotted, unplottable or beyond the cap goes unnamed (Item 31). */}
           {keyNotes && (

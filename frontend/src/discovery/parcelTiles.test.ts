@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { markMatches, pinFeatureId } from "./parcelTiles";
+import { MATCH_COLORS, addParcelLayers, markMatches, pinFeatureId } from "./parcelTiles";
 
 describe("parcel tiles", () => {
   it("keys a PIN by its first ten digits, dashed or not", () => {
@@ -23,5 +23,26 @@ describe("parcel tiles", () => {
     const map = { getSource: () => undefined, removeFeatureState: vi.fn(), setFeatureState: vi.fn() };
     markMatches(map as never, ["14-31-300-012-1001"]);
     expect(map.removeFeatureState).not.toHaveBeenCalled();
+  });
+
+  it("adds the source and layers once, from the registry's zooms, in the theme's palette colors", () => {
+    const sources: Record<string, { minzoom: number; maxzoom: number; tiles: string[] }> = {};
+    const layers: Record<string, { minzoom: number; paint: Record<string, unknown> }> = {};
+    const map = {
+      getSource: (id: string) => sources[id],
+      addSource: (id: string, s: (typeof sources)[string]) => { sources[id] = s; },
+      getLayer: (id: string) => layers[id],
+      addLayer: (l: { id: string; minzoom: number; paint: Record<string, unknown> }) => { layers[l.id] = l; },
+    };
+    addParcelLayers(map as never, "https://x", "light", { minZoom: 14, maxZoom: 16 });
+    addParcelLayers(map as never, "https://x", "light", { minZoom: 14, maxZoom: 16 });
+    expect(Object.keys(sources)).toEqual(["discovery-parcels"]);
+    expect(sources["discovery-parcels"].tiles).toEqual(["https://x/api/discovery/tiles/{z}/{x}/{y}.mvt"]);
+    expect(sources["discovery-parcels"]).toMatchObject({ minzoom: 14, maxzoom: 16 });
+    expect(Object.keys(layers)).toEqual(["discovery-parcels-fill", "discovery-parcels-line"]);
+    expect(layers["discovery-parcels-fill"].minzoom).toBe(14);
+    expect(layers["discovery-parcels-fill"].paint["fill-color"]).toBe(MATCH_COLORS.light.fill);
+    expect(MATCH_COLORS.light.fill).toBe("#d89552");
+    expect(MATCH_COLORS.dark.fill).toBe("#e7c07f");
   });
 });

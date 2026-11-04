@@ -673,6 +673,15 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         surfaces=("discovery", "profile"), fact_keys=("area.benchmarks", "capacity.utilization"), cadence_days=30, warn_days=40, alarm_days=70,
         note="Rebuilt by a monthly timer. Absent in a dev checkout, where its status is unknown.",
     ),
+    SourceSpec(
+        id="internal.parcel_tiles", name="Discovery map parcel outlines (vector tiles)", publisher="UrbanLayer",
+        tier="our_calculation", kind="local_db", locator="backend/data/parcel_tiles.mbtiles", probe="parcel_tiles",
+        owner_modules=("backend/discovery/parcel_tiles.py", "backend/discovery/index_build.py"),
+        surfaces=("discovery",), cadence_days=30, warn_days=40, alarm_days=70,
+        note="Built after each index rebuild from the index's PIN10s and PTAXSIM outlines (decision Item 68). Warns when "
+             "built from an older index than the one serving, when over 1% of PIN10s have no outline, or when over 100 "
+             "pieces were left out at clipping. Absent = the map shows dots only.",
+    ),
     # --- Internal checks (their probes arrive with the milestone in ``note``) -----------------
     SourceSpec(
         id="eval.kit_weekly", name="Weekly parcel kit against production (Profile, no model)", publisher="UrbanLayer",

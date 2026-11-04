@@ -2897,6 +2897,18 @@ Consumers → Property Profile (renders pin + confidence badge)
             judge says so instead of saying no (Items 44, 67).
           </P>
 
+          <Sub>Six hundred thousand lot outlines without a tile server</Sub>
+          <P>
+            Discovery's map drew matches as dots because shapes for every lot in the city seemed to need a tile
+            toolchain, a hosting decision and a new map library. A prototype showed none of that was needed: the
+            vector-tile format is small enough to encode by hand (about 120 lines, tested against the format's own
+            worked example), Mapbox already draws such tiles natively, and the whole city is 604,220 outlines in 26.5
+            MB, built in about three minutes after each monthly index rebuild and served from one file. The tiles carry
+            only shape and PIN; which lots a search matched is set per PIN in the browser, so one tile set serves every
+            query. The County's own outlines had 806 broken rings that stopped the first citywide run; they are
+            repaired or counted, never fatal (Item 68).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}

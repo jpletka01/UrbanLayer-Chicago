@@ -36,7 +36,7 @@ from backend.discovery.cqs import (
 from backend.discovery.diagnostics import Diagnostics, build
 from backend.discovery.evaluator import EvalResult
 from backend.discovery.result_cache import cached_evaluate
-from backend.discovery.registry import Coverage, Registry
+from backend.discovery.registry import Coverage, ParcelTiles, Registry
 from backend.discovery.registry import load as load_registry
 from backend.retrieval.property.assessment_level import is_nominal_assessment
 
@@ -181,7 +181,25 @@ def get_registry() -> Registry:
         "coverage": coverage,
         "populatedFields": sorted(meta.populated_fields),
         "recipeCounts": meta.recipe_counts,
+        "parcelTiles": _parcel_tiles(meta.data_version),
     })
+
+
+def _parcel_tiles(index_version: str) -> ParcelTiles | None:
+    """The tile file's registry block (decision Item 68), or None when no usable file is installed."""
+    from backend.config import get_settings
+    from backend.discovery.parcel_tiles import tiles_info
+
+    info = tiles_info(get_settings().discovery_tiles_path)
+    if not info:
+        return None
+    try:
+        return ParcelTiles(
+            builtAt=info.get("built_at") or "", minZoom=int(info["minzoom"]), maxZoom=int(info["maxzoom"]),
+            parcels=int(info.get("parcels") or 0), current=info.get("index_version") == index_version,
+        )
+    except (KeyError, ValueError):
+        return None
 
 
 def _resolve(req: SearchRequest) -> tuple[CQS, EvalResult, list[DroppedInvalid], str]:

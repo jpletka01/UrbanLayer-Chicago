@@ -118,6 +118,18 @@ class Coverage(BaseModel):
     asOf: str | None = None  # ISO date the index was built
 
 
+class ParcelTiles(BaseModel):
+    """The installed parcel-outline tile file (decision Item 68). Presentation only: the map draws outlines from
+    ``minZoom`` when this is present and keeps its dots alone when it is absent. ``current`` is False when the
+    tiles were built from an older index than the one serving (an outline may be missing for a new PIN)."""
+
+    builtAt: str
+    minZoom: int
+    maxZoom: int
+    parcels: int
+    current: bool
+
+
 class Registry(BaseModel):
     version: str
     filters: list[FilterDef]
@@ -130,6 +142,7 @@ class Registry(BaseModel):
     coverage: Coverage = Field(default_factory=Coverage)
     populatedFields: list[str] = Field(default_factory=list)  # filter ids with real data
     recipeCounts: dict[str, int] = Field(default_factory=dict)  # recipe id -> result count in the index
+    parcelTiles: ParcelTiles | None = None  # Item 68: None = no tile file, dots only
 
     @model_validator(mode="after")
     def _check_integrity(self) -> "Registry":

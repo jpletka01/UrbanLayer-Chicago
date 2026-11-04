@@ -2751,7 +2751,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 68 (WS8 Phase 2 prototype): parcel outlines on the Discovery map from our own vector tiles (2026-11-04)
 
-**Status: prototype on branch `ws8/phase2-tiles-prototype`, not merged; behind a local flag (`VITE_DISCOVERY_TILES=1`) and a tile file production doesn't have.** Plan and Jack's open calls: `plans/2026-11-04_ws8-phase2-plan.md` (local).
+**Status: built on branch `ws8/phase2-tiles-prototype` (PR #185), not merged.** Jack's answers (2026-11-04): the Python tile writer (Decision 1); fill matches only for the first release, color every lot later if the map feels plain (Decision 2); the Cloudflare cache rule, yes; and use his new data palette (Decision 6). Plan: `plans/2026-11-04_ws8-phase2-plan.md` (local).
 
 **Decision 1: write the tiles ourselves.** `backend/discovery/parcel_tiles.py` encodes Mapbox Vector Tiles v2 by hand (varints, zigzag, MoveTo/LineTo/ClosePath; about 120 lines) and uses shapely to clip, simplify (one tile unit per zoom) and orient rings. Alternatives: tippecanoe (a download and a native build on the box and the Mac), `mapbox-vector-tile` from PyPI (a new dependency for one encoder). Evidence: the spec's own worked example (`[9 6 12 18 10 12 24 44 15]`) is a test, a round-trip decode is a test, and Mapbox GL drew the output correctly in the browser.
 
@@ -2762,6 +2762,14 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Decision 4: outlines from zoom 14.** At 12-13 a parcel is 2-4 px wide and a z12 tile reaches 596 KB; dots read better there.
 
 **Decision 5: a broken source outline is repaired or counted, never fatal.** The citywide run stopped twice on County rings with three points (GEOS refuses to clip them): invalid outlines are repaired with `make_valid` at load (806 citywide), and a piece that still can't be clipped is left out and counted per zoom (1 citywide). Both counts are in the build's output for a future data-health source.
+
+**Decision 6: matches are colored from Jack's data palette** (warm earth tones, light to dark #f2e2c0 #e7c07f #d89552 #bf6236 #8a3a38 #4b3a5e; his pick for data encodings, 2026-11-04): #e7c07f on the dark basemap, #d89552 with a #bf6236 edge on the light one; every other lot is a faint neutral outline. Not the orange action accent (orange means "click this" in Bento Pro). The dots keep their upside/land-use colors; the key adds one "Matching lot" row only while outlines are on screen.
+
+**Decision 7: the tiles follow the index.** `index_build` rebuilds them after a successful build (`--no-tiles` skips), so the monthly timer needs no unit change. `parcel_tiles.build_file` writes beside the live file and renames over it only when finished, and refuses to replace tiles with an empty set; a tile failure is logged and never fails the index build, so the previous tiles keep serving.
+
+**Decision 8: no flag.** `/api/discovery/registry` carries `parcelTiles` (build date, zooms, parcel count, `current` = built from the index that is serving) when a tile file is installed; the map draws outlines from its `minZoom`, and with no file it shows dots only, as before.
+
+**Decision 9: data health watches the file.** Source `internal.parcel_tiles` (probe `parcel_tiles`, reads the file's metadata with sqlite, no serving code): the build date against a 30/40/70-day cadence, and a warning when the tiles were built from an older index, when over 1% of PIN10s have no outline, or when over 100 pieces were left out.
 
 **Numbers** (this Mac; citywide = the pruned 2026-10-29 index, 882,328 rows; local PTAXSIM outlines)
 

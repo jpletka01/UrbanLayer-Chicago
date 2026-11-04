@@ -1,4 +1,4 @@
-"""Parcel-shape vector tiles for the Discovery map (WS8 Phase 2 prototype, decision Item 68).
+"""Parcel-shape vector tiles for the Discovery map (WS8 Phase 2, decision Item 68).
 
 Writes Mapbox Vector Tiles (MVT v2) of County parcel outlines into one MBTiles file (SQLite), with no
 tile tool to install: the protobuf encoding is small enough to write by hand, and shapely does the
@@ -10,10 +10,10 @@ Sources: parcels (PIN10) from the Discovery index, so the tiles cover exactly wh
 outlines from PTAXSIM ``pin_geometry_raw`` (the latest year per PIN10), the same polygons the Profile
 draws. A PIN10 with no polygon is left out and counted.
 
-Prototype CLI (two community areas, local only):
+The monthly index rebuild builds the file after the index (``index_build``, unless ``--no-tiles``). By hand:
 
-    PYTHONPATH=. python -m backend.discovery.parcel_tiles --index <discovery_index.db> \\
-        --community-areas 22,24 --out <parcel_tiles.mbtiles>
+    PYTHONPATH=. python -m backend.discovery.parcel_tiles [--index <discovery_index.db>] \\
+        [--community-areas 22,24] [--out <parcel_tiles.mbtiles>]
 """
 
 from __future__ import annotations
@@ -302,7 +302,9 @@ def load_parcels(
     return parcels, len(want) - len(parcels), repaired
 
 
-def write_mbtiles(out: Path, parcels: list[Parcel], minzoom: int, maxzoom: int) -> BuildStats:
+def write_mbtiles(
+    out: Path, parcels: list[Parcel], minzoom: int, maxzoom: int, extra_meta: dict[str, str] | None = None,
+) -> BuildStats:
     stats = BuildStats(parcels=len(parcels))
     t0 = time.monotonic()
     out.unlink(missing_ok=True)
@@ -325,6 +327,8 @@ def write_mbtiles(out: Path, parcels: list[Parcel], minzoom: int, maxzoom: int) 
     meta = {
         "name": "parcels", "format": "pbf", "minzoom": str(minzoom), "maxzoom": str(maxzoom),
         "json": json.dumps({"vector_layers": [{"id": LAYER, "fields": {"g": "String"}}]}),
+        "pieces_unclipped": str(sum(stats.unclipped.values())),
+        **(extra_meta or {}),
     }
     db.executemany("INSERT INTO metadata VALUES (?,?)", list(meta.items()))
     db.execute("CREATE UNIQUE INDEX tile_index ON tiles (zoom_level, tile_column, tile_row)")
@@ -332,6 +336,70 @@ def write_mbtiles(out: Path, parcels: list[Parcel], minzoom: int, maxzoom: int) 
     db.close()
     stats.seconds = time.monotonic() - t0
     return stats
+
+
+def build_file(
+    index_path: Path, ptaxsim_path: Path, out: Path, *, community_areas: list[int] | None = None,
+    minzoom: int = MIN_ZOOM, maxzoom: int = MAX_ZOOM,
+) -> dict:
+    """Build the tile file for an index and swap it in atomically: written beside ``out`` and renamed over it
+    only when complete, so the endpoint never reads a half-written file and a failed build leaves the previous
+    tiles serving. The metadata records the build date, the index version it was built from and the counts of
+    what was left out, for data health and the registry. Returns that summary."""
+    from datetime import date
+
+    from backend.discovery.parcel_index import read_meta
+
+    meta = read_meta(index_path)
+    t0 = time.monotonic()
+    parcels, missing, repaired = load_parcels(index_path, ptaxsim_path, community_areas)
+    if not parcels:
+        raise RuntimeError(f"no parcel outlines for {index_path}: refusing to replace the tile file with an empty one")
+    count = len(parcels)
+    tmp = out.with_name(out.name + ".tmp")
+    stats = write_mbtiles(tmp, parcels, minzoom, maxzoom, extra_meta={
+        "built_at": date.today().isoformat(),
+        "index_version": meta.data_version if meta else "",
+        "parcels": str(count),
+        "pin10_without_outline": str(missing),
+        "outlines_repaired": str(repaired),
+    })
+    tmp.replace(out)
+    summary = {
+        "parcels_with_outline": count, "pin10_without_outline": missing, "outlines_repaired": repaired,
+        "pieces_unclipped": stats.unclipped, "tiles": stats.tiles,
+        "mb_gz": {z: round(b / 1e6, 2) for z, b in stats.bytes_gz.items()},
+        "max_tile_kb_gz": {z: round(b / 1e3, 1) for z, b in stats.max_tile_gz.items()},
+        "seconds": round(time.monotonic() - t0, 1), "file_mb": round(out.stat().st_size / 1e6, 2),
+    }
+    log.info("parcel tiles: %s", json.dumps(summary))
+    return summary
+
+
+_info_cache: dict[tuple[str, float], dict | None] = {}
+
+
+def tiles_info(path: Path) -> dict | None:
+    """The installed tile file's metadata (build date, zooms, counts, index version), or None when there is no
+    usable file. Re-read only when the file changes."""
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return None
+    key = (str(path), mtime)
+    if key not in _info_cache:
+        try:
+            db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+            try:
+                meta = dict(db.execute("SELECT name, value FROM metadata").fetchall())
+            finally:
+                db.close()
+            _info_cache.clear()
+            _info_cache[key] = meta if meta.get("format") == "pbf" else None
+        except sqlite3.Error as exc:
+            log.warning("parcel tiles: unreadable %s: %s", path, exc)
+            return None
+    return _info_cache[key]
 
 
 # ---------------------------------------------------------------- serving
@@ -372,24 +440,18 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--index", type=Path, default=None)
     ap.add_argument("--community-areas", default="")
-    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--out", type=Path, default=None, help="default: settings.discovery_tiles_path")
     ap.add_argument("--minzoom", type=int, default=MIN_ZOOM)
     ap.add_argument("--maxzoom", type=int, default=MAX_ZOOM)
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     settings = get_settings()
     cas = [int(c) for c in args.community_areas.split(",") if c.strip()] or None
-    t0 = time.monotonic()
-    parcels, missing, repaired = load_parcels(args.index or settings.discovery_index_path, settings.ptaxsim_db_path, cas)
-    load_s = time.monotonic() - t0
-    stats = write_mbtiles(args.out, parcels, args.minzoom, args.maxzoom)
-    print(json.dumps({
-        "parcels_with_outline": stats.parcels, "pin10_without_outline": missing, "outlines_repaired": repaired, "load_seconds": round(load_s, 1),
-        "tile_seconds": round(stats.seconds, 1), "tiles": stats.tiles, "pieces_unclipped": stats.unclipped,
-        "mb_gz": {z: round(b / 1e6, 2) for z, b in stats.bytes_gz.items()},
-        "max_tile_kb_gz": {z: round(b / 1e3, 1) for z, b in stats.max_tile_gz.items()},
-        "file_mb": round(args.out.stat().st_size / 1e6, 2),
-    }, indent=1))
+    summary = build_file(
+        args.index or settings.discovery_index_path, settings.ptaxsim_db_path, args.out or settings.discovery_tiles_path,
+        community_areas=cas, minzoom=args.minzoom, maxzoom=args.maxzoom,
+    )
+    print(json.dumps(summary, indent=1))
 
 
 if __name__ == "__main__":

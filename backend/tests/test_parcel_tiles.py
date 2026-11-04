@@ -166,3 +166,113 @@ def test_broken_outlines_are_repaired_not_fatal():
     fixed = pt._polygonal(shapely.make_valid(bowtie))
     assert fixed is not None and fixed.is_valid and fixed.area > 0
     assert pt._polygonal(shapely.make_valid(wkt.loads("LINESTRING (0 0, 1 1)"))) is None
+
+
+# ---------------------------------------------------------------- the built file, the registry, the rebuild hook
+
+
+def _index_and_ptaxsim(tmp_path, *, data_version="v1"):
+    """A two-parcel index and a PTAXSIM outline table: one PIN10 with an outline, one without."""
+    import json
+    import sqlite3
+
+    from backend.discovery.parcel_index import _SCHEMA
+
+    idx = tmp_path / "discovery_index.db"
+    con = sqlite3.connect(idx)
+    con.executescript(_SCHEMA)
+    con.executemany("INSERT INTO parcels VALUES (?,?,?,?,?)", [
+        ("14-31-300-012-0000", 41.9097, -87.6765, json.dumps({"zoning_group": "business"}), '["neighborhood:24"]'),
+        ("14-31-300-013-0000", 41.9098, -87.6766, "{}", '["neighborhood:24"]'),
+    ])
+    con.execute("INSERT INTO meta VALUES (1, ?, 0, '24', 2, '[]', '{}')", (data_version,))
+    con.commit()
+    con.close()
+    geo = tmp_path / "ptaxsim.db"
+    con = sqlite3.connect(geo)
+    con.execute("CREATE TABLE pin_geometry_raw (pin10 TEXT, start_year INT, end_year INT, longitude REAL, latitude REAL, geometry TEXT)")
+    con.execute("INSERT INTO pin_geometry_raw VALUES ('1431300012', 2006, 2024, -87.6765, 41.9097, "
+                "'POLYGON ((-87.6766 41.9096, -87.6764 41.9096, -87.6764 41.9098, -87.6766 41.9098, -87.6766 41.9096))')")
+    con.commit()
+    con.close()
+    return idx, geo
+
+
+def test_build_file_swaps_in_a_finished_file_with_its_provenance(tmp_path):
+    idx, geo = _index_and_ptaxsim(tmp_path)
+    out = tmp_path / "parcel_tiles.mbtiles"
+    out.write_bytes(b"previous")
+    summary = pt.build_file(idx, geo, out, minzoom=14, maxzoom=15)
+    assert summary["parcels_with_outline"] == 1 and summary["pin10_without_outline"] == 1
+    assert not out.with_name(out.name + ".tmp").exists()
+    info = pt.tiles_info(out)
+    assert info["index_version"] == "v1" and info["parcels"] == "1" and info["pin10_without_outline"] == "1"
+    assert info["minzoom"] == "14" and info["maxzoom"] == "15" and info["built_at"]
+
+
+def test_build_file_refuses_to_replace_tiles_with_nothing(tmp_path):
+    idx, geo = _index_and_ptaxsim(tmp_path)
+    import sqlite3
+
+    con = sqlite3.connect(geo)
+    con.execute("DELETE FROM pin_geometry_raw")
+    con.commit()
+    con.close()
+    out = tmp_path / "parcel_tiles.mbtiles"
+    out.write_bytes(b"previous")
+    with pytest.raises(RuntimeError, match="refusing"):
+        pt.build_file(idx, geo, out)
+    assert out.read_bytes() == b"previous"
+
+
+def test_tiles_info_none_without_a_usable_file(tmp_path):
+    assert pt.tiles_info(tmp_path / "none.mbtiles") is None
+    junk = tmp_path / "junk.mbtiles"
+    junk.write_bytes(b"not sqlite")
+    assert pt.tiles_info(junk) is None
+
+
+def test_registry_block_says_whether_tiles_match_the_index(tmp_path, monkeypatch):
+    import backend.config as config
+    from backend.discovery import api
+
+    idx, geo = _index_and_ptaxsim(tmp_path, data_version="v1")
+    out = tmp_path / "parcel_tiles.mbtiles"
+    pt.build_file(idx, geo, out, minzoom=14, maxzoom=16)
+    monkeypatch.setattr(config, "get_settings", lambda: SimpleNamespace(discovery_tiles_path=out))
+    block = api._parcel_tiles("v1")
+    assert block.minZoom == 14 and block.maxZoom == 16 and block.parcels == 1 and block.current
+    assert api._parcel_tiles("v2").current is False
+    monkeypatch.setattr(config, "get_settings", lambda: SimpleNamespace(discovery_tiles_path=tmp_path / "none"))
+    assert api._parcel_tiles("v1") is None
+
+
+def test_index_rebuild_never_fails_on_a_tile_failure(monkeypatch, capsys):
+    from backend.discovery import index_build
+
+    def boom(*a, **k):
+        raise RuntimeError("ptaxsim gone")
+
+    monkeypatch.setattr(pt, "build_file", boom)
+    index_build._rebuild_tiles()  # no exception
+    assert "NOT rebuilt: ptaxsim gone" in capsys.readouterr().out
+
+
+def test_rebuild_flag_parses():
+    from backend.discovery import index_build
+
+    assert index_build._parse_args(["--refresh"]).no_tiles is False
+    assert index_build._parse_args(["--refresh", "--no-tiles"]).no_tiles is True
+
+
+def test_data_health_findings():
+    from backend.data_health.probes import parcel_tiles_findings
+
+    meta = {"parcels": "604220", "pin10_without_outline": "854", "outlines_repaired": "806", "pieces_unclipped": "1",
+            "minzoom": "14", "maxzoom": "16", "index_version": "v1"}
+    info, findings = parcel_tiles_findings(meta, "v1")
+    assert "604,220 outlines" in info and findings == []
+    _, stale = parcel_tiles_findings(meta, "v2")
+    assert [f.level for f in stale] == ["warn"] and "built from index v1" in stale[0].text and "serving is v2" in stale[0].text
+    _, bad = parcel_tiles_findings({**meta, "pin10_without_outline": "20000", "pieces_unclipped": "500"}, "v1")
+    assert len(bad) == 2

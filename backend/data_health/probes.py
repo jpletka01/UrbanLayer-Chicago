@@ -669,6 +669,56 @@ async def probe_discovery_index(spec: SourceSpec, ctx: ProbeContext) -> ProbeRes
     return ProbeResult(content=_day(row[0], ms=False), info=f"{row[1]:,} parcels")
 
 
+TILES_MISSING_WARN_SHARE = 0.01   # more than 1% of the index's PIN10s drawn without an outline
+TILES_UNCLIPPED_WARN = 100        # parcel pieces left out at clipping (1 citywide on 2026-11-04)
+
+
+def parcel_tiles_findings(meta: dict[str, str], index_version: str | None) -> tuple[str, list[Finding]]:
+    """(info line, findings) for the parcel-outline tile file's metadata (decision Item 68). Pure: the probe reads
+    the files. Tiles built from an older index than the one serving warn (new parcels have no outline yet)."""
+    parcels = int(meta.get("parcels") or 0)
+    missing = int(meta.get("pin10_without_outline") or 0)
+    unclipped = int(meta.get("pieces_unclipped") or 0)
+    info = (f"{parcels:,} outlines, zooms {meta.get('minzoom', '?')}-{meta.get('maxzoom', '?')}; {missing:,} PIN10s without "
+            f"an outline, {int(meta.get('outlines_repaired') or 0):,} repaired, {unclipped:,} pieces left out")
+    findings: list[Finding] = []
+    if index_version and meta.get("index_version") != index_version:
+        findings.append(Finding("warn", f"tiles were built from index {meta.get('index_version') or '?'}, the index serving is "
+                                        f"{index_version}: rebuild them (python -m backend.discovery.parcel_tiles)"))
+    if parcels and missing / (parcels + missing) > TILES_MISSING_WARN_SHARE:
+        findings.append(Finding("warn", f"{missing:,} of {parcels + missing:,} PIN10s have no outline in PTAXSIM"))
+    if unclipped > TILES_UNCLIPPED_WARN:
+        findings.append(Finding("warn", f"{unclipped:,} parcel pieces could not be clipped into tiles"))
+    return info, findings
+
+
+async def probe_parcel_tiles(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    settings = get_settings()
+    path = settings.discovery_tiles_path
+    if not path.exists():
+        return ProbeResult(skipped="parcel_tiles.mbtiles not present here (the Discovery map shows dots only)")
+    try:
+        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        try:
+            meta = dict(con.execute("SELECT name, value FROM metadata").fetchall())
+        finally:
+            con.close()
+    except sqlite3.Error as exc:
+        raise ProbeError("service", f"cannot read {path.name}: {exc}") from exc
+    if not meta.get("built_at"):
+        raise ProbeError("service", f"{path.name} has no built_at: built by an older builder")
+    index_version = None
+    if settings.discovery_index_path.exists():
+        con = sqlite3.connect(f"file:{settings.discovery_index_path}?mode=ro", uri=True)
+        try:
+            row = con.execute("SELECT data_version FROM meta WHERE id = 1").fetchone()
+        finally:
+            con.close()
+        index_version = row[0] if row else None
+    info, findings = parcel_tiles_findings(meta, index_version)
+    return ProbeResult(content=date.fromisoformat(meta["built_at"]), info=info, findings=findings)
+
+
 BACKUP_WARN_HOURS = 30    # one nightly backup missed (the check runs ~2.5 h after the 03:00 job)
 BACKUP_ALARM_HOURS = 36   # a night and a half with no new backup
 
@@ -823,6 +873,7 @@ PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] 
     "ptaxsim": probe_ptaxsim,
     "discovery_index": probe_discovery_index,
     "backup_status": probe_backup_status,
+    "parcel_tiles": probe_parcel_tiles,
     "checker": probe_checker,
 }
 
