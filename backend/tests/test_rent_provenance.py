@@ -88,7 +88,8 @@ def test_a_suppressed_cell_is_not_a_figure():
 def test_a_wide_bedroom_margin_withholds_with_the_cv_reason():
     p = prov(ctx_with(evidence(bedrooms=[bedroom("3_bedrooms", est=2000, moe=1800.0)])))
     e = p["area.rent.3_bedrooms"]
-    assert e["confidence"] == "withheld" and e["confidence_reasons"] == ["high_cv"]
+    # high_cv must be a reason; from 2027 the 24-month rule also adds old_source to this 2020-2024 figure.
+    assert e["confidence"] == "withheld" and "high_cv" in e["confidence_reasons"]
 
 
 # --- chat: withheld rent never reaches the model --------------------------------------------------------

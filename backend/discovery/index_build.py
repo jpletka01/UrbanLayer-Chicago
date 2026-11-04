@@ -1009,6 +1009,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     g.add_argument("--all", action="store_true", help="all 77 community areas (~1.8M parcels)")
     g.add_argument("--refresh", action="store_true",
                    help="rebuild the community areas already in the current index (for the periodic timer)")
+    ap.add_argument("--no-tiles", action="store_true",
+                    help="skip rebuilding the parcel-outline tiles after the index (decision Item 68)")
     return ap.parse_args(argv)
 
 
@@ -1031,6 +1033,24 @@ async def _amain(args: argparse.Namespace) -> None:
     async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
         data_version, total = await build_index(cas, client=client)
     print(f"Built index {data_version}: {total} parcels across {len(cas)} community area(s)")
+    if not args.no_tiles:
+        _rebuild_tiles()
+
+
+def _rebuild_tiles() -> None:
+    """The Discovery map's parcel outlines follow the index (decision Item 68). A failure here never fails the
+    index build: the previous tile file keeps serving (``build_file`` swaps in only a finished file), the error
+    is logged, and data health flags tiles older than the index."""
+    from backend.discovery import parcel_tiles
+
+    settings = get_settings()
+    try:
+        summary = parcel_tiles.build_file(default_index_path(), settings.ptaxsim_db_path, settings.discovery_tiles_path)
+    except Exception as exc:  # noqa: BLE001 — any tile failure leaves the index (already written) in place
+        log.error("discovery index: parcel tiles NOT rebuilt (previous tiles keep serving): %s", exc)
+        print(f"Parcel tiles NOT rebuilt: {exc}")
+        return
+    print(f"Built parcel tiles: {summary['parcels_with_outline']} outlines, {summary['file_mb']} MB")
 
 
 if __name__ == "__main__":

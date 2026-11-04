@@ -107,6 +107,30 @@ def _no_legislation_snapshot(tmp_path, monkeypatch):
     monkeypatch.setattr(currency, "SNAPSHOT_FILE", tmp_path / "legislation_snapshot.json")
 
 
+# The day the rezoning/designation fixtures' absolute `passed_on` dates were written against.
+LEGISLATION_TEST_TODAY = (2026, 11, 4)
+
+
+@pytest.fixture(autouse=True)
+def _pin_legislation_lookback_today(monkeypatch):
+    """The passed-rezoning (365-day) and landmark-designation (180-day) lookbacks read ``date.today()`` when a
+    caller passes no ``today``. Fixtures carry absolute `passed_on` dates, so on the real clock they age out of
+    the window (rezonings on 2027-10-15, designations on 2027-03-23; found 2026-11-04 by running the suite with
+    the clock moved forward). Pin "today" for those two modules only; a test that passes ``today=`` still
+    decides it, and production reads the real date."""
+    import datetime as _dt
+
+    from backend.legislation import designations, rezonings
+
+    class _PinnedDate(_dt.date):
+        @classmethod
+        def today(cls):
+            return _dt.date(*LEGISLATION_TEST_TODAY)
+
+    monkeypatch.setattr(designations, "date", _PinnedDate)
+    monkeypatch.setattr(rezonings, "date", _PinnedDate)
+
+
 @pytest.fixture(autouse=True)
 def _no_pending_legislation_store(tmp_path, monkeypatch):
     """The WS2 poller is sync-only and its local DB must never leak into a unit test.

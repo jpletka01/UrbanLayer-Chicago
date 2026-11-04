@@ -399,6 +399,7 @@ export default function DiscoveryPage() {
             status={map.status}
             stale={refreshing}
             visible={(!showStart && mobileTab === "map") || wideLayout}
+            parcelTiles={registry?.parcelTiles ?? null}
           />
         </div>
       </div>

@@ -136,6 +136,17 @@ export interface Registry {
   // "No matches yet" badges so a recipe whose fields are populated but whose subset is
   // empty isn't shown as Live. Absent/empty when dormant.
   recipeCounts?: Record<string, number>;
+  // Decision Item 68: the installed parcel-outline tiles; absent = dots only.
+  parcelTiles?: ParcelTiles | null;
+}
+
+export interface ParcelTiles {
+  builtAt: string;
+  minZoom: number;
+  maxZoom: number;
+  parcels: number;
+  /** False when the tiles were built from an older index than the one serving. */
+  current: boolean;
 }
 
 // --- Diagnostics (06) ---

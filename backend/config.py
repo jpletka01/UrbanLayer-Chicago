@@ -175,6 +175,9 @@ class Settings(BaseSettings):
     # NOT in ingestion/data (which is ephemeral in the container) — so a prod-built index
     # survives redeploys instead of being wiped on the next image rebuild.
     discovery_index_path: Path = PROJECT_ROOT / "backend" / "data" / "discovery_index.db"
+    # WS8 Phase 2 prototype: parcel-outline vector tiles (MBTiles) built by `backend.discovery.parcel_tiles`.
+    # No file = the tile endpoint answers 404 and the Discovery map keeps its dots.
+    discovery_tiles_path: Path = PROJECT_ROOT / "backend" / "data" / "parcel_tiles.mbtiles"
     # Written daily by `python -m backend.legislation.sync` (prod timer) on the same volume;
     # the app only reads it, reloading when its mtime changes.
     legislation_snapshot_path: Path = PROJECT_ROOT / "backend" / "data" / "legislation_snapshot.json"

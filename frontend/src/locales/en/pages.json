@@ -1143,7 +1143,8 @@
       "show": "Show",
       "hide": "Hide them",
       "explain": "Vacant land over an acre with no street address of its own, and vacant common land on a development's shared outline. Most is rail, utility or common land, not a buildable lot. Show it only if you know what you're looking for."
-    }
+    },
+    "mapMatchingLot": "Matching lot"
   },
   "settings": {
     "title": "Settings",
