@@ -29,7 +29,7 @@ import httpx
 from backend.config import get_settings
 from backend.models import (
     AssessorModelRent, BedroomRent, CensusTractDemographics, CommunityAreaRent, RentCell, RentEvidence, RentTrend,
-    RentTrendPeriod, SalesTrend, SaleYear,
+    RentTrendPeriod, SalesTrend, SaleYear, SmallAreaFmr,
 )
 from backend.retrieval.cache import TTLCache
 from backend.retrieval.neighborhood.census_tract import _cv, rent_cells
@@ -39,6 +39,7 @@ log = logging.getLogger(__name__)
 ARTIFACT_FILENAME = "rent_by_area.json"
 ASSESSOR_FILENAME = "assessor_model_by_area.json"
 TREND_FILENAME = "rent_trend_by_area.json"
+SAFMR_FILENAME = "hud_safmr.json"
 # What the Profile shows. The studio and 4+ bedroom cells are published too, but the method proof only
 # measured these three at PUMA level (20 of 20 standard).
 BEDROOM_GROUPS = ("1_bedroom", "2_bedrooms", "3_bedrooms")
@@ -48,6 +49,7 @@ _lock = threading.Lock()
 _artifact: dict | None = None
 _assessor: dict | None = None
 _trend: dict | None = None
+_safmr: dict | None = None
 
 
 class RentArtifactError(RuntimeError):
@@ -105,11 +107,39 @@ def load_trend_artifact() -> dict:
         return _trend
 
 
+def load_safmr_artifact() -> dict:
+    """HUD's Small Area FMRs by ZIP (WS4 PR5), read once per process. Raises ``RentArtifactError``."""
+    global _safmr
+    with _lock:
+        if _safmr is None:
+            path = get_settings().data_dir / SAFMR_FILENAME
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if not isinstance(data.get("zips"), dict) or not data.get("fy") or not data["zips"]:
+                    raise ValueError("missing zips / fy")
+            except (OSError, ValueError) as exc:
+                raise RentArtifactError(f"{SAFMR_FILENAME} is unreadable: {exc}") from exc
+            _safmr = data
+        return _safmr
+
+
 def reset_artifact() -> None:
     """Forget the loaded artifacts (tests)."""
-    global _artifact, _assessor, _trend
+    global _artifact, _assessor, _trend, _safmr
     with _lock:
-        _artifact = _assessor = _trend = None
+        _artifact = _assessor = _trend = _safmr = None
+
+
+def safmr_for_zip(zip_code: str) -> SmallAreaFmr:
+    """HUD's ZIP-level voucher rent standard. A ZIP HUD doesn't list comes back ``listed=False`` with no figures
+    (a finding about the table, said as such); an unreadable artifact raises."""
+    art = load_safmr_artifact()
+    row = art["zips"].get(zip_code)
+    bedrooms = art.get("bedrooms") or ["0", "1", "2", "3", "4"]
+    return SmallAreaFmr(
+        zip_code=zip_code, fy=int(art["fy"]), area=art.get("area") or "", retrieved=art.get("retrieved") or "",
+        listed=row is not None, by_bedroom=dict(zip(bedrooms, row)) if row else {},
+    )
 
 
 def rent_trend(community_area: int) -> RentTrend | None:

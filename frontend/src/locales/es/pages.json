@@ -541,7 +541,8 @@
       "rentTract": "Renta bruta mensual mediana (renta más servicios) de los hogares inquilinos de este tramo censal, tal como la publica la Oficina del Censo. Es una estimación de encuesta con un margen de error.",
       "rentAssessor": "El modelo del Tasador de lo que ganan los departamentos de esta área comunitaria: ingreso bruto potencial por unidad al mes, antes de la vacancia, tomado de su valuación de edificios de 7 o más unidades en la reevaluación más reciente de toda la ciudad. Es un modelo, no una renta que alguien haya pedido o pagado, y no es comparable con las cifras del Censo. No hay cifra por número de recámaras.",
       "rentBedroom": "Renta bruta mensual mediana de unidades de este tamaño, tal como la Oficina del Censo la publica para este tramo censal. Cuando falta la cifra del tramo o es demasiado incierta, se muestra la del PUMA: un área estadística más grande que abarca varios vecindarios.",
-      "nominalTile": "El Condado avalúa esta parcela con un monto nominal, no con un valor de mercado. Las parcelas así suelen ser el área común de un desarrollo o el remanente de un terreno subdividido. Conforme a la ley de Illinois (35 ILCS 200/10-35), un área común que califica se registra en $1 al año y su valor se cuenta en el avalúo de los lotes que la comparten; no hemos confirmado que esta parcela califique."
+      "nominalTile": "El Condado avalúa esta parcela con un monto nominal, no con un valor de mercado. Las parcelas así suelen ser el área común de un desarrollo o el remanente de un terreno subdividido. Conforme a la ley de Illinois (35 ILCS 200/10-35), un área común que califica se registra en $1 al año y su valor se cuenta en el avalúo de los lotes que la comparten; no hemos confirmado que esta parcela califique.",
+      "rentHud": "La Renta Justa de Mercado de HUD para este código postal y número de recámaras: la renta más servicios con la que se calcula un vale de vivienda (Housing Choice Voucher) aquí. El estándar de pago de la CHA se fija a partir de ella y puede ser distinto."
     },
     "walkDesc": {
       "walker_s_paradise": "Paraíso del peatón",
@@ -616,6 +617,18 @@
         "none": "El modelo del Tasador no incluye edificios de departamentos en esta área",
         "noFigure": "El modelo no tiene una cifra de ingresos utilizable para esta área",
         "unchecked": "No se pudo verificar hoy"
+      },
+      "hud": {
+        "title": "Renta de referencia para vales (HUD)",
+        "scope": "Renta Justa de Mercado por Área Pequeña de HUD para el código postal {{zip}}, año fiscal {{fy}}: renta más servicios. Los programas de vales del área de Chicago usan estas cifras por código postal, y la Autoridad de Vivienda de Chicago (CHA) fija con ellas sus estándares de pago. Es un estándar del gobierno para lo que cubre un vale, no una renta de mercado ni una renta solicitada.",
+        "line": "Año fiscal {{fy}} · CP {{zip}} · renta más servicios",
+        "notListed": "HUD no publica una cifra por código postal para {{zip}}",
+        "unchecked": "No se pudo verificar hoy",
+        "br0": "Estudio",
+        "br1": "1 recámara",
+        "br2": "2 recámaras",
+        "br3": "3 recámaras",
+        "br4": "4 recámaras"
       }
     },
     "capacity": {

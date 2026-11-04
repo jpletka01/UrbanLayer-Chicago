@@ -391,6 +391,17 @@ def _rent_figures(rent, put, qd: str, ca_name: str | None) -> None:
             note=(f"The Assessor's model of potential gross income (before vacancy) per unit per month, median of "
                   f"{am.priced:,} apartment buildings ({am.units:,} units) in the {am.year} {am.cycle}. "
                   "Not an asking or achieved rent."))
+    fmr = rent.safmr
+    if fmr is not None and fmr.listed:
+        # HUD's standard, not a survey reading: no margin, no sample. Its vintage is the federal fiscal year, which
+        # starts October 1 of the year before (FY 2027 = from 2026-10-01).
+        for b, amount in fmr.by_bedroom.items():
+            put(f"area.rent.hud_safmr.{b}", amount, geography=f"ZIP {fmr.zip_code}", period=f"FY {fmr.fy}",
+                dates={"as_of": f"{fmr.fy - 1}-10-01", "as_of_basis": "vintage"},
+                method_params={"fy": fmr.fy, "area": fmr.area},
+                note=(f"HUD's Small Area Fair Market Rent for ZIP {fmr.zip_code}, FY {fmr.fy}: rent plus utilities that "
+                      "voucher programs in the Chicago metro area use, and the Chicago Housing Authority sets its "
+                      "payment standards from. A government standard, not an asking or market rent."))
     tr = rent.trend
     if tr is not None:
         # The change between two non-overlapping periods; the margin shown is the combined one the Census test uses.
@@ -601,6 +612,10 @@ def expected_fact_ids(payload: dict) -> set[str]:
         want.add("area.rent.assessor_model")
     if rent.get("trend"):
         want.add("area.rent.trend")
+    safmr = rent.get("safmr") or {}
+    if safmr.get("listed", True):
+        for b in safmr.get("by_bedroom") or {}:
+            want.add(f"area.rent.hud_safmr.{b}")
     if rent.get("sales_trend"):
         want.add("area.sales.trend")
     for b in rent.get("bedrooms") or []:

@@ -57,6 +57,8 @@ COPY ingestion/data/rent_by_area.json /app/ingestion/data/rent_by_area.json
 COPY ingestion/data/rent_by_area.meta.json /app/ingestion/data/rent_by_area.meta.json
 COPY ingestion/data/rent_trend_by_area.json /app/ingestion/data/rent_trend_by_area.json
 COPY ingestion/data/rent_trend_by_area.meta.json /app/ingestion/data/rent_trend_by_area.meta.json
+COPY ingestion/data/hud_safmr.json /app/ingestion/data/hud_safmr.json
+COPY ingestion/data/hud_safmr.meta.json /app/ingestion/data/hud_safmr.meta.json
 COPY ingestion/data/assessor_model_by_area.json /app/ingestion/data/assessor_model_by_area.json
 COPY ingestion/data/assessor_model_by_area.meta.json /app/ingestion/data/assessor_model_by_area.meta.json
 COPY ingestion/data/commercial_bldg_by_pin.json.gz /app/ingestion/data/commercial_bldg_by_pin.json.gz

@@ -332,6 +332,14 @@ def _chars_describe_prior_structure(
 _FOOTPRINT_SPAN_SLACK = 1.1
 
 
+def _zip5(value) -> str | None:
+    """A five-digit ZIP from the parcel record ("60622", "60622-1234", 60622.0), else None."""
+    if value is None:
+        return None
+    digits = str(value).split("-")[0].split(".")[0].strip()
+    return digits.zfill(5) if digits.isdigit() and 3 <= len(digits) <= 5 and int(digits) > 0 else None
+
+
 def _build_summary(
     parcel: dict,
     chars: dict | None,
@@ -606,6 +614,7 @@ def _build_summary(
     return PropertySummary(
         pin14=pin14,
         address=address,
+        zip_code=_zip5(parcel.get("zip_code")),
         bldg_class=bldg_class,
         bldg_class_description=bldg_class_description,
         bldg_sqft=bldg_sqft,

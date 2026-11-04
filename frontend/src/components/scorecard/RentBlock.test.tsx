@@ -213,3 +213,35 @@ describe("Which way prices moved (WS4 PR4, decision Item 62)", () => {
     expect(screen.getByTestId("trend-sales-condo").textContent).not.toContain("$95,000");
   });
 });
+
+describe("HUD's voucher rent standard (WS4 PR5, decision Item 69)", () => {
+  const fmr = { zip_code: "60622", fy: 2027, area: "Chicago-Joliet-Naperville, IL HUD Metro FMR Area", listed: true,
+    by_bedroom: { "0": 2340, "1": 2490, "2": 2810, "3": 3610, "4": 4130 }, retrieved: "2026-11-04" };
+  const hudEntry = entry({ tier: "official_estimate", method_key: "government_model", scope: "zip",
+    geography: "ZIP 60622", period: "FY 2027", source_id: "artifact.hud_safmr", precision: undefined });
+  const hudProv = { ...prov, ...Object.fromEntries(["0", "1", "2", "3", "4"].map((b) => [`area.rent.hud_safmr.${b}`, hudEntry])) };
+
+  it("sits in its own section after the others, with FY, ZIP and one tile per bedroom count", () => {
+    renderBlock(hood(rent({ safmr: fmr })), hudProv);
+    const block = screen.getByTestId("rent-hud");
+    expect(block.textContent).toContain("Voucher rent standard (HUD)");
+    expect(block.textContent).toContain("FY 2027 · ZIP 60622 · rent plus utilities");
+    expect(screen.getByTestId("rent-tile-hud-0").textContent).toMatch(/Studio.*\$2,340/);
+    expect(screen.getByTestId("rent-tile-hud-4").textContent).toMatch(/4 bedrooms.*\$4,130/);
+    expect(within(screen.getByTestId("rent-acs")).queryByText(/HUD/)).toBeNull();
+  });
+
+  it("says HUD lists no figure for an unlisted ZIP, and couldn't check for an unreadable table", () => {
+    renderBlock(hood(rent({ safmr: { ...fmr, zip_code: "60666", listed: false, by_bedroom: {} } })), hudProv);
+    expect(screen.getByTestId("rent-hud").textContent).toContain("HUD lists no ZIP-level figure for 60666");
+    expect(screen.queryByTestId("rent-tile-hud-0")).toBeNull();
+    cleanup();
+    renderBlock(hood(rent({ unchecked: ["hud_safmr"] })));
+    expect(screen.getByTestId("rent-hud").textContent).toContain("Couldn't check today");
+  });
+
+  it("shows nothing for HUD when the response has no ZIP figure (no ZIP, or an older answer)", () => {
+    renderBlock(hood(rent()));
+    expect(screen.queryByTestId("rent-hud")).toBeNull();
+  });
+});

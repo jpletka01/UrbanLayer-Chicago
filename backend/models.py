@@ -410,6 +410,8 @@ class AssessorPermitSummary(BaseModel):
 class PropertySummary(BaseModel):
     pin14: str | None = None
     address: str | None = None
+    # The parcel's ZIP from the County's parcel record (GIS or Parcel Universe); keys HUD's ZIP-level rents.
+    zip_code: str | None = None
     bldg_class: str | None = None
     bldg_class_description: str | None = None
     bldg_sqft: int | None = None
@@ -708,6 +710,20 @@ class AssessorModelRent(BaseModel):
     dataset: str = "csik-bsws"
 
 
+class SmallAreaFmr(BaseModel):
+    """HUD's Small Area Fair Market Rent for the parcel's ZIP (WS4 PR5, decision Item 69): what HUD sets as the
+    fair rent plus utilities by bedroom count, which every voucher program in the Chicago metro area uses and the
+    Chicago Housing Authority sets its payment standards from. A government standard for vouchers, never an
+    asking or market rent. ``by_bedroom`` is empty when HUD lists no figure for the ZIP (``listed`` False)."""
+
+    zip_code: str
+    fy: int
+    area: str
+    listed: bool = True
+    by_bedroom: dict[str, int] = Field(default_factory=dict)  # "0" (studio) .. "4"
+    retrieved: str
+
+
 class BedroomRent(BaseModel):
     """Median gross rent for one bedroom count, from the parcel's tract when the Census's figure
     passes the confidence rules, otherwise from its PUMA. ``scope`` says which; a PUMA is never
@@ -776,6 +792,8 @@ class RentEvidence(BaseModel):
     # WS4 PR4 (decision Item 62): which way rent and sale prices moved in the community area.
     trend: RentTrend | None = None
     sales_trend: SalesTrend | None = None
+    # WS4 PR5 (decision Item 69): HUD's voucher rent standard for the parcel's ZIP, set by /api/scorecard.
+    safmr: SmallAreaFmr | None = None
     unchecked: list[str] = Field(default_factory=list)
 
 

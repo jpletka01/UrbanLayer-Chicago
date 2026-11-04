@@ -4,12 +4,13 @@
 // bedroom count for the tract, else its PUMA. There is no community-area figure by bedroom count.
 // Below them, as a separate series (WS4 PR3), sits the County Assessor's MODELED apartment income for the
 // community area: never merged with the Census rents, never called a rent, never by bedroom count.
+// Last (WS4 PR5), HUD's Small Area Fair Market Rents for the parcel's ZIP: a voucher standard, not a market rent.
 // The backend decides each figure's confidence state; this block only says it (guide:
 // claude-context/guides/source-confidence.md).
 import { useTranslation } from "react-i18next";
 import type { Provenance } from "../../lib/api";
 import { useFact } from "../../lib/provenanceContext";
-import type { AssessorModelRent, BedroomRent, NeighborhoodSummary, RentEvidence, SaleYear } from "../../lib/types";
+import type { AssessorModelRent, BedroomRent, NeighborhoodSummary, RentEvidence, SaleYear, SmallAreaFmr } from "../../lib/types";
 import { ConfidenceCaption, ConfidenceValue, SourceTooltip } from "../ui/Confidence";
 import { ToolTray } from "../ui/ToolTray";
 import { StatusLabel } from "../ui/StatusLabel";
@@ -108,6 +109,60 @@ function AssessorModelTile({ model, unchecked }: { model: AssessorModelRent | nu
   );
 }
 
+const HUD_BEDROOMS = ["0", "1", "2", "3", "4"] as const;
+
+/** HUD's ZIP-level voucher rent standard (WS4 PR5, decision Item 69). FY, ZIP and what the figure covers sit once in
+ *  the header; each tile is one bedroom count. A ZIP HUD doesn't list, or a table we couldn't read, says so. */
+function HudBlock({ fmr, unchecked }: { fmr: SmallAreaFmr | null | undefined; unchecked: boolean }) {
+  const { t } = useTranslation("pages");
+  return (
+    <div className="space-y-3" data-testid="rent-hud">
+      <div>
+        <div className="flex items-center gap-1 text-overline uppercase tracking-wider text-text-muted">
+          {t("scorecard.rent.hud.title")}
+          {fmr && (
+            <ToolTray
+              label={t("scorecard.rent.hud.title")}
+              align="start"
+              explain={<span className="block normal-case tracking-normal" data-testid="hud-explain">{t("scorecard.rent.hud.scope", { zip: fmr.zip_code, fy: fmr.fy })}</span>}
+            />
+          )}
+        </div>
+        <p className="text-caption text-text-muted leading-snug mt-0.5">
+          {!fmr ? t("scorecard.rent.hud.unchecked")
+            : fmr.listed ? t("scorecard.rent.hud.line", { zip: fmr.zip_code, fy: fmr.fy })
+              : t("scorecard.rent.hud.notListed", { zip: fmr.zip_code })}
+        </p>
+      </div>
+      {fmr?.listed && !unchecked && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4">
+          {HUD_BEDROOMS.filter((b) => fmr.by_bedroom[b] != null).map((b) => (
+            <HudTile key={b} bedrooms={b} amount={fmr.by_bedroom[b]} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HudTile({ bedrooms, amount }: { bedrooms: (typeof HUD_BEDROOMS)[number]; amount: number }) {
+  const { t } = useTranslation("pages");
+  const entry = useFact(`area.rent.hud_safmr.${bedrooms}`);
+  const label = t(`scorecard.rent.hud.br${bedrooms}`);
+  return (
+    <div className="min-w-0" data-testid={`rent-tile-hud-${bedrooms}`}>
+      <div className="text-overline uppercase tracking-wider text-text-muted">
+        <SourceTooltip label={label} description={t("scorecard.tips.rentHud")} entry={entry} unit="usd">{label}</SourceTooltip>
+      </div>
+      <div className="text-subtitle text-text-primary mt-0.5 truncate">
+        <ConfidenceValue entry={entry}>
+          {usd(amount)}<span className="text-caption text-text-muted font-normal">{t("scorecard.rent.perMonth")}</span>
+        </ConfidenceValue>
+      </div>
+    </div>
+  );
+}
+
 const SALE_GROUPS = ["two_to_six", "single_family", "condo"] as const;
 
 /** Which way rent and sale prices moved in the community area (WS4 PR4, decision Item 62). The rent change between
@@ -198,7 +253,8 @@ export function RentBlock({ data }: { data: NeighborhoodSummary }) {
   const model = rent.assessor_model;
   const modelUnchecked = rent.unchecked.includes("assessor_model");
   const hasAcs = !!ca || tractRent != null || cells.size > 0 || pumaUnchecked || areaUnchecked;
-  if (!hasAcs && !model && !modelUnchecked) return null;
+  const hudUnchecked = rent.unchecked.includes("hud_safmr");
+  if (!hasAcs && !model && !modelUnchecked && !rent.safmr && !hudUnchecked) return null;
   return (
     <div className="space-y-4" data-testid="rent-block">
       {hasAcs && (
@@ -249,6 +305,7 @@ export function RentBlock({ data }: { data: NeighborhoodSummary }) {
           </div>
         </div>
       )}
+      {(rent.safmr || hudUnchecked) && <HudBlock fmr={rent.safmr} unchecked={hudUnchecked} />}
     </div>
   );
 }
