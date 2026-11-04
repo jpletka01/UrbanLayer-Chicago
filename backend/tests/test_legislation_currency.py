@@ -352,7 +352,8 @@ def test_prompt_rule_says_amended_and_never_infers_from_the_title():
 
 
 def test_the_context_the_model_sees_carries_code_currency():
-    _write_snapshot()
+    # The context reads the real clock, so the check must be recent by it (a fixed NOW aged out on 2026-11-04).
+    _write_snapshot(checked_at=datetime.now(timezone.utc) - timedelta(hours=2))
     ctx = ContextObject(resolved_address="4000 N Western Ave", parcel_zoning=ZoningSummary(zone_class="B3-2"))
     payload = json.loads(ctx.model_dump_json(exclude={"analytics"}))
     assert payload["code_currency"]["since"]["title17"] == 10
@@ -362,7 +363,8 @@ def test_the_context_the_model_sees_carries_code_currency():
 def test_the_model_gets_full_rows_only_for_what_touches_the_parcel_or_the_code():
     from backend.synthesizer import _build_user_text
 
-    _write_snapshot()
+    # The context reads the real clock, so the check must be recent by it (a fixed NOW aged out on 2026-11-04).
+    _write_snapshot(checked_at=datetime.now(timezone.utc) - timedelta(hours=2))
     ctx = ContextObject(resolved_address="4000 N Western Ave", parcel_zoning=ZoningSummary(zone_class="B3-2"))
     text = _build_user_text(ctx, "What can I build here?")
     payload = json.loads(text.split("```json\n", 1)[1].split("\n```", 1)[0])
