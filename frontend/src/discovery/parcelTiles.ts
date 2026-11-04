@@ -25,6 +25,12 @@ export function pinFeatureId(pin: string): number | null {
   return digits.length >= 10 ? Number(digits.slice(0, 10)) : null;
 }
 
+/** The tile URL template, always absolute. Production builds with an empty API base, and Mapbox fetches tiles from
+ *  a web worker, where a relative URL does not resolve against the page: no tile was ever requested (2026-11-04). */
+export function tileUrlTemplate(apiBase: string, pageUrl: string = window.location.href): string {
+  return `${new URL(`${apiBase}/api/discovery/tiles/`, pageUrl).href}{z}/{x}/{y}.mvt`;
+}
+
 /** Add the source and layers (idempotent; call again after a style swap, which drops them). */
 export function addParcelLayers(
   map: MapboxMap, apiBase: string, theme: "light" | "dark", zooms: { minZoom: number; maxZoom: number },
@@ -32,7 +38,7 @@ export function addParcelLayers(
   if (!map.getSource(SOURCE)) {
     map.addSource(SOURCE, {
       type: "vector",
-      tiles: [`${apiBase}/api/discovery/tiles/{z}/{x}/{y}.mvt`],
+      tiles: [tileUrlTemplate(apiBase)],
       minzoom: zooms.minZoom,
       maxzoom: zooms.maxZoom,
     });
