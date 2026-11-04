@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { MATCH_COLORS, addParcelLayers, markMatches, pinFeatureId } from "./parcelTiles";
+import { MATCH_COLORS, addParcelLayers, markMatches, pinFeatureId, tileUrlTemplate } from "./parcelTiles";
 
 describe("parcel tiles", () => {
   it("keys a PIN by its first ten digits, dashed or not", () => {
@@ -44,5 +44,12 @@ describe("parcel tiles", () => {
     expect(layers["discovery-parcels-fill"].paint["fill-color"]).toBe(MATCH_COLORS.light.fill);
     expect(MATCH_COLORS.light.fill).toBe("#d89552");
     expect(MATCH_COLORS.dark.fill).toBe("#e7c07f");
+  });
+
+  it("always hands Mapbox an absolute tile URL (production's API base is empty)", () => {
+    expect(tileUrlTemplate("", "https://urbanlayerchicago.com/discovery?x=1"))
+      .toBe("https://urbanlayerchicago.com/api/discovery/tiles/{z}/{x}/{y}.mvt");
+    expect(tileUrlTemplate("http://localhost:5175", "http://localhost:5175/discovery"))
+      .toBe("http://localhost:5175/api/discovery/tiles/{z}/{x}/{y}.mvt");
   });
 });
