@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { GeoJsonLayer } from "@deck.gl/layers";
 import { PathStyleExtension } from "@deck.gl/extensions";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
+import { MapUnavailable } from "../ui/MapUnavailable";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchCapacityMap } from "../../lib/api";
 import { formatDay } from "../../lib/format";
@@ -220,7 +221,7 @@ function CapacityMapCanvas({ model, lat, lon, theme }: { model: CapacityMapModel
   const { t } = useTranslation("pages");
   const style = theme === "light" ? "mapbox://styles/mapbox/light-v11" : "mapbox://styles/mapbox/dark-v11";
   const initialStyle = useMemo(() => style, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const { containerRef, mapRef, overlayRef, mapReady, contextRestored, styleRevision } = useMapboxOverlay({
+  const { containerRef, mapRef, overlayRef, mapReady, mapError, contextRestored, styleRevision } = useMapboxOverlay({
     center: [lon, lat],
     zoom: 16.2,
     interactive: true,
@@ -286,6 +287,7 @@ function CapacityMapCanvas({ model, lat, lon, theme }: { model: CapacityMapModel
   return (
     <div className="relative w-full h-full min-h-[18rem] rounded-lg overflow-hidden border border-dark-border">
       <div ref={containerRef} className="absolute inset-0" />
+      {mapError && <MapUnavailable />}
     </div>
   );
 }

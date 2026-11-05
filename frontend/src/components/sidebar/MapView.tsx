@@ -16,6 +16,7 @@ import {
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
+import { MapUnavailable } from "../ui/MapUnavailable";
 import { buildLayerTooltip, type LayerPickInfo } from "../../lib/mapTooltip";
 import { pointLayer } from "../../lib/mapLayers";
 import { formatDate } from "../../lib/format";
@@ -328,7 +329,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
   // Declared before handleMapClick so overlayRef is available for multi-pick.
   // The hook reads onClick through a ref, so late-binding is safe.
   const onClickRef = useRef<(info: LayerPickInfo) => void>(() => {});
-  const { containerRef, mapRef, overlayRef, mapReady, contextRestored } = useMapboxOverlay({
+  const { containerRef, mapRef, overlayRef, mapReady, mapError, contextRestored } = useMapboxOverlay({
     center: CHICAGO_CENTER,
     zoom: INITIAL_ZOOM,
     getTooltip: buildLayerTooltip,
@@ -853,6 +854,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
   return (
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
+      {mapError && <MapUnavailable />}
 
       {/* Desktop: right-side filters (DateRangeSlider + MapLayerToggles) */}
       {!isMobile && mapReady && showPoints && (
