@@ -38,12 +38,18 @@ interface UseMapboxOverlayOptions {
  * without re-initializing the map. Guards against double-init (React StrictMode
  * mounts effects twice in dev) and swallows the benign webglcontextlost event
  * so the context restores instead of logging an error.
+ *
+ * A browser that can't create a WebGL context (GPU off, blocklisted driver, some headless or remote-desktop
+ * setups) makes `new mapboxgl.Map` throw. Uncaught in this effect, that unmounted the whole app (no error
+ * boundary): a blank page (Sentry, /discovery, 2026-11-04). It is caught here and returned as `mapError`, so
+ * the caller shows <MapUnavailable /> in the map's place and the rest of the page keeps working.
  */
 export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState<"webgl" | null>(null);
   const [contextRestored, setContextRestored] = useState(0);
   const [styleOrder, setStyleOrder] = useState<MapStyleOrderRevision>({
     roadInsertionId: null,
@@ -61,15 +67,24 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     if (!containerRef.current || !MAPBOX_TOKEN || mapRef.current) return;
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: optsRef.current.style ?? "mapbox://styles/mapbox/dark-v11",
-      center: optsRef.current.center,
-      zoom: optsRef.current.zoom,
-      attributionControl: false,
-      interactive: optsRef.current.interactive ?? true,
-      preserveDrawingBuffer: true,
-    });
+    let map: mapboxgl.Map;
+    try {
+      map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: optsRef.current.style ?? "mapbox://styles/mapbox/dark-v11",
+        center: optsRef.current.center,
+        zoom: optsRef.current.zoom,
+        attributionControl: false,
+        interactive: optsRef.current.interactive ?? true,
+        preserveDrawingBuffer: true,
+      });
+    } catch (err) {
+      console.warn("Map unavailable in this browser:", err);
+      // Once, on mount, on the failure path only (no map exists to re-render), so no render cascade.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMapError("webgl");
+      return;
+    }
 
     if (optsRef.current.interactive ?? true) map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
 
@@ -128,6 +143,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     mapRef,
     overlayRef,
     mapReady,
+    mapError,
     contextRestored,
     roadInsertionId: styleOrder.roadInsertionId,
     styleRevision: styleOrder.revision,

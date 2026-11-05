@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { useThemeContext } from "../contexts/ThemeContext";
 import { useMapboxOverlay } from "../lib/useMapboxOverlay";
+import { MapUnavailable } from "../components/ui/MapUnavailable";
 import { useIsPhone } from "../lib/useIsPhone";
 import { buildDiscoveryMapModel, type DiscoveryMapRenderPoint } from "./discoveryMapModel";
 import { DotPreview } from "./DotPreview";
@@ -78,6 +79,7 @@ export function DiscoveryMap({
     mapRef,
     overlayRef,
     mapReady,
+    mapError,
     styleRevision,
   } = useMapboxOverlay({
     center: [-87.6298, 41.8781],
@@ -394,6 +396,7 @@ export function DiscoveryMap({
       data-testid="discovery-map"
     >
       <div ref={containerRef} className="absolute inset-0" data-testid="discovery-map-container" />
+      {mapError && <MapUnavailable />}
 
       {preview && (
         <DotPreview
@@ -435,7 +438,7 @@ export function DiscoveryMap({
         </button>
       )}
 
-      {stateMessage && (
+      {stateMessage && !mapError && (
         <div className="absolute inset-0 z-10 flex items-center justify-center p-5" aria-hidden="true">
           <p className="max-w-sm rounded-lg border border-dark-border bg-dark-surface/95 px-4 py-3 text-center text-body text-text-secondary shadow-lg">
             {stateMessage}

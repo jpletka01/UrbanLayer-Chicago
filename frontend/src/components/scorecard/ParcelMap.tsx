@@ -11,6 +11,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
+import { MapUnavailable } from "../ui/MapUnavailable";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import {
   zonePrefix, zonePrefixLabel,
@@ -227,6 +228,7 @@ function ParcelMapInner({
     mapRef,
     overlayRef,
     mapReady,
+    mapError,
     contextRestored,
     roadInsertionId,
     styleRevision,
@@ -474,6 +476,7 @@ function ParcelMapInner({
     >
     <div className={`relative min-w-0 flex-1 ${bare ? "" : "min-h-[16rem]"}`}>
       <div ref={containerRef} className="absolute inset-0" />
+      {mapError && <MapUnavailable />}
       {unavailable.length > 0 && (
         <div
           role="status"

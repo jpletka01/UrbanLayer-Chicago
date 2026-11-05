@@ -512,5 +512,6 @@
   "tooltip": {
     "ctaRail": "CTA Tren",
     "metra": "Metra"
-  }
+  },
+  "unavailableNoWebgl": "El mapa no puede cargarse en este navegador (WebGL está desactivado o no es compatible). Todo lo demás en esta página sigue funcionando."
 }
