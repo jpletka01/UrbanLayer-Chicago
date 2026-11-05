@@ -2751,7 +2751,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 68 (WS8 Phase 2 prototype): parcel outlines on the Discovery map from our own vector tiles (2026-11-04)
 
-**Status: built on branch `ws8/phase2-tiles-prototype` (PR #185), not merged.** Jack's answers (2026-11-04): the Python tile writer (Decision 1); fill matches only for the first release, color every lot later if the map feels plain (Decision 2); the Cloudflare cache rule, yes; and use his new data palette (Decision 6). Plan: `plans/2026-11-04_ws8-phase2-plan.md` (local).
+**Status: merged and deployed 2026-11-04 (PR #185 `9db5576`; fix PR #188 `8f34440`).** Jack's answers (2026-11-04): the Python tile writer (Decision 1); fill matches only for the first release, color every lot later if the map feels plain (Decision 2); the Cloudflare cache rule, yes; and use his new data palette (Decision 6). Plan: `plans/2026-11-04_ws8-phase2-plan.md` (local).
 
 **Decision 1: write the tiles ourselves.** `backend/discovery/parcel_tiles.py` encodes Mapbox Vector Tiles v2 by hand (varints, zigzag, MoveTo/LineTo/ClosePath; about 120 lines) and uses shapely to clip, simplify (one tile unit per zoom) and orient rings. Alternatives: tippecanoe (a download and a native build on the box and the Mac), `mapbox-vector-tile` from PyPI (a new dependency for one encoder). Evidence: the spec's own worked example (`[9 6 12 18 10 12 24 44 15]`) is a test, a round-trip decode is a test, and Mapbox GL drew the output correctly in the browser.
 
@@ -2785,6 +2785,8 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Not measured:** a real phone (desktop Chrome emulation only: page heap 95 → 122 MB; Mapbox's worker memory isn't visible to the page); tile latency from production; the build on the production box.
 
 **Revisit if** the County publishes its own parcel tile service, or Discovery needs outline coloring by a field (then add that field to the tiles or move to a deck.gl MVT layer).
+**Production (Item 68, 2026-11-04).** #185 merged after GitHub's Actions incident (CI ran only after the PR was closed and reopened); deploy green, bundle served. Jack built the first tile file on the server (`docker compose run --rm --no-deps backend python -m backend.discovery.parcel_tiles`): 604,220 outlines, 854 PIN10s without one, 806 repaired, 1 piece left out, 28.9 MB, **97 s**. The registry then listed `parcelTiles` (`current: true`) and tiles answered 200, but the live map requested **no tiles**: production builds with an empty API base, so the source URL was relative, and Mapbox's tile worker does not resolve it against the page. Local checks had used an absolute base. Fix #188 (`tileUrlTemplate`, the URL resolved against the page) verified first on a local server built the production way (28 tile requests, all 200), then live: 23 tile requests, all 200, outlines drawn, the matched lot filled, no page errors; `sweep:live` clean. **Lesson:** test the frontend under the production build's own environment (here an empty `VITE_API_BASE`), not only the dev one. Cloudflare cache rule: Jack's dashboard step, pending at writing (`cf-cache-status: DYNAMIC`).
+
 ## Item 69 (WS4 PR5): HUD's ZIP-level voucher rent standard on the Profile (2026-11-04)
 
 **Status: merged and deployed 2026-11-04 (PR #186, `8928fd1`).** Jack's answers (2026-11-04): build PR5 with no revenue line; he copied HUD's table himself.
