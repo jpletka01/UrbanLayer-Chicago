@@ -9,6 +9,29 @@ Standing constraints that shaped many of these:
 
 ---
 
+## Item 70: pending Type 1 proposal details (WS2 PR4, planned 2026-11-06)
+
+- **Human review is the publication boundary.** The local deterministic reader drafts candidates only. Any value
+  eventually displayed is a `hand_reviewed` artifact with its own cited PDF page; the reader's held-out evaluation
+  measures the drafting aid, not the facts users see.
+- **Premium is a real API boundary, not hidden markup.** Today the Profile is anonymous and cached, and the only
+  premium identities are vouchers and admin comps (Stripe is not configured). A later integration resolves the user
+  after shared work/cache, removes gated fields for free callers, sends premium responses `Cache-Control: private,
+  no-store`, and keeps proposal details out of `scorecard_context`, chat, and reports.
+- **Dark by default.** `pending_proposal_details_enabled=false` controls display; the separately reserved
+  `pending_filing_reader_enabled=false` controls a future model fallback. Neither flag is enabled by a code deploy.
+- **Private working files, public audit metadata.** Real PDFs and their OCR text stay under ignored
+  `research/pending-filing-pdfs/`; Git may contain only matter/attachment identity, SHA-256, page numbers, labels,
+  reviewed values, and synthetic test fixtures. Page-level EDS detection drops those pages before OCR text is stored.
+- **Evaluation cannot win by silence.** A held-out panel reports emitted-value precision (>=95%, zero wrong units and
+  zero wrong pages) and recall/coverage separately, with a minimum set before activation. Failure stops the reader
+  and records the decision; it never falls through to a model.
+
+**Revisit:** after the Clerk-only count determines whether 30 eligible pending Type 1 filings exist. If not, the
+hand-labelled panel uses historical passed Type 1 filings, still with no EDS material in Git.
+
+---
+
 ## Item 0: nightly backups and an off-box copy (#58, 2026-10-20)
 *Reconstructed from the earlier session's notes; that session holds the full reasoning.*
 
