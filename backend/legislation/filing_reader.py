@@ -13,6 +13,7 @@ import asyncio
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -138,7 +139,11 @@ async def download_sample(rows: Iterable[SampleCandidate], destination: Path) ->
                     declared = response.headers.get("Content-Length")
                     if declared and declared.isdigit() and int(declared) > MAX_SAMPLE_FILE_BYTES:
                         raise ValueError(f"{row.record_number}: declared size exceeds cap")
-                    if "pdf" not in response.headers.get("Content-Type", "").lower():
+                    content_type = response.headers.get("Content-Type", "").lower().split(";", 1)[0].strip()
+                    # Clerk's Azure blob host returns application/octet-stream for
+                    # some perfectly valid PDFs. The magic-byte check below remains
+                    # mandatory, so accepting this generic type does not trust it.
+                    if content_type not in {"application/pdf", "application/octet-stream"}:
                         raise ValueError(f"{row.record_number}: response is not a PDF")
                     with partial.open("wb") as output:
                         async for chunk in response.aiter_bytes():
@@ -188,11 +193,42 @@ def screen_pages_for_eds(path: Path) -> list[PageScreen]:
     return pages
 
 
+def screen_scanned_pages_for_eds(path: Path, pages: Iterable[PageScreen]) -> list[PageScreen]:
+    """OCR only unreadable pages in memory and retain classifications, never text."""
+    out: list[PageScreen] = []
+    for result in pages:
+        if result.status != "unreadable":
+            out.append(result)
+            continue
+        try:
+            raster = subprocess.run(
+                ["pdftoppm", "-f", str(result.page), "-l", str(result.page), "-r", "200", "-png", "-singlefile", str(path), "-"],
+                check=True, capture_output=True,
+            )
+            text = subprocess.run(
+                ["tesseract", "stdin", "stdout"], input=raster.stdout, check=True, capture_output=True,
+            ).stdout.decode("utf-8")
+        except (OSError, subprocess.CalledProcessError, UnicodeDecodeError):
+            out.append(result)
+            continue
+        out.append(PageScreen(result.page, "eds" if _EDS_PAGE.search(text) else "safe"))
+    return out
+
+
 async def _main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Print a WS2 PR4 PDF approval manifest without downloading PDFs")
     parser.add_argument("--limit", type=int, default=30)
     parser.add_argument("--head-sizes", action="store_true", help="also make HEAD-only size requests")
+    parser.add_argument("--download-dir", type=Path, help="development-only private PDF destination")
+    parser.add_argument("--screen-dir", type=Path, help="screen existing private PDFs for EDS pages")
     args = parser.parse_args(argv)
+    if args.screen_dir:
+        screened = {
+            pdf.name: [page.__dict__ for page in screen_scanned_pages_for_eds(pdf, screen_pages_for_eds(pdf))]
+            for pdf in sorted(args.screen_dir.glob("*.pdf"))
+        }
+        print(json.dumps(screened, indent=2))
+        return 0
     try:
         rows = await build_download_manifest(limit=args.limit)
     except (clerk.ClerkUnavailable, clerk.ClerkQueryError, ValueError) as exc:
@@ -200,6 +236,10 @@ async def _main(argv: list[str]) -> int:
         return 1
     if args.head_sizes:
         rows = await add_head_sizes(rows)
+    if args.download_dir:
+        saved = await download_sample(rows, args.download_dir)
+        print(json.dumps({"downloaded": saved}, indent=2))
+        return 0
     print(json.dumps({"files": [row.__dict__ for row in rows], "total_bytes": sum(
         row.download_bytes or 0 for row in rows), "unknown_sizes": sum(row.download_bytes is None for row in rows),
     }, indent=2))
