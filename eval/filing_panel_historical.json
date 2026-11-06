@@ -1,0 +1,931 @@
+{
+ "about": "Fresh held-out set for the WS2 PR4 filing reader: passed Type 1 matters (Clerk final action 2023-01-01 to 2026-11-06), newest first, both roles present, excluding every record in eval/filing_panel.json. Selected from metadata and labelled after reader ws2-pr4a-4 was frozen (c0f26a4). Same label rules as eval/filing_panel.json.",
+ "selection": "python -m backend.legislation.filing_reader --passed-since 2023-01-01 --limit 20 --skip <panel records>: 20 matters, 40 PDFs requested, 35 kept, 5 narratives rejected by the page screen, 15 matters complete.",
+ "held_out_scored_with": "ws2-pr4a-4",
+ "held_out_history": [
+  {
+   "reader_version": "ws2-pr4a-4",
+   "commit": "c0f26a4",
+   "date": "2026-11-06",
+   "gate": "fail",
+   "held_out": {
+    "rows": 15,
+    "expected": 80,
+    "emitted": 63,
+    "matched": 61,
+    "precision": 0.9683,
+    "recall": 0.7625,
+    "wrong_value": 2,
+    "wrong_page": 0,
+    "wrong_unit": 0
+   },
+   "causes": [
+    "SO2023-0005329: letter-spaced '1 7 spaces' read as parking 1 (true 17)",
+    "SO2026-0027411: table height 66.5 ft contradicts the prose's 63.5 feet; contradictions are unlabelled by rule, so the emitted table value counts as wrong"
+   ]
+  }
+ ],
+ "schema_version": 1,
+ "rows": [
+  {
+   "record_number": "O2024-0007245",
+   "title": "Zoning Reclassification Map No. 8-H at 1642 W 38th Pl - App No. 22342T1",
+   "matter_id": "0CDD43CA-6BB9-EE11-A568-001DD806999B",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0007245 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/e689e447-4f7a-4c5c-95b9-21e3c2433b0a.pdf",
+     "type": "Legislation",
+     "sha256": "4cd4f831e6d0b6c4cb15a4178baf49cc9ccbfaac36e5d404f91ba929023e96ad",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2024-0007245 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/6f0e008d-5947-48f0-897f-f3fcd626ccb7.pdf",
+     "type": "Exhibits",
+     "sha256": "0a7f412e6746b4f33839ceeb259bcedc9ae4f7cb4707dc77e59bf6aa5c226975",
+     "pages": 5
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3107.5",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "0.71",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "2",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "2",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Every table row is labelled '(existing)'; height 23'-10\" is feet+inches."
+  },
+  {
+   "record_number": "O2024-0009495",
+   "title": "Zoning Reclassification Map No. 17-G at 1415 W Morse Ave- App No. 22451T1",
+   "matter_id": "A968EDF3-8B14-EF11-9F89-001DD8050036",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0009495 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/891d65f7-3f62-4815-9031-71c2ccfd277c.pdf",
+     "type": "Legislation",
+     "sha256": "a3538f881ef2049df06bb2d1af397e50c91459936ad80d038f1e60bce19a9051",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2024-0009495 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/d5dc5213-3b45-43a1-9c6c-11dbf417f363.pdf",
+     "type": "Exhibits",
+     "sha256": "ba3f08b15f7d09a0b456aea877a3e13493fd4249d36cf6795d722a08ce064e6b",
+     "pages": 19
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "8575",
+     "unit": "sq ft",
+     "page": 2,
+     "source": "narrative"
+    }
+   },
+   "notes": "The narrative attachment holds its page 2 of 2 and plan sheets; lot area is the handwritten '50 x 171.50 = 8575 SF' on the site plan; FAR 4.0 there is 'Max. Permissible'."
+  },
+  {
+   "record_number": "O2024-0009596",
+   "title": "Zoning Reclassification Map No. 19-H at 7325-7331 N Honore St - App No. 22463T1",
+   "matter_id": "6D65C4EA-9D17-EF11-9F89-001DD809669D",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0009596 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/d54cc7dc-19aa-4fa1-9c7b-16d76fece29b.pdf",
+     "type": "Legislation",
+     "sha256": "502243993393c9152efe1f34a21e89070d0739b404692cf29dddaddbcd2640b8",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2024-0009596 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/6e66b543-3a26-467b-bbab-32546f645281.pdf",
+     "type": "Exhibits",
+     "sha256": "e1162477077f54cc687ce502ccc9292449c01cded87b023bb58a3d53f4c31bc8",
+     "pages": 1
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-6",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "10295.02",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "30",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "40.00",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "FAR not labelled: 'Maximum FAR: 2.42 (existing)'."
+  },
+  {
+   "record_number": "O2024-0011150",
+   "title": "Zoning Reclassification Map No. 5-I at 1810 N Richmond St - App No. 22525T1",
+   "matter_id": "9238158A-9E4A-EF11-A316-001DD8306DF0",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0011150 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/576ae9ef-3460-4f14-94e7-898d15030f20.pdf",
+     "type": "Legislation",
+     "sha256": "aef84be36a5b6c721f70bda125e3bebcf28e35fdc3f20e298e000dd29f8548e5",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2024-0011150 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/41f1b08a-b666-44b8-bc0d-94038b271da5.pdf",
+     "type": "Exhibits",
+     "sha256": "95e18bfdbca9edbba94e8e5fd17bf1e59505f1e2178050e782dbe158fd097bc8",
+     "pages": 5
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-4.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3000",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.33",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "2",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2024-0012502",
+   "title": "Zoning Reclassification Map No. 11-J at 4617-4623 N Pulaski Rd - App No. 22548T1",
+   "matter_id": "95B93BD5-0E76-EF11-A671-001DD8306DF0",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0012502 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/d1b9592a-f3ca-4150-a1e1-caa264817def.pdf",
+     "type": "Legislation",
+     "sha256": "ed075fddd1605013750152f5967f7141effebc3bf7c8a47f1abba2270e3a4619",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2204-0012502 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/9f0e247f-5e48-4246-b29f-e67e0b47ff1c.pdf",
+     "type": "Exhibits",
+     "sha256": "c95424effce247bc639ac4b1a611ee261e9fba00b6402b8ee03744458251de3c",
+     "pages": 14
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B1-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "C1-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "12533.0",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.12",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "6",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "28.5",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Proposed and Existing columns; labels follow the Proposed column (parking 'Six')."
+  },
+  {
+   "record_number": "O2025-0015331",
+   "title": "Zoning Reclassification Map No. 20-F at 8028 S Lafayette Ave - App No. 22661T1",
+   "matter_id": "06D05AD0-BAE4-EF11-8EEA-001DD804C7AB",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0015331 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/7932b8c2-fe52-46e7-838a-4b899138a444.pdf",
+     "type": "Legislation",
+     "sha256": "679f2d88a9eac54c336927df45f2b31b0221c4b6fbabeacf363628a7dc065426",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0015331 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/3c9f3995-2acd-446c-b2be-dc1a8b5afacd.pdf",
+     "type": "Exhibits",
+     "sha256": "ecdc9d05a1eda90515d2b9cb0e73a326a9b14fb68e424d383d2afb248b7bf877",
+     "pages": 7
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-4.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3729",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.43",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "32.33",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2025-0015342",
+   "title": "Zoning Reclassification Map No. 4-I at 2017 S California Ave - App No. 22665T1",
+   "matter_id": "68F0C322-66E5-EF11-8EEA-001DD8306DF0",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0015342 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f9cd6877-09dc-432e-bd5d-951c3829cb16.pdf",
+     "type": "Legislation",
+     "sha256": "5890b5e4d37dbc80f9bae140084c8ae291f64d8a3e1ac5476dfa750520a90cf2",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0015342 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/897f928b-c700-47ec-babd-039b53f4132d.pdf",
+     "type": "Exhibits",
+     "sha256": "b126bf900c53ee9d561b39b1eeaabc400f26df136669c3c39b6288def73f343e",
+     "pages": 7
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "C1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3253",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.39",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "6",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2025-0020565",
+   "title": "Zoning Reclassification Map No. 1-G at 1480 W Huron St - App No. 22906T1",
+   "matter_id": "F9027194-98AB-F011-BBD2-001DD80FF047",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0020565 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/c7e60bce-1b63-4f6c-9e9b-c5d82c5c586c.pdf",
+     "type": "Legislation",
+     "sha256": "d2399b89e0596adca9e14cb2aa708759a7d0a51d2132c15c6d05fdaf8b5b264d",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0020565 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/ef5dc673-4308-4b65-85fc-d05325e238da.pdf",
+     "type": "Exhibits",
+     "sha256": "213ec8d425c411457c934a13bc5b1f7072d6530821dc4e94fbc43667185a9d8f",
+     "pages": 8
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-4.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3075",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.7",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "The ordinance clause has no 'symbols' ('...District, as shown on Map 1-G')."
+  },
+  {
+   "record_number": "O2026-0024864",
+   "title": "Zoning Reclassification Map No. 1-G at 446 N Aberdeen St - App No. 23064T1",
+   "matter_id": "C8AB0938-3038-F111-88B3-001DD8033B18",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0024864 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f37a821c-978f-493d-a9cb-deddfd219b3d.pdf",
+     "type": "Legislation",
+     "sha256": "87606d1bdbed834c4c0f3e69aa2ae9312b31bc503a5b3c1aba6d86fc86bde2d7",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0024864 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/192be543-646e-43b9-bc71-4c5d2a3576d3.pdf",
+     "type": "Exhibits",
+     "sha256": "3d073d54a06174c7a1628478b64e4a019f34dbb60c95149a8436b361185789ba",
+     "pages": 9
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M2-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-4.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "2745",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.66",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0027415",
+   "title": "Zoning Reclassification Map No. 4-G at 1704 S Racine Ave - App No. 23144T1",
+   "matter_id": "5AA714A5-5A84-F111-AB0E-001DD80ED7AA",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0027415 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/0f00aef7-8b40-4fe9-be63-a75a653aaada.pdf",
+     "type": "Legislation",
+     "sha256": "5debd6a35abe18b02cae4a25e98102134596cb91cda21ecf2b7af249ea562040",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0027415 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/bba40dcc-dd72-48b4-af66-c72af3883eb6.pdf",
+     "type": "Exhibits",
+     "sha256": "2fdf7577c563eb245d8ffff7ad4afb630786c0cf08ecb714d236c0d853698a6b",
+     "pages": 7
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-4.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3125",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.3",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "4",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "SO2023-0004105",
+   "title": "Zoning Reclassification Map No. 26-B at 10301-10347 S Torrence Ave - App No. 22251T1",
+   "matter_id": "6BD7CE4D-7851-EE11-BE6E-001DD809716C",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2023-0004105 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/97f2590f-fb0d-4154-a7a1-5f2f383c4a6b.pdf",
+     "type": "Legislation",
+     "sha256": "949ef8ac0b63422c0963184e8d4c94222131b1c857fa42712d4c5332066a50bc",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2023-0004105 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/eee0a406-9ca1-4987-88d7-94f1f3f1b773.pdf",
+     "type": "Exhibits",
+     "sha256": "46471b7a9de1736e5ed008f538dace7450113ce1a1f4e96f5945f6279777302a",
+     "pages": 3
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "C2-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "C2-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "83955",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "0.12",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "128",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Lot area row reads 'Lot Area to be redeveloped'."
+  },
+  {
+   "record_number": "SO2023-0005329",
+   "title": "Zoning Reclassification Map No. 12-G at 4715-4759 S Bishop St and 1412-1424 W 48th St - App No. 22181T1",
+   "matter_id": "4B2B9018-346D-EE11-8DEF-001DD83043F7",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2023-2005-SO2023-0005329 Final Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/06610867-48b1-4502-9cfa-545f9e24882c.pdf",
+     "type": "Legislation",
+     "sha256": "6187da70930d0f42bc787d2c75ff0470d9d7d03f348e096047e3dfa304314b9f",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2023-2005-SO2023-0005329 Final Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/9f7b3f38-6bfe-464c-946d-573564e86eab.pdf",
+     "type": "Exhibits",
+     "sha256": "ca53e29a86611cf41d87f8f938b09ddca1705c6d722d0055238741335e47069d",
+     "pages": 5
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-4.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "57398",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.7",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "17",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "SO2025-0018884",
+   "title": "Zoning Reclassification Map No. 6-H at 2201-2203 W Cermak Rd and 2200-2208 S Leavitt St - App No. 22821T1",
+   "matter_id": "6B780230-1267-F011-BEC1-001DD80DE488",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0018884 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/054e4df1-e14e-4e07-89f0-65847b5b772d.pdf",
+     "type": "Legislation",
+     "sha256": "bdec979a4cadc58f561e4635762a54521819d2c2470ad6b3b8bf6cc748f7b449",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0018884 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/de6e3521-6561-41d6-a98e-3066782a2427.pdf",
+     "type": "Exhibits",
+     "sha256": "210012440421b715d493f7956f8e093c0dd14d9079668ee05608b925cdee6806",
+     "pages": 8
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "5000",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "18",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "4",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "The ordinance clause has no 'symbols'; FAR not labelled ('Maximum FAR')."
+  },
+  {
+   "record_number": "SO2026-0027154",
+   "title": "Zoning Reclassification Map No. 3-J at 3300 W Pierce Ave - App No. 23125T1",
+   "matter_id": "FE9D4DD7-6380-F111-AB0E-001DD80F46AC",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0027154 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/677b8778-3d46-4fd7-bcaf-5247464e3543.pdf",
+     "type": "Legislation",
+     "sha256": "4e57a28adf149a860ba82a772a3a4c93f40bad247842a0f65481eb0f939a033c",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0027154 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/cfebdab2-9847-4723-a17e-9f190d096487.pdf",
+     "type": "Exhibits",
+     "sha256": "2e5b937fc289b6678f21b713f99d04deb496fa7177127199128fea928c96cc05",
+     "pages": 5
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "5953.10",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "3.4",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "The density row says '20' (units, mislabelled): dwelling_units not labelled."
+  },
+  {
+   "record_number": "SO2026-0027411",
+   "title": "Zoning Reclassification Map No. 15-H at 5636-5640 N Ashland Ave - App No. 23142T1",
+   "matter_id": "CD3876DE-5484-F111-AB0E-001DD80ED7AA",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0027411 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/fec4c730-45d5-44ca-98a6-0b718785ba36.pdf",
+     "type": "Legislation",
+     "sha256": "ffc1f4dd249aecbba19606b6e722693fabf3ca51e192941b6762611df61481a5",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0027411 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/ca53d714-6721-4908-b672-637abc9c22f2.pdf",
+     "type": "Exhibits",
+     "sha256": "a05127006629b5d1cfd839955e72001b79fd8a29a32a164705aa41b2ad40c4a5",
+     "pages": 12
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-6",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "8625",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "3.50",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "27",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "13",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Height not labelled: table 66.5 ft, prose 63.5 feet."
+  }
+ ]
+}
