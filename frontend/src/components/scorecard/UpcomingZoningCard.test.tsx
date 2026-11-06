@@ -57,7 +57,7 @@ describe("UpcomingZoningCard", () => {
 
   it("keeps stale and partial warnings explicit", () => {
     render(<UpcomingZoningCard data={base({ status: "stale", placement_status: "partial", unplaced_count: 3 })} />);
-    expect(screen.getByText("Showing the last good check")).toBeTruthy();
+    expect(screen.getByText("Last good check")).toBeTruthy();
     expect(screen.getByText("3 filings couldn't be placed")).toBeTruthy();
     const explains = screen.getAllByRole("button", { name: /^What this means: Upcoming zoning/ });
     fireEvent.click(explains[1]);
