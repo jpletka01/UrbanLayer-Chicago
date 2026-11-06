@@ -179,6 +179,12 @@ def test_filing_reader_does_not_treat_non_zoning_type1_text_as_a_candidate():
     assert filing_reader.sample_candidates([text]) == []
 
 
+def test_filing_reader_eds_page_matcher_is_specific_to_disclosure_language():
+    assert filing_reader._EDS_PAGE.search("Economic Disclosure Statement")
+    assert filing_reader._EDS_PAGE.search("EDS form")
+    assert not filing_reader._EDS_PAGE.search("Proposed zoning reclassification")
+
+
 def test_hand_labeled_pending_title_panel_meets_precision_floor_with_no_wrong_streets():
     panel = json.loads((FIX / "pending_title_panel.json").read_text())
     rows = panel["rows"]

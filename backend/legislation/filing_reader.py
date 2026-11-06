@@ -10,19 +10,24 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import re
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable
 
 import httpx
+from pypdf import PdfReader
 
 from backend.legislation.pending import attachment_allowed
 from backend.retrieval import clerk
 
 
 _TYPE_1 = re.compile(r"\b(?:APP(?:LICATION)?\s*(?:NO\.?\s*)?)?\d{4,}T1\b", re.IGNORECASE)
+MAX_SAMPLE_FILE_BYTES = 8 * 1024 * 1024
+_EDS_PAGE = re.compile(r"\b(?:EDS|ECONOMIC\s+DISCLOS(?:URE|URE\s+STATEMENT))\b", re.IGNORECASE)
 
 
 def is_type_1(matter: clerk.ClerkMatter) -> bool:
@@ -111,6 +116,76 @@ async def add_head_sizes(rows: Iterable[SampleCandidate]) -> list[SampleCandidat
                 size = None
             out.append(SampleCandidate(**{**row.__dict__, "download_bytes": size}))
     return out
+
+
+async def download_sample(rows: Iterable[SampleCandidate], destination: Path) -> list[dict]:
+    """Download approved public PDFs outside Git with bounded, validated writes.
+
+    This is development-only: no serving import calls it.  A later page reader
+    must remove EDS pages before producing any retained text or review artifact.
+    """
+    destination.mkdir(parents=True, exist_ok=True)
+    saved: list[dict] = []
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        for row in rows:
+            path = destination / f"{row.record_number}.pdf"
+            partial = path.with_suffix(".pdf.part")
+            digest = hashlib.sha256()
+            total = 0
+            try:
+                async with client.stream("GET", row.url) as response:
+                    response.raise_for_status()
+                    declared = response.headers.get("Content-Length")
+                    if declared and declared.isdigit() and int(declared) > MAX_SAMPLE_FILE_BYTES:
+                        raise ValueError(f"{row.record_number}: declared size exceeds cap")
+                    if "pdf" not in response.headers.get("Content-Type", "").lower():
+                        raise ValueError(f"{row.record_number}: response is not a PDF")
+                    with partial.open("wb") as output:
+                        async for chunk in response.aiter_bytes():
+                            total += len(chunk)
+                            if total > MAX_SAMPLE_FILE_BYTES:
+                                raise ValueError(f"{row.record_number}: received size exceeds cap")
+                            digest.update(chunk)
+                            output.write(chunk)
+                if partial.read_bytes()[:5] != b"%PDF-":
+                    raise ValueError(f"{row.record_number}: PDF signature missing")
+                partial.replace(path)
+            except Exception:
+                partial.unlink(missing_ok=True)
+                raise
+            saved.append({"record_number": row.record_number, "file_name": row.file_name,
+                          "bytes": total, "sha256": digest.hexdigest()})
+    return saved
+
+
+@dataclass(frozen=True)
+class PageScreen:
+    page: int
+    status: str  # safe | eds | unreadable
+
+
+def screen_pages_for_eds(path: Path) -> list[PageScreen]:
+    """Classify each PDF page without persisting its text.
+
+    A native-text EDS page is quarantined. An image-only or unreadable page is
+    not safe and must be manually screened before any future OCR pass. The
+    function returns no text, so EDS content cannot enter fixtures or artifacts.
+    """
+    reader = PdfReader(path)
+    pages: list[PageScreen] = []
+    for number, page in enumerate(reader.pages, start=1):
+        try:
+            text = page.extract_text() or ""
+        except Exception:  # malformed individual page; fail closed
+            pages.append(PageScreen(number, "unreadable"))
+            continue
+        if not text.strip():
+            pages.append(PageScreen(number, "unreadable"))
+        elif _EDS_PAGE.search(text):
+            pages.append(PageScreen(number, "eds"))
+        else:
+            pages.append(PageScreen(number, "safe"))
+    return pages
 
 
 async def _main(argv: list[str]) -> int:
