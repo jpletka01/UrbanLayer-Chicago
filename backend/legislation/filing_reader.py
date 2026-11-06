@@ -225,11 +225,18 @@ async def _main(argv: list[str]) -> int:
     parser.add_argument("--head-sizes", action="store_true", help="also make HEAD-only size requests")
     parser.add_argument("--download-dir", type=Path, help="development-only private PDF destination")
     parser.add_argument("--screen-dir", type=Path, help="screen existing private PDFs for EDS pages")
+    parser.add_argument("--screen-limit", type=int, help="bound the number of private PDFs screened per run")
+    parser.add_argument("--screen-offset", type=int, default=0, help="skip this many private PDFs before screening")
     args = parser.parse_args(argv)
     if args.screen_dir:
+        if args.screen_offset < 0:
+            parser.error("--screen-offset must be non-negative")
+        pdfs = sorted(args.screen_dir.glob("*.pdf"))[args.screen_offset:]
+        if args.screen_limit is not None:
+            pdfs = pdfs[:args.screen_limit]
         screened = {
             pdf.name: [page.__dict__ for page in screen_scanned_pages_for_eds(pdf, screen_pages_for_eds(pdf))]
-            for pdf in sorted(args.screen_dir.glob("*.pdf"))
+            for pdf in pdfs
         }
         print(json.dumps(screened, indent=2))
         return 0
