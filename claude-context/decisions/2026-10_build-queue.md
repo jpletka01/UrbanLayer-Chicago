@@ -2817,7 +2817,7 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 ## Item 71: the stale-check label is three words, so both legislation cards fit the budget's live-state allowance (2026-11-06)
 
-**Status: draft PR, not merged.** Jack's answer (2026-11-06): shorten the label.
+**Status: merged and deployed 2026-11-06 (PR #194, `b228639`).** Jack's answer (2026-11-06): shorten the label.
 
 **What failed.** `twoflat/build.words` measured 313 against its baseline 303 + 8 (Item 52's allowance for live state rows), on `main` (041821a) with no flags. The page had not grown: the local `pending_legislation.db` was last synced 2026-11-02, past `STALE_AFTER` (3 days, `backend/legislation/upcoming.py`), so Upcoming zoning and Pending zoning-code changes each printed the amber "Showing the last good check" (5 words each, +10). With a freshly synced copy of the store the section measured 303 and all four parcels passed.
 
@@ -2827,7 +2827,11 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 | Measure | Result |
 |---|---:|
-| twoflat/build, stale store, before / after | 313 / see Production |
-| twoflat/build, fresh store | 303 (= baseline) |
+| twoflat/build, stale store, before / after | 313 / 309 (limit 311) |
+| milwaukee / downtown / pin1 build, stale store, after | 285 / 255 / 212 (all within limits) |
+| Build section, fresh store (label absent): twoflat / milwaukee / downtown / pin1 | 303 / 279 / 249 / 206 (= baselines) |
+| Tests | `UpcomingZoningCard.test.tsx`, `PendingTextImpactsCard.test.tsx` (label text) |
 
 **Revisit if** a third card reads the pending store and gets the same label (3 × 3 = 9 > 8), or the stale state needs a word that says what to do.
+
+**Production (Item 71, PR #194, 2026-11-06).** CI `test`/`lint`/CodeQL green before merge; the deploy job succeeded and the served bundle (`index-DLYqkRQD.js`) carries both new labels; `/health` ok (data-health alarms 3, unchanged by this release); `npm run sweep:live` clean (16 views, desktop and phone). Before merge, local: vitest 952 passed, `npm run lint` exit 0, `npm run build` exit 0. `npm run test:mobile`: 75 passed, 5 failed, all in `discovery-phone.spec.ts` on the WebKit iPhone 15 / 15 Pro Max projects; they failed the same way with `main`'s `frontend/src` and **pass against production** (15/15 on iPhone SE, 15, 15 Pro Max), so they belong to the local test setup used here, not to the site (known-issues, Gotchas). **Lesson:** before reading a budget failure as page growth, check the live source states the page is showing; a local data store older than its freshness window adds state rows that production, synced daily, does not show.
