@@ -17,7 +17,7 @@ import pytest
 from backend.config import get_settings
 from backend.data_health import probes
 from backend.data_health.registry import BY_ID
-from backend.legislation import pending, sync, upcoming
+from backend.legislation import filing_reader, pending, sync, upcoming
 from backend.legislation import address_titles
 from backend.legislation.pending_store import Snapshot, Store, read_status
 from backend.retrieval import clerk
@@ -151,6 +151,32 @@ async def test_recorded_pending_detail_is_parseable_and_contains_no_eds_metadata
     }
     assert len(snapshot.matters[0].attachments) == 3
     assert snapshot.matters[0].application_number == "23180"
+
+
+def test_filing_reader_selects_one_non_eds_type1_pdf_per_current_matter():
+    good = _matter(
+        "O2026-9", title="Zoning Reclassification Map No. 1-A - App No. 23123T1",
+        attachments=[
+            {"fileName": "O2026-9-EDS.pdf", "path": "https://example.test/eds.pdf", "attachmentType": "Exhibits"},
+            {"fileName": "O2026-9.pdf", "path": "https://example.test/filing.pdf", "attachmentType": "Legislation"},
+        ],
+    )
+    not_type1 = _matter("O2026-8", title="Zoning Reclassification Map No. 1-A - App No. 23122")
+    selected = filing_reader.sample_candidates([not_type1, good])
+    assert selected == [filing_reader.SampleCandidate(
+        matter_id="id-O2026-9", record_number="O2026-9", title=good.title, file_name="O2026-9.pdf",
+        url="https://example.test/filing.pdf", attachment_type="Legislation",
+    )]
+
+
+def test_filing_reader_does_not_treat_non_zoning_type1_text_as_a_candidate():
+    text = _matter(
+        "O2026-7", matterCategory="MUNICIPAL CODE AMENDMENTS",
+        title="Amendment regarding Type 1 applications", attachments=[
+            {"fileName": "O2026-7.pdf", "path": "https://example.test/text.pdf", "attachmentType": "Legislation"},
+        ],
+    )
+    assert filing_reader.sample_candidates([text]) == []
 
 
 def test_hand_labeled_pending_title_panel_meets_precision_floor_with_no_wrong_streets():
