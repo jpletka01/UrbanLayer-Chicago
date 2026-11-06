@@ -18,4 +18,5 @@ def test_panel_requires_30_rows_and_held_out_split():
     good = evaluate({"units": FieldValue("10", 2)}, {"units": FieldValue("10", 2)})
     assert not panel_passes([good], panel_size=29, held_out_size=10)
     assert not panel_passes([good], panel_size=30, held_out_size=9)
-    assert panel_passes([good], panel_size=30, held_out_size=10)
+    assert not panel_passes([good], panel_size=30, held_out_size=10)
+    assert panel_passes([good] * 10, panel_size=30, held_out_size=10)

@@ -91,6 +91,13 @@ def parse_labeled_type1_text(text: str) -> list[ParsedField]:
     return found
 
 
+def classify_page_text(text: str) -> str:
+    """A missing or uncertain OCR result is never eligible for extraction."""
+    if _EDS_PAGE.search(text):
+        return "eds"
+    return "safe" if len(text.strip()) >= 20 else "unreadable"
+
+
 def sample_candidates(matters: Iterable[clerk.ClerkMatter], *, limit: int = 30) -> list[SampleCandidate]:
     """One deterministic, metadata-only candidate per matter, newest record first.
 
@@ -185,6 +192,9 @@ async def download_sample(rows: Iterable[SampleCandidate], destination: Path) ->
                             output.write(chunk)
                 if partial.read_bytes()[:5] != b"%PDF-":
                     raise ValueError(f"{row.record_number}: PDF signature missing")
+                screened = screen_scanned_pages_for_eds(partial, screen_pages_for_eds(partial))
+                if not screened or any(page.status != "safe" for page in screened):
+                    raise ValueError(f"{row.record_number}: EDS or unreadable page; refusing to retain packet")
                 partial.replace(path)
             except Exception:
                 partial.unlink(missing_ok=True)
@@ -217,10 +227,8 @@ def screen_pages_for_eds(path: Path) -> list[PageScreen]:
             continue
         if not text.strip():
             pages.append(PageScreen(number, "unreadable"))
-        elif _EDS_PAGE.search(text):
-            pages.append(PageScreen(number, "eds"))
         else:
-            pages.append(PageScreen(number, "safe"))
+            pages.append(PageScreen(number, classify_page_text(text)))
     return pages
 
 
@@ -245,7 +253,7 @@ def screen_scanned_pages_for_eds(path: Path, pages: Iterable[PageScreen]) -> lis
         except (OSError, subprocess.CalledProcessError, UnicodeDecodeError):
             out.append(result)
             continue
-        out.append(PageScreen(result.page, "eds" if _EDS_PAGE.search(text) else "safe"))
+        out.append(PageScreen(result.page, classify_page_text(text)))
     return out
 
 

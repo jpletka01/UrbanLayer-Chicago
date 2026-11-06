@@ -31,6 +31,15 @@ Standing constraints that shaped many of these:
 **Revisit:** after the Clerk-only count determines whether 30 eligible pending Type 1 filings exist. If not, the
 hand-labelled panel uses historical passed Type 1 filings, still with no EDS material in Git.
 
+**2026-11-06 progress and correction:** The Clerk list yielded 921 pending candidates and 192 titles mentioning a
+Type 1 application. A selected 30-file manifest totalled 16,318,264 bytes by HEAD. All 30 were downloaded into
+ignored `research/pending-filing-pdfs/` and screened locally. Nine application packets contained an OCR-detected
+EDS page 2; those nine local copies were deleted, leaving 21 PDFs. The first downloader version retained bundled
+EDS packets; the revised version refuses to retain any packet with an EDS or unreadable page. This was a real
+privacy mistake during development, not evidence that the exclusion invariant held from the beginning. OCR is an
+imperfect screen, so human review must still establish the safe page set. No 30-item hand-labelled panel or held-out
+accuracy result exists yet, and the feature must remain dark. The production image and served API are unchanged.
+
 ---
 
 ## Item 0: nightly backups and an off-box copy (#58, 2026-10-20)

@@ -79,7 +79,7 @@ def evaluate(expected: dict[str, FieldValue], emitted: dict[str, FieldValue]) ->
 def panel_passes(rows: Iterable[Evaluation], *, panel_size: int, held_out_size: int) -> bool:
     """Apply the fixed sample and held-out split requirements to aggregate scores."""
     scores = list(rows)
-    if panel_size < MIN_PANEL_ROWS or held_out_size < MIN_HELD_OUT_ROWS:
+    if panel_size < MIN_PANEL_ROWS or held_out_size < MIN_HELD_OUT_ROWS or len(scores) != held_out_size:
         return False
     total = Evaluation(
         expected=sum(row.expected for row in scores), emitted=sum(row.emitted for row in scores),
