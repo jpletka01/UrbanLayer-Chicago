@@ -108,6 +108,8 @@ accuracy result exists yet, and the feature must remain dark. The production ima
   Parking: None for Roaster and Cafe / 1 per 10 occupants" (neither is labelled; a reader that emits them is
   wrong).
 - *Status.* No passing gate exists. The panel labels are still assistant drafts. Both flags stay false.
+- *Jack's call (2026-11-06):* keep the gate rules as they are (including zero wrong values) and wait until the
+  accruing set reaches 10 unseen filings, then score v5 once.
 
 ---
 
