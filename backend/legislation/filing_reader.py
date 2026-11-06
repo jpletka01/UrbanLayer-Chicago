@@ -15,6 +15,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -201,13 +202,16 @@ def screen_scanned_pages_for_eds(path: Path, pages: Iterable[PageScreen]) -> lis
             out.append(result)
             continue
         try:
-            raster = subprocess.run(
-                ["pdftoppm", "-f", str(result.page), "-l", str(result.page), "-r", "200", "-png", "-singlefile", str(path), "-"],
-                check=True, capture_output=True,
-            )
-            text = subprocess.run(
-                ["tesseract", "stdin", "stdout"], input=raster.stdout, check=True, capture_output=True,
-            ).stdout.decode("utf-8")
+            with tempfile.TemporaryDirectory(prefix="urbanlayer-filing-") as directory:
+                prefix = Path(directory) / "page"
+                subprocess.run(
+                    ["pdftoppm", "-f", str(result.page), "-l", str(result.page), "-r", "200", "-png", "-singlefile", str(path), str(prefix)],
+                    check=True, capture_output=True,
+                )
+                text = subprocess.run(
+                    ["tesseract", "stdin", "stdout"], input=prefix.with_suffix(".png").read_bytes(),
+                    check=True, capture_output=True,
+                ).stdout.decode("utf-8")
         except (OSError, subprocess.CalledProcessError, UnicodeDecodeError):
             out.append(result)
             continue
