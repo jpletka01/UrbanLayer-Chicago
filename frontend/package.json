@@ -29,7 +29,7 @@
     "jspdf": "^4.2.1",
     "lucide-react": "1.59.0",
     "mapbox-gl": "^3.34.1",
-    "motion": "^12.43.0",
+    "motion": "^14.8.0",
     "postcss": "^8.5.32",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
