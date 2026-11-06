@@ -1,0 +1,215 @@
+# Front-end redesign — vision brief
+
+Version 1 · 2026-11-06 · Owner: Jack · **Status: planning. No code has changed.**
+
+The reference for UrbanLayer's front-end rewrite: what it is for, how the pages fit together, and the
+rules every page follows. Visual design and the build are checked against it. Labels: **Approved** =
+decided; **Draft** = agreed in shape, details open; **Ruled out** = decided against.
+
+The detailed design pages (private Claude artifacts, Jack's account) hold the wireframes this summarizes:
+site map rethink, Property Profile blueprint, Profile tab designs, Discovery wireframe, and the FigJam
+site-map board. Ask Jack for links; they are not public.
+
+Until the rewrite ships, `guides/page-design.md` still governs the live site. Where this brief disagrees
+(for example color roles, the floating nav, the chat panel), it describes the *new* front end, not
+changes to make to today's.
+
+## Why we're redesigning
+
+A builder who tried the site was "utterly confused" and said he wouldn't pay for a product whose value
+he couldn't understand. His specific points:
+
+- **Discovery was a hassle:** too many options before any result, an unbalanced split between search and
+  map, annoying search mechanics, lots on the map that showed no information.
+- **The Profile said little in many words:** too many maps and moving pieces, walls of text, no
+  connection from one part to the next, a ~20-second first load.
+- **The maps were ugly:** business names crowded the satellite view; the zoning colors looked bad.
+- **Nothing said what mattered:** black, dark gray and a little orange everywhere, so primary and
+  secondary looked the same.
+- **Chat broke the flow:** asking replaced the page with no warning, and the answer failed with
+  "Something went wrong".
+
+## Who it's for — Approved
+
+**Builders and small developers, not the people who will live there.** They want to know three things
+about a lot: what the code lets them build, whether the City will let them, and what it would take.
+Features earn a place by answering one of those (livability extras such as walk-time rings were dropped
+for this reason; the walk score is enough).
+
+They spend their time on the **Property Profile**. Discovery is how they find lots; the Profile is where
+they decide.
+
+## Rules for every page — Approved
+
+1. **The answer comes first.** Every page and tab opens with one sentence that states the finding.
+2. **Pictures before sentences.** A fact gets a sentence only when no tile, bar, chart, chip or map
+   layer can carry it.
+3. **One map per page,** with layers that turn On / Dim / Off. Streets drawn as empty space, no business
+   labels, a designed zoning palette. Reference: the Cities: Skylines 2 OSM toolkit map
+   (`research/15-ui-data-inspiration.md` §2.4, local only).
+4. **Only data that holds up.** Show a figure only when it means the same thing for every property.
+   Exempt taxes, $1 transfers, quit claims and lowball assessments are labeled for what they are and
+   never feed an estimate. When records disagree, say so ("built 1928–31 · records differ").
+5. **Say how much we know.** Every filter and figure shows its coverage; unknowns are drawn hatched,
+   everywhere, and can be included or left out.
+6. **Compare locally:** the census tract against its community area, never against the whole city.
+7. **Asking never leaves the page.** The analyst opens beside what you're looking at.
+8. **Every visible lot opens something,** even "not in our data yet".
+9. **Color has jobs:** one for "this property", one for "you can click this", one for "this costs
+   money", status colors used sparingly. The palette itself is chosen in the visual phase.
+10. **Fixed slots keep it simple.** New data takes an existing slot or goes in a collapsed details
+    table; it never adds a new kind of card. Today's word budgets carry over.
+11. **No financial advice.** Report facts and what the code allows; never project returns or say
+    "you can build this".
+
+## The app frame — Approved
+
+- A slim **rail on the left** replaces today's floating top nav, which covered content. It expands on
+  hover: Search, Discovery, Saved, Chat, account. On phones it becomes a bottom bar.
+- **Left is for getting around, right is for the analyst.** Never two panels on the same side.
+
+## Property Profile — Overview approved, tabs Draft
+
+A tabbed dashboard: the first tab answers, the others prove it.
+
+**Overview**
+- The top band is the page's **one map**, opening on satellite with the lot outlined and the address
+  over it. A street photo opens full size from it (a 4:3 photo can't fill a wide band).
+- A full-width tab bar: Overview · Build · Money · Neighborhood · History, with Ask, Sources and Get the
+  report on the right.
+- The answer in one sentence ("Zoned for up to 6 units; 2 are built").
+- **One tile per tab** with its key figure, a small visual and at most one warning. No separate "what to
+  check" box. Tiles reflow from three to six; a seventh tab means two should merge.
+
+**Every tab has the same shape:** takeaway sentence → one wide main visual → two or three smaller
+visuals → collapsed details table. Missing data keeps its slot ("None on record").
+
+| Tab | Answers | Main pieces |
+|---|---|---|
+| Build | What can I build here? | Allowed vs built for floor area, units and height (the binding limit highlighted; a "compare with another district" ghost bar replaces the What-if card); a dimensioned side view to scale; pending zoning changes as a stage tracker with before/after numbers; rules as yes/no chips |
+| Money | What would it cost or earn? | Taxes (exempt case: "at a typical rate"); the assessor's estimate, flagged when far below sales; comparable market sales on a wide map with the "nearby" rule printed as chips; rent for this building's unit sizes; incentives; value and taxes over time |
+| Neighborhood | What's the area like? | Walk/transit/bike scores; construction nearby on its own map, clickable for what's being built; crime as violent vs property, per resident; top 311 concerns; "who lives here" as small charts vs the community area; schools |
+| History | What has happened to this property? | One filtered timeline of market sales, transfers, permits, violations and rezonings; building facts with "records differ" ranges; no predictions |
+
+**Check a project — Proposed.** A builder enters what they want to build (Build tab, or by asking) and
+gets a path, never a yes: fits the zoning numbers we checked / needs a variation / needs a rezoning /
+needs a planned development / use not allowed. One row per limit, the deciding one highlighted, who
+decides (the alderman, from the ward data already stored), precedent nearby, and what wasn't checked.
+
+## Discovery — Approved
+
+- **Opens on the map of the city (Explore mode):** every lot drawn as its shape, colored by one measure
+  you pick; quick filters dim rather than hide; "Search these lots" turns a view into a search.
+- **One search box** for an address, neighborhood or description; suggestions are autocomplete. A
+  description becomes editable chips via the existing rule-based parser
+  (`backend/discovery/compile_text.py`, deliberately not an LLM); unknown words show as
+  "not understood".
+- **Six goals as "Try" chips:** vacant land near transit, teardown candidates, room to add units,
+  underused commercial in a TIF, coach house candidates, recent sales.
+- **One focus at a time:** List (picture cards) or Map (matches only, "N lots in view · List them"; no
+  card strip). Cards: photo, address, zoning, lot size, room to build, last market sale, at most one
+  *serious* warning (demolition order, vacant-building case, pending rezoning, landmark), bookmark.
+- **Filters sheet with only filters that have data,** each showing coverage, presets plus a custom
+  value, an include-unknowns choice, and a live "Show N lots" count. Unknowns get their own hatched
+  histogram bar.
+- **Transit is one control:** close to any of L, Metra, bus or Divvy within a 5/10/15-minute walk; extra
+  rows must all be true; plus a "transit-oriented area" switch (the City's TOD rules).
+- An address offers its Profile, or a search within a resizable ring. ZIP codes need boundaries first.
+
+## Chat — Draft
+
+- **On the Profile, a drawer** over about a third of the screen: on demand, keeps the conversation across
+  tabs, its own history list, expands in place. Answers about the lot draw on the page's own map.
+- **The full chat page:** rail, a hideable history list, the conversation at reading width. The drawer
+  and the page are one conversation in two sizes.
+- **No sources panel:** a numbered source opens in place under its sentence; long code text opens in a
+  reader over the page.
+- **Maps are cards inside the answer** that fold to one line or expand full screen.
+
+## Saved — Draft
+
+In the rail: saved lots, searches and conversations. Named lists with a private note per lot; each saved
+lot shows what changed since it was saved (sale, permit, rezoning introduced, new violation); compare two
+or three; saves work before sign-in and move to the account after.
+
+## Ruled out
+
+| Idea | Why not |
+|---|---|
+| "Does it pencil" / pro forma | Financial advice we can't fully back up; credibility and legal risk |
+| Where the tax bill goes | People want the total, not the split |
+| Comparisons to the whole city | Too large to say anything about one block |
+| Walk-time rings | Builders get enough from the walk score |
+| Year built as a filter or sort | Known for about half the city, and records disagree |
+| Filters with no data (units, open violations and ten more) | Hidden until the index has them |
+| Minor violations on result cards | A fire-escape inspection isn't a reason to skip a lot |
+| A permanent chat or sources side panel | Crowds the page and never goes away |
+| The earth-tone infographic palette for the site | Reads as fall-themed; colors are chosen fresh in the visual phase |
+
+## Data work the designs need
+
+Back-end work that can run during the visual phase.
+
+| Work | Unblocks |
+|---|---|
+| Split the Profile request by tab | Overview in a few seconds instead of ~20; other tabs load behind it |
+| Fill the Discovery index: lot size for every lot, units, open violations (the City's citywide dataset), 311, crime, floodplain, brownfield, Opportunity Zone, coach-house area, ARO zone, overlays, SBIF/NOF areas, ward | Roughly twice as many working filters; most are point-in-area checks the Profile already runs per lot |
+| Metra stations, bus lines, Divvy docks in the index | The single transit control |
+| Building type from the assessor's class code (100% of lots) | Replaces the incomplete `land_use` enum |
+| 311 counts within ⅛ mile or the tract, against a baseline (`three11.py` groups by community area only today) | Flagging unusual noise, rodents or flooding near a lot |
+| Census B25024 (homes by building type) | "What's built around here" |
+| Rezoning history near a lot; the alderman's rezoning record | "Who decides" and precedent |
+| Permit processing times by area; sales and rents of new construction | How long it takes; what the finished product is worth nearby |
+| Photos: Street View on the Profile, aerial crops on cards | Street View: 10,000 free images a month, then about $7 per 1,000 (Google, post-March-2025 pricing; confirm before relying on it). Check cost at real traffic before cards use it; images can't be stored |
+| ZIP code boundaries (Census ZCTA) | Searching by ZIP |
+
+**Discovery index coverage, measured** on the 2026-10-29 citywide index copy (882,328 lots; production
+may be slightly newer): class, L-stop distance, vacant, TIF, Enterprise Zone, assessed value 100%;
+zoning group 99.6%; improvement ratio 94%; `land_use_class` 93.9% (mixed_use, institutional and exempt
+never appear); density band 86.5%; last sale / sale recency 67.8%; land sqft 66.8%; year built and bldg
+sqft 50.7%; teardown 50.3%; upside 49.4%; price per sqft 34%; value percentile 4.4%; and 0% for units,
+open violations, 311, crime, floodplain, brownfield, Opportunity Zone, ADU area, ARO, overlay, SBIF/NOF
+and ward.
+
+## Fixes that can't wait for the redesign
+
+- **Chat fails with "Something went wrong while answering"** (reproduced). It is `_CHAT_ERROR` in
+  `backend/main.py`, a server-side stage exception; the cause is in prod `request_logs.error_message`.
+  Anonymous chat is allowed, so it is not a sign-in issue.
+- **Asking from the Profile or Discovery replaces the page** with chat, with no warning
+  (`MiniChatDock` escalate and Discovery's `onAskArea` both `navigate()` in place).
+- **The ~20-second first Profile load.**
+- **Lots on the Discovery map that open nothing.**
+- **"WebGL context was lost"** on pages with several maps.
+
+## Open questions
+
+Parked on purpose; none blocks the visual design. Each must be answered before its feature is built.
+
+| Question | Answer before |
+|---|---|
+| The four Overview tiles: units, zoning, tax, price per sq ft? | Detailed Profile mockups |
+| Tabs on a phone: scrolling tab strip, or one page with jump links? | Detailed Profile mockups |
+| Does the report preview get its own tab? | Report purchase flow |
+| Race and ethnicity: details only, or left out (fair-housing steering concern)? Schools: include, and which measures? | Building the Neighborhood tab |
+| Renderings of new buildings: link out to filings, or skip? | Building the construction map |
+| Check a project: vague projects, low-confidence lots, two lots combined | Building Check a project |
+| Which violation categories count as serious enough for a card? | Indexing violations |
+| Which missing data to add first? | Starting the data work |
+| Alerts for new matches on saved searches: early or later? | Building Saved |
+| Which five quick filters; are the goal names right? | Detailed Discovery mockups |
+
+## What comes next
+
+1. **Wireframe the remaining pages:** the landing page (it changes most and must say what UrbanLayer does
+   for a builder in one line), the full chat page, and the report purchase flow. Sign-in, Settings,
+   Pricing and About are restyles.
+2. **Visual phase:** shortlist two to four templates (duplicated into Jack's Figma drafts so they can be
+   read), then choose colors, type, icons and chart style together.
+3. **Detailed mockups** of the Profile Overview, the Build tab, Discovery and the landing page.
+4. **A clickable prototype,** tested with two or three builders on a real task ("Could you build a
+   6-flat at this address?").
+5. **The build plan,** page by page, with the data work scheduled alongside. Every merge to `main`
+   deploys and needs Jack's approval.
+
+Update this brief when a decision changes; the design pages hold the detail.
