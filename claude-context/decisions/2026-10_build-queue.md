@@ -111,8 +111,9 @@ accuracy result exists yet, and the feature must remain dark. The production ima
   local-only fixture artifact (two assistant-drafted entries, never committed) for filings near the 1601 N Milwaukee
   and 14-28-319-102 reference parcels. Result: 76 passed, 1 failed. Overflow passed on all routes and devices, and
   the milwaukee, pin1 and downtown budgets passed (the panel is collapsed by default). The one failure, twoflat's
-  Build section at 313 words against 303+8, reproduces with the flag off **and on `main`** (041821a), so it is live-data
-  drift that predates this work. The expanded panel was checked by hand at 375 px: seven figures with units, no
+  Build section at 313 words against 303+8, reproduces with the flag off **and on `main`** (041821a). A follow-up
+  session traced it to this checkout's 4-day-old local pending store: with fresh data the section measures 303 words
+  and all four parcels pass. No code or baseline changed. The expanded panel was checked by hand at 375 px: seven figures with units, no
   horizontal overflow.
 
 **2026-11-06 (later) — reader v5, and the supply of unseen filings runs out.**

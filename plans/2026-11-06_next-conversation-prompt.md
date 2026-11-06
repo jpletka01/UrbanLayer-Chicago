@@ -7,7 +7,7 @@ Work in the main checkout at `/Users/jack/projects/chicago`. Read `CLAUDE.md`, `
 - **#192** `codex/ws2-proposal-reader` (draft, CI green): the offline Type 1 filing reader, now v5 (`ws2-pr4a-5`).
   - It downloads only the Ordinance (Legislation) and the Narrative and Plans (Exhibits); the Application and EDS are never requested.
   - Panels: `eval/filing_panel.json` (34 rows), `eval/filing_panel_historical.json` (15, spent) and `eval/filing_panel_accruing.json` (5, **sealed**).
-- **#193** `codex/ws2-proposal-details-profile` (draft, based on #192; CI doesn't run on a non-main base): premium-gated proposal details on `/api/scorecard` plus the collapsed Profile UI. It is synced with #192. The phone and budget check ran with a local fixture: 76 passed. One failure, twoflat's Build section at 313 words, also fails on `main`, so it is pre-existing data drift; someone should look at it separately.
+- **#193** `codex/ws2-proposal-details-profile` (draft, based on #192; CI doesn't run on a non-main base): premium-gated proposal details on `/api/scorecard` plus the collapsed Profile UI. It is synced with #192. The phone and budget check ran with a local fixture: 76 passed. One failure, twoflat's Build section at 313 words, came from a stale local pending store; with fresh data it measures its 303-word baseline and passes.
 - **#191** (dependency batch) is separate and untouched.
 - Nothing is merged; `main` and production are unchanged. Both `pending_proposal_details_enabled` and `pending_filing_reader_enabled` are false, and `backend/pending_filing_details.json` is empty.
 
