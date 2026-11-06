@@ -14,7 +14,7 @@ the reader version that spent them, and any later version reports ``post_hoc``. 
 assistant are ``assistant_draft``: the result is then reported as
 ``provisional``, never as a pass.
 
-    PYTHONPATH=. python -m eval.filing_panel [--fresh] [--split train|held_out|all] [--out eval/results/filing_panel.json]
+    PYTHONPATH=. python -m eval.filing_panel [--fresh | --fresh-panel FILE] [--split train|held_out|all] [--out FILE]
 
 Offline, no model call, no network.  Needs Poppler/Tesseract and ``pypdf`` (requirements-dev.txt).
 """
@@ -57,7 +57,8 @@ def run(panel: dict, *, split: str = "all", private: Path = PRIVATE,
         tagged = [(r, r["split"], private) for r in panel["rows"]]
         spent = panel.get("held_out_scored_with")
     else:
-        tagged = [(r, "train", private) for r in panel["rows"]] + [(r, "held_out", fresh_private) for r in fresh["rows"]]
+        tagged = [(r, "train", Path(r["_private"]) if "_private" in r else private) for r in panel["rows"]]
+        tagged += [(r, "held_out", fresh_private) for r in fresh["rows"]]
         spent = fresh.get("held_out_scored_with")
     all_rows = [r for r, _, _ in tagged]
     tagged = [t for t in tagged if split == "all" or t[1] == split]
@@ -131,9 +132,27 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--split", choices=("train", "held_out", "all"), default="all")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--fresh", action="store_true", help=f"hold out {FRESH.name} instead of the panel's own split")
+    parser.add_argument("--fresh-panel", type=Path, help="hold out this fresh panel file; earlier fresh panels become development rows")
     args = parser.parse_args(argv)
-    fresh = json.loads(FRESH.read_text()) if args.fresh else None
-    result = run(json.loads(PANEL.read_text()), split=args.split, fresh=fresh)
+    panel = json.loads(PANEL.read_text())
+    fresh, fresh_private = None, FRESH_PRIVATE
+    if args.fresh_panel:
+        # Every earlier, spent fresh set joins the development rows.
+        for spent in sorted(PANEL.parent.glob("filing_panel_*.json")):
+            extra = json.loads(spent.read_text())
+            # Only a set already scored joins development; an unspent one stays sealed.
+            if spent.resolve() != args.fresh_panel.resolve() and extra.get("held_out_scored_with"):
+                base = PANEL.parent.parent / extra.get("private_dir", "research/pending-filing-pdfs/historical")
+                panel = {**panel, "rows": panel["rows"] + [{**r, "_private": str(base)} for r in extra["rows"]]}
+        fresh = json.loads(args.fresh_panel.read_text())
+        if len(fresh["rows"]) < fe.MIN_HELD_OUT_ROWS:
+            # Scoring spends a held-out set; a set too small to pass must not be spent.
+            print(f"{args.fresh_panel.name}: {len(fresh['rows'])} rows; not scored until it has {fe.MIN_HELD_OUT_ROWS}", file=sys.stderr)
+            return 2
+        fresh_private = PANEL.parent.parent / fresh["private_dir"]
+    elif args.fresh:
+        fresh = json.loads(FRESH.read_text())
+    result = run(panel, split=args.split, fresh=fresh, fresh_private=fresh_private)
     text = json.dumps(result, indent=2)
     if args.out:
         args.out.write_text(text + "\n")

@@ -1,6 +1,7 @@
 {
  "about": "Fresh held-out set for the WS2 PR4 filing reader: passed Type 1 matters (Clerk final action 2023-01-01 to 2026-11-06), newest first, both roles present, excluding every record in eval/filing_panel.json. Selected from metadata and labelled after reader ws2-pr4a-4 was frozen (c0f26a4). Same label rules as eval/filing_panel.json.",
  "selection": "python -m backend.legislation.filing_reader --passed-since 2023-01-01 --limit 20 --skip <panel records>: 20 matters, 40 PDFs requested, 35 kept, 5 narratives rejected by the page screen, 15 matters complete.",
+ "private_dir": "research/pending-filing-pdfs/historical",
  "held_out_scored_with": "ws2-pr4a-4",
  "held_out_history": [
   {

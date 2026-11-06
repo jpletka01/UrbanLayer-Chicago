@@ -2921,8 +2921,10 @@ Consumers → Property Profile (renders pin + confidence badge)
             a decimal point (FAR 2.17 read as 217). Both fixes only withhold values. Re-scoring them on the same rows
             is post hoc, so the runner refuses to call it a pass. The fixed reader was frozen again and scored once
             on 15 unseen passed filings: 96.8% precision, but two wrong values ("1 7 spaces" read as 1, and a table
-            height that contradicts the prose) against a rule that allows none. The figures stay unpublished until a
-            person checks the labels and an unseen set passes. Even then they are a Premium field, sent with a
+            height that contradicts the prose) against a rule that allows none. A third version guards both, but
+            unseen filings ran out: older matters are one combined PDF that would bundle the disclosure form, so the
+            next held-out set has to accrue from new filings and stays sealed until it has ten. The figures stay
+            unpublished until a person checks the labels and an unseen set passes. Even then they are a Premium field, sent with a
             private, no-store cache header and never sent to chat (Item 70).
           </P>
 

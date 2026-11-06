@@ -46,3 +46,13 @@ def test_fresh_historical_panel_is_disjoint_spent_and_well_formed():
         assert row["split"] == "held_out" and set(row["attachments"]) == {"ordinance", "narrative"}
         for field_id, label in row["labels"].items():
             assert label["unit"] == FIELD_UNITS[field_id]
+
+
+def test_accruing_set_is_disjoint_unspent_and_sealed_below_ten_rows():
+    accruing = json.loads((filing_panel.PANEL.parent / "filing_panel_accruing.json").read_text())
+    earlier = {r["record_number"] for r in PANEL["rows"]} | {
+        r["record_number"] for r in json.loads(filing_panel.FRESH.read_text())["rows"]}
+    assert not {r["record_number"] for r in accruing["rows"]} & earlier
+    assert accruing["held_out_scored_with"] is None
+    if len(accruing["rows"]) < fe.MIN_HELD_OUT_ROWS:
+        assert filing_panel.main(["--fresh-panel", str(filing_panel.PANEL.parent / "filing_panel_accruing.json")]) == 2
