@@ -261,6 +261,15 @@ def test_filing_reader_v4_withholds_dropped_decimal_far_and_other_property_narra
     assert filing_reader.title_streets("not a zoning title") == set()
 
 
+def test_filing_reader_v5_withholds_letter_spaced_counts_and_contradicted_heights():
+    assert filing_reader.parse_labeled_type1_text("On-Site Accessory Parking: 1 7 spaces") == []
+    assert [f.value for f in filing_reader.parse_labeled_type1_text("Parking: 17 spaces")] == ["17"]
+    contradicted = "The height of the building will be 63.5 feet.\nLot Area: 8,625 sq. ft.\nHeight: 66.5 ft."
+    assert "height" not in {f.id for f in filing_reader.parse_labeled_type1_text(contradicted)}
+    agreeing = "a proposed height of 32.33'.\nBuilding Height: 32.33'"
+    assert [f.value for f in filing_reader.parse_labeled_type1_text(agreeing) if f.id == "height"] == ["32.33"]
+
+
 def test_hand_labeled_pending_title_panel_meets_precision_floor_with_no_wrong_streets():
     panel = json.loads((FIX / "pending_title_panel.json").read_text())
     rows = panel["rows"]

@@ -39,7 +39,7 @@ from backend.legislation.pending import attachment_allowed
 from backend.retrieval import clerk
 
 
-READER_VERSION = "ws2-pr4a-4"
+READER_VERSION = "ws2-pr4a-5"
 _TYPE_1 = re.compile(r"\b(?:APP(?:LICATION)?\s*(?:NO\.?\s*)?)?\d{4,}T1\b", re.IGNORECASE)
 MAX_SAMPLE_FILE_BYTES = 8 * 1024 * 1024
 
@@ -76,16 +76,26 @@ _APPROX = r"(?:approx(?:imately|\.)?\s*)?"
 _LOT_AREA = re.compile(r"\bLot\s+Area" + _SEP + r"(?:\n[ \t]*)?" + _APPROX + _NUM
                        + r"\s*(?:square\s+feet|sq\.?\s*f(?:ee)?t\.?|s\.?f\.?)(?![a-z])", re.IGNORECASE)
 _FAR_LABEL = re.compile(r"(\b[A-Za-z]+[ \t]+)?(?:\b[Ff]loor\s+[Aa]rea\s+[Rr]atio|\bF\.?A\.?R\.?)(?:\s*\(FAR\))?"
-                        + _SEP + _NUM + r"(?![\d,]|\s*(?:sq|square|s\.?f\b|%))")
+                        + _SEP + _NUM + r"(?![\d,]|[ \t]+\d|\s*(?:sq|square|s\.?f\b|%))")
 _FAR_PAREN = re.compile(r"\((\d+)?\.?(\d+)?\s*F\.?A\.?R\.?\)")
 _FAR_NOT_PROJECT = {"base", "maximum", "max", "allowed", "allowable", "permitted", "required"}
-_COUNT_END = r"\b(?!-\d)"  # never a code section such as 17-10-0200
+# Never a code section such as 17-10-0200, and never the first digit of a letter-spaced
+# number ("1 7 spaces" read as 1 on fresh held-out SO2023-0005329; v5).
+_COUNT_END = r"\b(?!-\d)(?![ \t]+\d)"
 _UNITS = re.compile(r"\b(?:Dwelling\s+Units|Residential\s+Units|Number\s+of\s+(?:Dwelling\s+|Residential\s+)?Units)"
                     + _SEP + r"(\d+)" + _COUNT_END, re.IGNORECASE)
 _EFFICIENCY = re.compile(r"\bEfficiency\s+Units?\s*[:\-]", re.IGNORECASE)
 _HEIGHT = re.compile(r"\b(?:Building\s+)?Height" + _SEP + _APPROX + r"(\d+(?:\.\d+)?)\s*(?:feet|foot|ft\.?|['’°])",
                      re.IGNORECASE)
 # Anything number-like right after the foot value is an inch part ("65'-1 ¼\"" OCRs as "65’-1 %”").
+# v5: other statements of the building's height in the narrative's prose ("the height of the
+# building will be 63.5 feet", "a proposed height of 32.33'", "57 ft. tall").  A table height that
+# disagrees with any of them is withheld (fresh held-out SO2026-0027411: table 66.5, prose 63.5).
+_HEIGHT_MENTION = re.compile(
+    r"\bheight\b[^.\n]{0,40}?\b(\d+(?:\.\d+)?)\s*(?:feet|foot|ft\b|['’])"
+    r"|\b(\d+(?:\.\d+)?)\s*(?:feet|foot|ft\.?|['’])\s*(?:tall|in\s+height)\b",
+    re.IGNORECASE,
+)
 _INCHES = re.compile(r"\s*(?:and\s*)?-?\s*(\d+)([^\n]{0,6})")
 _PARKING = re.compile(r"(\b[A-Za-z]+[ \t]+)?\bParking(?:\s+Spaces)?" + _SEP + r"(\d+|zero|none)" + _COUNT_END, re.IGNORECASE)
 _PARKING_NOT_CARS = {"bicycle", "bicycles", "bike", "bikes"}
@@ -183,7 +193,7 @@ async def build_download_manifest(*, limit: int = 30, skip: Iterable[str] = ()) 
     return selected
 
 
-async def build_historical_manifest(since, *, limit: int = 20, skip: Iterable[str] = ()) -> list[SampleCandidate]:
+async def build_historical_manifest(since, *, before=None, limit: int = 20, skip: Iterable[str] = ()) -> list[SampleCandidate]:
     """Passed Type 1 matters after ``since``, newest final action first, both roles present.
 
     The fresh held-out source once every pending filing is spent (decision Item 70).
@@ -193,7 +203,7 @@ async def build_historical_manifest(since, *, limit: int = 20, skip: Iterable[st
     passed = await clerk.passed_since(since, (clerk.ZONING_RECLASSIFICATIONS,))
     selected: list[SampleCandidate] = []
     for listed in sorted((m for m in passed if is_type_1(m)), key=lambda m: (m.final_action_at, m.record_number), reverse=True):
-        if listed.record_number in skipped:
+        if listed.record_number in skipped or (before and (listed.passed_on is None or listed.passed_on >= before)):
             continue
         detail = await clerk.get_matter(listed.matter_id)
         if detail is None:
@@ -471,6 +481,7 @@ def parse_narrative_pages(pages: Iterable[tuple[int, str]]) -> list[ParsedField]
         efficiency = efficiency or bool(_EFFICIENCY.search(text))
     if efficiency:
         found["dwelling_units"] = []
+    mentions = {float(m.group(1) or m.group(2)) for _, text in pages for m in _HEIGHT_MENTION.finditer(text)}
     # v4: a whole-number FAR of 10 or more is almost always a dropped decimal point
     # ("2.17" OCR'd as "217" in held-out O2024-0012331); withhold rather than guess.
     found["far"] = [(v, p) if "." in v or int(v) < 10 else ("withheld", p) for v, p in found["far"]]
@@ -478,6 +489,8 @@ def parse_narrative_pages(pages: Iterable[tuple[int, str]]) -> list[ParsedField]
     out: list[ParsedField] = []
     for field_id, values in found.items():
         chosen = _one(values)
+        if chosen and field_id == "height" and chosen[0] != "withheld" and any(v != float(chosen[0]) for v in mentions):
+            continue
         if chosen and chosen[0] != "withheld":
             out.append(ParsedField(field_id, chosen[0], units.get(field_id), chosen[1], "narrative"))
     return out
@@ -526,6 +539,7 @@ async def _main(argv: list[str]) -> int:
     parser.add_argument("--limit", type=int, default=30, help="matters to select")
     parser.add_argument("--skip", nargs="*", default=(), help="record numbers already sampled")
     parser.add_argument("--passed-since", type=date.fromisoformat, help="select PASSED Type 1 matters after this date")
+    parser.add_argument("--passed-before", type=date.fromisoformat, help="with --passed-since: only matters passed before this date")
     parser.add_argument("--head-sizes", action="store_true", help="also make HEAD-only size requests")
     parser.add_argument("--download-dir", type=Path, help="development-only private PDF destination")
     parser.add_argument("--screen-dir", type=Path, help="screen existing private PDFs (prints page types only)")
@@ -539,7 +553,7 @@ async def _main(argv: list[str]) -> int:
         return 0
     try:
         if args.passed_since:
-            rows = await build_historical_manifest(args.passed_since, limit=args.limit, skip=args.skip)
+            rows = await build_historical_manifest(args.passed_since, before=args.passed_before, limit=args.limit, skip=args.skip)
         else:
             rows = await build_download_manifest(limit=args.limit, skip=args.skip)
     except (clerk.ClerkUnavailable, clerk.ClerkQueryError, ValueError) as exc:
