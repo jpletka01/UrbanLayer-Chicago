@@ -208,6 +208,11 @@ async def require_admin(request: Request) -> dict:
 _TIER_ORDER = {"free": 0, "premium": 1, "admin": 2}
 
 
+def has_tier(user: dict | None, minimum: str) -> bool:
+    """The non-raising form of ``require_tier`` for endpoints that serve everyone but gate a field."""
+    return isinstance(user, dict) and _TIER_ORDER.get(user.get("tier", "free"), 0) >= _TIER_ORDER[minimum]
+
+
 def require_tier(minimum: str):
     async def _check(request: Request) -> dict:
         from fastapi import HTTPException

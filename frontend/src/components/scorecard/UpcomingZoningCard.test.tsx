@@ -81,4 +81,39 @@ describe("UpcomingZoningCard", () => {
     expect(link.getAttribute("href")).toBe("https://clerk.example/O-SUBJECT");
     expect(link.getAttribute("title")).toContain("O-SUBJECT");
   });
+
+  it("keeps premium proposal figures collapsed, with units and a cited source per figure", () => {
+    const reviewed: UpcomingZoningFiling = {
+      ...filing("O-SUBJECT", "subject_pin"),
+      proposal_details: {
+        reviewed_record: "O-SUBJECT",
+        reviewed_on: "2026-11-06",
+        fields: [
+          { id: "to_district", value: "B2-3", page: 1, document_name: "O-SUBJECT Ordinance.pdf", document_url: "https://clerk.example/o.pdf" },
+          { id: "lot_area", value: "5361", unit: "sq ft", page: 2, document_name: "Narrative.pdf", document_url: "https://clerk.example/n.pdf" },
+          { id: "parking", value: "1", unit: "spaces", page: 2, document_name: "Narrative.pdf", document_url: "https://clerk.example/n.pdf" },
+        ],
+      },
+    };
+    render(<UpcomingZoningCard data={base({ subject_filings: [reviewed] })} />);
+    const toggle = screen.getByRole("button", { name: "Applicant's proposal" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("5,361 sq ft")).toBeNull();
+    fireEvent.click(toggle);
+    expect(screen.getByText("Applicant's figures, not approved")).toBeTruthy();
+    expect(screen.getByText("5,361 sq ft")).toBeTruthy();
+    expect(screen.getByText("1 space")).toBeTruthy();
+    expect(screen.getByText("B2-3")).toBeTruthy();
+    const source = screen.getByRole("link", { name: /Lot area/ });
+    expect(source.getAttribute("href")).toBe("https://clerk.example/n.pdf");
+    expect(source.getAttribute("title")).toBe("Page 2 of Narrative.pdf");
+    expect(source.getAttribute("target")).toBe("_blank");
+  });
+
+  it("tells a free caller only that reviewed figures exist", () => {
+    const locked: UpcomingZoningFiling = { ...filing("O-SUBJECT", "subject_pin"), proposal_details_status: "premium" };
+    render(<UpcomingZoningCard data={base({ subject_filings: [locked] })} />);
+    expect(screen.getByText("Proposal details with Premium")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Applicant's proposal" })).toBeNull();
+  });
 });

@@ -89,6 +89,32 @@ accuracy result exists yet, and the feature must remain dark. The production ima
   narrative page. A v5 with those guards needs another unseen held-out set (passed Type 1 filings before 2023) and
   person-checked labels before it can pass. *Revisit if* Jack decides that a precision floor alone, without the
   zero-wrong-value rule, is the publication gate. That is his call, not this record's.
+**2026-11-06 — PR4b, the premium Profile boundary (stacked PR, dark).**
+- `/api/scorecard` resolves the caller (`Depends(get_current_user)`, anonymous allowed) and, only when
+  `pending_proposal_details_enabled`, calls `upcoming.attach_proposal_details` on the per-request upcoming summary
+  AFTER the shared cached retrieval. The join reads the pending store read-only and needs the lifecycle's *current*
+  record plus identical live attachment URL, file name and type (`filing_details.current_details`). A substitute
+  record or a re-uploaded attachment drops the entry until it is reviewed again. A same-URL replacement can't be
+  seen on the request path (no download there), so the monthly review re-hashes.
+- Premium (`auth.has_tier(user, "premium")`: vouchers and admin comps today, since Stripe is not configured) gets
+  `proposal_details` (value, unit, page, document name and URL, reviewed date) and the response is
+  `Cache-Control: private, no-store`. A free or anonymous caller gets only `proposal_details_status: "premium"`,
+  with no value and no PDF URL in the JSON. *Alternative rejected:* hiding the figures in the frontend, which would
+  have shipped them to every browser.
+- Chat and report stay out: the frontend `buildScorecardContext` is an allowlist without `upcoming_zoning`, and
+  the backend `ScorecardContext` has no such field. Both are now pinned by tests.
+- UI: one collapsed "Applicant's proposal" expand per filing. Inside it are a neutral "Applicant's figures, not
+  approved" label, every value with its unit, the reviewed date behind the Calendar tool, and each figure's page
+  and document behind its source tool (new tab). A free caller sees a violet Lock line. Strings are es-MX in the
+  usted register. *Revisit if* the first reviewed entries make the Profile budget move.
+- *Phone and budget check (2026-11-06).* `npm run test:mobile` ran locally with the flag on, the dev admin user and a
+  local-only fixture artifact (two assistant-drafted entries, never committed) for filings near the 1601 N Milwaukee
+  and 14-28-319-102 reference parcels. Result: 76 passed, 1 failed. Overflow passed on all routes and devices, and
+  the milwaukee, pin1 and downtown budgets passed (the panel is collapsed by default). The one failure, twoflat's
+  Build section at 313 words against 303+8, reproduces with the flag off **and on `main`** (041821a). A follow-up
+  session traced it to this checkout's 4-day-old local pending store: with fresh data the section measures 303 words
+  and all four parcels pass. No code or baseline changed. The expanded panel was checked by hand at 375 px: seven figures with units, no
+  horizontal overflow.
 
 **2026-11-06 (later) — reader v5, and the supply of unseen filings runs out.**
 - *v5 (`ws2-pr4a-5`, frozen in `a1d9ebe`)* adds two withhold-only guards. A count never takes the first digit of a

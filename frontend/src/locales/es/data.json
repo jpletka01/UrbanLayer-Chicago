@@ -153,7 +153,35 @@
       "partialShort_one": "{{count}} solicitud no se pudo ubicar",
       "partialShort_other": "{{count}} solicitudes no se pudieron ubicar",
       "noneNear": "Ninguna en esta propiedad ni a menos de {{radius}} mi",
-      "proposedStatus": "Propuesta · {{status}}"
+      "proposedStatus": "Propuesta · {{status}}",
+      "proposal": {
+        "show": "Propuesta del solicitante",
+        "label": "Propuesta del solicitante para {{place}}",
+        "notApproved": "Cifras del solicitante, no aprobadas",
+        "premium": "Detalles de la propuesta con Premium",
+        "premiumExplain": "Una persona leyó la solicitud presentada por el solicitante. Las cifras, con la página donde aparece cada una, forman parte de Premium.",
+        "explain": "Una persona copió estas cifras de la solicitud del solicitante e indicó la página de cada una. Es lo que el solicitante pide; la Ciudad no las ha aprobado.",
+        "reviewedOn": "Una persona leyó la solicitud",
+        "page": "Página {{page}} de {{document}}",
+        "fields": {
+          "from_district": "Distrito actual",
+          "to_district": "Distrito propuesto",
+          "lot_area": "Superficie del lote",
+          "dwelling_units": "Viviendas",
+          "height": "Altura del edificio",
+          "far": "Coeficiente de edificabilidad",
+          "parking": "Estacionamiento para autos"
+        },
+        "values": {
+          "lot_area": "{{value}} pies²",
+          "height": "{{value}} pies",
+          "far": "FAR de {{value}}",
+          "dwelling_units_one": "{{count}} vivienda",
+          "dwelling_units_other": "{{count}} viviendas",
+          "parking_one": "{{count}} cajón",
+          "parking_other": "{{count}} cajones"
+        }
+      }
     },
     "adu": {
       "allowed_by_right": "Casas de carruaje y unidades de conversión permitidas por derecho",

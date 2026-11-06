@@ -203,3 +203,25 @@ describe("propertyStarterKeys — priority-ordered, notable-only, capped at 4", 
     expect(propertyStarterKeys(null)).toEqual([]);
   });
 });
+
+describe("buildScorecardContext — applicant proposal details (WS2 PR4b)", () => {
+  it("never sends upcoming zoning or reviewed proposal figures to chat", () => {
+    const base = makeResp();
+    const resp = {
+      ...base,
+      context: {
+        ...base.context,
+        upcoming_zoning: {
+          subject_filings: [{
+            record_number: "O1",
+            proposal_details: { fields: [{ id: "height", value: "45", document_url: "https://clerk.example/n.pdf" }] },
+          }],
+        },
+      },
+    } as unknown as ScorecardResponse;
+    const json = JSON.stringify(buildScorecardContext(resp));
+    expect(json).not.toContain("upcoming_zoning");
+    expect(json).not.toContain("proposal_details");
+    expect(json).not.toContain("n.pdf");
+  });
+});
