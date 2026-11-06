@@ -71,6 +71,24 @@ accuracy result exists yet, and the feature must remain dark. The production ima
   `pending_proposal_details_enabled` stays false and nothing is published. Full numbers:
   `eval/results/filing_panel_2026-11-06_v3_gate.json` (gate) and `_v4_posthoc.json`.
 
+**2026-11-06 (later) — fresh historical held-out set: FAIL again (2 wrong values).**
+- *Source.* Every pending filing was spent, so `filing_reader --passed-since 2023-01-01` picked the 20 newest
+  passed Type 1 matters with both roles from Clerk metadata (none of them in the first panel). 40 PDFs were
+  requested and 35 kept; 5 narratives were rejected by the page screen, leaving 15 complete matters. These are
+  `eval/filing_panel_historical.json`; `eval.filing_panel --fresh` scores them as the held-out set, with all 34
+  earlier rows as development data. Reader v4 was frozen in `c0f26a4` before any of their pages was opened, and the
+  labels are again assistant drafts.
+- *Result.* Held out: precision 96.8% (floor 95%), recall 76.3% (floor 60%), **2 wrong values**, 0 wrong page or
+  unit. **FAIL**, because the gate allows zero wrong values.
+  1. SO2023-0005329: letter-spaced "1 7 spaces" was read as parking 1 (true 17).
+  2. SO2026-0027411: the table's height of 66.5 ft contradicts the prose's 63.5 feet. Contradictions are unlabelled
+     by rule, so the table value counts as wrong.
+  The set is now spent (`held_out_scored_with: ws2-pr4a-4`).
+- *Reading.* Both failure classes are narrow, and both fixes would only withhold: a count followed by a lone digit
+  before its unit ("1 7 spaces"), and a height that disagrees with another "N feet" height statement on the same
+  narrative page. A v5 with those guards needs another unseen held-out set (passed Type 1 filings before 2023) and
+  person-checked labels before it can pass. *Revisit if* Jack decides that a precision floor alone, without the
+  zero-wrong-value rule, is the publication gate. That is his call, not this record's.
 **2026-11-06 — PR4b, the premium Profile boundary (stacked PR, dark).**
 - `/api/scorecard` resolves the caller (`Depends(get_current_user)`, anonymous allowed) and, only when
   `pending_proposal_details_enabled`, calls `upcoming.attach_proposal_details` on the per-request upcoming summary

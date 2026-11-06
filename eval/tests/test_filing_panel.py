@@ -35,3 +35,14 @@ def test_labels_use_known_fields_units_and_sources_and_no_row_claims_verificatio
 def test_post_hoc_versions_cannot_report_a_gate():
     assert PANEL["held_out_scored_with"] == "ws2-pr4a-3"
     assert PANEL["held_out_history"][0]["gate"] == "fail"
+
+
+def test_fresh_historical_panel_is_disjoint_spent_and_well_formed():
+    fresh = json.loads(filing_panel.FRESH.read_text())
+    assert len(fresh["rows"]) >= fe.MIN_HELD_OUT_ROWS
+    assert not {r["record_number"] for r in fresh["rows"]} & {r["record_number"] for r in PANEL["rows"]}
+    assert fresh["held_out_scored_with"] == "ws2-pr4a-4" and fresh["held_out_history"][0]["gate"] == "fail"
+    for row in fresh["rows"]:
+        assert row["split"] == "held_out" and set(row["attachments"]) == {"ordinance", "narrative"}
+        for field_id, label in row["labels"].items():
+            assert label["unit"] == FIELD_UNITS[field_id]

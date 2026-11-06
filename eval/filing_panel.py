@@ -14,7 +14,7 @@ the reader version that spent them, and any later version reports ``post_hoc``. 
 assistant are ``assistant_draft``: the result is then reported as
 ``provisional``, never as a pass.
 
-    PYTHONPATH=. python -m eval.filing_panel [--split train|held_out|all] [--out eval/results/filing_panel.json]
+    PYTHONPATH=. python -m eval.filing_panel [--fresh] [--split train|held_out|all] [--out eval/results/filing_panel.json]
 
 Offline, no model call, no network.  Needs Poppler/Tesseract and ``pypdf`` (requirements-dev.txt).
 """
@@ -33,6 +33,9 @@ from backend.legislation import filing_reader
 
 PANEL = Path(__file__).resolve().parent / "filing_panel.json"
 PRIVATE = Path(__file__).resolve().parent.parent / "research" / "pending-filing-pdfs" / "panel"
+# The fresh held-out set (historical passed Type 1 filings): with it, every row above is development data.
+FRESH = Path(__file__).resolve().parent / "filing_panel_historical.json"
+FRESH_PRIVATE = PRIVATE.parent / "historical"
 
 
 def split_for(record_number: str) -> str:
@@ -46,12 +49,22 @@ def _expected(row: dict) -> dict[str, fe.FieldValue]:
             for field_id, v in row["labels"].items()}
 
 
-def run(panel: dict, *, split: str = "all", private: Path = PRIVATE) -> dict:
-    rows = [r for r in panel["rows"] if split == "all" or r["split"] == split]
+def run(panel: dict, *, split: str = "all", private: Path = PRIVATE,
+        fresh: dict | None = None, fresh_private: Path = FRESH_PRIVATE) -> dict:
+    """Score the panel.  With ``fresh``, the main panel's rows are all ``train`` and the
+    fresh panel's rows are the held-out set; its own ``held_out_scored_with`` spends it."""
+    if fresh is None:
+        tagged = [(r, r["split"], private) for r in panel["rows"]]
+        spent = panel.get("held_out_scored_with")
+    else:
+        tagged = [(r, "train", private) for r in panel["rows"]] + [(r, "held_out", fresh_private) for r in fresh["rows"]]
+        spent = fresh.get("held_out_scored_with")
+    all_rows = [r for r, _, _ in tagged]
+    tagged = [t for t in tagged if split == "all" or t[1] == split]
     scores: dict[str, list[fe.Evaluation]] = {"train": [], "held_out": []}
     per_field: dict[str, Counter] = {}
     results = []
-    for row in rows:
+    for row, row_split, private in tagged:
         emitted: dict[str, fe.FieldValue] = {}
         problems = []
         for role, attachment in row["attachments"].items():
@@ -69,7 +82,7 @@ def run(panel: dict, *, split: str = "all", private: Path = PRIVATE) -> dict:
                 emitted[f.id] = fe.FieldValue(f.value, f.page, f.unit, f.source)
         expected = _expected(row)
         score = fe.evaluate(expected, emitted)
-        scores[row["split"]].append(score)
+        scores[row_split].append(score)
         for field_id in set(expected) | set(emitted):
             c = per_field.setdefault(field_id, Counter())
             label, got = expected.get(field_id), emitted.get(field_id)
@@ -77,7 +90,7 @@ def run(panel: dict, *, split: str = "all", private: Path = PRIVATE) -> dict:
             c["emitted"] += got is not None
             c["matched"] += label is not None and got == label
         results.append({
-            "record_number": row["record_number"], "split": row["split"], "label_status": row["label_status"],
+            "record_number": row["record_number"], "split": row_split, "label_status": row["label_status"],
             "expected": score.expected, "emitted": score.emitted, "matched": score.matched,
             "wrong_value": score.wrong_value, "wrong_page": score.wrong_page, "wrong_unit": score.wrong_unit,
             "mismatches": sorted(k for k, v in emitted.items() if expected.get(k) != v),
@@ -85,9 +98,8 @@ def run(panel: dict, *, split: str = "all", private: Path = PRIVATE) -> dict:
         })
     summary = {name: _aggregate(s) for name, s in scores.items() if s}
     held = scores["held_out"]
-    verified = all(r["label_status"] == "human_verified" for r in panel["rows"])
-    measured = fe.panel_passes(held, panel_size=len(panel["rows"]), held_out_size=len(held)) if split == "all" else None
-    spent = panel.get("held_out_scored_with")
+    verified = all(r["label_status"] == "human_verified" for r in all_rows)
+    measured = fe.panel_passes(held, panel_size=len(all_rows), held_out_size=len(held)) if split == "all" else None
     if measured is None:
         gate = "not_scored"
     elif spent and spent != filing_reader.READER_VERSION:
@@ -99,7 +111,8 @@ def run(panel: dict, *, split: str = "all", private: Path = PRIVATE) -> dict:
     else:
         gate = "pass" if verified else "provisional"
     return {
-        "reader_version": filing_reader.READER_VERSION, "panel_rows": len(panel["rows"]), "split": split,
+        "reader_version": filing_reader.READER_VERSION, "panel_rows": len(all_rows), "split": split,
+        "held_out_source": "historical" if fresh is not None else "panel",
         "labels_human_verified": verified, "gate": gate, "summary": summary,
         "per_field": {k: dict(v) for k, v in sorted(per_field.items())}, "rows": results,
     }
@@ -117,12 +130,14 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--split", choices=("train", "held_out", "all"), default="all")
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--fresh", action="store_true", help=f"hold out {FRESH.name} instead of the panel's own split")
     args = parser.parse_args(argv)
-    result = run(json.loads(PANEL.read_text()), split=args.split)
+    fresh = json.loads(FRESH.read_text()) if args.fresh else None
+    result = run(json.loads(PANEL.read_text()), split=args.split, fresh=fresh)
     text = json.dumps(result, indent=2)
     if args.out:
         args.out.write_text(text + "\n")
-    print(json.dumps({k: result[k] for k in ("reader_version", "panel_rows", "split", "labels_human_verified",
+    print(json.dumps({k: result[k] for k in ("reader_version", "panel_rows", "split", "held_out_source", "labels_human_verified",
                                               "gate", "summary", "per_field")}, indent=2))
     return 0
 

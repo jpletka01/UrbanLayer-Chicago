@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import asdict, dataclass
+from datetime import date
 from pathlib import Path
 from typing import Iterable
 
@@ -179,6 +180,27 @@ async def build_download_manifest(*, limit: int = 30, skip: Iterable[str] = ()) 
         selected.extend(rows)
         if len({row.record_number for row in selected}) == limit:
             return selected
+    return selected
+
+
+async def build_historical_manifest(since, *, limit: int = 20, skip: Iterable[str] = ()) -> list[SampleCandidate]:
+    """Passed Type 1 matters after ``since``, newest final action first, both roles present.
+
+    The fresh held-out source once every pending filing is spent (decision Item 70).
+    Selection uses metadata only and is fixed before any PDF is opened.
+    """
+    skipped = set(skip)
+    passed = await clerk.passed_since(since, (clerk.ZONING_RECLASSIFICATIONS,))
+    selected: list[SampleCandidate] = []
+    for listed in sorted((m for m in passed if is_type_1(m)), key=lambda m: (m.final_action_at, m.record_number), reverse=True):
+        if listed.record_number in skipped:
+            continue
+        detail = await clerk.get_matter(listed.matter_id)
+        if detail is None:
+            continue
+        selected.extend(sample_candidates([detail], limit=1))
+        if len({row.record_number for row in selected}) == limit:
+            break
     return selected
 
 
@@ -503,6 +525,7 @@ async def _main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="WS2 PR4 offline Type 1 filing reader (development only)")
     parser.add_argument("--limit", type=int, default=30, help="matters to select")
     parser.add_argument("--skip", nargs="*", default=(), help="record numbers already sampled")
+    parser.add_argument("--passed-since", type=date.fromisoformat, help="select PASSED Type 1 matters after this date")
     parser.add_argument("--head-sizes", action="store_true", help="also make HEAD-only size requests")
     parser.add_argument("--download-dir", type=Path, help="development-only private PDF destination")
     parser.add_argument("--screen-dir", type=Path, help="screen existing private PDFs (prints page types only)")
@@ -515,7 +538,10 @@ async def _main(argv: list[str]) -> int:
         print(json.dumps(screened, indent=2))
         return 0
     try:
-        rows = await build_download_manifest(limit=args.limit, skip=args.skip)
+        if args.passed_since:
+            rows = await build_historical_manifest(args.passed_since, limit=args.limit, skip=args.skip)
+        else:
+            rows = await build_download_manifest(limit=args.limit, skip=args.skip)
     except (clerk.ClerkUnavailable, clerk.ClerkQueryError, ValueError) as exc:
         print(f"filing reader manifest: failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
