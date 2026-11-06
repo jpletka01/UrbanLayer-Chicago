@@ -26,6 +26,8 @@ def validate_artifact(data: object) -> list[str]:
         for key in ("reviewed_record", "matter_id", "attachment_url", "attachment_file_name", "sha256", "reviewed_on", "reviewed_by", "fields"):
             if not item.get(key):
                 problems.append(f"{lifecycle}: missing {key}")
+        if item.get("method") != "hand_reviewed":
+            problems.append(f"{lifecycle}: method must be hand_reviewed")
         fields = item.get("fields")
         if not isinstance(fields, list):
             problems.append(f"{lifecycle}: fields must be a list")
