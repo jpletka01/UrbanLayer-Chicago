@@ -8,9 +8,15 @@ and parsing belong in a later explicitly invoked development-only tool.
 
 from __future__ import annotations
 
+import argparse
+import asyncio
+import json
 import re
+import sys
 from dataclasses import dataclass
 from typing import Iterable
+
+import httpx
 
 from backend.legislation.pending import attachment_allowed
 from backend.retrieval import clerk
@@ -45,6 +51,7 @@ class SampleCandidate:
     file_name: str
     url: str
     attachment_type: str
+    download_bytes: int | None = None
 
 
 def sample_candidates(matters: Iterable[clerk.ClerkMatter], *, limit: int = 30) -> list[SampleCandidate]:
@@ -71,3 +78,58 @@ def sample_candidates(matters: Iterable[clerk.ClerkMatter], *, limit: int = 30) 
         if len(rows) == limit:
             break
     return rows
+
+
+async def build_download_manifest(*, limit: int = 30) -> list[SampleCandidate]:
+    """Read Clerk metadata until ``limit`` eligible documents are found; fetches no PDFs."""
+    selected: list[SampleCandidate] = []
+    matters = await clerk.pending_zoning_matters()
+    for listed in sorted((m for m in matters if is_type_1(m)), key=lambda m: m.record_number, reverse=True):
+        detail = await clerk.get_matter(listed.matter_id)
+        if detail is None:
+            continue
+        selected.extend(sample_candidates([detail], limit=1))
+        if len(selected) == limit:
+            return selected
+    return selected
+
+
+async def add_head_sizes(rows: Iterable[SampleCandidate]) -> list[SampleCandidate]:
+    """Add Content-Length metadata without requesting attachment bodies.
+
+    Missing or malformed lengths stay ``None``: an operator must not approve a
+    download budget whose size the public host did not disclose.
+    """
+    out: list[SampleCandidate] = []
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+        for row in rows:
+            try:
+                response = await client.head(row.url)
+                value = response.headers.get("Content-Length") if response.is_success else None
+                size = int(value) if value and value.isdigit() else None
+            except httpx.HTTPError:
+                size = None
+            out.append(SampleCandidate(**{**row.__dict__, "download_bytes": size}))
+    return out
+
+
+async def _main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Print a WS2 PR4 PDF approval manifest without downloading PDFs")
+    parser.add_argument("--limit", type=int, default=30)
+    parser.add_argument("--head-sizes", action="store_true", help="also make HEAD-only size requests")
+    args = parser.parse_args(argv)
+    try:
+        rows = await build_download_manifest(limit=args.limit)
+    except (clerk.ClerkUnavailable, clerk.ClerkQueryError, ValueError) as exc:
+        print(f"filing reader manifest: failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
+    if args.head_sizes:
+        rows = await add_head_sizes(rows)
+    print(json.dumps({"files": [row.__dict__ for row in rows], "total_bytes": sum(
+        row.download_bytes or 0 for row in rows), "unknown_sizes": sum(row.download_bytes is None for row in rows),
+    }, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(_main(sys.argv[1:])))
