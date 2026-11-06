@@ -591,6 +591,13 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "45 days alarms. A separate source so the Profile's 'not yet reviewed' state is also an operator signal. "
              "Reads the pending snapshot and the review file only; no judgement without a fresh snapshot.",
     ),
+    SourceSpec(
+        id="internal.pending_filing_details_review", name="Review of pending Type 1 proposal details",
+        publisher="UrbanLayer", tier="internal", kind="internal", locator="backend/pending_filing_details.json",
+        probe="pending_filing_details_review", owner_modules=("backend/legislation/filing_details.py",),
+        availability_only=True, surfaces=("profile",),
+        note="Hand-reviewed, page-cited applicant-proposal details. Empty is expected until the dark feature is approved; malformed entries must never serve.",
+    ),
     # --- Committed artifacts -----------------------------------------------------------------
     SourceSpec(
         id="artifact.transit_stations", name="Transit stations (committed)", publisher="UrbanLayer from CTA/Metra GTFS",
