@@ -106,8 +106,14 @@ accuracy result exists yet, and the feature must remain dark. The production ima
 - UI: one collapsed "Applicant's proposal" expand per filing. Inside it are a neutral "Applicant's figures, not
   approved" label, every value with its unit, the reviewed date behind the Calendar tool, and each figure's page
   and document behind its source tool (new tab). A free caller sees a violet Lock line. Strings are es-MX in the
-  usted register. *Revisit if* the first reviewed entries make the Profile budget move (the gate wasn't run: with the
-  flag off and an empty artifact nothing renders).
+  usted register. *Revisit if* the first reviewed entries make the Profile budget move.
+- *Phone and budget check (2026-11-06).* `npm run test:mobile` ran locally with the flag on, the dev admin user and a
+  local-only fixture artifact (two assistant-drafted entries, never committed) for filings near the 1601 N Milwaukee
+  and 14-28-319-102 reference parcels. Result: 76 passed, 1 failed. Overflow passed on all routes and devices, and
+  the milwaukee, pin1 and downtown budgets passed (the panel is collapsed by default). The one failure, twoflat's
+  Build section at 313 words against 303+8, reproduces with the flag off **and on `main`** (041821a), so it is live-data
+  drift that predates this work. The expanded panel was checked by hand at 375 px: seven figures with units, no
+  horizontal overflow.
 
 **2026-11-06 (later) — reader v5, and the supply of unseen filings runs out.**
 - *v5 (`ws2-pr4a-5`, frozen in `a1d9ebe`)* adds two withhold-only guards. A count never takes the first digit of a
