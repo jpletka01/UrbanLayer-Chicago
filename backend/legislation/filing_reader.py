@@ -32,12 +32,13 @@ from typing import Iterable
 
 import httpx
 
+from backend.legislation import address_titles
 from backend.legislation.ordinance_reader import normalize_district
 from backend.legislation.pending import attachment_allowed
 from backend.retrieval import clerk
 
 
-READER_VERSION = "ws2-pr4a-3"
+READER_VERSION = "ws2-pr4a-4"
 _TYPE_1 = re.compile(r"\b(?:APP(?:LICATION)?\s*(?:NO\.?\s*)?)?\d{4,}T1\b", re.IGNORECASE)
 MAX_SAMPLE_FILE_BYTES = 8 * 1024 * 1024
 
@@ -448,6 +449,9 @@ def parse_narrative_pages(pages: Iterable[tuple[int, str]]) -> list[ParsedField]
         efficiency = efficiency or bool(_EFFICIENCY.search(text))
     if efficiency:
         found["dwelling_units"] = []
+    # v4: a whole-number FAR of 10 or more is almost always a dropped decimal point
+    # ("2.17" OCR'd as "217" in held-out O2024-0012331); withhold rather than guess.
+    found["far"] = [(v, p) if "." in v or int(v) < 10 else ("withheld", p) for v, p in found["far"]]
     units = {"lot_area": "sq ft", "height": "ft", "parking": "spaces"}
     out: list[ParsedField] = []
     for field_id, values in found.items():
@@ -462,16 +466,35 @@ def parse_labeled_type1_text(text: str) -> list[ParsedField]:
     return parse_narrative_pages([(1, text)])
 
 
-def read_packet(path: Path, role: str, *, cache_dir: Path | None = None) -> tuple[list[PageScreen], list[ParsedField]]:
+def title_streets(title: str) -> set[str]:
+    """Street-name spellings from a clean Clerk title ("... at 4901 W Ferdinand St") for the narrative check."""
+    parsed = address_titles.parse_title(title)
+    return {re.sub(r"[^A-Z0-9]", "", spelling) for seg in parsed.segments
+            for spelling in address_titles.name_candidates(seg.name)} - {""}
+
+
+def _names_street(text: str, streets: set[str]) -> bool:
+    """Space-insensitive ("Le Moyne" = "LeMoyne"); names under 3 characters never count."""
+    squashed = re.sub(r"[^A-Z0-9]", "", text.upper())
+    return any(len(street) >= 3 and street in squashed for street in streets)
+
+
+def read_packet(path: Path, role: str, *, cache_dir: Path | None = None,
+                title: str | None = None) -> tuple[list[PageScreen], list[ParsedField]]:
     """Screen and parse one retained private PDF.  Returns classifications and fields, never text.
 
     Fails closed: any EDS or unreadable page means no fields from this packet.
+    v4: a narrative is read only when its parsed pages name a street from the
+    matter's Clerk title (held-out O2024-0007192 carried another property's
+    narrative); a title with no parseable street means no narrative fields.
     """
     texts = page_texts(path, cache_dir)
     screens = [PageScreen(n, "unreadable" if t is None else classify_page_text(t)) for n, t in enumerate(texts, 1)]
     if not screens or any(s.status in {"eds", "unreadable"} for s in screens):
         return screens, []
     eligible = [(s.page, texts[s.page - 1] or "") for s in screens if s.status == role]
+    if role == "narrative" and not _names_street(" ".join(t for _, t in eligible), title_streets(title or "")):
+        return screens, []
     parse = parse_ordinance_pages if role == "ordinance" else parse_narrative_pages
     return screens, parse(eligible)
 

@@ -1,0 +1,586 @@
+{
+  "reader_version": "ws2-pr4a-4",
+  "panel_rows": 34,
+  "split": "all",
+  "labels_human_verified": false,
+  "gate": "post_hoc",
+  "summary": {
+    "train": {
+      "rows": 21,
+      "expected": 120,
+      "emitted": 114,
+      "matched": 113,
+      "precision": 0.9912,
+      "recall": 0.9417,
+      "wrong_value": 1,
+      "wrong_page": 0,
+      "wrong_unit": 0
+    },
+    "held_out": {
+      "rows": 13,
+      "expected": 67,
+      "emitted": 51,
+      "matched": 51,
+      "precision": 1.0,
+      "recall": 0.7612,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0
+    }
+  },
+  "per_field": {
+    "dwelling_units": {
+      "expected": 14,
+      "emitted": 11,
+      "matched": 11
+    },
+    "far": {
+      "expected": 28,
+      "emitted": 26,
+      "matched": 26
+    },
+    "from_district": {
+      "expected": 32,
+      "emitted": 31,
+      "matched": 31
+    },
+    "height": {
+      "expected": 15,
+      "emitted": 12,
+      "matched": 12
+    },
+    "lot_area": {
+      "expected": 33,
+      "emitted": 25,
+      "matched": 25
+    },
+    "parking": {
+      "expected": 31,
+      "emitted": 27,
+      "matched": 26
+    },
+    "to_district": {
+      "expected": 34,
+      "emitted": 33,
+      "matched": 33
+    }
+  },
+  "rows": [
+    {
+      "record_number": "O2023-0002168",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 2,
+      "matched": 2,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "dwelling_units",
+        "lot_area",
+        "parking"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2024-0007192",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 1,
+      "emitted": 1,
+      "matched": 1,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2024-0012331",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 2,
+      "matched": 2,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "far",
+        "from_district",
+        "height",
+        "to_district"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2024-0012528",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 6,
+      "matched": 6,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2024-0013546",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 3,
+      "emitted": 2,
+      "matched": 2,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "lot_area"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0017146",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 4,
+      "emitted": 5,
+      "matched": 4,
+      "wrong_value": 1,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [
+        "parking"
+      ],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0017932",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "parking"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0018857",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "dwelling_units"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0018865",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 6,
+      "matched": 6,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0018871",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0018886",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 6,
+      "matched": 6,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0019644",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "height"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0020560",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "dwelling_units"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0020949",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2025-0020961",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0022474",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 7,
+      "emitted": 7,
+      "matched": 7,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0028686",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 2,
+      "matched": 2,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "far",
+        "height",
+        "lot_area",
+        "parking"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0028740",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 7,
+      "emitted": 7,
+      "matched": 7,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0028742",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 7,
+      "emitted": 7,
+      "matched": 7,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029356",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029371",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 6,
+      "matched": 6,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029372",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 7,
+      "emitted": 7,
+      "matched": 7,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029375",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 6,
+      "matched": 6,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029386",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029387",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 4,
+      "matched": 4,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "lot_area"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029394",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "lot_area"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029395",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 4,
+      "emitted": 3,
+      "matched": 3,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "lot_area"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029398",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 4,
+      "matched": 4,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "lot_area"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029403",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "lot_area"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029405",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 7,
+      "emitted": 7,
+      "matched": 7,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029415",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "parking"
+      ],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029422",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 5,
+      "matched": 5,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029425",
+      "split": "train",
+      "label_status": "assistant_draft",
+      "expected": 6,
+      "emitted": 6,
+      "matched": 6,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [],
+      "problems": []
+    },
+    {
+      "record_number": "O2026-0029435",
+      "split": "held_out",
+      "label_status": "assistant_draft",
+      "expected": 5,
+      "emitted": 4,
+      "matched": 4,
+      "wrong_value": 0,
+      "wrong_page": 0,
+      "wrong_unit": 0,
+      "mismatches": [],
+      "missed": [
+        "parking"
+      ],
+      "problems": []
+    }
+  ]
+}

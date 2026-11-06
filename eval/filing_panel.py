@@ -7,7 +7,8 @@ the reader's downloader fills (``research/pending-filing-pdfs/panel``).
 
 The split is fixed by a hash of the record number before any label is written
 (``split_for``; a test checks every row's stored split against it).  The parser is developed against ``train`` rows only; the
-``held_out`` rows are scored once per reader version.  The gate is
+``held_out`` rows are scored once: ``held_out_scored_with`` in the panel names
+the reader version that spent them, and any later version reports ``post_hoc``.  The gate is
 ``filing_evaluation.panel_passes`` on the held-out rows, and it can only
 *pass* when every panel row is ``human_verified``.  Rows labelled by the
 assistant are ``assistant_draft``: the result is then reported as
@@ -61,7 +62,7 @@ def run(panel: dict, *, split: str = "all", private: Path = PRIVATE) -> dict:
             if hashlib.sha256(path.read_bytes()).hexdigest() != attachment["sha256"]:
                 problems.append(f"{role}: sha256 differs from the labelled copy")
                 continue
-            screens, fields = filing_reader.read_packet(path, role, cache_dir=path.parent / "ocr")
+            screens, fields = filing_reader.read_packet(path, role, cache_dir=path.parent / "ocr", title=row.get("title"))
             if any(s.status in {"eds", "unreadable"} for s in screens):
                 problems.append(f"{role}: packet failed the page screen")
             for f in fields:
@@ -86,8 +87,13 @@ def run(panel: dict, *, split: str = "all", private: Path = PRIVATE) -> dict:
     held = scores["held_out"]
     verified = all(r["label_status"] == "human_verified" for r in panel["rows"])
     measured = fe.panel_passes(held, panel_size=len(panel["rows"]), held_out_size=len(held)) if split == "all" else None
+    spent = panel.get("held_out_scored_with")
     if measured is None:
         gate = "not_scored"
+    elif spent and spent != filing_reader.READER_VERSION:
+        # The held-out rows were already scored by an earlier reader version, and
+        # what that run showed shaped this one: the number is informative, never a gate.
+        gate = "post_hoc"
     elif not measured:
         gate = "fail"
     else:

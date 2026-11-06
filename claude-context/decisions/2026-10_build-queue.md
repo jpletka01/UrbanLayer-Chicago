@@ -40,6 +40,37 @@ privacy mistake during development, not evidence that the exclusion invariant he
 imperfect screen, so human review must still establish the safe page set. No 30-item hand-labelled panel or held-out
 accuracy result exists yet, and the feature must remain dark. The production image and served API are unchanged.
 
+**2026-11-06 (later) — role-scoped reader and the first measured gate: FAIL.**
+- *Attachments by role, not by order.* Every Type 1 matter carries four attachments: Ordinance (Legislation),
+  Narrative and Plans (Exhibits), Application (Miscellaneous) and EDS. The first manifest took whichever allowed PDF
+  came first, which is how Application packets with a bundled EDS page were downloaded. The reader now selects only
+  the Ordinance and the Narrative (`filing_reader.ROLES`); the Application (owner, applicant and attorney identity)
+  and the EDS are never requested. A matter missing either role, or with two candidates for one, is skipped.
+  *Revisit if* the Clerk renames attachments (the selector then finds nothing, which fails closed).
+- *Positive page types.* A page is parsed only when it is an `ordinance` page (ORDAIN + Title 17) or a `narrative`
+  page (says "Lot Area"); any EDS-marker or unreadable page still rejects the whole packet before it is kept.
+- *Sample.* All 58 pending Type 1 matters with both roles (45 + 13; 189 Type 1 titles in all) were requested:
+  116 PDFs requested, 110 kept (40.2 MB), 5 narratives rejected by the page screen, 1 refused by the 8 MB cap.
+  34 matters were labelled (21 train, 13 held out by the fixed hash rule; O2026-0029378 moved to train because
+  its narrative was read before the split existed). OCR text is cached only beside the private PDFs under the
+  ignored `research/` tree.
+- *Labels are assistant drafts.* Claude labelled each row from the page images (not the OCR the parser reads),
+  under the rules in `eval/filing_panel.json`. No person has checked them, so the panel cannot pass even when the
+  numbers clear the floors (`gate: provisional`). A row becomes `human_verified` only with a name and date.
+- *Result (reader `ws2-pr4a-3`, frozen in `be63466` before any held-out page was opened).* Train: precision
+  99.1%, recall 94.2%, 1 wrong value. **Held out: precision 93.1% (floor 95%), recall 80.6%, 4 wrong values, 0 wrong
+  page/unit: FAIL.** Causes: O2024-0007192's narrative attachment describes another property (3 values correct
+  for that property, wrong for this matter); O2024-0012331's FAR 2.17 OCR'd as 217.
+- *v4 guards (`ws2-pr4a-4`) only withhold:* a whole-number FAR of 10 or more is withheld, and a narrative is read
+  only when it names a street from the matter's Clerk title. Re-scored on the same rows: held out 100% precision,
+  76.1% recall, 0 wrong. **That is post hoc, not a gate**: the panel records `held_out_scored_with: ws2-pr4a-3`, and
+  the runner reports `post_hoc` for any later version.
+- *What a pass needs:* (1) a person checks the 34 labels against the cited pages; (2) a fresh held-out set scored
+  once with the then-current reader. Every eligible *pending* Type 1 filing is now in the panel, so the fresh set
+  must be historical passed Type 1 filings (the Revisit above), downloaded by role. Until then
+  `pending_proposal_details_enabled` stays false and nothing is published. Full numbers:
+  `eval/results/filing_panel_2026-11-06_v3_gate.json` (gate) and `_v4_posthoc.json`.
+
 ---
 
 ## Item 0: nightly backups and an off-box copy (#58, 2026-10-20)

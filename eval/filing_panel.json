@@ -6,16 +6,307 @@
   "Districts are written as normalize_district writes them (RS-3, RT-3.5, PD 1492).",
   "Numbers are copied as printed with commas removed (stated decimals kept; '.78' is written 0.78). No arithmetic and no unit conversion.",
   "far is the project's FAR. A row labelled Base/Maximum/Allowed FAR is the district's figure and is not labelled.",
-  "dwelling_units needs a dwelling/residential unit-count label; a parenthetical in a density row is not labelled; a table that counts efficiency units separately is not labelled.",
+  "dwelling_units needs a dwelling/residential unit-count label ('None' is 0); a parenthetical in a density row is not labelled; a table that counts non-zero efficiency units separately is not labelled (refined while labelling held-out O2025-0018857, whose efficiency count is 0).",
   "height is labelled only in whole or decimal feet (X'-0\" counts as X); feet plus non-zero inches is not representable as a plain foot value and is not labelled.",
   "parking is automobile/off-street parking (bicycle and loading excluded); 'zero'/'none' is 0.",
   "page is the 1-based PDF page within the cited attachment."
  ],
  "split_rule": "held_out iff int(sha256(record_number)[:8], 16) % 3 == 0 (eval.filing_panel.split_for), fixed before labelling; a record read during parser development before the split moves to train with a note.",
+ "held_out_scored_with": "ws2-pr4a-3",
+ "held_out_history": [
+  {
+   "reader_version": "ws2-pr4a-3",
+   "commit": "be63466",
+   "date": "2026-11-06",
+   "gate": "fail",
+   "held_out": {
+    "rows": 13,
+    "expected": 67,
+    "emitted": 58,
+    "matched": 54,
+    "precision": 0.931,
+    "recall": 0.806,
+    "wrong_value": 4,
+    "wrong_page": 0,
+    "wrong_unit": 0
+   },
+   "causes": [
+    "O2024-0007192: the Narrative and Plans attachment describes another property; 3 values correct for that property, wrong for this matter",
+    "O2024-0012331: OCR dropped the decimal point in FAR 2.17 (read as 217)"
+   ]
+  }
+ ],
  "schema_version": 1,
  "rows": [
   {
+   "record_number": "O2023-0002168",
+   "title": "Zoning Reclassification Map No. 4-G at 1030 W 21st St - App No. 22219T1",
+   "matter_id": "080DAA6B-0315-EE11-8F6D-001DD806F9D9",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2023-0002168 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/aa202303-a171-4c5e-abb5-31f59dff12f5.pdf",
+     "type": "Legislation",
+     "sha256": "4d5dde451b5b363491176fd9e4cdcde98b9491a372cbe78f679a64d0b3363c04",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2023-0002168 Exhibit 1 - Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/dfc453e5-d124-40c8-895e-434410ea373a.pdf",
+     "type": "Exhibits",
+     "sha256": "a6b5e0d28ced5a40fe7a8264b9bca1c35442e878384d595258d226cc3f749bed",
+     "pages": 9
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "C3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "17558.34",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "0",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "13",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "FAR not labelled ('Maximum FAR'); height not labelled (table 20 feet 8 inches, prose 18.75 feet)."
+  },
+  {
+   "record_number": "O2024-0007192",
+   "title": "Zoning Reclassification Map No. 3-J at 3301-3315 W Division St and 1148-1158 N Spaulding Ave- App No. 22337T1",
+   "matter_id": "466C6AC7-43B9-EE11-A568-001DD806901D",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0007192 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/75262fbe-108e-460c-9367-a1bb3629f651.pdf",
+     "type": "Legislation",
+     "sha256": "ec6b99c17dfbf0c298877142e3186cba81f7c6f1e09e2d3f33683ceb922a1560",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2024-0007192 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/3b1c156c-40f3-4724-892b-4bda98202ff7.pdf",
+     "type": "Exhibits",
+     "sha256": "2dbc108606863bb468001b82dade4726ece18817c19f10a2ff3b699f2d30c398",
+     "pages": 7
+    }
+   },
+   "labels": {
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    }
+   },
+   "notes": "The attached Narrative and Plans describes a different property (500 W 26th St, RS-3 to B2-3) from the ordinance (3301-3315 W Division St, B1-2 and B3-1 to B2-3): no narrative field is labelled. Two source districts: from_district not labelled."
+  },
+  {
+   "record_number": "O2024-0012331",
+   "title": "Zoning Reclassification Map No. 4-H at 2052 W 21st St - App No. 22542T1",
+   "matter_id": "99C3EE93-2475-EF11-A671-001DD8306DF0",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0012331 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/5ca77bd9-57e4-4894-a017-19b48abd33ab.pdf",
+     "type": "Legislation",
+     "sha256": "92c4444431b2bd95931dc6928c53ebe741c84c96a1016532ea6bf0f8e218e00e",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2024-0012331 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/2131ef78-23c8-4800-bd86-dc8af21e001e.pdf",
+     "type": "Exhibits",
+     "sha256": "a6f6e7fb7b175d8ba6c1e61f4b82d2538bd03afe340775bce00658e582dc3514",
+     "pages": 6
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3125.00",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "2.17",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "2",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "47",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "The ordinance omits 'Title 17' ('That the Chicago Zoning Ordinance be amended')."
+  },
+  {
+   "record_number": "O2024-0012528",
+   "title": "Zoning Reclassification Map No. 9-H at 3751-3759 N Western Ave and 2347-2357 W Grace St - App No. 22566T1",
+   "matter_id": "6E00A73D-C476-EF11-A671-001DD804C7AB",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0012528 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/8a5d8237-7d41-42d4-9c7d-c7ca544ae744.pdf",
+     "type": "Legislation",
+     "sha256": "1dcd2d6b37a16e0b0011ee27fb01638844e1189ded7e27d27443f12e16fbfefa",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2024-0012528 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/a9397f11-52fc-40fa-8bd2-f5c91f1baa0f.pdf",
+     "type": "Exhibits",
+     "sha256": "49db7e1f3829374e9065ad2c00985356cf56b6e098186a4e5435fb426ad369d4",
+     "pages": 15
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "9631.8",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "3.0",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "31",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "6",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2024-0013546",
+   "title": "Zoning Reclassification Map No. 16-E at 6521 S Rhodes Ave - App No. 22599T1",
+   "matter_id": "62B19DBD-1193-EF11-AC21-001DD804C7AB",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2024-0013546 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/1dc9032c-f7d8-430d-8986-d33583e76cbe.pdf",
+     "type": "Legislation",
+     "sha256": "f6ca4539a767ce5a0979f35df5dd063eeabbaf5e8cc05d1a1cc0b965f1e3cdf6",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2024-0013546 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/2b29bc70-3490-4c3b-a8e2-246b2f4a1c8e.pdf",
+     "type": "Exhibits",
+     "sha256": "d0282148fd6ac2f0cafb9b7515824f8e5d83ad26bec20783ab5517c684b88c7f",
+     "pages": 10
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "2934",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Lot area stated as 'Actual lot area = 2,934 sqft'; FAR row states square feet; height and parking are stated as maxima/ratios."
+  },
+  {
    "record_number": "O2025-0017146",
+   "title": "Zoning Reclassification Map No. 13-J at 3240 W Foster Ave - App No. 22745T1",
    "matter_id": "6895D7DB-A42A-F011-8C4D-001DD8097675",
    "split": "train",
    "label_status": "assistant_draft",
@@ -66,7 +357,136 @@
    "notes": "Parking not labelled: the table says 10 vehicular spaces, the note on the same page says two existing spaces."
   },
   {
+   "record_number": "O2025-0017932",
+   "title": "Zoning Reclassification Map No. 4-H at 1616 W 17th St - App No. 22780T1",
+   "matter_id": "B32D7DD7-7F48-F011-8779-001DD8307DDE",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0017932 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/1e8250e8-b101-4934-a4e2-062d8b124cd0.pdf",
+     "type": "Legislation",
+     "sha256": "465136503c5f3018145fe02fb750c6e684da21f3034085334eb4635e8d31e704",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0017932 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/593cebec-ca87-4020-b194-07ccb96e67ac.pdf",
+     "type": "Exhibits",
+     "sha256": "0591447609670afcea634ea5daaa096e5987118624af85b6a3fd58a5463365d3",
+     "pages": 4
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-6",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3125",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.88",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "47.06",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "2",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2025-0018857",
+   "title": "Zoning Reclassification Map No. 4-H at 1843-1845 W 19th St - App No. 22808T1",
+   "matter_id": "66E79280-4366-F011-BEC1-001DD80DE488",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0018857 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/e61e16a0-24db-4f87-aa9b-0813b1ea5c6a.pdf",
+     "type": "Legislation",
+     "sha256": "7ad79c25bb3863982ebd92084e47b3039170706251441d009c329fc678880220",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0018857 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/8dcf0bf0-5622-4bdd-bec4-16cd7fe5f402.pdf",
+     "type": "Exhibits",
+     "sha256": "b1bf57921ff91c1d0b54ed4014db9ced38e33a8d88844c76e6db5210ac7f2ff4",
+     "pages": 9
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-6",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "5904",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "2.2",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "16",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Efficiency units stated as 0, so the 16 dwelling units are the whole count."
+  },
+  {
    "record_number": "O2025-0018865",
+   "title": "Zoning Reclassification Map No. 7-I at 2953-2959 W Belmont Ave - App No. 22815T1",
    "matter_id": "AD858F4C-6E66-F011-BEC1-001DD80DE488",
    "split": "train",
    "label_status": "assistant_draft",
@@ -130,6 +550,7 @@
   },
   {
    "record_number": "O2025-0018871",
+   "title": "Zoning Reclassification Map No. 6-H at 2212-2216 S Leavitt St - App No. 22818T1",
    "matter_id": "83A38B3C-0667-F011-BEC1-001DD80DE488",
    "split": "train",
    "label_status": "assistant_draft",
@@ -187,6 +608,7 @@
   },
   {
    "record_number": "O2025-0018886",
+   "title": "Zoning Reclassification Map No. 6-H at 2219-2221 W Cermak Rd - App No. 22822T1",
    "matter_id": "EECD8742-1467-F011-BEC1-001DD80DE488",
    "split": "train",
    "label_status": "assistant_draft",
@@ -250,6 +672,7 @@
   },
   {
    "record_number": "O2025-0019644",
+   "title": "Zoning Reclassification Map No. 3-G at 932 N Elston Ave - App No. 22847T1",
    "matter_id": "CD4BA82D-B994-F011-B4CB-001DD809A5D6",
    "split": "train",
    "label_status": "assistant_draft",
@@ -313,6 +736,7 @@
   },
   {
    "record_number": "O2025-0020560",
+   "title": "Zoning Reclassification Map No. 7-J at 3735-3737 W Belmont Ave - App No. 22901T1",
    "matter_id": "38474C12-7CAB-F011-BBD2-001DD80FF25D",
    "split": "train",
    "label_status": "assistant_draft",
@@ -375,7 +799,66 @@
    "notes": ""
   },
   {
+   "record_number": "O2025-0020949",
+   "title": "Zoning Reclassification Map No. 4-H at 1600-1615 S Wolcott Ave and 1901-1923 W 16th St - App No. 22931T1",
+   "matter_id": "941052FB-E1BF-F011-BBD2-001DD80C6CBA",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0020949 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/39c5cf19-4208-4ac4-a039-e17a15eb5380.pdf",
+     "type": "Legislation",
+     "sha256": "21137a7cb9dcfa1fcfbcd10161c0e0a0b28c910047423995c69463483f14fda3",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0020949 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/843efd3e-90ee-438b-845b-71ca356a8005.pdf",
+     "type": "Exhibits",
+     "sha256": "8b519548e8a84b9057faf349ca1638bf27fc0af343942f7ce72c4e523aad2158",
+     "pages": 7
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "41981",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "106",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "21",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "FAR not labelled: the row is 'Maximum FAR: 2.6'."
+  },
+  {
    "record_number": "O2025-0020961",
+   "title": "Zoning Reclassification Map No. 6-K at 4017 W Ogden Ave - App No. 22936T1",
    "matter_id": "5437196C-FBBF-F011-BBD2-001DD80C033C",
    "split": "train",
    "label_status": "assistant_draft",
@@ -433,6 +916,7 @@
   },
   {
    "record_number": "O2026-0022474",
+   "title": "Zoning Reclassification Map No. 20-A at 8415 S Mackinaw Ave - App No. 22973T1",
    "matter_id": "70CB50BE-F4F2-F011-8406-001DD808A8BA",
    "split": "train",
    "label_status": "assistant_draft",
@@ -501,7 +985,72 @@
    "notes": ""
   },
   {
+   "record_number": "O2026-0028686",
+   "title": "Zoning Reclassification Map No. 10-E at 4200 S Dr Martin Luther King, Jr. - App No. 23158T1",
+   "matter_id": "24C54B08-D0B5-F111-AAAC-001DD80FDA55",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0028686 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/0962fcbf-9769-4e93-9fb1-d2adf4338d35.pdf",
+     "type": "Legislation",
+     "sha256": "096af6dad3bb2b490bb4ea5c5fa8fb2e8208dd7d6f30abee535e7fc74692e95d",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0028686 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f3427890-f217-4c15-af55-0a326125c083.pdf",
+     "type": "Exhibits",
+     "sha256": "ffc0678ad718565060ca12b7b17a3965c390ffae7119156bc6aa3aecfdb8212b",
+     "pages": 15
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RM-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "15112.5",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "0.35",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "14",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "17",
+     "unit": "ft",
+     "page": 2,
+     "source": "narrative"
+    }
+   },
+   "notes": "Building height is on narrative page 2."
+  },
+  {
    "record_number": "O2026-0028740",
+   "title": "Zoning Reclassification Map No. 4-H at 2142 W 18th Pl - App No. 23173T1",
    "matter_id": "0810C875-BBB6-F111-AAAC-001DD80FDA55",
    "split": "train",
    "label_status": "assistant_draft",
@@ -570,7 +1119,78 @@
    "notes": ""
   },
   {
+   "record_number": "O2026-0028742",
+   "title": "Zoning Reclassification Map No. 5-H at 1933 N Winchester Ave - App No. 23175T1",
+   "matter_id": "9AE4233B-C0B6-F111-AAAC-001DD80FDA55",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0028742 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/66bac463-36ce-499b-9d2d-8c2b26cdaf5b.pdf",
+     "type": "Legislation",
+     "sha256": "c6e08a97c93bbb87dbc7e40863bdb4ffda5afcfcdd67778033394e41cb4b7373",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0028742 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/e4eee897-2a9a-4ac8-8cd1-4ac949faf15e.pdf",
+     "type": "Exhibits",
+     "sha256": "c8c3fbc8dc78da3169ffac6b92637297e13d23309a3be0d71ff521d5ab4ebee7",
+     "pages": 7
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-4.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3000",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.37",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "5",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "29.0",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "2",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
    "record_number": "O2026-0029356",
+   "title": "Zoning Reclassification Map No. 93-B at 1828 W Race Ave - App No. 23178T1",
    "matter_id": "FC31A970-EBC3-F111-AAAE-001DD80FDAD3",
    "split": "train",
    "label_status": "assistant_draft",
@@ -628,6 +1248,7 @@
   },
   {
    "record_number": "O2026-0029371",
+   "title": "Zoning Reclassification Map No. 7-F at 3127-3139 N Halsted St/749-759 W Briar Pl - App No. 23185T1",
    "matter_id": "2B74CB2A-08C4-F111-AAAE-001DD80FDA55",
    "split": "train",
    "label_status": "assistant_draft",
@@ -691,6 +1312,7 @@
   },
   {
    "record_number": "O2026-0029372",
+   "title": "Zoning Reclassification Map No. 7-G at 920-928 W Diversey Pkwy - App No. 23186T1",
    "matter_id": "CD89F170-0CC4-F111-AAAE-001DD80FDA55",
    "split": "train",
    "label_status": "assistant_draft",
@@ -760,6 +1382,7 @@
   },
   {
    "record_number": "O2026-0029375",
+   "title": "Zoning Reclassification Map No. 3-J at 3724 W Le Moyne St - App No. 23187T1",
    "matter_id": "81E1AF6B-10C4-F111-AAAE-001DD80FDA55",
    "split": "train",
    "label_status": "assistant_draft",
@@ -822,7 +1445,66 @@
    "notes": ""
   },
   {
+   "record_number": "O2026-0029386",
+   "title": "Zoning Reclassification Map No. 2-I at 507-509 S California Ave - App No. 23191T1",
+   "matter_id": "97B11E35-0EC7-F111-AAAE-001DD80FDAD3",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029386 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/b8395c19-232f-4aa0-8aad-876587e0efe6.pdf",
+     "type": "Legislation",
+     "sha256": "14b14041e93063b257a7c97154f96351da63b0e2f200532a37f95a2869a57af6",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029386 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f074f286-d2eb-4273-bc80-009be2348e66.pdf",
+     "type": "Exhibits",
+     "sha256": "c248438df07c5adeb29a71fa41d0af6db9f1a8a965a95c7ba681e46f12fbd6d0",
+     "pages": 6
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "M1-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "18750",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "0.204",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "14",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
    "record_number": "O2026-0029387",
+   "title": "Zoning Reclassification Map No. 11-G at 4525-4531 N Clark St - App No. 23192T1",
    "matter_id": "89D014C2-10C7-F111-AAAE-001DD80FDAD3",
    "split": "train",
    "label_status": "assistant_draft",
@@ -879,7 +1561,72 @@
    "notes": "Lot area stated as '74.46' x 120' = 8,935 SF'."
   },
   {
+   "record_number": "O2026-0029394",
+   "title": "Zoning Reclassification Map No. 4-F at 2125-2127 S Archer Ave - App No. 23193T1",
+   "matter_id": "6681C4AC-17C7-F111-AAAE-001DD80FDAD3",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029394 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/39b5c609-b673-41a0-acc1-ccb3381e2ab9.pdf",
+     "type": "Legislation",
+     "sha256": "a2f7aa316956737b4f96ee77a564360b87ff95fbb2626b05f1276f2a85857de9",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029394 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/079e42bc-3532-40cf-b878-fc3b63035c4c.pdf",
+     "type": "Exhibits",
+     "sha256": "8a57e75a1c8d8fef714929b940e28b9002937174f9be35898c590689449494f3",
+     "pages": 3
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M1-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "C2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "6507",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "3.83",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "55",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
    "record_number": "O2026-0029395",
+   "title": "Zoning Reclassification Map No. 5-G at 2230-2232 N Wayne Ave - App No. 23194T1",
    "matter_id": "23590694-1BC7-F111-AAAE-001DD80B58E5",
    "split": "train",
    "label_status": "assistant_draft",
@@ -931,6 +1678,7 @@
   },
   {
    "record_number": "O2026-0029398",
+   "title": "Zoning Reclassification Map No. 3-F at 864-868 N Orleans St - App No. 23195T1",
    "matter_id": "B9E4FA12-20C7-F111-AAAE-001DD80B58E5",
    "split": "train",
    "label_status": "assistant_draft",
@@ -988,6 +1736,7 @@
   },
   {
    "record_number": "O2026-0029403",
+   "title": "Zoning Reclassification Map No. 13-G at 4940-4942 N Sheridan Rd - App No. 23196T1",
    "matter_id": "EDF29974-2DC7-F111-AAAE-001DD80B58E5",
    "split": "train",
    "label_status": "assistant_draft",
@@ -1051,6 +1800,7 @@
   },
   {
    "record_number": "O2026-0029405",
+   "title": "Zoning Reclassification Map No. 1-J at 746-748 N Trumbull Ave - App No. 23198T1",
    "matter_id": "2C3A6A54-32C7-F111-AAAE-001DD80B58E5",
    "split": "train",
    "label_status": "assistant_draft",
@@ -1120,6 +1870,7 @@
   },
   {
    "record_number": "O2026-0029415",
+   "title": "Zoning Reclassification Map No. 5-J at 3853 W Palmer Ave - App No. 23200T1",
    "matter_id": "9108E605-D8C7-F111-AAAE-001DD80FDA55",
    "split": "train",
    "label_status": "assistant_draft",
@@ -1183,6 +1934,7 @@
   },
   {
    "record_number": "O2026-0029422",
+   "title": "Zoning Reclassification Map No. 5-H at 2343-2349 N Damen Ave - App No. 23201T1",
    "matter_id": "02747516-E0C7-F111-AAAE-001DD80FDA55",
    "split": "train",
    "label_status": "assistant_draft",
@@ -1240,6 +1992,7 @@
   },
   {
    "record_number": "O2026-0029425",
+   "title": "Zoning Reclassification Map No. 9-L at 5555 W Newport Ave - App No. 23202T1",
    "matter_id": "5ED33460-E2C7-F111-AAAE-001DD80FDA55",
    "split": "train",
    "label_status": "assistant_draft",
@@ -1295,6 +2048,64 @@
     "height": {
      "value": "45",
      "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029435",
+   "title": "Zoning Reclassification Map No. 1-L at 4901 W Ferdinand St - App No. 23203T1",
+   "matter_id": "A87DEA3B-E5C7-F111-AAAE-001DD80FDA55",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029435 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/18eb4e03-5f3e-4f13-aaf9-193cd0fcddbb.pdf",
+     "type": "Legislation",
+     "sha256": "c967fa31b97a4a2fb8679b55ab9c15c059e42f140391c024c79465b43fee6221",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029435 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/9d80ef33-2598-436a-8124-0500287b26a1.pdf",
+     "type": "Exhibits",
+     "sha256": "83ea8d17ff8b61ff84ab2f2b117617eb39143bab602f2cbc708e349d1c467d63",
+     "pages": 32
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "12026",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "0.56",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "21",
+     "unit": "spaces",
      "page": 1,
      "source": "narrative"
     }

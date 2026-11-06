@@ -252,6 +252,15 @@ def test_filing_reader_parses_only_unambiguous_labeled_values_with_units():
     assert filing_reader.parse_narrative_pages([(1, "FAR: 2.0"), (2, "FAR: 2.0")]) == []
 
 
+def test_filing_reader_v4_withholds_dropped_decimal_far_and_other_property_narratives():
+    assert filing_reader.parse_labeled_type1_text("c) FAR 217") == []
+    assert [f.value for f in filing_reader.parse_labeled_type1_text("FAR: 2.17")] == ["2.17"]
+    streets = filing_reader.title_streets("Zoning Reclassification Map No. 3-J at 3724 W Le Moyne St - App No. 23187T1")
+    assert filing_reader._names_street("Property Location: 3724 W. LeMoyne Street", streets)
+    assert not filing_reader._names_street("500 West 26th Street", streets)
+    assert filing_reader.title_streets("not a zoning title") == set()
+
+
 def test_hand_labeled_pending_title_panel_meets_precision_floor_with_no_wrong_streets():
     panel = json.loads((FIX / "pending_title_panel.json").read_text())
     rows = panel["rows"]
