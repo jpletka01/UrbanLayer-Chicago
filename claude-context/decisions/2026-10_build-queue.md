@@ -24,8 +24,9 @@ Standing constraints that shaped many of these:
   `research/pending-filing-pdfs/`; Git may contain only matter/attachment identity, SHA-256, page numbers, labels,
   reviewed values, and synthetic test fixtures. Page-level EDS detection drops those pages before OCR text is stored.
 - **Evaluation cannot win by silence.** A held-out panel reports emitted-value precision (>=95%, zero wrong units and
-  zero wrong pages) and recall/coverage separately, with a minimum set before activation. Failure stops the reader
-  and records the decision; it never falls through to a model.
+  zero wrong pages) and recall/coverage separately. The initial release floor is 60% recall on the held-out panel;
+  this is intentionally conservative because absent/ambiguous fields are withheld. Failure stops the reader and
+  records the decision; it never falls through to a model.
 
 **Revisit:** after the Clerk-only count determines whether 30 eligible pending Type 1 filings exist. If not, the
 hand-labelled panel uses historical passed Type 1 filings, still with no EDS material in Git.
