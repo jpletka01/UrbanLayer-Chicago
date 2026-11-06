@@ -1,0 +1,1305 @@
+{
+ "about": "WS2 PR4 Type 1 filing-reader panel (decision Item 70). Identity, SHA-256 and expected values only; the PDFs stay in ignored research/pending-filing-pdfs/panel. Every row is assistant_draft until a person checks it against the cited page and sets human_verified.",
+ "label_rules": [
+  "A field is labelled only when the filing states one unambiguous value for the proposed project; a self-contradiction or a prose-only mention is left unlabelled.",
+  "from_district/to_district come from the ordinance (Legislation) clause, never the narrative; two source districts leave from_district unlabelled; every 'to those of' must name the same district.",
+  "Districts are written as normalize_district writes them (RS-3, RT-3.5, PD 1492).",
+  "Numbers are copied as printed with commas removed (stated decimals kept; '.78' is written 0.78). No arithmetic and no unit conversion.",
+  "far is the project's FAR. A row labelled Base/Maximum/Allowed FAR is the district's figure and is not labelled.",
+  "dwelling_units needs a dwelling/residential unit-count label; a parenthetical in a density row is not labelled; a table that counts efficiency units separately is not labelled.",
+  "height is labelled only in whole or decimal feet (X'-0\" counts as X); feet plus non-zero inches is not representable as a plain foot value and is not labelled.",
+  "parking is automobile/off-street parking (bicycle and loading excluded); 'zero'/'none' is 0.",
+  "page is the 1-based PDF page within the cited attachment."
+ ],
+ "split_rule": "held_out iff int(sha256(record_number)[:8], 16) % 3 == 0 (eval.filing_panel.split_for), fixed before labelling; a record read during parser development before the split moves to train with a note.",
+ "schema_version": 1,
+ "rows": [
+  {
+   "record_number": "O2025-0017146",
+   "matter_id": "6895D7DB-A42A-F011-8C4D-001DD8097675",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0017146 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/1665f351-482c-44ac-9bf2-b7ccc43a6938.pdf",
+     "type": "Legislation",
+     "sha256": "358034706736007d237064d01cac31fcc486ed298125a692bce0f1357c47d094",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0017146 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/0fad5164-77da-45f2-bc72-26773ddda65d.pdf",
+     "type": "Exhibits",
+     "sha256": "a0029ed442ab01a1abba37890f6aed9261023f167d51d28cfdc70bb6b6080c75",
+     "pages": 4
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3125",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "0.78",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Parking not labelled: the table says 10 vehicular spaces, the note on the same page says two existing spaces."
+  },
+  {
+   "record_number": "O2025-0018865",
+   "matter_id": "AD858F4C-6E66-F011-BEC1-001DD80DE488",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0018865 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/d44214c0-2336-4154-92f8-d24b78ebb05a.pdf",
+     "type": "Legislation",
+     "sha256": "6c7ea7146024b6b28b5794a5bfaca8e162172041ad911d6233651984e2ec1714",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0018865 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/e0e3dfbd-3998-42dd-9c1a-2d1660216ced.pdf",
+     "type": "Exhibits",
+     "sha256": "0171738fdaae72a3bc91f5012d031b282c51f55dbb6ed959bc4edfa3f2937e7b",
+     "pages": 8
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "C1-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "9150.55",
+     "unit": "sq ft",
+     "page": 2,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "4.00",
+     "unit": null,
+     "page": 2,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "24",
+     "unit": null,
+     "page": 2,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "11",
+     "unit": "spaces",
+     "page": 2,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2025-0018871",
+   "matter_id": "83A38B3C-0667-F011-BEC1-001DD80DE488",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0018871 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/c04c5c9c-a9b1-4b32-8cb6-bca5625045eb.pdf",
+     "type": "Legislation",
+     "sha256": "d5f3eeeb51cea0716566b45f9436c8ee1be57cdcafe66a4166066b965e401610",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0018871 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/537c71d0-1795-42cb-95d0-078e1c990abf.pdf",
+     "type": "Exhibits",
+     "sha256": "6d1a1aea440ba7ca94310e6393567f964c68df6b3cb9e7ebdd656e3e58d09760",
+     "pages": 10
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "C1-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "9450",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "30",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "16",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "FAR not labelled: the row is 'Maximum FAR: 4.0' (district maximum), not the project's FAR."
+  },
+  {
+   "record_number": "O2025-0018886",
+   "matter_id": "EECD8742-1467-F011-BEC1-001DD80DE488",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0018886 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f679abee-c0f7-47e3-8a72-5b25d20032fb.pdf",
+     "type": "Legislation",
+     "sha256": "38dcd853f95f8bce49da56dd7d8e192106c6efff708b5de79018ad15f56d460a",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0018886 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/4f17d839-50f4-453e-848b-cf1218657e5f.pdf",
+     "type": "Exhibits",
+     "sha256": "520432fa9dd890a6d2496b3aec122c4cee14df98b69970627240ff477a2f9162",
+     "pages": 6
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "4800",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "4.0",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "16",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "4",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2025-0019644",
+   "matter_id": "CD4BA82D-B994-F011-B4CB-001DD809A5D6",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0019644 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/0b491ad3-7b81-4f1f-a3ef-008c305a86e1.pdf",
+     "type": "Legislation",
+     "sha256": "8686f12a478071975e5d659f8dcf71b4dd3656a955117823fada9948b2f4a47f",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0019644 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/3c89de08-5e08-4778-ba83-fdc9e3ea37c9.pdf",
+     "type": "Exhibits",
+     "sha256": "6737539ebc114666cdd888eef9d240d42d5be136080d4ef71833b13cead01233",
+     "pages": 10
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M3-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "654.50",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "3",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "41",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "1",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Lot area 654.50 sf as stated (agrees with the MLA density row)."
+  },
+  {
+   "record_number": "O2025-0020560",
+   "matter_id": "38474C12-7CAB-F011-BBD2-001DD80FF25D",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0020560 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/6665ea47-ba55-432a-8d6f-526cedee4dc3.pdf",
+     "type": "Legislation",
+     "sha256": "3384fede44c9ca53cc749fa851b7e58267a80dc442c5dec4b62568e124a18cc7",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0020560 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/0804667d-b62c-431f-991e-6b8452c149ec.pdf",
+     "type": "Exhibits",
+     "sha256": "5d4b6cd1aa0f8e984832577f9b799227fd65900ed25fefb6d2a16ac80d9e0a5c",
+     "pages": 4
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "C1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "8125",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.47",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "0",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2025-0020961",
+   "matter_id": "5437196C-FBBF-F011-BBD2-001DD80C033C",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2025-0020961 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/be4c9197-8797-4ee1-9099-5b002f10bcf7.pdf",
+     "type": "Legislation",
+     "sha256": "129a16f87a89ad92750c84b6fd705397d39972b9fa3ddde6362beeacdada7be1",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2025-0020961 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/64ca05e5-2359-4d9b-9992-c066c72b171b.pdf",
+     "type": "Exhibits",
+     "sha256": "689813eb83bd06fef58088db231ea0e8dbcf8a245fc6ea8d5f8268f054bf05a2",
+     "pages": 2
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "C1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3947",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "30",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "FAR not labelled: 'Base F.A.R.: 2.2' is the district base, not the project's FAR."
+  },
+  {
+   "record_number": "O2026-0022474",
+   "matter_id": "70CB50BE-F4F2-F011-8406-001DD808A8BA",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0022474 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/b0f42e64-e103-4aa5-88fc-e1493fb964eb.pdf",
+     "type": "Legislation",
+     "sha256": "1379a9cd27f76a899649f78c79fd05a8983f018d104dd566b5d8234e1e26472a",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0022474 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/2dfceac4-8f79-4808-baf2-5beb74b05101.pdf",
+     "type": "Exhibits",
+     "sha256": "5cc9310385b378680f6b81294bde4609aa64d275024b720c62047721352ef197",
+     "pages": 8
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3100",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.02",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "4",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "32.87",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0028740",
+   "matter_id": "0810C875-BBB6-F111-AAAC-001DD80FDA55",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0028740 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/7defb000-8e56-4953-a2d8-0a4a3ae701fe.pdf",
+     "type": "Legislation",
+     "sha256": "abf7245ecef4a38dee00cb0c5d0d941cce6f77262f1b83875ac1e50a6432abd4",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0028740 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/d9ea9ab2-e736-47eb-8010-51513f9736af.pdf",
+     "type": "Exhibits",
+     "sha256": "e93ad21d5b5111ef87f95a3abcafaa8f45c7f1c6805c24039ab969ba2d3132b1",
+     "pages": 3
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "2978.88",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.58",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "5",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "27.0",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029356",
+   "matter_id": "FC31A970-EBC3-F111-AAAE-001DD80FDAD3",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029356 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/81a585d3-b563-4997-9c11-3a356ff4190a.pdf",
+     "type": "Legislation",
+     "sha256": "c922cded76d193047aa6ed433b0af1a829de06dec5e900645961313f541a5504",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029356 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f71c3e17-6c92-4da6-8546-bda903bb9eaf.pdf",
+     "type": "Exhibits",
+     "sha256": "f7b42fc3135356481e9068211c83304b9f346d6ed6184ab517b16ecd2aa5d8bb",
+     "pages": 10
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RT-3.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "4320",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "0.9984",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "2",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029371",
+   "matter_id": "2B74CB2A-08C4-F111-AAAE-001DD80FDA55",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029371 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/eb8cc01e-bd37-4d0f-b8e5-53b748cc6ac4.pdf",
+     "type": "Legislation",
+     "sha256": "21c998ed38baa645c425dcf0a6ffbb4b34ba87722edd64bc3b2f46d632277cf5",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029371 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/fb579d49-e8bc-4fba-a84d-35cea7e86fa5.pdf",
+     "type": "Exhibits",
+     "sha256": "7ba1d2cbb71548a30b92ab4c150b9702e7e893a00ec648ac12017c978ec5f987",
+     "pages": 9
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "17289",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "3.90",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "67",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "14",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029372",
+   "matter_id": "CD89F170-0CC4-F111-AAAE-001DD80FDA55",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029372 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/fa05c8a1-24a8-4ed1-a6e2-be154e767c40.pdf",
+     "type": "Legislation",
+     "sha256": "e6a22ae3599202c5b4ffaa9e0e5a720cc24489581a23c55340493a4c15ae38f0",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029372 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/44f32c60-77c8-4e08-a851-44f2092fa229.pdf",
+     "type": "Exhibits",
+     "sha256": "5c859cd13656f1647a8424ecb77c040cbcef19ad95ee094e2976893bbf97d4e1",
+     "pages": 19
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "12400",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "3.90",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "52",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "8",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "65",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029375",
+   "matter_id": "81E1AF6B-10C4-F111-AAAE-001DD80FDA55",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029375 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/c99039ef-2a1e-4899-9e08-60bc9aaeeeb3.pdf",
+     "type": "Legislation",
+     "sha256": "e97bcfe66cd6687034f10bc9eff9f66b02184ca48d175553cb174839b760114d",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029375 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/8fadd9a4-90e8-4ea6-92e5-a5086d471a64.pdf",
+     "type": "Exhibits",
+     "sha256": "b23dd568e48affc7faddcad91a561fd157b4a1177aeb85f848253cb2577a253b",
+     "pages": 7
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3130",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "2.2",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "33.50",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029387",
+   "matter_id": "89D014C2-10C7-F111-AAAE-001DD80FDAD3",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029387 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f6110791-c3f9-4a32-9132-685057cea73c.pdf",
+     "type": "Legislation",
+     "sha256": "06ee832287c26964612458e23b1e6bf882b4042f1c379951fa763b080144bad1",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029387 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/90143086-3099-47e5-acad-7c05e67edd1e.pdf",
+     "type": "Exhibits",
+     "sha256": "15808efddfcb2f04dee3b82a441189e900e9c0896c0960c4ba872a6031cad8db",
+     "pages": 14
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "C1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "C1-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "8935",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "2.5",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "10",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Lot area stated as '74.46' x 120' = 8,935 SF'."
+  },
+  {
+   "record_number": "O2026-0029395",
+   "matter_id": "23590694-1BC7-F111-AAAE-001DD80B58E5",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029395 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/362e615f-1f94-490d-99ac-0811c1951268.pdf",
+     "type": "Legislation",
+     "sha256": "1e3a8a58339c43a0fe942c7031c477e184d32d88b3c5a11be363afb9409b5177",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029395 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/06182bef-cf65-4463-abe8-8e450e470918.pdf",
+     "type": "Exhibits",
+     "sha256": "c98d10c1bbdf9811df9d33ec360485008cbf86b97e058f1addd12553d10e8b30",
+     "pages": 4
+    }
+   },
+   "labels": {
+    "to_district": {
+     "value": "RT-4",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "8938.8",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "0.86",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "4",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Two source districts (RS-3 and RT-4) in two areas: from_district not a single value, not labelled."
+  },
+  {
+   "record_number": "O2026-0029398",
+   "matter_id": "B9E4FA12-20C7-F111-AAAE-001DD80B58E5",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029398 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/ea814b77-9233-4873-9a99-4f6a9cf8352d.pdf",
+     "type": "Legislation",
+     "sha256": "79cdedbbe04824f009e9696e249136b44222e401a0dff7fb1544a588b22de80d",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029398 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/5bf9c1c4-e538-4221-a483-39873b57b826.pdf",
+     "type": "Exhibits",
+     "sha256": "22041c4423e0ebe676468c5bf4f0d1c14910f5ec6a845b1a322d4f3d7710b01e",
+     "pages": 12
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "PD 1492",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "DX-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "7500",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "5.0",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029403",
+   "matter_id": "EDF29974-2DC7-F111-AAAE-001DD80B58E5",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029403 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f0c86533-cc62-465c-8c87-5428f1d8a809.pdf",
+     "type": "Legislation",
+     "sha256": "1b0821bf8899d986e7f9f053fcb3046db67c3b1eea667b955edd85fc0881c8fe",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029403 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/2b98b221-10f7-4446-9817-6b87bfc49975.pdf",
+     "type": "Exhibits",
+     "sha256": "a6e0bd5b56776e970e7bd71cb932d04d28c620168127c6f1d2c621e9b91c420b",
+     "pages": 9
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "8729.1",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "2.55",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "42.5",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029405",
+   "matter_id": "2C3A6A54-32C7-F111-AAAE-001DD80B58E5",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029405 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/5ba9e7fe-f57c-4d9b-a19e-eeccb08f48eb.pdf",
+     "type": "Legislation",
+     "sha256": "ffa9872082085972f3b1e9023f2e6fc70abe7fbdf80e90b94b417c299e984840",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029405 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/009f7b06-d90c-4203-9c80-65f3606a58cc.pdf",
+     "type": "Exhibits",
+     "sha256": "25f2d363182414d1e6c236528e7106197d94620159001a1d0ce2fffafed3cd8e",
+     "pages": 6
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "2096",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.2",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "dwelling_units": {
+     "value": "3",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "24.0",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029415",
+   "matter_id": "9108E605-D8C7-F111-AAAE-001DD80FDA55",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029415 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/df38b658-90cd-48ca-a561-4434f8651a76.pdf",
+     "type": "Legislation",
+     "sha256": "223e3d77add249a9cbe950c540a9e946819e90b0a6d45185b10c4e246b34159c",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029415 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/4ddac074-f9c5-4021-8c54-d0d946dec6e0.pdf",
+     "type": "Exhibits",
+     "sha256": "b2e1131dc533672ecdbbf4c30b440c7a2b7298c6e4d241662cc8dc1fd44bc0aa",
+     "pages": 4
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "RS-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3763",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.58",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "2",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "26.6",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029422",
+   "matter_id": "02747516-E0C7-F111-AAAE-001DD80FDA55",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029422 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/e8c5d4e6-70b1-4047-84e3-1da7ec25ee1c.pdf",
+     "type": "Legislation",
+     "sha256": "2851cc1839f974c3b85d26d30a9cf6763a798ebc0109f0c5237ccdd4ee53bb7b",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029422 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/eb3c84d8-6272-464a-8b43-15eff3713910.pdf",
+     "type": "Exhibits",
+     "sha256": "77881baa6d33be50e9fd59a03352b44be2b2aa513624aa4100b951941e1e029d",
+     "pages": 13
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M3-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B2-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "11661",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "2.9",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "16",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2026-0029425",
+   "matter_id": "5ED33460-E2C7-F111-AAAE-001DD80FDA55",
+   "split": "train",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2026-0029425 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f231f228-05e7-4d3c-8942-a789e4528fc9.pdf",
+     "type": "Legislation",
+     "sha256": "804c554b7b2ea06c7f6f7d2b324a0182561925d458448dc3c58d6ca194e73b77",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2026-0029425 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/a61a7527-bd61-4678-b32b-b29986013438.pdf",
+     "type": "Exhibits",
+     "sha256": "467476910526861f052b2618c696cf8b90073d4a1120e29ec4520bc51c7b6905",
+     "pages": 5
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "5423.75",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "2.2",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "2",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "45",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  }
+ ]
+}

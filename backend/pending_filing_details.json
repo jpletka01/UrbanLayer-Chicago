@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "reader_version": "ws2-pr4a-draft",
+  "schema_version": 2,
+  "reader_version": "ws2-pr4a-2",
   "reviewed_at": null,
   "details": {}
 }

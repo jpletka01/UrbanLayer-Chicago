@@ -21,6 +21,7 @@ class FieldValue:
     value: str
     page: int
     unit: str | None = None
+    source: str | None = None  # attachment role the page belongs to
 
 
 @dataclass(frozen=True)
@@ -54,7 +55,7 @@ def evaluate(expected: dict[str, FieldValue], emitted: dict[str, FieldValue]) ->
     """Score an extraction by exact value/page/unit agreement.
 
     An omitted expected field lowers recall; an unexpected emitted field lowers
-    precision.  A page or unit mismatch is separately counted and blocks release
+    precision.  A page (or attachment) or unit mismatch is separately counted and blocks release
     even if another field happens to make aggregate precision look acceptable.
     """
     matched = wrong_value = wrong_page = wrong_unit = 0
@@ -63,7 +64,7 @@ def evaluate(expected: dict[str, FieldValue], emitted: dict[str, FieldValue]) ->
         if label is None or actual.value != label.value:
             wrong_value += 1
             continue
-        if actual.page != label.page:
+        if actual.page != label.page or actual.source != label.source:
             wrong_page += 1
             continue
         if actual.unit != label.unit:
