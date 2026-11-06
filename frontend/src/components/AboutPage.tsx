@@ -2909,6 +2909,21 @@ Consumers → Property Profile (renders pin + confidence badge)
             repaired or counted, never fatal (Item 68).
           </P>
 
+          <Sub>Reading applicant filings without a model, and failing the test honestly</Sub>
+          <P>
+            Pending Type 1 rezonings attach the applicant's own project table as scanned PDFs, next to an Application
+            form and an Economic Disclosure Statement that name private people. The reader asks the City Clerk only
+            for the Ordinance and the Narrative attachments, so those two are never downloaded. It rejects any packet
+            with a page that looks like a disclosure form, and reads labelled values with fixed patterns: no
+            arithmetic, no model. A 34-filing panel was labelled from the page images and split by a hash before any
+            label was written, and the reader was frozen in a commit before the held-out pages were opened. It failed:
+            93.1% precision against a 95% floor. One filing carried another property's narrative, and OCR dropped
+            a decimal point (FAR 2.17 read as 217). Both fixes only withhold values. Re-scoring them on the same rows
+            is post hoc, so the runner refuses to call it a pass. The figures stay unpublished until a person checks
+            the labels and a fresh held-out set passes. Even then they are a Premium field, sent with a private,
+            no-store cache header and never sent to chat (Item 70).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}

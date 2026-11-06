@@ -2194,8 +2194,14 @@ async def scorecard(
     lat: float | None = None,
     lon: float | None = None,
     pin: str | None = None,
+    user: dict | None = Depends(get_current_user),
+    response: Response = None,  # injected by FastAPI; None only when a test calls the function directly
 ) -> dict:
-    """Non-AI instant-load property dashboard. Zero LLM cost."""
+    """Non-AI instant-load property dashboard. Zero LLM cost.
+
+    Anonymous and shared-cached; the caller is resolved only to gate WS2 PR4b's
+    reviewed proposal details, which are joined AFTER the cached work.
+    """
     # Every parcel the two address sources list for the typed address, fetched alongside
     # the resolution so the "how we found this parcel" panel can say when an address
     # maps to several parcels or the sources disagree (both are cached lookups).
@@ -2272,6 +2278,19 @@ async def scorecard(
         address=rl.address,
         authoritative_pin=resolved_confidence == "authoritative",
     )
+    # WS2 PR4b (dark): reviewed applicant-proposal details, per caller. Free callers learn only that
+    # reviewed details exist; a premium response carrying values must never sit in a shared cache.
+    if get_settings().pending_proposal_details_enabled and data["context"].upcoming_zoning is not None:
+        from backend.auth import has_tier
+        from backend.legislation.upcoming import attach_proposal_details
+
+        premium = has_tier(user, "premium")
+        await asyncio.to_thread(
+            attach_proposal_details, get_settings().pending_legislation_path,
+            data["context"].upcoming_zoning, premium=premium,
+        )
+        if premium and response is not None:
+            response.headers["Cache-Control"] = "private, no-store"
     data["nearest_parcel_unverified"] = nearest_parcel_unverified
     data["resolved_lat"] = rl.lat
     data["resolved_lon"] = rl.lon

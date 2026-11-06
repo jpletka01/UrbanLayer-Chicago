@@ -915,6 +915,28 @@ export interface UpcomingZoningFiling {
   segment?: string | null;
   match_kind: "subject_pin" | "subject_range" | "nearby";
   distance_mi?: number | null;
+  /** WS2 PR4b: reviewed applicant figures, premium responses only. */
+  proposal_details?: ProposalDetails | null;
+  /** "premium" = reviewed figures exist but this caller is not premium (no values are sent). */
+  proposal_details_status?: "premium" | null;
+}
+
+export type ProposalFieldId =
+  | "from_district" | "to_district" | "lot_area" | "dwelling_units" | "height" | "far" | "parking";
+
+export interface ProposalDetailField {
+  id: ProposalFieldId;
+  value: string;
+  unit?: string | null;
+  page: number;
+  document_name: string;
+  document_url: string;
+}
+
+export interface ProposalDetails {
+  reviewed_record: string;
+  reviewed_on: string;
+  fields: ProposalDetailField[];
 }
 
 export interface UpcomingZoningProvenance {

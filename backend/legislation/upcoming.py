@@ -13,9 +13,15 @@ from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from backend.legislation import address_titles, currency
+from backend.legislation import address_titles, currency, filing_details
 from backend.legislation.pending_store import read_status
-from backend.models import UpcomingZoningFiling, UpcomingZoningProvenance, UpcomingZoningSummary
+from backend.models import (
+    ProposalDetailField,
+    ProposalDetails,
+    UpcomingZoningFiling,
+    UpcomingZoningProvenance,
+    UpcomingZoningSummary,
+)
 
 
 RADIUS_MI = 0.5
@@ -214,3 +220,73 @@ def summary_for(
             confidence="low" if freshness == "stale" or placement_status == "partial" else "standard",
         ),
     )
+
+
+def attach_proposal_details(
+    path: Path | str,
+    summary: UpcomingZoningSummary,
+    *,
+    premium: bool,
+    details: dict[str, dict] | None = None,
+) -> int:
+    """Join reviewed proposal details onto this request's filings (WS2 PR4b).
+
+    Runs per request AFTER the shared, cached Profile work, on a summary built
+    for this request only. An entry joins only when its lifecycle's CURRENT
+    record and live attachment URL/name/type are the ones a person reviewed
+    (``filing_details.current_details``). Premium callers get the values;
+    free callers get ``proposal_details_status="premium"`` and nothing else.
+    Returns how many filings carry premium values (the caller then marks the
+    response private). Any read failure attaches nothing.
+    """
+    reviewed = filing_details.load_details() if details is None else details
+    filings = [*summary.subject_filings, *summary.nearby_filings]
+    if not reviewed or not filings:
+        return 0
+    records = [f.record_number for f in filings]
+    try:
+        with closing(sqlite3.connect(f"file:{Path(path)}?mode=ro", uri=True, timeout=2)) as con:
+            con.row_factory = sqlite3.Row
+            marks = ",".join("?" * len(records))
+            matters = {
+                row["record_number"]: row for row in con.execute(
+                    f"SELECT matter_id, lifecycle_id, record_number FROM matters WHERE record_number IN ({marks})", records,
+                )
+            }
+            matter_ids = [m["matter_id"] for m in matters.values()]
+            attachments: dict[str, list[dict]] = {}
+            for row in con.execute(
+                f"SELECT matter_id, file_name, url, attachment_type FROM attachments "
+                f"WHERE matter_id IN ({','.join('?' * len(matter_ids))})", matter_ids,
+            ):
+                attachments.setdefault(row["matter_id"], []).append(
+                    {"file_name": row["file_name"], "url": row["url"], "type": row["attachment_type"]}
+                )
+    except (OSError, sqlite3.Error):
+        return 0
+    served = 0
+    for filing in filings:
+        matter = matters.get(filing.record_number)
+        if matter is None:
+            continue
+        entry = filing_details.current_details(
+            matter["lifecycle_id"], filing.record_number, attachments.get(matter["matter_id"], []), details=reviewed,
+        )
+        if entry is None:
+            continue
+        if not premium:
+            filing.proposal_details_status = "premium"
+            continue
+        documents = entry["attachments"]
+        filing.proposal_details = ProposalDetails(
+            reviewed_record=entry["reviewed_record"], reviewed_on=entry["reviewed_on"],
+            fields=[
+                ProposalDetailField(
+                    id=field["id"], value=field["value"], unit=field.get("unit"), page=field["page"],
+                    document_name=documents[field["source"]]["file_name"], document_url=documents[field["source"]]["url"],
+                )
+                for field in entry["fields"]
+            ],
+        )
+        served += 1
+    return served

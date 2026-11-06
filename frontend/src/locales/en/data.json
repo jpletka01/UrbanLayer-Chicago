@@ -153,7 +153,35 @@
       "partialShort_one": "{{count}} filing couldn't be placed",
       "partialShort_other": "{{count}} filings couldn't be placed",
       "noneNear": "None on this property or within {{radius}} mi",
-      "proposedStatus": "Proposed · {{status}}"
+      "proposedStatus": "Proposed · {{status}}",
+      "proposal": {
+        "show": "Applicant's proposal",
+        "label": "Applicant's proposal for {{place}}",
+        "notApproved": "Applicant's figures, not approved",
+        "premium": "Proposal details with Premium",
+        "premiumExplain": "A person read the applicant's own filing for this proposal. The figures, with page citations, are part of Premium.",
+        "explain": "Copied by a person from the applicant's filing, with the page each figure is on. These are what the applicant asks for; the City has not approved them.",
+        "reviewedOn": "A person read the filing",
+        "page": "Page {{page}} of {{document}}",
+        "fields": {
+          "from_district": "Current district",
+          "to_district": "Proposed district",
+          "lot_area": "Lot area",
+          "dwelling_units": "Dwelling units",
+          "height": "Building height",
+          "far": "Floor area ratio",
+          "parking": "Car parking"
+        },
+        "values": {
+          "lot_area": "{{value}} sq ft",
+          "height": "{{value}} ft",
+          "far": "{{value}} FAR",
+          "dwelling_units_one": "{{count}} dwelling unit",
+          "dwelling_units_other": "{{count}} dwelling units",
+          "parking_one": "{{count}} space",
+          "parking_other": "{{count}} spaces"
+        }
+      }
     },
     "adu": {
       "allowed_by_right": "Coach houses and conversion units permitted by right",

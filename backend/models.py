@@ -939,6 +939,25 @@ class FigureNote(BaseModel):
     note: str
 
 
+class ProposalDetailField(BaseModel):
+    """One hand-reviewed value from the applicant's own filing, with its page citation (WS2 PR4b)."""
+
+    id: Literal["from_district", "to_district", "lot_area", "dwelling_units", "height", "far", "parking"]
+    value: str
+    unit: str | None = None
+    page: int
+    document_name: str
+    document_url: str
+
+
+class ProposalDetails(BaseModel):
+    """What the applicant proposes, as a person read it from the filing. Premium only; never an approval."""
+
+    reviewed_record: str
+    reviewed_on: str
+    fields: list[ProposalDetailField]
+
+
 class UpcomingZoningFiling(BaseModel):
     """One current applicant filing from the Clerk's non-final zoning docket."""
 
@@ -953,6 +972,10 @@ class UpcomingZoningFiling(BaseModel):
     segment: str | None = None
     match_kind: Literal["subject_pin", "subject_range", "nearby"]
     distance_mi: float | None = None
+    # WS2 PR4b, dark behind ``pending_proposal_details_enabled``. A premium caller gets the reviewed
+    # values; a free caller gets only ``"premium"`` (that reviewed details exist), never a value or a PDF URL.
+    proposal_details: ProposalDetails | None = None
+    proposal_details_status: Literal["premium"] | None = None
 
 
 class UpcomingZoningProvenance(BaseModel):
