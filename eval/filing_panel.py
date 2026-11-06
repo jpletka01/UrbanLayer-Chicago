@@ -139,11 +139,16 @@ def main(argv: list[str]) -> int:
     if args.fresh_panel:
         # Every earlier, spent fresh set joins the development rows.
         for spent in sorted(PANEL.parent.glob("filing_panel_*.json")):
-            if spent.resolve() != args.fresh_panel.resolve():
-                extra = json.loads(spent.read_text())
+            extra = json.loads(spent.read_text())
+            # Only a set already scored joins development; an unspent one stays sealed.
+            if spent.resolve() != args.fresh_panel.resolve() and extra.get("held_out_scored_with"):
                 base = PANEL.parent.parent / extra.get("private_dir", "research/pending-filing-pdfs/historical")
                 panel = {**panel, "rows": panel["rows"] + [{**r, "_private": str(base)} for r in extra["rows"]]}
         fresh = json.loads(args.fresh_panel.read_text())
+        if len(fresh["rows"]) < fe.MIN_HELD_OUT_ROWS:
+            # Scoring spends a held-out set; a set too small to pass must not be spent.
+            print(f"{args.fresh_panel.name}: {len(fresh['rows'])} rows; not scored until it has {fe.MIN_HELD_OUT_ROWS}", file=sys.stderr)
+            return 2
         fresh_private = PANEL.parent.parent / fresh["private_dir"]
     elif args.fresh:
         fresh = json.loads(FRESH.read_text())

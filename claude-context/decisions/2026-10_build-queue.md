@@ -90,6 +90,25 @@ accuracy result exists yet, and the feature must remain dark. The production ima
   person-checked labels before it can pass. *Revisit if* Jack decides that a precision floor alone, without the
   zero-wrong-value rule, is the publication gate. That is his call, not this record's.
 
+**2026-11-06 (later) — reader v5, and the supply of unseen filings runs out.**
+- *v5 (`ws2-pr4a-5`, frozen in `a1d9ebe`)* adds two withhold-only guards. A count never takes the first digit of a
+  letter-spaced number ("1 7 spaces"). A table height is withheld when the narrative's prose states a different
+  height. On all 49 development rows (both earlier sets, now spent) it changes only the two rows that failed v4,
+  and both are now withheld. That is post hoc, not a gate.
+- *Pre-2023 is not a usable source.* The 479 passed Type 1 titles from 2019 to 2022 come from the old Legistar
+  system as one combined `Legislation` PDF per matter (`O2022-3372.pdf`), with no separate Ordinance or Narrative.
+  The role selector skips them. Downloading them would pull Application and EDS pages onto disk, which is the
+  privacy mistake this reader was rebuilt to prevent. *Alternative rejected:* screening and deleting those
+  packets, because the page screen runs only after the bytes are written.
+- *Accruing set.* Only 6 unseen 2023+ passed matters with both roles remain (5 kept, 1 over the 8 MB cap). They
+  are labelled in `eval/filing_panel_accruing.json` but not scored: `--fresh-panel` refuses to score (and so spend)
+  a set under 10 rows, and an unspent set never joins development data. New pending Type 1 filings introduced
+  after 2026-11-06 are to be added (by role, labelled before scoring) until the set reaches 10 or more; then v5 is
+  scored once. Two of the five already test v5's limits: a lot area printed "27.503 square feet" and "Automobile
+  Parking: None for Roaster and Cafe / 1 per 10 occupants" (neither is labelled; a reader that emits them is
+  wrong).
+- *Status.* No passing gate exists. The panel labels are still assistant drafts. Both flags stay false.
+
 ---
 
 ## Item 0: nightly backups and an off-box copy (#58, 2026-10-20)
