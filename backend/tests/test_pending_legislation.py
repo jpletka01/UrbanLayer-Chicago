@@ -185,6 +185,16 @@ def test_filing_reader_eds_page_matcher_is_specific_to_disclosure_language():
     assert not filing_reader._EDS_PAGE.search("Proposed zoning reclassification")
 
 
+def test_filing_reader_parses_only_single_explicitly_labeled_values():
+    parsed = filing_reader.parse_labeled_type1_text("Lot Area: 4,500 sq ft\nHeight: 45 ft\nFAR: 2.5")
+    assert parsed == [
+        filing_reader.ParsedField("lot_area", "4500", "sq ft"),
+        filing_reader.ParsedField("height", "45", "ft"),
+        filing_reader.ParsedField("far", "2.5"),
+    ]
+    assert filing_reader.parse_labeled_type1_text("Height: 45 ft\nHeight: 50 ft") == []
+
+
 def test_hand_labeled_pending_title_panel_meets_precision_floor_with_no_wrong_streets():
     panel = json.loads((FIX / "pending_title_panel.json").read_text())
     rows = panel["rows"]

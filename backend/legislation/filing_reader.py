@@ -30,6 +30,13 @@ from backend.retrieval import clerk
 _TYPE_1 = re.compile(r"\b(?:APP(?:LICATION)?\s*(?:NO\.?\s*)?)?\d{4,}T1\b", re.IGNORECASE)
 MAX_SAMPLE_FILE_BYTES = 8 * 1024 * 1024
 _EDS_PAGE = re.compile(r"\b(?:EDS|ECONOMIC\s+DISCLOS(?:URE|URE\s+STATEMENT))\b", re.IGNORECASE)
+_LABELED_FIELDS = {
+    "lot_area": re.compile(r"\b(?:lot\s+area)\s*[:\-]\s*([\d,]+)\s*(sq\.?\s*ft\.?)", re.IGNORECASE),
+    "dwelling_units": re.compile(r"\b(?:dwelling\s+units?)\s*[:\-]\s*([\d,]+)\b", re.IGNORECASE),
+    "height": re.compile(r"\b(?:height)\s*[:\-]\s*([\d,.]+)\s*(ft\.?)", re.IGNORECASE),
+    "far": re.compile(r"\b(?:floor\s+area\s+ratio|FAR)\s*[:\-]\s*([\d.]+)\b", re.IGNORECASE),
+    "parking": re.compile(r"\b(?:parking(?:\s+spaces?)?)\s*[:\-]\s*([\d,]+)\b", re.IGNORECASE),
+}
 
 
 def is_type_1(matter: clerk.ClerkMatter) -> bool:
@@ -59,6 +66,29 @@ class SampleCandidate:
     url: str
     attachment_type: str
     download_bytes: int | None = None
+
+
+@dataclass(frozen=True)
+class ParsedField:
+    id: str
+    value: str
+    unit: str | None = None
+
+
+def parse_labeled_type1_text(text: str) -> list[ParsedField]:
+    """Extract only explicitly labelled Type 1 values from one already-safe page.
+
+    This deliberately performs no arithmetic, column guessing, or inference.
+    Duplicate labels are ambiguous and therefore withheld.
+    """
+    found: list[ParsedField] = []
+    for field_id, pattern in _LABELED_FIELDS.items():
+        matches = list(pattern.finditer(text))
+        if len(matches) != 1:
+            continue
+        match = matches[0]
+        found.append(ParsedField(field_id, match.group(1).replace(",", ""), match.group(2) if match.lastindex == 2 else None))
+    return found
 
 
 def sample_candidates(matters: Iterable[clerk.ClerkMatter], *, limit: int = 30) -> list[SampleCandidate]:
