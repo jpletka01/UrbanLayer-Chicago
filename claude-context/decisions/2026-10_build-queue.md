@@ -2814,3 +2814,20 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Revisit if** CHA publishes its own payment-standard table (then show CHA's figure beside HUD's), or HUD's FY 2028 table appears (each fall: copy it, rebuild, the check stops warning).
 
 **Production (Item 69, PR #186, 2026-11-04).** CI `test`/`lint`/CodeQL green before merge; the deploy job succeeded and the new bundle (`index-ctnGRN-C.js`, it contains "Voucher rent standard") was served within minutes; `/health` ok (data-health alarms 3, unchanged by this release). Live: `/api/scorecard?address=1601 N Milwaukee Ave` → `property.zip_code` 60647, `neighborhood.rent.safmr` FY 2027 studio $2,140 / 1 BR $2,270 / 2 BR $2,570 / 3 BR $3,300 / 4 BR $3,770, five `area.rent.hud_safmr.*` entries at `standard`. `npm run sweep:live` clean (16 views, desktop and phone). Phone audit before merge (local stack): 80 passed, 0 failed.
+
+## Item 71: the stale-check label is three words, so both legislation cards fit the budget's live-state allowance (2026-11-06)
+
+**Status: draft PR, not merged.** Jack's answer (2026-11-06): shorten the label.
+
+**What failed.** `twoflat/build.words` measured 313 against its baseline 303 + 8 (Item 52's allowance for live state rows), on `main` (041821a) with no flags. The page had not grown: the local `pending_legislation.db` was last synced 2026-11-02, past `STALE_AFTER` (3 days, `backend/legislation/upcoming.py`), so Upcoming zoning and Pending zoning-code changes each printed the amber "Showing the last good check" (5 words each, +10). With a freshly synced copy of the store the section measured 303 and all four parcels passed.
+
+**Decision: shorten the label, not the budget.** "Showing the last good check" → "Last good check" (es-MX: "Se muestra la última verificación correcta" → "Última verificación correcta"); the full explanation stays behind the Info tool (`regulatory.*.stale`). The two cards read the same store, so they go stale together: 2 × 3 = 6 words now fit the 8-word allowance. Alternatives: raise the twoflat baseline (hides 10 words of real growth on every other day; rejected), widen `WORD_STATE_SLACK` for all parcels (loosens every budget for one state; rejected), merge the two labels into one (the cards are separate sections; more code for the same result).
+
+**Numbers**
+
+| Measure | Result |
+|---|---:|
+| twoflat/build, stale store, before / after | 313 / see Production |
+| twoflat/build, fresh store | 303 (= baseline) |
+
+**Revisit if** a third card reads the pending store and gets the same label (3 × 3 = 9 > 8), or the stale state needs a word that says what to do.

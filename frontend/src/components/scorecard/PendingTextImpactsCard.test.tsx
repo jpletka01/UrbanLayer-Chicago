@@ -187,7 +187,7 @@ describe("PendingTextImpactsCard", () => {
 
   it("stale keeps the reviewed list with the explicit last-good warning", () => {
     render(<PendingTextImpactsCard data={base({ status: "stale", text_impacts: [impact()] })} />);
-    expect(screen.getByText("Showing the last good check")).toBeTruthy();
+    expect(screen.getByText("Last good check")).toBeTruthy();
     expect(screen.getByText("Minimum lot area per dwelling unit for RT-4")).toBeTruthy();
     fireEvent.click(screen.getAllByRole("button", { name: /^What this means: Pending zoning-code changes/ })[1]);
     expect(screen.getByText(/latest refresh did not complete/)).toBeTruthy();
