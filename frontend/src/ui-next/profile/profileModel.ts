@@ -4,7 +4,7 @@
 // so the pages render from typed fixtures in tests.
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict, TFunc } from "../../lib/scorecardVerdict";
-import { confidenceStateFor, displayState, type ConfidenceKind } from "../../lib/confidence";
+import { confidenceStateFor, type ConfidenceKind } from "../../lib/confidence";
 import type { UpcomingZoningFiling } from "../../lib/types";
 
 export type FigureState = { kind: ConfidenceKind; low: boolean } | null;
@@ -184,10 +184,16 @@ export function ruleChips(data: ScorecardResponse, verdict: ScorecardVerdict): R
   return chips.sort((a, b) => rank(a) - rank(b));
 }
 
-// ── The Overview's tiles (provisional set: units allowed, zoning, property tax, price per sq ft) ──────────
+// ── The Overview's tiles: one per tab (brief "Overview", Approved; decision Item 77) ─────────────────────
+// Build: units allowed vs built · Money: property tax · Neighborhood: walk score · History: last market sale.
+// The zoning district lives in the answer sentence and the map band, not in a tile.
+
+export type TabId = "build" | "money" | "neighborhood" | "history";
 
 export interface Tile {
-  key: "units" | "zoning" | "tax" | "pricePerSqft";
+  key: "units" | "tax" | "walk" | "lastSale";
+  /** The tab this tile summarizes (its label names it). */
+  tabOf: TabId;
   label: string;
   figure: string;
   unit?: string;
@@ -195,14 +201,23 @@ export interface Tile {
   /** At most one warning per tile (brief: "at most one warning"). */
   warning?: string;
   state: FigureState;
-  /** The tab that proves it; null while that tab isn't built. */
+  /** The tab that proves it, when that tab is built; null opens nothing yet. */
   tab: "build" | null;
-  /** The small visual: the built share of the allowed figure, when there is one. */
+  /** The small visual: a share of the whole (built of allowed units, a score of 100). */
   share?: number | null;
 }
 
 const money = (n: number, lng: string) =>
   new Intl.NumberFormat(lng.startsWith("es") ? "es-MX" : "en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+
+/** Deed types the County treats as arm's-length (its own `sale_filter_deed_type` excludes quit claims, executor
+    and other deeds; comps use the same filters). Unknown deed type = not counted as a market sale. */
+const MARKET_DEEDS = /^(warranty|trustee)$/i;
+const MARKET_MIN_PRICE = 10_000; // the County's `sale_filter_less_than_10k`
+
+export function isMarketSale(s: { price: number | null; deed_type: string | null }): boolean {
+  return s.price != null && s.price >= MARKET_MIN_PRICE && MARKET_DEEDS.test((s.deed_type ?? "").trim());
+}
 
 export function overviewTiles(data: ScorecardResponse, verdict: ScorecardVerdict, t: TFunc, lng = "en"): Tile[] {
   const ctx = data.context;
@@ -210,70 +225,71 @@ export function overviewTiles(data: ScorecardResponse, verdict: ScorecardVerdict
   const prov = data.provenance ?? {};
   const tiles: Tile[] = [];
 
-  // Units allowed
+  // Build: units allowed vs built
   const uy = ctx?.unit_yield;
+  const label = (k: Tile["key"]) => t(`profile.tiles.${k}`);
   if (uy && uy.units > 0) {
     const built = prop?.units ?? null;
     tiles.push({
-      key: "units", label: t("profile.tiles.units"), figure: `≤ ${uy.units}`,
-      note: built != null ? t("profile.tiles.unitsBuilt", { count: built }) : t("profile.tiles.unitsByLotArea"),
+      key: "units", tabOf: "build", label: label("units"), figure: `≤ ${uy.units}`,
+      note: built != null ? t("profile.tiles.unitsBuilt", { count: built }) : t("profile.tiles.unitsBuiltUnknown"),
       state: { kind: "estimate", low: false }, tab: "build",
       share: built != null ? Math.min(built / uy.units, 1) : null,
     });
   } else if (verdict.category === "entitlement_defined") {
-    tiles.push({ key: "units", label: t("profile.tiles.units"), figure: "—", note: t("profile.tiles.ownOrdinance"), state: null, tab: "build" });
+    tiles.push({ key: "units", tabOf: "build", label: label("units"), figure: "—", note: t("profile.tiles.ownOrdinance"), state: null, tab: "build" });
   } else {
-    tiles.push({ key: "units", label: t("profile.tiles.units"), figure: "—", note: t("profile.tiles.unitsNoRule"), state: { kind: "na", low: false }, tab: "build" });
+    tiles.push({ key: "units", tabOf: "build", label: label("units"), figure: "—", note: t("profile.tiles.unitsNoRule"), state: { kind: "na", low: false }, tab: "build" });
   }
 
-  // Zoning
-  const zone = (data.zone_definition?.zone_class as string | undefined) ?? verdict.signals.zoneClass;
-  const pending = pendingRezonings(data);
-  const ownPending = pending.filings.filter((f) => f.onThisLot).length;
-  tiles.push({
-    key: "zoning", label: t("profile.tiles.zoning"), figure: zone ?? "—",
-    note: !zone ? t("profile.tiles.zoningUnchecked")
-      : ownPending > 0 ? undefined
-      : pending.state === "unavailable" ? t("profile.tiles.pendingUnchecked")
-      : t("profile.tiles.noPendingHere"),
-    warning: ownPending > 0 ? t("profile.tiles.pendingHere", { count: ownPending }) : undefined,
-    state: zone ? null : { kind: "not_checked", low: false },
-    tab: "build",
-  });
-
-  // Property tax
+  // Money: property tax
   if (prop?.nominal_assessment) {
-    tiles.push({ key: "tax", label: t("profile.tiles.tax"), figure: "—", note: t("profile.tiles.nominal"), state: { kind: "na", low: false }, tab: null });
+    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: "—", note: t("profile.tiles.nominal"), state: { kind: "na", low: false }, tab: null });
   } else if (prop?.tax_exempt) {
-    tiles.push({ key: "tax", label: t("profile.tiles.tax"), figure: t("profile.tiles.exempt"), state: null, tab: null });
+    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: t("profile.tiles.exempt"), state: null, tab: null });
   } else if (prop?.estimated_annual_tax != null) {
     const year = prov["property.tax_estimate"]?.period ?? (prop.tax_year != null ? String(prop.tax_year) : null);
     const rate = prop.effective_tax_rate;
     tiles.push({
-      key: "tax", label: t("profile.tiles.tax"), figure: money(prop.estimated_annual_tax, lng), unit: t("profile.tiles.perYear"),
+      key: "tax", tabOf: "money", label: label("tax"), figure: money(prop.estimated_annual_tax, lng), unit: t("profile.tiles.perYear"),
       note: [year ? t("profile.tiles.taxYear", { year }) : null, rate != null ? t("profile.tiles.taxRate", { rate: (rate * 100).toFixed(2) }) : null].filter(Boolean).join(" · ") || undefined,
       state: confidenceStateFor(prov["property.tax_estimate"]), tab: null,
     });
   } else {
-    tiles.push({ key: "tax", label: t("profile.tiles.tax"), figure: "—", note: t("profile.tiles.notOnRecord"), state: { kind: "not_checked", low: false }, tab: null });
+    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: "—", note: t("profile.tiles.notOnRecord"), state: { kind: "not_checked", low: false }, tab: null });
   }
 
-  // Price per sq ft: nearby market sales per building sq ft (the backend decides whether it is shown).
-  const comps = data.comparables;
-  const compsState = displayState(prov["property.comps.median_price"]);
-  const psf = comps?.median_price_per_bldg_sqft ?? null;
-  if (psf != null && compsState !== "withheld") {
+  // Neighborhood: walk score (a private company's index, named as such)
+  const ws = ctx?.neighborhood?.walkscore;
+  if (ws?.walk_score != null) {
     tiles.push({
-      key: "pricePerSqft", label: t("profile.tiles.pricePerSqft"), figure: money(psf, lng), unit: t("profile.tiles.perSqft"),
-      note: t("profile.tiles.nearbySales", { count: comps?.sales_volume ?? 0 }),
-      warning: (comps?.sales_volume ?? 0) < 3 ? t("profile.tiles.fewSales") : undefined,
-      state: confidenceStateFor(prov["property.comps.median_price"]), tab: null,
+      key: "walk", tabOf: "neighborhood", label: label("walk"), figure: String(ws.walk_score), unit: t("profile.tiles.of100"),
+      note: [ws.walk_description, t("profile.tiles.walkSource")].filter(Boolean).join(" · "),
+      state: null, tab: null, share: ws.walk_score / 100,
+    });
+  } else {
+    tiles.push({ key: "walk", tabOf: "neighborhood", label: label("walk"), figure: "—", note: t("profile.tiles.walkUnchecked"), state: { kind: "not_checked", low: false }, tab: null });
+  }
+
+  // History: last market sale. A $1 transfer, a quit claim or an unknown deed is never shown as the sale price.
+  const sales = [...(prop?.sales_history ?? [])].filter((s) => s.date).sort((a, b) => (b.date! < a.date! ? -1 : 1));
+  const market = sales.find(isMarketSale);
+  const newerTransfer = market ? sales.find((s) => s.date! > market.date! && !isMarketSale(s)) : null;
+  const year = (d: string) => d.slice(0, 4);
+  if (!prop) {
+    tiles.push({ key: "lastSale", tabOf: "history", label: label("lastSale"), figure: "—", note: t("profile.tiles.notOnRecord"), state: { kind: "not_checked", low: false }, tab: null });
+  } else if (market) {
+    tiles.push({
+      key: "lastSale", tabOf: "history", label: label("lastSale"), figure: money(market.price!, lng),
+      note: t("profile.tiles.soldIn", { year: year(market.date!) }),
+      warning: newerTransfer ? t("profile.tiles.laterTransfer", { year: year(newerTransfer.date!) }) : undefined,
+      state: confidenceStateFor(prov["property.sales"]), tab: null,
     });
   } else {
     tiles.push({
-      key: "pricePerSqft", label: t("profile.tiles.pricePerSqft"), figure: "—",
-      note: compsState === "withheld" ? t("profile.tiles.tooFewSales") : t("profile.tiles.noSales"),
-      state: { kind: compsState === "withheld" ? "withheld" : "none_found", low: false }, tab: null,
+      key: "lastSale", tabOf: "history", label: label("lastSale"), figure: "—",
+      note: sales.length > 0 ? t("profile.tiles.onlyTransfers", { count: sales.length }) : t("profile.tiles.noSaleOnRecord"),
+      state: { kind: "none_found", low: false }, tab: null,
     });
   }
   return tiles;

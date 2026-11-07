@@ -2,7 +2,7 @@
 // lucide-react), 1.5 stroke. A new concept gets one line here before it gets a component.
 import {
   ArrowUpToLine, BadgeDollarSign, BookOpen, Bookmark, Building2, CircleUser, Download, FileClock, LandPlot, Layers,
-  ListChecks, Map as MapIcon, MessageCircle, Receipt, Ruler, Search, Sparkles, Square, type LucideIcon,
+  Footprints, ListChecks, Map as MapIcon, MessageCircle, Receipt, Ruler, Search, Sparkles, Square, type LucideIcon,
 } from "lucide-react";
 import type { NavIcon } from "./readiness";
 
@@ -28,6 +28,7 @@ export const ICON = {
   pending: FileClock,
   rules: ListChecks,
   sale: BadgeDollarSign,
+  walk: Footprints,
 } satisfies Record<string, LucideIcon>;
 
 export const NAV_ICON: Record<NavIcon, LucideIcon> = {

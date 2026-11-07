@@ -280,7 +280,6 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 
 | Question | Answer before |
 |---|---|
-| The four Overview tiles: units, zoning, tax, price per sq ft? | Detailed Profile mockups |
 | Tabs on a phone: scrolling tab strip, or one page with jump links? | Detailed Profile mockups |
 | Exact chat allowances; whether past report buyers and voucher holders convert to Pro time; a short trial | Turning purchases on |
 | Race and ethnicity: details only, or left out (fair-housing steering concern)? Schools: include, and which measures? | Building the Neighborhood tab |
@@ -308,7 +307,7 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
    6-flat at this address?") against pass criteria written in advance. The map, data, chat, landing and
    commercial work follow in gated phases; every merge to `main` deploys and needs the owner's approval.
 4. **Phase 1 prototype built (2026-11-07, Item 76):** behind `?ui=next` on today's URLs: the frame, Profile
-   Overview (provisional tiles: units allowed, zoning, property tax, price per sq ft) and Build on today's
+   Overview (one tile per tab: units allowed vs built, property tax, walk score, last market sale; Item 77) and Build on today's
    `/api/scorecard`, the parcel map in the new look, the Ask drawer on the existing chat path, one Discovery
    flow. Next: the owner's review against SnowUI in both themes, then the latency spike (Phase 2).
 

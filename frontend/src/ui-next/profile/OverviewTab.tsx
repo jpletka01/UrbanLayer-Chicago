@@ -11,7 +11,7 @@ import { ICON, STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
 import { overviewTiles, type Tile } from "./profileModel";
 
-const TILE_ICON = { units: ICON.units, zoning: ICON.zoning, tax: ICON.tax, pricePerSqft: ICON.pricePerSqft } as const;
+const TILE_ICON = { units: ICON.units, tax: ICON.tax, walk: ICON.walk, lastSale: ICON.sale } as const;
 
 export function OverviewTab({
   data,
@@ -45,6 +45,7 @@ function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTa
   const Icon = TILE_ICON[tile.key];
   const body = (
     <>
+      <span className="text-caption nx-card-muted">{t(`profile.tabs.${tile.tabOf}`)}</span>
       <span className="flex items-center gap-2 font-semibold">
         <Icon aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
         {tile.label}

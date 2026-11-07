@@ -51,7 +51,7 @@ export function profileFixture(over: DeepPartial<ScorecardResponse> & Record<str
         full_baths: null, half_baths: null, bldg_age: 100, total_assessed_value: 250000,
         estimated_annual_tax: 64000, effective_tax_rate: 0.0515, tax_year: 2024, assessment_level: 0.25,
         implied_market_value: 1000000, tax_code: "71001", tax_breakdown: [], tax_exemptions: [],
-        assessment_history: [], sales_history: [], parcel_geometry: null, assessor_permits: null,
+        assessment_history: [], sales_history: [{ date: "2019-06-24T00:00:00.000", price: 1200000, deed_type: "Warranty" }], parcel_geometry: null, assessor_permits: null,
       },
       regulatory: {
         overlays: [], in_planned_development: false, in_landmark_district: true, is_landmark_building: false,
@@ -61,6 +61,7 @@ export function profileFixture(over: DeepPartial<ScorecardResponse> & Record<str
         in_special_flood_hazard: false, brownfield_sites: [], aro_housing: null, unchecked_overlays: [],
       },
       incentives: { in_tif_district: false, unchecked: [] },
+      neighborhood: { walkscore: { walk_score: 99, walk_description: "Walker's Paradise", transit_score: 77, transit_description: null, bike_score: 94, bike_description: null, ws_link: null } },
       upcoming_zoning: {
         status: "ready", placement_status: "complete", checked_at: "2026-11-05", radius_mi: 0.5,
         subject_filings: [],

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import i18n from "../../lib/i18n";
 import { computeVerdict } from "../../lib/scorecardVerdict";
 import { profileFixture } from "../test/fixtures";
-import { allowedVsBuilt, heightFeet, overviewTiles, pendingRezonings, ruleChips, stageOf } from "./profileModel";
+import { allowedVsBuilt, heightFeet, isMarketSale, overviewTiles, pendingRezonings, ruleChips, stageOf } from "./profileModel";
 
 const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "next", ...opts }) as string;
 const tp = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts }) as string;
@@ -67,22 +67,40 @@ describe("rules", () => {
   });
 });
 
-describe("overview tiles (provisional set)", () => {
-  it("gives units allowed, zoning, property tax and price per sq ft, in that order", () => {
+describe("overview tiles: one per tab", () => {
+  it("gives Build units allowed, Money property tax, Neighborhood walk score, History last market sale", () => {
     const data = profileFixture();
     const tiles = overviewTiles(data, computeVerdict(data, tp), t);
-    expect(tiles.map((x) => [x.key, x.figure])).toEqual([
-      ["units", "≤ 11"], ["zoning", "B3-2"], ["tax", "$64,000"], ["pricePerSqft", "$312"],
+    expect(tiles.map((x) => [x.tabOf, x.key, x.figure])).toEqual([
+      ["build", "units", "≤ 11"], ["money", "tax", "$64,000"], ["neighborhood", "walk", "99"], ["history", "lastSale", "$1,200,000"],
     ]);
-    expect(tiles.every((x) => !x.warning || typeof x.warning === "string")).toBe(true);
+    expect(tiles.some((x) => (x.key as string) === "zoning")).toBe(false);
   });
 
-  it("says exempt and nominal in words, and withholds a price the backend withholds", () => {
-    const exempt = profileFixture({ context: { property: { tax_exempt: true, estimated_annual_tax: null } } } as never);
-    expect(overviewTiles(exempt, computeVerdict(exempt, tp), t)[2].figure).toBe("Exempt");
-    const withheld = profileFixture({ provenance: { "property.comps.median_price": { label: "x", confidence: "withheld" } } } as never);
-    const tile = overviewTiles(withheld, computeVerdict(withheld, tp), t)[3];
+  it("never shows a $1 transfer, a quit claim or an unknown deed as the sale price", () => {
+    expect(isMarketSale({ price: 1, deed_type: "Warranty" })).toBe(false);
+    expect(isMarketSale({ price: 400000, deed_type: "Quit claim" })).toBe(false);
+    expect(isMarketSale({ price: 400000, deed_type: null })).toBe(false);
+    expect(isMarketSale({ price: 395000, deed_type: "Trustee" })).toBe(true);
+    const data = profileFixture({ context: { property: { sales_history: [
+      { date: "2022-05-01T00:00:00.000", price: 1, deed_type: "Quit claim" },
+      { date: "2019-06-24T00:00:00.000", price: 1200000, deed_type: "Warranty" },
+    ] } } } as never);
+    const sale = overviewTiles(data, computeVerdict(data, tp), t)[3];
+    expect(sale.figure).toBe("$1,200,000");
+    expect(sale.warning).toBe("A 2022 transfer isn't counted as a sale");
+    const onlyTransfers = profileFixture({ context: { property: { sales_history: [{ date: "2022-05-01T00:00:00.000", price: 1, deed_type: "Quit claim" }] } } } as never);
+    const tile = overviewTiles(onlyTransfers, computeVerdict(onlyTransfers, tp), t)[3];
     expect(tile.figure).toBe("—");
-    expect(tile.state?.kind).toBe("withheld");
+    expect(tile.note).toBe("1 transfer on record, not a market sale");
+  });
+
+  it("says exempt in words and keeps the walk score's slot when it couldn't be read", () => {
+    const exempt = profileFixture({ context: { property: { tax_exempt: true, estimated_annual_tax: null } } } as never);
+    expect(overviewTiles(exempt, computeVerdict(exempt, tp), t)[1].figure).toBe("Exempt");
+    const noWalk = profileFixture({ context: { neighborhood: null } } as never);
+    const walk = overviewTiles(noWalk, computeVerdict(noWalk, tp), t)[2];
+    expect(walk.figure).toBe("—");
+    expect(walk.state?.kind).toBe("not_checked");
   });
 });

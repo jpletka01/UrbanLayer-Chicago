@@ -26,7 +26,7 @@ describe("Overview", () => {
     expect(screen.getByTestId("answer-sentence").textContent).toMatch(/^B3-2 allows/);
     const tiles = within(screen.getByTestId("overview-tiles")).getAllByRole("listitem");
     expect(tiles).toHaveLength(4);
-    expect(tiles.map((li) => li.getAttribute("data-tile"))).toEqual(["units", "zoning", "tax", "pricePerSqft"]);
+    expect(tiles.map((li) => li.getAttribute("data-tile"))).toEqual(["units", "tax", "walk", "lastSale"]);
     for (const li of tiles) expect(li.querySelector("svg")).not.toBeNull();
     fireEvent.click(within(tiles[0]).getByRole("button"));
     expect(onOpenTab).toHaveBeenCalledWith("build");
