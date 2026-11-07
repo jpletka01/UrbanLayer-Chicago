@@ -9,6 +9,7 @@ import logging
 
 import httpx
 
+from backend.timing import timed
 from backend.config import get_settings
 from backend.models import (
     CensusTractDemographics,
@@ -52,36 +53,36 @@ async def neighborhood_domain(
 
         skip_demographics = workflow in ("property_intelligence",)
         if community_area is not None and not skip_demographics:
-            tasks["demographics"] = asyncio.create_task(
-                fetch_demographics(community_area, client=client)
-            )
+            tasks["demographics"] = asyncio.create_task(timed(
+                "neighborhood.demographics", fetch_demographics(community_area, client=client),
+            ))
 
         has_coords = lat != 0.0 or lon != 0.0
         if has_coords:
-            tasks["stations"] = asyncio.create_task(
-                find_nearest_stations(lat, lon)
-            )
-            tasks["tod"] = asyncio.create_task(
-                check_tod_eligibility(lat, lon, client=client)
-            )
-            tasks["census_tract"] = asyncio.create_task(
-                _fetch_census_tract(lat, lon, client=client)
-            )
+            tasks["stations"] = asyncio.create_task(timed(
+                "neighborhood.stations", find_nearest_stations(lat, lon),
+            ))
+            tasks["tod"] = asyncio.create_task(timed(
+                "neighborhood.tod", check_tod_eligibility(lat, lon, client=client),
+            ))
+            tasks["census_tract"] = asyncio.create_task(timed(
+                "neighborhood.census_tract", _fetch_census_tract(lat, lon, client=client),
+            ))
             from backend.retrieval.neighborhood.traffic import get_traffic_context
-            tasks["traffic"] = asyncio.create_task(
-                get_traffic_context(lat, lon, client=client)
-            )
+            tasks["traffic"] = asyncio.create_task(timed(
+                "neighborhood.traffic", get_traffic_context(lat, lon, client=client),
+            ))
             from backend.retrieval.neighborhood.divvy import find_nearest_divvy
-            tasks["divvy"] = asyncio.create_task(
-                find_nearest_divvy(lat, lon, client=client)
-            )
+            tasks["divvy"] = asyncio.create_task(timed(
+                "neighborhood.divvy", find_nearest_divvy(lat, lon, client=client),
+            ))
 
         if has_coords and address:
             settings = get_settings()
             if settings.walkscore_api_key:
-                tasks["walkscore"] = asyncio.create_task(
-                    fetch_walkscore(lat, lon, address, client=client)
-                )
+                tasks["walkscore"] = asyncio.create_task(timed(
+                    "neighborhood.walkscore", fetch_walkscore(lat, lon, address, client=client),
+                ))
 
         results: dict[str, object] = {}
         failed: list[str] = []

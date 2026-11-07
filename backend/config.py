@@ -205,6 +205,10 @@ class Settings(BaseSettings):
     ptaxsim_db_path: Path = PROJECT_ROOT / "backend" / "data" / "ptaxsim.db"
     ptaxsim_enabled: bool = True
 
+    # Dev switch (front-end rewrite Phase 2, decision Item 81): add the per-task timing breakdown to
+    # /api/scorecard as `_timings`. Ignored when environment == "production"; the log line is always written.
+    profile_timings: bool = False
+
     upload_dir: Path = PROJECT_ROOT / "backend" / "data" / "uploads"
     upload_max_size_bytes: int = 10 * 1024 * 1024  # 10 MB
     upload_allowed_types: list[str] = [

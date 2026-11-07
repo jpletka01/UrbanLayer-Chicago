@@ -13,6 +13,7 @@ import httpx
 import datetime
 
 from backend.config import get_settings
+from backend.timing import timed
 from backend.models import (
     AssessmentRecord,
     PropertySummary,
@@ -49,12 +50,12 @@ async def property_domain(
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
         if pin:
-            parcel = await lookup_parcel_by_pin(pin, client=client)
+            parcel = await timed("property.parcel_by_pin", lookup_parcel_by_pin(pin, client=client))
             if parcel is None:
                 # PIN row missing/unavailable — degrade to the coordinate path.
-                parcel = await lookup_parcel(lat, lon, client=client)
+                parcel = await timed("property.parcel_by_point", lookup_parcel(lat, lon, client=client))
         else:
-            parcel = await lookup_parcel(lat, lon, client=client)
+            parcel = await timed("property.parcel_by_point", lookup_parcel(lat, lon, client=client))
         if parcel is None:
             log.info("No parcel found at (%s, %s) pin=%s", lat, lon, pin)
             return None
@@ -63,36 +64,36 @@ async def property_domain(
 
         skip_history = workflow in ("development_feasibility",)
 
-        coros = [get_characteristics(pin14, client=client)]
+        coros = [timed("property.characteristics", get_characteristics(pin14, client=client))]
         if not skip_history:
-            coros.append(get_assessments(pin14, client=client))
-            coros.append(get_sales(pin14, client=client))
+            coros.append(timed("property.assessments", get_assessments(pin14, client=client)))
+            coros.append(timed("property.sales", get_sales(pin14, client=client)))
             from backend.retrieval.property.appeals import get_appeals
-            coros.append(get_appeals(pin14, lat, lon, client=client))
+            coros.append(timed("property.appeals", get_appeals(pin14, lat, lon, client=client)))
 
         settings = get_settings()
         if settings.ptaxsim_enabled:
             from backend.retrieval.property.tax_estimate import estimate_tax
             tax_year = datetime.date.today().year - 1
-            coros.append(estimate_tax(tax_year, pin14))
+            coros.append(timed("property.tax", estimate_tax(tax_year, pin14)))
 
         # Geometry-derived land area + parcel outline from the local PTAXSIM
         # polygon table — the only all-class land source (CCAO chars is
         # residential-only; GIS is flaky and absent on the PIN-keyed path).
         from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
-        coros.append(get_parcel_geometry_facts(pin14))
+        coros.append(timed("property.geometry", get_parcel_geometry_facts(pin14)))
 
         # Distress/opportunity flags (tax-sale history, city-owned, scofflaw,
         # STR-prohibited) — cheap parallel lookups, None when all clear.
         from backend.retrieval.property.parcel_flags import get_parcel_flags
-        coros.append(get_parcel_flags(pin14, lat, lon, client=client))
+        coros.append(timed("property.flags", get_parcel_flags(pin14, lat, lon, client=client)))
 
         # Assessor-side permit record (PIN-keyed, carries declared cost and the
         # assessor's "assessable" call). Skipped on the report path with the rest
         # of the history block.
         if not skip_history:
             from backend.retrieval.property.assessor_permits import get_assessor_permits
-            coros.append(get_assessor_permits(pin14, client=client))
+            coros.append(timed("property.assessor_permits", get_assessor_permits(pin14, client=client)))
 
         results = await asyncio.gather(*coros, return_exceptions=True)
 
@@ -167,11 +168,11 @@ async def property_domain(
             )
             chars = None
 
-        building_fallbacks = await _fetch_building_fallbacks(
+        building_fallbacks = await timed("property.building_facts", _fetch_building_fallbacks(
             parcel, chars, assessments, lat, lon,
             parcel_geojson=(geometry_facts or {}).get("parcel_geometry"),
             client=client,
-        )
+        ))
 
         return _build_summary(parcel, chars, assessments, sales, tax_result,
                               geometry_facts=geometry_facts,
@@ -241,7 +242,9 @@ async def _fetch_building_fallbacks(
         lat, lon, parcel_geojson=parcel_geojson, client=client
     )
 
-    done = await asyncio.gather(*coros.values(), return_exceptions=True)
+    done = await asyncio.gather(
+        *(timed(f"property.building_facts.{k}", c) for k, c in coros.items()), return_exceptions=True,
+    )
     fallbacks: dict[str, Any] = {}
     for key, value in zip(coros.keys(), done):
         if isinstance(value, Exception):

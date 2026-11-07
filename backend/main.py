@@ -35,6 +35,7 @@ from backend.context_manager import summarize_turn
 from backend.conversation import synthesize_query
 from backend.llm import tracked_create
 from backend import db
+from backend import timing as _timing
 from backend.report_builder import (
     _apply_mock_overrides,
     _comp_class_prefix,
@@ -117,9 +118,16 @@ def _trim_malloc() -> None:
             pass
 
 
-async def _limited(coro):
+async def _limited(coro, name: str | None = None):
+    """Run ``coro`` under the process-wide retrieval semaphore. With ``name`` and an open timing collector
+    (``backend/timing.py``, the Profile's per-task timings), the run is recorded with its queue wait."""
+    if name is None or _timing.current() is None:
+        async with _RETRIEVAL_SEM:
+            return await coro
+    queued = time.perf_counter()
     async with _RETRIEVAL_SEM:
-        return await coro
+        wait_ms = (time.perf_counter() - queued) * 1000.0
+        return await _timing.timed(name, coro, wait_ms=wait_ms)
 
 
 _settings_init = get_settings()
@@ -1829,7 +1837,7 @@ async def _resolve_location(
     #    parcel's own point, improving every coordinate-driven downstream domain.
     if address and settings.address_point_resolution_enabled:
         from backend.retrieval.property.address_points import address_to_pin
-        hit = await address_to_pin(address)
+        hit = await _timing.timed("resolution.address_points", address_to_pin(address))
         if hit:
             return ResolvedLocation(
                 hit["lat"], hit["lon"], resolved_address, hit["pin14"], "authoritative", "address_points",
@@ -1844,7 +1852,7 @@ async def _resolve_location(
     if address and settings.assessor_address_resolution_enabled:
         from backend.retrieval.property.parcel_addresses import assessor_address_to_pin
         from backend.retrieval.socrata import socrata_get
-        assessor_pin = await assessor_address_to_pin(address)
+        assessor_pin = await _timing.timed("resolution.assessor_addresses", assessor_address_to_pin(address))
         if assessor_pin:
             rows = await socrata_get(
                 settings.dataset_ccao_parcels,
@@ -1860,7 +1868,7 @@ async def _resolve_location(
     # 4. Degraded fallback: geocode → street-interpolated point → downstream
     #    nearest-centroid. No confident PIN, so flag approximate (INV-5) and log.
     if address and degraded_fallback:
-        coords = await geocode_address(address)
+        coords = await _timing.timed("resolution.geocode", geocode_address(address))
         if coords:
             log.warning(
                 "R7 degraded resolution (approximate parcel) for address=%r", address
@@ -1952,13 +1960,13 @@ async def _fetch_scorecard_data(
     wf = "property_intelligence"
 
     tasks["property"] = asyncio.create_task(_limited(
-        property_domain(resolved_lat, resolved_lon, pin=pin, workflow=wf)
+        property_domain(resolved_lat, resolved_lon, pin=pin, workflow=wf), "property",
     ))
     tasks["regulatory"] = asyncio.create_task(_limited(
-        regulatory_domain(resolved_lat, resolved_lon, workflow="site_due_diligence")
+        regulatory_domain(resolved_lat, resolved_lon, workflow="site_due_diligence"), "regulatory",
     ))
     tasks["zoning"] = asyncio.create_task(_limited(
-        lookup_zoning(resolved_lat, resolved_lon)
+        lookup_zoning(resolved_lat, resolved_lon), "zoning",
     ))
 
     if ca is not None:
@@ -1966,7 +1974,7 @@ async def _fetch_scorecard_data(
             incentives_domain(
                 resolved_lat, resolved_lon,
                 ca_name=ca_name, workflow="site_due_diligence",
-            )
+            ), "incentives",
         ))
         tasks["neighborhood"] = asyncio.create_task(_limited(
             neighborhood_domain(
@@ -1974,25 +1982,25 @@ async def _fetch_scorecard_data(
                 community_area=ca,
                 address=resolved_address,
                 workflow=wf,
-            )
+            ), "neighborhood",
         ))
         tasks["aro_housing"] = asyncio.create_task(_limited(
-            aro_housing_by_community_area(ca)
+            aro_housing_by_community_area(ca), "aro_housing",
         ))
         tasks["crime"] = asyncio.create_task(_limited(
-            crime.crime_by_community_area(ca)
+            crime.crime_by_community_area(ca), "crime",
         ))
         tasks["crime_yoy"] = asyncio.create_task(_limited(
-            crime.crime_yoy_by_community_area(ca)
+            crime.crime_yoy_by_community_area(ca), "crime_yoy",
         ))
 
     # Violations + 311 are PARCEL-scoped (address-exact), not area-level — they
     # live outside the community-area block and key off the resolved address.
     tasks["violations"] = asyncio.create_task(_limited(
-        _address_violations_data(resolved_address)
+        _address_violations_data(resolved_address), "violations",
     ))
     tasks["address_311"] = asyncio.create_task(_limited(
-        three11.address_311_complaints(resolved_lat, resolved_lon)
+        three11.address_311_complaints(resolved_lat, resolved_lon), "address_311",
     ))
 
     results: dict[str, Any] = {}
@@ -2041,20 +2049,21 @@ async def _fetch_scorecard_data(
     )
 
     from backend.assembler import assemble_context as _assemble
-    ctx = _assemble(
-        plan=dummy_plan,
-        crime_rows=results.get("crime"),
-        crime_yoy_data=results.get("crime_yoy"),
-        address_311_data=results.get("address_311"),
-        violation_data=results.get("violations") if results.get("violations") else None,
-        zoning_info=results.get("zoning"),
-        regulatory_summary=results.get("regulatory"),
-        property_summary=results.get("property"),
-        incentives_summary=results.get("incentives"),
-        neighborhood_summary=results.get("neighborhood"),
-        aro_housing_rows=results.get("aro_housing"),
-        partial_failures=partial_failures,
-    )
+    with _timing.span("assemble"):
+        ctx = _assemble(
+            plan=dummy_plan,
+            crime_rows=results.get("crime"),
+            crime_yoy_data=results.get("crime_yoy"),
+            address_311_data=results.get("address_311"),
+            violation_data=results.get("violations") if results.get("violations") else None,
+            zoning_info=results.get("zoning"),
+            regulatory_summary=results.get("regulatory"),
+            property_summary=results.get("property"),
+            incentives_summary=results.get("incentives"),
+            neighborhood_summary=results.get("neighborhood"),
+            aro_housing_rows=results.get("aro_housing"),
+            partial_failures=partial_failures,
+        )
 
     # Phase 2: comparable sales (needs property class from phase 1). Class
     # derivation is shared with the report (_comp_class_prefix): exempt /
@@ -2070,7 +2079,7 @@ async def _fetch_scorecard_data(
             from backend.retrieval.property.sales import nearby_comparable_sales
             from backend.models import ComparableSale, ComparablesSummary
             comps_data = await _limited(
-                nearby_comparable_sales(resolved_lat, resolved_lon, class_prefix)
+                nearby_comparable_sales(resolved_lat, resolved_lon, class_prefix), "comparables.sales",
             )
             if comps_data.get("sales"):
                 # Price per BUILDABLE foot — the density-normalized land basis a
@@ -2078,7 +2087,7 @@ async def _fetch_scorecard_data(
                 # per-land-foot figures if the zoning quilt is unavailable.
                 from backend.retrieval.property.comps_far import annotate_far_normalized
                 comps_data = await _limited(
-                    annotate_far_normalized(comps_data, resolved_lat, resolved_lon)
+                    annotate_far_normalized(comps_data, resolved_lat, resolved_lon), "comparables.far",
                 )
                 s = comps_data["summary"]
                 comparables_summary = ComparablesSummary(
@@ -2108,7 +2117,7 @@ async def _fetch_scorecard_data(
         from backend.retrieval.property.block_face import block_face_test
 
         try:
-            ctx.block_face = await _limited(block_face_test(resolved_address))
+            ctx.block_face = await _limited(block_face_test(resolved_address), "block_face")
         except Exception as exc:
             log.warning("Scorecard block-face test failed: %s", exc)
             ctx.block_face = BlockFaceTest(state="unchecked")
@@ -2274,7 +2283,40 @@ async def scorecard(
     lon: float | None = None,
     pin: str | None = None,
 ) -> dict:
-    """Non-AI instant-load property dashboard. Zero LLM cost."""
+    """Non-AI instant-load property dashboard. Zero LLM cost.
+
+    Every request is timed per retrieval task (``backend/timing.py``, decision Item 81) and logged as one
+    ``scorecard timings`` line. The breakdown rides the response as ``_timings`` only when the dev switch
+    ``PROFILE_TIMINGS=true`` is set (ignored in production), so today's payload is unchanged."""
+    with _timing.collect() as timer:
+        ok = False
+        try:
+            data = await _scorecard_payload(address, lat, lon, pin)
+            ok = True
+        finally:
+            total_ms = timer.now_ms()
+            spans = timer.summary()
+            slowest = sorted(
+                ((k, v["ms"]) for k, v in spans.items() if "." not in k and k not in ("fetch", "resolution")),
+                key=lambda kv: -kv[1],
+            )[:3]
+            log.info(
+                "scorecard timings ok=%s total_ms=%.0f resolution_ms=%.0f fetch_ms=%.0f slowest=%s",
+                ok, total_ms, spans.get("resolution", {}).get("ms", 0.0), spans.get("fetch", {}).get("ms", 0.0),
+                ",".join(f"{k}:{ms:.0f}" for k, ms in slowest),
+            )
+    settings = get_settings()
+    if settings.profile_timings and settings.environment != "production":
+        data["_timings"] = {"total_ms": round(total_ms, 1), "spans": spans}
+    return data
+
+
+async def _scorecard_payload(
+    address: str | None,
+    lat: float | None,
+    lon: float | None,
+    pin: str | None,
+) -> dict:
     # Every parcel the two address sources list for the typed address, fetched alongside
     # the resolution so the "how we found this parcel" panel can say when an address
     # maps to several parcels or the sources disagree (both are cached lookups).
@@ -2284,11 +2326,15 @@ async def scorecard(
         from backend.retrieval.property.parcel_addresses import assessor_address_pins
 
         cand_task = asyncio.gather(
-            address_point_pins(address), assessor_address_pins(address), return_exceptions=True,
+            _timing.timed("candidates.address_points", address_point_pins(address)),
+            _timing.timed("candidates.assessor", assessor_address_pins(address)),
+            return_exceptions=True,
         )
-    rl = await _resolve_location(address, lat, lon, pin)
+    with _timing.span("resolution"):
+        rl = await _resolve_location(address, lat, lon, pin)
     _require_chicago(rl)
-    data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
+    with _timing.span("fetch"):
+        data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
 
     # Reconcile identity. When the authoritative address→PIN path degraded
     # ("approximate"), the property orchestrator still resolved a parcel from the
@@ -2308,7 +2354,7 @@ async def scorecard(
         candidate_pin = prop.pin14 if prop else None
         if candidate_pin:
             from backend.retrieval.property.address_points import parcel_address_matches
-            if await parcel_address_matches(candidate_pin, address):
+            if await _timing.timed("identity.address_round_trip", parcel_address_matches(candidate_pin, address)):
                 resolved_pin = candidate_pin
                 resolved_confidence = "authoritative"
                 resolution_method = "geocode_nearest_verified"
@@ -2342,7 +2388,7 @@ async def scorecard(
     # is returned as an explicit state rather than being confused with zero filings.
     from backend.legislation.upcoming import summary_for as upcoming_zoning_for
 
-    data["context"].upcoming_zoning = await asyncio.to_thread(
+    data["context"].upcoming_zoning = await _timing.timed("upcoming_zoning", asyncio.to_thread(
         upcoming_zoning_for,
         get_settings().pending_legislation_path,
         lat=rl.lat,
@@ -2350,7 +2396,7 @@ async def scorecard(
         pin=resolved_pin,
         address=rl.address,
         authoritative_pin=resolved_confidence == "authoritative",
-    )
+    ))
     data["nearest_parcel_unverified"] = nearest_parcel_unverified
     data["resolved_lat"] = rl.lat
     data["resolved_lon"] = rl.lon
@@ -2372,7 +2418,8 @@ async def scorecard(
     ap_pins: list[str] = []
     assessor_pins: list[str] = []
     if cand_task is not None:
-        got = await cand_task
+        with _timing.span("candidates.wait"):
+            got = await cand_task
         ap_pins = got[0] if isinstance(got[0], list) else []
         assessor_pins = got[1] if isinstance(got[1], list) else []
     _prop = data["context"].property
@@ -2390,14 +2437,15 @@ async def scorecard(
         property_pin=_prop.pin14 if _prop else None,
         parcel_geometry=_prop.parcel_geometry if _prop else None,
     )
-    data["provenance"] = build_provenance(
-        context=data["context"],
-        zone_definition=data.get("zone_definition"),
-        resolved_pin=resolved_pin,
-        resolved_confidence=resolved_confidence,
-        comparables=data.get("comparables"),
-        address_scoped_violations=True,
-    )
+    with _timing.span("provenance"):
+        data["provenance"] = build_provenance(
+            context=data["context"],
+            zone_definition=data.get("zone_definition"),
+            resolved_pin=resolved_pin,
+            resolved_confidence=resolved_confidence,
+            comparables=data.get("comparables"),
+            address_scoped_violations=True,
+        )
     # WS2 PR3: pending Title 17 text amendments a committed review maps to THIS parcel's district,
     # overlays and shown facts. Computed after provenance because the facts the Profile actually
     # shows decide relevance; a pending proposal never alters any current-law figure above.
@@ -2411,7 +2459,7 @@ async def scorecard(
         zoning_now = data["context"].parcel_zoning
         regulatory_now = data["context"].regulatory
         facts = {k: v for k, v in data["provenance"].items() if not k.startswith("regulatory.upcoming_zoning.")}
-        upcoming.text_impacts, upcoming.text_review = await asyncio.to_thread(
+        upcoming.text_impacts, upcoming.text_review = await _timing.timed("upcoming_zoning.text_impacts", asyncio.to_thread(
             pending_impacts.for_parcel,
             get_settings().pending_legislation_path,
             summary_status=upcoming.status,
@@ -2423,7 +2471,7 @@ async def scorecard(
                 fact_ids=frozenset(facts),
                 entries=facts,
             ),
-        )
+        ))
         data["provenance"].update(
             text_impact_entries(upcoming, datetime.now(timezone.utc).strftime("%Y-%m-%d"))
         )
@@ -2431,11 +2479,12 @@ async def scorecard(
     from backend.data_health.vintages import as_dicts, vintages_for
 
     data["data_dates"] = as_dicts(vintages_for(data["provenance"], code_currency=data["context"].code_currency))
-    data["context"] = data["context"].model_dump(exclude_none=True)
-    if data.get("comparables"):
-        data["comparables"] = data["comparables"].model_dump(exclude_none=True)
-    else:
-        data["comparables"] = None
+    with _timing.span("serialize"):
+        data["context"] = data["context"].model_dump(exclude_none=True)
+        if data.get("comparables"):
+            data["comparables"] = data["comparables"].model_dump(exclude_none=True)
+        else:
+            data["comparables"] = None
     return data
 
 
