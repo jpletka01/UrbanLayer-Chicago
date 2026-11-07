@@ -30,7 +30,8 @@ reusable lesson, not the full narrative.
 - `guides/auth-and-conversations.md` — Google OAuth + JWT, conversation persistence, sharing.
 - `guides/latency-reduction.md` — completed + planned perf work, pipeline timing reference.
 
-### Design system — **canonical: "Bento Pro"**
+### Design system — **live site: "Bento Pro"; the rewrite: SnowUI + Items 73–80**
+- `guides/frontend-rewrite-runbook.md` — **start here for the front-end rewrite (2026-11-07)**: phase status table, working rules, the end-of-milestone checklist (decisions, docs, next-phase prompt). Decisions in `decisions/2026-11_frontend-rewrite.md` (Item 73 SnowUI base, Item 74 visual system, Item 75 how it is built, 76–80 Phase 1); the approved plan is local (`plans/2026-11-07_frontend-implementation-plan.md`).
 - `guides/frontend-redesign-vision.md` — **the front-end rewrite brief (governs `frontend/src/ui-next/`; Phase 1 built 2026-11-07)**: audience (builders), 11 page rules, app frame, Profile tabs, Discovery, chat, Saved, ruled-out list, data work it needs, urgent fixes, parked questions. Read before any redesign work; `page-design.md` still governs the live site until the rewrite ships.
 - `guides/page-design.md` — **what a page shows and how on today's live UI (2026-11-02)**; the rewrite's rules are rewritten after the builder test (Item 75): one answer first, evidence behind the Lucide tool tray, color by role, Button vs StatusLabel, the ratcheting page budget, measured effect, file map. Checklist form = skill `page-design-rules`. Read before ANY Profile/Discovery UI change.
 - `guides/bento-pro-redesign.md` — today's live-UI token system + landing (not used by the rewrite).

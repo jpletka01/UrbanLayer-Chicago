@@ -62,7 +62,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 
 ## Design Tokens
 
-> **Two UIs during the rewrite (2026-11-07).** Everything in this section is **today's live UI**. The new UI in `src/ui-next/` (see its Key Files row) has its own tokens (`ui-next.css`, SnowUI + Coastal, Items 73–77), **no satellite map**, and must not reuse Bento Pro colors, orange actions or violet premium.
+> **Two UIs during the rewrite (2026-11-07).** Everything in this section is **today's live UI**. The new UI in `src/ui-next/` (see its Key Files row) has its own tokens (`ui-next.css`, SnowUI + Coastal, Items 73–77), **no satellite map**, and must not reuse Bento Pro colors, orange actions or violet premium. Start from `claude-context/guides/frontend-rewrite-runbook.md`.
 
 **Live-site design language: "Bento Pro"** (branch `feat/bento-pro`, 2026-06-30 →) — full spec in
 `claude-context/guides/bento-pro-redesign.md` (token system + landing) and

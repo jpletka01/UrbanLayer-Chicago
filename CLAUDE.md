@@ -92,3 +92,4 @@ cd frontend && npm run sweep:live                 # after a deploy: console erro
 
 Deep context lives in `claude-context/`. Read `claude-context/README.md` for a manifest
 of available docs — load only what's relevant to the current task. Don't read everything.
+Front-end rewrite work: `claude-context/guides/frontend-rewrite-runbook.md` first (status, rules, and the end-of-milestone checklist that writes the next phase's prompt).
