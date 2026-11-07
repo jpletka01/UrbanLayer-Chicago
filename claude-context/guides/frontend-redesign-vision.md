@@ -1,6 +1,6 @@
 # Front-end redesign — vision brief
 
-Version 2 · 2026-11-06 · Owner: Jack · **Status: planning. No code has changed.**
+Version 3 · 2026-11-07 · Owner: Jack · **Status: planning. No code has changed.**
 
 The reference for UrbanLayer's front-end rewrite: what it is for, how the pages fit together, and the
 rules every page follows. Visual design and the build are checked against it. Labels: **Approved** =
@@ -183,6 +183,32 @@ by the decision) and it maps one-to-one to the PDF export, which is today's repo
 - **At the limit:** a frosted sign-in card (a bottom sheet on phones), which also offers connecting the
   user's own Claude or ChatGPT.
 
+## Maps — Draft
+
+One map design for every page, so the Profile, Discovery, chat and Deep analysis read the same way.
+
+- **A quiet base:** muted land, streets as empty gaps between blocks, street names only when zoomed in,
+  no business or point-of-interest labels. Today's satellite view uses `satellite-streets-v12`, which
+  prints business names; hiding the base style's POI label layers in `lib/useMapboxOverlay.ts` (the one
+  place every map is created) is the quick win, shipping with the live-site fixes.
+- **Zoning clipped to blocks** so the street grid stays visible; district codes are the only zoning labels.
+- **The lot always on top** as a strong outline in the "this property" color.
+- **One shared layer catalog** (base; the lot and buildings; zoning and pending rezonings; built vs
+  allowed; rules such as TIF, transit area, landmark, planned development and flood; market sales and new
+  construction; crime and 311; L, Metra, bus and Divvy). Every layer switches **On / Dim / Off**; pages
+  differ only in which layers start on.
+- **A key that builds itself** from the layers that are on, with counts in view and each source's date;
+  it folds to one button. On phones, Key and Layers are two buttons that open half-height sheets.
+- **Zoning colors by rule:** one hue per zoning family, darker as density rises; planned developments as
+  an outline only. Exact colors come with the site palette, checked for color-blind safety in both themes.
+- **3D is a mode of the same map** (Mapbox extrusions): the County lot outline, today's building, the
+  largest allowed, and neighbors raised by stories from the City's 2015 footprint survey (approximate).
+- **One map instance per page,** reused across tabs and layers, which also ends the "WebGL context was
+  lost" error.
+- **Defaults:** Overview satellite + this lot; Build zoning, pending rezonings, 3D; Money market sales
+  within ¼ mile; Neighborhood new construction within ½ mile; Discovery lots colored by the chosen
+  measure; a chat answer shows only the layer it is about.
+
 ## Saved — Draft
 
 In the rail: saved lots, searches and conversations. Named lists with a private note per lot; each saved
@@ -265,10 +291,10 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 
 ## What comes next
 
-1. **The map design pass:** one cleaner map for the Profile, Discovery, chat and Deep analysis (layers
-   with On / Dim / Off, the key, zoning colors, streets as empty space, the 3D lot). The landing page,
-   chat page and subscription flow are wireframed (landing and chat approved). Sign-in, Settings and
-   About are restyles.
+1. **Structure is done (2026-11-07).** Every page is wireframed: site map, Profile (Overview approved,
+   tabs drafted), Deep analysis (draft 7), Discovery (approved), landing (approved), chat (approved),
+   the subscription flow and the shared map design. Sign-in, Settings and About are restyles.
+   **Next: a new conversation, in planning mode,** to plan the implementation and choose templates.
 2. **Visual phase:** shortlist two to four templates (duplicated into Jack's Figma drafts so they can be
    read), then choose colors, type, icons and chart style together.
 3. **Detailed mockups** of the Profile Overview, the Build tab, Discovery and the landing page.
