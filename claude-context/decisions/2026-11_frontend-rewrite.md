@@ -180,3 +180,21 @@ The implementation plan itself is local (`plans/2026-11-07_frontend-implementati
 **Revisit if:** a builder test task can't be done without imagery (then raise it with the owner; don't add it back silently).
 
 **Numbers:** none measured. Local plan files outside the repo that still mention satellite (`plans/2026-11-01_profile-discovery-redesign-plan.md` and its assets) are pre-rewrite and superseded by the brief.
+
+---
+
+## Item 79: the owner's first look at the prototype (2026-11-07)
+
+Notes from the owner's first walkthrough of the Phase 1 prototype, before the formal thumbs-up.
+
+**Changed now:**
+- **Map focus.** An "Expand map" button on the map band makes the map the focus of the screen (a full-window view; "Close map" or Escape returns, focus stays on the toggle). `ParcelMap` now resizes with its own box (a `ResizeObserver` calls `map.resize()`), which also stops the canvas stretching when the Ask drawer narrows the page.
+- **Chat is a folder in the side panel**, like a directory: the row opens and closes, "New chat" comes first, then the signed-in visitor's recent chats (anonymous: a sign-in line). Replaces the "Past chats" dropdown, which read oddly in a side panel. The owner pointed to the "Sidebars (Full Interactive)" Figma file (Item 73) as the reference for the panel's finished look; that restyle belongs to Phase 6.
+- **Ask uses a chat icon** (`MessageCircleQuestion`, the "ask" icon today's tool tray already uses), not the sparkle.
+- **The quiet base hides building footprints, pier/structure shapes and airport shapes** ("the polygons look ugly"); blocks read as plain land between streets. The real Cities: Skylines-style base is still map track M1.
+
+**Carried forward (not Phase 1):**
+- **Loading screens.** A cold Profile takes 15–40 s and the current skeleton plus a seconds counter isn't good enough. Phase 2 measures where the time goes and adds honest progressive loading; Phase 4 splits the response.
+- **The page feels thin.** With only Overview and Build, the Profile "doesn't stand out." Expected at this scope (Money, Neighborhood, History come in Phase 6), but the builder test (Phase 3) should record whether the Overview alone earns attention, and the Phase 4 contract should make sure the first screen carries enough.
+
+**Numbers:** none measured.

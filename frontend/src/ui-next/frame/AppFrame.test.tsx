@@ -29,12 +29,23 @@ describe("AppFrame", () => {
     const { container } = mount();
     const panel = screen.getAllByRole("navigation", { name: "Main menu" })[0];
     const links = within(panel).getAllByRole("link").map((a) => a.textContent);
-    expect(links).toEqual(["UrbanLayer", "Search", "Discovery", "Chat"]);
+    expect(links).toEqual(["UrbanLayer", "Search", "Discovery"]);
+    expect(within(panel).getByRole("button", { name: "Chat" }).getAttribute("aria-expanded")).toBe("false");
     expect(within(panel).queryByText("Saved")).toBeNull();
     expect(within(panel).getByRole("link", { name: "Search" }).getAttribute("aria-current")).toBe("page");
     expect(container.querySelector(".ui-next")).not.toBeNull();
     expect(screen.getByRole("navigation", { name: "You are here" }).textContent).toContain("1601 N Milwaukee Ave");
     expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("opens Chat like a folder: New chat first, then a sign-in line for anonymous visitors", () => {
+    mount();
+    const panel = screen.getAllByRole("navigation", { name: "Main menu" })[0];
+    fireEvent.click(within(panel).getByRole("button", { name: "Chat" }));
+    const folder = within(panel).getByTestId("chat-folder");
+    const rows = within(folder).getAllByRole("listitem").map((li) => li.textContent);
+    expect(rows).toEqual(["New chat", "Sign in to see past chats"]);
+    expect(within(folder).getByRole("link", { name: "New chat" }).getAttribute("href")).toBe("/?ask=1");
   });
 
   it("collapses to icons that keep their names, and remembers it", () => {

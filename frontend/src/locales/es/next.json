@@ -17,7 +17,6 @@
     "collapse": "Contraer menú",
     "expand": "Expandir menú",
     "breadcrumb": "Usted está aquí",
-    "pastChats": "Chats anteriores",
     "signInForChats": "Inicie sesión para ver sus chats",
     "loading": "Cargando…",
     "noChats": "Aún no hay chats",
@@ -32,7 +31,8 @@
     "language": "Idioma",
     "settings": "Configuración",
     "signIn": "Iniciar sesión",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "newChat": "Chat nuevo"
   },
   "tools": {
     "ask": "Preguntar al analista",
@@ -180,6 +180,11 @@
         "lot": "Área del terreno",
         "unitMath": "Unidades por área del terreno"
       }
+    },
+    "map": {
+      "expand": "Ampliar mapa",
+      "close": "Cerrar mapa",
+      "focusedLabel": "Mapa de {{address}}"
     }
   },
   "discovery": {

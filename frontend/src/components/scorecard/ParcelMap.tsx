@@ -326,6 +326,17 @@ function ParcelMapInner({
     map.setStyle(target);
   }, [satellite, themeStyle, mapReady, mapRef]);
 
+  // The map follows its own box, not just the window: a drawer beside it or the new UI's focus (full-screen) view
+  // changes its size without a window resize, and Mapbox would otherwise stretch the old canvas.
+  useEffect(() => {
+    const el = frameRef.current;
+    const map = mapRef.current;
+    if (!el || !map || !mapReady || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mapReady, mapRef]);
+
   // The desktop key narrows the map's box; tell Mapbox so the canvas follows (no stretched frame).
   useEffect(() => {
     const map = mapRef.current;

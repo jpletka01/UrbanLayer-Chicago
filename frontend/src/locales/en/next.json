@@ -17,7 +17,6 @@
     "collapse": "Collapse menu",
     "expand": "Expand menu",
     "breadcrumb": "You are here",
-    "pastChats": "Past chats",
     "signInForChats": "Sign in to see past chats",
     "loading": "Loading…",
     "noChats": "No chats yet",
@@ -32,7 +31,8 @@
     "language": "Language",
     "settings": "Settings",
     "signIn": "Sign in",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "newChat": "New chat"
   },
   "tools": {
     "ask": "Ask the analyst",
@@ -180,6 +180,11 @@
         "lot": "Lot area",
         "unitMath": "Units by lot area"
       }
+    },
+    "map": {
+      "expand": "Expand map",
+      "close": "Close map",
+      "focusedLabel": "Map of {{address}}"
     }
   },
   "discovery": {

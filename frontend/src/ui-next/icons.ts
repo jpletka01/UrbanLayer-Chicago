@@ -2,7 +2,7 @@
 // lucide-react), 1.5 stroke. A new concept gets one line here before it gets a component.
 import {
   ArrowUpToLine, BadgeDollarSign, BookOpen, Bookmark, Building2, CircleUser, Download, FileClock, LandPlot, Layers,
-  Footprints, ListChecks, Map as MapIcon, MessageCircle, Receipt, Ruler, Search, Sparkles, Square, type LucideIcon,
+  Footprints, ListChecks, Map as MapIcon, MessageCircle, MessageCircleQuestion, Receipt, Ruler, Search, Square, type LucideIcon,
 } from "lucide-react";
 import type { NavIcon } from "./readiness";
 
@@ -14,7 +14,7 @@ export const ICON = {
   chat: MessageCircle,
   account: CircleUser,
   // the Profile's tools (icon-only buttons are allowed for these three; Item 75)
-  ask: Sparkles,
+  ask: MessageCircleQuestion, // a chat bubble (owner review 2026-11-07), the same "ask" icon as today's ToolTray
   sources: BookOpen,
   export: Download,
   // facts

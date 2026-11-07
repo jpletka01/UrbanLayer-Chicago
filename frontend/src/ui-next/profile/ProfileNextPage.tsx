@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as Tabs from "@radix-ui/react-tabs";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, Maximize2, Minimize2 } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ParcelQuery } from "../../lib/types";
 import { useSelectedParcel } from "../../contexts/SelectedParcelContext";
@@ -137,6 +137,14 @@ function ProfileLoaded({ data, onSearch }: { data: ScorecardResponse; onSearch: 
   const [tab, setTab] = useState<TabId>("overview");
   const [askOpen, setAskOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [mapFocused, setMapFocused] = useState(false);
+  const mapButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Keep focus on the map's toggle across the switch (it moves between the band and the focused view).
+  const mapToggled = useRef(false);
+  useEffect(() => {
+    if (!mapToggled.current) { mapToggled.current = true; return; } // not on first render
+    mapButtonRef.current?.focus({ preventScroll: true });
+  }, [mapFocused]);
   const askButtonRef = useRef<HTMLSpanElement | null>(null);
   const chat = useParcelChat(data, i18n.language);
   const ctx = data.context;
@@ -184,23 +192,49 @@ function ProfileLoaded({ data, onSearch }: { data: ScorecardResponse; onSearch: 
     >
       <Tabs.Root value={tab} onValueChange={(v) => setTab(v as TabId)} className="flex flex-col">
         <div className="px-4 pt-5 sm:px-7 sm:pt-7">
-          <div className="relative h-52 overflow-hidden rounded-2xl bg-nx-block sm:h-64 lg:h-72" data-testid="map-band">
-            <ParcelMap
-              variant="place"
-              look="next"
-              lat={data.resolved_lat ?? data.lat}
-              lon={data.resolved_lon ?? data.lon}
-              parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
-              profileKey={data.resolved_pin ?? data.address}
-              parcelConfidence={data.resolved_confidence}
-              outlineShared={!!ctx.property?.shared_outline_with}
-              comps={data.comparables?.sales}
-              showTransit
-              className="h-full"
-            />
-            <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-12rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
-              {address}
-            </h1>
+          {/* The page's one map. "Expand map" makes it the focus of the screen; Escape or "Close" returns. */}
+          <div
+            role={mapFocused ? "dialog" : undefined}
+            aria-modal={mapFocused || undefined}
+            aria-label={mapFocused ? t("profile.map.focusedLabel", { address }) : undefined}
+            onKeyDown={(e) => { if (mapFocused && e.key === "Escape") { e.stopPropagation(); setMapFocused(false); } }}
+            className={mapFocused ? "fixed inset-0 z-50 bg-nx-page p-3 sm:p-6" : "relative h-52 sm:h-64 lg:h-72"}
+            data-testid="map-band"
+            data-focused={mapFocused || undefined}
+          >
+            <div className="relative h-full overflow-hidden rounded-2xl bg-nx-block">
+              <ParcelMap
+                variant="place"
+                look="next"
+                lat={data.resolved_lat ?? data.lat}
+                lon={data.resolved_lon ?? data.lon}
+                parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                profileKey={data.resolved_pin ?? data.address}
+                parcelConfidence={data.resolved_confidence}
+                outlineShared={!!ctx.property?.shared_outline_with}
+                comps={data.comparables?.sales}
+                showTransit
+                className="h-full"
+              />
+              <div className="pointer-events-none absolute left-3 top-3 flex max-w-[calc(100%-12rem)] items-center gap-2">
+                <h1 className="truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
+                  {address}
+                </h1>
+                <button
+                  ref={mapButtonRef}
+                  type="button"
+                  onClick={() => setMapFocused((f) => !f)}
+                  aria-expanded={mapFocused}
+                  data-testid="map-focus"
+                  className="pointer-events-auto inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-nx-page px-3 py-1.5 text-caption font-medium shadow-[0_1px_2px_rgb(0_0_0/0.08)] hover:bg-nx-block touch-target"
+                >
+                  {mapFocused
+                    ? <Minimize2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    : <Maximize2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                  {mapFocused ? t("profile.map.close") : t("profile.map.expand")}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
