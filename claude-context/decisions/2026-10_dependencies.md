@@ -21,3 +21,28 @@ Format: see `README.md` in this folder.
 - **After:** `npm audit` 0 vulnerabilities; 8 PRs superseded once this merges.
 - **Not measured:** the live site (map rendering on real devices, bundle size change); the major-version items above; a Spanish or light-theme pass of the map.
 - **Reproduce:** `cd frontend && npx -p node@24 -p npm@11 -- sh -c 'npm ci && npx tsc --noEmit && npm test && npm run lint && npm run build && npm audit'`
+
+## Item 2: one tested compatibility batch; Python stays on 3.11 (2026-11-06)
+
+**Decision:** take the three raised Python dependency floors (`uvicorn` 0.54, `pydantic-settings` 2.16, and `sentence-transformers` 6.2) together with the two frontend major updates (`motion` 14.9 and `@sentry/react` 11.11). Keep the production Docker image on Python 3.11. The six Dependabot PRs are not merged independently: their branches are stale, the two frontend PRs both rewrite the lockfile, and all three failed checks were the same Discovery test race fixed on `main` by `0cdd832`.
+
+**Why:** CI had already resolved the newer Python packages under the old loose lower bounds, but this batch makes that tested baseline explicit. The project uses only `Sentry.init` plus `browserTracingIntegration`, which type-checks and tests unchanged under Sentry 11; Motion 14 likewise passes the full frontend gate. Python 3.15 is a runtime migration, not routine dependency maintenance. Its PR changes only the two `FROM` lines and leaves the Dockerfile copying `/usr/local/lib/python3.11`, so it would fail an image build even before Python-3.15 compatibility was assessed. The Dependabot policy already ignores Python majors; close that pre-existing PR rather than widen its scope.
+
+**Alternatives:** merge the five safe Dependabot PRs one at a time; rejected because it produces lockfile conflicts, repeated CI, and multiple deploy opportunities for one coordinated compatibility change. Upgrade to Python 3.15 now; rejected because it needs a dedicated runtime-migration plan, corrected Dockerfile paths, and image verification. Leave the old minimums; rejected because a fresh build could resolve a materially older dependency set than the one CI just tested.
+
+**Revisit if:** the production Docker build fails under the pinned Python 3.11 base, the frontend receives a Sentry event regression, or a Python 3.15 migration is explicitly scheduled.
+
+**Numbers**
+
+| Measure | Before | After |
+|---|---:|---:|
+| Frontend direct dependencies | Motion 12.43; Sentry React 10.78 | Motion 14.9.1; Sentry React 11.11.0 |
+| Python floors | uvicorn 0.30; pydantic-settings 2.5; sentence-transformers 3.2 | uvicorn 0.54; pydantic-settings 2.16; sentence-transformers 6.2 |
+| Backend unit tests | n/a | 2,742 passed, 66 deselected |
+| Evaluator tests | n/a | 188 passed |
+| Frontend tests | n/a | 952 passed |
+| Frontend lint warnings | 66 allowed | 66 (cap 67) |
+
+**Reproduce:** `PYTHONPATH=. /tmp/urbanlayer-deps-nov/bin/python -m pytest backend/tests -q -m 'not integration'`; `PYTHONPATH=. /tmp/urbanlayer-deps-nov/bin/python -m pytest eval/test_judge.py eval/tests -q`; `cd frontend && npx -p node@24 -p npm@11 -- sh -c 'npm run build && npm run test && npm run lint'`.
+
+**Not verified:** the production-backend Docker image; the local Docker daemon was unavailable. No live deployment or production Sentry-event check was run.
