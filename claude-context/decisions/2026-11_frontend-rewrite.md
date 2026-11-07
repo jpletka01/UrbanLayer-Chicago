@@ -215,6 +215,8 @@ Notes from the owner's first walkthrough of the Phase 1 prototype, before the fo
 - **Our data, not OpenStreetMap guesses.** The reference labels 76% of Chicago buildings from surrounding land use; we use County and City records (parcels, Assessor class, official zoning) and keep OSM-derived inputs separate and attributed (Item 75, M5).
 - **Gate:** no route flips to the new UI by default until its map meets this look in light and dark, reviewed by the owner against the reference. Phase 1's quiet stock base (Items 76, 78) is a placeholder; the building footprints it hides come back as our own styled shapes.
 
+**Timing (owner, 2026-11-07):** the map tracks stay where Item 75 put them, after the builder test (Phase 5). The builder test runs on the Phase 1 placeholder map, and its notes should treat the map's look as known-unfinished.
+
 **Alternatives:** keeping Mapbox's stock styles with more layers hidden (cannot reach the look; the owner rejected it); a satellite base (rejected, Item 78).
 
 **Revisit if:** M1's measurements show the chosen stack can't hold the first-view payload or frame rate on a phone; then change the stack, not the look.
