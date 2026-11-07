@@ -60,6 +60,27 @@ TOP_LEVEL = [
 ]
 
 
+# Phase 4 what-ifs, read from each run's span end times (both include resolution). Upper bounds: the spans ran
+# inside the full request, beside everything else.
+#   first_content = the lot on the map with its district: resolution, the zoning point, the PTAXSIM outline.
+#   overview      = what the Overview reads (answer sentence + verdict + one tile per tab): those, plus the
+#                   property record it shows (characteristics, assessments, sales, tax), the overlays the verdict
+#                   and the 606 rule read, Walk Score, and the RS-3 block-face test.
+SUBSETS = {
+    "first_content": ["resolution", "zoning", "property.parcel_by_pin", "property.parcel_by_point",
+                      "property.geometry"],
+    "overview": ["resolution", "zoning", "property.parcel_by_pin", "property.parcel_by_point",
+                 "property.geometry", "property.characteristics", "property.assessments", "property.sales",
+                 "property.tax", "property.building_facts", "regulatory.overlays", "neighborhood.walkscore",
+                 "block_face"],
+}
+
+
+def subset_end(run: dict, names: list[str]) -> float | None:
+    ends = [run["spans"][n]["end_ms"] for n in names if n in run["spans"]]
+    return max(ends) if ends else None
+
+
 def pct(values: list[float], p: float) -> float | None:
     """Nearest-rank percentile (no interpolation: with n=35 the p95 is the 34th value)."""
     if not values:
@@ -247,6 +268,13 @@ def summarize(runs: list[dict]) -> dict:
             mode: statistics.median([r["total_ms"] for r in measured if r["parcel"] == key and r["mode"] == mode])
             for mode in ("cold", "warm") if any(r["parcel"] == key and r["mode"] == mode for r in measured)
         }
+    out["subsets"] = {}
+    for sub, names in SUBSETS.items():
+        out["subsets"][sub] = {}
+        for mode in ("cold", "warm"):
+            vals = [v for r in measured if r["mode"] == mode and (v := subset_end(r, names)) is not None]
+            out["subsets"][sub][mode] = {"n": len(vals), "p50": pct(vals, 50), "p95": pct(vals, 95),
+                                         "max": max(vals, default=None)}
     first = [r for r in runs if r["round"] == 0 and r["mode"] == "cold"]
     if first:
         out["process_first_ms"] = first[0]["total_ms"]
@@ -273,6 +301,9 @@ def render_md(meta: dict, summary: dict, parcels: list[tuple[str, dict, str]]) -
     if "process_first_ms" in summary:
         lines.append(f"First Profile after process start (round 0, not in the percentiles): "
                      f"{_s(summary['process_first_ms'])}.")
+    for sub, row in summary.get("subsets", {}).items():
+        lines.append(f"If only `{sub}` were awaited ({', '.join(SUBSETS[sub])}): cold p50 {_s(row['cold']['p50'])}"
+                     f" / p95 {_s(row['cold']['p95'])}; warm p50 {_s(row['warm']['p50'])} / p95 {_s(row['warm']['p95'])}.")
     lines += ["", "**Critical path** (the fetch task that finished last): "
               f"cold {summary['critical']['cold']}; warm {summary['critical']['warm']}.", ""]
     lines += ["| Task | cold p50 | cold p95 | cold max | warm p50 | warm p95 | queue wait p95 (cold) | failed |",
@@ -294,6 +325,8 @@ def main() -> None:
     ap.add_argument("--rounds", type=int, default=5)
     ap.add_argument("--parcels", help="comma-separated keys (default: all)")
     ap.add_argument("--base", help="time a running server over HTTP instead of in-process")
+    ap.add_argument("--from-json", action="store_true",
+                    help="re-summarize results/<label>.json without running anything")
     ap.add_argument("--isolate", action="store_true",
                     help="run each slow lookup alone, cold, --rounds times, on the first parcel")
     args = ap.parse_args()
@@ -302,6 +335,16 @@ def main() -> None:
     if args.parcels:
         want = set(args.parcels.split(","))
         parcels = [p for p in PARCELS if p[0] in want]
+
+    if args.from_json:
+        saved = json.loads((RESULTS_DIR / f"{args.label}.json").read_text())
+        summary = summarize(saved["runs"])
+        saved["summary"] = summary
+        (RESULTS_DIR / f"{args.label}.json").write_text(json.dumps(saved, indent=1, default=str))
+        md = render_md(saved["meta"], summary, parcels)
+        (RESULTS_DIR / f"{args.label}.md").write_text(md)
+        print(md)
+        return
 
     if args.isolate:
         import logging
