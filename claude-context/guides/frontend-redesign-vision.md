@@ -57,7 +57,8 @@ they decide.
 7. **Asking never leaves the page.** The analyst opens beside what you're looking at.
 8. **Every visible lot opens something,** even "not in our data yet".
 9. **Color has jobs:** one for "this property", one for "you can click this", one for "this costs
-   money", status colors used sparingly. The palette itself is chosen in the visual phase.
+   money", status colors used sparingly. Chosen 2026-11-07 (Item 74): SnowUI's colors for the frame,
+   black for this property, the Coastal palette for charts.
 10. **Fixed slots keep it simple.** New data takes an existing slot or goes in a collapsed details
     table; it never adds a new kind of card. Today's word budgets carry over.
 11. **No financial advice.** Report facts and what the code allows; never project returns or say
@@ -66,7 +67,8 @@ they decide.
 ## The app frame — Approved
 
 - One **side panel on the left** in the ChatGPT style (from a template): the logo, an icon for each page
-  (Search, Discovery, Saved, Chat), then chat history and the account. A collapse button inside the panel
+  (Search, Discovery, Saved, Chat, with a small menu for past chats) and the account; no recent-lots or
+  chat-history lists (Item 74). A collapse button inside the panel
   shrinks it to a strip of icons. The same panel opens from a menu button on the landing page.
 - **Left is for getting around, right is for the analyst.** Never two panels on the same side.
 - Signed-in return visitors land on an in-app home (search, recent lots, saved lots that changed, recent
@@ -298,7 +300,8 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 2. **Visual phase:** the template is chosen (2026-11-07): **SnowUI** is the visual base, with a bottom-sheet
    library, a collapsible sidebar and a light/dark sidebar filling single jobs, and Lucide kept for icons
    (`decisions/2026-11_frontend-rewrite.md` Item 73; the files are CC BY 4.0, so the About page credits them).
-   Next: approve the visual-system draft (color roles, type, chart style, zoning colors).
+   The visual system is chosen too (Item 74): SnowUI's frame colors and type, the Coastal chart palette,
+   black for this lot. Zoning colors stay provisional until the map mockups.
 3. **Detailed mockups** of the Profile Overview, the Build tab, Discovery and the landing page.
 4. **A clickable prototype,** tested with two or three builders on a real task ("Could you build a
    6-flat at this address?").
