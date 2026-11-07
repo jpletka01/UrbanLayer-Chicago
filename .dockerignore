@@ -22,6 +22,7 @@ ingestion/data/
 !ingestion/data/commercial_bldg_by_pin.meta.json
 chicago-il-*.html
 eval/
+research/
 test-results/
 .env
 .env.*

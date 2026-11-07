@@ -1,0 +1,275 @@
+{
+ "about": "Accruing held-out set for reader ws2-pr4a-5 (frozen a1d9ebe before these pages were opened). Holds the last unseen passed Type 1 matters with both roles (2023), and grows with new pending Type 1 filings introduced after 2026-11-06. Not scored until it has at least 10 rows; then scored once with --fresh-panel.",
+ "selection": "filing_reader --passed-since 2023-01-01 --limit 25 --skip <every earlier record>: 6 matters, 12 PDFs requested, 11 kept, 1 refused by the 8 MB cap (SO2023-0002181 narrative); 5 matters complete. Pre-2023 matters are single combined Legislation PDFs with no separate Ordinance/Narrative, so the role selector skips them.",
+ "private_dir": "research/pending-filing-pdfs/accruing",
+ "held_out_scored_with": null,
+ "schema_version": 1,
+ "rows": [
+  {
+   "record_number": "O2023-0005688",
+   "title": "Zoning Reclassification Map No. 7-H at 2515 N Clybourn Ave - App No. 22286T1",
+   "matter_id": "68836AC8-1878-EE11-9AE5-001DD804D430",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2023-0005688 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/598534cb-0531-42ce-8419-9bbc03ff343f.pdf",
+     "type": "Legislation",
+     "sha256": "876a808de93cbd89ba3c210e459aacd88934d888911690928fbacbc5612e63ba",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2023-0005688 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/add00668-ee1d-461c-bfc4-78d5ca767ff0.pdf",
+     "type": "Exhibits",
+     "sha256": "670a28de9b26c8aea454dcca1322547fcfabfd020319cbe838fcf519b483c141",
+     "pages": 8
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "RM-4.5",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "3750",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "far": {
+     "value": "1.35",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "3",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": ""
+  },
+  {
+   "record_number": "O2023-0006013",
+   "title": "Zoning Reclassification Map No. 3-L at 5034-5048 W Chicago Ave - App No. 22302T1",
+   "matter_id": "733A5A54-A484-EE11-8178-001DD83091CA",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2023-0006013 Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/1da6e0c0-3177-4f80-90c2-33be6190bda7.pdf",
+     "type": "Legislation",
+     "sha256": "0cff798ed5d9a2a4cf4bc2e6580baa9625da4f0fff76a690d7d5dd1da7891af4",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2023-0006013 Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/50f56dea-9794-485a-a3e0-575c103af24f.pdf",
+     "type": "Exhibits",
+     "sha256": "3c9690d95cbda1de4b53ba4d4c78e8a4f925ab0fe05b79f415b72ac4df611ed1",
+     "pages": 13
+    }
+   },
+   "labels": {
+    "to_district": {
+     "value": "B3-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "far": {
+     "value": "1.13",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "15",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "40",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Two source districts (RS-3 and B3-1): from_district not labelled. No lot area is stated."
+  },
+  {
+   "record_number": "SO2023-0002169",
+   "title": "Zoning Reclassification Map No. 3-H at 1746 W Division St - App No. 22200T1",
+   "matter_id": "05DBDF9C-0315-EE11-8F6D-001DD806F9D9",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "SO2023-0002169 Final Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/fc8fe616-031d-4a57-b049-890bd8cddb77.pdf",
+     "type": "Legislation",
+     "sha256": "c38dce7195e5fc945df3e45242d548366cae14873ced97f122b11d37d5072fb0",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "SO2023-0002169 Final Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/26f0e783-eead-4457-a7e8-e47c58cb0690.pdf",
+     "type": "Exhibits",
+     "sha256": "f4f064122a4daf2c977ea5cc795148318d0e00a02ec2681ea713b1eb8ebe791f",
+     "pages": 7
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "B3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "B3-3",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "lot_area": {
+     "value": "2400",
+     "unit": "sq ft",
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "0",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "FAR not labelled ('Maximum FAR: 3.0'); height 37 feet 10 inches."
+  },
+  {
+   "record_number": "SO2023-0003861",
+   "title": "Zoning Reclassification Map No. 1-K at 4711 W Chicago Ave - App No. 22173T1",
+   "matter_id": "6E288ACF-2D48-EE11-BE6D-001DD8097665",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2023-1570, SO2023-3861 Final Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/d8ffe777-6a2a-4e36-a465-39e737b391ed.pdf",
+     "type": "Legislation",
+     "sha256": "63114fd550e8c774d5b06214b49929bdf5f5e51589ef5c2b8ef34cd82ac2b4ea",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2023-1570, SO2023-3861 Final Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/6d3dfeff-f269-498f-bc97-1ce25d41cf52.pdf",
+     "type": "Exhibits",
+     "sha256": "a74aeddbcb71d3ccefa2b4d545201efada6398c9153f6b63b438c3c1f1887228",
+     "pages": 6
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M1-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "M2-1",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "far": {
+     "value": "0",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "parking": {
+     "value": "10",
+     "unit": "spaces",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "FAR stated as '= 0, there are no buildings proposed'."
+  },
+  {
+   "record_number": "SO2023-0003865",
+   "title": "Zoning Reclassification Map No. 12-I at 2614 W 48th St and 4743 S Talman Ave - App No. 22170T1",
+   "matter_id": "AA451D70-3148-EE11-BE6D-001DD8097665",
+   "split": "held_out",
+   "label_status": "assistant_draft",
+   "labeled_by": "Claude (assistant), from page images",
+   "labeled_on": "2026-11-06",
+   "attachments": {
+    "ordinance": {
+     "file_name": "O2023-1567, SO2023-0003865 Final Ordinance.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/6b11c838-03ac-46c6-8e77-a4b6ce7de072.pdf",
+     "type": "Legislation",
+     "sha256": "183826364e276b8851b07555e303fad8b91c1be18ecc75e31a10aedb12299f6c",
+     "pages": 1
+    },
+    "narrative": {
+     "file_name": "O2023-1567, SO2023-3865 Final Narrative and Plans.pdf",
+     "url": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/9766bf9e-7982-47c4-a0c2-86e6f57d08ac.pdf",
+     "type": "Exhibits",
+     "sha256": "68f00d983c178a6708a2fb2dfbbd8bba083b018e4a708cd5c46a70cab829ae5b",
+     "pages": 4
+    }
+   },
+   "labels": {
+    "from_district": {
+     "value": "M1-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "to_district": {
+     "value": "C3-2",
+     "unit": null,
+     "page": 1,
+     "source": "ordinance"
+    },
+    "dwelling_units": {
+     "value": "0",
+     "unit": null,
+     "page": 1,
+     "source": "narrative"
+    },
+    "height": {
+     "value": "17.33",
+     "unit": "ft",
+     "page": 1,
+     "source": "narrative"
+    }
+   },
+   "notes": "Lot area printed '27.503 square feet' (an obvious typo, not a single value): not labelled. Parking is 'None for Roaster and Cafe / 1 per 10 occupants': not a count, not labelled. 'Maximum FAR': not labelled."
+  }
+ ]
+}

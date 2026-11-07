@@ -252,6 +252,12 @@ class Settings(BaseSettings):
     ordinance_reader_enabled: bool = False
     ordinance_reader_model: str = "claude-sonnet-4-6"
 
+    # WS2 PR4 is deliberately dark until a hand-checked production verification.
+    # Display is independent from the (future) model-fallback reader so a deploy
+    # cannot expose applicant proposal details or spend model credits.
+    pending_proposal_details_enabled: bool = False
+    pending_filing_reader_enabled: bool = False
+
     # Max concurrent PDF report renders. The memory-heavy WeasyPrint span now runs
     # in an isolated child process (backend/report_render.py); measured peak is
     # ~118 MB per render (2026-06-16 prod), so render memory itself is no longer an
