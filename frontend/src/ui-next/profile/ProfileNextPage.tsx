@@ -219,7 +219,7 @@ function ProfileLoaded({ data, onSearch }: { data: ScorecardResponse; onSearch: 
               <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
                 {address}
               </h1>
-              {/* Icon only, in the map's corner (owner's call); the name is in the label and tooltip. */}
+              {/* Icon only, bottom-right beside Mapbox's zoom buttons with a gap (owner's call; the key keeps the top-right corner). */}
               <button
                 ref={mapButtonRef}
                 type="button"
@@ -228,7 +228,7 @@ function ProfileLoaded({ data, onSearch }: { data: ScorecardResponse; onSearch: 
                 aria-label={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
                 title={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
                 data-testid="map-focus"
-                className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
+                className="absolute bottom-2.5 right-12 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
               >
                 {mapFocused
                   ? <Shrink aria-hidden className="h-4 w-4" strokeWidth={1.5} />
