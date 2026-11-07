@@ -320,6 +320,7 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 4. **Phase 1 prototype built (2026-11-07, Item 76):** behind `?ui=next` on today's URLs: the frame, Profile
    Overview (one tile per tab: units allowed vs built, property tax, walk score, last market sale; Item 77) and Build on today's
    `/api/scorecard`, the parcel map in the new look, the Ask drawer on the existing chat path, one Discovery
-   flow. Next: the owner's review against SnowUI in both themes, then the latency spike (Phase 2).
+   flow. **Approved by the owner 2026-11-07** (Item 79; the map's look waits for the map tracks, Item 80). Next: the
+   latency spike (Phase 2), then the builder test (Phase 3).
 
 Update this brief when a decision changes; the design pages hold the detail.

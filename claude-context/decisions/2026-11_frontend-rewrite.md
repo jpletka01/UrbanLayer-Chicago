@@ -147,7 +147,7 @@ The implementation plan itself is local (`plans/2026-11-07_frontend-implementati
 
 **Numbers** (measured 2026-11-07, local build of this branch vs `origin/main` 8b65246):
 - First load (index.html's scripts + modulepreloads, gzip): 1,319,856 → 1,334,171 bytes (+14.3 KB, +1.1%); CSS 18,096 → 20,277 bytes gzip. Radix is not in the first-load chunks; the new pages are `ProfileNextPage`/`DiscoveryNextPage` chunks. *Reproduce:* `npm run build`, then gzip-sum the assets named in `dist/index.html`.
-- Tests: vitest 986 → 1,041 (new: isolation, preview switch, contrast, tabs, drawer, frame, Discovery, map); lint 66 warnings before and after (cap 67).
+- Tests: vitest 986 → 1,044 at the end of Phase 1 (new: isolation, preview switch, contrast, tabs, drawer, frame, Discovery, map); lint 66 warnings before and after (cap 67).
 - Playwright axe (WCAG 2 A/AA): 0 violations on the preview search, Profile (Overview and Build) and Discovery, light and dark. *Reproduce:* `npx playwright test e2e/ui-next.spec.ts --project="Pixel 3"` with the dev stack up.
 - **Not measured:** latency (Phase 2), how builders read it (Phase 3), the Spanish by a native reader.
 
@@ -185,7 +185,7 @@ The implementation plan itself is local (`plans/2026-11-07_frontend-implementati
 
 ## Item 79: the owner's first look at the prototype (2026-11-07)
 
-Notes from the owner's first walkthrough of the Phase 1 prototype, before the formal thumbs-up.
+Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: the owner approved Phase 1 ("thumbs up", 2026-11-07) after the changes below**, with the map's look explicitly left to the map tracks (Item 80).
 
 **Changed now:**
 - **Map focus.** A four-arrow icon button at the map's bottom right, just left of the zoom buttons (icon only, the owner's call; "Expand map" / "Close map" as its label and tooltip; the key keeps the top-right corner) makes the map the focus of the screen (a full-window view; "Close map" or Escape returns, focus stays on the toggle). `ParcelMap` now resizes with its own box (a `ResizeObserver` calls `map.resize()`), which also stops the canvas stretching when the Ask drawer narrows the page.
