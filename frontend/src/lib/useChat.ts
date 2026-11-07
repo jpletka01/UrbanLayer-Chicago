@@ -77,8 +77,26 @@ interface UseChat {
   ) => Promise<void>;
   clearTurnState: () => void;
   reset: () => void;
+  /** True when the last turn failed in a way a resend can fix (not a rate or message limit). */
+  canRetry: boolean;
+  /** Resend the failed turn's question: its bubble and any partial answer are replaced, not duplicated. */
+  retry: () => void;
   // Set the conversation's active parcel grounding (attached to every turn).
   setGrounding: (ctx: ScorecardContext | null) => void;
+}
+
+type SendOpts = { parcelPin?: string | null; scorecardContext?: ScorecardContext | null };
+
+/** The words for a failed turn: the step that failed, or that chat itself is out (decision Item 72). An older
+ *  backend sends no step, so its own text stands. */
+export function turnErrorText(
+  chunk: { error: string; error_step?: string; error_kind?: string },
+  t: (key: string) => string,
+): string {
+  if (chunk.error === "MESSAGE_LIMIT_REACHED") return t("common:messageLimit");
+  if (chunk.error_kind === "unavailable") return t("chat:turnError.unavailable");
+  if (chunk.error_step) return t(`chat:turnError.step.${chunk.error_step}`);
+  return chunk.error;
 }
 
 export function useChat({
@@ -97,6 +115,9 @@ export function useChat({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  // The failed turn, kept so "Try again" resends the same question (decision Item 72).
+  type FailedTurn = { text: string; attachments?: UploadMeta[]; opts?: SendOpts };
+  const [failedTurn, setFailedTurn] = useState<FailedTurn | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const pendingContextRef = useRef<ContextObject | null>(null);
   const pendingPlanRef = useRef<RetrievalPlan | null>(null);
@@ -122,6 +143,7 @@ export function useChat({
     setErrorMsg(null);
     setRateLimited(false);
     setActivities([]);
+    setFailedTurn(null);
   }
 
   function reset() {
@@ -131,14 +153,25 @@ export function useChat({
     activeGroundingRef.current = null; // New Chat drops the parcel grounding
   }
 
-  async function sendMessage(
-    text: string,
-    attachments?: UploadMeta[],
-    opts?: { parcelPin?: string | null; scorecardContext?: ScorecardContext | null },
-  ) {
+  async function sendMessage(text: string, attachments?: UploadMeta[], opts?: SendOpts) {
+    return send(text, attachments, opts);
+  }
+
+  function retry() {
+    if (!failedTurn || streaming) return;
+    // Drop the failed turn (its partial or empty answer, then its question) and send the question again.
+    let base = messages;
+    if (base[base.length - 1]?.role === "assistant") base = base.slice(0, -1);
+    if (base[base.length - 1]?.role === "user" && base[base.length - 1].content === failedTurn.text) base = base.slice(0, -1);
+    void send(failedTurn.text, failedTurn.attachments, failedTurn.opts, base);
+  }
+
+  // `base`: the transcript to send on top of (a retry drops the failed turn first). Without it the new turn is
+  // appended to whatever the transcript is when React applies the update, as before.
+  async function send(text: string, attachments: UploadMeta[] | undefined, opts: SendOpts | undefined, base?: Message[]) {
     if (streaming) return;
 
-    if (atMessageLimit) {
+    if (base ? base.filter((m) => m.role === "user").length >= MESSAGE_LIMIT : atMessageLimit) {
       setErrorMsg(t("common:messageLimit"));
       return;
     }
@@ -159,8 +192,10 @@ export function useChat({
       content: text,
       attachments: attachments?.length ? attachments : undefined,
     };
-    const historySnapshot = messages.map((m) => ({ role: m.role, content: m.content }));
-    setMessages((m) => [...m, userMessage, { role: "assistant", content: "" }]);
+    const historySnapshot = (base ?? messages).map((m) => ({ role: m.role, content: m.content }));
+    if (base) setMessages([...base, userMessage, { role: "assistant", content: "" }]);
+    else setMessages((m) => [...m, userMessage, { role: "assistant", content: "" }]);
+    const thisTurn: FailedTurn = { text, attachments, opts };
     setStreaming(true);
 
     const controller = new AbortController();
@@ -262,7 +297,8 @@ export function useChat({
             return next;
           });
         } else if (chunk.type === "error") {
-          setErrorMsg(chunk.error);
+          setErrorMsg(turnErrorText(chunk, t));
+          if (chunk.error !== "MESSAGE_LIMIT_REACHED") setFailedTurn(thisTurn);
         }
       }
     } catch (err) {
@@ -272,8 +308,10 @@ export function useChat({
         if (err instanceof ChatStreamError) {
           setErrorMsg(err.detail ?? t("common:connectionLost"));
           setRateLimited(err.status === 429);
+          if (err.status !== 429) setFailedTurn(thisTurn);
         } else {
           setErrorMsg((err as Error).message);
+          setFailedTurn(thisTurn);
         }
         // The request failed before any token arrived: drop the optimistic
         // empty assistant bubble so the error banner sits under the question.
@@ -288,6 +326,7 @@ export function useChat({
     } finally {
       if (!receivedDone && !controller.signal.aborted && !streamErrored) {
         setErrorMsg(t("common:connectionLost"));
+        setFailedTurn(thisTurn);
       }
       setStreaming(false);
       abortRef.current = null;
@@ -308,6 +347,8 @@ export function useChat({
     activities,
     sendMessage,
     clearTurnState,
+    canRetry: failedTurn != null && !streaming,
+    retry,
     reset,
     setGrounding,
   };

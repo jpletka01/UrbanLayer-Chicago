@@ -1,4 +1,6 @@
 {
+  "opensInNewTab": "(se abre en una pestaña nueva)",
+  "newTabBlocked": "Su navegador bloqueó la pestaña nueva. Permita las ventanas emergentes para este sitio e inténtelo de nuevo.",
   "history": "Historial",
   "newChat": "Nueva consulta",
   "export": "Exportar",

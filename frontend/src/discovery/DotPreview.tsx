@@ -16,16 +16,22 @@ export interface DotPreviewProps {
   /** The full row, when the list has it or the one-row read returned; null while loading or when it failed. */
   row: ResultRow | null;
   loading: boolean;
+  /** A lot outline whose PIN10 has no row (Item 68): "missing" = not in our index, "failed" = the read failed. */
+  missing?: "missing" | "failed" | null;
   sortKey: string;
   pinned: boolean;
   onOpen: (pin: string) => void;
+  /** Opens the Profile at the point when there is no row to open by PIN. */
+  onOpenPoint?: (lat: number, lon: number) => void;
   onClose: () => void;
   variant: "popover" | "sheet";
   style?: CSSProperties;
   onPointerEnter?: () => void;
 }
 
-export function DotPreview({ point, row, loading, sortKey, pinned, onOpen, onClose, variant, style, onPointerEnter }: DotPreviewProps) {
+export function DotPreview({
+  point, row, loading, missing = null, sortKey, pinned, onOpen, onOpenPoint, onClose, variant, style, onPointerEnter,
+}: DotPreviewProps) {
   const { t } = useTranslation("pages");
   const nf = (n: number) => Math.round(n).toLocaleString();
   const { title, approx } = row ? rowTitle(row) : { title: t("discovery.preview.parcel"), approx: false };
@@ -60,7 +66,7 @@ export function DotPreview({ point, row, loading, sortKey, pinned, onOpen, onClo
             <span className="text-body font-medium text-text-primary">{title}</span>
             {approx && <span title={t("discovery.approxTip")}><StatusLabel tone="neutral" glyph={null}>{t("discovery.approx")}</StatusLabel></span>}
           </div>
-          <p className="font-mono text-micro text-text-muted">{t("discovery.pinTitle", { pin: point.pin })}</p>
+          <p className="font-mono text-micro text-text-muted">{t("discovery.pinTitle", { pin: row?.pin ?? point.pin })}</p>
         </div>
         {pinned && (
           <button
@@ -77,6 +83,11 @@ export function DotPreview({ point, row, loading, sortKey, pinned, onOpen, onClo
         {[landUse ? t(`discovery.enum.land_use.${landUse}`, { defaultValue: landUse.replace(/_/g, " ") }) : null, zoning].filter(Boolean).join(" · ")}
       </p>
       {loading && !row && <p className="mt-2 text-caption text-text-muted">{t("discovery.preview.loading")}</p>}
+      {missing && (
+        <p className="mt-2 text-caption text-text-secondary" data-testid="dot-preview-missing">
+          {t(missing === "missing" ? "discovery.preview.notInData" : "discovery.preview.readFailed")}
+        </p>
+      )}
       {figures && (
         <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
           {figures.primary && (
@@ -103,7 +114,12 @@ export function DotPreview({ point, row, loading, sortKey, pinned, onOpen, onClo
         variant="secondary"
         className="mt-3"
         icon={<ArrowRight className="h-4 w-4" strokeWidth={2} />}
-        onClick={() => onOpen(point.pin)}
+        // A row opens by its own PIN (an outline's point holds only the PIN10); no row opens the Profile at the point.
+        onClick={() => {
+          if (row) onOpen(row.pin);
+          else if (missing && onOpenPoint && point.lat != null && point.lon != null) onOpenPoint(point.lat, point.lon);
+          else onOpen(point.pin);
+        }}
         data-testid="dot-preview-open"
       >
         {t("discovery.preview.open")}

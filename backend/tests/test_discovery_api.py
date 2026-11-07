@@ -695,6 +695,29 @@ def test_parcel_row_unknown_pin_and_sort(preview_client):
     assert preview_client.get("/api/discovery/parcel", params={"pin": "v1", "sort": "bogus"}).status_code == 200
 
 
+def test_parcel_row_by_outline_pin10():
+    """A map outline carries only its PIN10 (Item 68): it opens the lot's base parcel, else its lowest
+    unit PIN, and a PIN10 the index lacks is a 404 the map words as "not in our data yet"."""
+    parcel_source.set_snapshot(VERSION, [
+        DictParcel("14-33-103-011-1002", {"land_use_class": "residential"}),
+        DictParcel("14-33-103-011-0000", {"land_use_class": "residential", "address": "642 W Belden Ave"}),
+        DictParcel("14-33-103-012-1003", {"land_use_class": "residential"}),
+        DictParcel("14-33-103-012-1001", {"land_use_class": "residential"}),
+    ])
+    try:
+        client = TestClient(app)
+        base = client.get("/api/discovery/parcel", params={"pin": "1433103011"})
+        assert base.status_code == 200 and base.json()["pin"] == "14-33-103-011-0000"
+        condo = client.get("/api/discovery/parcel", params={"pin": "1433103012"})
+        assert condo.status_code == 200 and condo.json()["pin"] == "14-33-103-012-1001"
+        assert client.get("/api/discovery/parcel", params={"pin": "1433103099"}).status_code == 404
+        # an exact PIN still wins over the PIN10 fallback
+        assert client.get("/api/discovery/parcel", params={"pin": "14-33-103-011-1002"}).json()["pin"] == "14-33-103-011-1002"
+    finally:
+        parcel_source._current_version = None
+        default_source.clear()
+
+
 # --- unusual parcels hidden by default, with the count said (decision Item 60) --------------------
 
 

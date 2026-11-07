@@ -1,4 +1,14 @@
 {
+  "turnError": {
+    "step": {
+      "read": "La respuesta falló al leer su pregunta. Su pregunta se conservó: inténtelo de nuevo.",
+      "route": "La respuesta falló al decidir qué consultar. Su pregunta se conservó: inténtelo de nuevo.",
+      "gather": "La respuesta falló al reunir los datos. Su pregunta se conservó: inténtelo de nuevo.",
+      "answer": "La respuesta falló al redactar la respuesta. Su pregunta se conservó: inténtelo de nuevo."
+    },
+    "unavailable": "El chat no está disponible por el momento. Su pregunta se conservó: inténtelo de nuevo en un rato.",
+    "retry": "Intentar de nuevo"
+  },
   "chips": {
     "map": "Mapa",
     "mapCount": "Mapa · {{count}}",

@@ -1,4 +1,6 @@
 {
+  "opensInNewTab": "(opens in a new tab)",
+  "newTabBlocked": "Your browser blocked the new tab. Allow pop-ups for this site and try again.",
   "history": "History",
   "newChat": "New chat",
   "export": "Export",

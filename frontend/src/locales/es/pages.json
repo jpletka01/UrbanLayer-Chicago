@@ -1133,7 +1133,9 @@
       "lot": "Lote",
       "also": "Además",
       "open": "Abrir la ficha",
-      "close": "Cerrar la vista previa"
+      "close": "Cerrar la vista previa",
+      "notInData": "Este lote aún no está en nuestros datos.",
+      "readFailed": "No se pudo cargar este lote."
     },
     "unusual": {
       "label": "Parcelas inusuales",

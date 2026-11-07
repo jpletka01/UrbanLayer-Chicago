@@ -1345,10 +1345,89 @@ async def _apply_typed_address(plan):
     return plan
 
 
-# What the user sees when a chat stage fails. The exception detail stays in the
-# server log and request_logs; it used to be streamed to the browser verbatim
-# (e.g. "Synthesizer failed: '>' not supported between ...").
-_CHAT_ERROR = "Something went wrong while answering. Please try again."
+# What the user sees when a chat stage fails: which step failed, and that the question is kept for a retry.
+# The exception detail stays in the server log and request_logs; it used to be streamed to the browser verbatim
+# (e.g. "Synthesizer failed: '>' not supported between ..."), and then as one bare "Something went wrong"
+# that named nothing (tester report, 2026-11-06). The frontend words `error_step` itself (chat.error.*);
+# this text is for clients that don't.
+_CHAT_ERROR_STEPS = {
+    "en": {
+        "read": "reading your question",
+        "route": "working out what to look up",
+        "gather": "gathering the data",
+        "answer": "writing the answer",
+    },
+    "es": {
+        "read": "leer su pregunta",
+        "route": "decidir qué consultar",
+        "gather": "reunir los datos",
+        "answer": "redactar la respuesta",
+    },
+}
+_CHAT_ERROR_TEMPLATE = {
+    "en": "The answer failed while {step}. Your question is kept: try again.",
+    "es": "La respuesta falló al {step}. Su pregunta se conservó: inténtelo de nuevo.",
+}
+_CHAT_UNAVAILABLE = {
+    "en": "Chat is temporarily unavailable. Your question is kept: try again in a little while.",
+    "es": "El chat no está disponible por el momento. Su pregunta se conservó: inténtelo de nuevo en un rato.",
+}
+
+
+def _provider_outage(exc: BaseException) -> str | None:
+    """Why the model provider, not this question, failed the turn: "billing" (out of credits), "auth" (a rejected
+    key), "overloaded"/"down" (transient), or None for any other failure. Production ran out of API credits on
+    2026-11-06 and every chat turn read as "something went wrong" (decision Item 72)."""
+    try:
+        import anthropic
+    except ImportError:  # pragma: no cover - the app always has it
+        return None
+    if isinstance(exc, anthropic.APIConnectionError):  # includes APITimeoutError
+        return "down"
+    if not isinstance(exc, anthropic.APIStatusError):
+        return None
+    text = str(exc).lower()
+    if "credit balance" in text or "billing" in text:
+        return "billing"
+    if isinstance(exc, (anthropic.AuthenticationError, anthropic.PermissionDeniedError)):
+        return "auth"
+    if exc.status_code == 529 or isinstance(exc, anthropic.RateLimitError) or "overloaded" in text:
+        return "overloaded"
+    if exc.status_code >= 500:
+        return "down"
+    return None
+
+
+def _alarm_provider_outage(reason: str, exc: BaseException) -> None:
+    """Billing and key failures don't fix themselves, so they page (Sentry, one issue per reason); transient
+    ones only log. Never raises."""
+    if reason not in ("billing", "auth"):
+        log.warning("Model provider %s: %s", reason, exc)
+        return
+    log.error("Model provider %s failure: chat is unavailable until it is fixed: %s", reason, exc)
+    try:
+        import sentry_sdk
+
+        with sentry_sdk.new_scope() as scope:
+            scope.fingerprint = ["anthropic-provider", reason]
+            scope.set_tag("alarm", "chat-unavailable")
+            sentry_sdk.capture_message(
+                f"Chat unavailable: Anthropic {reason} failure ({type(exc).__name__})", level="fatal",
+            )
+    except Exception:
+        log.warning("Could not send the provider alarm to Sentry", exc_info=True)
+
+
+def _chat_error(step: str, language: str | None, exc: BaseException | None = None) -> ChatChunk:
+    """The `error` chunk for a failed chat step, worded in the chat's language (English fallback). A provider
+    outage says chat is unavailable (and alarms) instead of blaming the step."""
+    lang = language if language in _CHAT_ERROR_TEMPLATE else "en"
+    reason = _provider_outage(exc) if exc is not None else None
+    if reason:
+        _alarm_provider_outage(reason, exc)  # type: ignore[arg-type]
+        return ChatChunk(type="error", error=_CHAT_UNAVAILABLE[lang], error_step=step, error_kind="unavailable")
+    text = _CHAT_ERROR_TEMPLATE[lang].format(step=_CHAT_ERROR_STEPS[lang][step])
+    return ChatChunk(type="error", error=text, error_step=step, error_kind="step")
 
 # Appended to the streamed answer when the model hit the token cap. Silent
 # truncation (kit 2026-10-01: 5 of 7 answers cut mid-sentence, two lost the
@@ -1404,7 +1483,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Pre-routing failed")
         error_msg = f"Failed to process query: {exc}"
-        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
+        yield _sse(_chat_error("read", req.language, exc).model_copy(update={"t_ms": elapsed_ms()}))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1431,7 +1510,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Router failed")
         error_msg = f"Router failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
+        yield _sse(_chat_error("route", req.language, exc).model_copy(update={"t_ms": elapsed_ms()}))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1479,7 +1558,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Retrieval failed")
         error_msg = f"Retrieval failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
+        yield _sse(_chat_error("gather", req.language, exc).model_copy(update={"t_ms": elapsed_ms()}))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1574,7 +1653,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Synthesizer failed")
         error_msg = f"Synthesizer failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
+        yield _sse(_chat_error("answer", req.language, exc).model_copy(update={"t_ms": elapsed_ms()}))
 
     if t_first_token is not None:
         timings["first_token"] = t_first_token

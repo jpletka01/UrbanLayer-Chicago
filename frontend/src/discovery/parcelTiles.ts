@@ -71,3 +71,14 @@ export function markMatches(map: MapboxMap, pins: readonly string[]): void {
     if (id != null) map.setFeatureState({ source: SOURCE, sourceLayer: SOURCE_LAYER, id }, { match: true });
   }
 }
+
+/** The PIN10 of the outline drawn at a screen point, or null (no outline there, or outlines not added). Every
+ *  outline is queryable, matched or not: the fill layer covers every lot (opacity 0 for non-matches). */
+export function outlineAt(map: MapboxMap, x: number, y: number): string | null {
+  if (!map.getLayer(FILL)) return null;
+  const hit = map.queryRenderedFeatures([x, y], { layers: [FILL] })[0];
+  const id = hit?.id;
+  if (id == null) return null;
+  const digits = String(id).replace(/\D/g, "");
+  return digits ? digits.padStart(10, "0") : null;
+}

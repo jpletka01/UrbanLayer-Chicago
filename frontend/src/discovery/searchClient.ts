@@ -2,7 +2,8 @@
 // The envelope carries raw inputs (userFilters + topicId + text + sort + scope) — the
 // backend compiles, merges, evaluates, and echoes back the canonical CQS.
 
-import { discoveryExportCsv, discoveryParcelRow, discoverySearch, discoverySearchPins, discoveryTextPreview } from "../lib/api";
+import type { DiscoveryOutlineLookup } from "../lib/api";
+import { discoveryExportCsv, discoveryOutlineRow, discoveryParcelRow, discoverySearch, discoverySearchPins, discoveryTextPreview } from "../lib/api";
 import { compilePanel } from "./uiCompiler";
 import type {
   PanelState,
@@ -80,3 +81,10 @@ export async function exportCsv(inputs: SearchInputs, registry: Registry): Promi
 export async function fetchParcelRow(pin: string, sortKey: string, signal?: AbortSignal): Promise<ResultRow | null> {
   return discoveryParcelRow(pin, sortKey, signal);
 }
+
+/** The lot behind a map outline, by its PIN10 (Item 68): found, missing from the index, or failed. */
+export async function fetchOutlineRow(pin10: string, sortKey: string, signal?: AbortSignal): Promise<OutlineLookup> {
+  return discoveryOutlineRow(pin10, sortKey, signal);
+}
+
+export type OutlineLookup = DiscoveryOutlineLookup;

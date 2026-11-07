@@ -1369,6 +1369,13 @@ class ChatChunk(BaseModel):
     map_data: MapDataResponse | None = None
     text: str | None = None
     error: str | None = None
+    # On `error`: which step of the answer failed (read = understanding the question, route = deciding what to
+    # look up, gather = fetching the data, answer = writing it). The client words it and offers a retry of the
+    # same question; `error` already carries the step in words for clients that ignore this field.
+    error_step: Literal["read", "route", "gather", "answer"] | None = None
+    # On `error`: "unavailable" when the model provider refused or could not be reached (out of credits, a
+    # rejected key, overloaded, down). The question is fine; chat itself is out for a while. "step" otherwise.
+    error_kind: Literal["step", "unavailable"] | None = None
     turn_summary: dict | None = None
     # Wall-clock milliseconds since the /chat request was received. Set on
     # phase-boundary events (plan, context, done, error) and on the first

@@ -54,7 +54,7 @@ vi.mock("../contexts/ThemeContext", () => ({
   }),
 }));
 
-vi.mock("./searchClient", () => ({ fetchParcelRow: vi.fn(async () => null) }));
+vi.mock("./searchClient", () => ({ fetchParcelRow: vi.fn(async () => null), fetchOutlineRow: vi.fn(async () => ({ status: "failed" })) }));
 
 vi.mock("@deck.gl/layers", () => ({
   ScatterplotLayer: class ScatterplotLayer {
