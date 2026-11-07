@@ -139,7 +139,7 @@ The implementation plan itself is local (`plans/2026-11-07_frontend-implementati
 
 **Decision: the Ask drawer shares the dock's chat path.** `lib/useParcelChat.ts` is the dock's grounding, address-carrying ask and new-tab escalation, extracted on its second use; `MiniChatDock` now calls it (its tests pass unchanged). The drawer owns no chat state: the page holds it, so the conversation survives closing the drawer and switching tabs. Tests mock `useChat`; no production model call was made in development.
 
-**Decision: `ParcelMap` gets `look="next"`, not a fork.** The lot is a black outline over a white edge (white over dark on dark streets), comps are Sapphire, the satellite/streets switch sits beside the zoom buttons, and `useMapboxOverlay({ quiet: true })` applies `lib/mapQuietStyle.ts` (hides nature/water/airport/sub-area/shield labels as well as POIs, street names from zoom 15). Found on the way and fixed for both looks: re-applying the style the map already had brought the hidden POI labels back without a `style.load`; `ParcelMap` now calls `setStyle` only on a real change.
+**Decision: `ParcelMap` gets `look="next"`, not a fork.** The lot is a black outline over a white edge (white over dark on dark streets), comps are Sapphire, there is no satellite view (Item 78), and `useMapboxOverlay({ quiet: true })` applies `lib/mapQuietStyle.ts` (hides nature/water/airport/sub-area/shield labels as well as POIs, street names from zoom 15). Found on the way and fixed for both looks: re-applying the style the map already had brought the hidden POI labels back without a `style.load`; `ParcelMap` now calls `setStyle` only on a real change.
 
 **Alternatives considered:** a separate `next.urbanlayerchicago.com` (Item 75), shadcn/ui now (Item 75's third fallback; Radix behavior alone was enough), Radix for the drawer (a plain non-modal region with managed focus is simpler and lets the page stay usable beside it).
 
@@ -166,3 +166,17 @@ The implementation plan itself is local (`plans/2026-11-07_frontend-implementati
 **Revisit if:** the Phase 4 response split carries an arm's-length flag per sale (then use it and drop the client test); the builder test shows a tile nobody reads; a fifth or sixth tab is built (its tile joins; a seventh tab means two should merge, per the brief).
 
 **Numbers:** none measured on users. The market-sale rule is pinned by `profileModel.test.ts` (a $1 transfer, a quit claim and an unknown deed never show as the price).
+
+---
+
+## Item 78: no satellite map in the new UI; one set of docs governs it (2026-11-07)
+
+**Decision: the new UI has no satellite view, anywhere.** The owner's call (2026-11-07): imagery competes with the lot and the data it is meant to show, and the target is the quiet Cities: Skylines-style map (muted land, streets as gaps between blocks, names only zoomed in). `ParcelMap look="next"` opens on the theme's street style (`light-v11` / `dark-v11`) with the quiet base (`lib/mapQuietStyle.ts`) and has no satellite switch; `mapNoSatellite.test.tsx` pins it, and pins today's place map as unchanged (satellite default, with its switch). The full Skylines-style base, zoning palette and On / Dim / Off layers remain map track M1 (Item 75); Phase 1 only removes imagery and noise. The first prototype had followed two brief lines ("opening on satellite", "Overview satellite + this lot"); both are corrected.
+
+**Decision: during the rewrite, the brief and this file govern new UI work; older design docs describe today's live UI only.** Root `CLAUDE.md`, `frontend/CLAUDE.md`, the docs manifest, the `page-design-rules` and `load-urbanlayer-context` skills, and the Bento Pro, `page-design`, `scorecard-dashboard-model` and `frontend-guide` guides now say so at the top, so their orange/violet tokens, components and map choices don't leak into `frontend/src/ui-next/`. The same sweep found the brief still said "zoning clipped to blocks", which Item 75 (M3) had rejected; corrected.
+
+**Alternatives:** satellite as an opt-in layer (rejected by the owner: out entirely); rewriting the old guides now (they still govern the live site until each route flips; banners are enough, and Phase 10 deletes them with the old UI).
+
+**Revisit if:** a builder test task can't be done without imagery (then raise it with the owner; don't add it back silently).
+
+**Numbers:** none measured. Local plan files outside the repo that still mention satellite (`plans/2026-11-01_profile-discovery-redesign-plan.md` and its assets) are pre-rewrite and superseded by the brief.

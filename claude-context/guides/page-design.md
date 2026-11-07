@@ -1,5 +1,8 @@
 # Page design: how a UrbanLayer page shows information
 
+> **Two UIs during the front-end rewrite (2026-11-07):** new UI work (`frontend/src/ui-next/`, behind `?ui=next`) follows `guides/frontend-redesign-vision.md` and decisions Items 73+ (`decisions/2026-11_frontend-rewrite.md`): SnowUI frame, Coastal charts, black for this lot, **no satellite map**. This document describes today's live UI only; don't carry its colors, components or map choices into the new UI.
+
+
 **Status: living, canonical (2026-11-02).** The Property Profile was rebuilt around these rules in decision Items 46-54 (`decisions/2026-10_build-queue.md`), shipped by #162, #163, #174, #175 and #177; Items 55-58 (one analysis map, the phone layout, Discovery's dot preview and rows) follow in the next release PR. Every other app page follow them as they are touched. The checklist form is the project skill **`page-design-rules`** (`.claude/skills/page-design-rules/SKILL.md`); load it before any UI change. This guide holds the reasons, the evidence and the file map.
 
 Supersedes the layout parts of `guides/scorecard-dashboard-model.md` (July 2026). Sits on top of the Bento Pro tokens (`guides/bento-pro-redesign.md`), which still own the palette, type and radius. Does not change the truth rules (`guides/source-confidence.md`); it changes only where their words go.

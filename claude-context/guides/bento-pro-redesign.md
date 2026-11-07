@@ -1,5 +1,8 @@
 # Bento Pro Frontend Redesign — Handoff
 
+> **Two UIs during the front-end rewrite (2026-11-07):** new UI work (`frontend/src/ui-next/`, behind `?ui=next`) follows `guides/frontend-redesign-vision.md` and decisions Items 73+ (`decisions/2026-11_frontend-rewrite.md`): SnowUI frame, Coastal charts, black for this lot, **no satellite map**. This document describes today's live UI only; don't carry its colors, components or map choices into the new UI.
+
+
 > **2026-11-02:** components now pick a color ROLE (`status-*`, `action`, `link`, `premium`) layered over these tokens, plus a Button/StatusLabel shape grammar and Lucide tool icons. Rules: `guides/page-design.md`. The status lines below are historical (this branch merged 2026-07-02).
 
 **Status:** in progress on branch `feat/bento-pro` (NOT merged, NOT pushed).

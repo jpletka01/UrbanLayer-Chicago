@@ -1,5 +1,8 @@
 # Frontend Guide — UrbanLayer
 
+> **Two UIs during the front-end rewrite (2026-11-07):** new UI work (`frontend/src/ui-next/`, behind `?ui=next`) follows `guides/frontend-redesign-vision.md` and decisions Items 73+ (`decisions/2026-11_frontend-rewrite.md`): SnowUI frame, Coastal charts, black for this lot, **no satellite map**. This document describes today's live UI only; don't carry its colors, components or map choices into the new UI.
+
+
 ## Layout Architecture
 
 Two global UI states:

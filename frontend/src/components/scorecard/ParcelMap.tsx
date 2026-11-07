@@ -162,7 +162,9 @@ function ParcelMapInner({
     ? "mapbox://styles/mapbox/light-v11"
     : "mapbox://styles/mapbox/dark-v11";
   const mapTheme = resolvedTheme === "light" ? "light" : "dark";
-  const [satellite, setSatellite] = useState(variant === "place");
+  // The new UI has no satellite view (Jack, 2026-11-07): imagery competes with the lot and the data. Today's
+  // place map keeps its satellite default.
+  const [satellite, setSatellite] = useState(variant === "place" && !next);
   const [transit, setTransit] = useState<TransitStation[] | null>(null);
   const [layerStates, setLayerStates] = useState<ParcelMapLayerStates>({
     ...DEFAULT_PARCEL_MAP_LAYER_STATES,
@@ -189,7 +191,7 @@ function ParcelMapInner({
   };
 
   const initialStyle = useMemo(
-    () => (variant === "place" ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle),
+    () => (variant === "place" && !next ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
@@ -512,8 +514,8 @@ function ParcelMapInner({
           })}
         </div>
       )}
-      {variant === "place" && !bare && (
-        <div className={`absolute ${next ? "bottom-2 right-12" : "top-2 left-2"} flex rounded-md overflow-hidden border border-dark-border bg-dark-surface/90 backdrop-blur text-micro`}>
+      {variant === "place" && !bare && !next && (
+        <div className={`absolute top-2 left-2 flex rounded-md overflow-hidden border border-dark-border bg-dark-surface/90 backdrop-blur text-micro`}>
           <button
             type="button"
             onClick={() => setSatellite(true)}

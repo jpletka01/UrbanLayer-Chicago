@@ -1,6 +1,8 @@
 # Front-end redesign — vision brief
 
-Version 3 · 2026-11-07 · Owner: Jack · **Status: planning. No code has changed.**
+Version 3.1 · 2026-11-07 · Owner: Jack · **Status: Phase 1 prototype built behind `?ui=next` (decision Items 76–78).**
+
+**This brief and the decisions file govern the new UI (`frontend/src/ui-next/`).** The Bento Pro guides, `guides/page-design.md` and the older layout docs describe today's live UI; where they disagree with this brief, this brief wins for new work. **No satellite map anywhere in the new UI** (Item 78).
 
 The reference for UrbanLayer's front-end rewrite: what it is for, how the pages fit together, and the
 rules every page follows. Visual design and the build are checked against it. Labels: **Approved** =
@@ -24,7 +26,7 @@ he couldn't understand. His specific points:
   map, annoying search mechanics, lots on the map that showed no information.
 - **The Profile said little in many words:** too many maps and moving pieces, walls of text, no
   connection from one part to the next, a ~20-second first load.
-- **The maps were ugly:** business names crowded the satellite view; the zoning colors looked bad.
+- **The maps were ugly:** business names crowded the satellite view; the zoning colors looked bad. (Satellite is out of the new UI entirely, Item 78.)
 - **Nothing said what mattered:** black, dark gray and a little orange everywhere, so primary and
   secondary looked the same.
 - **Chat broke the flow:** asking replaced the page with no warning, and the answer failed with
@@ -79,7 +81,7 @@ they decide.
 A tabbed dashboard: the first tab answers, the others prove it.
 
 **Overview**
-- The top band is the page's **one map**, opening on satellite with the lot outlined and the address
+- The top band is the page's **one map**, opening on the quiet street base (no satellite) with the lot outlined and the address
   over it. A street photo opens full size from it (a 4:3 photo can't fill a wide band).
 - A full-width tab bar: Overview · Build · Money · Neighborhood · History · Deep analysis, with Ask,
   Sources and Export PDF as icons on the right. Once you scroll, the header shrinks to one slim bar: a
@@ -190,10 +192,11 @@ by the decision) and it maps one-to-one to the PDF export, which is today's repo
 One map design for every page, so the Profile, Discovery, chat and Deep analysis read the same way.
 
 - **A quiet base:** muted land, streets as empty gaps between blocks, street names only when zoomed in,
-  no business or point-of-interest labels. Today's satellite view uses `satellite-streets-v12`, which
+  no business or point-of-interest labels. **No satellite imagery** (Item 78): imagery competes with the lot and
+  the data. Today's live Profile still opens on `satellite-streets-v12`, which
   prints business names; hiding the base style's POI label layers in `lib/useMapboxOverlay.ts` (the one
   place every map is created) is the quick win, shipping with the live-site fixes.
-- **Zoning clipped to blocks** so the street grid stays visible; district codes are the only zoning labels.
+- **Streets stay visible above zoning** (streets drawn over the zoning fill or a road mask; zoning is never clipped to blocks, which would draw a cleaner but wrong map: Item 75, M3); district codes are the only zoning labels.
 - **The lot always on top** as a strong outline in the "this property" color.
 - **One shared layer catalog** (base; the lot and buildings; zoning and pending rezonings; built vs
   allowed; rules such as TIF, transit area, landmark, planned development and flood; market sales and new
@@ -207,7 +210,7 @@ One map design for every page, so the Profile, Discovery, chat and Deep analysis
   largest allowed, and neighbors raised by stories from the City's 2015 footprint survey (approximate).
 - **One map instance per page,** reused across tabs and layers, which also ends the "WebGL context was
   lost" error.
-- **Defaults:** Overview satellite + this lot; Build zoning, pending rezonings, 3D; Money market sales
+- **Defaults:** Overview quiet street base + this lot; Build zoning, pending rezonings, 3D; Money market sales
   within ¼ mile; Neighborhood new construction within ½ mile; Discovery lots colored by the chosen
   measure; a chat answer shows only the layer it is about.
 

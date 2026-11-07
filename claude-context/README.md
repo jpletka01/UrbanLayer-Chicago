@@ -3,6 +3,8 @@
 Load only what the current task needs. **Don't read everything.** One line per file below; the
 `load-urbanlayer-context` skill maps common work-types → the exact files to open.
 
+**Two UIs during the front-end rewrite (2026-11-07):** new UI work (`frontend/src/ui-next/`, behind `?ui=next`) follows `guides/frontend-redesign-vision.md` and decisions Items 73+ (`decisions/2026-11_frontend-rewrite.md`): SnowUI frame, Coastal charts, black for this lot, **no satellite map**. In the list below, the Bento Pro guides, `page-design.md`, `scorecard-dashboard-model.md`, `frontend-guide.md` and the historical design docs describe **today's live UI only**.
+
 **The definitive archive is the website About page** (`frontend/src/components/AboutPage.tsx`, ~38
 sections): architecture, design decisions, and war stories in full. Files under `archive/` and `audits/`
 are now short **pointers** into that record + git history — read them for the one-paragraph summary and
@@ -29,9 +31,9 @@ reusable lesson, not the full narrative.
 - `guides/latency-reduction.md` — completed + planned perf work, pipeline timing reference.
 
 ### Design system — **canonical: "Bento Pro"**
-- `guides/frontend-redesign-vision.md` — **the planned front-end rewrite (2026-11-06, planning only)**: audience (builders), 11 page rules, app frame, Profile tabs, Discovery, chat, Saved, ruled-out list, data work it needs, urgent fixes, parked questions. Read before any redesign work; `page-design.md` still governs the live site until the rewrite ships.
-- `guides/page-design.md` — **what a page shows and how (2026-11-02, canonical)**: one answer first, evidence behind the Lucide tool tray, color by role, Button vs StatusLabel, the ratcheting page budget, measured effect, file map. Checklist form = skill `page-design-rules`. Read before ANY Profile/Discovery UI change.
-- `guides/bento-pro-redesign.md` — the token system + landing (source of truth for color/type/radius/primitives).
+- `guides/frontend-redesign-vision.md` — **the front-end rewrite brief (governs `frontend/src/ui-next/`; Phase 1 built 2026-11-07)**: audience (builders), 11 page rules, app frame, Profile tabs, Discovery, chat, Saved, ruled-out list, data work it needs, urgent fixes, parked questions. Read before any redesign work; `page-design.md` still governs the live site until the rewrite ships.
+- `guides/page-design.md` — **what a page shows and how on today's live UI (2026-11-02)**; the rewrite's rules are rewritten after the builder test (Item 75): one answer first, evidence behind the Lucide tool tray, color by role, Button vs StatusLabel, the ratcheting page budget, measured effect, file map. Checklist form = skill `page-design-rules`. Read before ANY Profile/Discovery UI change.
+- `guides/bento-pro-redesign.md` — today's live-UI token system + landing (not used by the rewrite).
 - `guides/bento-pro-phase3-app-surfaces.md` — Scorecard/Discovery Bento Pro surfaces (the 2026-10 Discovery redesign shipped; see `archive/2026-10-30_discovery-redesign.md`).
 - `guides/dot-matrix.md` — the LED dot-matrix halftone renderer (hero skyline backdrop + reusable image→dot art + the in-browser Playwright probe workflow).
 - `guides/design-system.md`, `guides/light-dark-theming.md` — **HISTORICAL** (the "Cyanotype on Vellum" palette + Space Grotesk are retired by Bento Pro). The **theming mechanics still apply**: CSS-var-backed tokens, `ThemeProvider`/`useTheme`, `system` default, mode-lock islands with `data-theme`. Read only for that mechanism or the AA-contrast reasoning.
