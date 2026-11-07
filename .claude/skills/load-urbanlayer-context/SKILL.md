@@ -27,7 +27,8 @@ and the definitive architecture + design-decision + war-story archive is the web
 | **Parcel resolution / address→PIN / geocoding** | `guides/parcel-resolution-truth-model.md` → `core/known-issues.md` (Cook County GIS) → `archive/2026-06-21_pin-resolution-seam.md` |
 | **Lot facts / property retrieval / tax / provenance** | `archive/2026-07-03_lot-info-robustness.md` → `guides/ptaxsim-prod-seeding.md` → gate with `eval/lot_coverage.py` |
 | **Property Discovery** (filters, search, index) | `property-discovery/10-implementation-status.md` → `property-discovery/` spec `00`–`09` → `frontend/CLAUDE.md` (`src/discovery/`) |
-| **Design / CSS / tokens / component chrome** | `guides/bento-pro-redesign.md` → `guides/bento-pro-phase3-app-surfaces.md` → `frontend/CLAUDE.md` (Design Tokens) |
+| **Front-end rewrite** (new UI behind `?ui=next`, SnowUI look) | `guides/frontend-rewrite-runbook.md` → `decisions/2026-11_frontend-rewrite.md` (Items 73–75+) → `guides/frontend-redesign-vision.md` → the latest local `plans/*_frontend-phase-*-prompt.md` |
+| **Design / CSS / tokens / component chrome** (live site) | `guides/bento-pro-redesign.md` → `guides/bento-pro-phase3-app-surfaces.md` → `frontend/CLAUDE.md` (Design Tokens) |
 | **Hero backdrop / dot-matrix / canvas viz** | `guides/dot-matrix.md` |
 | **Theming mechanics** (CSS-var tokens, dark/light, FOUC) | `guides/light-dark-theming.md` (mechanics only — palette is retired; Bento Pro is canonical) |
 | **Map / geo visualization / deck.gl layers** | `frontend/CLAUDE.md` (Map sections) → `core/architecture.md` |
