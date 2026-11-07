@@ -73,6 +73,12 @@ SUBSETS = {
                  "property.geometry", "property.characteristics", "property.assessments", "property.sales",
                  "property.tax", "property.building_facts", "regulatory.overlays", "neighborhood.walkscore",
                  "block_face"],
+    # The same minus the two steps that start late for reasons a split can remove: the building-facts
+    # fallback (waits today for the whole first property batch, parcel flags included) and the RS-3
+    # block-face test (runs after the fetch). A lower bound for a Phase 4 Overview part.
+    "overview_unblocked": ["resolution", "zoning", "property.parcel_by_pin", "property.parcel_by_point",
+                           "property.geometry", "property.characteristics", "property.assessments",
+                           "property.sales", "property.tax", "regulatory.overlays", "neighborhood.walkscore"],
 }
 
 
@@ -340,7 +346,7 @@ def main() -> None:
         saved = json.loads((RESULTS_DIR / f"{args.label}.json").read_text())
         summary = summarize(saved["runs"])
         saved["summary"] = summary
-        (RESULTS_DIR / f"{args.label}.json").write_text(json.dumps(saved, indent=1, default=str))
+        (RESULTS_DIR / f"{args.label}.json").write_text(json.dumps(saved, separators=(",", ":"), default=str))
         md = render_md(saved["meta"], summary, parcels)
         (RESULTS_DIR / f"{args.label}.md").write_text(md)
         print(md)
@@ -373,12 +379,12 @@ def main() -> None:
 
     git = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     meta = {"label": args.label, "when": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "host": f"{platform.node()} ({platform.machine()}, py{platform.python_version()})",
+            "host": f"{platform.system()} {platform.machine()}, py{platform.python_version()}",
             "git": git, "mode": f"http {args.base}" if args.base else "in-process", "rounds": args.rounds}
     summary = summarize(runs)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    (RESULTS_DIR / f"{args.label}.json").write_text(json.dumps({"meta": meta, "summary": summary, "runs": runs},
-                                                               indent=1, default=str))
+    out = {"meta": meta, "summary": summary, "runs": runs}
+    (RESULTS_DIR / f"{args.label}.json").write_text(json.dumps(out, separators=(",", ":"), default=str))
     md = render_md(meta, summary, parcels)
     (RESULTS_DIR / f"{args.label}.md").write_text(md)
     print(md)

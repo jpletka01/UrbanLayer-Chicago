@@ -1,5 +1,19 @@
 # Latency Reduction — UrbanLayer
 
+## Property Profile (`/api/scorecard`), measured 2026-11-07 (decision Item 81)
+
+The Profile is deterministic (no model) and waits for every source before it answers. Measured locally, in-process, 7 parcels × 5 rounds (n 35 cold, 35 warm): **cold p50 26.8 s, p95 46.0 s; warm p50 41 ms.** Full table, method and the Phase 4 contract sketch: `decisions/2026-11_frontend-rewrite.md` Item 81.
+
+- **Where the time goes:** ~36 Socrata requests per cold Profile plus ArcGIS/FEMA/EPA/Census/FCC/Walk Score; the last to finish varies (property, 311, crime YoY, incentives). The City portal (`data.cityofchicago.org`) is the tail: a one-row query took 1.7–9.6 s during the run, and ~35 parallel requests roughly double its medians. Crime (`ijzp-q8t2`) is the largest single cost.
+- **Known suspect:** the Cook County GIS point lookup, 10–11 s, on approximately resolved addresses only.
+- **Hidden ordering:** the property domain's building-facts fallback waits for parcel flags (6.5 s p50).
+- **Fixed:** TIF financial reports had no cache (warm 1.5–12 s on TIF parcels) → 24 h per district (warm p95 0.5 s).
+- **Open:** crime's 15-minute cache (proposed 6 h); the progressive loading and Phase 4 split (Item 81).
+
+**Measure:** `PYTHONPATH=. python -m eval.profile_latency --label <label> --rounds 5` (no model, public APIs, ~25 min); `--isolate` runs each slow lookup alone; `--base URL` times a running server. A running server logs one `scorecard timings` line per Profile; `PROFILE_TIMINGS=true` (dev only) adds the breakdown to the response as `_timings`. Instrumentation: `backend/timing.py`.
+
+The sections below are the 2026-06 chat pipeline work.
+
 ## Completed (2026-06-06)
 
 ### Prompt Caching

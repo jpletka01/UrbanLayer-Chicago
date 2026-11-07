@@ -222,3 +222,73 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Revisit if:** M1's measurements show the chosen stack can't hold the first-view payload or frame rate on a phone; then change the stack, not the look.
 
 **Numbers:** none measured yet; M1 records payload and frame rate before and after.
+
+---
+
+## Item 81: Phase 2, where a cold Profile's time goes (2026-11-07)
+
+**Status: measured; one defect fixed; the progressive loading below is a proposal waiting for the owner's go** (the phase prompt: propose before building beyond catastrophic fixes).
+
+**Decision: measure with a request-scoped timing collector, not a new code path.** `backend/timing.py` opens a collector per `/api/scorecard` request; `timed(name, awaitable)` / `span(name)` record start, duration, success and (through `main._limited(coro, name)`) the wait on the retrieval semaphore. Tasks started inside the request inherit it, so every domain orchestrator names its sub-tasks (`property.sales`, `regulatory.flood`, `neighborhood.walkscore`, ...) and `socrata_get` records one `socrata.<dataset id>` span per HTTP attempt. Outside a collector (chat, the report) the helpers are pass-throughs; a span re-raises unchanged. Every Profile request logs one `scorecard timings` line (total, resolution, fetch, three slowest tasks); the full breakdown rides the response as `_timings` only with `PROFILE_TIMINGS=true` and never in production (`test_timing.py`). *Alternatives:* OpenTelemetry/Sentry tracing (a new dependency and a vendor for one measurement), a `Server-Timing` header (needs `Response` in the handler signature, which the direct-call tests don't pass; the log line already serves production), timing in the eval script only (it could not see inside the orchestrators).
+
+**Decision: the measurement runs in-process, cold and warm, no model.** `eval/profile_latency.py` calls the handler with the collector on the four page-budget parcels plus three fresh ones. *Cold* = every TTL cache emptied (a parcel and community area nobody opened since start; shared connections and startup artifacts stay warm, as on a running server). *Warm* = the same parcel straight after. Round 0 (the process's first Profile) is reported apart. `--isolate` runs each slow lookup alone, cold; `--base URL` times a running server over HTTP. Local only so far: production needs the owner's go.
+
+**What the numbers say** (table below):
+1. **No catastrophic single task.** A cold Profile makes ~36 Socrata requests (32–44) plus ArcGIS, FEMA, EPA, Census, FCC and Walk Score calls, and waits for the slowest. The task that finishes last varies run to run (property 10/35, 311 7, crime YoY 6, incentives 6, violations 2, others 1 each). Whole response: **cold p50 26.8 s, p95 46.0 s; warm p50 41 ms.**
+2. **The City data portal is the tail.** A one-row query to `data.cityofchicago.org` took 1.7–9.6 s (median 6.4 s) during the run; the County portal 0.4–1.9 s. The same lookups run alone are mostly 0.4–3 s at the median with 6–10 s outliers; inside a Profile, beside ~35 other requests, their medians roughly double (crime 3.1 → 6.9 s, parcel flags 1.1 → 6.5 s). Crime (`ijzp-q8t2`, community-area aggregates over the full crime table) is the largest single cost: its requests sum to 25 s p50 / 43 s p95 per cold Profile.
+3. **The known suspect, confirmed and bounded.** The Cook County GIS point lookup runs only when an address resolves approximately (geocode, no Address Points PIN): 10.0–10.8 s on every such run (3300 W Armitage, 5 of 35 cold runs). It alone puts the lot-on-the-map time at 12 s for those parcels.
+4. **Hidden ordering inside the property domain.** The building-facts fallback (stories, year built, floor area for non-residential classes; it feeds "units built") starts only after the whole first property batch finishes, including parcel flags (City-owned land, scofflaw, short-term-rental lists: 6.5 s p50, one run 56 s on `aksk-kvfp`). That ordering, not the fallback (1.4 s p50), makes the Overview's own dependencies end at 15.7 s p50.
+5. **A warm-path defect, fixed.** TIF financial reports (`72uz-ikdv`, `qm7s-3ctt`) had no cache, so every visit to a parcel in a TIF district re-fetched the same annual rows: warm 1.5–12 s on the two TIF parcels. **Fixed** with a 24 h cache per district, successes only (`tif._financials_cache`; a failure still raises and is never cached, Item 65; tests in `test_incentives_tif.py`). Warm p95 on those parcels: 12.25 s → 0.50 s (n=6).
+6. **Crime caches for 15 minutes** (`crime._cache`, 900 s). The source publishes daily, and the Profile's crime figures are per community area, so on production most visits re-pay crime's 7 s p50 / 21 s p95. **Proposed, not changed** (a freshness choice): 6 h.
+
+**Targets, confirmed and revised.** Item 75's "first useful content under 3 s warm and 6 s cold" holds if *first useful content* means **the lot on the map, its address and district, and what the district allows** (resolution + zoning point + PTAXSIM outline + the Title 17 table): measured **1.85 s p50 / 3.87 s p95 cold** on exactly resolved parcels, 19 ms / 0.44 s warm. Approximate parcels can't meet it while they wait on County GIS (12 s): they show the point and district first and the outline when it comes. Proposed second target: **the full Overview (answer sentence and the four tiles) under 8 s cold p95.** Its dependencies with the two late starts removed (`overview_unblocked`) end at 3.7 s p50 / 6.6 s p95 on exact parcels (16 s p95 including approximate ones); today, waiting for everything, it is 26.8 / 46.0 s. Everything else loads after and is named while it does.
+
+**Proposed progressive loading for the preview Profile (needs the owner's go before building).**
+- *First (about 2 s):* a small request beside today's, `GET /api/scorecard/first` (same parameters): the resolved identity (address, PIN, confidence, point), the parcel outline and lot area from PTAXSIM, the zoning district and its Title 17 row. The page drops the skeleton at once: the map band with the lot, the address, "Zoned B3-2" and what the district allows on this lot.
+- *While the rest loads:* the four tiles hold their places with their labels, each saying what it waits for ("Units built: checking County building records", "Property tax: checking", "Walk score: checking", "Last sale: checking County sales"), and one quiet line lists what is still on its way by source ("Still checking: overlays and flood (City map, FEMA) · sales and tax history (Cook County) · neighborhood (crime, 311, transit)"). No seconds counter. Until Phase 4 the page gets the rest as one response, so it cannot say which source is still out: the line names what the rest contains, not its progress.
+- *Then:* today's full response replaces it (one swap, no re-layout: the tiles keep their slots). If the first request fails, today's loading state shows; if the full one fails, what the first request showed stays with an honest "couldn't load the rest. Retry".
+- *Cost:* one extra request with three or four public calls on a cold visit (both requests start together, so they can ask the same source twice until Phase 4 shares one identity), new strings in English and Mexican Spanish, a contract test that the first response's figures equal the full response's.
+- *Not in Phase 2:* streaming parts, dedup of in-flight work, cancelling, reordering the property domain. Those are Phase 4.
+
+**Sketch of the Phase 4 contract, from these numbers.**
+- *Overview part* (target: under 8 s cold p95): identity; outline and lot area; zoning point + Title 17 row; characteristics, assessments, sales (with a **per-sale arm's-length flag** computed server-side from the County's own sale filters, retiring Item 77's client test), PTAXSIM tax; the overlays the verdict and the 606 rule read; Walk Score; the verdict and the answer sentence's inputs; the building-facts fallback started as soon as characteristics and the outline are in, not after the flags. Budgeted dependencies: Address Points or the PIN row, the zoning point, PTAXSIM (local), four County Assessor datasets, the overlay layers, Walk Score.
+- *Late parts:* parcel flags, appeals and Assessor permits (History); comparables and FAR comps (Money, they need the class and the zoning quilt); incentives, TIF reports and grants; neighborhood (tract, transit, traffic, Divvy, rent); crime, 311, violations, ARO; the RS-3 block-face test (a late "unchecked → checked" on the units tile, as the 606 rule already is); upcoming zoning (local, 13 ms, can ride the Overview).
+- *Sequencing:* the Overview's requests go first; the late parts start once it has answered (the burst roughly doubles the City portal's medians); one resolved identity shared by all parts (Item 75, plan item 14). A per-source deadline for the late parts ("couldn't check in time", never "none") is a choice for the owner then, measured against how often it would fire.
+
+**Alternatives considered:** parallel tuning (a bigger semaphore or connection pool: the wait on our own semaphore is 0 for the domain tasks and 1–2 s only for violations and 311, and more parallel requests make the City portal slower, not faster); hard timeouts now (would turn slow answers into "couldn't check" rows on the live Profile, a product change); caching everything longer (the cold case is the first visit to a parcel; only area-level caches like crime help across visitors).
+
+**Revisit if:** production numbers (another network, other hours) differ a lot from these; the City portal's one-row baseline returns to well under a second (then the in-Profile contention, not the portal, is the thing to fix); the builder test says the first screen without the tiles reads as "broken" rather than "loading".
+
+**Numbers** (2026-11-07, MacBook Pro arm64, home network, in-process, git `627bdb7` + the TIF fix measured separately; 7 parcels × 5 rounds = **n 35 cold, 35 warm**; nearest-rank percentiles). *Reproduce:* `PYTHONPATH=. python -m eval.profile_latency --label <label> --rounds 5` (~25 min, public APIs, no model); `--isolate --rounds 5 --parcels milwaukee`; results in `eval/results/2026-11-profile-latency/` (`local-2026-11-07`, `local-2026-11-07-tif-cache`, `isolate-2026-11-07`).
+
+| Task | cold p50 | cold p95 | warm p50 | warm p95 |
+|---|---|---|---|---|
+| **Whole response** | **26.8 s** | **46.0 s** | 41 ms | 12.3 s (TIF defect; 0.5 s after the fix) |
+| Lot + district (`first_content`) | 1.9 s | 12.3 s (3.9 s exact parcels) | 19 ms | 0.44 s |
+| Overview deps, as ordered today | 15.7 s | 45.9 s | 22 ms | 0.44 s |
+| Overview deps, unblocked | 3.8 s | 16.2 s (6.6 s exact parcels) | 22 ms | 0.44 s |
+| resolution (Address Points / PIN / geocode) | 0.40 s | 2.42 s | 0 | 0.41 s |
+| property (domain) | 12.5 s | 27.4 s | 22 ms | 33 ms |
+| ↳ parcel by PIN / by point (County GIS) | 1.41 s / 10.0 s | 3.12 s / 10.8 s | 0 | 0 |
+| ↳ characteristics · assessments · sales | 0.38 · 1.40 · 1.60 s | 0.62 · 2.81 · 1.88 s | 0 | 0 |
+| ↳ tax · outline (PTAXSIM, local) | 9 ms · 9 ms | 13 ms · 12 ms | 3 ms · 0 | 4 ms · 0 |
+| ↳ parcel flags · appeals · Assessor permits | 6.47 · 1.95 · 1.50 s | 19.5 · 4.53 · 2.84 s | 0 | 0 |
+| ↳ building-facts fallback | 1.42 s | 13.8 s | 0 | 0 |
+| regulatory (overlays, flood, brownfield) | 2.12 s | 3.31 s | 15 ms | 20 ms |
+| zoning point | 0.58 s | 1.35 s | 0 | 0 |
+| incentives | 11.2 s | 24.6 s | 12 ms | 10.7 s (TIF defect) |
+| ↳ grants (SBIF, NOF) | 7.85 s | 17.9 s | 0 | 0 |
+| neighborhood | 5.09 s | 15.2 s | 6 ms | 8 ms |
+| ↳ census tract · walk score · traffic · Divvy | 2.31 · 1.82 · 2.07 · 1.68 s | 2.67 · 2.83 · 12.4 · 11.0 s | 0 | 0 |
+| crime · crime YoY | 6.94 · 6.69 s | 20.4 · 21.9 s | 0 | 0 |
+| violations (address) · 311 (address) | 4.70 · 4.03 s | 16.4 · 27.9 s | 0 | 0 |
+| ARO housing | 1.90 s | 13.9 s | 0 | 0 |
+| comparables + FAR comps (after the fetch) | 3.49 + 1.72 s | 5.81 + 2.35 s | 0 + 5 ms | 0 + 19 ms |
+| RS-3 block-face test (n=5) | 7.67 s | 15.9 s | 0 | 0 |
+| upcoming zoning · provenance · serialize | 13 · 2 · 2 ms | 21 · 2 · 2 ms | — | — |
+
+- Queue wait on the retrieval semaphore (8): 0 for the domain tasks; p95 1.2 s (violations) and 2.4 s (311).
+- Failures: 1 of 35 cold runs lost a source (311 on 233 S Wacker); no Socrata retries.
+- First Profile after process start: 19.2 s (round 0). Payload median 98.9 KB.
+- Lookups alone, cold, 5 runs each (median / max): City portal one row 6.4 / 9.6 s; County portal one row 0.57 / 1.9 s; crime 3.1 / 7.7 s; crime YoY 0.74 / 6.4 s; 311 0.92 / 9.8 s; grants 3.0 / 10.3 s; traffic 2.6 / 6.8 s; parcel flags 1.1 / 2.5 s; energy benchmarking 2.2 / 9.2 s.
+- **Not measured:** production (needs the owner's go; a different network, a 4-vCPU box, other visitors' caches); the browser side (JS parse, map tiles; the new Profile is gated on this one response); `/api/parcel-map`, `/api/area-stats` and `/api/capacity-map` (today's Profile only).

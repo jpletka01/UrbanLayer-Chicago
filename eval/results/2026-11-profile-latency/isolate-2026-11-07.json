@@ -1,0 +1,145 @@
+[
+ {
+  "task": "baseline.city_portal_1_row",
+  "ms": [
+   1676.4,
+   3374.3,
+   9608.8,
+   6363.4,
+   7892.8
+  ],
+  "ok": true
+ },
+ {
+  "task": "baseline.county_portal_1_row",
+  "ms": [
+   1862.3,
+   645.6,
+   421.4,
+   571.7,
+   509.9
+  ],
+  "ok": true
+ },
+ {
+  "task": "crime",
+  "ms": [
+   5671.8,
+   499.5,
+   7736.9,
+   2936.6,
+   3102.2
+  ],
+  "ok": true
+ },
+ {
+  "task": "crime_yoy",
+  "ms": [
+   1836.9,
+   494.8,
+   744.4,
+   702.6,
+   6345.2
+  ],
+  "ok": true
+ },
+ {
+  "task": "aro_housing",
+  "ms": [
+   835.7,
+   408.0,
+   3864.3,
+   413.0,
+   429.7
+  ],
+  "ok": true
+ },
+ {
+  "task": "address_311",
+  "ms": [
+   885.9,
+   9806.0,
+   1187.1,
+   921.3,
+   669.6
+  ],
+  "ok": true
+ },
+ {
+  "task": "incentives.grants",
+  "ms": [
+   2070.6,
+   2993.3,
+   3995.7,
+   10255.6,
+   1606.3
+  ],
+  "ok": true
+ },
+ {
+  "task": "neighborhood.divvy",
+  "ms": [
+   1960.1,
+   431.7,
+   467.8,
+   436.2,
+   861.9
+  ],
+  "ok": true
+ },
+ {
+  "task": "neighborhood.traffic",
+  "ms": [
+   4252.8,
+   2561.2,
+   6751.0,
+   724.4,
+   738.2
+  ],
+  "ok": true
+ },
+ {
+  "task": "property.flags",
+  "ms": [
+   2539.0,
+   1125.2,
+   1619.1,
+   518.6,
+   1015.5
+  ],
+  "ok": true
+ },
+ {
+  "task": "property.appeals",
+  "ms": [
+   2069.1,
+   596.6,
+   531.0,
+   566.2,
+   684.6
+  ],
+  "ok": true
+ },
+ {
+  "task": "property.assessor_permits",
+  "ms": [
+   384.4,
+   365.4,
+   365.6,
+   574.6,
+   362.4
+  ],
+  "ok": true
+ },
+ {
+  "task": "property.building_facts.energy",
+  "ms": [
+   2172.1,
+   413.5,
+   459.3,
+   9185.8,
+   3405.2
+  ],
+  "ok": true
+ }
+]

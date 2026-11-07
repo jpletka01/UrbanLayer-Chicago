@@ -28,7 +28,7 @@ reusable lesson, not the full narrative.
 - `guides/deployment.md` — server ops, `.env` template, deploy commands, monitoring, DB backups.
 - `guides/ptaxsim-prod-seeding.md` — seeding the ptaxsim tax DB on prod (the "0 tax data since launch" runbook).
 - `guides/auth-and-conversations.md` — Google OAuth + JWT, conversation persistence, sharing.
-- `guides/latency-reduction.md` — completed + planned perf work, pipeline timing reference.
+- `guides/latency-reduction.md` — Property Profile latency per task (measured 2026-11-07, Item 81; `eval/profile_latency.py`) + the 2026-06 chat pipeline perf work.
 
 ### Design system — **live site: "Bento Pro"; the rewrite: SnowUI + Items 73–80**
 - `guides/frontend-rewrite-runbook.md` — **start here for the front-end rewrite (2026-11-07)**: phase status table, working rules, the end-of-milestone checklist (decisions, docs, next-phase prompt). Decisions in `decisions/2026-11_frontend-rewrite.md` (Item 73 SnowUI base, Item 74 visual system, Item 75 how it is built, 76–80 Phase 1); the approved plan is local (`plans/2026-11-07_frontend-implementation-plan.md`).
