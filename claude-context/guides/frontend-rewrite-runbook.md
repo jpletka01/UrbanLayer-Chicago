@@ -17,11 +17,11 @@ Until a route flips, `guides/page-design.md` and the Bento Pro guides govern the
 | Phase | What it delivers | Status |
 |---|---|---|
 | 0 | Baseline: Items 73–75 on `main`, success criteria | **Done** 2026-11-07 (PR #201) |
-| 1 | Thin prototype behind the preview boundary: readiness registry, frame, Profile Overview + Build on today's data, cleaned parcel map, Ask drawer, one Discovery flow; old/new isolation test | Next |
-| 2 | Latency spike: p50/p95 per retrieval task, cold and warm; only catastrophic fixes or honest progressive loading | Waiting |
+| 1 | Thin prototype behind the preview boundary: readiness registry, frame, Profile Overview + Build on today's data, cleaned parcel map, Ask drawer, one Discovery flow; old/new isolation test | **Done** 2026-11-07, owner-approved (PR #203; Items 76–80: one tile per tab, no satellite, Cities: Skylines map required) |
+| 2 | Latency spike: p50/p95 per retrieval task, cold and warm; only catastrophic fixes or honest progressive loading (the owner named slow loading, Item 79) | Next |
 | 3 | Builder test against the pass criteria in Item 75 | Waiting |
 | 4 | Profile response split, designed from the Phase 2 data | Waiting |
-| 5 | Map tracks M1 (base + one persistent map), M2 (parcels), M3 (official zoning geometry) | Waiting |
+| 5 | Map tracks M1 (base + one persistent map), M2 (parcels), M3 (official zoning geometry); the Cities: Skylines look is required (Item 80) | Waiting |
 | 6 | Remaining Profile tabs and Discovery, route by route; routes flip as approved | Waiting |
 | 7 | Data tracks M4 (capacity), M5 (land in use), M6 (3D), each blocked by its thresholds | Waiting |
 | 8 | Full chat page, landing and signed-in home | Waiting |
@@ -32,6 +32,7 @@ Until a route flips, `guides/page-design.md` and the Bento Pro guides govern the
 - Branch from current `main` in a worktree. Open PRs freely once the local gates pass; **never merge** without green CI, verification and the owner's go (merge = deploy). Batch ready work into few merges.
 - CI gates: `npm run build`, `npm run test`, `npm run lint`, backend `pytest -m "not integration"`. Local release gates: the mobile matrix, page budgets, Playwright axe, a keyboard walkthrough.
 - No production model calls in automated development or tests; human prototype testing only within the budget the owner approves.
+- Docs: during the rewrite the brief and the decisions file govern new UI work; the Bento Pro guides and `page-design.md` describe today's live UI only (Item 78). No satellite map anywhere in the new UI; every map must reach the Cities: Skylines look before its route flips (Item 80).
 - Every new screen: icons beside visible labels, reuse without leaking into old pages, light and dark, English and Mexican Spanish (usted) in the same PR, accessible.
 
 ## End-of-milestone checklist
@@ -41,4 +42,5 @@ Run this when a phase (or a large part of one) is finished, before stopping:
 3. **Operational docs:** `frontend/CLAUDE.md` / `backend/CLAUDE.md` for new files and conventions; the `claude-context/README.md` manifest if a doc was added.
 4. **About page:** for shipped work that is a big engineering decision or a hard problem (the owner keeps it as the project record).
 5. **Next prompt:** write `plans/<date>_frontend-phase-<N>-prompt.md` (local): goal, what to read, scope, acceptance, open questions for the owner, the rules above, and this checklist. Copy it into the shared session-notes folder when one is in use.
+   (Process confirmed by the owner 2026-11-07: owner reviews the running prototype on localhost and gives a thumbs up or notes; then docs, close-out, and a new session started with the next prompt.)
 6. **Hand off:** give the owner the prompt and offer it as a new session; stop the current conversation there to keep context small.

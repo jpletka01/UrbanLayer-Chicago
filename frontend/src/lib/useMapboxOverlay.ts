@@ -8,6 +8,7 @@ import {
   type MapStyleOrderRevision,
 } from "./mapLayerOrder";
 import { hidePoiLabels } from "./mapPoiLabels";
+import { applyQuietBaseStyle } from "./mapQuietStyle";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
@@ -29,6 +30,9 @@ interface UseMapboxOverlayOptions {
       a map initialized under display:none can leave the shared drawing buffer
       pinned to Mapbox's 400×300 fallback after the pane is revealed. */
   interleaved?: boolean;
+  /** The new UI's cleaned base (lib/mapQuietStyle.ts): fewer labels, street names only zoomed in.
+      Off by default, so today's maps keep their base exactly. Read once at init. */
+  quiet?: boolean;
 }
 
 /**
@@ -119,6 +123,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     const resolveStyleOrder = () => {
       // Business/POI names off on every style (Item 72d); setStyle() brings them back, so this runs per style.load.
       hidePoiLabels(map);
+      if (optsRef.current.quiet) applyQuietBaseStyle(map);
       const layers = (map.getStyle()?.layers ?? []) as MapStyleLayerLike[];
       setStyleOrder((previous) => reviseMapStyleOrder(previous, layers));
     };

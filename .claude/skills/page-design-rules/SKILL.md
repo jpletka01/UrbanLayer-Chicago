@@ -5,6 +5,8 @@ description: UrbanLayer's rules for what a page shows and how — one answer fir
 
 # Page design rules
 
+> **Two UIs during the front-end rewrite (2026-11-07):** new UI work (`frontend/src/ui-next/`, behind `?ui=next`) follows `guides/frontend-redesign-vision.md` and decisions Items 73+ (`decisions/2026-11_frontend-rewrite.md`): SnowUI frame, Coastal charts, black for this lot, **no satellite map**. These rules describes today's live UI only; don't carry its colors, components or map choices into the new UI. The Lucide-icons-only, no-emoji, words-not-color-alone and page-budget principles still apply to both.
+
 The Profile once grew to ~3,000 words at equal weight because every PR added one correct sentence
 ("additive honesty"). These rules exist so that never happens again. They come from Jack's reviews
 (2026-10-31, 2026-11-02), `plans/reports/Fixing an overgrown data page.md`, and decision Items 49-54 in

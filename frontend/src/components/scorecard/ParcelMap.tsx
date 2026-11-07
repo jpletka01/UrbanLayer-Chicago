@@ -35,6 +35,7 @@ import {
 import {
   buildBoundaryDeckLayers,
   buildSubjectParcelLayer,
+  buildSubjectParcelLayersNext,
   buildZoningDeckLayers,
   DEFAULT_PARCEL_MAP_LAYER_STATES,
   type ParcelMapLayerStates,
@@ -49,6 +50,8 @@ import {
 export type { ParcelMapLayers } from "../../lib/parcelMap";
 
 const ACCENT: [number, number, number, number] = [249, 164, 116, 255];
+/** Coastal chart 1 (decision Item 74): context marks in the new UI. */
+const SAPPHIRE: [number, number, number, number] = [114, 176, 171, 255];
 /** The open key sits beside the map only when the map's box is at least this wide (map keeps ≥ 2/3 of it). */
 const KEY_BESIDE_MIN_PX = 768;
 
@@ -97,6 +100,9 @@ interface ParcelMapProps {
   bare?: boolean;
   /** The parcel's outline is a whole development's, shared with other parcels (decision Item 59). */
   outlineShared?: boolean;
+  /** The new UI's look (decision Item 76): the lot in black with a white edge, comps in Sapphire, the cleaned
+      base style. Absent = today's map, unchanged. */
+  look?: "next";
 }
 
 export function ParcelMap(props: ParcelMapProps) {
@@ -147,14 +153,18 @@ function ParcelMapInner({
   subjectKey,
   bare,
   outlineShared,
+  look,
 }: ParcelMapProps) {
+  const next = look === "next";
   const { t } = useTranslation("pages");
   const { resolvedTheme } = useThemeContext();
   const themeStyle = resolvedTheme === "light"
     ? "mapbox://styles/mapbox/light-v11"
     : "mapbox://styles/mapbox/dark-v11";
   const mapTheme = resolvedTheme === "light" ? "light" : "dark";
-  const [satellite, setSatellite] = useState(variant === "place");
+  // The new UI has no satellite view (Jack, 2026-11-07): imagery competes with the lot and the data. Today's
+  // place map keeps its satellite default.
+  const [satellite, setSatellite] = useState(variant === "place" && !next);
   const [transit, setTransit] = useState<TransitStation[] | null>(null);
   const [layerStates, setLayerStates] = useState<ParcelMapLayerStates>({
     ...DEFAULT_PARCEL_MAP_LAYER_STATES,
@@ -181,7 +191,7 @@ function ParcelMapInner({
   };
 
   const initialStyle = useMemo(
-    () => (variant === "place" ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle),
+    () => (variant === "place" && !next ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
@@ -238,6 +248,7 @@ function ParcelMapInner({
     interactive: !bare,
     clickToActivate: true,
     style: initialStyle,
+    quiet: next,
     pickingRadius: 14,
     // Definition-carrying tooltips, same content model as the chat map
     // (label + name) extended with the termDefinitions description — works on
@@ -302,13 +313,29 @@ function ParcelMapInner({
     overlayBoxRef.current = overlayRef.current;
   }, [overlayRef, mapReady]);
 
-  // Satellite ⇄ streets toggle (place variant) + theme flips for street styles.
+  // Satellite ⇄ streets toggle (place variant) + theme flips for street styles. Only on a real change: setting
+  // the style the map already has re-applies it as a diff, which can bring the hidden POI labels back without a
+  // style.load to hide them again (seen 2026-11-07 on the place map).
+  const appliedStyleRef = useRef(initialStyle);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     const target = satellite ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle;
+    if (appliedStyleRef.current === target) return;
+    appliedStyleRef.current = target;
     map.setStyle(target);
   }, [satellite, themeStyle, mapReady, mapRef]);
+
+  // The map follows its own box, not just the window: a drawer beside it or the new UI's focus (full-screen) view
+  // changes its size without a window resize, and Mapbox would otherwise stretch the old canvas.
+  useEffect(() => {
+    const el = frameRef.current;
+    const map = mapRef.current;
+    if (!el || !map || !mapReady || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mapReady, mapRef]);
 
   // The desktop key narrows the map's box; tell Mapbox so the canvas follows (no stretched frame).
   useEffect(() => {
@@ -364,7 +391,7 @@ function ParcelMapInner({
           getPosition: (c: ComparableSale) => [c.lon!, c.lat!],
           getRadius: 6,
           radiusUnits: "pixels",
-          getFillColor: ACCENT,
+          getFillColor: next ? SAPPHIRE : ACCENT,
           getLineColor: satellite ? [10, 10, 10, 255] : [255, 255, 255, 255],
           getLineWidth: 2,
           lineWidthUnits: "pixels",
@@ -391,14 +418,24 @@ function ParcelMapInner({
 
     // Subject parcel stays present above every thematic source. The backend's
     // approximate resolution state is the only thing that can make it low-confidence.
-    layerList.push(buildSubjectParcelLayer({
-      parcelGeometry,
-      lat,
-      lon,
-      satellite,
-      variant,
-      confidence: parcelConfidence,
-    }));
+    if (next) {
+      layerList.push(...buildSubjectParcelLayersNext({
+        parcelGeometry,
+        lat,
+        lon,
+        onDarkStreets: !satellite && mapTheme === "dark",
+        confidence: parcelConfidence,
+      }));
+    } else {
+      layerList.push(buildSubjectParcelLayer({
+        parcelGeometry,
+        lat,
+        lon,
+        satellite,
+        variant,
+        confidence: parcelConfidence,
+      }));
+    }
 
     // Attach tooltips for comps/transit via object augmentation at pick time.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -406,20 +443,21 @@ function ParcelMapInner({
   }, [
     variant, layers, zoningModel, boundaryModel, layerStates, compsInView, transit,
     parcelGeometry, mapReady, contextRestored, satellite, mapTheme, mapZoom,
-    roadInsertionId, styleRevision, lat, lon, parcelConfidence, overlayRef,
+    roadInsertionId, styleRevision, lat, lon, parcelConfidence, overlayRef, next,
   ]);
 
   // Map key (top-RIGHT — the Mapbox wordmark owns the bottom-left corner, so
   // that space stays empty on every map): one row per encoding on the map.
   const legend: Array<{ key: string; swatchCSS: string; label: string; kind: "line" | "fill" | "dot" }> = [];
+  const lotSwatch = next ? (!satellite && mapTheme === "dark" ? "#ffffff" : "#1c1c1c") : "rgb(249,164,116)";
   legend.push({
-    key: "parcel", swatchCSS: "rgb(249,164,116)", kind: "line",
+    key: "parcel", swatchCSS: lotSwatch, kind: "line",
     label: outlineShared ? t("scorecard.map.keyParcelShared") : t("scorecard.map.keyParcel"),
   });
   if (variant === "place") {
     if (compsInView.length) {
       legend.push({
-        key: "comps", swatchCSS: "rgb(249,164,116)", kind: "dot",
+        key: "comps", swatchCSS: next ? "rgb(114,176,171)" : "rgb(249,164,116)", kind: "dot",
         label: t("scorecard.map.compsLegend", { count: compsInView.length }),
       });
     }
@@ -472,7 +510,7 @@ function ParcelMapInner({
   return (
     <div
       ref={frameRef}
-      className={`flex w-full h-full ${bare ? "" : "min-h-[16rem]"} rounded-lg overflow-hidden border border-dark-border ${keyBeside ? "flex-row" : "flex-col"}`}
+      className={`flex w-full h-full ${bare ? "" : "min-h-[16rem]"} ${next ? "rounded-2xl" : "rounded-lg border border-dark-border"} overflow-hidden ${keyBeside ? "flex-row" : "flex-col"}`}
     >
     <div className={`relative min-w-0 flex-1 ${bare ? "" : "min-h-[16rem]"}`}>
       <div ref={containerRef} className="absolute inset-0" />
@@ -487,8 +525,8 @@ function ParcelMapInner({
           })}
         </div>
       )}
-      {variant === "place" && !bare && (
-        <div className="absolute top-2 left-2 flex rounded-md overflow-hidden border border-dark-border bg-dark-surface/90 backdrop-blur text-micro">
+      {variant === "place" && !bare && !next && (
+        <div className={`absolute top-2 left-2 flex rounded-md overflow-hidden border border-dark-border bg-dark-surface/90 backdrop-blur text-micro`}>
           <button
             type="button"
             onClick={() => setSatellite(true)}
@@ -519,7 +557,7 @@ function ParcelMapInner({
         <ParcelMapKeySheet id={`${keyId}-sheet`} sources={controlSources} subjectKey={subjectKey} onChange={setLayerState} onClose={closeKey} />
       )}
       {variant === "place" && !bare && legend.length > 0 && (
-        <div className="absolute top-2 right-2 max-w-[55%] max-h-[calc(100%-1rem)] overflow-y-auto rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5">
+        <div className={`absolute top-2 right-2 max-h-[calc(100%-1rem)] max-w-[55%] overflow-y-auto rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5`}>
           {legend.map((row) => (
             <div key={row.key} className="flex items-center gap-1.5 text-micro text-text-secondary leading-tight">
               {row.kind === "dot" ? (

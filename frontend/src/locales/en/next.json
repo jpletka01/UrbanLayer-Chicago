@@ -1,0 +1,217 @@
+{
+  "preview": {
+    "badge": "Preview",
+    "exit": "Exit preview"
+  },
+  "nav": {
+    "search": "Search",
+    "discovery": "Discovery",
+    "saved": "Saved",
+    "chat": "Chat"
+  },
+  "frame": {
+    "panel": "Main menu",
+    "panelHint": "Pages of UrbanLayer and your account.",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "collapse": "Collapse menu",
+    "expand": "Expand menu",
+    "breadcrumb": "You are here",
+    "signInForChats": "Sign in to see past chats",
+    "loading": "Loading…",
+    "noChats": "No chats yet",
+    "untitledChat": "Untitled chat",
+    "account": "Account",
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "Match device"
+    },
+    "language": "Language",
+    "settings": "Settings",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "newChat": "New chat"
+  },
+  "tools": {
+    "ask": "Ask the analyst",
+    "sources": "Sources",
+    "export": "Export CSV"
+  },
+  "ask": {
+    "title": "Ask about this property",
+    "titleAt": "Ask about {{address}}",
+    "notSaved": "Quick questions here aren't saved.",
+    "close": "Close",
+    "label": "Your question",
+    "placeholder": "Could I add a coach house here?",
+    "knows": "Knows this lot and the {{tab}} tab",
+    "send": "Send",
+    "startersHint": "Or start with one of these:",
+    "openFull": "Open in full chat"
+  },
+  "sources": {
+    "title": "Sources and coverage",
+    "description": "Where each figure on this page comes from, how current it is, and what couldn't be checked.",
+    "close": "Close",
+    "dates": "Data dates",
+    "notChecked": "Couldn't check today",
+    "figures": "Figures",
+    "open": "Open the record"
+  },
+  "profile": {
+    "crumb": "Profile",
+    "crumbLoading": "Looking up…",
+    "unknownAddress": "This property",
+    "tabsLabel": "Profile sections",
+    "tabs": {
+      "overview": "Overview",
+      "build": "Build",
+      "money": "Money",
+      "neighborhood": "Neighborhood",
+      "history": "History"
+    },
+    "approximate": "Approximate match",
+    "another": "Look up another address",
+    "opensInNewTab": "(opens in a new tab)",
+    "search": {
+      "crumb": "Search",
+      "title": "Look up a property",
+      "lead": "Type a Chicago address to see what its zoning allows, what is built, and what stands in the way.",
+      "notFound": "We couldn't find that address in Chicago. Check the spelling and try again.",
+      "placeholder": "1601 N Milwaukee Ave",
+      "try": "Try:"
+    },
+    "loading": {
+      "at": "Looking up {{address}}…",
+      "plain": "Looking up this property…",
+      "firstLookup": "A first lookup can take 15 to 40 seconds. {{seconds}} s so far."
+    },
+    "tiles": {
+      "units": "Units allowed",
+      "unitsBuilt_one": "{{count}} unit built",
+      "unitsBuilt_other": "{{count}} units built",
+      "unitsNoRule": "No per-unit limit in this district",
+      "ownOrdinance": "Set by its own ordinance",
+      "tax": "Property tax",
+      "perYear": "a year",
+      "taxYear": "Tax year {{year}}",
+      "taxRate": "{{rate}}% of value",
+      "exempt": "Exempt",
+      "nominal": "Nominal assessment, no tax figure",
+      "notOnRecord": "Not on record",
+      "open": "Open {{tab}}",
+      "walk": "Walk score",
+      "lastSale": "Last market sale",
+      "unitsBuiltUnknown": "Built units not on record",
+      "of100": "of 100",
+      "walkSource": "Walk Score, a private index",
+      "walkUnchecked": "Couldn't check today",
+      "soldIn": "Sold in {{year}}",
+      "laterTransfer": "A {{year}} transfer isn't counted as a sale",
+      "onlyTransfers_one": "{{count}} transfer on record, not a market sale",
+      "onlyTransfers_other": "{{count}} transfers on record, none a market sale",
+      "noSaleOnRecord": "No sale on record"
+    },
+    "build": {
+      "allowedVsBuilt": "Allowed vs built",
+      "underDistrict": "Under {{zone}}",
+      "noLimits": "The district's limits couldn't be compared for this lot.",
+      "limit": {
+        "floorArea": "Floor area",
+        "units": "Units",
+        "height": "Height"
+      },
+      "sqft": "{{value}} sq ft",
+      "units_one": "{{count}} unit",
+      "units_other": "{{count}} units",
+      "feet": "{{value}} ft",
+      "stories_one": "{{count}} story",
+      "stories_other": "{{count}} stories",
+      "notOnRecord": "not on record",
+      "builtOfAllowed": "{{built}} of {{allowed}}",
+      "allowedBuiltUnknown": "{{allowed}} allowed · built: {{built}}",
+      "barLabel": "{{limit}}: {{built}} built of {{allowed}} allowed",
+      "decidingNote": "Black marks the deciding limit: {{limit}} is the closest to its cap.",
+      "noDeciding": "No limit can be compared with what is built.",
+      "howToRead": "How to read these bars",
+      "howToReadBody": "Each bar is what the zoning table allows; the fill is what is built today. Hatched means the built figure isn't on record. The table's arithmetic, not a forecast: other rules can allow less.",
+      "pending": "Pending zoning changes",
+      "checked": "Checked {{date}}",
+      "pendingUnavailable": "The City Clerk's records couldn't be checked today.",
+      "pendingNone": "No pending rezonings on this lot or within {{radius}} mile.",
+      "pendingStale": "Last good check; may be out of date",
+      "onThisLot": "This lot",
+      "nearby": "{{distance}} mi away",
+      "clerkStatus": "Clerk status: {{status}}",
+      "stageLabel": "Stage: {{stage}}",
+      "stage": {
+        "introduced": "Introduced",
+        "committee": "Committee",
+        "council": "Council vote",
+        "inEffect": "In effect"
+      },
+      "rules": "Rules on this lot",
+      "rulesNote": "Yes on a highlighted rule changes what can be built; not checked never means no.",
+      "rule": {
+        "landmark": "Landmark",
+        "historic": "Historic district",
+        "pd": "Planned development",
+        "flood": "Flood zone",
+        "lakefront": "Lakefront protection",
+        "tod": "Transit-oriented area",
+        "adu": "Coach house allowed",
+        "aro": "Affordable housing rule",
+        "tif": "TIF district"
+      },
+      "answer": {
+        "yes": "Yes",
+        "no": "No",
+        "notChecked": "Not checked"
+      },
+      "details": "Zoning details",
+      "row": {
+        "district": "District",
+        "section": "Code section",
+        "far": "Floor-area ratio",
+        "height": "Maximum height",
+        "perUnit": "Lot area per unit",
+        "lot": "Lot area",
+        "unitMath": "Units by lot area"
+      }
+    },
+    "map": {
+      "expand": "Expand map",
+      "close": "Close map",
+      "focusedLabel": "Map of {{address}}"
+    }
+  },
+  "discovery": {
+    "crumb": "Discovery",
+    "title": "Find lots",
+    "lead": "Describe what you're looking for, or start from a goal.",
+    "label": "Describe the lots",
+    "placeholder": "Vacant lots near the L in Logan Square",
+    "search": "Search",
+    "try": "Try:",
+    "unavailable": "Discovery isn't available right now.",
+    "searchFailed": "The search didn't go through. Try again.",
+    "notUnderstood": "Not understood",
+    "none": "No lots match.",
+    "count_one": "{{total}} lot",
+    "count_other": "{{total}} lots",
+    "countTop": "The top {{shown}} of {{total}} lots",
+    "more": "Show more",
+    "card": {
+      "near": "Near {{address}}",
+      "zoning": "Zoning",
+      "lot": "Lot",
+      "room": "Room to build",
+      "sale": "Last sale",
+      "saleValue": "{{price}} in {{year}}",
+      "nominal": "Nominal assessment",
+      "open": "Open profile"
+    }
+  }
+}

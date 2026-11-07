@@ -210,3 +210,59 @@ export function buildSubjectParcelLayer({
   };
   return new ScatterplotLayer(props);
 }
+
+/** "This lot" in the new UI (decision Item 74): a black outline with a white edge (white with a dark edge on a
+    dark street map), a faint fill, the same dashed treatment when the parcel's identity is approximate. Drawn as
+    two layers, the wide edge under the outline. Today's Profile keeps buildSubjectParcelLayer (orange). */
+export function buildSubjectParcelLayersNext({
+  parcelGeometry,
+  lat,
+  lon,
+  onDarkStreets,
+  confidence,
+}: {
+  parcelGeometry: GeoJSON.Geometry | null | undefined;
+  lat: number;
+  lon: number;
+  /** A dark street map flips the lot to white; satellite and light streets keep it black. */
+  onDarkStreets: boolean;
+  confidence: "authoritative" | "approximate" | null | undefined;
+}): unknown[] {
+  const low = confidence === "approximate";
+  const ink: [number, number, number, number] = onDarkStreets ? [255, 255, 255, 255] : [28, 28, 28, 255];
+  const edge: [number, number, number, number] = onDarkStreets ? [28, 28, 28, 230] : [255, 255, 255, 235];
+  if (parcelGeometry) {
+    const data = [{ type: "Feature", geometry: parcelGeometry, properties: {} } as GeoJSON.Feature];
+    return [
+      new GeoJsonLayer({
+        id: "pm-parcel-edge", data, filled: false, getLineColor: edge, lineWidthMinPixels: 6, pickable: false,
+      }),
+      new GeoJsonLayer({
+        id: "pm-parcel",
+        data,
+        getFillColor: [ink[0], ink[1], ink[2], low ? 10 : 20],
+        getLineColor: ink,
+        getDashArray: low ? LOW_DASH : SOLID_DASH,
+        lineDashJustified: true,
+        lineWidthMinPixels: 2.5,
+        pickable: false,
+        extensions: [DASH_EXTENSION],
+      }),
+    ];
+  }
+  return [
+    new ScatterplotLayer({
+      id: "pm-pin",
+      data: [{ lat, lon }],
+      getPosition: (): [number, number] => [lon, lat],
+      getRadius: 7,
+      radiusUnits: "pixels",
+      getFillColor: low ? [ink[0], ink[1], ink[2], 128] : ink,
+      getLineColor: edge,
+      getLineWidth: 3,
+      lineWidthUnits: "pixels",
+      stroked: true,
+      pickable: false,
+    }),
+  ];
+}

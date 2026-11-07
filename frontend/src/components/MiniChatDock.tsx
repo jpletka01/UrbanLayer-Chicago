@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ScorecardResponse } from "../lib/api";
-import { buildScorecardContext, propertyStarterKeys } from "../lib/scorecardContext";
-import { useChat } from "../lib/useChat";
+import { useParcelChat } from "../lib/useParcelChat";
 import { track } from "../lib/tracking";
 import { MessageBubble } from "./MessageBubble";
 import { RotateCcw, SquareArrowOutUpRight } from "lucide-react";
-import { openInNewTab, takeHandoff, writeHandoff } from "../lib/openInNewTab";
 
 // Persistent quick-chat dock (bottom-right of the Scorecard). The old model —
 // every investigate chip navigating to the full workspace — made a one-line
@@ -39,15 +37,13 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
   launcherBelowMd?: boolean;
 }) {
   const { t, i18n } = useTranslation(["pages", "chat", "common"]);
-  const [tabBlocked, setTabBlocked] = useState(false);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const consumedSignalRef = useRef<number | null>(null);
 
-  const grounding = useMemo(() => buildScorecardContext(data), [data]);
-  const address = data.address ?? grounding?.address ?? null;
-
+  // Grounding, the address-carrying ask and the new-tab escalation live in useParcelChat (shared with the
+  // new UI's Ask drawer).
   const {
     messages,
     streaming,
@@ -57,29 +53,12 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
     retry,
     atMessageLimit,
     activities,
-    sendMessage,
-    setGrounding,
-  } = useChat({ language: i18n.language });
-
-  // Grounding rides every dock turn — same conversation-sticky model as the
-  // workspace handoff (useChat attaches it when opts are omitted).
-  useEffect(() => {
-    setGrounding(grounding);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grounding]);
-
-  const ask = (question: string) => {
-    const q = question.trim();
-    if (!q || streaming || atMessageLimit) return;
-    // Embed the address so the router types the turn as an address query —
-    // mirrors sendPropertyStarter in App.tsx (a deictic "this lot" routes to
-    // clarification before grounding is ever read).
-    const text = address && !q.includes(address) ? `${q} — ${address}` : q;
-    sendMessage(text, undefined, {
-      parcelPin: grounding?.pin ?? null,
-      scorecardContext: grounding,
-    });
-  };
+    address,
+    ask,
+    starterKeys,
+    escalate,
+    tabBlocked,
+  } = useParcelChat(data, i18n.language);
 
   // Page chrome pushed a question (or just an open request).
   useEffect(() => {
@@ -98,20 +77,9 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
   }, [messages, streaming]);
 
   const starters = useMemo(
-    () => propertyStarterKeys(grounding).map((k) => t(`chat:propertyStarters.${k}`)),
-    [grounding, t],
+    () => starterKeys.map((k) => t(`chat:propertyStarters.${k}`)),
+    [starterKeys, t],
   );
-
-  const escalate = () => {
-    track("investigate_click", { card_name: "dock_escalate" });
-    const id = writeHandoff(messages.filter((m) => m.content).map((m) => ({ role: m.role, content: m.content })));
-    const params = new URLSearchParams(grounding?.pin ? { pin: grounding.pin } : { ask: "1" });
-    if (id) params.set("handoff", id);
-    const opened = openInNewTab(`/?${params}`);
-    // A blocked tab keeps this page and says so; the unused handoff is dropped.
-    if (!opened && id) takeHandoff(id);
-    setTabBlocked(!opened);
-  };
 
   const submitDraft = () => {
     if (!draft.trim()) return;
@@ -222,7 +190,7 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
         <div className="px-4 py-2 border-t border-dark-border">
           <button
             type="button"
-            onClick={escalate}
+            onClick={() => escalate()}
             className="text-caption text-link hover:text-accent transition-colors inline-flex items-center gap-1"
           >
             {t("pages:scorecard.dock.escalate")}

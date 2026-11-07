@@ -1,0 +1,174 @@
+/* ── The new UI's tokens (decision Items 74, 76) ─────────────────────────────────────────────────────
+   EVERY rule in this file is scoped to `.ui-next` (the isolation test parses this file and fails on any
+   selector that isn't), so nothing here can reach today's pages. Two layers:
+
+   1. `--nx-*`: the SnowUI frame (page, blocks, stat cards, ink and its steps, main button, this lot,
+      analyst gradient, status pills) and the Coastal chart palette. Tailwind exposes them as `nx-*`.
+   2. Overrides of today's role variables (`--bg`, `--text-*`, `--status-*`, ...) INSIDE `.ui-next` only,
+      so shared components reused by the new UI (StatusLabel, ConfidenceState, Toggletip, AddressInput,
+      MessageBubble, the parcel map's controls) take the SnowUI look without a new variant. Outside
+      `.ui-next` those variables keep their Bento Pro values.
+
+   Channel triplets ("R G B") so Tailwind's `<alpha-value>` works. Deliberate departures from the sampled
+   SnowUI values, for WCAG AA (4.5:1 for small text), measured 2026-11-07:
+   - secondary text is ink at 64% in light (SnowUI's 40% is 2.5:1 on white; 64% is 4.8–5.1 on every
+     light surface) and 60% in dark (6.3–6.8);
+   - light pill words are darker than SnowUI's (its #8A8CD9 on #EDEEFC is 2.7:1; ours are 4.8–6.0);
+   - the analyst's Send button keeps SnowUI's gradient with a dark label (white on it is 2.5:1). */
+
+.ui-next {
+  color-scheme: light;
+  --nx-page: 255 255 255;          /* SnowUI Background 1 */
+  --nx-block: 247 249 251;         /* Background 2: chart and table blocks */
+  --nx-stat-a: 227 245 255;        /* stat card, light blue */
+  --nx-stat-b: 229 236 246;        /* stat card, blue-gray */
+  --nx-card-ink: 28 28 28;         /* text on stat cards: always dark, in both themes */
+  --nx-ink: 28 28 28;              /* SnowUI Primary, Black 100: text, selected tab */
+  --nx-ink-muted-a: 0.64;          /* secondary text alpha (AA, see above) */
+  --nx-on-ink: 255 255 255;        /* text on an ink fill */
+  --nx-primary: 28 28 28;          /* main button: black in light */
+  --nx-primary-fg: 255 255 255;
+  --nx-lot: 28 28 28;              /* "this lot" in charts and on maps */
+  --nx-lot-edge: 255 255 255;      /* the white edge around the lot's map outline */
+  --nx-ai-a: 198 199 248;          /* analyst edge, lavender */
+  --nx-ai-b: 177 227 255;          /* analyst edge, blue */
+  --nx-send-a: 142 156 247;        /* analyst Send button */
+  --nx-send-b: 166 155 245;
+  --nx-pill-purple-bg: 237 238 252;  --nx-pill-purple: 91 93 184;
+  --nx-pill-green-bg: 234 247 241;   --nx-pill-green: 30 122 82;
+  --nx-pill-blue-bg: 230 244 252;    --nx-pill-blue: 33 112 155;
+  --nx-pill-yellow-bg: 255 246 219;  --nx-pill-yellow: 122 89 0;
+  --nx-pill-red-bg: 253 236 236;     --nx-pill-red: 180 40 40;
+  /* Coastal, in order (Item 74): Sapphire, Ballet Slipper, Spruce, Pistachio, Bubblegum */
+  --nx-chart-1: 114 176 171;
+  --nx-chart-2: 254 145 121;
+  --nx-chart-3: 53 94 88;
+  --nx-chart-4: 184 157 71;
+  --nx-chart-5: 253 193 180;
+
+  /* Today's role variables, re-pointed for components reused inside the new UI */
+  --bg: 255 255 255;
+  --surface: 255 255 255;
+  --elevated: 247 249 251;
+  --hover: 240 241 242;
+  --border-subtle: 240 241 242;
+  --border: 226 227 228;
+  --border-strong: 198 199 200;
+  --text-primary: 28 28 28;
+  --text-secondary: 98 98 98;      /* = ink 64% on white */
+  --text-muted: 98 98 98;
+  --text-disabled: 164 164 164;
+  --text-on-accent: 255 255 255;
+  --accent: 28 28 28;
+  --accent-text: 28 28 28;
+  --accent-hover: 64 64 64;
+  --accent-muted-a: 0.06;
+  --action-primary: 28 28 28;
+  --action-primary-hover: 64 64 64;
+  --status-success: 30 122 82;
+  --status-warning: 122 89 0;
+  --status-danger: 180 40 40;
+  --status-info: 33 112 155;
+  --status-neutral: 98 98 98;
+  --state-positive: 30 122 82;
+  --state-negative: 180 40 40;
+  --state-warning: 122 89 0;
+  --shadow-card: none;
+  --shadow-modal: 0 8px 32px rgb(0 0 0 / 0.12);
+  --glow-accent: none;
+  /* No background, color or font here: this file loads after Tailwind, so a property on `.ui-next` would
+     beat a utility on the same element (the frame sets `bg-nx-page text-nx-ink` itself). */
+}
+
+[data-theme="dark"] .ui-next,
+.ui-next[data-theme="dark"] {
+  color-scheme: dark;
+  --nx-page: 28 28 28;
+  --nx-block: 40 40 40;
+  --nx-stat-a: 227 245 255;
+  --nx-stat-b: 229 236 246;
+  --nx-card-ink: 28 28 28;
+  --nx-ink: 255 255 255;
+  --nx-ink-muted-a: 0.6;
+  --nx-on-ink: 28 28 28;
+  --nx-primary: 198 199 248;       /* lavender main button in dark */
+  --nx-primary-fg: 28 28 28;
+  --nx-lot: 255 255 255;
+  --nx-lot-edge: 28 28 28;
+  --nx-pill-purple-bg: 54 54 67;     --nx-pill-purple: 198 199 248;
+  --nx-pill-green-bg: 44 55 46;      --nx-pill-green: 148 233 184;
+  --nx-pill-blue-bg: 39 53 61;       --nx-pill-blue: 143 216 255;
+  --nx-pill-yellow-bg: 60 58 45;     --nx-pill-yellow: 255 219 86;
+  --nx-pill-red-bg: 64 35 35;        --nx-pill-red: 255 138 138;
+
+  --bg: 28 28 28;
+  --surface: 28 28 28;
+  --elevated: 40 40 40;
+  --hover: 52 52 52;
+  --border-subtle: 46 46 46;
+  --border: 56 56 56;
+  --border-strong: 86 86 86;
+  --text-primary: 255 255 255;
+  --text-secondary: 164 164 164;   /* = white 60% on #1C1C1C */
+  --text-muted: 164 164 164;
+  --text-disabled: 102 102 102;
+  --text-on-accent: 28 28 28;
+  --accent: 255 255 255;
+  --accent-text: 255 255 255;
+  --accent-hover: 220 220 220;
+  --accent-muted-a: 0.08;
+  --action-primary: 198 199 248;
+  --action-primary-hover: 178 179 240;
+  --status-success: 148 233 184;
+  --status-warning: 255 219 86;
+  --status-danger: 255 138 138;
+  --status-info: 143 216 255;
+  --status-neutral: 164 164 164;
+  --state-positive: 148 233 184;
+  --state-negative: 255 138 138;
+  --state-warning: 255 219 86;
+  --shadow-modal: 0 8px 32px rgb(0 0 0 / 0.5);
+}
+
+/* Secondary text: the ink at its AA step, as one class so the alpha lives in one place. */
+.ui-next .nx-muted {
+  color: rgb(var(--nx-ink) / var(--nx-ink-muted-a));
+}
+/* Stat cards stay pale in both themes, so reused labels on them read with the light theme's role colors. */
+.ui-next .nx-on-card {
+  --text-secondary: 82 82 82;
+  --status-neutral: 82 82 82;
+  --status-warning: 122 89 0;
+  --status-danger: 180 40 40;
+  --status-success: 30 122 82;
+  --status-info: 33 112 155;
+}
+.ui-next .nx-card-muted {
+  color: rgb(var(--nx-card-ink) / 0.68);
+}
+
+/* The analyst's question box: a 1px lavender-to-blue edge (SnowUI's chat screen), the only gradient. */
+.ui-next .nx-ai-edge {
+  background: linear-gradient(90deg, rgb(var(--nx-ai-a)), rgb(var(--nx-ai-b)));
+  padding: 1px;
+}
+.ui-next .nx-ai-send {
+  background: linear-gradient(90deg, rgb(var(--nx-send-a)), rgb(var(--nx-send-b)));
+  color: rgb(28 28 28);
+}
+
+/* Focus: one visible ring everywhere in the new UI. Zero-specificity scope (:where), so a component's own
+   focus utility (loaded earlier, by Tailwind) can still replace it. */
+:where(.ui-next) :focus-visible {
+  outline: 2px solid rgb(var(--nx-ink) / 0.6);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-next *,
+  .ui-next *::before,
+  .ui-next *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

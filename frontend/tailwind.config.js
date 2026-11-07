@@ -76,6 +76,36 @@ export default {
           info: { DEFAULT: 'rgb(var(--status-info) / <alpha-value>)', subtle: 'rgb(var(--status-info) / 0.12)' },
           neutral: { DEFAULT: 'rgb(var(--status-neutral) / <alpha-value>)', subtle: 'rgb(var(--status-neutral) / 0.12)' },
         },
+        // ── The new UI (decision Items 74, 76): defined ONLY inside `.ui-next` (src/ui-next/ui-next.css),
+        // so an `nx-*` class outside the preview resolves to nothing. Used only under src/ui-next/
+        // (the isolation test checks both).
+        nx: {
+          page: 'rgb(var(--nx-page) / <alpha-value>)',
+          block: 'rgb(var(--nx-block) / <alpha-value>)',
+          'stat-a': 'rgb(var(--nx-stat-a) / <alpha-value>)',
+          'stat-b': 'rgb(var(--nx-stat-b) / <alpha-value>)',
+          'card-ink': 'rgb(var(--nx-card-ink) / <alpha-value>)',
+          ink: 'rgb(var(--nx-ink) / <alpha-value>)',
+          'on-ink': 'rgb(var(--nx-on-ink) / <alpha-value>)',
+          primary: 'rgb(var(--nx-primary) / <alpha-value>)',
+          'primary-fg': 'rgb(var(--nx-primary-fg) / <alpha-value>)',
+          lot: 'rgb(var(--nx-lot) / <alpha-value>)',
+          'pill-purple': 'rgb(var(--nx-pill-purple) / <alpha-value>)',
+          'pill-purple-bg': 'rgb(var(--nx-pill-purple-bg) / <alpha-value>)',
+          'pill-green': 'rgb(var(--nx-pill-green) / <alpha-value>)',
+          'pill-green-bg': 'rgb(var(--nx-pill-green-bg) / <alpha-value>)',
+          'pill-blue': 'rgb(var(--nx-pill-blue) / <alpha-value>)',
+          'pill-blue-bg': 'rgb(var(--nx-pill-blue-bg) / <alpha-value>)',
+          'pill-yellow': 'rgb(var(--nx-pill-yellow) / <alpha-value>)',
+          'pill-yellow-bg': 'rgb(var(--nx-pill-yellow-bg) / <alpha-value>)',
+          'pill-red': 'rgb(var(--nx-pill-red) / <alpha-value>)',
+          'pill-red-bg': 'rgb(var(--nx-pill-red-bg) / <alpha-value>)',
+          'chart-1': 'rgb(var(--nx-chart-1) / <alpha-value>)',
+          'chart-2': 'rgb(var(--nx-chart-2) / <alpha-value>)',
+          'chart-3': 'rgb(var(--nx-chart-3) / <alpha-value>)',
+          'chart-4': 'rgb(var(--nx-chart-4) / <alpha-value>)',
+          'chart-5': 'rgb(var(--nx-chart-5) / <alpha-value>)',
+        },
         // Themed semantic state tones (§6) — replace the static Tailwind emerald/rose/amber-400
         // refs in Phase 3. -400 in dark, -700 in light (the only AA failures light introduces).
         state: {
@@ -117,6 +147,9 @@ export default {
         caption: ['0.75rem', { lineHeight: '1.45', fontWeight: '400' }],
         micro: ['0.6875rem', { lineHeight: '1.45', fontWeight: '500' }],
         overline: ['0.6875rem', { lineHeight: '1.2', fontWeight: '600', letterSpacing: '0.08em' }],
+        // The new UI's two extra steps (Item 74): the 18px answer sentence and the 24px figure.
+        'nx-answer': ['1.125rem', { lineHeight: '1.625rem', fontWeight: '600' }],
+        'nx-figure': ['1.5rem', { lineHeight: '2.25rem', fontWeight: '600' }],
       },
       keyframes: {
         'fade-in': {

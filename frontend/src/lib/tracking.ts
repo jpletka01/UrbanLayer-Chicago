@@ -88,6 +88,13 @@ interface TrackEvent {
 const _queue: TrackEvent[] = [];
 let _flushTimer: ReturnType<typeof setTimeout> | null = null;
 let _address: string | null = null;
+// The preview UI tags every event it sends (decision Item 76), so preview traffic can be left out of
+// product metrics. Today's UI sends events exactly as before: no tag.
+let _uiVersion: "old" | "next" = "old";
+
+export function setUiVersion(version: "old" | "next"): void {
+  _uiVersion = version;
+}
 
 export function setAddress(addr: string | null): void {
   _address = addr;
@@ -104,7 +111,7 @@ export function track(
   try {
     _queue.push({
       event_name: eventName,
-      event_data: data ?? null,
+      event_data: _uiVersion === "next" ? { ...(data ?? {}), ui_version: "next" } : data ?? null,
       session_id: getSessionId(),
       visitor_id: getVisitorId(),
       page: getCurrentPage(),
