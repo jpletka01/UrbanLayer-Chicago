@@ -296,16 +296,16 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 1. **Structure is done (2026-11-07).** Every page is wireframed: site map, Profile (Overview approved,
    tabs drafted), Deep analysis (draft 7), Discovery (approved), landing (approved), chat (approved),
    the subscription flow and the shared map design. Sign-in, Settings and About are restyles.
-   **Next: a new conversation, in planning mode,** to plan the implementation and choose templates.
+   Templates and the implementation plan followed the same day (steps 2 and 3).
 2. **Visual phase:** the template is chosen (2026-11-07): **SnowUI** is the visual base, with a bottom-sheet
    library, a collapsible sidebar and a light/dark sidebar filling single jobs, and Lucide kept for icons
    (`decisions/2026-11_frontend-rewrite.md` Item 73; the files are CC BY 4.0, so the About page credits them).
    The visual system is chosen too (Item 74): SnowUI's frame colors and type, the Coastal chart palette,
    black for this lot. Zoning colors stay provisional until the map mockups.
-3. **Detailed mockups** of the Profile Overview, the Build tab, Discovery and the landing page.
-4. **A clickable prototype,** tested with two or three builders on a real task ("Could you build a
-   6-flat at this address?").
-5. **The build plan,** page by page, with the data work scheduled alongside. Every merge to `main`
-   deploys and needs Jack's approval.
+3. **The build plan is approved (2026-11-07, Item 75).** The prototype is built in code behind a preview
+   switch (the frame, Profile Overview and Build, the Ask drawer, one Discovery flow on today's data),
+   checked against SnowUI, then tested with two or three builders on a real task ("Could you build a
+   6-flat at this address?") against pass criteria written in advance. The map, data, chat, landing and
+   commercial work follow in gated phases; every merge to `main` deploys and needs the owner's approval.
 
 Update this brief when a decision changes; the design pages hold the detail.
