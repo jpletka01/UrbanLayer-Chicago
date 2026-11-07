@@ -5,6 +5,11 @@ import { buildSubjectParcelLayersNext } from "../components/scorecard/parcelMapL
 const LAYERS = [
   { id: "land", type: "background" },
   { id: "road-primary", type: "line" },
+  { id: "building", type: "fill" },
+  { id: "land-structure-polygon", type: "fill" },
+  { id: "aeroway-polygon", type: "fill" },
+  { id: "landuse", type: "fill" },
+  { id: "water", type: "fill" },
   { id: "poi-label", type: "symbol" },
   { id: "natural-point-label", type: "symbol" },
   { id: "waterway-label", type: "symbol" },
@@ -19,8 +24,11 @@ describe("the new UI's quiet base style", () => {
   it("hides point-of-interest and noise labels, keeps transit, delays street names to zoomed-in", () => {
     const plan = quietLayerPlan(LAYERS);
     expect(plan.hide.sort()).toEqual([
-      "airport-label", "natural-point-label", "poi-label", "road-number-shield", "settlement-subdivision-label", "waterway-label",
+      "aeroway-polygon", "airport-label", "building", "land-structure-polygon", "natural-point-label", "poi-label",
+      "road-number-shield", "settlement-subdivision-label", "waterway-label",
     ]);
+    expect(plan.hide).not.toContain("water");
+    expect(plan.hide).not.toContain("landuse");
     expect(plan.delay).toEqual(["road-label-simple"]);
     expect(plan.hide).not.toContain("transit-label");
     expect(plan.hide).not.toContain("road-primary");

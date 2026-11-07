@@ -17,6 +17,11 @@ interface MapLike {
     the place). */
 const NOISE = /natural|water(way)?-?.*label|airport|settlement-subdivision|housenum|building-number|road-number|shield|building-label/i;
 
+/** Shape layers that make the base look busy (owner review 2026-11-07: "the polygons look ugly"): building
+    footprints, pier and structure outlines, airport shapes. Blocks then read as calm land between streets, a first
+    step toward the Cities: Skylines-style base (map track M1). Water, parks and roads stay. */
+const SHAPE_NOISE = /^(building|land-structure|aeroway)/;
+
 /** Street names appear from this zoom up. */
 export const STREET_LABEL_MIN_ZOOM = 15;
 
@@ -24,6 +29,7 @@ export function quietLayerPlan(layers: readonly StyleLayerLike[]): { hide: strin
   const symbols = layers.filter((l) => l.type === "symbol");
   const hide = new Set(poiLabelLayerIds(layers));
   for (const l of symbols) if (NOISE.test(l.id)) hide.add(l.id);
+  for (const l of layers) if (l.type !== "symbol" && SHAPE_NOISE.test(l.id)) hide.add(l.id);
   const delay = symbols.filter((l) => /^road-label/.test(l.id) && !hide.has(l.id)).map((l) => l.id);
   return { hide: [...hide], delay };
 }
