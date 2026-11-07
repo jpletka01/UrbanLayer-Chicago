@@ -349,7 +349,14 @@ def parcel_row(pin: str, sort: str = Query("lot_size")) -> ResultRow:
     window still opens a preview. The same fields as a /search row, from the current snapshot; every
     tier gets it (Q1: the full preview for everyone). Pro keeps the list past the teaser, export and
     the upside coloring."""
-    parcel = _pin_lookup(parcel_source.current_version()).get(pin)
+    version = parcel_source.current_version()
+    parcel = _pin_lookup(version).get(pin)
+    if parcel is None:
+        # A map outline carries only its PIN10 (one outline per PIN10, Item 68): open that lot's base
+        # parcel, else its lowest unit PIN. An outline with no row here is "not in our data yet".
+        digits = "".join(ch for ch in pin if ch.isdigit())
+        if len(digits) == 10:
+            parcel = parcel_source.pin10_lookup(version).get(digits)
     if parcel is None:
         raise HTTPException(status_code=404, detail="parcel not in the index")
     try:

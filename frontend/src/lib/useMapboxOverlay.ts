@@ -7,6 +7,7 @@ import {
   type MapStyleLayerLike,
   type MapStyleOrderRevision,
 } from "./mapLayerOrder";
+import { hidePoiLabels } from "./mapPoiLabels";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
@@ -116,6 +117,8 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     mapRef.current = map;
     overlayRef.current = overlay;
     const resolveStyleOrder = () => {
+      // Business/POI names off on every style (Item 72d); setStyle() brings them back, so this runs per style.load.
+      hidePoiLabels(map);
       const layers = (map.getStyle()?.layers ?? []) as MapStyleLayerLike[];
       setStyleOrder((previous) => reviseMapStyleOrder(previous, layers));
     };

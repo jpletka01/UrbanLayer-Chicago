@@ -2835,3 +2835,49 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 **Revisit if** a third card reads the pending store and gets the same label (3 × 3 = 9 > 8), or the stale state needs a word that says what to do.
 
 **Production (Item 71, PR #194, 2026-11-06).** CI `test`/`lint`/CodeQL green before merge; the deploy job succeeded and the served bundle (`index-DLYqkRQD.js`) carries both new labels; `/health` ok (data-health alarms 3, unchanged by this release); `npm run sweep:live` clean (16 views, desktop and phone). Before merge, local: vitest 952 passed, `npm run lint` exit 0, `npm run build` exit 0. `npm run test:mobile`: 75 passed, 5 failed, all in `discovery-phone.spec.ts` on the WebKit iPhone 15 / 15 Pro Max projects; they failed the same way with `main`'s `frontend/src` and **pass against production** (15/15 on iPhone SE, 15, 15 Pro Max), so they belong to the local test setup used here, not to the site (known-issues, Gotchas). **Lesson:** before reading a budget failure as page growth, check the live source states the page is showing; a local data store older than its freshness window adds state rows that production, synced daily, does not show.
+
+## Item 72: honest chat failures, chat opens in a new tab, every Discovery lot outline opens something, no business names on maps (2026-11-07)
+
+**Status: PR open, not merged.** Three live-site problems a tester hit, listed in the front-end vision brief under "Fixes that can't wait for the redesign". Jack's decisions: opening the full chat uses a new tab (2026-11-06); go ahead with the honest-unavailable state and an alarm (2026-11-07).
+
+### 72a. Chat said "Something went wrong" for every question: the API account was out of credits
+
+**Evidence.** Read-only query of production `request_logs` (`status != 'ok'`, run by Jack, 2026-11-06): 7 failed turns. The 4 newest (2026-10-02 and 2026-11-06, including a Discovery handoff and "what does RS-3 zoning allow") are all `Router failed: Error code: 400 - invalid_request_error: 'Your credit balance is too low to access the Anthropic API…'`; the container log's traceback runs `_event_stream` → `router.route` → `llm.tracked_create` → `messages.create` → 400. The API balance had run out (credits bought went to Claude subscription usage, Jack 2026-11-07). The 3 older rows (2026-08-05, 2026-09-28) are `Synthesizer failed: '>' not supported between instances of 'NoneType' and 'int'`, all from before `5419adf` (2026-09-28), which fixed that crash with a regression test; nothing newer has it, so it needed no change here.
+
+**Decision: name the step, say when chat itself is out, and page on billing/key failures.** `_chat_error(step, language, exc)` in `backend/main.py` replaces the single `_CHAT_ERROR`: each stage streams `error_step` (`read` / `route` / `gather` / `answer`) and `error_kind` (`step` / `unavailable`) beside words in the chat's language ("The answer failed while working out what to look up. Your question is kept: try again."). `_provider_outage(exc)` sorts an Anthropic failure into `billing` (the credit-balance 400, or any status error naming billing), `auth` (401/403), `overloaded` (429/529) or `down` (5xx, connection, timeout); any of these reads "Chat is temporarily unavailable." `billing` and `auth` do not fix themselves, so they send a Sentry `fatal` event (fingerprint `["anthropic-provider", reason]`, tag `alarm: chat-unavailable`); transient ones only log. The exception text still never reaches the browser. The frontend words the step itself (`chat.turnError.*`, es-MX usted) and keeps the failed turn: **Try again** (`useChat.retry`, in the chat banner and the Profile dock) drops the failed question and its empty or half-written answer, then resends the same question, so it is not duplicated or sent back as history. A rate limit (429 from our own limiter) or the message limit offers no retry. `MESSAGE_LIMIT_REACHED` now reads as the message-limit sentence instead of the raw code.
+
+**Alternatives.** A data-health source for the API balance: the checker would have to call the model API (data health makes no model calls) or read `llm_calls` from the app database it does not open; Sentry already alarms for data health, so a Sentry event on the first failing turn reaches the same place with no new reader. Treating every 400 as an outage: a malformed request is our bug, not an outage, and should say which step failed (tested). Words only from the backend: the frontend already owns every other chat string in both languages, and an older client still gets the backend's words.
+
+**Revisit if** Anthropic changes the credit-balance message (the match is on "credit balance" / "billing"), chat moves to a second provider, or an outage page (not a per-turn message) is wanted.
+
+### 72b. Opening the full chat replaced the page
+
+**Decision.** The Profile dock's "Continue in the full analyst" and Discovery's "Ask the analyst" open the chat in a new tab (`lib/openInNewTab.ts`: `window.open(path, "_blank")`, opener cut). A browser that still blocks the tab keeps the page and says so ("Your browser blocked the new tab…"); it never falls back to navigating in place. The dock's transcript used to go through `sessionStorage`, which is per tab and is not copied to a tab opened without an opener, so it now goes through `localStorage` under a one-time id in the URL (`/?pin=…&handoff=<id>`): read once and removed by `App.tsx`; entries older than an hour are dropped on the next write; a blocked tab removes its unused entry. Alternatives: an `<a target="_blank">` (never blocked, but the handoff must be written before the click and the button looks like a link in a dialog); `BroadcastChannel` (needs the old tab still open, more code).
+
+**Revisit if** the chat becomes part of the same page (the redesign's side panel), which would make the new tab unnecessary.
+
+### 72c. Lots on the Discovery map opened nothing
+
+**Cause.** The parcel outlines (Item 68) are Mapbox vector tiles; clicks only reached deck.gl's dots, so a click on an outline (matched or not) away from its dot did nothing.
+
+**Decision.** A deck.gl click with no dot asks Mapbox for the outline under the pointer (`parcelTiles.outlineAt`, the fill layer, which covers every lot; non-matches are at opacity 0, which the fill query does not read). The outline's feature id is its PIN10. `GET /api/discovery/parcel` now takes a 10-digit PIN: an exact PIN still wins, else the PIN10's base parcel (suffix 0000), else its lowest unit PIN (`parcel_source.pin10_lookup`, memoized per data version). The preview shows that row and "Open profile" opens the row's own PIN. A 404 says "Not in our data yet" and a failed read "Couldn't load this lot" (never "not in our data"); both still open the Profile at the point clicked (`/scorecard?lat=&lon=`). Stale results keep the map inert, as before. Alternatives: a hover on outlines too (a hover request per lot swept over; click only for now); a Profile by `PIN10 + 0000` for a missing lot (a condo PIN10 may have no 0000 parcel; the point always resolves to something).
+
+**Revisit if** the tiles start carrying full PINs or row fields (no request needed), or outline hover is wanted.
+
+### 72d. Business and point-of-interest names on every map
+
+**Decision (Jack, 2026-11-07).** A tester saw "business names everywhere". Every map is created by `useMapboxOverlay`, so its `style.load` handler hides the base style's point-of-interest labels (`lib/mapPoiLabels.ts`: `symbol` layers whose id contains "poi", which in dark-v11, light-v11 and satellite-streets-v12 is `poi-label`) with `visibility: none`. It runs on every `style.load` because `setStyle` (theme and satellite swaps) brings the layer back. Street names, road shields, transit/station, airport and place labels stay. Alternatives: satellite imagery-only (drops the street names readers navigate by); a custom Studio style (a style to maintain per theme, and the redesign will choose the map look: https://claude.ai/artifact/72dHKhfkjyecVq6Zk8V2QU); filtering POI classes (still names businesses).
+
+**Revisit if** Mapbox renames the layer (the match is on the id), or the map design brings back selected landmarks.
+
+**Numbers**
+
+| Measure | Result |
+|---|---:|
+| Failed chat turns in prod `request_logs`, by cause (2026-11-06) | 4 credit balance (router), 3 NoneType synthesizer (all before `5419adf`) |
+| New backend tests | `test_chat_errors.py` (17), `test_discovery_api.py::test_parcel_row_by_outline_pin10` |
+| New frontend tests | `mapPoiLabels.test.ts` (3), `useChat.retry.test.ts` (4), `MiniChatDock.test.tsx` (2), `openInNewTab.test.ts` (5), `DiscoveryMap.outline.test.tsx` (5), `DiscoveryPage.test.tsx` new-tab case (1) |
+
+**Reproduce:** the prod query is in the PR description (read-only, `mode=ro`); tests: `python -m pytest backend/tests/test_chat_errors.py backend/tests/test_discovery_api.py -q`, `cd frontend && npx vitest run src/lib src/components/MiniChatDock.test.tsx src/discovery`.
+
+**Not measured:** how often a browser blocks the new tab; outline-click latency on the live tiles; an outline click in a real browser against live tiles (the query path was read, not run: mapbox-gl's `FillStyleLayer.queryIntersectsFeature` tests only geometry and `fill-translate`, never `fill-opacity`, so zero-opacity non-matches are returned).

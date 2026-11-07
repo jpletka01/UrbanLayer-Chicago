@@ -1133,7 +1133,9 @@
       "lot": "Lot",
       "also": "Also",
       "open": "Open profile",
-      "close": "Close the preview"
+      "close": "Close the preview",
+      "notInData": "Not in our data yet.",
+      "readFailed": "Couldn't load this lot."
     },
     "unusual": {
       "label": "Unusual parcels",

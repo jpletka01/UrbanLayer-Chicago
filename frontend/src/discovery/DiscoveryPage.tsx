@@ -24,6 +24,7 @@ import { StartPanel, type StartChoice } from "./StartPanel";
 import { TextFeedback } from "./TextFeedback";
 import { clearLastSearch, loadLastSearch, saveLastSearch, type SavedSearch } from "./lastSearch";
 import { track } from "../lib/tracking";
+import { openInNewTab } from "../lib/openInNewTab";
 import { ToolTray } from "../components/ui/ToolTray";
 import { loadRegistry } from "./registryClient";
 import { summarize, seamPrompt } from "./summary";
@@ -155,10 +156,19 @@ export default function DiscoveryPage() {
   // Discovery→chat seam (#6): hand the result set to the analyst as an UNGROUNDED
   // pre-filled question (area + filter intent as prose). No pin, no payload — the
   // chat's native area retrieval answers it; App.tsx clears grounding on open.
+  // It opens in a NEW tab (Jack, 2026-11-06): the search stays where it was. A browser that still blocks the tab
+  // keeps this page and says so; it never navigates in place.
+  const [askTabBlocked, setAskTabBlocked] = useState(false);
   const onAskArea = useCallback(() => {
     if (!response || !registry) return;
-    navigate(`/?q=${encodeURIComponent(seamPrompt(response.cqs, registry))}`);
-  }, [navigate, response, registry]);
+    setAskTabBlocked(!openInNewTab(`/?q=${encodeURIComponent(seamPrompt(response.cqs, registry))}`));
+  }, [response, registry]);
+
+  // A lot outline with no row in our index still opens its Profile, by the point clicked (Item 68).
+  const onOpenPoint = useCallback(
+    (lat: number, lon: number) => navigate(`/scorecard?lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}`),
+    [navigate],
+  );
 
   const showUpdate = pendingCount > 0 && !draftIsInFlight;
 
@@ -321,7 +331,7 @@ export default function DiscoveryPage() {
                   Item 57): the chips already say what was searched, so the sentence that restated them is
                   evidence now. Screen readers still get it in line; it dims with the previous results. */}
               {response && (
-                <div className={`order-6 flex items-center justify-between gap-3 md:order-5 ${expanded ? "" : "max-md:hidden"}`}>
+                <div className={`order-6 flex flex-wrap items-center justify-between gap-3 md:order-5 ${expanded ? "" : "max-md:hidden"}`}>
                   <p
                     className={`sr-only transition-opacity ${refreshing ? "opacity-[0.55]" : ""}`}
                     aria-busy={refreshing}
@@ -337,6 +347,11 @@ export default function DiscoveryPage() {
                     onAsk={response.result.total > 0 && !refreshing ? onAskArea : undefined}
                   />
                   {draft.sort && <SortControl registry={registry} sort={draft.sort} onChange={search.setSort} />}
+                  {askTabBlocked && (
+                    <p className="basis-full text-caption text-text-secondary" role="status" data-testid="ask-tab-blocked">
+                      {t("common:newTabBlocked")}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -392,6 +407,7 @@ export default function DiscoveryPage() {
             hoveredPin={selectedPin ?? hoveredPin}
             onHoverPin={onMapHoverPin}
             onOpenParcel={onOpenParcel}
+            onOpenPoint={onOpenPoint}
             colorBy={isPro ? "upside" : "land_use"}
             rows={rows}
             sortKey={response?.cqs.sort.key ?? "lot_size"}

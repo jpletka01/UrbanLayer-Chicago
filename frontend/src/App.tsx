@@ -65,6 +65,8 @@ import FloatingNav from "./components/FloatingNav";
 import { useTranslation } from "react-i18next";
 import { track } from "./lib/tracking";
 import { countDataCategories } from "./lib/contextSummary";
+import { takeHandoff } from "./lib/openInNewTab";
+import { RotateCcw } from "lucide-react";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -267,6 +269,8 @@ export function App() {
     context,
     showDisclaimer,
     errorMsg,
+    canRetry,
+    retry,
     rateLimited,
     atMessageLimit,
     messagesRemaining,
@@ -440,30 +444,23 @@ export function App() {
     if (heldScorecard?.resolved_pin !== pin) selectParcel({ pin });
   }, [searchParams, conversationIdFromUrl, shareTokenFromUrl, heldScorecard]);
 
-  // Quick-chat dock escalation: the Scorecard's MiniChatDock stashes its
-  // ephemeral transcript in sessionStorage and navigates here (/?pin= for the
-  // grounding door). Seed those turns into the workspace so the conversation
-  // continues instead of restarting — from this point it lives (and persists)
-  // like any other conversation. Consumed exactly once; a stale handoff never
-  // overwrites an active chat.
+  // Quick-chat dock escalation: the Profile's MiniChatDock stores its ephemeral
+  // transcript under a one-time id (lib/openInNewTab.ts) and opens this page in a
+  // NEW tab with ?handoff=<id> (plus ?pin= for the grounding door). Seed those turns
+  // into the workspace so the conversation continues instead of restarting — from
+  // this point it lives (and persists) like any other conversation. Consumed exactly
+  // once; a stale handoff never overwrites an active chat.
   const dockHandoffConsumedRef = useRef(false);
+  const handoffId = searchParams.get("handoff");
   useEffect(() => {
-    if (dockHandoffConsumedRef.current) return;
+    if (dockHandoffConsumedRef.current || !handoffId) return;
     if (conversationIdFromUrl || shareTokenFromUrl) return;
-    let seeded: { role: "user" | "assistant"; content: string }[] | null;
-    try {
-      const raw = sessionStorage.getItem("ul_dock_handoff");
-      if (!raw) return;
-      sessionStorage.removeItem("ul_dock_handoff");
-      seeded = JSON.parse(raw).messages ?? null;
-    } catch {
-      return;
-    }
     dockHandoffConsumedRef.current = true;
+    const seeded = takeHandoff(handoffId);
     if (!seeded?.length || messages.length > 0 || streaming) return;
     setComposing(true);
     setMessages(seeded.map((m) => ({ role: m.role, content: m.content })));
-  }, [conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
+  }, [handoffId, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
 
   // Bare ?ask=1 — the labeled "Ask the analyst" door (Home hero + page nav).
   // Opens an EMPTY, UNGROUNDED chat: the user hasn't named a parcel here, so
@@ -1079,6 +1076,17 @@ export function App() {
             {errorMsg && (
               <div className="px-6 py-3 bg-state-negative/10 border-b border-state-negative/20 text-state-negative text-sm flex items-center justify-between gap-4">
                 <span>{errorMsg}</span>
+                {canRetry && (
+                  <button
+                    type="button"
+                    onClick={retry}
+                    data-testid="chat-retry"
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border border-state-negative/40 rounded-lg hover:bg-state-negative/10 transition-colors"
+                  >
+                    <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                    {tc("chat:turnError.retry")}
+                  </button>
+                )}
                 {rateLimited && !canPersist && (
                   <button
                     onClick={() => setShowAuthModal(true)}

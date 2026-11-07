@@ -17,8 +17,8 @@ import { MapUnavailable } from "../components/ui/MapUnavailable";
 import { useIsPhone } from "../lib/useIsPhone";
 import { buildDiscoveryMapModel, type DiscoveryMapRenderPoint } from "./discoveryMapModel";
 import { DotPreview } from "./DotPreview";
-import { fetchParcelRow } from "./searchClient";
-import { MATCH_COLORS, addParcelLayers, markMatches } from "./parcelTiles";
+import { fetchOutlineRow, fetchParcelRow, type OutlineLookup } from "./searchClient";
+import { MATCH_COLORS, addParcelLayers, markMatches, outlineAt } from "./parcelTiles";
 import { API_BASE } from "../lib/api";
 import type { ParcelTiles, PinPoint, ResultRow } from "./types";
 
@@ -29,6 +29,8 @@ interface DiscoveryMapProps {
   hoveredPin: string | null;
   onHoverPin: (pin: string | null) => void;
   onOpenParcel: (pin: string) => void;
+  /** Open the Profile at a map point: a lot outline whose PIN10 is not in our index still opens something. */
+  onOpenPoint?: (lat: number, lon: number) => void;
   // Pro gets the upside coloring; free gets land-use color. Every tier can open a dot's preview (Q1,
   // decision Item 57).
   colorBy: "upside" | "land_use";
@@ -46,6 +48,8 @@ interface DiscoveryMapProps {
   parcelTiles?: ParcelTiles | null;
 }
 
+type MapClickInfo = { object?: PinPoint; x?: number; y?: number; coordinate?: number[] };
+
 const HIGHLIGHT_RING: [number, number, number, number] = [249, 164, 116, 255];
 const STALE_OPACITY = 0.35;
 const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
@@ -58,6 +62,7 @@ export function DiscoveryMap({
   hoveredPin,
   onHoverPin,
   onOpenParcel,
+  onOpenPoint,
   colorBy,
   rows,
   sortKey,
@@ -71,7 +76,7 @@ export function DiscoveryMap({
   const { resolvedTheme } = useThemeContext();
   const isPhone = useIsPhone();
   const [coarse] = useState(() => typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches === true);
-  const onMapClickRef = useRef<(info: { object?: PinPoint; x?: number; y?: number }) => void>(() => {});
+  const onMapClickRef = useRef<(info: MapClickInfo) => void>(() => {});
   const themeStyle = resolvedTheme === "light" ? LIGHT_STYLE : DARK_STYLE;
   const [initialStyle] = useState(themeStyle);
   const {
@@ -88,7 +93,7 @@ export function DiscoveryMap({
     style: initialStyle,
     // Real tap targets: a coarse pointer picks within 22 px (a 44 px target), a mouse within 8 px.
     pickingRadius: coarse ? 22 : 8,
-    onClick: (info) => onMapClickRef.current(info as { object?: PinPoint; x?: number; y?: number }),
+    onClick: (info) => onMapClickRef.current(info as MapClickInfo),
   });
 
   const model = useMemo(
@@ -117,7 +122,8 @@ export function DiscoveryMap({
 
   // The dot preview (decision Item 57): hover previews on a mouse, a click or tap pins it. Its position is
   // worked out when the pointer event arrives, beside the dot and inside the map.
-  type Preview = { point: PinPoint; left: number; top: number; pinned: boolean };
+  // `outline`: opened from a lot outline with no dot under the pointer (Item 68); its point carries the PIN10.
+  type Preview = { point: PinPoint; left: number; top: number; pinned: boolean; outline?: boolean };
   const [preview, setPreview] = useState<Preview | null>(null);
   const placeAt = useCallback((point: PinPoint, x: number, y: number, pinned: boolean): Preview => {
     const box = containerRef.current;
@@ -133,6 +139,16 @@ export function DiscoveryMap({
       if (info.object) {
         setPreview(placeAt(info.object, info.x ?? 0, info.y ?? 0, true));
         onSelectPin(info.object.pin);
+        return;
+      }
+      // Every visible outline opens something (matched or not): its lot's preview, or "not in our data yet".
+      const map = mapRef.current;
+      const pin10 = map && parcelTiles && info.x != null && info.y != null ? outlineAt(map, info.x, info.y) : null;
+      if (pin10) {
+        const [lon, lat] = info.coordinate ?? [null, null];
+        const point: PinPoint = { pin: pin10, lat: lat ?? null, lon: lon ?? null, upside: null, landUse: null };
+        setPreview({ ...placeAt(point, info.x ?? 0, info.y ?? 0, true), outline: true });
+        onSelectPin(null);
       } else if (preview) {
         closePreview();
       }
@@ -160,7 +176,7 @@ export function DiscoveryMap({
   const listRow = previewPin ? rowsByPin.get(previewPin) ?? null : null;
   const haveFetched = cacheKey != null && fetched.has(cacheKey);
   useEffect(() => {
-    if (!previewPin || !cacheKey || listRow || haveFetched) return;
+    if (!previewPin || !cacheKey || listRow || haveFetched || preview?.outline) return;
     const ctrl = new AbortController();
     // A short wait so sweeping the pointer across dots doesn't fire a request per dot.
     const timer = setTimeout(() => {
@@ -170,9 +186,25 @@ export function DiscoveryMap({
       });
     }, 150);
     return () => { clearTimeout(timer); ctrl.abort(); };
-  }, [previewPin, cacheKey, listRow, sortKey, haveFetched]);
-  const previewRow = listRow ?? (cacheKey ? fetched.get(cacheKey) ?? null : null);
-  const previewLoading = !!cacheKey && !listRow && !haveFetched;
+  }, [previewPin, cacheKey, listRow, sortKey, haveFetched, preview?.outline]);
+  // An outline's lot: read by PIN10, kept apart from the dot rows so "missing" and "failed" stay distinct.
+  const [outlineLookups, setOutlineLookups] = useState<ReadonlyMap<string, OutlineLookup>>(() => new Map());
+  const outlineKey = preview?.outline && previewPin ? `${previewPin}|${sortKey}` : null;
+  const outlineLookup = outlineKey ? outlineLookups.get(outlineKey) ?? null : null;
+  useEffect(() => {
+    if (!outlineKey || !previewPin || outlineLookups.has(outlineKey)) return;
+    const ctrl = new AbortController();
+    fetchOutlineRow(previewPin, sortKey, ctrl.signal).then((lookup) => {
+      if (!ctrl.signal.aborted) setOutlineLookups((prev) => new Map(prev).set(outlineKey, lookup));
+    });
+    return () => ctrl.abort();
+  }, [outlineKey, previewPin, sortKey, outlineLookups]);
+
+  const previewRow = preview?.outline
+    ? outlineLookup?.status === "found" ? outlineLookup.row : null
+    : listRow ?? (cacheKey ? fetched.get(cacheKey) ?? null : null);
+  const previewLoading = preview?.outline ? outlineLookup == null : !!cacheKey && !listRow && !haveFetched;
+  const previewMissing = preview?.outline && outlineLookup && outlineLookup.status !== "found" ? outlineLookup.status : null;
 
   const layers = useMemo(() => {
     if (!renderPoints.length) return [];
@@ -403,9 +435,11 @@ export function DiscoveryMap({
           point={preview.point}
           row={previewRow}
           loading={previewLoading}
+          missing={previewMissing}
           sortKey={sortKey}
           pinned={preview.pinned}
           onOpen={onOpenParcel}
+          onOpenPoint={onOpenPoint}
           onClose={closePreview}
           variant={isPhone ? "sheet" : "popover"}
           style={{ left: preview.left, top: preview.top }}

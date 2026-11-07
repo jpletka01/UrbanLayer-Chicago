@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { ScorecardResponse } from "../lib/api";
 import { buildScorecardContext, propertyStarterKeys } from "../lib/scorecardContext";
 import { useChat } from "../lib/useChat";
 import { track } from "../lib/tracking";
 import { MessageBubble } from "./MessageBubble";
+import { RotateCcw, SquareArrowOutUpRight } from "lucide-react";
+import { openInNewTab, takeHandoff, writeHandoff } from "../lib/openInNewTab";
 
 // Persistent quick-chat dock (bottom-right of the Scorecard). The old model —
 // every investigate chip navigating to the full workspace — made a one-line
@@ -14,9 +15,8 @@ import { MessageBubble } from "./MessageBubble";
 // pin + scorecard_context handoff the workspace uses. Chats here are
 // ephemeral by design (quick question ≠ research session); "Continue in the
 // full analyst" carries the transcript over, where it becomes a real, saved
-// conversation. Mount with key={pin ?? address} so a new parcel opens fresh.
-
-export const DOCK_HANDOFF_KEY = "ul_dock_handoff";
+// conversation. It opens in a NEW tab (Jack, 2026-11-06): the Profile stays where
+// it was. Mount with key={pin ?? address} so a new parcel opens fresh.
 
 /** A question pushed into the dock from page chrome (investigate chips, the
  *  verdict next-step). question=null opens the dock without sending. `id`
@@ -39,7 +39,7 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
   launcherBelowMd?: boolean;
 }) {
   const { t, i18n } = useTranslation(["pages", "chat", "common"]);
-  const navigate = useNavigate();
+  const [tabBlocked, setTabBlocked] = useState(false);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -53,6 +53,8 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
     streaming,
     context: streamingContext,
     errorMsg,
+    canRetry,
+    retry,
     atMessageLimit,
     activities,
     sendMessage,
@@ -102,15 +104,13 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
 
   const escalate = () => {
     track("investigate_click", { card_name: "dock_escalate" });
-    try {
-      sessionStorage.setItem(
-        DOCK_HANDOFF_KEY,
-        JSON.stringify({ messages: messages.filter((m) => m.content).map((m) => ({ role: m.role, content: m.content })) }),
-      );
-    } catch {
-      // no storage → escalate without the transcript rather than not at all
-    }
-    navigate(grounding?.pin ? `/?pin=${grounding.pin}` : "/?ask=1");
+    const id = writeHandoff(messages.filter((m) => m.content).map((m) => ({ role: m.role, content: m.content })));
+    const params = new URLSearchParams(grounding?.pin ? { pin: grounding.pin } : { ask: "1" });
+    if (id) params.set("handoff", id);
+    const opened = openInNewTab(`/?${params}`);
+    // A blocked tab keeps this page and says so; the unused handoff is dropped.
+    if (!opened && id) takeHandoff(id);
+    setTabBlocked(!opened);
   };
 
   const submitDraft = () => {
@@ -200,9 +200,20 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
           })
         )}
         {errorMsg && (
-          <p className="text-caption text-state-negative bg-state-negative/10 border border-state-negative/20 rounded-lg px-3 py-2">
-            {errorMsg}
-          </p>
+          <div className="text-caption text-state-negative bg-state-negative/10 border border-state-negative/20 rounded-lg px-3 py-2">
+            <p>{errorMsg}</p>
+            {canRetry && (
+              <button
+                type="button"
+                onClick={retry}
+                data-testid="dock-retry"
+                className="mt-1.5 inline-flex items-center gap-1.5 text-link hover:text-accent transition-colors"
+              >
+                <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                {t("chat:turnError.retry")}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -215,8 +226,14 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
             className="text-caption text-link hover:text-accent transition-colors inline-flex items-center gap-1"
           >
             {t("pages:scorecard.dock.escalate")}
-            <span aria-hidden>→</span>
+            <SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+            <span className="sr-only">{t("common:opensInNewTab")}</span>
           </button>
+          {tabBlocked && (
+            <p className="mt-1 text-caption text-text-secondary" role="status" data-testid="dock-tab-blocked">
+              {t("common:newTabBlocked")}
+            </p>
+          )}
         </div>
       )}
 

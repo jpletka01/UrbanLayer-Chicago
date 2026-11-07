@@ -223,6 +223,26 @@ describe("DiscoveryPage issued-query pairing", () => {
     expect(screen.getByTestId("map-state").textContent).toContain("ready:1");
   });
 
+  it("Ask the analyst opens chat in a NEW tab and keeps the search page; a blocked tab says so", async () => {
+    mocks.runSearch.mockResolvedValue(combined("v1", "one"));
+    const open = vi.spyOn(window, "open").mockReturnValue({ opener: null } as Window);
+    const ready = await readyPage();
+    fireEvent.change(ready.input, { target: { value: "tif" } });
+    fireEvent.click(ready.button);
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+    fireEvent.click(screen.getByRole("button", { name: "Ask about: These results" }));
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(String(open.mock.calls[0][0])).toMatch(/^\/\?q=/);
+    expect(open.mock.calls[0][1]).toBe("_blank");
+    expect(screen.queryByTestId("ask-tab-blocked")).toBeNull();
+
+    open.mockReturnValue(null);
+    fireEvent.click(screen.getByRole("button", { name: "Ask about: These results" }));
+    expect(screen.getByTestId("ask-tab-blocked")).toBeTruthy();
+    expect(screen.getByTestId("results-state").textContent).toBe("v1:1"); // the page is still here
+    open.mockRestore();
+  });
+
   it("keeps the canonical list but makes the map unavailable on a pins version mismatch", async () => {
     mocks.runSearch.mockResolvedValue(response("canonical", "one"));
     mocks.runPins.mockResolvedValue(pins("other", "wrong"));

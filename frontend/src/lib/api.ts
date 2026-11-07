@@ -1208,6 +1208,23 @@ export async function discoveryParcelRow(pin: string, sort: string, signal?: Abo
   } catch { return null; }
 }
 
+// A map outline's lot (decision Item 68): found, not in the index (404), or the read failed. The outline
+// preview words these three apart, so a failed read never says "not in our data".
+export type DiscoveryOutlineLookup =
+  | { status: "found"; row: DiscoveryResultRow }
+  | { status: "missing" }
+  | { status: "failed" };
+
+export async function discoveryOutlineRow(pin10: string, sort: string, signal?: AbortSignal): Promise<DiscoveryOutlineLookup> {
+  try {
+    const qs = new URLSearchParams({ pin: pin10, sort });
+    const resp = await authFetch(`${API_BASE}/api/discovery/parcel?${qs}`, { signal });
+    if (resp.status === 404) return { status: "missing" };
+    if (!resp.ok) return { status: "failed" };
+    return { status: "found", row: await resp.json() };
+  } catch { return { status: "failed" }; }
+}
+
 // Compile-only: what the free-text compiler makes of a phrase (no search, no index read).
 // null on any failure, so the caller can fail open and just search.
 export async function discoveryTextPreview(

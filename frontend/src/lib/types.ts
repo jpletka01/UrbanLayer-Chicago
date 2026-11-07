@@ -1058,7 +1058,14 @@ export type ChatChunk =
   | { type: "context"; context: ContextObject; t_ms?: number }
   | { type: "map_data"; map_data: MapData; t_ms?: number }
   | { type: "token"; text: string; t_ms?: number }
-  | { type: "error"; error: string; t_ms?: number }
+  | {
+      type: "error";
+      error: string;
+      // Which step failed (backend `_chat_error`, decision Item 72); "unavailable" = the model provider is out.
+      error_step?: "read" | "route" | "gather" | "answer";
+      error_kind?: "step" | "unavailable";
+      t_ms?: number;
+    }
   | { type: "done"; t_ms?: number; timings?: PhaseTimings; truncated?: boolean }
   | { type: "turn_summary"; turn_summary: TurnSummary; t_ms?: number };
 

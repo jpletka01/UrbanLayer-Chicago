@@ -1,4 +1,14 @@
 {
+  "turnError": {
+    "step": {
+      "read": "The answer failed while reading your question. Your question is kept: try again.",
+      "route": "The answer failed while working out what to look up. Your question is kept: try again.",
+      "gather": "The answer failed while gathering the data. Your question is kept: try again.",
+      "answer": "The answer failed while writing the answer. Your question is kept: try again."
+    },
+    "unavailable": "Chat is temporarily unavailable. Your question is kept: try again in a little while.",
+    "retry": "Try again"
+  },
   "chips": {
     "map": "Map",
     "mapCount": "Map · {{count}}",
