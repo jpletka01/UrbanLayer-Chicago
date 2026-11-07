@@ -198,3 +198,25 @@ Notes from the owner's first walkthrough of the Phase 1 prototype, before the fo
 - **The page feels thin.** With only Overview and Build, the Profile "doesn't stand out." Expected at this scope (Money, Neighborhood, History come in Phase 6), but the builder test (Phase 3) should record whether the Overview alone earns attention, and the Phase 4 contract should make sure the first screen carries enough.
 
 **Numbers:** none measured.
+
+---
+
+## Item 80: the Cities: Skylines map style is a requirement of the rewrite (2026-11-07)
+
+**Decision: every map in the new UI takes the look of the Cities: Skylines 2 OSM toolkit map, and the rewrite is not complete without it.** The owner has asked for this repeatedly (most recently after reviewing the Phase 1 prototype, whose map is Mapbox's stock `light-v11`/`dark-v11` with layers hidden). What the look is made of, from the teardown in `research/15-ui-data-inspiration.md` §2.4:
+- a dimmed, desaturated base (theirs: Esri Dark Gray raster at 45% brightness, −25% saturation);
+- the map's own vector tiles, where each shape (theirs: OSM buildings; ours: County parcels, buildings and official zoning) is filled and outlined thinly in a color that carries meaning;
+- roads drawn by the map itself in a handful of classes with set widths and colors, on top of the fills, so streets read as clean gaps;
+- On / Dim / Off per layer, counts in the key, confidence shown in the drawing.
+
+**What follows:**
+- **Tuning Mapbox's stock style is not the path.** It can hide layers, not draw the look. The map tracks (M1 base and roads, M2 parcels, M3 zoning, later M5 land in use) build it with our own tiles and style. Discovery's parcel-outline tiles (Item 68) are the first piece.
+- **Technology may change.** MapLibre GL (what the reference uses; open source, no per-load billing), our own vector tiles (MBTiles or PMTiles), a custom style document and a different basemap source are all allowed; deck.gl stays if it fits. The choice is made and measured in M1 (payload, frame rate, both themes).
+- **Our data, not OpenStreetMap guesses.** The reference labels 76% of Chicago buildings from surrounding land use; we use County and City records (parcels, Assessor class, official zoning) and keep OSM-derived inputs separate and attributed (Item 75, M5).
+- **Gate:** no route flips to the new UI by default until its map meets this look in light and dark, reviewed by the owner against the reference. Phase 1's quiet stock base (Items 76, 78) is a placeholder; the building footprints it hides come back as our own styled shapes.
+
+**Alternatives:** keeping Mapbox's stock styles with more layers hidden (cannot reach the look; the owner rejected it); a satellite base (rejected, Item 78).
+
+**Revisit if:** M1's measurements show the chosen stack can't hold the first-view payload or frame rate on a phone; then change the stack, not the look.
+
+**Numbers:** none measured yet; M1 records payload and frame rate before and after.

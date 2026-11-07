@@ -187,9 +187,17 @@ by the decision) and it maps one-to-one to the PDF export, which is today's repo
 - **At the limit:** a frosted sign-in card (a bottom sheet on phones), which also offers connecting the
   user's own Claude or ChatGPT.
 
-## Maps — Draft
+## Maps — Approved: the Cities: Skylines style is required (Item 80)
 
 One map design for every page, so the Profile, Discovery, chat and Deep analysis read the same way.
+
+**The look is the Cities: Skylines 2 OSM toolkit map, and the rewrite is not complete without it** (owner,
+2026-11-07, repeated; Item 80). That means: a dimmed, desaturated base that nearly disappears; our own shapes
+(parcels, buildings, zoning) each filled and thinly outlined in a color that means something; roads drawn by us
+in a few classes with set widths and colors, on top, so streets read as clean gaps between blocks; no satellite,
+no business labels. Mapbox's stock street styles cannot produce this; changing technology (for example MapLibre,
+our own vector tiles, a custom style) is allowed if that is what it takes. No route flips to the new UI by default
+until its map meets this look. How it was made: `research/15-ui-data-inspiration.md` §2.4.
 
 - **A quiet base:** muted land, streets as empty gaps between blocks, street names only when zoomed in,
   no business or point-of-interest labels. **No satellite imagery** (Item 78): imagery competes with the lot and
