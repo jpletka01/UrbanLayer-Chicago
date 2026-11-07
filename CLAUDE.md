@@ -67,7 +67,7 @@ cd frontend && npm run sweep:live                 # after a deploy: console erro
 - Domain orchestrators (`property/`, `regulatory/`, `incentives/`, `neighborhood/`) run sub-queries in parallel via `asyncio.gather` with graceful degradation.
 - TTLCache used for all external API queries. Clear caches between tests via autouse fixture in `conftest.py`.
 - Frontend state: `useChat` hook owns SSE consumption. `App.tsx` is the state machine. Per-message context architecture (each assistant message stores its own context/plan/mapData).
-- Theming: light/dark themeable (CSS-var-backed Tailwind tokens; `system` default; `ThemeProvider`/`useTheme`). **Canonical design language = "Bento Pro"** (orange action accent + violet premium on near-black/warm-white neutrals). The earlier "Cyanotype on Vellum" palette is retired. See `claude-context/guides/bento-pro-redesign.md` + `bento-pro-phase3-app-surfaces.md` + `frontend/CLAUDE.md` before any color/token work; `design-system.md`/`light-dark-theming.md` are historical (theming *mechanics* still valid).
+- Theming: light/dark themeable (CSS-var-backed Tailwind tokens; `system` default; `ThemeProvider`/`useTheme`). **Canonical design language = "Bento Pro"** (orange action accent + violet premium on near-black/warm-white neutrals). The earlier "Cyanotype on Vellum" palette is retired. See `claude-context/guides/bento-pro-redesign.md` + `bento-pro-phase3-app-surfaces.md` + `frontend/CLAUDE.md` before any color/token work; `design-system.md`/`light-dark-theming.md` are historical (theming *mechanics* still valid). **The front-end rewrite** (behind `?ui=next`, route by route) uses a new look: SnowUI's frame, the Coastal chart palette, black for this lot (`decisions/2026-11_frontend-rewrite.md` Items 73–75); start from `claude-context/guides/frontend-rewrite-runbook.md`. Bento Pro governs each live route until it flips.
 - Tests: mock external APIs, mark real-API tests with `@pytest.mark.integration`.
 - Env vars: `.env` (ANTHROPIC_API_KEY, SOCRATA_APP_TOKEN, WALKSCORE_API_KEY), `frontend/.env` (VITE_MAPBOX_TOKEN).
 
@@ -91,3 +91,4 @@ cd frontend && npm run sweep:live                 # after a deploy: console erro
 
 Deep context lives in `claude-context/`. Read `claude-context/README.md` for a manifest
 of available docs — load only what's relevant to the current task. Don't read everything.
+Front-end rewrite work: `claude-context/guides/frontend-rewrite-runbook.md` first (status, rules, and the end-of-milestone checklist that writes the next phase's prompt).

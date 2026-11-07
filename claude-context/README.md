@@ -28,8 +28,9 @@ reusable lesson, not the full narrative.
 - `guides/auth-and-conversations.md` — Google OAuth + JWT, conversation persistence, sharing.
 - `guides/latency-reduction.md` — completed + planned perf work, pipeline timing reference.
 
-### Design system — **canonical: "Bento Pro"**
-- `guides/frontend-redesign-vision.md` — **the planned front-end rewrite (2026-11-06, planning only)**: audience (builders), 11 page rules, app frame, Profile tabs, Discovery, chat, Saved, ruled-out list, data work it needs, urgent fixes, parked questions. Read before any redesign work; `page-design.md` still governs the live site until the rewrite ships.
+### Design system — **live site: "Bento Pro"; the rewrite: SnowUI + Items 73–75**
+- `guides/frontend-rewrite-runbook.md` — **start here for the front-end rewrite (2026-11-07)**: phase status table, working rules, the end-of-milestone checklist (decisions, docs, next-phase prompt). Decisions in `decisions/2026-11_frontend-rewrite.md` (Item 73 SnowUI base, Item 74 visual system, Item 75 how it is built); the approved plan is local (`plans/2026-11-07_frontend-implementation-plan.md`).
+- `guides/frontend-redesign-vision.md` — **the front-end rewrite brief (2026-11-06; build plan approved 2026-11-07, see the runbook)**: audience (builders), 11 page rules, app frame, Profile tabs, Discovery, chat, Saved, ruled-out list, data work it needs, urgent fixes, parked questions. Read before any redesign work; `page-design.md` still governs the live site until the rewrite ships.
 - `guides/page-design.md` — **what a page shows and how (2026-11-02, canonical)**: one answer first, evidence behind the Lucide tool tray, color by role, Button vs StatusLabel, the ratcheting page budget, measured effect, file map. Checklist form = skill `page-design-rules`. Read before ANY Profile/Discovery UI change.
 - `guides/bento-pro-redesign.md` — the token system + landing (source of truth for color/type/radius/primitives).
 - `guides/bento-pro-phase3-app-surfaces.md` — Scorecard/Discovery Bento Pro surfaces (the 2026-10 Discovery redesign shipped; see `archive/2026-10-30_discovery-redesign.md`).

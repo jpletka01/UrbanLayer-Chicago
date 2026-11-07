@@ -61,7 +61,9 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 
 ## Design Tokens
 
-**Canonical design language: "Bento Pro"** (branch `feat/bento-pro`, 2026-06-30 →) — full spec in
+**The front-end rewrite (2026-11-07 →)** builds a new UI behind `?ui=next` with its own `.ui-next` tokens (SnowUI frame, Coastal charts; `claude-context/decisions/2026-11_frontend-rewrite.md` Items 73–75). Its tokens must not leak into the live pages below; start from `claude-context/guides/frontend-rewrite-runbook.md`.
+
+**Canonical design language (live site): "Bento Pro"** (branch `feat/bento-pro`, 2026-06-30 →) — full spec in
 `claude-context/guides/bento-pro-redesign.md` (token system + landing) and
 `claude-context/guides/bento-pro-phase3-app-surfaces.md` (Scorecard/Discovery redesign, the
 active working doc). The previous "Cyanotype on Vellum" system (azure accent, vellum neutrals,
