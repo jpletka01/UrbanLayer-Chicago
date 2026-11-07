@@ -1,6 +1,6 @@
 # Front-end redesign — vision brief
 
-Version 1 · 2026-11-06 · Owner: Jack · **Status: planning. No code has changed.**
+Version 2 · 2026-11-06 · Owner: Jack · **Status: planning. No code has changed.**
 
 The reference for UrbanLayer's front-end rewrite: what it is for, how the pages fit together, and the
 rules every page follows. Visual design and the build are checked against it. Labels: **Approved** =
@@ -8,7 +8,8 @@ decided; **Draft** = agreed in shape, details open; **Ruled out** = decided agai
 
 The detailed design pages (private Claude artifacts, Jack's account) hold the wireframes this summarizes:
 site map rethink, Property Profile blueprint, Profile tab designs, Discovery wireframe, and the FigJam
-site-map board. Ask Jack for links; they are not public.
+site-map board, plus the landing page, chat page, Deep analysis and subscription wireframes. Ask Jack
+for links; they are not public.
 
 Until the rewrite ships, `guides/page-design.md` still governs the live site. Where this brief disagrees
 (for example color roles, the floating nav, the chat panel), it describes the *new* front end, not
@@ -64,9 +65,12 @@ they decide.
 
 ## The app frame — Approved
 
-- A slim **rail on the left** replaces today's floating top nav, which covered content. It expands on
-  hover: Search, Discovery, Saved, Chat, account. On phones it becomes a bottom bar.
+- One **side panel on the left** in the ChatGPT style (from a template): the logo, an icon for each page
+  (Search, Discovery, Saved, Chat), then chat history and the account. A collapse button inside the panel
+  shrinks it to a strip of icons. The same panel opens from a menu button on the landing page.
 - **Left is for getting around, right is for the analyst.** Never two panels on the same side.
+- Signed-in return visitors land on an in-app home (search, recent lots, saved lots that changed, recent
+  chats) instead of the marketing page.
 
 ## Property Profile — Overview approved, tabs Draft
 
@@ -75,8 +79,9 @@ A tabbed dashboard: the first tab answers, the others prove it.
 **Overview**
 - The top band is the page's **one map**, opening on satellite with the lot outlined and the address
   over it. A street photo opens full size from it (a 4:3 photo can't fill a wide band).
-- A full-width tab bar: Overview · Build · Money · Neighborhood · History, with Ask, Sources and Get the
-  report on the right.
+- A full-width tab bar: Overview · Build · Money · Neighborhood · History · Deep analysis, with Ask,
+  Sources and Export PDF as icons on the right. Once you scroll, the header shrinks to one slim bar: a
+  short address, the current tab as a menu, and the same three icons. Every Profile tab works this way.
 - The answer in one sentence ("Zoned for up to 6 units; 2 are built").
 - **One tile per tab** with its key figure, a small visual and at most one warning. No separate "what to
   check" box. Tiles reflow from three to six; a seventh tab means two should merge.
@@ -86,15 +91,56 @@ visuals → collapsed details table. Missing data keeps its slot ("None on recor
 
 | Tab | Answers | Main pieces |
 |---|---|---|
-| Build | What can I build here? | Allowed vs built for floor area, units and height (the binding limit highlighted; a "compare with another district" ghost bar replaces the What-if card); a dimensioned side view to scale; pending zoning changes as a stage tracker with before/after numbers; rules as yes/no chips |
+| Build | What can I build here? | Allowed vs built for floor area, units and height (the binding limit highlighted; a "compare with another district" ghost bar replaces the What-if card); the lot in 3D on its real block (today's building, the largest allowed around it, neighbors' heights; replaces the 2D side view); pending zoning changes as a stage tracker with before/after numbers; rules as yes/no chips |
 | Money | What would it cost or earn? | Taxes (exempt case: "at a typical rate"); the assessor's estimate, flagged when far below sales; comparable market sales on a wide map with the "nearby" rule printed as chips; rent for this building's unit sizes; incentives; value and taxes over time |
 | Neighborhood | What's the area like? | Walk/transit/bike scores; construction nearby on its own map, clickable for what's being built; crime as violent vs property, per resident; top 311 concerns; "who lives here" as small charts vs the community area; schools |
 | History | What has happened to this property? | One filtered timeline of market sales, transfers, permits, violations and rezonings; building facts with "records differ" ranges; no predictions |
 
-**Check a project — Proposed.** A builder enters what they want to build (Build tab, or by asking) and
-gets a path, never a yes: fits the zoning numbers we checked / needs a variation / needs a rezoning /
+**Check a project — part of Deep analysis.** A builder picks or adjusts a project and gets a path, never
+a yes: fits the zoning numbers we checked / needs a variation / needs a rezoning /
 needs a planned development / use not allowed. One row per limit, the deciding one highlighted, who
 decides (the alderman, from the ward data already stored), precedent nearby, and what wasn't checked.
+
+## Deep analysis — Draft
+
+The paid layer: a sixth Profile tab that is a **feasibility study of one project on one lot**, read in
+the order a builder decides. It is not a second Profile (the free tabs are organized by topic, this tab
+by the decision) and it maps one-to-one to the PDF export, which is today's report generator.
+
+- **Start from a project:** ready-made starting points for the lot (largest allowed, a 3-flat,
+  townhouses, your own), each marked fits or not, adjusted with plus and minus buttons. No blank form.
+- **The lot's real outline in 3D** (County parcel geometry; the report already classifies front, side
+  and rear edges), rotatable, with the allowed building around the project and anything over a limit in
+  red, beside the verdict and five limit marks. Odd lots get "approximate"; a missing outline shows
+  dimensions only, never an invented rectangle.
+- **For and against this project,** with icons. Every figure opens its meaning and actions (the TIF
+  card links out to the City; upzonings use a ¼-mile radius and show on the page's map).
+- **Getting it approved:** one numbered path (talk to the ward office, gather documents, file the
+  amendment, Council vote, permit, inspections). The current step is highlighted with its one or two
+  actions; City links sit on the step that uses them; Done moves the highlight on. An application kit
+  prefills the facts we know and drafts a note to the ward office; the builder sends everything.
+- **Rules that affect the project** as a row of tiles, problems first; checks that don't apply fold into
+  one tile. **Uses** as four icon tiles that open into the full list with approvals and code sections.
+- **Your numbers:** sliders for rent, price, build cost, taxes and a target return, starting from the
+  lot's data, with the area range and the new-construction range drawn as colored bands on each slider.
+  The result is arithmetic against the builder's own target, labeled as their assumptions. This is a
+  deliberate, user-driven exception to "no pro forma": we never judge the deal.
+- **Before you buy:** a short checklist whose items link back into UrbanLayer.
+
+## Pricing — Approved
+
+- **A subscription, not a price per lot.** Paying per address made builders bet on a lot before seeing
+  its value. **Pro: $19 a month or $199 a year** (saves $29, about 1½ months free; show it in dollars).
+  No lifetime plan.
+- **The free version is never punished.** No blurred or locked sections; the free tabs are complete; a
+  fully open example lot and one free Deep analysis show the value before paying.
+- **Chat limits from cost.** About 3.6¢ a question on development traffic (Sonnet 4.6 at list prices;
+  re-measure about a month after real users arrive). Signed-out visitors get 3 questions in total, then
+  sign in. Free accounts and Pro get monthly allowances (about 50 and 300, to confirm), with an overall
+  spend cap. Past the limit, users can connect their own Claude or ChatGPT (an MCP connector) with an
+  opt-in handoff of the current conversation.
+- **Sign-in only through Google, Apple or Microsoft,** never email, so limits can't be reset with
+  throwaway addresses.
 
 ## Discovery — Approved
 
@@ -116,15 +162,26 @@ decides (the alderman, from the ward data already stored), precedent nearby, and
   rows must all be true; plus a "transit-oriented area" switch (the City's TOD rules).
 - An address offers its Profile, or a search within a resizable ring. ZIP codes need boundaries first.
 
-## Chat — Draft
+## Chat — Approved
 
-- **On the Profile, a drawer** over about a third of the screen: on demand, keeps the conversation across
-  tabs, its own history list, expands in place. Answers about the lot draw on the page's own map.
-- **The full chat page:** rail, a hideable history list, the conversation at reading width. The drawer
-  and the page are one conversation in two sizes.
-- **No sources panel:** a numbered source opens in place under its sentence; long code text opens in a
-  reader over the page.
-- **Maps are cards inside the answer** that fold to one line or expand full screen.
+- **On the Profile, a drawer** over about a third of the screen: on demand from the Ask icon, keeps the
+  conversation across tabs, knows the lot, project and calculator numbers. "Open in full chat" opens a
+  new tab, never replacing the page.
+- **The full chat page:** the side panel with its history, and the conversation at reading width. A
+  nearly empty first screen with one example question typing itself; a message box with an upload
+  paperclip, dictation and an arrow to send.
+- **Answers lead with text**, with small previews (lot, map, sources, chart) on standby. An opened
+  preview fills the space above the message box; a minimize icon puts it back. The same on phones.
+- **Sources** as a short list, one open at a time, each shown as what it is: a code quote, a code table
+  trimmed to the columns used, data records as rows, or a single figure.
+- **Memory across a conversation:** lots are kept by parcel number and the records each answer used are
+  indexed, inside a sliding window with a summary, so switching back to a lot or asking about one record
+  is exact. Today only the text of up to 20 earlier messages is sent back, and a conversation is capped
+  at 10 questions.
+- **Neighborhood questions:** words in chat with at most two previews (one map, one chart); the full
+  data lives on the Neighborhood tab.
+- **At the limit:** a frosted sign-in card (a bottom sheet on phones), which also offers connecting the
+  user's own Claude or ChatGPT.
 
 ## Saved — Draft
 
@@ -145,6 +202,10 @@ or three; saves work before sign-in and move to the account after.
 | Minor violations on result cards | A fire-escape inspection isn't a reason to skip a lot |
 | A permanent chat or sources side panel | Crowds the page and never goes away |
 | The earth-tone infographic palette for the site | Reads as fall-themed; colors are chosen fresh in the visual phase |
+| Paying per lot ($25 a report or an unlock) | Makes builders bet on an address before seeing its value |
+| A lifetime plan | Running costs continue for every user, and the site's future is open |
+| Blurred or locked sections in free tabs | Punishes free users; better they stay than leave |
+| A floating Ask button | Bulky on phones; Ask sits with Sources and Export |
 
 ## Data work the designs need
 
@@ -171,6 +232,9 @@ sqft 50.7%; teardown 50.3%; upside 49.4%; price per sqft 34%; value percentile 4
 open violations, 311, crime, floodplain, brownfield, Opportunity Zone, ADU area, ARO, overlay, SBIF/NOF
 and ward.
 
+Also needed for Pro and chat: Stripe subscriptions ($19 / $199), monthly chat allowances and the
+3-question signed-out cap; later, the MCP connector for users' own AI.
+
 ## Fixes that can't wait for the redesign
 
 - **Chat fails with "Something went wrong while answering"** (reproduced). It is `_CHAT_ERROR` in
@@ -190,7 +254,7 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 |---|---|
 | The four Overview tiles: units, zoning, tax, price per sq ft? | Detailed Profile mockups |
 | Tabs on a phone: scrolling tab strip, or one page with jump links? | Detailed Profile mockups |
-| Does the report preview get its own tab? | Report purchase flow |
+| Exact chat allowances; whether past report buyers and voucher holders convert to Pro time; a short trial | Turning purchases on |
 | Race and ethnicity: details only, or left out (fair-housing steering concern)? Schools: include, and which measures? | Building the Neighborhood tab |
 | Renderings of new buildings: link out to filings, or skip? | Building the construction map |
 | Check a project: vague projects, low-confidence lots, two lots combined | Building Check a project |
@@ -201,9 +265,10 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 
 ## What comes next
 
-1. **Wireframe the remaining pages:** the landing page (it changes most and must say what UrbanLayer does
-   for a builder in one line), the full chat page, and the report purchase flow. Sign-in, Settings,
-   Pricing and About are restyles.
+1. **The map design pass:** one cleaner map for the Profile, Discovery, chat and Deep analysis (layers
+   with On / Dim / Off, the key, zoning colors, streets as empty space, the 3D lot). The landing page,
+   chat page and subscription flow are wireframed (landing and chat approved). Sign-in, Settings and
+   About are restyles.
 2. **Visual phase:** shortlist two to four templates (duplicated into Jack's Figma drafts so they can be
    read), then choose colors, type, icons and chart style together.
 3. **Detailed mockups** of the Profile Overview, the Build tab, Discovery and the landing page.
