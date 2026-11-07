@@ -127,7 +127,10 @@ function ResultCard({ row }: { row: ResultRow }) {
   const navigate = useNavigate();
   const { title, approx } = rowTitle(row);
   const n = (v: number) => Math.round(v).toLocaleString(i18n.language);
-  const zone = row.zone_class ?? row.zoning_group ?? null;
+  const { t: tp } = useTranslation("pages");
+  // The exact district when the index has it, else the family in words (same keys as today's dot preview).
+  const zone = row.zone_class
+    ?? (row.zoning_group ? tp(`discovery.enum.zoning_group.${row.zoning_group}`, { defaultValue: row.zoning_group }) : null);
   const room = row.allowed_far != null && row.lot_sqft != null && row.bldg_sqft != null
     ? Math.max(0, row.allowed_far * row.lot_sqft - row.bldg_sqft)
     : null;

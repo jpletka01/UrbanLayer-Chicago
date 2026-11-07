@@ -311,11 +311,16 @@ function ParcelMapInner({
     overlayBoxRef.current = overlayRef.current;
   }, [overlayRef, mapReady]);
 
-  // Satellite ⇄ streets toggle (place variant) + theme flips for street styles.
+  // Satellite ⇄ streets toggle (place variant) + theme flips for street styles. Only on a real change: setting
+  // the style the map already has re-applies it as a diff, which can bring the hidden POI labels back without a
+  // style.load to hide them again (seen 2026-11-07 on the place map).
+  const appliedStyleRef = useRef(initialStyle);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     const target = satellite ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle;
+    if (appliedStyleRef.current === target) return;
+    appliedStyleRef.current = target;
     map.setStyle(target);
   }, [satellite, themeStyle, mapReady, mapRef]);
 
@@ -508,7 +513,7 @@ function ParcelMapInner({
         </div>
       )}
       {variant === "place" && !bare && (
-        <div className="absolute top-2 left-2 flex rounded-md overflow-hidden border border-dark-border bg-dark-surface/90 backdrop-blur text-micro">
+        <div className={`absolute ${next ? "bottom-2 right-12" : "top-2 left-2"} flex rounded-md overflow-hidden border border-dark-border bg-dark-surface/90 backdrop-blur text-micro`}>
           <button
             type="button"
             onClick={() => setSatellite(true)}

@@ -11,7 +11,7 @@ export function PreviewBadge() {
   if (version !== "next") return null;
   return (
     <div
-      className="ui-next fixed bottom-3 left-3 z-[60] flex items-center gap-1 rounded-full bg-nx-ink text-nx-on-ink py-1 pl-3 pr-1 text-caption shadow-lg"
+      className="ui-next fixed bottom-3 right-3 z-[60] flex items-center gap-1 rounded-full bg-nx-ink text-nx-on-ink py-1 pl-3 pr-1 text-caption shadow-lg"
       data-testid="preview-badge"
       role="status"
     >

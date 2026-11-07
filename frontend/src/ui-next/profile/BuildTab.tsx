@@ -54,7 +54,7 @@ export function BuildTab({ data, verdict }: { data: ScorecardResponse; verdict: 
                     label={t("profile.build.barLabel", { limit: label, built: r.builtText, allowed: r.allowedText })}
                   />
                   <span className="col-span-2 flex flex-wrap items-center gap-1.5 text-caption tabular-nums sm:col-span-1 sm:justify-end">
-                    <span>{t("profile.build.builtOfAllowed", { built: r.builtText, allowed: r.allowedText })}</span>
+                    <span>{r.share != null ? t("profile.build.builtOfAllowed", { built: r.builtText, allowed: r.allowedText }) : t("profile.build.allowedBuiltUnknown", { built: r.builtText, allowed: r.allowedText })}</span>
                     {r.state && <ConfidenceState kind={r.state.kind} low={r.state.low} />}
                   </span>
                 </li>
@@ -144,7 +144,7 @@ function StageTracker({ stage, status }: { stage: (typeof STAGES)[number] | null
         <li key={s} className="relative flex min-w-0 flex-col gap-1 text-caption" aria-current={i === at ? "step" : undefined}>
           <span aria-hidden className={`relative z-[1] block h-3.5 w-3.5 rounded-full border-2 ${i < at ? "border-nx-ink bg-nx-ink" : i === at ? "border-nx-ink bg-nx-page shadow-[0_0_0_4px_rgb(var(--nx-ink)/0.1)]" : "border-nx-ink/20 bg-nx-page"}`} />
           {i < STAGES.length - 1 && <span aria-hidden className={`absolute left-3.5 right-[-0.5rem] top-1.5 h-0.5 ${i < at ? "bg-nx-ink" : "bg-nx-ink/10"}`} />}
-          <span className={`truncate ${i === at ? "font-semibold" : i > at ? "nx-muted" : ""}`}>{t(`profile.build.stage.${s}`)}</span>
+          <span className={`leading-tight [overflow-wrap:anywhere] ${i === at ? "font-semibold" : i > at ? "nx-muted" : ""}`}>{t(`profile.build.stage.${s}`)}</span>
         </li>
       ))}
     </ol>

@@ -60,6 +60,15 @@ const PAGES: Array<{
   { id: "about", path: "/about" },
   { id: "settings", path: "/settings" },
   { id: "privacy", path: "/privacy" },
+  // The new UI's preview routes (decision Item 76): ?ui=next turns the preview on for this page load.
+  { id: "profile-next-search", path: "/scorecard?ui=next", settle: 1500 },
+  {
+    id: "profile-next",
+    path: "/scorecard?address=1601%20N%20Milwaukee%20Ave&ui=next",
+    awaitApi: "/api/scorecard",
+    settle: 3000,
+  },
+  { id: "discovery-next", path: "/discovery?ui=next", settle: 1500 },
 ];
 
 const OUT_DIR = path.join(
@@ -291,6 +300,23 @@ for (const pageDef of PAGES) {
     }
 
     let topAudit = await auditOverflow(page);
+
+    // The preview Profile: audit the Build tab too, and the Ask drawer opened over the page.
+    if (pageDef.id === "profile-next") {
+      await page.getByRole("tab", { name: "Build" }).click();
+      await page.waitForTimeout(300);
+      topAudit = mergeAudits(topAudit, await auditOverflow(page));
+      await page.getByTestId("tool-ask-top").click();
+      await expect(page.getByTestId("ask-drawer")).toBeVisible();
+      topAudit = mergeAudits(topAudit, await auditOverflow(page));
+      await page.getByRole("button", { name: "Close" }).first().click();
+    }
+    // The preview Discovery: one goal search, then audit the result cards.
+    if (pageDef.id === "discovery-next") {
+      await page.getByRole("group", { name: "Try:" }).getByRole("button").first().click();
+      await page.getByTestId("next-results").waitFor({ timeout: 60_000 }).catch(() => {});
+      topAudit = mergeAudits(topAudit, await auditOverflow(page));
+    }
 
     // The Profile's sections start collapsed (decision Item 51) and a phone opens one at a time (Item 56):
     // open each in turn, check the others closed, and audit it scrolled through, so the audit still covers

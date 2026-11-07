@@ -76,7 +76,7 @@ export function AskDrawer({
 
       {/* The question box: SnowUI's lavender-to-blue edge, the only place the gradient appears. */}
       <form
-        className="nx-ai-edge rounded-2xl"
+        className="nx-ai-edge rounded-2xl focus-within:shadow-[0_0_0_3px_rgb(var(--nx-ai-a)/0.6)]"
         onSubmit={(e) => { e.preventDefault(); submit(); }}
       >
         <div className="flex flex-col gap-2 rounded-[15px] bg-nx-page px-3 py-2.5">
@@ -90,7 +90,7 @@ export function AskDrawer({
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
             placeholder={t("next:ask.placeholder")}
-            className="w-full resize-none bg-transparent text-body text-nx-ink placeholder:text-nx-ink/[0.64] focus:outline-none disabled:opacity-50"
+            className="w-full resize-none bg-transparent text-body text-nx-ink placeholder:text-nx-ink/[0.64] focus:outline-none focus-visible:outline-none disabled:opacity-50"
           />
           <div className="flex items-center justify-between gap-2">
             <span className="text-caption nx-muted">{t("next:ask.knows", { tab: tabLabel })}</span>

@@ -24,7 +24,11 @@
     "untitledChat": "Untitled chat",
     "account": "Account",
     "theme": "Theme",
-    "themes": { "light": "Light", "dark": "Dark", "system": "Match device" },
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "Match device"
+    },
     "language": "Language",
     "settings": "Settings",
     "signIn": "Sign in",
@@ -61,7 +65,10 @@
     "crumbLoading": "Looking up…",
     "unknownAddress": "This property",
     "tabsLabel": "Profile sections",
-    "tabs": { "overview": "Overview", "build": "Build" },
+    "tabs": {
+      "overview": "Overview",
+      "build": "Build"
+    },
     "approximate": "Approximate match",
     "another": "Look up another address",
     "opensInNewTab": "(opens in a new tab)",
@@ -111,7 +118,11 @@
       "allowedVsBuilt": "Allowed vs built",
       "underDistrict": "Under {{zone}}",
       "noLimits": "The district's limits couldn't be compared for this lot.",
-      "limit": { "floorArea": "Floor area", "units": "Units", "height": "Height" },
+      "limit": {
+        "floorArea": "Floor area",
+        "units": "Units",
+        "height": "Height"
+      },
       "sqft": "{{value}} sq ft",
       "units_one": "{{count}} unit",
       "units_other": "{{count}} units",
@@ -120,6 +131,7 @@
       "stories_other": "{{count}} stories",
       "notOnRecord": "not on record",
       "builtOfAllowed": "{{built}} of {{allowed}}",
+      "allowedBuiltUnknown": "{{allowed}} allowed · built: {{built}}",
       "barLabel": "{{limit}}: {{built}} built of {{allowed}} allowed",
       "decidingNote": "Black marks the deciding limit: {{limit}} is the closest to its cap.",
       "noDeciding": "No limit can be compared with what is built.",
@@ -134,7 +146,12 @@
       "nearby": "{{distance}} mi away",
       "clerkStatus": "Clerk status: {{status}}",
       "stageLabel": "Stage: {{stage}}",
-      "stage": { "introduced": "Introduced", "committee": "Committee", "council": "Council vote", "inEffect": "In effect" },
+      "stage": {
+        "introduced": "Introduced",
+        "committee": "Committee",
+        "council": "Council vote",
+        "inEffect": "In effect"
+      },
       "rules": "Rules on this lot",
       "rulesNote": "Yes on a highlighted rule changes what can be built; not checked never means no.",
       "rule": {
@@ -148,7 +165,11 @@
         "aro": "Affordable housing rule",
         "tif": "TIF district"
       },
-      "answer": { "yes": "Yes", "no": "No", "notChecked": "Not checked" },
+      "answer": {
+        "yes": "Yes",
+        "no": "No",
+        "notChecked": "Not checked"
+      },
       "details": "Zoning details",
       "row": {
         "district": "District",

@@ -39,9 +39,13 @@ describe("allowed vs built", () => {
 
 describe("pending rezonings", () => {
   it("reads a Clerk status into a stage only when the words say so", () => {
-    expect(stageOf({ status: "Referred", sub_status: "In Committee on Zoning" })).toBe("committee");
-    expect(stageOf({ status: "Passed", sub_status: "" })).toBe("inEffect");
-    expect(stageOf({ status: "Something else", sub_status: "" })).toBeNull();
+    // Real values from the Clerk snapshot (2026-11-07).
+    expect(stageOf({ status: "3-Council Introduction", sub_status: "Council Introduction" })).toBe("introduced");
+    expect(stageOf({ status: "4-In Committee", sub_status: "Referred" })).toBe("committee");
+    expect(stageOf({ status: "5-Council Consideration", sub_status: "Recommended to Pass" })).toBe("council");
+    expect(stageOf({ status: "90-Final", sub_status: "Passed" })).toBe("inEffect");
+    expect(stageOf({ status: "90-Final", sub_status: "Failed to Pass" })).toBeNull();
+    expect(stageOf({ status: "Referred", sub_status: "In Committee on Zoning" })).toBeNull();
   });
 
   it("puts the lot's own filings first and keeps unavailable apart from none", () => {

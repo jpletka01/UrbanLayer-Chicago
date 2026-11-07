@@ -33,7 +33,7 @@ export function OverviewTab({
         <p className="text-nx-answer" data-testid="answer-sentence">{answerSentence(data, verdict, tp)}</p>
         {identity === "approximate" && <Pill tone="yellow" icon={TriangleAlert}>{t("profile.approximate")}</Pill>}
       </div>
-      <ul className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-7 xl:grid-cols-4" data-testid="overview-tiles">
+      <ul className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(190px,1fr))] sm:gap-7" data-testid="overview-tiles">
         {tiles.map((tile, i) => <TileCard key={tile.key} tile={tile} alt={i % 2 === 1} onOpenTab={onOpenTab} />)}
       </ul>
     </div>
@@ -59,6 +59,11 @@ function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTa
         </span>
       )}
       {tile.note && <span className="text-caption nx-card-muted">{tile.note}</span>}
+      {tile.state && (
+        <span className="nx-on-card inline-flex">
+          <ConfidenceState kind={tile.state.kind} low={tile.state.low} />
+        </span>
+      )}
       {tile.warning && (
         <span className="flex items-center gap-1 text-caption font-medium">
           <TriangleAlert aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
@@ -80,11 +85,6 @@ function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTa
         </button>
       ) : (
         <div className={cls}>{body}</div>
-      )}
-      {tile.state && (
-        <span className="mt-1.5 inline-flex">
-          <ConfidenceState kind={tile.state.kind} low={tile.state.low} />
-        </span>
       )}
     </li>
   );

@@ -65,7 +65,7 @@ export function profileFixture(over: DeepPartial<ScorecardResponse> & Record<str
         status: "ready", placement_status: "complete", checked_at: "2026-11-05", radius_mi: 0.5,
         subject_filings: [],
         nearby_filings: [
-          { record_number: "O2026-0001", title: "Map amendment, 1650 N Damen", status: "Referred", sub_status: "In Committee on Zoning",
+          { record_number: "O2026-0001", title: "Map amendment, 1650 N Damen", status: "4-In Committee", sub_status: "Referred",
             url: "https://chicityclerkelms.chicago.gov/Matter/?matterId=1", match_kind: "nearby", distance_mi: 0.21 },
         ],
         placed_count: 1, unplaced_count: 0,

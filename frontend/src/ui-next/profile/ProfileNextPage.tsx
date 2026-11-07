@@ -198,7 +198,7 @@ function ProfileLoaded({ data, onSearch }: { data: ScorecardResponse; onSearch: 
               showTransit
               className="h-full"
             />
-            <h1 className="pointer-events-none absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
+            <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-12rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
               {address}
             </h1>
           </div>

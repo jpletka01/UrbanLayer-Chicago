@@ -103,13 +103,16 @@ export function allowedVsBuilt(data: ScorecardResponse, verdict: ScorecardVerdic
 export const STAGES = ["introduced", "committee", "council", "inEffect"] as const;
 export type Stage = (typeof STAGES)[number];
 
-/** Where a Clerk filing stands, read from its status words; null when the words don't say. */
+/** Where a Clerk filing stands, from the Clerk's numbered workflow state (backend/retrieval/clerk.py
+    KNOWN_PENDING_STATUSES: 2-Submitted to Clerk, 3-Council Introduction, 4-In Committee, 5-Council Consideration;
+    90-Final with a passed sub-status). Never from loose words: "Council Introduction" is an introduction, not a
+    vote. An unknown state returns null and the page shows the Clerk's own words instead of a tracker. */
 export function stageOf(f: Pick<UpcomingZoningFiling, "status" | "sub_status">): Stage | null {
-  const s = `${f.status} ${f.sub_status}`.toLowerCase();
-  if (/\b(passed|adopted|approved|enacted)\b/.test(s)) return "inEffect";
-  if (/\b(council|recommended to pass|do pass)\b/.test(s)) return "council";
-  if (/\bcommittee\b|\breferred\b/.test(s)) return "committee";
-  if (/\bintroduced\b|\bfiled\b|\bpending\b/.test(s)) return "introduced";
+  const code = /^(\d+)\s*-/.exec(f.status ?? "")?.[1];
+  if (code === "2" || code === "3") return "introduced";
+  if (code === "4") return "committee";
+  if (code === "5") return "council";
+  if (code === "90" && /^(Passed|Passed as Substitute|Signed|Adopted|Approved|Approved as Substitute)$/.test((f.sub_status ?? "").trim())) return "inEffect";
   return null;
 }
 

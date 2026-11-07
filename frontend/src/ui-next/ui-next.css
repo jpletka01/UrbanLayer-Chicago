@@ -134,6 +134,15 @@
 .ui-next .nx-muted {
   color: rgb(var(--nx-ink) / var(--nx-ink-muted-a));
 }
+/* Stat cards stay pale in both themes, so reused labels on them read with the light theme's role colors. */
+.ui-next .nx-on-card {
+  --text-secondary: 82 82 82;
+  --status-neutral: 82 82 82;
+  --status-warning: 122 89 0;
+  --status-danger: 180 40 40;
+  --status-success: 30 122 82;
+  --status-info: 33 112 155;
+}
 .ui-next .nx-card-muted {
   color: rgb(var(--nx-card-ink) / 0.68);
 }
@@ -148,8 +157,9 @@
   color: rgb(28 28 28);
 }
 
-/* Focus: one visible ring everywhere in the new UI. */
-.ui-next :focus-visible {
+/* Focus: one visible ring everywhere in the new UI. Zero-specificity scope (:where), so a component's own
+   focus utility (loaded earlier, by Tailwind) can still replace it. */
+:where(.ui-next) :focus-visible {
   outline: 2px solid rgb(var(--nx-ink) / 0.6);
   outline-offset: 2px;
 }

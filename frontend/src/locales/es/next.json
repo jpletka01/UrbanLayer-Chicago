@@ -24,7 +24,11 @@
     "untitledChat": "Chat sin título",
     "account": "Cuenta",
     "theme": "Tema",
-    "themes": { "light": "Claro", "dark": "Oscuro", "system": "Como el dispositivo" },
+    "themes": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Como el dispositivo"
+    },
     "language": "Idioma",
     "settings": "Configuración",
     "signIn": "Iniciar sesión",
@@ -61,7 +65,10 @@
     "crumbLoading": "Buscando…",
     "unknownAddress": "Esta propiedad",
     "tabsLabel": "Secciones de la ficha",
-    "tabs": { "overview": "Resumen", "build": "Construir" },
+    "tabs": {
+      "overview": "Resumen",
+      "build": "Construir"
+    },
     "approximate": "Coincidencia aproximada",
     "another": "Buscar otra dirección",
     "opensInNewTab": "(se abre en una pestaña nueva)",
@@ -111,7 +118,11 @@
       "allowedVsBuilt": "Permitido vs construido",
       "underDistrict": "Bajo {{zone}}",
       "noLimits": "No se pudieron comparar los límites del distrito para este terreno.",
-      "limit": { "floorArea": "Área de piso", "units": "Unidades", "height": "Altura" },
+      "limit": {
+        "floorArea": "Área de piso",
+        "units": "Unidades",
+        "height": "Altura"
+      },
       "sqft": "{{value}} pie²",
       "units_one": "{{count}} unidad",
       "units_other": "{{count}} unidades",
@@ -120,6 +131,7 @@
       "stories_other": "{{count}} pisos",
       "notOnRecord": "no consta",
       "builtOfAllowed": "{{built}} de {{allowed}}",
+      "allowedBuiltUnknown": "{{allowed}} permitido · construido: {{built}}",
       "barLabel": "{{limit}}: {{built}} construido de {{allowed}} permitido",
       "decidingNote": "En negro, el límite decisivo: {{limit}} es el más cercano a su tope.",
       "noDeciding": "Ningún límite se puede comparar con lo construido.",
@@ -134,7 +146,12 @@
       "nearby": "A {{distance}} mi",
       "clerkStatus": "Estado ante el Secretario: {{status}}",
       "stageLabel": "Etapa: {{stage}}",
-      "stage": { "introduced": "Presentada", "committee": "Comisión", "council": "Votación del Concejo", "inEffect": "Vigente" },
+      "stage": {
+        "introduced": "Presentada",
+        "committee": "Comisión",
+        "council": "Votación del Concejo",
+        "inEffect": "Vigente"
+      },
       "rules": "Reglas en este terreno",
       "rulesNote": "Un Sí en una regla resaltada cambia lo que se puede construir; no revisado nunca significa no.",
       "rule": {
@@ -148,7 +165,11 @@
         "aro": "Regla de vivienda asequible",
         "tif": "Distrito TIF"
       },
-      "answer": { "yes": "Sí", "no": "No", "notChecked": "No revisado" },
+      "answer": {
+        "yes": "Sí",
+        "no": "No",
+        "notChecked": "No revisado"
+      },
       "details": "Detalles de zonificación",
       "row": {
         "district": "Distrito",
