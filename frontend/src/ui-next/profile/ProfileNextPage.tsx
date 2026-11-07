@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as Tabs from "@radix-ui/react-tabs";
-import { LoaderCircle, Maximize2, Minimize2 } from "lucide-react";
+import { Expand, LoaderCircle, Shrink } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ParcelQuery } from "../../lib/types";
 import { useSelectedParcel } from "../../contexts/SelectedParcelContext";
@@ -216,24 +216,24 @@ function ProfileLoaded({ data, onSearch }: { data: ScorecardResponse; onSearch: 
                 showTransit
                 className="h-full"
               />
-              <div className="pointer-events-none absolute left-3 top-3 flex max-w-[calc(100%-12rem)] items-center gap-2">
-                <h1 className="truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
-                  {address}
-                </h1>
-                <button
-                  ref={mapButtonRef}
-                  type="button"
-                  onClick={() => setMapFocused((f) => !f)}
-                  aria-expanded={mapFocused}
-                  data-testid="map-focus"
-                  className="pointer-events-auto inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-nx-page px-3 py-1.5 text-caption font-medium shadow-[0_1px_2px_rgb(0_0_0/0.08)] hover:bg-nx-block touch-target"
-                >
-                  {mapFocused
-                    ? <Minimize2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
-                    : <Maximize2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />}
-                  {mapFocused ? t("profile.map.close") : t("profile.map.expand")}
-                </button>
-              </div>
+              <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
+                {address}
+              </h1>
+              {/* Icon only, in the map's corner (owner's call); the name is in the label and tooltip. */}
+              <button
+                ref={mapButtonRef}
+                type="button"
+                onClick={() => setMapFocused((f) => !f)}
+                aria-expanded={mapFocused}
+                aria-label={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
+                title={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
+                data-testid="map-focus"
+                className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
+              >
+                {mapFocused
+                  ? <Shrink aria-hidden className="h-4 w-4" strokeWidth={1.5} />
+                  : <Expand aria-hidden className="h-4 w-4" strokeWidth={1.5} />}
+              </button>
             </div>
           </div>
         </div>

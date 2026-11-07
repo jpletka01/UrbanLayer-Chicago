@@ -557,7 +557,7 @@ function ParcelMapInner({
         <ParcelMapKeySheet id={`${keyId}-sheet`} sources={controlSources} subjectKey={subjectKey} onChange={setLayerState} onClose={closeKey} />
       )}
       {variant === "place" && !bare && legend.length > 0 && (
-        <div className="absolute top-2 right-2 max-w-[55%] max-h-[calc(100%-1rem)] overflow-y-auto rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5">
+        <div className={`absolute ${next ? "top-12 right-2.5 max-h-[calc(100%-6rem)]" : "top-2 right-2 max-h-[calc(100%-1rem)]"} max-w-[55%] overflow-y-auto rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5`}>
           {legend.map((row) => (
             <div key={row.key} className="flex items-center gap-1.5 text-micro text-text-secondary leading-tight">
               {row.kind === "dot" ? (
