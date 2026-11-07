@@ -5,6 +5,8 @@ import * as Sentry from '@sentry/react'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './lib/i18n'
 import './index.css'
+// The new UI's tokens: every rule is scoped to .ui-next, so this changes nothing on today's pages.
+import './ui-next/ui-next.css'
 import { initTracking, track } from './lib/tracking'
 
 if (import.meta.env.VITE_SENTRY_DSN) {
@@ -50,16 +52,27 @@ import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 import { SegmentPrompt } from './components/SegmentPrompt.tsx'
+import { UiVersionProvider } from './ui-next/UiVersionProvider.tsx'
+import { useUiVersion } from './ui-next/uiVersionContext.ts'
+import { VersionedRoute } from './ui-next/VersionedRoute.tsx'
+import { PreviewBadge } from './ui-next/PreviewBadge.tsx'
+import { entryForPath, isReady } from './ui-next/readiness.ts'
 
 function TrackPageView() {
   const { pathname } = useLocation();
-  useEffect(() => { track("page_view"); }, [pathname]);
+  const { version } = useUiVersion();
+  useEffect(() => {
+    // In the preview, page_view names the page from the readiness registry (tracking adds ui_version).
+    const entry = version === "next" ? entryForPath(pathname) : undefined;
+    track("page_view", entry && isReady(entry.id) ? { page_name: entry.analytics } : undefined);
+  }, [pathname, version]);
   return null;
 }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      <UiVersionProvider>
       <ThemeProvider>
         <AuthProvider>
           <SelectedParcelProvider>
@@ -67,14 +80,16 @@ createRoot(document.getElementById('root')!).render(
           {/* Post-sign-in "what best describes you" — renders nothing unless
               a sign-in just completed and no segment is stored. */}
           <SegmentPrompt />
+          <PreviewBadge />
           <Routes>
             <Route path="/" element={<App />} />
             <Route path="/c/:id" element={<App />} />
             <Route path="/s/:shareToken" element={<App />} />
-            <Route path="/scorecard" element={<ScorecardPage />} />
+            {/* Versioned routes: today's page unless ?ui=next is on and the readiness registry says ready. */}
+            <Route path="/scorecard" element={<VersionedRoute id="profile" old={<ScorecardPage />} />} />
             {/* /explore retired 2026-06-14 — Discovery is a strict superset. Redirect legacy links. */}
             <Route path="/explore" element={<Navigate to="/discovery" replace />} />
-            <Route path="/discovery" element={<DiscoveryPage />} />
+            <Route path="/discovery" element={<VersionedRoute id="discovery" old={<DiscoveryPage />} />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/settings" element={
               <ProtectedRoute>
@@ -93,6 +108,7 @@ createRoot(document.getElementById('root')!).render(
           </SelectedParcelProvider>
         </AuthProvider>
       </ThemeProvider>
+      </UiVersionProvider>
     </BrowserRouter>
   </StrictMode>,
 )

@@ -8,6 +8,7 @@ import enLanding from "../locales/en/landing.json";
 import enMap from "../locales/en/map.json";
 import enData from "../locales/en/data.json";
 import enPages from "../locales/en/pages.json";
+import enNext from "../locales/en/next.json";
 
 import esCommon from "../locales/es/common.json";
 import esChat from "../locales/es/chat.json";
@@ -16,11 +17,12 @@ import esLanding from "../locales/es/landing.json";
 import esMap from "../locales/es/map.json";
 import esData from "../locales/es/data.json";
 import esPages from "../locales/es/pages.json";
+import esNext from "../locales/es/next.json";
 
 i18n.use(initReactI18next).init({
   resources: {
-    en: { common: enCommon, chat: enChat, sidebar: enSidebar, landing: enLanding, map: enMap, data: enData, pages: enPages },
-    es: { common: esCommon, chat: esChat, sidebar: esSidebar, landing: esLanding, map: esMap, data: esData, pages: esPages },
+    en: { common: enCommon, chat: enChat, sidebar: enSidebar, landing: enLanding, map: enMap, data: enData, pages: enPages, next: enNext },
+    es: { common: esCommon, chat: esChat, sidebar: esSidebar, landing: esLanding, map: esMap, data: esData, pages: esPages, next: esNext },
   },
   lng: localStorage.getItem("urbanlayer-language") || "en",
   fallbackLng: "en",
