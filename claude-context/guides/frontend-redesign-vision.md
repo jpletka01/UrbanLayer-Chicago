@@ -295,8 +295,10 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
    tabs drafted), Deep analysis (draft 7), Discovery (approved), landing (approved), chat (approved),
    the subscription flow and the shared map design. Sign-in, Settings and About are restyles.
    **Next: a new conversation, in planning mode,** to plan the implementation and choose templates.
-2. **Visual phase:** shortlist two to four templates (duplicated into Jack's Figma drafts so they can be
-   read), then choose colors, type, icons and chart style together.
+2. **Visual phase:** the template is chosen (2026-11-07): **SnowUI** is the visual base, with a bottom-sheet
+   library, a collapsible sidebar and a light/dark sidebar filling single jobs, and Lucide kept for icons
+   (`decisions/2026-11_frontend-rewrite.md` Item 73; the files are CC BY 4.0, so the About page credits them).
+   Next: approve the visual-system draft (color roles, type, chart style, zoning colors).
 3. **Detailed mockups** of the Profile Overview, the Build tab, Discovery and the landing page.
 4. **A clickable prototype,** tested with two or three builders on a real task ("Could you build a
    6-flat at this address?").

@@ -22,3 +22,4 @@ Why the code looks the way it does: the choices made while building, the options
 - `2026-10_data-health-baselines.md`: measured baselines in the data-health registry that moved after the change was understood (the pedestrian-street overlay, 2 to 58 features), from 2026-10-30.
 - `2026-10_spanish-backlog.md`: the 289 English-only Spanish keys translated (Mexican Spanish, usted), how sentence fragments were built, and what a native reader should check first, from 2026-10-30.
 - `2026-10_profile-gaps.md`: PR #54 carried onto current main (the use rules and transit amount the Profile left out), and why its benchmark record was left behind, from 2026-10-30.
+- `2026-11_frontend-rewrite.md`: the front-end rewrite in `guides/frontend-redesign-vision.md`: the visual base (SnowUI) and the kits that fill single jobs (Item 73), from 2026-11-07.
