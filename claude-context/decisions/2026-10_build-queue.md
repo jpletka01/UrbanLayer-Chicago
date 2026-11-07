@@ -2850,6 +2850,8 @@ The local index is a July 2026 build of six community areas (188,312 rows, befor
 
 **Revisit if** Anthropic changes the credit-balance message (the match is on "credit balance" / "billing"), chat moves to a second provider, or an outage page (not a per-turn message) is wanted.
 
+**Status (2026-11-07): chat restored.** Jack added Anthropic Console API credits to the production organization after the deploy of #199 and confirmed chat answers again on the live site. The outage was the empty API balance alone; no code change was needed for chat to work, and the honest-failure path above stays in place for the next one.
+
 ### 72b. Opening the full chat replaced the page
 
 **Decision.** The Profile dock's "Continue in the full analyst" and Discovery's "Ask the analyst" open the chat in a new tab (`lib/openInNewTab.ts`: `window.open(path, "_blank")`, opener cut). A browser that still blocks the tab keeps the page and says so ("Your browser blocked the new tab…"); it never falls back to navigating in place. The dock's transcript used to go through `sessionStorage`, which is per tab and is not copied to a tab opened without an opener, so it now goes through `localStorage` under a one-time id in the URL (`/?pin=…&handoff=<id>`): read once and removed by `App.tsx`; entries older than an hour are dropped on the next write; a blocked tab removes its unused entry. Alternatives: an `<a target="_blank">` (never blocked, but the handoff must be written before the click and the button looks like a link in a dialog); `BroadcastChannel` (needs the old tab still open, more code).
