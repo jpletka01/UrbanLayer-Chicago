@@ -74,7 +74,7 @@ Type is Inter (14px body, 12px labels, 18px answer sentence, 24px figures with t
 - Scatter plots and maps use at most Sapphire, Spruce and black, or carry shape or labels as well.
 - Spruce is weak on the dark background; keep it to third-series use.
 
-**Still provisional:** the zoning colors (pastel family colors, darker as density rises; checked on every pair in light: `#B99C3A`, `#ED8A8E`, `#CDB7F6`, `#63A8CF`, `#A7E2B2`). They have not been reviewed next to Coastal and will be settled with the map mockups.
+**Still provisional:** the zoning colors (pastel family colors, darker as density rises; the five pass the color-blind check on every pair in light): residential lavender `#CDB7F6`, business and commercial `#ED8A8E`, manufacturing gold `#B99C3A`, downtown `#63A8CF`, parks `#A7E2B2`, transport mid gray `#8F959C`. The owner swapped residential and manufacturing (2026-11-07) and flagged the first transport gray, `#D5D8DD`, as too close to the palest steps: measured OKLab ΔE 2.8-6.2 against them, versus 23-26 for `#8F959C`. They will be settled with the map mockups.
 
 **Revisit if:**
 - The clickable prototype shows builders missing what is clickable without a link color.
