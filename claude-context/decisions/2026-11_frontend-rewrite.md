@@ -528,3 +528,46 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Revisit if:** a real phone drops frames on the new map; the City stops publishing street centerlines or they fall far behind (then OpenFreeMap or Protomaps tiles of OSM roads, attributed); Mapbox's billing stops mattering.
 
 **Numbers:** above; harness (bench page, tile server, Playwright runner) kept in the session notes, not in the repo.
+
+---
+
+## Item 91: Phase 5 (M1–M3), the one map: our tiles, its gates, and what it does (2026-11-08)
+
+**Status: built on `feat/ui-next-phase-5-maps`, checked locally; waiting for the owner's look review against the Cities: Skylines reference in light and dark (Item 80's gate).** Production also needs the two tile files built once on the server (below).
+
+**Decision: three tile sets, all ours, served by one route.** `GET /api/map/tiles/{base|zoning}/{z}/{x}/{y}.mvt` (MBTiles on the `backend/data` volume, 404 = not installed, 204 = empty, gzipped, a day of caching) plus Discovery's parcel tiles (Item 68) for the lots; `GET /api/map/info` says which are installed. The encoder is Item 68's hand-written one, extended with lines, points, several layers per tile and per-layer minimum zooms (`backend/map_tiles/tiler.py`); no new dependency.
+- **Base** (`base_tiles.py`, zooms 10–16): the City boundary as land, water incl. the lake (`knfe-65pw`), Park District parks (`ejsh-fztr`, from 11) and street centerlines (`pr57-gg9e`) as highway / major / minor / local / ramp with sign-style names (arterials from 10, collectors and ramps from 12, locals from 13). Lower-level streets, river lines, runways and proposed/vacated/closed segments are left out and counted. Citywide: 54,557 road segments, 617 parks, 605 water shapes, 8.4 MB, 72 s; largest tile 3.9 KB at 16, 15 KB at 14.
+- **Zoning** (`zoning_tiles.py`, zooms 13–16): the City's Zoning MapServer layer 1, all 15,043 districts with their source attributes (zone class and type, ordinance number and date, case number, PD number, PMD sub-area, Clerk document number; staff user ids are not copied), plus a `family` and intensity `level` for color, and one label point per district part (polylabel, from a zoom by size). 11.3 MB, 18 s; largest tile 93 KB at 13, 8.8 KB at 16.
+
+**Decision: zoning is never simplified.** Shared-edge simplification (`coverage_simplify`) was tried and refused: the City's layer is not a valid coverage (`coverage_is_valid` false; 124 districts needed repair), so its output can't be trusted. The tiles carry the source polygons quantized only to the tile grid (about 0.9 m at zoom 13, 0.1 m at 16), which ends the sliver problem (research/15 §1.2) and can't move a lot's district. Cost: payload at zoom 13 (93 KB tiles), hence zoning starts at 13. Streets stay visible because roads draw above zoning, never by clipping zoning to blocks. *Alternatives:* per-feature simplification (the old slivers), clipping zoning to blocks (rejected in Item 75).
+
+**Gate: boundary accuracy** (`PYTHONPATH=. python -m eval.zoning_tile_accuracy --boundary 400`, no network, 7 s). For the lot panel (97 of 100 with an outline), the 13 data-health sentinels and 400 seeded boundary parcels (a PTAXSIM outline touching two or more districts), the district by largest share and at the representative point, from the source and from the decoded tiles at each zoom 13–16: **0 differences in 2,040 comparisons; all 13 sentinels match their answer key.** A recorded-fixture test does the same on a point grid at every zoom (`test_map_tiles.py`).
+
+**Decision: one MapLibre map per page, never remounted** (`ui-next/map/NextMap.tsx`). The Profile hands it the active tab's `view` (camera + On / Dim / Off): Overview = zoom 17 at the lot, zoning dimmed, lots, recent sales and transit on; Build = zoom 15.6, zoning on, sales off, transit dimmed. A visitor's choice holds until the tab changes. Camera moves ease, or jump under reduced motion, and never take focus. **A theme switch repaints every layer in place** (`themePaint`), so sources, feature state, the camera and the key survive it (no style reload). The Playwright check still finds the same canvas across every Profile swap.
+- **Look** (`mapStyle.ts`): light = pale cool land with streets as white gaps and warm arterials; dark = dim gray land with the reference's warm arterials and quiet gray side streets; zoning in Item 74's provisional family hues, four steps darker as intensity rises, fill 0.42 light / 0.30 dark, thin same-hue outlines; parcel lines at 14–16% ink; street names from zoom 15; district codes as labels; this lot black with a white edge (white with a dark edge in dark), dashed when the match is approximate.
+- **The key builds itself:** one row per layer with something to show, its count on screen ("14 districts", "285 lots", "1 station"), On / Dim / Off (Dim = opacity × 0.3), and the districts in view with their colors. It starts collapsed on a map under 440 × 640 px (the Profile's band) and open on the expanded map.
+- **Every outline opens something:** a lot → its address, use and "Open its Profile" (`/api/discovery/parcel` by PIN10), and the lot is marked; a district → its code and ordinance; a sale → price and date. The lot's own outline is marked in the parcel layer by feature-state (exact matches only).
+- **Late layers follow Item 89's skeleton rule:** recent sales wait on the `money` part; the map says "Loading recent sales…" in place, and "Couldn't check recent sales in time · Retry" when the source passed the deadline.
+- **Failure states:** no WebGL → a note in the map's place, the page works; no base file → "Street map not installed" over the parcels and zoning; a lost GL context is swallowed so the browser restores it. *Not shown:* Sentry's "Failed to initialize WebGL" can only be checked after deploy.
+
+**Gate: first-view payload** (this Mac, local stack built the production way with relative API URLs, cache off; transferred bytes until the map settled). Library: MapLibre 285 KB + worker 143 KB gzip (Mapbox was 511 KB; both still ship until today's maps load lazily, Item 90).
+
+| View | Base | Zoning | Lots | Glyphs | Total map data |
+|---|---:|---:|---:|---:|---:|
+| Before (Item 90): Mapbox `dark-v11`/`light-v11`, desktop / phone | ≈442 / ≈288 KB | – | – | (inside) | ≈442 / ≈288 KB |
+| Overview, desktop (zoom 17) | 6.5 KB | 21.4 KB | 29.3 KB | 150.6 KB* | 208 KB* |
+| Overview, phone | 3.1 KB | 11.8 KB | 14.4 KB | 150.6 KB* | 180 KB* |
+| Build, desktop (zoom 15.6; after the Overview) | 21.6 KB | 72.5 KB | 128.9 KB | – | 223 KB |
+| Build, phone | 9.1 KB | 33.5 KB | 60.3 KB | – | 103 KB |
+
+*Measured with two font weights from the dev server, uncompressed. Since then the second weight is dropped and nginx gzips glyphs (one 0–255 range: 76 KB raw, 46 KB gzipped), so production should spend roughly 50–60 KB on glyphs; to re-measure after deploy.
+
+**Gate: frame rate.** 60 fps with no frame over 50 ms on this Mac for every stack (Item 90); the page's map is the same engine and tiles. **Not measured on a real phone** (owner's phone at the localhost review, or after deploy).
+
+**Gate: coverage.** Base and zoning cover the whole city; lots = Discovery's tiles (604,220 outlines, 0.14% of PIN10s without one, Item 68).
+
+**Production steps (once, on the server, then monthly with the index timer later):** `docker compose run --rm --no-deps backend python -m backend.map_tiles.base_tiles` and `... python -m backend.map_tiles.zoning_tiles` (they read the City portal and the zoning layer; outputs and a source copy land in `backend/data/`). Until then the new map shows "Street map not installed" with lots only. Also new in this change: the CSP allows same-origin workers (`worker-src 'self' blob:`, MapLibre's worker) and nginx serves `/map/fonts/` gzipped with a month's caching (not syntax-checked locally: no Docker or nginx on this Mac).
+
+**Not done, for later:** a refresh timer and data-health sources for the two tile files (zoning changes with every passed map amendment; the base rarely); Discovery's map (Phase 6, owner); the zoning palette's final check at real size by the owner (Item 74 still calls it provisional); deck.gl isn't used by the new map (nothing needed it yet).
+
+**Revisit if:** the owner's review asks for a different look; a phone drops frames; zoning tiles at zoom 13 matter (then a valid shared-edge simplification after repairing the coverage, re-run through the accuracy gate).
