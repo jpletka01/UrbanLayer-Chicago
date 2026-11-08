@@ -74,15 +74,27 @@ export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; o
         </span>
       )}
       {tile.note && <span className="text-caption nx-card-muted">{tile.note}</span>}
-      {tile.state && (
-        <span className="nx-on-card inline-flex">
-          <ConfidenceState kind={tile.state.kind} low={tile.state.low} />
-        </span>
-      )}
       {tile.warning && (
         <span className="flex items-center gap-1 text-caption font-medium">
           <TriangleAlert aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
           {tile.warning}
+        </span>
+      )}
+      {/* The state label and, on a tile that opens its tab, the "Open …" link share one row (owner, 2026-11-08):
+          the link on its own line made every tile in the row taller. */}
+      {(tile.state || tile.tab) && (
+        <span className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          {tile.state ? (
+            <span className="nx-on-card inline-flex">
+              <ConfidenceState kind={tile.state.kind} low={tile.state.low} />
+            </span>
+          ) : <span />}
+          {tile.tab && (
+            <span id={`tile-go-${tile.key}`} className="inline-flex items-center gap-1 text-caption underline underline-offset-2">
+              {t("profile.tiles.open", { tab: t(`profile.tabs.${tile.tab}`) })}
+              <ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
+            </span>
+          )}
         </span>
       )}
     </>
@@ -93,10 +105,6 @@ export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; o
       {tile.tab ? (
         <button type="button" onClick={() => onOpenTab(tile.tab!)} className={`${cls} group hover:brightness-[0.97]`} aria-describedby={`tile-go-${tile.key}`}>
           {body}
-          <span id={`tile-go-${tile.key}`} className="mt-auto inline-flex items-center gap-1 text-caption underline underline-offset-2">
-            {t("profile.tiles.open", { tab: t(`profile.tabs.${tile.tab}`) })}
-            <ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
-          </span>
         </button>
       ) : (
         <div className={cls}>{body}</div>
