@@ -6,7 +6,7 @@ import { LoaderCircle, RotateCw, TriangleAlert } from "lucide-react";
 import type { ProfileLatePart } from "../../lib/api";
 import type { PartStatus } from "./useProfileParts";
 
-const ORDER: ProfileLatePart[] = ["history", "money", "incentives", "neighborhood", "activity", "block_face"];
+const ORDER: ProfileLatePart[] = ["building", "history", "money", "incentives", "neighborhood", "activity", "block_face"];
 
 export function PartsStatus({
   parts,

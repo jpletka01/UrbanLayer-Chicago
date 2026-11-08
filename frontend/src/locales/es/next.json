@@ -213,6 +213,7 @@
       "retry": "Reintentar",
       "cityLists": "Seguimos revisando las listas de la Ciudad (terrenos municipales, infractores, rentas de corto plazo), que pueden agregar una advertencia.",
       "part": {
+        "building": "registros de edificios de la Ciudad (benchmarking de energía, huellas de edificios)",
         "history": "listas de la Ciudad, apelaciones y permisos del Asesor",
         "money": "ventas cercanas",
         "incentives": "informes TIF y subvenciones",
@@ -230,8 +231,10 @@
         "crime_yoy": "tendencia de delitos",
         "violations": "infracciones de construcción",
         "address_311": "solicitudes al 311",
-        "block_face": "la regla del frente de cuadra"
-      }
+        "block_face": "la regla del frente de cuadra",
+        "property": "registros de edificios de la Ciudad"
+      },
+      "unitsBuiltChecking": "Revisando los registros de edificios de la Ciudad"
     }
   },
   "discovery": {

@@ -49,7 +49,29 @@ def _zone(zone_class):
             "ordinance_date": None, "map_updated": None, "clerk_url": None}
 
 
-def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL):
+def _commercial(stack):
+    """A commercial lot with no Assessor characteristics row: the building-facts fallback runs for real, the
+    County's datasets (condo, Commercial Valuation) in the Overview, the City's (energy, footprints) late."""
+    p = stack.enter_context
+    p(patch.object(prop_mod, "get_characteristics", new=AsyncMock(return_value=None)))
+    p(patch.object(prop_mod, "lookup_parcel_by_pin", new=AsyncMock(
+        return_value={"pin14": PIN, "address": "642 W BELDEN AVE", "bldg_class": "517", "land_sqft": None,
+                      "zip_code": "60614"})))
+    p(patch.object(prop_mod, "get_assessments", new=AsyncMock(
+        return_value=[{"class": "517", "year": "2024", "certified_tot": "90000"}])))
+    p(patch.object(prop_mod, "_fetch_building_fallbacks", new=REAL_FALLBACKS))  # undo _sources' stub
+    p(patch("backend.retrieval.property.building_facts.get_condo_characteristics", new=AsyncMock(return_value=None)))
+    p(patch("backend.retrieval.property.building_facts.get_commercial_facts", new=AsyncMock(
+        return_value={"bldg_sqft": None, "year_built": 1925, "units": 4, "valuation_year": 2024})))
+    p(patch("backend.retrieval.property.energy.get_energy_benchmark", new=AsyncMock(return_value=None)))
+    p(patch("backend.retrieval.property.building_facts.get_footprint_facts", new=AsyncMock(
+        return_value={"bldg_sqft": 2800, "year_built": 1920, "stories": 3})))
+
+
+REAL_FALLBACKS = prop_mod._fetch_building_fallbacks
+
+
+def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL, commercial=False):
     """Every source both paths read, with the same answers for both."""
     stack = ExitStack()
     p = stack.enter_context
@@ -101,6 +123,8 @@ def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL):
     p(patch("backend.retrieval.property.sales.nearby_comparable_sales", new=AsyncMock(return_value={"sales": []})))
     p(patch("backend.retrieval.property.block_face.block_face_test", new=AsyncMock(
         return_value=BlockFaceTest(state="met", lots=8, counted=8, two_plus=6), side_effect=block_face_exc)))
+    if commercial:
+        _commercial(stack)
     return stack
 
 
@@ -126,9 +150,11 @@ def _reset():
     inflight._reset_for_tests()
 
 
-@pytest.mark.parametrize("zone_class,block_face_exc", [("RS-3", None), ("RS-3", RuntimeError("down")), ("B3-2", None)])
-async def test_the_parts_together_equal_the_full_profile(zone_class, block_face_exc):
-    with _sources(zone_class=zone_class, block_face_exc=block_face_exc):
+@pytest.mark.parametrize("zone_class,block_face_exc,commercial", [
+    ("RS-3", None, False), ("RS-3", RuntimeError("down"), False), ("B3-2", None, False), ("B3-2", None, True),
+])
+async def test_the_parts_together_equal_the_full_profile(zone_class, block_face_exc, commercial):
+    with _sources(zone_class=zone_class, block_face_exc=block_face_exc, commercial=commercial):
         full = await main._scorecard_payload(ADDRESS, None, None, None)
         _ov, responses = await _all_parts()
     last = max(responses, key=lambda r: r["version"])
@@ -367,3 +393,19 @@ async def test_the_deadline_counts_the_sources_own_time_not_its_queue(monkeypatc
     ))
     # one at a time: the third waited 0.3 s for its slot, but ran 0.15 s, within its deadline
     assert got == [(True, 0), (True, 1), (True, 2)]
+
+
+
+async def test_the_city_building_records_are_a_late_part_on_a_commercial_lot():
+    """Owner's call (Item 89): energy benchmarking and footprints, the Overview's slow tail, come late; the
+    County's own building records stay in the Overview."""
+    with _sources(zone_class="B3-2", commercial=True):
+        ov = await profile_parts.overview(ADDRESS, None, None, None)
+        assert ov["parts_pending"][0] == "building"
+        prop = ov["profile"]["context"]["property"]
+        assert prop["year_built"] == 1925 and prop["units"] == 4  # Commercial Valuation, County
+        assert "stories" not in prop and "bldg_sqft" not in prop  # footprints: late
+        late = await profile_parts.part("building", ov["lookup"], None)
+    prop = late["profile"]["context"]["property"]
+    assert prop["stories"] == 3 and prop["bldg_sqft"] == 2800 and prop["year_built"] == 1925
+    assert "building" not in late["parts_pending"]

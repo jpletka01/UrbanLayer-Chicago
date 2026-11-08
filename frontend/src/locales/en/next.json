@@ -213,6 +213,7 @@
       "retry": "Retry",
       "cityLists": "Still checking the City's lists (City-owned land, scofflaw, short-term rentals), which can add a caveat.",
       "part": {
+        "building": "City building records (energy benchmarking, footprints)",
         "history": "City lists, appeals and Assessor permits",
         "money": "nearby sales",
         "incentives": "TIF reports and grants",
@@ -230,8 +231,10 @@
         "crime_yoy": "crime trend",
         "violations": "building violations",
         "address_311": "311 requests",
-        "block_face": "the block-face rule"
-      }
+        "block_face": "the block-face rule",
+        "property": "City building records"
+      },
+      "unitsBuiltChecking": "Checking City building records"
     }
   },
   "discovery": {

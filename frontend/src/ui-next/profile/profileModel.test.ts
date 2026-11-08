@@ -97,6 +97,15 @@ describe("overview tiles: one per tab", () => {
     expect(tile.note).toBe("1 transfer on record, not a market sale");
   });
 
+  it("says the City's building records are still being checked, never 'not on record', while that part waits", () => {
+    const data = profileFixture({ context: { property: { units: null, stories: null } } } as never);
+    const v = computeVerdict(data, tp);
+    expect(overviewTiles(data, v, t, "en", { buildingPending: true })[0].note).toBe("Checking City building records");
+    expect(overviewTiles(data, v, t)[0].note).not.toBe("Checking City building records");
+    const height = allowedVsBuilt(data, v, t, "en", { buildingPending: true }).find((r) => r.key === "height");
+    expect(height?.builtText).toBe("Checking City building records");
+  });
+
   it("says exempt in words and keeps the walk score's slot when it couldn't be read", () => {
     const exempt = profileFixture({ context: { property: { tax_exempt: true, estimated_annual_tax: null } } } as never);
     expect(overviewTiles(exempt, computeVerdict(exempt, tp), t)[1].figure).toBe("Exempt");

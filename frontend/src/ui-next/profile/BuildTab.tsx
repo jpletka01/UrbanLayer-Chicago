@@ -15,10 +15,10 @@ import { allowedVsBuilt, pendingRezonings, ruleChips, STAGES, type RuleChip } fr
 
 const LIMIT_ICON = { floorArea: ICON.floorArea, units: ICON.units, height: ICON.height } as const;
 
-export function BuildTab({ data, verdict }: { data: ScorecardResponse; verdict: ScorecardVerdict }) {
+export function BuildTab({ data, verdict, buildingPending = false }: { data: ScorecardResponse; verdict: ScorecardVerdict; buildingPending?: boolean }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
-  const rows = allowedVsBuilt(data, verdict, t, i18n.language);
+  const rows = allowedVsBuilt(data, verdict, t, i18n.language, { buildingPending });
   const pending = pendingRezonings(data);
   const rules = ruleChips(data, verdict);
   const zdef = data.zone_definition;

@@ -501,6 +501,9 @@ class PropertySummary(BaseModel):
     # source has no record of (no assessments for an exempt parcel). Only these are "couldn't check" (WS6 M7).
     failed_calls: list[str] = Field(default_factory=list)
     assessor_permits: AssessorPermitSummary | None = None
+    # The Profile's Overview part asked no City-portal building lookups (energy benchmarking, footprints) though
+    # this parcel needs them; its late ``building`` part fills them (decision Item 89). Never dumped.
+    city_building_pending: bool = Field(default=False, exclude=True)
 
 
 class GrantProject(BaseModel):

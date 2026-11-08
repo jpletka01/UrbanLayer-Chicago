@@ -106,9 +106,12 @@ async def property_core(
     pin: str | None = None,
     workflow: str = "general",
     client: httpx.AsyncClient | None = None,
+    city_building_facts: bool = True,
 ) -> PropertySummary | None:
-    """``property_domain`` without the History lookups (the Profile's Overview part, Item 89): the summary's
-    appeals, flags and Assessor permits are None until ``with_history`` sets them."""
+    """``property_domain`` without the History lookups (the Profile's parts, Item 89): the summary's appeals,
+    flags and Assessor permits are None until ``with_history`` sets them. The Overview asks it with
+    ``city_building_facts=False`` (no City-portal building lookups; ``city_building_pending`` says whether they
+    were needed); the late ``building`` part asks it again in full (the County calls are cached by then)."""
     owns = client is None
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
@@ -116,7 +119,10 @@ async def property_core(
         parcel, started = await _core_with_parcel(lat, lon, pin, workflow=workflow, client=client)
         if parcel is None:
             return None
-        return await property_core_for_parcel(parcel, lat, lon, workflow=workflow, client=client, started=started)
+        return await property_core_for_parcel(
+            parcel, lat, lon, workflow=workflow, client=client, started=started,
+            city_building_facts=city_building_facts,
+        )
     finally:
         if owns:
             await client.aclose()
@@ -241,6 +247,7 @@ async def property_core_for_parcel(
     workflow: str = "general",
     client: httpx.AsyncClient,
     started: dict | None = None,
+    city_building_facts: bool = True,
 ) -> PropertySummary:
     """CCAO characteristics, assessments and sales, the PTAXSIM tax and outline, in parallel; the building-facts
     fallback starts as soon as the three things it reads (characteristics, assessments, outline) are in, not after
@@ -296,8 +303,10 @@ async def property_core_for_parcel(
             parcel, chars, assessments, lat, lon,
             parcel_geojson=(geometry_facts or {}).get("parcel_geometry"),
             client=client,
+            city=city_building_facts,
         )))
         pending.append(t_fallback)
+        city_pending = not city_building_facts and _needs_building_fallbacks(parcel, chars, assessments)
 
         sales: list[dict] = []
         if t_assess is not None:
@@ -328,10 +337,12 @@ async def property_core_for_parcel(
 
         building_fallbacks = await t_fallback
 
-        return _build_summary(parcel, chars, assessments, sales, tax_result,
-                              geometry_facts=geometry_facts,
-                              building_fallbacks=building_fallbacks,
-                              data_gaps=data_gaps, failed_calls=failed_calls)
+        summary = _build_summary(parcel, chars, assessments, sales, tax_result,
+                                 geometry_facts=geometry_facts,
+                                 building_fallbacks=building_fallbacks,
+                                 data_gaps=data_gaps, failed_calls=failed_calls)
+        summary.city_building_pending = city_pending
+        return summary
     finally:
         for t in pending:
             if not t.done():
@@ -347,28 +358,18 @@ async def _fetch_building_fallbacks(
     *,
     parcel_geojson: dict | None = None,
     client: httpx.AsyncClient | None = None,
+    city: bool = True,
 ) -> dict | None:
     """Phase 2: building-fact fallbacks, fetched only when the primary CCAO
     characteristics left gaps (x54s-btds covers regression-class residential
     only — the 2026-07-02 benchmark measured 0% bldg facts everywhere else).
 
     Returns {"condo": ..., "commercial": ..., "footprint": ...} (each
-    possibly None) or None when nothing was needed/fetched.
+    possibly None) or None when nothing was needed/fetched. ``city=False`` asks only the County's datasets
+    (condo, Commercial Valuation) and leaves the City portal's (energy benchmarking, building footprints) to
+    the Profile's late ``building`` part (decision Item 89: they were the Overview's slow tail, up to 23 s).
     """
-    cls = str(
-        parcel.get("bldg_class")
-        or (assessments[0].get("class") if assessments else "")
-        or ""
-    ).strip().upper().replace("-", "")
-
-    # Vacant land (class 1xx) has no building to find; skip entirely.
-    if cls[:1] == "1":
-        return None
-
-    has_bldg = bool(chars and _safe_int(chars.get("char_bldg_sf")))
-    has_year = bool(chars and _safe_int(chars.get("char_yrblt")))
-    has_stories = bool(chars and _decode_stories(chars))
-    if has_bldg and has_year and has_stories:
+    if not _needs_building_fallbacks(parcel, chars, assessments):
         return None
 
     from backend.retrieval.property.building_facts import (
@@ -387,12 +388,16 @@ async def _fetch_building_fallbacks(
         # ≥50k-sqft buildings live outside x54s by definition — the energy
         # benchmarking lookup rides the same no-chars gate (CRE opex facts +
         # sqft/year-built fill for the large-building segment).
-        coros["energy"] = get_energy_benchmark(lat, lon, client=client)
+        if city:
+            coros["energy"] = get_energy_benchmark(lat, lon, client=client)
     # Point-in-parcel when the PTAXSIM polygon is available (the 25 m circle
     # missed large parcels and risks the neighbor's building on narrow lots).
-    coros["footprint"] = get_footprint_facts(
-        lat, lon, parcel_geojson=parcel_geojson, client=client
-    )
+    if city:
+        coros["footprint"] = get_footprint_facts(
+            lat, lon, parcel_geojson=parcel_geojson, client=client
+        )
+    if not coros:
+        return None
 
     done = await asyncio.gather(
         *(timed(f"property.building_facts.{k}", c) for k, c in coros.items()), return_exceptions=True,
@@ -405,6 +410,22 @@ async def _fetch_building_fallbacks(
         else:
             fallbacks[key] = value
     return fallbacks
+
+
+def _needs_building_fallbacks(parcel: dict, chars: dict | None, assessments: list[dict]) -> bool:
+    """The fallbacks' gate: not vacant land (class 1xx has no building to find), and the CCAO characteristics row
+    left a building fact (floor area, year built, stories) missing."""
+    cls = str(
+        parcel.get("bldg_class")
+        or (assessments[0].get("class") if assessments else "")
+        or ""
+    ).strip().upper().replace("-", "")
+    if cls[:1] == "1":
+        return False
+    has_bldg = bool(chars and _safe_int(chars.get("char_bldg_sf")))
+    has_year = bool(chars and _safe_int(chars.get("char_yrblt")))
+    has_stories = bool(chars and _decode_stories(chars))
+    return not (has_bldg and has_year and has_stories)
 
 
 def _safe_int(val) -> int | None:

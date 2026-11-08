@@ -18,6 +18,7 @@ export function OverviewTab({
   verdict,
   identity,
   checkingCityLists = false,
+  buildingPending = false,
   onOpenTab,
 }: {
   data: ScorecardResponse;
@@ -25,11 +26,13 @@ export function OverviewTab({
   identity: "exact" | "approximate";
   /** The History part (the City's lists) hasn't answered: the verdict can still gain a caveat (Item 89). */
   checkingCityLists?: boolean;
+  /** The City's building records (the `building` part) haven't answered. */
+  buildingPending?: boolean;
   onOpenTab: (tab: "build") => void;
 }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
-  const tiles = overviewTiles(data, verdict, t, i18n.language);
+  const tiles = overviewTiles(data, verdict, t, i18n.language, { buildingPending });
   return (
     <div className="flex flex-col gap-7">
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">

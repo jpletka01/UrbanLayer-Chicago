@@ -343,6 +343,7 @@ function ProfileScreen({
                 verdict={verdict}
                 identity={identity}
                 checkingCityLists={parts.history === "waiting"}
+                buildingPending={parts.building === "waiting"}
                 onOpenTab={(id) => { setTab(id); window.scrollTo({ top: 0 }); }}
               />
             ) : first ? (
@@ -351,7 +352,7 @@ function ProfileScreen({
           </Tabs.Content>
           {data && verdict && (
             <Tabs.Content value="build" className="focus:outline-none">
-              <BuildTab data={data} verdict={verdict} />
+              <BuildTab data={data} verdict={verdict} buildingPending={parts.building === "waiting"} />
             </Tabs.Content>
           )}
 

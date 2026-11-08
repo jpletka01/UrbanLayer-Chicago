@@ -1136,7 +1136,7 @@ export async function fetchScorecardFirst(params: {
 /** The new Profile's parts (decision Item 89, `backend/profile_parts.py`). The Overview resolves the parcel once and
     signs a `lookup`; each late part reads it and never resolves again. Every response carries the whole Profile
     assembled so far (`profile`, the `/api/scorecard` shape); the page keeps the highest `version` of a record. */
-export type ProfileLatePart = "history" | "money" | "incentives" | "neighborhood" | "activity" | "block_face";
+export type ProfileLatePart = "building" | "history" | "money" | "incentives" | "neighborhood" | "activity" | "block_face";
 
 export interface ProfilePartResponse {
   part: "overview" | ProfileLatePart;

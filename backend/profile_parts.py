@@ -7,7 +7,8 @@ what the Overview reads (the core property record, the zoning point, overlays an
 Walk Score). It returns a signed ``lookup`` token and the Profile so far.
 
 ``GET /api/profile/part/{name}?lookup=…&have=…`` fetches one late part and never resolves the address again:
-``history`` (parcel flags, appeals, Assessor permits), ``money`` (comparables), ``incentives`` (TIF reports,
+``building`` (the City portal's building records: energy benchmarking, footprints; the Overview's slow tail,
+owner's call), ``history`` (parcel flags, appeals, Assessor permits), ``money`` (comparables), ``incentives`` (TIF reports,
 grants), ``neighborhood`` (tract, transit, traffic, Divvy, rent), ``activity`` (crime, 311, violations, ARO),
 ``block_face`` (RS-3 only).
 
@@ -50,7 +51,7 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
-LATE_PARTS = ("history", "money", "incentives", "neighborhood", "activity", "block_face")
+LATE_PARTS = ("building", "history", "money", "incentives", "neighborhood", "activity", "block_face")
 PARTS = ("overview", *LATE_PARTS)
 LATE_DEADLINE_S = 20.0
 LATE_CONCURRENCY = 4
@@ -162,7 +163,9 @@ def _overview_coros(rec: Record) -> dict[str, Any]:
 
     rl = rec.rl
     coros: dict[str, Any] = {
-        "property": main._limited(property_core(rl.lat, rl.lon, pin=rl.pin, workflow="property_intelligence"), "property"),
+        "property": main._limited(property_core(
+            rl.lat, rl.lon, pin=rl.pin, workflow="property_intelligence", city_building_facts=False,
+        ), "property"),
         "regulatory": main._scorecard_task("regulatory", rl.lat, rl.lon, rl.address, pin=rl.pin, ca=rec.ca, ca_name=rec.ca_name),
         "zoning": inflight.shared(("zoning", rl.lat, rl.lon), lambda: main._limited(main.lookup_zoning(rl.lat, rl.lon), "zoning")),
     }
@@ -199,6 +202,8 @@ def applicable_parts(rec: Record) -> list[str]:
     zoning = rec.results.get("zoning")
     zone_class = zoning.get("zone_class") if isinstance(zoning, dict) else None
     out: list[str] = []
+    if prop is not None and getattr(prop, "city_building_pending", False):
+        out.append("building")
     if prop is not None and prop.pin14:
         out.append("history")
     if prop is not None and getattr(prop, "bldg_class", None):
@@ -237,7 +242,16 @@ async def _run_late(rec: Record, part: str, deadline_s: float) -> list[str]:
     rl = rec.rl
     timed_out: list[str] = []
     sources: dict[str, tuple[tuple, Any]] = {}
-    if part == "history":
+    if part == "building":
+        from backend.retrieval.property import property_core
+
+        # The whole core again with the City's building lookups: the County calls are cached by now, and the
+        # summary is rebuilt by the same merge (assessor wins, fill-only), so it equals the full path's.
+        sources["property"] = (
+            ("property_core_full", rl.lat, rl.lon, rl.pin),
+            lambda: main._limited(property_core(rl.lat, rl.lon, pin=rl.pin, workflow="property_intelligence"), "property.building"),
+        )
+    elif part == "history":
         prop = rec.results.get("property")
         pin14 = getattr(prop, "pin14", None)
         if pin14:
