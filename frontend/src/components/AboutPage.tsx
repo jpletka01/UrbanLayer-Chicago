@@ -2798,6 +2798,22 @@ Consumers → Property Profile (renders pin + confidence badge)
             while answering elsewhere, and a failure is never cached, so every visit asks again (Items 81–83).
           </P>
 
+          <Sub>Splitting the page without a second version of the truth</Sub>
+          <P>
+            The next step was to send the Profile in parts: the overview first, the slow lookups (crime, 311, grants,
+            neighborhood) after it. The risk was two sources of truth: several figures read many parts at once (how
+            many units the lot allows reads the zoning, the lot, a special district and a rule about the rest of the
+            block), so a part computing its own figures could show a number that changes or disagrees. Instead each
+            lookup keeps one record on the server; every part writes its raw results into it, and every response is
+            the whole Profile so far, assembled by the same functions as the full response. Tests check that the parts
+            together equal the full response, figure for figure. Measuring found three things to undo. The overview's
+            slow tail was two City lookups for building records on commercial lots (up to 23 s), so they moved to a
+            late part. The 20 s per-source deadline started counting while a source waited in our own queue, so
+            queued sources gave up early. And capping the late lookups at 4 at a time halved the parallelism the old
+            page had, taking the whole page to 41 s; the cap went back to 8. The overview now answers in about 4 s at
+            the median on a first visit (Item 89).
+          </P>
+
           <Sub>A federal map that refused our server</Sub>
           <P>
             Every Property Profile on the live site said the flood zone couldn't be checked. From a home connection

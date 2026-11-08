@@ -20,8 +20,8 @@ Until a route flips, `guides/page-design.md` and the Bento Pro guides govern the
 | 1 | Thin prototype behind the preview boundary: readiness registry, frame, Profile Overview + Build on today's data, cleaned parcel map, Ask drawer, one Discovery flow; old/new isolation test | **Done** 2026-11-07, owner-approved (PR #203; Items 76–80: one tile per tab, no satellite, Cities: Skylines map required) |
 | 2 | Latency spike: p50/p95 per retrieval task, cold and warm; only catastrophic fixes or honest progressive loading (the owner named slow loading, Item 79) | **Done** 2026-11-07, owner-approved (PR #204; Items 81–83: cold p50 26.8 s / p95 46.0 s; TIF and crime caches; a first screen in about 1–3 s from `/api/scorecard/first`; production repeat visits slowed by FEMA failing from the server) |
 | 3 | Builder test against the pass criteria in Item 75 (model budget $2, chat only in the follow-up task; Item 83) | **Deferred** 2026-11-08 by the owner (no builders lined up; Item 88). Production latency re-measured (Item 87). Kit ready locally (`research/16-builder-test-kit/`, not in the repo). The test must run before any route flips by default |
-| 4 | Profile response split, designed from the Phase 2 data | Next |
-| 5 | Map tracks M1 (base + one persistent map), M2 (parcels), M3 (official zoning geometry); the Cities: Skylines look is required (Item 80) | Waiting |
+| 4 | Profile response split, designed from the Phase 2 data | **Done** 2026-11-08, owner-approved (PR #210; Item 89: the Profile in parts behind `/api/profile/*`, one record per lookup, 20 s per-source deadline, the City's building records late, the Profile's outline before the first screen; Overview about 4 s p50 locally, production pass after deploy) |
+| 5 | Map tracks M1 (base + one persistent map), M2 (parcels), M3 (official zoning geometry); the Cities: Skylines look is required (Item 80) | Next |
 | 6 | Remaining Profile tabs and Discovery, route by route; routes flip as approved | Waiting |
 | 7 | Data tracks M4 (capacity), M5 (land in use), M6 (3D), each blocked by its thresholds | Waiting |
 | 8 | Full chat page, landing and signed-in home | Waiting |
