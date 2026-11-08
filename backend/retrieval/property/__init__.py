@@ -86,11 +86,11 @@ async def property_domain(
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
-        parcel = await resolve_parcel(lat, lon, pin=pin, client=client)
+        parcel, started = await _core_with_parcel(lat, lon, pin, workflow=workflow, client=client)
         if parcel is None:
             return None
         core, history = await asyncio.gather(
-            property_core_for_parcel(parcel, lat, lon, workflow=workflow, client=client),
+            property_core_for_parcel(parcel, lat, lon, workflow=workflow, client=client, started=started),
             property_history(parcel["pin14"], lat, lon, workflow=workflow, client=client),
         )
         return with_history(core, history)
@@ -113,10 +113,10 @@ async def property_core(
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
-        parcel = await resolve_parcel(lat, lon, pin=pin, client=client)
+        parcel, started = await _core_with_parcel(lat, lon, pin, workflow=workflow, client=client)
         if parcel is None:
             return None
-        return await property_core_for_parcel(parcel, lat, lon, workflow=workflow, client=client)
+        return await property_core_for_parcel(parcel, lat, lon, workflow=workflow, client=client, started=started)
     finally:
         if owns:
             await client.aclose()
@@ -166,6 +166,73 @@ async def property_history(
             await client.aclose()
 
 
+def _start_core(pin14: str, *, workflow: str, client: httpx.AsyncClient) -> dict[str, asyncio.Task | None]:
+    """Start the core lookups for a PIN (they need only the PIN, not the parcel row)."""
+    from backend import inflight
+
+    skip_history = workflow in ("development_feasibility",)
+
+    def task(name: str, coro) -> asyncio.Task:
+        return asyncio.create_task(timed(name, coro))
+
+    tasks: dict[str, asyncio.Task | None] = {"pin14": None}
+    # Shared with the first screen's lot lookup (first_lot_facts), which the new Profile starts at the same moment.
+    tasks["chars"] = task("property.characteristics", inflight.shared(
+        ("ccao.characteristics", pin14), lambda: get_characteristics(pin14, client=client),
+    ))
+    tasks["assess"] = tasks["sales"] = None
+    if not skip_history:
+        tasks["assess"] = task("property.assessments", inflight.shared(
+            ("ccao.assessments", pin14), lambda: get_assessments(pin14, client=client),
+        ))
+        tasks["sales"] = task("property.sales", get_sales(pin14, client=client))
+    tasks["tax"] = None
+    if get_settings().ptaxsim_enabled:
+        from backend.retrieval.property.tax_estimate import estimate_tax
+        tax_year = datetime.date.today().year - 1
+        tasks["tax"] = task("property.tax", estimate_tax(tax_year, pin14))
+    # Geometry-derived land area + parcel outline from the local PTAXSIM polygon table — the only all-class land
+    # source (CCAO chars is residential-only; GIS is flaky and absent on the PIN-keyed path).
+    from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
+    tasks["geom"] = task("property.geometry", get_parcel_geometry_facts(pin14))
+    tasks["pin14"] = pin14  # type: ignore[assignment]
+    return tasks
+
+
+def _cancel_core(tasks: dict) -> None:
+    for k, t in tasks.items():
+        if k != "pin14" and t is not None and not t.done():
+            t.cancel()
+
+
+def _is_full_pin(pin: str | None) -> bool:
+    return bool(pin) and len(pin) == 14 and pin.isdigit()
+
+
+async def _core_with_parcel(
+    lat: float, lon: float, pin: str | None, *, workflow: str, client: httpx.AsyncClient,
+) -> tuple[dict | None, dict | None]:
+    """The parcel row and the core lookups, started together when an exact 14-digit PIN is known (the parcel row
+    is a County request of its own, 1.4 s p50, Item 81, and the core needs only the PIN). When the row names
+    another parcel (the PIN row was missing and the point lookup found a neighbor), the early lookups are dropped
+    and redone for that parcel, as the sequential path did."""
+    early = _start_core(pin, workflow=workflow, client=client) if _is_full_pin(pin) else None
+    try:
+        parcel = await resolve_parcel(lat, lon, pin=pin, client=client)
+    except BaseException:
+        if early:
+            _cancel_core(early)
+        raise
+    if parcel is None:
+        if early:
+            _cancel_core(early)
+        return None, None
+    if early is not None and early["pin14"] != parcel["pin14"]:
+        _cancel_core(early)
+        early = None
+    return parcel, early
+
+
 async def property_core_for_parcel(
     parcel: dict,
     lat: float,
@@ -173,38 +240,15 @@ async def property_core_for_parcel(
     *,
     workflow: str = "general",
     client: httpx.AsyncClient,
+    started: dict | None = None,
 ) -> PropertySummary:
     """CCAO characteristics, assessments and sales, the PTAXSIM tax and outline, in parallel; the building-facts
     fallback starts as soon as the three things it reads (characteristics, assessments, outline) are in, not after
-    the whole batch (Item 81, point 4: it used to wait for the parcel flags, 6.5 s p50)."""
+    the whole batch (Item 81, point 4: it used to wait for the parcel flags, 6.5 s p50). ``started`` = the same
+    lookups already running for this parcel's PIN (``_core_with_parcel``)."""
     pin14 = parcel["pin14"]
-    skip_history = workflow in ("development_feasibility",)
-    settings = get_settings()
-
-    def task(name: str, coro) -> asyncio.Task:
-        return asyncio.create_task(timed(name, coro))
-
-    from backend import inflight
-
-    # Shared with the first screen's lot lookup (first_lot_facts), which the new Profile starts at the same moment.
-    t_chars = task("property.characteristics", inflight.shared(
-        ("ccao.characteristics", pin14), lambda: get_characteristics(pin14, client=client),
-    ))
-    t_assess = t_sales = None
-    if not skip_history:
-        t_assess = task("property.assessments", inflight.shared(
-            ("ccao.assessments", pin14), lambda: get_assessments(pin14, client=client),
-        ))
-        t_sales = task("property.sales", get_sales(pin14, client=client))
-    t_tax = None
-    if settings.ptaxsim_enabled:
-        from backend.retrieval.property.tax_estimate import estimate_tax
-        tax_year = datetime.date.today().year - 1
-        t_tax = task("property.tax", estimate_tax(tax_year, pin14))
-    # Geometry-derived land area + parcel outline from the local PTAXSIM polygon table — the only all-class land
-    # source (CCAO chars is residential-only; GIS is flaky and absent on the PIN-keyed path).
-    from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
-    t_geom = task("property.geometry", get_parcel_geometry_facts(pin14))
+    tasks = started if started is not None else _start_core(pin14, workflow=workflow, client=client)
+    t_chars, t_assess, t_sales, t_tax, t_geom = (tasks[k] for k in ("chars", "assess", "sales", "tax", "geom"))
     pending = [t for t in (t_chars, t_assess, t_sales, t_tax, t_geom) if t is not None]
 
     async def outcome(t: asyncio.Task | None):

@@ -313,3 +313,41 @@ async def test_building_facts_start_before_the_parcel_flags_answer():
             patch.object(prop_mod, "_fetch_building_fallbacks", new=fallback):
         summary = await prop_mod.property_domain(LAT, LON, pin=PIN, workflow="property_intelligence")
     assert summary is not None and started_at and started_at[0] < 0.2
+
+
+async def test_an_exact_pin_starts_the_core_lookups_beside_the_parcel_row():
+    loop = asyncio.get_running_loop()
+    t0 = loop.time()
+    chars_at: list[tuple[str, float]] = []
+
+    async def slow_row(pin, **_k):
+        await asyncio.sleep(0.2)
+        return {"pin14": PIN, "address": "642 W BELDEN AVE", "bldg_class": "211"}
+
+    async def chars(pin14, **_k):
+        chars_at.append((pin14, loop.time() - t0))
+        return {"char_land_sf": "3100"}
+
+    with _sources(), patch.object(prop_mod, "lookup_parcel_by_pin", new=slow_row), \
+            patch.object(prop_mod, "get_characteristics", new=chars):
+        summary = await prop_mod.property_core(LAT, LON, pin=PIN, workflow="property_intelligence")
+    assert summary.land_sqft == 3100
+    assert chars_at[0][0] == PIN and chars_at[0][1] < 0.1  # didn't wait for the 0.2 s parcel row
+
+
+async def test_a_parcel_row_naming_another_parcel_redoes_the_core_for_that_parcel():
+    other = "14331030120000"
+    asked: list[str] = []
+
+    async def chars(pin14, **_k):
+        asked.append(pin14)
+        return {"char_land_sf": "3100" if pin14 == other else "9999"}
+
+    with _sources(), \
+            patch.object(prop_mod, "lookup_parcel_by_pin", new=AsyncMock(return_value=None)), \
+            patch.object(prop_mod, "lookup_parcel", new=AsyncMock(
+                return_value={"pin14": other, "address": "644 W BELDEN AVE", "bldg_class": "211"})), \
+            patch.object(prop_mod, "get_characteristics", new=chars):
+        summary = await prop_mod.property_domain(LAT, LON, pin=PIN, workflow="property_intelligence")
+    assert summary.pin14 == other and summary.land_sqft == 3100
+    assert asked[-1] == other

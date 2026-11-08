@@ -9,6 +9,9 @@ export interface SelectedParcelState {
   // without re-fetching. Identity-paired with `parcel`: same write, same pin.
   scorecard: ScorecardResponse | null;
   select: (query: ParcelQuery) => Promise<ScorecardResponse | null>;
+  /** Hold a Profile the backend already resolved and assembled (the new Profile's parts, decision Item 89, once
+      every part is in). Same write as `select`: identity comes from the backend's response, never the query. */
+  adopt: (result: ScorecardResponse) => void;
 }
 
 const SelectedParcelContext = createContext<SelectedParcelState | null>(null);
@@ -19,23 +22,25 @@ export function SelectedParcelProvider({ children }: { children: ReactNode }) {
 
   // The only SelectedParcel write in the codebase. Identity fields come
   // exclusively from the backend resolver's response — never from the query.
-  const select = useCallback(async (query: ParcelQuery): Promise<ScorecardResponse | null> => {
-    const result = await fetchScorecard(query);
-    if (result) {
-      setParcel({
-        pin: result.resolved_pin,
-        confidence: result.resolved_confidence,
-        lat: result.resolved_lat,
-        lon: result.resolved_lon,
-        address: result.address,
-      });
-      setScorecard(result);
-    }
-    return result;
+  const adopt = useCallback((result: ScorecardResponse) => {
+    setParcel({
+      pin: result.resolved_pin,
+      confidence: result.resolved_confidence,
+      lat: result.resolved_lat,
+      lon: result.resolved_lon,
+      address: result.address,
+    });
+    setScorecard(result);
   }, []);
 
+  const select = useCallback(async (query: ParcelQuery): Promise<ScorecardResponse | null> => {
+    const result = await fetchScorecard(query);
+    if (result) adopt(result);
+    return result;
+  }, [adopt]);
+
   return (
-    <SelectedParcelContext.Provider value={{ parcel, scorecard, select }}>
+    <SelectedParcelContext.Provider value={{ parcel, scorecard, select, adopt }}>
       {children}
     </SelectedParcelContext.Provider>
   );

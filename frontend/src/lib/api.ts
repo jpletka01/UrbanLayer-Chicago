@@ -1133,6 +1133,63 @@ export async function fetchScorecardFirst(params: {
   } catch { return null; }
 }
 
+/** The new Profile's parts (decision Item 89, `backend/profile_parts.py`). The Overview resolves the parcel once and
+    signs a `lookup`; each late part reads it and never resolves again. Every response carries the whole Profile
+    assembled so far (`profile`, the `/api/scorecard` shape); the page keeps the highest `version` of a record. */
+export type ProfileLatePart = "history" | "money" | "incentives" | "neighborhood" | "activity" | "block_face";
+
+export interface ProfilePartResponse {
+  part: "overview" | ProfileLatePart;
+  lookup: string;
+  record: string;
+  version: number;
+  parts_in: Array<"overview" | ProfileLatePart>;
+  parts_pending: ProfileLatePart[];
+  /** Sources of this part past their deadline: "couldn't check in time", never "none". */
+  timed_out: string[];
+  timed_out_by_part: Partial<Record<ProfileLatePart, string[]>>;
+  profile: ScorecardResponse;
+}
+
+function parcelQs(params: { address?: string; lat?: number; lon?: number; pin?: string }): URLSearchParams {
+  const qs = new URLSearchParams();
+  if (params.address) qs.set("address", params.address);
+  if (params.lat != null) qs.set("lat", String(params.lat));
+  if (params.lon != null) qs.set("lon", String(params.lon));
+  if (params.pin) qs.set("pin", params.pin);
+  return qs;
+}
+
+/** The Overview part. `notFound` = the address didn't resolve to a Chicago parcel (422); `failed` = anything else. */
+export async function fetchProfileOverview(
+  params: { address?: string; lat?: number; lon?: number; pin?: string },
+  signal?: AbortSignal,
+): Promise<ProfilePartResponse | "notFound" | "failed"> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/profile/overview?${parcelQs(params)}`, { signal });
+    if (resp.status === 422) return "notFound";
+    if (!resp.ok) return "failed";
+    return await resp.json();
+  } catch { return "failed"; }
+}
+
+/** One late part. `expired` = the server no longer trusts the lookup (409): ask the Overview again. */
+export async function fetchProfilePart(
+  name: ProfileLatePart,
+  lookup: string,
+  have: string[],
+  signal?: AbortSignal,
+): Promise<ProfilePartResponse | "expired" | "failed"> {
+  const qs = new URLSearchParams({ lookup });
+  if (have.length) qs.set("have", have.join(","));
+  try {
+    const resp = await authFetch(`${API_BASE}/api/profile/part/${name}?${qs}`, { signal });
+    if (resp.status === 409) return "expired";
+    if (!resp.ok) return "failed";
+    return await resp.json();
+  } catch { return "failed"; }
+}
+
 /** One Municipal Code subsection (and the table it cites) with how current the code is. */
 export interface CodeSubsection {
   section_id: string;

@@ -78,18 +78,20 @@ describe("overview tiles: one per tab", () => {
   });
 
   it("never shows a $1 transfer, a quit claim or an unknown deed as the sale price", () => {
-    expect(isMarketSale({ price: 1, deed_type: "Warranty" })).toBe(false);
-    expect(isMarketSale({ price: 400000, deed_type: "Quit claim" })).toBe(false);
-    expect(isMarketSale({ price: 400000, deed_type: null })).toBe(false);
-    expect(isMarketSale({ price: 395000, deed_type: "Trustee" })).toBe(true);
+    // The server's call (the County's own filters, Item 89); unknown is never counted.
+    expect(isMarketSale({ price: 1, arms_length: false })).toBe(false);
+    expect(isMarketSale({ price: 400000, arms_length: false })).toBe(false);
+    expect(isMarketSale({ price: 400000, arms_length: null })).toBe(false);
+    expect(isMarketSale({ price: 400000 })).toBe(false);
+    expect(isMarketSale({ price: 395000, arms_length: true })).toBe(true);
     const data = profileFixture({ context: { property: { sales_history: [
-      { date: "2022-05-01T00:00:00.000", price: 1, deed_type: "Quit claim" },
-      { date: "2019-06-24T00:00:00.000", price: 1200000, deed_type: "Warranty" },
+      { date: "2022-05-01T00:00:00.000", price: 1, deed_type: "Quit claim", arms_length: false },
+      { date: "2019-06-24T00:00:00.000", price: 1200000, deed_type: "Warranty", arms_length: true },
     ] } } } as never);
     const sale = overviewTiles(data, computeVerdict(data, tp), t)[3];
     expect(sale.figure).toBe("$1,200,000");
     expect(sale.warning).toBe("A 2022 transfer isn't counted as a sale");
-    const onlyTransfers = profileFixture({ context: { property: { sales_history: [{ date: "2022-05-01T00:00:00.000", price: 1, deed_type: "Quit claim" }] } } } as never);
+    const onlyTransfers = profileFixture({ context: { property: { sales_history: [{ date: "2022-05-01T00:00:00.000", price: 1, deed_type: "Quit claim", arms_length: false }] } } } as never);
     const tile = overviewTiles(onlyTransfers, computeVerdict(onlyTransfers, tp), t)[3];
     expect(tile.figure).toBe("—");
     expect(tile.note).toBe("1 transfer on record, not a market sale");

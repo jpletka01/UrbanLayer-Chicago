@@ -17,11 +17,14 @@ export function OverviewTab({
   data,
   verdict,
   identity,
+  checkingCityLists = false,
   onOpenTab,
 }: {
   data: ScorecardResponse;
   verdict: ScorecardVerdict;
   identity: "exact" | "approximate";
+  /** The History part (the City's lists) hasn't answered: the verdict can still gain a caveat (Item 89). */
+  checkingCityLists?: boolean;
   onOpenTab: (tab: "build") => void;
 }) {
   const { t, i18n } = useTranslation("next");
@@ -32,6 +35,9 @@ export function OverviewTab({
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
         <p className="text-nx-answer" data-testid="answer-sentence">{answerSentence(data, verdict, tp)}</p>
         {identity === "approximate" && <Pill tone="yellow" icon={TriangleAlert}>{t("profile.approximate")}</Pill>}
+        {checkingCityLists && (
+          <p className="w-full text-caption nx-muted" role="status" data-testid="checking-city-lists">{t("profile.parts.cityLists")}</p>
+        )}
       </div>
       <ul className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(190px,1fr))] sm:gap-7" data-testid="overview-tiles">
         {tiles.map((tile, i) => <TileCard key={tile.key} tile={tile} alt={i % 2 === 1} onOpenTab={onOpenTab} />)}

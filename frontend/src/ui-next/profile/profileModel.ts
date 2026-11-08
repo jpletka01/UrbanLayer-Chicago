@@ -212,13 +212,10 @@ export interface Tile {
 const money = (n: number, lng: string) =>
   new Intl.NumberFormat(lng.startsWith("es") ? "es-MX" : "en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
-/** Deed types the County treats as arm's-length (its own `sale_filter_deed_type` excludes quit claims, executor
-    and other deeds; comps use the same filters). Unknown deed type = not counted as a market sale. */
-const MARKET_DEEDS = /^(warranty|trustee)$/i;
-const MARKET_MIN_PRICE = 10_000; // the County's `sale_filter_less_than_10k`
-
-export function isMarketSale(s: { price: number | null; deed_type: string | null }): boolean {
-  return s.price != null && s.price >= MARKET_MIN_PRICE && MARKET_DEEDS.test((s.deed_type ?? "").trim());
+/** A market sale, by the County's own sale filters as the server reads them (`arms_length`, decision Item 89; it
+    retired Item 77's client-side deed test). Unknown (null or absent) is not counted as a market sale. */
+export function isMarketSale(s: { price: number | null; arms_length?: boolean | null }): boolean {
+  return s.price != null && s.arms_length === true;
 }
 
 export function overviewTiles(data: ScorecardResponse, verdict: ScorecardVerdict, t: TFunc, lng = "en"): Tile[] {
