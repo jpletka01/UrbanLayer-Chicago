@@ -10,6 +10,7 @@ from __future__ import annotations
 import gzip
 import json
 from types import SimpleNamespace
+from urllib.parse import urlparse
 from unittest.mock import AsyncMock
 
 import httpx
@@ -124,7 +125,7 @@ def _committed():
 def test_the_committed_artifact_is_fema_and_covers_the_city():
     art = _committed()
     meta = json.loads((get_settings().data_dir / "fema_flood_chicago.meta.json").read_text())
-    assert "hazards.fema.gov" in art["source_url"] and art["retrieved"] == meta["retrieved"]
+    assert urlparse(art["source_url"]).hostname == "hazards.fema.gov" and art["retrieved"] == meta["retrieved"]
     assert meta["city_share_covered"] >= 0.98 and len(art["features"]) == meta["features"] > 300
     zones = {f["z"] for f in art["features"]}
     assert "X" in zones and zones & {"A", "AE", "AH", "AO"}  # minimal-hazard land and real flood hazard areas
