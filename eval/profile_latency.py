@@ -372,6 +372,8 @@ def _visit_record(key: str, rnd: int, mode: str, t_first, t_ov, late: dict, comp
         "timed_out": {n: r.get("timed_out", []) for n, (_ms, r) in late.items() if isinstance(r, dict)},
         "failed_parts": [n for n, (_ms, r) in late.items() if not isinstance(r, dict)],
         "failed_sources": [f.get("key") for f in ((ov or {}).get("profile") or {}).get("failed_sources") or []] if ok else [],
+        # the Overview's own per-task spans (only when the server runs with PROFILE_TIMINGS=true)
+        "overview_spans": ((ov.get("_timings") or {}).get("spans") if ok else None) or {},
     }
 
 

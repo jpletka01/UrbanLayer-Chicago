@@ -28,7 +28,8 @@ class _Entry:
     task: asyncio.Task
     waiters: int = 0
     keep: bool = False
-    joined: int = 0  # callers that found the call already running (tests, logs)
+    joined: int = 0
+    started: asyncio.Event | None = None  # shared_with_deadline: set when the call leaves its queue  # callers that found the call already running (tests, logs)
 
 
 _inflight: dict[Hashable, _Entry] = {}
@@ -76,18 +77,32 @@ async def shared(key: Hashable, factory: Callable[[], Awaitable[Any]], *, keep: 
 
 
 async def shared_with_deadline(
-    key: Hashable, factory: Callable[[], Awaitable[Any]], deadline_s: float,
+    key: Hashable,
+    factory: Callable[[Callable[[], None]], Awaitable[Any]],
+    deadline_s: float,
+    *,
+    queue_cap_s: float = 120.0,
 ) -> tuple[bool, Any]:
-    """``(True, result)`` when the call for ``key`` finishes within ``deadline_s``; ``(False, None)`` when it
-    doesn't. Past the deadline the caller stops waiting and the call keeps running to its own end (``keep``).
-    An exception from the call is raised as from ``shared``."""
+    """``(True, result)`` when the call for ``key`` finishes within ``deadline_s`` of starting; ``(False, None)``
+    when it doesn't. ``factory(mark_started)`` must call ``mark_started()`` once the call actually begins (after
+    any queue of its own), so time spent waiting for a slot doesn't count against the source (Item 89: the 20 s
+    is the source's own time). Past the deadline the caller stops waiting and the call keeps running to its own
+    end. An exception from the call is raised as from ``shared``."""
     entry = _inflight.get(key)
     if entry is None:
-        entry = _start(key, factory, keep=False)
+        started = asyncio.Event()
+        entry = _start(key, lambda: factory(started.set), keep=False)
+        entry.started = started
     else:
         entry.joined += 1
+    started = entry.started
     entry.waiters += 1
     try:
+        if started is not None and not started.is_set():
+            # Queued behind other late sources: wait for the slot (bounded), then start the deadline.
+            waiter = asyncio.ensure_future(started.wait())
+            await asyncio.wait({waiter, entry.task}, timeout=queue_cap_s, return_when=asyncio.FIRST_COMPLETED)
+            waiter.cancel()
         done, _ = await asyncio.wait({entry.task}, timeout=deadline_s)
         if not done:
             # Past the deadline: stop waiting, let the fetch finish so its cache fills for the Retry.

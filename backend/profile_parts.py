@@ -216,8 +216,9 @@ async def _late_source(key: tuple, factory, deadline_s: float) -> tuple[bool, An
     """One late source: shared with any caller asking the same thing, under the late cap, with the deadline.
     ``(False, None)`` = past the deadline; an exception is returned as the value (the record names it)."""
 
-    async def run():
+    async def run(mark_started):
         async with _late_semaphore():
+            mark_started()  # the deadline counts from here, not from the queue
             return await factory()
 
     try:

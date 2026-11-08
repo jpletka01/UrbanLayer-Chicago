@@ -351,3 +351,19 @@ async def test_a_parcel_row_naming_another_parcel_redoes_the_core_for_that_parce
         summary = await prop_mod.property_domain(LAT, LON, pin=PIN, workflow="property_intelligence")
     assert summary.pin14 == other and summary.land_sqft == 3100
     assert asked[-1] == other
+
+
+async def test_the_deadline_counts_the_sources_own_time_not_its_queue(monkeypatch):
+    """Late sources wait for a slot (LATE_CONCURRENCY); the 20 s is each source's own time."""
+    monkeypatch.setattr(profile_parts, "LATE_CONCURRENCY", 1)
+    profile_parts._reset_for_tests()
+
+    async def slow(_tag):
+        await asyncio.sleep(0.15)
+        return _tag
+
+    got = await asyncio.gather(*(
+        profile_parts._late_source(("q", i), (lambda i=i: slow(i)), 0.3) for i in range(3)
+    ))
+    # one at a time: the third waited 0.3 s for its slot, but ran 0.15 s, within its deadline
+    assert got == [(True, 0), (True, 1), (True, 2)]
