@@ -129,40 +129,70 @@ export default function ProfileNextPage() {
     );
   }
 
+  if (status === "loading") {
+    return (
+      <AppFrame crumbs={[t("profile.crumb"), params.get("address") ?? t("profile.crumbLoading")]}>
+        <ProfileSkeleton address={params.get("address")} />
+      </AppFrame>
+    );
+  }
+
   return (
     <AppFrame crumbs={[t("profile.crumb"), status === "idle" ? t("profile.search.crumb") : (params.get("address") ?? t("profile.crumbLoading"))]}>
       <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10 sm:px-7 sm:py-16">
-        {status === "loading" ? (
-          <LoadingState address={params.get("address")} />
-        ) : (
-          <>
-            <div className="flex flex-col gap-2">
-              <h1 className="text-nx-figure">{t("profile.search.title")}</h1>
-              <p className="nx-muted">{status === "notFound" || status === "failed" ? t("profile.search.notFound") : t("profile.search.lead")}</p>
-            </div>
-            <AddressInput variant="page" onSubmit={search} defaultValue={params.get("address") ?? ""} placeholder={t("profile.search.placeholder")} />
-            <p className="text-caption nx-muted">
-              {t("profile.search.try")}{" "}
-              <button type="button" className="underline underline-offset-2" onClick={() => search("1601 N Milwaukee Ave")}>1601 N Milwaukee Ave</button>
-            </p>
-          </>
-        )}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-nx-figure">{t("profile.search.title")}</h1>
+          <p className="nx-muted">{status === "notFound" || status === "failed" ? t("profile.search.notFound") : t("profile.search.lead")}</p>
+        </div>
+        <AddressInput variant="page" onSubmit={search} defaultValue={params.get("address") ?? ""} placeholder={t("profile.search.placeholder")} />
+        <p className="text-caption nx-muted">
+          {t("profile.search.try")}{" "}
+          <button type="button" className="underline underline-offset-2" onClick={() => search("1601 N Milwaukee Ave")}>1601 N Milwaukee Ave</button>
+        </p>
+
       </div>
     </AppFrame>
   );
 }
 
-/** Before the first screen (about 1–3 s): the address being looked up. No time estimate and no seconds counter
-    (Items 81, 89: the Overview now follows within seconds, so the old "15 to 40 seconds" line was wrong). */
-function LoadingState({ address }: { address: string | null }) {
+/** Before the first screen (about 1–3 s): the Profile's own outline in its final sizes (the map band, the tab bar,
+    the answer's line, the four tiles in their pale stat colors), so the first screen fills this exact shape instead
+    of replacing a box (owner, Item 89). The address being looked up, with no time estimate or seconds counter. */
+export function ProfileSkeleton({ address }: { address: string | null }) {
   const { t } = useTranslation("next");
+  const bar = "block rounded bg-nx-ink/10 motion-safe:animate-pulse";
   return (
-    <div className="flex flex-col gap-4" role="status" aria-live="polite" data-testid="profile-loading">
-      <div className="h-48 animate-pulse rounded-2xl bg-nx-block" />
-      <p className="flex items-center gap-2">
-        <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={1.5} />
-        {address ? t("profile.loading.at", { address }) : t("profile.loading.plain")}
-      </p>
+    <div data-testid="profile-loading" aria-busy="true">
+      <div className="px-4 pt-5 sm:px-7 sm:pt-7">
+        <div className="relative h-52 overflow-hidden rounded-2xl bg-nx-block sm:h-64 lg:h-72">
+          <span className="absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
+            {address ?? t("profile.crumbLoading")}
+          </span>
+        </div>
+      </div>
+      <div aria-hidden className="flex gap-5 px-4 pt-5 sm:px-7">
+        <span className={`${bar} my-2 h-4 w-16`} />
+        <span className={`${bar} my-2 h-4 w-10`} />
+      </div>
+      <div className="flex flex-col gap-7 px-4 pt-6 sm:px-7">
+        <div className="flex flex-col gap-3">
+          <p className="flex items-center gap-2" role="status" aria-live="polite">
+            <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={1.5} />
+            {address ? t("profile.loading.at", { address }) : t("profile.loading.plain")}
+          </p>
+          <span aria-hidden className={`${bar} h-6 w-full max-w-2xl`} />
+        </div>
+        <ul aria-hidden className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(190px,1fr))] sm:gap-7" data-testid="skeleton-tiles">
+          {[0, 1, 2, 3].map((i) => (
+            <li key={i} className={`flex flex-col gap-3 rounded-2xl p-4 sm:p-6 ${i % 2 ? "bg-nx-stat-b" : "bg-nx-stat-a"}`}>
+              <span className="block h-3 w-12 rounded bg-nx-card-ink/10 motion-safe:animate-pulse" />
+              <span className="block h-4 w-24 rounded bg-nx-card-ink/10 motion-safe:animate-pulse" />
+              <span className="block h-7 w-20 rounded bg-nx-card-ink/10 motion-safe:animate-pulse" />
+              <span className="block h-3 w-28 rounded bg-nx-card-ink/10 motion-safe:animate-pulse" />
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
