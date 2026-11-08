@@ -262,5 +262,57 @@
       "nominal": "Nominal assessment",
       "open": "Open profile"
     }
+  },
+  "map": {
+    "key": "Map key",
+    "attribution": "City of Chicago, Cook County",
+    "unavailable": "The map can't be drawn in this browser. The rest of the page works.",
+    "noBase": "Street map not installed",
+    "loading": "Loading {{layer}}…",
+    "loadingShort": "Loading…",
+    "timedOut": "Couldn't check {{layer}} in time ·",
+    "notChecked": "Couldn't check in time ·",
+    "retry": "Retry",
+    "modeLabel": "{{layer}}: on, dim or off",
+    "mode": {
+      "on": "On",
+      "dim": "Dim",
+      "off": "Off"
+    },
+    "districtsInView": "Districts in view",
+    "groups": {
+      "zoning": "Zoning",
+      "parcels": "Lots",
+      "sales": "Recent sales",
+      "transit": "Transit",
+      "streets": "Streets"
+    },
+    "count": {
+      "zoning_one": "{{count}} district",
+      "zoning_other": "{{count}} districts",
+      "parcels_one": "{{count}} lot",
+      "parcels_other": "{{count}} lots",
+      "sales_one": "{{count}} sale",
+      "sales_other": "{{count}} sales",
+      "transit_one": "{{count}} station",
+      "transit_other": "{{count}} stations"
+    },
+    "card": {
+      "label": "What is here",
+      "close": "Close",
+      "looking": "Looking up this lot…",
+      "noAddress": "Lot without an address",
+      "openProfile": "Open its Profile",
+      "notIndexed": "Lot {{pin}} isn't in our data yet",
+      "failed": "Couldn't look up this lot. Try again.",
+      "district": "Zoning district {{zone}}",
+      "ordinance": "Ordinance {{num}}, {{date}}",
+      "districtSource": "From the City's zoning map",
+      "noPrice": "Price not recorded",
+      "approx": "Approx."
+    },
+    "inSentence": {
+      "sales": "recent sales"
+    }
   }
 }

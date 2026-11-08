@@ -29,6 +29,7 @@ async function axe(page: Page) {
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     // The map canvas and Mapbox's own controls are third-party.
     .exclude(".mapboxgl-map")
+    .exclude(".maplibregl-map")
     .analyze();
   return result.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`);
 }

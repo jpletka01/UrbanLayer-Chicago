@@ -22,7 +22,7 @@ import { setAddress as setTrackingAddress, track } from "../../lib/tracking";
 import { buildFilenameSlug, buildScorecardCSV, downloadCSV } from "../../lib/csvExport";
 import { humanizeShoutyCase } from "../../lib/format";
 import { AddressInput } from "../../components/AddressInput";
-import { ParcelMap } from "../../components/scorecard/ParcelMap";
+import { NextMap, type LateState, type MapView } from "../map/NextMap";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
 import { AskDrawer } from "../ask/AskDrawer";
 import { ICON } from "../icons";
@@ -35,6 +35,14 @@ import { PartsStatus } from "./PartsStatus";
 import { useProfileParts, type PartStatus } from "./useProfileParts";
 
 type TabId = "overview" | "build";
+
+/** Each tab's camera and layers on the one map (map track M1): the Overview looks at the lot among its neighbors and
+    recent sales with zoning dimmed; Build pulls back to the districts around it with zoning on. The visitor's
+    On / Dim / Off choices hold until the tab changes. */
+const MAP_VIEWS: Record<TabId, MapView> = {
+  overview: { id: "overview", zoom: 17, modes: { zoning: "dim", parcels: "on", sales: "on", transit: "on", streets: "on" } },
+  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", transit: "dim", streets: "on" } },
+};
 const TABS: TabId[] = ["overview", "build"];
 
 function queryFrom(params: URLSearchParams): ParcelQuery | null {
@@ -243,8 +251,6 @@ function ProfileScreen({
   const identity = data
     ? (data.resolved_confidence === "authoritative" && !data.nearest_parcel_unverified ? "exact" : "approximate")
     : (first?.resolved_confidence === "authoritative" ? "exact" : "approximate");
-  // The map's identity stays the first answer's for this lookup, so the full response doesn't remount it.
-  const mapKey = first ? (first.resolved_pin ?? first.address) : (data?.resolved_pin ?? data?.address ?? null);
   const map = {
     lat: data?.resolved_lat ?? data?.lat ?? first!.resolved_lat,
     lon: data?.resolved_lon ?? data?.lon ?? first!.resolved_lon,
@@ -254,6 +260,16 @@ function ProfileScreen({
     confidence: data?.resolved_confidence ?? first!.resolved_confidence,
     shared: data ? !!ctx?.property?.shared_outline_with : !!first?.lot?.shared_outline_with,
   };
+
+  // The lot's PIN10 marks its outline in the parcel layer; only for an exact match (a nearest parcel may be a neighbor).
+  const resolvedPin = data?.resolved_pin ?? first?.resolved_pin ?? null;
+  const mapPin10 = identity === "exact" && resolvedPin ? resolvedPin.replace(/\D/g, "").slice(0, 10) : null;
+  // Recent sales come with the late `money` part: the map names them while they wait (Item 89's skeleton rule).
+  const salesState: LateState = !data ? "loading"
+    : parts.money === "waiting" ? "loading"
+    : parts.money === "failed" ? "failed"
+    : (timedOut.money ?? []).includes("comparables") ? "timedOut"
+    : (data.comparables?.sales?.length ?? 0) > 0 ? "ready" : "absent";
 
   // The tab bar is sticky; once it is stuck it also shows the short address (the slim header).
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -308,17 +324,16 @@ function ProfileScreen({
             data-focused={mapFocused || undefined}
           >
             <div className="relative h-full overflow-hidden rounded-2xl bg-nx-block">
-              <ParcelMap
-                variant="place"
-                look="next"
+              <NextMap
                 lat={map.lat}
                 lon={map.lon}
-                parcelGeometry={map.geometry}
-                profileKey={mapKey}
-                parcelConfidence={map.confidence}
-                outlineShared={map.shared}
-                comps={data?.comparables?.sales}
-                showTransit
+                geometry={map.geometry}
+                approximate={identity !== "exact" || map.shared}
+                pin10={mapPin10}
+                view={MAP_VIEWS[tab]}
+                sales={data?.comparables?.sales ?? null}
+                salesState={salesState}
+                onRetrySales={() => onRetryParts(["money"])}
                 className="h-full"
               />
               <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">

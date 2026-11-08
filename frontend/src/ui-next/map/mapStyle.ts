@@ -1,0 +1,251 @@
+// The new UI's map style (map track M1, decision Items 90-91): the Cities: Skylines look (Item 80) drawn from our
+// own tiles. Pure: builds a MapLibre style document and the per-theme paint for every layer, so a theme switch
+// repaints in place (setPaintProperty) and never reloads the style: sources, feature state, the camera and every
+// overlay survive it.
+//
+// What the look is made of (research/15 §2.4): a dim, desaturated base; our shapes filled and outlined thinly in a
+// color that means something; roads drawn by the map over the fills in a few classes; names only zoomed in;
+// On / Dim / Off per layer (Dim multiplies opacity by 0.3).
+
+import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
+
+export type Theme = "light" | "dark";
+export type LayerMode = "on" | "dim" | "off";
+export const DIM = 0.3;
+
+/** The groups a visitor can turn On / Dim / Off, in the key's order. The base land and water are not a group. */
+export type GroupId = "zoning" | "parcels" | "streets" | "sales" | "transit";
+export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "transit", "streets"];
+
+/** Street names appear from this zoom (brief: names only when zoomed in). */
+export const STREET_LABEL_MIN_ZOOM = 15;
+
+export interface TileSet { minZoom: number; maxZoom: number }
+export interface MapTiles { base: TileSet | null; parcels: TileSet | null; zoning: TileSet | null }
+
+// ---------------------------------------------------------------- colors
+
+interface Palette {
+  outside: string; land: string; water: string; park: string;
+  highway: string; major: string; minor: string; local: string; ramp: string; casing: string;
+  label: string; halo: string;
+  parcelLine: string; parcelLineOpacity: number; parcelHit: string;
+  lot: string; lotEdge: string;
+  sale: string; saleEdge: string; transit: string; transitEdge: string;
+  zoningLabel: string; zoningFill: number; zoningLine: number;
+}
+
+// Light: a pale, cool base where streets read as white gaps; dark: the reference's dim gray base with warm
+// arterials. "This lot" is black with a white edge in light and white with a dark edge in dark (Item 74).
+export const PALETTES: Record<Theme, Palette> = {
+  light: {
+    outside: "#E4E7EB", land: "#EEF0F3", water: "#C6D9E3", park: "#D6E8D8",
+    highway: "#F0A08C", major: "#F6CF9E", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F4B8A8", casing: "#D3D8DE",
+    label: "#3C4249", halo: "#F4F6F8",
+    parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
+    lot: "#1C1C1C", lotEdge: "#FFFFFF",
+    sale: "#72B0AB", saleEdge: "#FFFFFF", transit: "#355E58", transitEdge: "#FFFFFF",
+    zoningLabel: "#1C1C1C", zoningFill: 0.42, zoningLine: 0.85,
+  },
+  dark: {
+    outside: "#141516", land: "#1E2023", water: "#18252D", park: "#1B2620",
+    highway: "#E8806F", major: "#D9AE73", minor: "#565B61", local: "#3B3F44", ramp: "#B56F62", casing: "#141516",
+    label: "#C9CDD2", halo: "#1E2023",
+    parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
+    lot: "#FFFFFF", lotEdge: "#1C1C1C",
+    sale: "#72B0AB", saleEdge: "#1C1C1C", transit: "#B1E3D9", transitEdge: "#1C1C1C",
+    zoningLabel: "#FFFFFF", zoningFill: 0.30, zoningLine: 0.75,
+  },
+};
+
+/** Zoning colors by family, four steps darker as intensity rises (Item 74's provisional family hues). The same
+    steps in both themes; the fill opacity differs per theme. */
+export const ZONING_COLORS: Record<string, [string, string, string, string]> = {
+  residential: ["#E4D9FA", "#CDB7F6", "#AE91E8", "#8A6AD0"],
+  business: ["#F5BDBF", "#ED8A8E", "#D9666B", "#B8464C"],
+  manufacturing: ["#D9C47E", "#B99C3A", "#977C24", "#735D16"],
+  downtown: ["#A6CCE3", "#63A8CF", "#3F86B0", "#2A6488"],
+  park: ["#A7E2B2", "#A7E2B2", "#A7E2B2", "#A7E2B2"],
+  transport: ["#8F959C", "#8F959C", "#8F959C", "#8F959C"],
+  planned: ["#C9CED6", "#C9CED6", "#C9CED6", "#C9CED6"],
+  other: ["#C9CED6", "#C9CED6", "#C9CED6", "#C9CED6"],
+};
+export const ZONING_FAMILIES = ["residential", "business", "manufacturing", "downtown", "planned", "park", "transport"] as const;
+
+function zoningColorExpr(): unknown {
+  // match on family, then on level 1-4.
+  const byFamily: unknown[] = ["match", ["get", "family"]];
+  for (const [fam, steps] of Object.entries(ZONING_COLORS)) {
+    byFamily.push(fam, ["match", ["get", "level"], "2", steps[1], "3", steps[2], "4", steps[3], steps[0]]);
+  }
+  byFamily.push(ZONING_COLORS.other[0]);
+  return byFamily;
+}
+
+// ---------------------------------------------------------------- layers
+
+/** Every style layer: its group (or none), the paint for a theme, and the opacity properties Dim scales. */
+interface LayerDef {
+  group: GroupId | null;
+  spec: (t: Theme) => LayerSpecification;
+  /** Paint properties holding an opacity that On / Dim / Off scales. */
+  opacity: string[];
+  needs: keyof MapTiles | "sales" | "transit" | "lot" | null;
+}
+
+const zoomWidth = (stops: Array<[number, number]>) =>
+  ["interpolate", ["exponential", 1.6], ["zoom"], ...stops.flat()] as unknown as number;
+
+const roadLayer = (kind: string, minzoom: number, widths: Array<[number, number]>, color: keyof Palette): LayerDef => ({
+  group: "streets", needs: "base", opacity: ["line-opacity"],
+  spec: (t) => ({
+    id: `road-${kind}`, type: "line", source: "base", "source-layer": "road", minzoom,
+    filter: ["==", ["get", "kind"], kind],
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": PALETTES[t][color] as string, "line-width": zoomWidth(widths), "line-opacity": 1 },
+  }),
+});
+
+export const LAYERS: LayerDef[] = [
+  { group: null, needs: null, opacity: [], spec: (t) => ({ id: "background", type: "background", paint: { "background-color": PALETTES[t].outside } }) },
+  { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "city", type: "fill", source: "base", "source-layer": "city", paint: { "fill-color": PALETTES[t].land } }) },
+  { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "park", type: "fill", source: "base", "source-layer": "park", paint: { "fill-color": PALETTES[t].park } }) },
+  { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "water", type: "fill", source: "base", "source-layer": "water", paint: { "fill-color": PALETTES[t].water } }) },
+  {
+    group: "zoning", needs: "zoning", opacity: ["fill-opacity"],
+    spec: (t) => ({ id: "zoning-fill", type: "fill", source: "zoning", "source-layer": "zoning",
+      paint: { "fill-color": zoningColorExpr() as string, "fill-opacity": PALETTES[t].zoningFill } }),
+  },
+  {
+    group: "parcels", needs: "parcels", opacity: ["fill-opacity"],
+    // Invisible except where a lot is marked (a search match or a sale): fill only under feature-state.
+    spec: (t) => ({ id: "parcel-fill", type: "fill", source: "parcels", "source-layer": "parcels",
+      paint: { "fill-color": PALETTES[t].parcelHit,
+        "fill-opacity": ["case", ["boolean", ["feature-state", "match"], false], 0.18, 0] as unknown as number } }),
+  },
+  {
+    group: "zoning", needs: "zoning", opacity: ["line-opacity"],
+    spec: (t) => ({ id: "zoning-line", type: "line", source: "zoning", "source-layer": "zoning",
+      paint: { "line-color": zoningColorExpr() as string, "line-opacity": PALETTES[t].zoningLine,
+        "line-width": zoomWidth([[13, 0.6], [16, 1.4], [18, 2.4]]) } }),
+  },
+  {
+    group: "parcels", needs: "parcels", opacity: ["line-opacity"],
+    spec: (t) => ({ id: "parcel-line", type: "line", source: "parcels", "source-layer": "parcels",
+      paint: { "line-color": PALETTES[t].parcelLine, "line-opacity": PALETTES[t].parcelLineOpacity,
+        "line-width": zoomWidth([[14, 0.3], [16, 0.7], [19, 1.4]]) } }),
+  },
+  // Roads over the fills, quietest first (a white gap in light, warm arterials in dark).
+  roadLayer("local", 13, [[13, 0.5], [15, 2], [17, 6], [19, 14]], "local"),
+  roadLayer("minor", 12, [[12, 0.6], [15, 3], [17, 8], [19, 18]], "minor"),
+  roadLayer("ramp", 12, [[12, 0.5], [15, 1.6], [17, 4]], "ramp"),
+  roadLayer("major", 10, [[10, 0.7], [13, 1.6], [15, 4], [17, 10], [19, 22]], "major"),
+  roadLayer("highway", 10, [[10, 1.2], [13, 2.4], [15, 5], [17, 12], [19, 26]], "highway"),
+  {
+    group: null, needs: "lot", opacity: [],
+    spec: (t) => ({ id: "lot-edge", type: "line", source: "lot",
+      paint: { "line-color": PALETTES[t].lotEdge, "line-width": 5, "line-opacity": 0.9 } }),
+  },
+  {
+    group: null, needs: "lot", opacity: [],
+    spec: (t) => ({ id: "lot-line", type: "line", source: "lot",
+      paint: { "line-color": PALETTES[t].lot, "line-width": 2.5,
+        // Approximate identity is drawn dashed: "confidence in the drawing" (Items 80, 89).
+        "line-dasharray": ["case", ["==", ["get", "approximate"], true], ["literal", [2, 1.5]], ["literal", [1, 0]]] as unknown as number[] } }),
+  },
+  {
+    group: "sales", needs: "sales", opacity: ["circle-opacity", "circle-stroke-opacity"],
+    spec: (t) => ({ id: "sales-circle", type: "circle", source: "sales",
+      paint: { "circle-color": PALETTES[t].sale, "circle-radius": zoomWidth([[13, 3], [16, 6], [18, 9]]),
+        "circle-stroke-color": PALETTES[t].saleEdge, "circle-stroke-width": 1.5, "circle-opacity": 1, "circle-stroke-opacity": 1 } }),
+  },
+  {
+    group: "transit", needs: "transit", opacity: ["circle-opacity", "circle-stroke-opacity"],
+    spec: (t) => ({ id: "transit-circle", type: "circle", source: "transit",
+      paint: { "circle-color": PALETTES[t].transit, "circle-radius": zoomWidth([[12, 3], [16, 6], [18, 8]]),
+        "circle-stroke-color": PALETTES[t].transitEdge, "circle-stroke-width": 1.5, "circle-opacity": 1, "circle-stroke-opacity": 1 } }),
+  },
+  {
+    group: "streets", needs: "base", opacity: ["text-opacity"],
+    spec: (t) => ({ id: "road-label", type: "symbol", source: "base", "source-layer": "road", minzoom: STREET_LABEL_MIN_ZOOM,
+      filter: ["all", ["!=", ["get", "name"], ""], ["match", ["get", "kind"], ["highway", "major", "minor", "local"], true, false]],
+      layout: { "symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"],
+        "text-size": zoomWidth([[15, 10.5], [18, 13]]), "symbol-spacing": 320, "text-max-angle": 30, "text-padding": 4 },
+      paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
+  },
+  {
+    group: "zoning", needs: "zoning", opacity: ["text-opacity"],
+    spec: (t) => ({ id: "zoning-label", type: "symbol", source: "zoning", "source-layer": "zoning_label",
+      layout: { "text-field": ["get", "zone_class"], "text-font": ["Noto Sans Regular"],
+        "text-size": zoomWidth([[13, 10], [17, 13]]), "text-padding": 6, "text-allow-overlap": false },
+      paint: { "text-color": PALETTES[t].zoningLabel, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.6, "text-opacity": 1 } }),
+  },
+];
+
+export const LAYER_IDS = LAYERS.map((l) => l.spec("light").id);
+
+/** The style layers that belong to a group. */
+export function groupLayerIds(group: GroupId): string[] {
+  return LAYERS.filter((l) => l.group === group).map((l) => l.spec("light").id);
+}
+
+// ---------------------------------------------------------------- the document
+
+export interface StyleInput {
+  theme: Theme;
+  /** Absolute URL of the API (production: the page's origin; the workers don't resolve relative URLs, Item 68). */
+  apiOrigin: string;
+  /** Absolute URL the committed glyphs are served from. */
+  glyphsBase: string;
+  tiles: MapTiles;
+}
+
+const EMPTY = { type: "FeatureCollection", features: [] } as const;
+
+/** The full style for the first paint. Later changes go through `themePaint` / `modeOpacity`, never a reload. */
+export function buildStyle({ theme, apiOrigin, glyphsBase, tiles }: StyleInput): StyleSpecification {
+  const sources: StyleSpecification["sources"] = {
+    lot: { type: "geojson", data: EMPTY as never },
+    sales: { type: "geojson", data: EMPTY as never },
+    transit: { type: "geojson", data: EMPTY as never },
+  };
+  if (tiles.base) sources.base = { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/base/{z}/{x}/{y}.mvt`], minzoom: tiles.base.minZoom, maxzoom: tiles.base.maxZoom };
+  if (tiles.zoning) sources.zoning = { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/zoning/{z}/{x}/{y}.mvt`], minzoom: tiles.zoning.minZoom, maxzoom: tiles.zoning.maxZoom };
+  if (tiles.parcels) sources.parcels = { type: "vector", tiles: [`${apiOrigin}/api/discovery/tiles/{z}/{x}/{y}.mvt`], minzoom: tiles.parcels.minZoom, maxzoom: tiles.parcels.maxZoom, promoteId: undefined };
+  const layers = LAYERS.filter((l) => l.needs === null || l.needs === "lot" || l.needs === "sales" || l.needs === "transit" || tiles[l.needs] != null)
+    .map((l) => l.spec(theme));
+  return {
+    version: 8,
+    glyphs: `${glyphsBase}/{fontstack}/{range}.pbf`,
+    sources,
+    layers,
+  };
+}
+
+/** Every paint property of every layer for a theme: what a theme switch sets. */
+export function themePaint(theme: Theme): Array<{ id: string; paint: Record<string, unknown> }> {
+  return LAYERS.map((l) => {
+    const s = l.spec(theme) as { id: string; paint?: Record<string, unknown> };
+    return { id: s.id, paint: s.paint ?? {} };
+  });
+}
+
+/** The opacity values for a group's layers in a mode: Off hides (visibility), Dim scales the theme's opacity by
+    0.3. Returns the property writes; `visible` false means set `visibility: none`. */
+export function modeOpacity(group: GroupId, mode: LayerMode, theme: Theme): Array<{ id: string; visible: boolean; paint: Record<string, unknown> }> {
+  return LAYERS.filter((l) => l.group === group).map((l) => {
+    const s = l.spec(theme) as { id: string; paint?: Record<string, unknown> };
+    const paint: Record<string, unknown> = {};
+    for (const p of l.opacity) {
+      const base = s.paint?.[p] ?? 1;
+      paint[p] = mode === "dim" ? scale(base, DIM) : base;
+    }
+    return { id: s.id, visible: mode !== "off", paint };
+  });
+}
+
+function scale(v: unknown, k: number): unknown {
+  if (typeof v === "number") return v * k;
+  // An expression (the parcel highlight): multiply its result.
+  return ["*", v, k];
+}

@@ -262,5 +262,57 @@
       "nominal": "Avalúo nominal",
       "open": "Abrir ficha"
     }
+  },
+  "map": {
+    "key": "Leyenda del mapa",
+    "attribution": "Ciudad de Chicago, Condado de Cook",
+    "unavailable": "No se puede mostrar el mapa en este navegador. El resto de la página funciona.",
+    "noBase": "Mapa de calles no instalado",
+    "loading": "Cargando {{layer}}…",
+    "loadingShort": "Cargando…",
+    "timedOut": "No se pudieron revisar {{layer}} a tiempo ·",
+    "notChecked": "No se pudo revisar a tiempo ·",
+    "retry": "Reintentar",
+    "modeLabel": "{{layer}}: encendido, atenuado o apagado",
+    "mode": {
+      "on": "Sí",
+      "dim": "Tenue",
+      "off": "No"
+    },
+    "districtsInView": "Distritos a la vista",
+    "groups": {
+      "zoning": "Zonificación",
+      "parcels": "Terrenos",
+      "sales": "Ventas recientes",
+      "transit": "Transporte",
+      "streets": "Calles"
+    },
+    "count": {
+      "zoning_one": "{{count}} distrito",
+      "zoning_other": "{{count}} distritos",
+      "parcels_one": "{{count}} terreno",
+      "parcels_other": "{{count}} terrenos",
+      "sales_one": "{{count}} venta",
+      "sales_other": "{{count}} ventas",
+      "transit_one": "{{count}} estación",
+      "transit_other": "{{count}} estaciones"
+    },
+    "card": {
+      "label": "Qué hay aquí",
+      "close": "Cerrar",
+      "looking": "Buscando este terreno…",
+      "noAddress": "Terreno sin dirección",
+      "openProfile": "Abrir su ficha",
+      "notIndexed": "El terreno {{pin}} aún no está en nuestros datos",
+      "failed": "No se pudo buscar este terreno. Intente de nuevo.",
+      "district": "Distrito de zonificación {{zone}}",
+      "ordinance": "Ordenanza {{num}}, {{date}}",
+      "districtSource": "Del mapa de zonificación de la Ciudad",
+      "noPrice": "Precio no registrado",
+      "approx": "Aprox."
+    },
+    "inSentence": {
+      "sales": "ventas recientes"
+    }
   }
 }
