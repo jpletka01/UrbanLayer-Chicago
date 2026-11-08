@@ -31,8 +31,6 @@
 
 **Violation categories are homegrown**: Chicago's violations dataset has no standard category field — only free-text `violation_description`. `_categorize_violation()` does first-match keyword bucketing into 18 custom categories, supplemented by code-prefix mapping (EV→Elevator, BR→Boiler) using the `violation_code` field.
 
-**FEMA endpoint flakiness**: The FEMA NFHL MapServer occasionally returns 500 errors or empty results. Graceful degradation handles this (flood zone shows as "Unknown" rather than failing the whole request).
-
 **CCAO assessment 400 errors**: Some PINs return HTTP 400 from the Cook County Assessor API. `socrata_get()` now fails fast on 4xx errors (no retries), and negative results are cached for 24 hours to prevent repeat queries. Graceful degradation shows assessments as unavailable. **Impact on Report**: When assessments fail, `estimated_annual_tax` and `total_assessed_value` are null → effective tax rate cannot be derived.
 
 **Report address-specific data gaps**: The permits dataset (`ydr8-5enu`) stores addresses as separate fields (`street_number`, `street_direction`, `street_name`). Some properties have permits filed under variant address formats. When no exact-match permits are found, the section renders "No permits found" rather than showing community-area-level data.
