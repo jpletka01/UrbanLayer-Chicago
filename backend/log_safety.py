@@ -46,6 +46,25 @@ class NoCRLFFilter(logging.Filter):
         return True  # a filter that scrubs, never one that drops
 
 
+LOG_FORMAT = "%(levelname)s %(name)s: %(message)s"
+
+
+def configure(level: int = logging.INFO) -> None:
+    """Give the root logger a stderr handler and let the app's own loggers (``backend.*``) log at ``level``.
+
+    Uvicorn configures only its own loggers, so before this the root logger had no handler: the app's
+    warnings reached stderr through Python's last-resort handler (WARNING and up, no filters), every
+    ``log.info`` line (the Profile's ``scorecard timings``, Item 81) was dropped, and :func:`install` found
+    no handler to protect. Libraries stay at the root's WARNING. Idempotent; call before :func:`install`.
+    """
+    root = logging.getLogger()
+    if not root.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(LOG_FORMAT))
+        root.addHandler(handler)
+    logging.getLogger("backend").setLevel(level)
+
+
 def install(logger: logging.Logger | None = None) -> None:
     """Attach the filter to every handler on the root (or given) logger.
 

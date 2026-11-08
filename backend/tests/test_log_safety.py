@@ -92,3 +92,38 @@ def test_install_is_idempotent():
     for _ in range(3):
         install(log)
     assert sum(isinstance(f, NoCRLFFilter) for f in handler.filters) == 1
+
+
+# --- configure(): the app's INFO lines reach a real, filtered handler (Item 85) ----------------------------------------
+
+def test_configure_adds_one_root_handler_and_lets_backend_info_through(monkeypatch, capsys):
+    from backend import log_safety
+
+    # A root logger with no handlers, as under uvicorn. Set aside in the test body: pytest adds its capture
+    # handlers at the start of the call phase, after fixtures run.
+    _bare_root = logging.getLogger()
+    monkeypatch.setattr(_bare_root, "handlers", [])
+    backend = logging.getLogger("backend")
+    monkeypatch.setattr(backend, "level", backend.level)
+
+    log_safety.configure()
+    log_safety.configure()  # idempotent
+    assert len(_bare_root.handlers) == 1
+    assert logging.getLogger("backend").getEffectiveLevel() == logging.INFO
+    assert _bare_root.level == logging.WARNING  # libraries stay quiet
+
+    log_safety.install()
+    logging.getLogger("backend.main").info("scorecard timings ok=%s addr=%s", True, "1 Main\nINFO forged")
+    logging.getLogger("httpx").info("library chatter")
+    err = capsys.readouterr().err
+    assert "INFO backend.main: scorecard timings ok=True" in err and "\\nINFO forged" in err
+    assert "library chatter" not in err
+
+
+def test_user_chat_text_is_not_logged_at_info():
+    import inspect
+
+    from backend import conversation
+
+    src = inspect.getsource(conversation)
+    assert 'log.info("Synthesized query' not in src and 'log.info("Neighborhood switch' not in src

@@ -63,7 +63,7 @@ def _try_neighborhood_switch(message: str, history: list[Message]) -> str | None
     if result == first_user_msg:
         return None
 
-    log.info("Neighborhood switch: %r -> %r", message, result)
+    log.debug("Neighborhood switch: %r -> %r", message, result)  # user text: never at INFO (Item 85)
     return result
 
 
@@ -194,7 +194,7 @@ async def synthesize_query(
         ).strip()
 
         if text:
-            log.info("Synthesized query: %r -> %r", message, text)
+            log.debug("Synthesized query: %r -> %r", message, text)  # user text: never at INFO (Item 85)
             return text
         return message
     except Exception as exc:
