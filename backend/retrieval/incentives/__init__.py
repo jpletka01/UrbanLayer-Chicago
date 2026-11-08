@@ -62,6 +62,22 @@ async def incentives_domain(
             await client.aclose()
 
 
+async def incentives_membership(
+    lat: float, lon: float, *, client: httpx.AsyncClient | None = None,
+) -> IncentivesSummary:
+    """Which programs the point is in (TIF, EZ, OZ, QCT, NMTC), without the TIF district's financial reports or
+    the area's grants: the Profile's Overview part (decision Item 89), which the verdict and the TIF rule chip
+    read. The full ``incentives_domain`` (a late part) asks the same cached lookups again and adds the rest."""
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    try:
+        return await _incentives_by_point(lat, lon, client=client, membership_only=True)
+    finally:
+        if owns:
+            await client.aclose()
+
+
 async def _incentives_by_point(
     lat: float,
     lon: float,
@@ -69,6 +85,7 @@ async def _incentives_by_point(
     ca_name: str | None = None,
     workflow: str = "general",
     client: httpx.AsyncClient,
+    membership_only: bool = False,
 ) -> IncentivesSummary:
     """Full point-based incentive lookup (TIF + EZ + OZ + QCT + NMTC + grants).
 
@@ -82,7 +99,7 @@ async def _incentives_by_point(
         "tract": resolve_census_tract(lat, lon, client=client),
         "oz": check_opportunity_zone(lat=lat, lon=lon, client=client),
     }
-    if ca_name:
+    if ca_name and not membership_only:
         phase_a_tasks["grants"] = grant_programs_by_community_area(ca_name, client=client)
 
     done_a = await asyncio.gather(
@@ -106,7 +123,7 @@ async def _incentives_by_point(
 
     phase_b_tasks: dict[str, asyncio.Task] = {}
 
-    skip_financials = workflow in ("business_launch",)
+    skip_financials = membership_only or workflow in ("business_launch",)
     if tif_result and tif_result.get("tif_name") and not skip_financials:
         phase_b_tasks["financials"] = asyncio.create_task(timed(
             "incentives.financials", fetch_tif_financials(tif_result["tif_name"], client=client),

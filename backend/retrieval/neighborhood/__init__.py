@@ -35,6 +35,24 @@ from backend.retrieval.neighborhood.walkscore import fetch_walkscore
 log = logging.getLogger(__name__)
 
 
+async def walkscore_summary(
+    lat: float, lon: float, address: str | None, *, client: httpx.AsyncClient | None = None,
+) -> NeighborhoodSummary:
+    """The neighborhood summary with only Walk Score in it: the Profile's Overview tile (decision Item 89).
+    Asked exactly as ``neighborhood_domain`` asks it (same cache key), so the full domain (a late part) finds it
+    cached; a failure is the same ``data_gaps`` label."""
+    summary = NeighborhoodSummary()
+    has_coords = lat != 0.0 or lon != 0.0
+    if not (has_coords and address and get_settings().walkscore_api_key):
+        return summary
+    try:
+        summary.walkscore = await timed("neighborhood.walkscore", fetch_walkscore(lat, lon, address, client=client))
+    except Exception as exc:  # noqa: BLE001 - named as the domain names it
+        log.warning("Neighborhood walkscore failed: %s", exc)
+        summary.data_gaps = [label for k, label in NEIGHBORHOOD_GAPS.items() if k == "walkscore"]
+    return summary
+
+
 async def neighborhood_domain(
     lat: float,
     lon: float,

@@ -6,6 +6,7 @@ then fetches CCAO characteristics, assessments, and sales in parallel.
 
 import asyncio
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -30,6 +31,43 @@ from backend.retrieval.property.sales import get_sales
 log = logging.getLogger(__name__)
 
 
+@dataclass
+class PropertyHistory:
+    """The property domain's slow, History-tab lookups (decision Item 89): tax appeals, the parcel flags (City-owned,
+    scofflaw, short-term-rental lists, CHRS, tax-sale history) and the Assessor's permits. Each is None when it
+    failed or wasn't asked, exactly as ``_build_summary`` receives it; none of them feeds another property figure."""
+
+    appeals: Any = None
+    flags: Any = None
+    assessor_permits: Any = None
+
+
+def with_history(summary: PropertySummary | None, history: PropertyHistory | None) -> PropertySummary | None:
+    """The summary ``property_domain`` returns: the core summary with the History lookups set."""
+    if summary is None or history is None:
+        return summary
+    return summary.model_copy(update={
+        "appeals": history.appeals, "flags": history.flags, "assessor_permits": history.assessor_permits,
+    })
+
+
+async def resolve_parcel(
+    lat: float, lon: float, *, pin: str | None = None, client: httpx.AsyncClient,
+) -> dict | None:
+    """Step 1: the parcel row. By PIN when an authoritative PIN is supplied (pure Socrata, GIS-independent),
+    else, or when the PIN row is missing, the coordinate lookup (GIS point-in-polygon, Socrata nearest-centroid)."""
+    if pin:
+        parcel = await timed("property.parcel_by_pin", lookup_parcel_by_pin(pin, client=client))
+        if parcel is None:
+            # PIN row missing/unavailable — degrade to the coordinate path.
+            parcel = await timed("property.parcel_by_point", lookup_parcel(lat, lon, client=client))
+    else:
+        parcel = await timed("property.parcel_by_point", lookup_parcel(lat, lon, client=client))
+    if parcel is None:
+        log.info("No parcel found at (%s, %s) pin=%s", lat, lon, pin)
+    return parcel
+
+
 async def property_domain(
     lat: float,
     lon: float,
@@ -40,126 +78,168 @@ async def property_domain(
 ) -> PropertySummary | None:
     """Fetch all property data for a point.
 
-    Step 1: Resolve the parcel. When an authoritative PIN is supplied, resolve
-            by PIN directly (pure Socrata, GIS-independent). Otherwise fall back
-            to the coordinate parcel lookup (GIS PIP → Socrata nearest-centroid).
-    Step 2: CCAO characteristics, assessments, sales in parallel (by PIN)
+    Step 1: Resolve the parcel (``resolve_parcel``).
+    Step 2: the core (``property_core_for_parcel``: CCAO characteristics, assessments, sales, the PTAXSIM tax
+            and outline, then the building-facts fallback) beside the History lookups (``property_history``).
     """
     owns = client is None
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
-        if pin:
-            parcel = await timed("property.parcel_by_pin", lookup_parcel_by_pin(pin, client=client))
-            if parcel is None:
-                # PIN row missing/unavailable — degrade to the coordinate path.
-                parcel = await timed("property.parcel_by_point", lookup_parcel(lat, lon, client=client))
-        else:
-            parcel = await timed("property.parcel_by_point", lookup_parcel(lat, lon, client=client))
+        parcel = await resolve_parcel(lat, lon, pin=pin, client=client)
         if parcel is None:
-            log.info("No parcel found at (%s, %s) pin=%s", lat, lon, pin)
             return None
+        core, history = await asyncio.gather(
+            property_core_for_parcel(parcel, lat, lon, workflow=workflow, client=client),
+            property_history(parcel["pin14"], lat, lon, workflow=workflow, client=client),
+        )
+        return with_history(core, history)
+    finally:
+        if owns:
+            await client.aclose()
 
-        pin14 = parcel["pin14"]
 
+async def property_core(
+    lat: float,
+    lon: float,
+    *,
+    pin: str | None = None,
+    workflow: str = "general",
+    client: httpx.AsyncClient | None = None,
+) -> PropertySummary | None:
+    """``property_domain`` without the History lookups (the Profile's Overview part, Item 89): the summary's
+    appeals, flags and Assessor permits are None until ``with_history`` sets them."""
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    try:
+        parcel = await resolve_parcel(lat, lon, pin=pin, client=client)
+        if parcel is None:
+            return None
+        return await property_core_for_parcel(parcel, lat, lon, workflow=workflow, client=client)
+    finally:
+        if owns:
+            await client.aclose()
+
+
+async def property_history(
+    pin14: str,
+    lat: float,
+    lon: float,
+    *,
+    workflow: str = "general",
+    client: httpx.AsyncClient | None = None,
+) -> PropertyHistory:
+    """Appeals, parcel flags and the Assessor's permits, in parallel. A failure is logged and left None, as it
+    always was (none of the three is a figure that reads "none" when missing)."""
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    try:
         skip_history = workflow in ("development_feasibility",)
-
-        coros = [timed("property.characteristics", get_characteristics(pin14, client=client))]
-        if not skip_history:
-            coros.append(timed("property.assessments", get_assessments(pin14, client=client)))
-            coros.append(timed("property.sales", get_sales(pin14, client=client)))
-            from backend.retrieval.property.appeals import get_appeals
-            coros.append(timed("property.appeals", get_appeals(pin14, lat, lon, client=client)))
-
-        settings = get_settings()
-        if settings.ptaxsim_enabled:
-            from backend.retrieval.property.tax_estimate import estimate_tax
-            tax_year = datetime.date.today().year - 1
-            coros.append(timed("property.tax", estimate_tax(tax_year, pin14)))
-
-        # Geometry-derived land area + parcel outline from the local PTAXSIM
-        # polygon table — the only all-class land source (CCAO chars is
-        # residential-only; GIS is flaky and absent on the PIN-keyed path).
-        from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
-        coros.append(timed("property.geometry", get_parcel_geometry_facts(pin14)))
-
-        # Distress/opportunity flags (tax-sale history, city-owned, scofflaw,
-        # STR-prohibited) — cheap parallel lookups, None when all clear.
         from backend.retrieval.property.parcel_flags import get_parcel_flags
-        coros.append(timed("property.flags", get_parcel_flags(pin14, lat, lon, client=client)))
 
-        # Assessor-side permit record (PIN-keyed, carries declared cost and the
-        # assessor's "assessable" call). Skipped on the report path with the rest
-        # of the history block.
+        coros: dict[str, Any] = {}
+        if not skip_history:
+            from backend.retrieval.property.appeals import get_appeals
+            coros["appeals"] = timed("property.appeals", get_appeals(pin14, lat, lon, client=client))
+        # Distress/opportunity flags (tax-sale history, city-owned, scofflaw, STR-prohibited) — None when all clear.
+        coros["flags"] = timed("property.flags", get_parcel_flags(pin14, lat, lon, client=client))
+        # Assessor-side permit record (PIN-keyed, carries declared cost and the assessor's "assessable" call).
+        # Skipped on the report path with the rest of the history block.
         if not skip_history:
             from backend.retrieval.property.assessor_permits import get_assessor_permits
-            coros.append(timed("property.assessor_permits", get_assessor_permits(pin14, client=client)))
+            coros["assessor_permits"] = timed("property.assessor_permits", get_assessor_permits(pin14, client=client))
+        done = await asyncio.gather(*coros.values(), return_exceptions=True)
+        got: dict[str, Any] = {}
+        for key, value in zip(coros.keys(), done):
+            if isinstance(value, BaseException):
+                if not isinstance(value, Exception):
+                    raise value
+                log.warning("Property %s lookup failed: %s", key, value)
+                got[key] = None
+            else:
+                got[key] = value
+        return PropertyHistory(**got)
+    finally:
+        if owns:
+            await client.aclose()
 
-        results = await asyncio.gather(*coros, return_exceptions=True)
 
+async def property_core_for_parcel(
+    parcel: dict,
+    lat: float,
+    lon: float,
+    *,
+    workflow: str = "general",
+    client: httpx.AsyncClient,
+) -> PropertySummary:
+    """CCAO characteristics, assessments and sales, the PTAXSIM tax and outline, in parallel; the building-facts
+    fallback starts as soon as the three things it reads (characteristics, assessments, outline) are in, not after
+    the whole batch (Item 81, point 4: it used to wait for the parcel flags, 6.5 s p50)."""
+    pin14 = parcel["pin14"]
+    skip_history = workflow in ("development_feasibility",)
+    settings = get_settings()
+
+    def task(name: str, coro) -> asyncio.Task:
+        return asyncio.create_task(timed(name, coro))
+
+    from backend import inflight
+
+    # Shared with the first screen's lot lookup (first_lot_facts), which the new Profile starts at the same moment.
+    t_chars = task("property.characteristics", inflight.shared(
+        ("ccao.characteristics", pin14), lambda: get_characteristics(pin14, client=client),
+    ))
+    t_assess = t_sales = None
+    if not skip_history:
+        t_assess = task("property.assessments", inflight.shared(
+            ("ccao.assessments", pin14), lambda: get_assessments(pin14, client=client),
+        ))
+        t_sales = task("property.sales", get_sales(pin14, client=client))
+    t_tax = None
+    if settings.ptaxsim_enabled:
+        from backend.retrieval.property.tax_estimate import estimate_tax
+        tax_year = datetime.date.today().year - 1
+        t_tax = task("property.tax", estimate_tax(tax_year, pin14))
+    # Geometry-derived land area + parcel outline from the local PTAXSIM polygon table — the only all-class land
+    # source (CCAO chars is residential-only; GIS is flaky and absent on the PIN-keyed path).
+    from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
+    t_geom = task("property.geometry", get_parcel_geometry_facts(pin14))
+    pending = [t for t in (t_chars, t_assess, t_sales, t_tax, t_geom) if t is not None]
+
+    async def outcome(t: asyncio.Task | None):
+        if t is None:
+            return None
+        try:
+            return await t
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - each failure is named below
+            return exc
+
+    try:
         data_gaps: list[str] = []
         failed_calls: list[str] = []  # the gaps that are a call failing, not a record being absent (WS6 M7)
 
-        idx = 0
-        chars = results[idx] if not isinstance(results[idx], Exception) else None
-        if isinstance(results[idx], Exception):
-            log.warning("CCAO characteristics failed: %s", results[idx])
+        chars_r = await outcome(t_chars)
+        chars = chars_r if not isinstance(chars_r, Exception) else None
+        if isinstance(chars_r, Exception):
+            log.warning("CCAO characteristics failed: %s", chars_r)
             data_gaps.append("property characteristics")
             failed_calls.append("property characteristics")
-        idx += 1
 
         assessments: list[dict] = []
-        sales: list[dict] = []
-        appeals_summary = None
-        if not skip_history:
-            assessments = results[idx] if not isinstance(results[idx], Exception) else []
-            if isinstance(results[idx], Exception):
-                log.warning("CCAO assessments failed: %s", results[idx])
-                data_gaps.append("property assessments")
-                failed_calls.append("property assessments")
-            elif not assessments:
-                data_gaps.append("property assessments")
-            idx += 1
-            sales = results[idx] if not isinstance(results[idx], Exception) else []
-            if isinstance(results[idx], Exception):
-                log.warning("CCAO sales failed: %s", results[idx])
-                data_gaps.append("property sales history")
-                failed_calls.append("property sales history")
-            idx += 1
-            appeals_summary = results[idx] if not isinstance(results[idx], Exception) else None
-            if isinstance(results[idx], Exception):
-                log.warning("Appeals lookup failed: %s", results[idx])
-            idx += 1
+        assess_r = await outcome(t_assess)
+        assess_failed = isinstance(assess_r, Exception)
+        if t_assess is not None:
+            assessments = assess_r if not assess_failed else []
+            if assess_failed:
+                log.warning("CCAO assessments failed: %s", assess_r)
 
-        tax_result = None
-        if settings.ptaxsim_enabled:
-            tax_result = results[idx] if not isinstance(results[idx], Exception) else None
-            if isinstance(results[idx], Exception):
-                log.warning("PTAXSIM tax estimate failed: %s", results[idx])
-                data_gaps.append("property tax estimate")
-                failed_calls.append("property tax estimate")
-            elif tax_result is None:
-                data_gaps.append("property tax estimate")
-            idx += 1
-        else:
-            data_gaps.append("property tax estimate")
-
-        geometry_facts = results[idx] if not isinstance(results[idx], Exception) else None
-        if isinstance(results[idx], Exception):
-            log.warning("Parcel geometry facts failed: %s", results[idx])
-        idx += 1
-
-        parcel_flags = results[idx] if not isinstance(results[idx], Exception) else None
-        if isinstance(results[idx], Exception):
-            log.warning("Parcel flags failed: %s", results[idx])
-        idx += 1
-
-        assessor_permits = None
-        if not skip_history:
-            assessor_permits = results[idx] if not isinstance(results[idx], Exception) else None
-            if isinstance(results[idx], Exception):
-                log.warning("Assessor permits failed: %s", results[idx])
-            idx += 1
+        geom_r = await outcome(t_geom)
+        geometry_facts = geom_r if not isinstance(geom_r, Exception) else None
+        if isinstance(geom_r, Exception):
+            log.warning("Parcel geometry facts failed: %s", geom_r)
 
         if _chars_describe_prior_structure(parcel, assessments, chars):
             log.info(
@@ -168,22 +248,50 @@ async def property_domain(
             )
             chars = None
 
-        building_fallbacks = await timed("property.building_facts", _fetch_building_fallbacks(
+        t_fallback = asyncio.create_task(timed("property.building_facts", _fetch_building_fallbacks(
             parcel, chars, assessments, lat, lon,
             parcel_geojson=(geometry_facts or {}).get("parcel_geometry"),
             client=client,
-        ))
+        )))
+        pending.append(t_fallback)
+
+        sales: list[dict] = []
+        if t_assess is not None:
+            if assess_failed:
+                data_gaps.append("property assessments")
+                failed_calls.append("property assessments")
+            elif not assessments:
+                data_gaps.append("property assessments")
+            sales_r = await outcome(t_sales)
+            sales = sales_r if not isinstance(sales_r, Exception) else []
+            if isinstance(sales_r, Exception):
+                log.warning("CCAO sales failed: %s", sales_r)
+                data_gaps.append("property sales history")
+                failed_calls.append("property sales history")
+
+        tax_result = None
+        if t_tax is not None:
+            tax_r = await outcome(t_tax)
+            tax_result = tax_r if not isinstance(tax_r, Exception) else None
+            if isinstance(tax_r, Exception):
+                log.warning("PTAXSIM tax estimate failed: %s", tax_r)
+                data_gaps.append("property tax estimate")
+                failed_calls.append("property tax estimate")
+            elif tax_result is None:
+                data_gaps.append("property tax estimate")
+        else:
+            data_gaps.append("property tax estimate")
+
+        building_fallbacks = await t_fallback
 
         return _build_summary(parcel, chars, assessments, sales, tax_result,
                               geometry_facts=geometry_facts,
                               building_fallbacks=building_fallbacks,
-                              appeals_summary=appeals_summary,
-                              parcel_flags=parcel_flags,
-                              assessor_permits=assessor_permits,
                               data_gaps=data_gaps, failed_calls=failed_calls)
     finally:
-        if owns:
-            await client.aclose()
+        for t in pending:
+            if not t.done():
+                t.cancel()
 
 
 async def _fetch_building_fallbacks(
@@ -351,9 +459,15 @@ async def first_lot_facts(pin14: str, *, client: httpx.AsyncClient | None = None
     page then waits for the full response rather than show an area the full one might correct)."""
     from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
 
+    from backend import inflight
+
     chars, assessments, geometry_facts = await asyncio.gather(
-        timed("first.characteristics", get_characteristics(pin14, client=client)),
-        timed("first.assessments", get_assessments(pin14, client=client)),
+        timed("first.characteristics", inflight.shared(
+            ("ccao.characteristics", pin14), lambda: get_characteristics(pin14, client=client),
+        )),
+        timed("first.assessments", inflight.shared(
+            ("ccao.assessments", pin14), lambda: get_assessments(pin14, client=client),
+        )),
         timed("first.geometry", get_parcel_geometry_facts(pin14)),
     )
     if _chars_describe_prior_structure({}, assessments or [], chars):
@@ -372,6 +486,26 @@ async def first_lot_facts(pin14: str, *, client: httpx.AsyncClient | None = None
 # A building footprint may exceed the lot by this factor before we conclude the
 # building spans several lots (see _build_summary's footprint fallback).
 _FOOTPRINT_SPAN_SLACK = 1.1
+
+
+_SALE_FILTERS = ("sale_filter_less_than_10k", "sale_filter_deed_type", "is_multisale")
+
+
+def arms_length(row: dict) -> bool | None:
+    """Whether a County sales row is a market sale by the County's own filters (decision Item 89): the three
+    lines the comparables already draw (``sales.nearby_comparable_sales``): under $10,000, an excluded deed type,
+    one sale of several parcels. Any filter set = not a market sale; all three false = a market sale; any filter
+    missing and none set = unknown (None). The dataset spells booleans as JSON booleans or the strings
+    "true"/"false"."""
+    seen_all = True
+    for name in _SALE_FILTERS:
+        v = row.get(name)
+        if v is None or v == "":
+            seen_all = False
+            continue
+        if v is True or str(v).strip().lower() == "true":
+            return False
+    return True if seen_all else None
 
 
 def _zip5(value) -> str | None:
@@ -497,6 +631,7 @@ def _build_summary(
             date=row.get("sale_date"),
             price=_safe_float(row.get("sale_price")),
             deed_type=row.get("deed_type"),
+            arms_length=arms_length(row),
         )
         sales_history.append(rec)
 
