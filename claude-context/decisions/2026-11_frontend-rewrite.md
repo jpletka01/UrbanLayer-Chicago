@@ -341,3 +341,30 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 **Revisit if:** crime figures need same-day freshness for a feature (alerts); the FEMA fix lands (repeat visits should drop to well under a second, otherwise look again); production per-task numbers differ from Item 81's local ones.
 
+
+## Item 84: FEMA's flood zones come from a committed Chicago copy, because FEMA blocks the production server (2026-11-07)
+
+**Decision: a point inside Chicago is answered from `ingestion/data/fema_flood_chicago.json.gz`, FEMA's own NFHL layer 28 polygons clipped to the city, by point-in-polygon with no network call.** A point outside the copy's coverage, or every point when the copy is missing or unreadable, still asks FEMA live, and a failure there is still "couldn't check" (`FloodLookupError`, Item 65), never "no flood zone". The dev fault flag (`DATA_HEALTH_FAULT=source:fed.fema.nfhl`) still beats both paths. Built by `python -m ingestion.build_flood_artifact` from a machine FEMA answers; registry `artifact.fema_flood_chicago` (sidecar-dated, warn at 200 days, alarm at 400); the `regulatory.flood` fact now cites it, with `fed.fema.nfhl` as the alternate source.
+
+**Why: FEMA's edge refuses the production server.** Item 83 found every production Profile reporting flood as couldn't-check. Measured from the server on 2026-11-07: `hazards.fema.gov` accepts the TCP connection and resets the TLS handshake after about 0.23 s, 10 of 10 tries across both of its IPs (IPv4; the box resolves no IPv6 for it), with curl as well as httpx and with any User-Agent; `www.fema.gov` answers 403 and `msc.fema.gov` doesn't answer. The server's address geolocates to Germany. The same query from a US home connection answers in 0.3–1.6 s. So it is a block by source address or country, not a moved URL, a timeout or a TLS-version problem, and the October "about half of fresh connections reset" pattern (the retry logic in `flood.py` and `probes.py`) has become all of them. No client-side change can fix it.
+
+**Alternatives:**
+- *Esri's Living Atlas "USA Flood Hazard Areas" mirror.* Reachable from the server, but it is a third party's derivative, and its reduced set holds only the high-risk zones (the test point returned no feature where FEMA says X), so "no feature" there doesn't mean what FEMA's "no feature" means. Rejected under the source-authority rule.
+- *A proxy in the US (a Cloudflare Worker or a small US host).* It keeps the answer live, but it is new infrastructure in the request path, and FEMA could block that address too.
+- *A short negative cache of the failure.* It would cut the 4 s repeat cost, but every Profile would still say couldn't-check. It treats the symptom.
+
+**The trade-off is data vintage.** The copy is FEMA's data as of the build date (2026-11-07): the Cook County FIRM panels (`17031C`, plus the edge panels `17043C` and `18089C`) with whatever LOMRs FEMA had folded in by then. A Letter of Map Revision issued later won't show until the next rebuild. Chicago's flood maps change rarely, a few LOMRs a year, and the Profile already says flood is a FEMA designation to confirm. The registry's 200/400-day warn/alarm puts a rebuild on the calendar about every six months, and sooner when FEMA announces a Cook County revision.
+
+**Build guards:** the build pages FEMA tile by tile (one large page answers 500), refuses to write if any page fails, and refuses to write if the polygons cover less than 98% of the city's land. That guard caught the first build: deduplicating by `GFID`, which is not unique, kept 3 polygons. On a shared edge the flood-hazard zone wins.
+
+**Numbers:**
+- Production Profiles listing flood in `failed_sources`: 10 of 10 (Item 83, 2026-11-07) → expected 0 after deploy (to verify on the live API).
+- FEMA cost of a repeat Profile visit: about 4 s on production (Item 83) → 0 network calls inside the city. The artifact loads once per process in 81 ms; a lookup takes about 22 µs (1,000 lookups in 22 ms, local, 2026-11-07).
+- Agreement with live FEMA: 400 of 400 points (300 uniform over the city, 100 in or within ~50 m of a flood-hazard area), zone and SFHA flag both equal, 2026-11-07.
+- Artifact: 395 zones, 100.0% of the city covered, 0.5 MB gzipped; flood-hazard areas are 3.5% of the city's land.
+- Reproduce: the server measurement is curl to `.../NFHL/MapServer/28/query` from `ssh urbanlayer-prod` (exit 35, connection reset); the build is `PYTHONPATH=. python -m ingestion.build_flood_artifact`; the agreement check is a script comparing `flood._from_artifact` with live FEMA at random city points (not committed: it calls FEMA 400 times).
+- Not measured: the production repeat-visit time after deploy (from the `scorecard timings` log line, Item 81).
+
+**Still open:** the `fed.fema.nfhl` data-health probe asks FEMA live from the server, so it keeps failing there and its stale alarm will continue. The Profile no longer depends on it. Acknowledging the alarm or running the probe off-box is the owner's call.
+
+**Revisit if:** FEMA unblocks the server's address (then a live check of the copy against FEMA could join data health); FEMA issues a Cook County map revision; UrbanLayer covers places outside Chicago (they would all go to the blocked live path).

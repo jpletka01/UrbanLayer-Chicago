@@ -20,6 +20,8 @@ ingestion/data/
 !ingestion/data/assessor_model_by_area.meta.json
 !ingestion/data/commercial_bldg_by_pin.json.gz
 !ingestion/data/commercial_bldg_by_pin.meta.json
+!ingestion/data/fema_flood_chicago.json.gz
+!ingestion/data/fema_flood_chicago.meta.json
 chicago-il-*.html
 eval/
 test-results/

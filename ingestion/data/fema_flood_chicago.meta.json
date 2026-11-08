@@ -1,0 +1,19 @@
+{
+ "builder": "ingestion/build_flood_artifact.py",
+ "built_at": "2026-11-07",
+ "city_share_covered": 1.0,
+ "dfirm_ids": [
+  "17031C",
+  "17043C",
+  "18089C"
+ ],
+ "features": 395,
+ "retrieved": "2026-11-07",
+ "version_ids": [
+  "1.1.1.0",
+  "2.1.1.0",
+  "2.3.3.0",
+  "2.4.3.0",
+  "2.6.5.0"
+ ]
+}

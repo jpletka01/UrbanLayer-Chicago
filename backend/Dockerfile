@@ -63,6 +63,8 @@ COPY ingestion/data/assessor_model_by_area.json /app/ingestion/data/assessor_mod
 COPY ingestion/data/assessor_model_by_area.meta.json /app/ingestion/data/assessor_model_by_area.meta.json
 COPY ingestion/data/commercial_bldg_by_pin.json.gz /app/ingestion/data/commercial_bldg_by_pin.json.gz
 COPY ingestion/data/commercial_bldg_by_pin.meta.json /app/ingestion/data/commercial_bldg_by_pin.meta.json
+COPY ingestion/data/fema_flood_chicago.json.gz /app/ingestion/data/fema_flood_chicago.json.gz
+COPY ingestion/data/fema_flood_chicago.meta.json /app/ingestion/data/fema_flood_chicago.meta.json
 
 # Create data + uploads dirs for the SQLite volume mount
 RUN mkdir -p /app/backend/data/uploads && chown -R app:app /app/backend/data

@@ -55,8 +55,11 @@ async def test_returns_none_for_missing_fld_zone():
 
 @pytest.fixture(autouse=True)
 def _no_pause(monkeypatch):
-    """The retry pause is real time otherwise; the live counts are module state."""
+    """The retry pause is real time otherwise; the live counts are module state. These tests cover the live
+    FEMA path, so the committed artifact is switched off (its own tests are in test_flood_artifact.py)."""
     monkeypatch.setattr(flood, "_RETRY_PAUSE_S", 0)
+    monkeypatch.setattr(flood, "_art_loaded", True)
+    monkeypatch.setattr(flood, "_art", None)
     live.reset()
     yield
     live.reset()
