@@ -1,0 +1,22 @@
+# Production /api/scorecard, whole requests from outside, 2026-11-07 evening (Item 83)
+# address|visit|http status + seconds|resolved_confidence + number of failed sources (all: FEMA flood zone)
+4815 N Kedzie Ave|first|200 30.136206|approximate 1
+4815 N Kedzie Ave|repeat|200 4.101285|approximate 1
+6400 S Pulaski Rd|first|200 18.476927|authoritative 1
+6400 S Pulaski Rd|repeat|200 4.020409|authoritative 1
+2150 W Roscoe St|first|200 16.765288|approximate 1
+2150 W Roscoe St|repeat|200 3.592489|approximate 1
+10300 S Western Ave|first|200 24.771693|authoritative 1
+10300 S Western Ave|repeat|200 9.665139|authoritative 1
+3700 W Fullerton Ave|first|200 20.764521|authoritative 1
+3700 W Fullerton Ave|repeat|200 4.012272|authoritative 1
+1250 W Lawrence Ave|first|200 44.135014|approximate 1
+1250 W Lawrence Ave|repeat|200 14.433941|approximate 1
+8100 S Cottage Grove Ave|first|200 20.465172|authoritative 2
+8100 S Cottage Grove Ave|repeat|200 8.692451|authoritative 1
+2600 S Kedzie Ave|first|200 30.091117|approximate 1
+2600 S Kedzie Ave|repeat|200 3.523599|approximate 1
+5200 W Belmont Ave|first|200 24.744439|authoritative 1
+5200 W Belmont Ave|repeat|200 3.491918|authoritative 1
+1900 N Damen Ave|first|200 25.470411|approximate 1
+1900 N Damen Ave|repeat|200 3.557782|approximate 1

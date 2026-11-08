@@ -8,7 +8,10 @@ The Profile is deterministic (no model) and waits for every source before it ans
 - **Known suspect:** the Cook County GIS point lookup, 10–11 s, on approximately resolved addresses only.
 - **Hidden ordering:** the property domain's building-facts fallback waits for parcel flags (6.5 s p50).
 - **Fixed:** TIF financial reports had no cache (warm 1.5–12 s on TIF parcels) → 24 h per district (warm p95 0.5 s).
-- **Open:** crime's 15-minute cache (proposed 6 h); the progressive loading and Phase 4 split (Item 81).
+- **Fixed:** crime's cache 15 min → 6 h (Item 83; the source is daily).
+- **Built:** the new UI's first screen, `GET /api/scorecard/first` (Item 82): lot, district and what it allows in about 1–3 s locally, by the full response's own rules; then one swap.
+- **Production, 2026-11-07 (Item 83, whole requests from outside, n=10 fresh addresses, before this branch deployed):** first visit p50 24.7 s / p95 44.1 s (matches local); **repeat visit p50 4.0 s / p95 14.4 s** (local: 41 ms). FEMA's flood map failed on every production request while answering locally in 1.5 s; failures are never cached, so each visit re-asks it (~4 s). The slowest repeats look like the uncached TIF reports fixed on this branch. Re-measure after deploy with the `scorecard timings` log lines.
+- **Open:** FEMA from the production server; the Phase 4 split (Item 81).
 
 **Measure:** `PYTHONPATH=. python -m eval.profile_latency --label <label> --rounds 5` (no model, public APIs, ~25 min); `--isolate` runs each slow lookup alone; `--base URL` times a running server. A running server logs one `scorecard timings` line per Profile; `PROFILE_TIMINGS=true` (dev only) adds the breakdown to the response as `_timings`. Instrumentation: `backend/timing.py`.
 

@@ -9,7 +9,12 @@ from backend.retrieval.cache import TTLCache
 from backend.retrieval.socrata import grouped_count, socrata_get
 from backend.retrieval.utils import cutoff_iso
 
-_cache = TTLCache(ttl_seconds=900, maxsize=256, name="crime")
+# 6 h (was 15 min; decision Item 83). The City publishes crimes daily with a lag (crime_lag_days), and these
+# are community-area aggregates over the full crime table: the largest single cost of a cold Profile (Item 81:
+# 7 s p50 / 21 s p95), re-paid by every visitor to an area after 15 minutes. Successes only: a failed request
+# raises before ``set`` (Item 65).
+CRIME_CACHE_TTL_S = 6 * 60 * 60
+_cache = TTLCache(ttl_seconds=CRIME_CACHE_TTL_S, maxsize=256, name="crime")
 
 
 def _year_earlier(dt: datetime) -> datetime:
