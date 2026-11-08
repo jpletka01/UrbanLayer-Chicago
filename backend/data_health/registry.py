@@ -206,7 +206,11 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         note=("Availability and layer name. A known-answer parcel is M4's sentinel work. The app's own lookup "
               "(retrieval/regulatory/flood.py) raises when FEMA doesn't answer, so the Profile, chat and report say "
               "'couldn't check' (never 'no flood zone'), and each call's outcome is counted live (live.py). "
-              "FEMA resets many fresh connections; the lookup retries those, the probe does too."),
+              "FEMA resets many fresh connections; the lookup retries those, the probe does too. Since Item 84 "
+              "a point inside Chicago is answered from artifact.fema_flood_chicago; this service answers only "
+              "points outside the city and the artifact build. From the production server it resets every TLS "
+              "handshake (measured 2026-11-07), so this probe fails there for a reason the Profile no longer "
+              "depends on."),
     ),
     _layer(
         "https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services/FRS_INTERESTS_ACRES/FeatureServer/0",
@@ -621,6 +625,19 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "Area, which every voucher program there uses (decision Item 69). Copied from HUD's FMR Documentation "
              "System page in a browser (huduser.gov refuses scripts). HUD publishes the next fiscal year's table each "
              "fall, effective October 1; the artifact check warns from then.",
+    ),
+    SourceSpec(
+        id="artifact.fema_flood_chicago", name="FEMA flood hazard zones clipped to Chicago (committed)",
+        publisher="FEMA", tier="official_record", kind="artifact", locator="ingestion/data/fema_flood_chicago.json.gz",
+        probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/regulatory/flood.py", "ingestion/build_flood_artifact.py"),
+        surfaces=_PROP, fact_keys=("regulatory.flood",),
+        cadence_days=180, warn_days=200, alarm_days=400,
+        note="FEMA's own NFHL layer 28 polygons inside the city (decision Item 84). hazards.fema.gov resets every TLS "
+             "handshake from the production server, so the Profile answers from this copy; points outside the city "
+             "still ask FEMA live. Zones change with a map revision or a LOMR; rebuild from a machine FEMA answers "
+             "(`python -m ingestion.build_flood_artifact`) every six months or when FEMA announces a Cook County "
+             "revision.",
     ),
     SourceSpec(
         id="artifact.rent_trend_by_area", name="Rent and sale-price trends by community area (committed)",

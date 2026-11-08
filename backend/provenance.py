@@ -400,7 +400,7 @@ FACTS.update({
     "zoning.unit_yield": _calc("Maximum units by lot area", "code.hand_table.zoning_definitions"),
     "zoning.adu": _calc("Accessory dwelling unit status", "code.hand_table.zoning_definitions"),
     "zoning.tod_benefits": _calc("Transit-served benefits", "code.hand_table.zoning_definitions"),
-    "regulatory.flood": _rec("FEMA flood zone", "fed.fema.nfhl"),
+    "regulatory.flood": _rec("FEMA flood zone", "artifact.fema_flood_chicago", alt_source_ids=("fed.fema.nfhl",)),
     "regulatory.environmental": _rec("EPA-registered sites near the parcel", "fed.epa.frs", scope="radius"),
     "incentive.tif": _rec("TIF district", "chi.tif.boundaries", alt_source_ids=("chi.tif.projects", "chi.tif.fund_analysis")),
     "incentive.enterprise_zone": _rec("Enterprise zone", "chi.enterprise_zones"),
