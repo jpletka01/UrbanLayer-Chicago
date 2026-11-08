@@ -29,7 +29,8 @@ export function blockersFor(data: ScorecardResponse, verdict: ScorecardVerdict):
   return BLOCKER_ORDER.filter((k) => present.has(k));
 }
 
-function fmtFar(n: number): string {
+/** The ratio as the answer sentence writes it (also the Profile's first screen, Item 82). */
+export function fmtFar(n: number): string {
   return n.toFixed(1);
 }
 

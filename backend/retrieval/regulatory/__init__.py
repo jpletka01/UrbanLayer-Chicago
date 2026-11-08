@@ -10,6 +10,7 @@ import logging
 import httpx
 
 from backend.models import OverlayDistrict, RegulatorySummary
+from backend.timing import timed
 from backend.retrieval.regulatory.environmental import query_brownfield_sites
 from backend.retrieval.regulatory.flood import query_flood_zone
 from backend.retrieval.regulatory.overlay_facts import describe_overlay
@@ -75,7 +76,9 @@ async def regulatory_domain(
         if not skip_brownfield:
             coros["brownfield"] = query_brownfield_sites(lat, lon, client=client)
 
-        results_list = await asyncio.gather(*coros.values(), return_exceptions=True)
+        results_list = await asyncio.gather(
+            *(timed(f"regulatory.{k}", c) for k, c in coros.items()), return_exceptions=True,
+        )
         results_map = dict(zip(coros.keys(), results_list))
 
         overlay_results = results_map["overlays"]

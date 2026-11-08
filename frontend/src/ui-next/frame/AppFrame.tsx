@@ -107,6 +107,7 @@ export function ToolButton({
   pressed,
   controls,
   testId,
+  disabled,
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number; "aria-hidden"?: boolean }>;
@@ -114,17 +115,20 @@ export function ToolButton({
   pressed?: boolean;
   controls?: string;
   testId?: string;
+  /** Held in place but not usable yet (the Profile's first screen, before the full response). */
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       title={label}
       aria-pressed={pressed}
       aria-controls={controls}
       data-testid={testId}
-      className={`grid h-9 w-9 place-items-center rounded-lg touch-target ${pressed ? "bg-nx-ink/5" : "hover:bg-nx-ink/5"}`}
+      className={`grid h-9 w-9 place-items-center rounded-lg touch-target disabled:cursor-not-allowed disabled:opacity-40 ${pressed ? "bg-nx-ink/5" : "hover:bg-nx-ink/5"}`}
     >
       <Icon aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
     </button>

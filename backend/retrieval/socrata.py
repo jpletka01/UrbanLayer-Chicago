@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 
 from backend.config import get_settings
+from backend.timing import span
 
 
 log = logging.getLogger(__name__)
@@ -94,7 +95,10 @@ async def _socrata_get(
 
     for attempt in range(_MAX_RETRIES):
         try:
-            resp = await client.get(url, params=params, headers=headers)
+            # One span per HTTP attempt (connection-pool wait included), so the Profile's timings can tell a
+            # slow dataset from a crowded request (decision Item 81); a pass-through outside a collector.
+            with span(f"socrata.{dataset_id}"):
+                resp = await client.get(url, params=params, headers=headers)
             if resp.status_code >= 500:
                 raise httpx.HTTPStatusError(
                     f"socrata {resp.status_code}", request=resp.request, response=resp

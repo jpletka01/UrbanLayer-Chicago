@@ -1092,6 +1092,47 @@ export async function fetchScorecard(params: {
   } catch { return null; }
 }
 
+/** The Profile's first screen (`/api/scorecard/first`, decision Item 82): identity, the district at the point with
+    its Title 17 row, and for a PIN-resolved parcel the lot outline and area, by the full response's own rules.
+    About 2 s cold; the full `/api/scorecard` response replaces it. A failed part is `*_unchecked`, never empty. */
+export interface ScorecardFirst {
+  address: string | null;
+  resolved_pin: string | null;
+  resolved_confidence: "authoritative" | "approximate";
+  resolved_lat: number;
+  resolved_lon: number;
+  zoning: { zone_class: string; zone_type?: number | null } | null;
+  zoning_unchecked: boolean;
+  zone_definition: ZoneDefinition | null;
+  lot: {
+    pin14: string;
+    land_sqft: number | null;
+    land_sqft_source: "assessor" | "geometry" | null;
+    parcel_geometry: GeoJSON.Geometry | null;
+    shared_outline_with: number;
+  } | null;
+  lot_unchecked: boolean;
+}
+
+/** The first-screen request; null on any failure (the page then waits for the full response). */
+export async function fetchScorecardFirst(params: {
+  address?: string;
+  lat?: number;
+  lon?: number;
+  pin?: string;
+}, signal?: AbortSignal): Promise<ScorecardFirst | null> {
+  const qs = new URLSearchParams();
+  if (params.address) qs.set("address", params.address);
+  if (params.lat != null) qs.set("lat", String(params.lat));
+  if (params.lon != null) qs.set("lon", String(params.lon));
+  if (params.pin) qs.set("pin", params.pin);
+  try {
+    const resp = await authFetch(`${API_BASE}/api/scorecard/first?${qs}`, { signal });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
 /** One Municipal Code subsection (and the table it cites) with how current the code is. */
 export interface CodeSubsection {
   section_id: string;

@@ -2783,6 +2783,21 @@ Consumers → Property Profile (renders pin + confidence badge)
             the decision log.
           </P>
 
+          <Sub>A 27-second page with no slow task</Sub>
+          <P>
+            A builder nearly closed the tab while a first Property Profile loaded. Timing every retrieval task inside
+            the request (a collector that tasks inherit, so 36 parallel lookups report themselves) found no single
+            culprit: a cold Profile made about 36 requests to the City and County data portals, and waiting for the
+            slowest took 26.8 s at the median and 46 s at p95. The City portal answered a one-row query in 6 s at the
+            median during the run, and the burst of our own requests doubled its times. A bigger connection pool
+            would only have made the portal slower. What helped instead: a missing cache on TIF reports
+            (repeat visits from 12 s to 0.5 s), six-hour caching of the daily crime figures, and a small first
+            request that returns the lot, its district and what that district allows in about 2 s, by the same
+            functions as the full response so no number changes when the rest arrives. Measuring production then
+            showed a repeat visit still taking 4 s there: the federal flood map fails every request from our server
+            while answering elsewhere, and a failure is never cached, so every visit asks again (Items 81–83).
+          </P>
+
           <Sub>A page that grew one honest sentence at a time</Sub>
           <P>
             Every workstream added a correct caveat, date or method note to the Property Profile, and each passed

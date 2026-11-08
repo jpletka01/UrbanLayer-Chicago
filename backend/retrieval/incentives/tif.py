@@ -14,9 +14,16 @@ import httpx
 from shapely.geometry import Point, shape
 
 from backend.config import get_settings
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.socrata import socrata_get
 
 log = logging.getLogger(__name__)
+
+# A district's financial reports change once a year (annual TIF reports), and every parcel in the district
+# asks for the same rows: without a cache each Profile re-fetched them, the slowest step of a repeat visit
+# to any TIF parcel (1.5-12 s warm, measured 2026-11-07, decision Item 81). Successful answers only: a
+# failed query raises and is never cached (Item 65).
+_financials_cache = TTLCache(ttl_seconds=86400, maxsize=256, name="tif_financials")
 
 _tif_boundaries: list[tuple[str, dict, Any, dict]] | None = None
 _tif_lock = asyncio.Lock()
@@ -202,12 +209,18 @@ async def fetch_tif_fund_analysis(
         "$order": "report_year DESC",
         "$limit": settings.limit_tif_fund_analysis,
     }
+    key = f"fetch_tif_fund_analysis:{tif_name}:{settings.limit_tif_fund_analysis}"
+    cached = _financials_cache.get(key)
+    if cached is not None:
+        return cached
     # A failed query raises: [] is reserved for a district with no reports on record.
-    return await socrata_get(
+    rows = await socrata_get(
         settings.dataset_tif_fund_analysis,
         params,
         client=client,
     )
+    _financials_cache.set(key, rows)
+    return rows
 
 
 async def fetch_tif_financials(
@@ -222,12 +235,18 @@ async def fetch_tif_financials(
         "$order": "report_year DESC",
         "$limit": settings.limit_tif_financials,
     }
+    key = f"fetch_tif_financials:{tif_name}:{settings.limit_tif_financials}"
+    cached = _financials_cache.get(key)
+    if cached is not None:
+        return cached
     # A failed query raises: [] is reserved for a district with no reports on record.
-    return await socrata_get(
+    rows = await socrata_get(
         settings.dataset_tif_financials,
         params,
         client=client,
     )
+    _financials_cache.set(key, rows)
+    return rows
 
 
 async def preload(*, client: httpx.AsyncClient | None = None) -> None:

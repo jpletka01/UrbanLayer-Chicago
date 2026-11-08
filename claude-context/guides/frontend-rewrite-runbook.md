@@ -18,8 +18,8 @@ Until a route flips, `guides/page-design.md` and the Bento Pro guides govern the
 |---|---|---|
 | 0 | Baseline: Items 73–75 on `main`, success criteria | **Done** 2026-11-07 (PR #201) |
 | 1 | Thin prototype behind the preview boundary: readiness registry, frame, Profile Overview + Build on today's data, cleaned parcel map, Ask drawer, one Discovery flow; old/new isolation test | **Done** 2026-11-07, owner-approved (PR #203; Items 76–80: one tile per tab, no satellite, Cities: Skylines map required) |
-| 2 | Latency spike: p50/p95 per retrieval task, cold and warm; only catastrophic fixes or honest progressive loading (the owner named slow loading, Item 79) | Next |
-| 3 | Builder test against the pass criteria in Item 75 | Waiting |
+| 2 | Latency spike: p50/p95 per retrieval task, cold and warm; only catastrophic fixes or honest progressive loading (the owner named slow loading, Item 79) | **Done** 2026-11-07, owner-approved (PR #204; Items 81–83: cold p50 26.8 s / p95 46.0 s; TIF and crime caches; a first screen in about 1–3 s from `/api/scorecard/first`; production repeat visits slowed by FEMA failing from the server) |
+| 3 | Builder test against the pass criteria in Item 75 (model budget $2, chat only in the follow-up task; Item 83) | Next |
 | 4 | Profile response split, designed from the Phase 2 data | Waiting |
 | 5 | Map tracks M1 (base + one persistent map), M2 (parcels), M3 (official zoning geometry); the Cities: Skylines look is required (Item 80) | Waiting |
 | 6 | Remaining Profile tabs and Discovery, route by route; routes flip as approved | Waiting |
@@ -31,7 +31,7 @@ Until a route flips, `guides/page-design.md` and the Bento Pro guides govern the
 ## Working rules (from Item 75)
 - Branch from current `main` in a worktree. Open PRs freely once the local gates pass; **never merge** without green CI, verification and the owner's go (merge = deploy). Batch ready work into few merges.
 - CI gates: `npm run build`, `npm run test`, `npm run lint`, backend `pytest -m "not integration"`. Local release gates: the mobile matrix, page budgets, Playwright axe, a keyboard walkthrough.
-- No production model calls in automated development or tests; human prototype testing only within the budget the owner approves.
+- No production model calls in automated development or tests; human prototype testing only within the budget the owner approves ($2 for Phase 3). Test chat only when a change updates or fixes chat (Item 83).
 - Docs: during the rewrite the brief and the decisions file govern new UI work; the Bento Pro guides and `page-design.md` describe today's live UI only (Item 78). No satellite map anywhere in the new UI; every map must reach the Cities: Skylines look before its route flips (Item 80).
 - Every new screen: icons beside visible labels, reuse without leaking into old pages, light and dark, English and Mexican Spanish (usted) in the same PR, accessible.
 

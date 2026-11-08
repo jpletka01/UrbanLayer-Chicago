@@ -10,10 +10,12 @@ import { useChat } from "./useChat";
 import { track } from "./tracking";
 import { openInNewTab, takeHandoff, writeHandoff } from "./openInNewTab";
 
-export function useParcelChat(data: ScorecardResponse, language: string) {
+/** `data` is null while the new Profile shows its first screen (Item 82): nothing is grounded and the page
+    offers no ask until the full response arrives. */
+export function useParcelChat(data: ScorecardResponse | null, language: string) {
   const [tabBlocked, setTabBlocked] = useState(false);
   const grounding = useMemo(() => buildScorecardContext(data), [data]);
-  const address = data.address ?? grounding?.address ?? null;
+  const address = data?.address ?? grounding?.address ?? null;
   const chat = useChat({ language });
   const { messages, streaming, atMessageLimit, sendMessage, setGrounding } = chat;
 

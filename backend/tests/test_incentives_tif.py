@@ -355,3 +355,37 @@ async def test_tif_by_community_area_live():
     results = await tif.tif_districts_by_community_area(22)
     assert len(results) > 0, "Expected TIF districts in Logan Square"
     assert all(r.get("tif_name") for r in results)
+
+
+# --- financial reports are cached per district, successes only (decision Item 81) ---
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fetch", ["fetch_tif_financials", "fetch_tif_fund_analysis"])
+@patch("backend.retrieval.incentives.tif.socrata_get")
+async def test_financial_reports_are_cached_per_district(mock_socrata, fetch):
+    mock_socrata.return_value = [{"report_year": "2024", "tif_district": "Fullerton/Milwaukee"}]
+    first = await getattr(tif, fetch)("Fullerton/Milwaukee", client=AsyncMock())
+    again = await getattr(tif, fetch)("Fullerton/Milwaukee", client=AsyncMock())
+    assert first == again
+    assert mock_socrata.call_count == 1
+    await getattr(tif, fetch)("Elston/Armstrong", client=AsyncMock())
+    assert mock_socrata.call_count == 2  # another district is its own entry
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fetch", ["fetch_tif_financials", "fetch_tif_fund_analysis"])
+@patch("backend.retrieval.incentives.tif.socrata_get")
+async def test_a_failed_financial_query_is_not_cached(mock_socrata, fetch):
+    mock_socrata.side_effect = [Exception("Socrata down"), [{"report_year": "2024"}]]
+    with pytest.raises(Exception, match="Socrata down"):
+        await getattr(tif, fetch)("Fullerton/Milwaukee", client=AsyncMock())
+    assert await getattr(tif, fetch)("Fullerton/Milwaukee", client=AsyncMock()) == [{"report_year": "2024"}]
+    assert mock_socrata.call_count == 2
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif.socrata_get")
+async def test_the_two_report_kinds_never_share_an_entry(mock_socrata):
+    mock_socrata.side_effect = [[{"kind": "projects"}], [{"kind": "fund"}]]
+    assert await tif.fetch_tif_financials("Fullerton/Milwaukee", client=AsyncMock()) == [{"kind": "projects"}]
+    assert await tif.fetch_tif_fund_analysis("Fullerton/Milwaukee", client=AsyncMock()) == [{"kind": "fund"}]

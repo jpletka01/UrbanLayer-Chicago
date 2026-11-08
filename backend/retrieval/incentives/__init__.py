@@ -10,6 +10,7 @@ import logging
 
 import httpx
 
+from backend.timing import timed
 from backend.data_health.failures import INCENTIVE_GAPS
 from backend.models import IncentivesSummary
 from backend.retrieval.incentives.enterprise_zones import check_enterprise_zone
@@ -84,7 +85,9 @@ async def _incentives_by_point(
     if ca_name:
         phase_a_tasks["grants"] = grant_programs_by_community_area(ca_name, client=client)
 
-    done_a = await asyncio.gather(*phase_a_tasks.values(), return_exceptions=True)
+    done_a = await asyncio.gather(
+        *(timed(f"incentives.{k}", c) for k, c in phase_a_tasks.items()), return_exceptions=True,
+    )
     phase_a: dict[str, object] = {}
     failed: set[str] = set()
     for key, value in zip(phase_a_tasks.keys(), done_a):
@@ -105,20 +108,20 @@ async def _incentives_by_point(
 
     skip_financials = workflow in ("business_launch",)
     if tif_result and tif_result.get("tif_name") and not skip_financials:
-        phase_b_tasks["financials"] = asyncio.create_task(
-            fetch_tif_financials(tif_result["tif_name"], client=client)
-        )
-        phase_b_tasks["fund_analysis"] = asyncio.create_task(
-            fetch_tif_fund_analysis(tif_result["tif_name"], client=client)
-        )
+        phase_b_tasks["financials"] = asyncio.create_task(timed(
+            "incentives.financials", fetch_tif_financials(tif_result["tif_name"], client=client),
+        ))
+        phase_b_tasks["fund_analysis"] = asyncio.create_task(timed(
+            "incentives.fund_analysis", fetch_tif_fund_analysis(tif_result["tif_name"], client=client),
+        ))
 
     if tract_fips:
-        phase_b_tasks["qct"] = asyncio.create_task(
-            check_qct(tract_fips, client=client)
-        )
-        phase_b_tasks["nmtc"] = asyncio.create_task(
-            check_nmtc(tract_fips, client=client)
-        )
+        phase_b_tasks["qct"] = asyncio.create_task(timed(
+            "incentives.qct", check_qct(tract_fips, client=client),
+        ))
+        phase_b_tasks["nmtc"] = asyncio.create_task(timed(
+            "incentives.nmtc", check_nmtc(tract_fips, client=client),
+        ))
 
     phase_b_results: dict[str, object] = {}
     if phase_b_tasks:

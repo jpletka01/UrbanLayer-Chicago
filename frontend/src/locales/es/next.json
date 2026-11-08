@@ -185,6 +185,26 @@
       "expand": "Ampliar mapa",
       "close": "Cerrar mapa",
       "focusedLabel": "Mapa de {{address}}"
+    },
+    "first": {
+      "zonedLotHeight": "Zonificación {{zone}}: hasta {{floor}} pie² de área de piso en este terreno de {{lot}} pie², con hasta {{height}} pies de altura.",
+      "zonedLot": "Zonificación {{zone}}: hasta {{floor}} pie² de área de piso en este terreno de {{lot}} pie².",
+      "zonedFarHeight": "Zonificación {{zone}}: un coeficiente de edificabilidad (FAR) de {{far}}, con hasta {{height}} pies de altura.",
+      "zonedFar": "Zonificación {{zone}}: un coeficiente de edificabilidad (FAR) de {{far}}.",
+      "zoned": "Zonificación {{zone}}.",
+      "noZone": "El mapa de zonificación de la Ciudad no muestra ningún distrito en este punto.",
+      "zoningUnchecked": "Todavía no se pudo revisar el distrito de zonificación.",
+      "checkingLabel": "Revisando",
+      "checking": {
+        "units": "Revisando los registros de construcción del Condado",
+        "tax": "Revisando los registros fiscales del Condado",
+        "walk": "Revisando Walk Score",
+        "lastSale": "Revisando las ventas del Condado"
+      },
+      "stillChecking": "Seguimos revisando: zonas especiales e inundación (mapa de la Ciudad, FEMA) · historial de ventas e impuestos (Condado de Cook) · vecindario (delitos, 311, transporte).",
+      "restFailed": "No se pudo cargar el resto de esta ficha.",
+      "retry": "Reintentar",
+      "toolsLater": "Disponible cuando termine de cargar la ficha"
     }
   },
   "discovery": {

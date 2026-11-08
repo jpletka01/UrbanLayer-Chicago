@@ -13,6 +13,7 @@ import httpx
 import datetime
 
 from backend.config import get_settings
+from backend.timing import timed
 from backend.models import (
     AssessmentRecord,
     PropertySummary,
@@ -49,12 +50,12 @@ async def property_domain(
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
         if pin:
-            parcel = await lookup_parcel_by_pin(pin, client=client)
+            parcel = await timed("property.parcel_by_pin", lookup_parcel_by_pin(pin, client=client))
             if parcel is None:
                 # PIN row missing/unavailable — degrade to the coordinate path.
-                parcel = await lookup_parcel(lat, lon, client=client)
+                parcel = await timed("property.parcel_by_point", lookup_parcel(lat, lon, client=client))
         else:
-            parcel = await lookup_parcel(lat, lon, client=client)
+            parcel = await timed("property.parcel_by_point", lookup_parcel(lat, lon, client=client))
         if parcel is None:
             log.info("No parcel found at (%s, %s) pin=%s", lat, lon, pin)
             return None
@@ -63,36 +64,36 @@ async def property_domain(
 
         skip_history = workflow in ("development_feasibility",)
 
-        coros = [get_characteristics(pin14, client=client)]
+        coros = [timed("property.characteristics", get_characteristics(pin14, client=client))]
         if not skip_history:
-            coros.append(get_assessments(pin14, client=client))
-            coros.append(get_sales(pin14, client=client))
+            coros.append(timed("property.assessments", get_assessments(pin14, client=client)))
+            coros.append(timed("property.sales", get_sales(pin14, client=client)))
             from backend.retrieval.property.appeals import get_appeals
-            coros.append(get_appeals(pin14, lat, lon, client=client))
+            coros.append(timed("property.appeals", get_appeals(pin14, lat, lon, client=client)))
 
         settings = get_settings()
         if settings.ptaxsim_enabled:
             from backend.retrieval.property.tax_estimate import estimate_tax
             tax_year = datetime.date.today().year - 1
-            coros.append(estimate_tax(tax_year, pin14))
+            coros.append(timed("property.tax", estimate_tax(tax_year, pin14)))
 
         # Geometry-derived land area + parcel outline from the local PTAXSIM
         # polygon table — the only all-class land source (CCAO chars is
         # residential-only; GIS is flaky and absent on the PIN-keyed path).
         from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
-        coros.append(get_parcel_geometry_facts(pin14))
+        coros.append(timed("property.geometry", get_parcel_geometry_facts(pin14)))
 
         # Distress/opportunity flags (tax-sale history, city-owned, scofflaw,
         # STR-prohibited) — cheap parallel lookups, None when all clear.
         from backend.retrieval.property.parcel_flags import get_parcel_flags
-        coros.append(get_parcel_flags(pin14, lat, lon, client=client))
+        coros.append(timed("property.flags", get_parcel_flags(pin14, lat, lon, client=client)))
 
         # Assessor-side permit record (PIN-keyed, carries declared cost and the
         # assessor's "assessable" call). Skipped on the report path with the rest
         # of the history block.
         if not skip_history:
             from backend.retrieval.property.assessor_permits import get_assessor_permits
-            coros.append(get_assessor_permits(pin14, client=client))
+            coros.append(timed("property.assessor_permits", get_assessor_permits(pin14, client=client)))
 
         results = await asyncio.gather(*coros, return_exceptions=True)
 
@@ -167,11 +168,11 @@ async def property_domain(
             )
             chars = None
 
-        building_fallbacks = await _fetch_building_fallbacks(
+        building_fallbacks = await timed("property.building_facts", _fetch_building_fallbacks(
             parcel, chars, assessments, lat, lon,
             parcel_geojson=(geometry_facts or {}).get("parcel_geometry"),
             client=client,
-        )
+        ))
 
         return _build_summary(parcel, chars, assessments, sales, tax_result,
                               geometry_facts=geometry_facts,
@@ -241,7 +242,9 @@ async def _fetch_building_fallbacks(
         lat, lon, parcel_geojson=parcel_geojson, client=client
     )
 
-    done = await asyncio.gather(*coros.values(), return_exceptions=True)
+    done = await asyncio.gather(
+        *(timed(f"property.building_facts.{k}", c) for k, c in coros.items()), return_exceptions=True,
+    )
     fallbacks: dict[str, Any] = {}
     for key, value in zip(coros.keys(), done):
         if isinstance(value, Exception):
@@ -325,6 +328,45 @@ def _chars_describe_prior_structure(
         for f in ("char_bldg_sf", "char_yrblt", "char_rooms", "char_beds")
     ) or bool(str(chars.get("char_type_resd") or "").strip())
     return has_building_facts
+
+
+def lot_area(
+    land_sqft: int | None, source: str | None, geometry_facts: dict | None,
+) -> tuple[int | None, str | None]:
+    """The lot area the Profile shows and its source, after the stated areas (GIS, then the Assessor's
+    characteristics row): the PTAXSIM outline's area fills a gap. A shared outline is a whole development's
+    (Items 46, 59): its area is no lot's, so it never becomes the land area. One rule for the full Profile
+    (``_build_summary``) and its first-content request (``first_lot_facts``), so the two can't disagree."""
+    shared = int((geometry_facts or {}).get("shared_outline_with") or 0)
+    if not land_sqft and geometry_facts and geometry_facts.get("land_sqft_geom") and not shared:
+        return geometry_facts["land_sqft_geom"], "geometry"
+    return land_sqft, source
+
+
+async def first_lot_facts(pin14: str, *, client: httpx.AsyncClient | None = None) -> dict:
+    """The lot the Profile's first screen draws (decision Item 82): outline and lot area, by the same rules as
+    ``property_domain`` on the PIN path (the PIN row carries no land area, the Assessor's characteristics row
+    wins, a stale vacant-lot row is dropped, the outline fills the gap). Three calls in parallel: two cached
+    County requests and the local PTAXSIM table. A failed characteristics or assessments call raises (the
+    page then waits for the full response rather than show an area the full one might correct)."""
+    from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
+
+    chars, assessments, geometry_facts = await asyncio.gather(
+        timed("first.characteristics", get_characteristics(pin14, client=client)),
+        timed("first.assessments", get_assessments(pin14, client=client)),
+        timed("first.geometry", get_parcel_geometry_facts(pin14)),
+    )
+    if _chars_describe_prior_structure({}, assessments or [], chars):
+        chars = None
+    land = _safe_int((chars or {}).get("char_land_sf")) or None
+    land, source = lot_area(land, "assessor" if land else None, geometry_facts)
+    return {
+        "pin14": pin14,
+        "land_sqft": land,
+        "land_sqft_source": source,
+        "parcel_geometry": (geometry_facts or {}).get("parcel_geometry"),
+        "shared_outline_with": int((geometry_facts or {}).get("shared_outline_with") or 0),
+    }
 
 
 # A building footprint may exceed the lot by this factor before we conclude the
@@ -463,14 +505,9 @@ def _build_summary(
     # (commercial/multifamily/exempt/industrial — 0% before 2026-07-02).
     parcel_geometry = parcel.get("geometry")
     shared_outline_with = int((geometry_facts or {}).get("shared_outline_with") or 0)
-    if geometry_facts:
-        # A shared outline is a whole development's (Items 46, 59): its area is no lot's, so it never
-        # becomes the land area. An Assessor-stated area still stands.
-        if not land_sqft and geometry_facts.get("land_sqft_geom") and not shared_outline_with:
-            land_sqft = geometry_facts["land_sqft_geom"]
-            land_sqft_source = "geometry"
-        if parcel_geometry is None:
-            parcel_geometry = geometry_facts.get("parcel_geometry")
+    land_sqft, land_sqft_source = lot_area(land_sqft, land_sqft_source, geometry_facts)
+    if geometry_facts and parcel_geometry is None:
+        parcel_geometry = geometry_facts.get("parcel_geometry")
 
     # Building-fact fallbacks (condo unit chars → commercial valuation →
     # city footprints), applied ONLY into holes the assessor data left, with

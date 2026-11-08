@@ -25,7 +25,7 @@ export interface LimitRow {
   state: FigureState;
 }
 
-const fmtInt = (n: number, lng: string) => Math.round(n).toLocaleString(lng);
+export const fmtInt = (n: number, lng: string) => Math.round(n).toLocaleString(lng);
 
 /** Parse the table's height ("45 ft", "65'") to feet; null when it isn't a plain number of feet. */
 export function heightFeet(text: string | null | undefined): number | null {
@@ -205,6 +205,8 @@ export interface Tile {
   tab: "build" | null;
   /** The small visual: a share of the whole (built of allowed units, a score of 100). */
   share?: number | null;
+  /** The first screen (Item 82): no figure yet; the note says what the tile waits for. */
+  checking?: boolean;
 }
 
 const money = (n: number, lng: string) =>
