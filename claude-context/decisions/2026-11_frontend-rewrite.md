@@ -495,3 +495,36 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - Approximate parcels wait on County GIS (Item 81 point 3, about 10 s), so their Overview is reported apart.
 - **Not measured:** run b's full panel with the last fixes (the owner asked for no more hour-long local runs); production (after deploy, one visit at a time, as in Item 87; the `scorecard part timings` lines give the per-part split).
 - The eval script can hang at interpreter exit on idle worker threads after writing its results (seen once, local); it is not a request path.
+
+---
+
+## Item 90: Phase 5 (M1), the map stack: MapLibre over a base made from the City's own streets (2026-11-08)
+
+**Status: decided by the owner on the measurements below (2026-11-08), before any of the look was built.**
+
+**Decision: the new UI's maps run on MapLibre GL (6.15) with our own vector tiles and our own style document; deck.gl stays (`MapboxOverlay` works on MapLibre).** Owner's pick over keeping Mapbox with a custom style. Today's pages keep Mapbox until their routes flip (Phase 10 deletes it with the old UI).
+
+**Decision: the base is ours, cut from government data.** Roads from the City's street centerlines (`pr57-gg9e`: 57k segments, `class` 1 expressway, 2 arterial, 3 collector, 4 local, street names, one-way, z-levels; rows last updated 2021), with parks, the lake and the river, drawn dimmed in light and dark. Chicago only: outside the city the map is a plain dim fill. Owner's pick over a hosted OpenStreetMap vector base (OpenFreeMap: free, keyless, no SLA) and a keyed raster like the reference's.
+
+**Decision: street names use Noto Sans glyphs committed to the repo** (Latin ranges from `protomaps/basemaps-assets` at commit `028c18f`, SIL Open Font License, license file beside them), served by us. Owner's pick over OpenFreeMap's font server.
+
+**Decision: only the Profile's map moves in Phase 5;** Discovery's map moves with its route in Phase 6 (owner). **The builder test stays undated** (Item 88; owner).
+
+**Evidence (2026-11-08, this Mac: Playwright Chromium on the real GPU, ANGLE Metal / Apple M4 Pro; cache off).** Same view on every stack: 1601 N Milwaukee at zoom 16 with our parcel tiles (community areas 22 and 24, built from the citywide 2026-10-29 index). Desktop 1440×900 at 2×; "phone" 390×844 at 3×, touch, CPU slowed 4×. Frame rate = frame intervals over an 8 s scripted pan and zoom between zooms 14.5 and 17. First view = bytes transferred until the map first went idle.
+
+| Stack | Library (gzip) | Base, first view: desktop / phone | Our parcels: desktop / phone | Frame rate: desktop / phone |
+|---|---:|---:|---:|---|
+| Mapbox GL 3, `light-v11`/`dark-v11` (today) | 511 KB (worker inside) | ≈442 / ≈288 KB | 81 / 44 KB | 60 / 60 fps, p95 16.8 ms, no frame over 50 ms |
+| MapLibre 6.15 + OpenFreeMap vector | 285 + 143 KB worker = 428 KB | ≈560 / ≈408 KB (incl. a 120 KB sprite) | 81 / 44 KB | 60 / 60 |
+| MapLibre 6.15 + CARTO raster, dimmed | 428 KB | 73–89 / 31–38 KB | 81 / 44 KB | 60 / 60 |
+| MapLibre + the City's streets (estimate) | 428 KB | zoom-16 view: 516 segments, 14 KB as gzipped GeoJSON | 81 / 44 KB | not measured |
+
+- **Frame rate didn't separate the stacks** on this machine (the CPU slow-down doesn't slow the GPU); a real phone is the check that counts.
+- **The base is the heavy part of a first view**; a hosted vector base costs 300–560 KB, our streets about 15 KB close in.
+- **CARTO's free raster tiles now carry "API KEY REQUIRED" watermarks**, so a raster base like the reference's means a keyed or paid service.
+- **Mapbox bills per map load** (each `new Map()`; about 50,000 a month free, then roughly $5 per 1,000 per third-party pricing write-ups; not confirmed on mapbox.com). MapLibre with our tiles has no per-load bill.
+- `mapbox-gl` rides in today's main chunk (the app imports every page eagerly), so a `?ui=next` visitor downloads both libraries until today's maps load lazily or are deleted; that split is a separate, cheap win (not done here).
+
+**Revisit if:** a real phone drops frames on the new map; the City stops publishing street centerlines or they fall far behind (then OpenFreeMap or Protomaps tiles of OSM roads, attributed); Mapbox's billing stops mattering.
+
+**Numbers:** above; harness (bench page, tile server, Playwright runner) kept in the session notes, not in the repo.

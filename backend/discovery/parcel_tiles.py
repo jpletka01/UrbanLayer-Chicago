@@ -135,19 +135,24 @@ def _packed(values: list[int]) -> bytes:
     return b"".join(_varint(v) for v in values)
 
 
-def encode_layer(features: list[tuple[int, list[int], dict[str, str]]], name: str = LAYER) -> bytes:
-    """One MVT layer from (id, geometry commands, string properties) triples."""
+POLYGON, LINESTRING = 3, 2
+
+
+def encode_layer(features: list[tuple], name: str = LAYER) -> bytes:
+    """One MVT layer from (id, geometry commands, string properties[, geometry type]) tuples; the type defaults
+    to POLYGON (the parcel outlines). The map tiles (``backend.map_tiles``) pass LINESTRING for roads."""
     keys: dict[str, int] = {}
     values: dict[str, int] = {}
     body = bytearray()
-    for fid, geometry, props in features:
+    for fid, geometry, props, *rest in features:
+        gtype = rest[0] if rest else POLYGON
         tags: list[int] = []
         for k, v in props.items():
             tags += [keys.setdefault(k, len(keys)), values.setdefault(v, len(values))]
         feat = _key(1, 0) + _varint(fid)
         if tags:
             feat += _len_field(2, _packed(tags))
-        feat += _key(3, 0) + _varint(3)  # POLYGON
+        feat += _key(3, 0) + _varint(gtype)
         feat += _len_field(4, _packed(geometry))
         body += _len_field(2, feat)
     layer = _key(15, 0) + _varint(2) + _len_field(1, name.encode())

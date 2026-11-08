@@ -178,6 +178,9 @@ class Settings(BaseSettings):
     # WS8 Phase 2 prototype: parcel-outline vector tiles (MBTiles) built by `backend.discovery.parcel_tiles`.
     # No file = the tile endpoint answers 404 and the Discovery map keeps its dots.
     discovery_tiles_path: Path = PROJECT_ROOT / "backend" / "data" / "parcel_tiles.mbtiles"
+    # The new UI's own map tiles (Items 90+): the base from the City's streets, parks and water; official zoning.
+    map_base_tiles_path: Path = PROJECT_ROOT / "backend" / "data" / "map_base.mbtiles"
+    map_zoning_tiles_path: Path = PROJECT_ROOT / "backend" / "data" / "map_zoning.mbtiles"
     # Written daily by `python -m backend.legislation.sync` (prod timer) on the same volume;
     # the app only reads it, reloading when its mtime changes.
     legislation_snapshot_path: Path = PROJECT_ROOT / "backend" / "data" / "legislation_snapshot.json"
