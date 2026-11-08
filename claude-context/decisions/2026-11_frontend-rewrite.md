@@ -470,6 +470,10 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 **What the page does** (`useProfileParts`, `PartsStatus`). The first screen (Item 82), then the Overview in the same screen (one component per lookup, so the map is never remounted; the Playwright check marks the canvas before the Overview and finds it after every part), then the late parts once the Overview has painted, each named while it waits ("Still checking: nearby sales, TIF reports and grants, …"). Ask, Sources and Export read the whole Profile, so they turn on once every part has answered; then the assembled Profile goes to the parcel context (`adopt`) for chat grounding, so grounding still reads the full shape. Strings in English and Mexican Spanish (usted).
 
+**The owner's localhost review (2026-11-08).**
+- *Search on the Profile (for Phase 6):* "Look up another address" should be pinned to the bottom of the screen and stay there on every Profile tab, so a visitor can search again without scrolling down to the end of the page. Deferred by the owner to Phase 6, built with the phone layout (the bottom of the screen also holds the preview badge, the expanded map's controls and the phone keyboard).
+- *Fixed here:* the line before the first screen said "A first lookup can take 15 to 40 seconds" with a seconds counter; the Overview now follows within seconds, so the line and counter are gone (the address being looked up stays).
+
 **Alternatives considered:** keeping the full response and only caching more (the cold first visit is the slow case); hard timeouts on today's endpoint (a product change on the live page); streaming (above).
 
 **Revisit if:** production `scorecard part timings` lines show the Overview over 8 s at p95 on exact parcels; the deadline fires on more than about 10% of first visits for any source (then look at that source, not the deadline); the builder test reads the late fill-in as broken; the old Profile's route flips (then it moves to the parts and `/api/scorecard` serves chat and the report only).

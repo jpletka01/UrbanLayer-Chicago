@@ -152,13 +152,10 @@ export default function ProfileNextPage() {
   );
 }
 
+/** Before the first screen (about 1–3 s): the address being looked up. No time estimate and no seconds counter
+    (Items 81, 89: the Overview now follows within seconds, so the old "15 to 40 seconds" line was wrong). */
 function LoadingState({ address }: { address: string | null }) {
   const { t } = useTranslation("next");
-  const [seconds, setSeconds] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => setSeconds((s) => s + 1), 1000);
-    return () => window.clearInterval(id);
-  }, []);
   return (
     <div className="flex flex-col gap-4" role="status" aria-live="polite" data-testid="profile-loading">
       <div className="h-48 animate-pulse rounded-2xl bg-nx-block" />
@@ -166,7 +163,6 @@ function LoadingState({ address }: { address: string | null }) {
         <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={1.5} />
         {address ? t("profile.loading.at", { address }) : t("profile.loading.plain")}
       </p>
-      <p className="text-caption nx-muted">{t("profile.loading.firstLookup", { seconds })}</p>
     </div>
   );
 }

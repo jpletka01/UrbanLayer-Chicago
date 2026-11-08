@@ -85,8 +85,7 @@
     },
     "loading": {
       "at": "Buscando {{address}}…",
-      "plain": "Buscando esta propiedad…",
-      "firstLookup": "La primera búsqueda puede tardar de 15 a 40 segundos. Van {{seconds}} s."
+      "plain": "Buscando esta propiedad…"
     },
     "tiles": {
       "units": "Unidades permitidas",

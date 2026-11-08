@@ -85,8 +85,7 @@
     },
     "loading": {
       "at": "Looking up {{address}}…",
-      "plain": "Looking up this property…",
-      "firstLookup": "A first lookup can take 15 to 40 seconds. {{seconds}} s so far."
+      "plain": "Looking up this property…"
     },
     "tiles": {
       "units": "Units allowed",
