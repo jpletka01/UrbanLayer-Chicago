@@ -54,7 +54,7 @@ log = logging.getLogger(__name__)
 LATE_PARTS = ("building", "history", "money", "incentives", "neighborhood", "activity", "block_face")
 PARTS = ("overview", *LATE_PARTS)
 LATE_DEADLINE_S = 20.0
-LATE_CONCURRENCY = 4
+LATE_CONCURRENCY = 8  # today's response's parallelism (main._RETRIEVAL_SEM); 4 made the whole Profile slower
 LOOKUP_TTL_S = 1800
 
 _records = TTLCache(ttl_seconds=LOOKUP_TTL_S, maxsize=256, name="profile_lookups")
@@ -119,6 +119,10 @@ class Record:
     ca_name: str | None
     ap_pins: list[str] = field(default_factory=list)
     assessor_pins: list[str] = field(default_factory=list)
+    # Every parcel the address sources list for a typed address (the "how we found this parcel" panel, read only
+    # in Sources): started with the Overview, never waited for by it; the late parts take it when it's in.
+    cand_task: Any = None
+    cand_applies: bool = False
     results: dict[str, Any] = field(default_factory=dict)
     comparables: Any = None
     block_face: Any = None
@@ -133,7 +137,7 @@ def _claims(rec: Record) -> dict:
         "i": rec.id, "a": rec.address_in,
         "rl": [rl.lat, rl.lon, rl.address, rl.pin, rl.confidence, rl.method],
         "id": [idn.pin, idn.confidence, idn.method, idn.unverified, idn.unverified_reason],
-        "ap": rec.ap_pins, "as": rec.assessor_pins,
+        "ap": rec.ap_pins, "as": rec.assessor_pins, "c": rec.cand_applies,
         "exp": int(time.time()) + LOOKUP_TTL_S,
     }
 
@@ -148,7 +152,23 @@ def _record_from_claims(claims: dict) -> Record:
         id=claims["i"], address_in=claims.get("a"), rl=rl, identity=ProfileIdentity(*claims["id"]),
         ca=ca, ca_name=community_area_name(ca) if ca else None,
         ap_pins=list(claims.get("ap") or []), assessor_pins=list(claims.get("as") or []),
+        cand_applies=bool(claims.get("c")),
     )
+
+
+async def _take_candidates(rec: Record, wait_s: float) -> None:
+    """Move the address candidates into the record once their lookup is in (waiting up to ``wait_s``)."""
+    t = rec.cand_task
+    if t is None:
+        return
+    if not t.done() and wait_s > 0:
+        await asyncio.wait({t}, timeout=wait_s)
+    if not t.done():
+        return
+    rec.cand_task = None
+    got = t.result()
+    rec.ap_pins = got[0] if isinstance(got[0], list) else []
+    rec.assessor_pins = got[1] if isinstance(got[1], list) else []
 
 
 # ── What each part runs ────────────────────────────────────────────────────────────────────────────────
@@ -411,10 +431,8 @@ async def _overview(address, lat, lon, pin) -> dict:
         await _gather_into(rec, _overview_coros(rec))
     prop = rec.results.get("property")
     rec.identity = await main._reconcile_identity(address, rl, None if isinstance(prop, Exception) else prop)
-    if cand_task is not None:
-        got = await cand_task
-        rec.ap_pins = got[0] if isinstance(got[0], list) else []
-        rec.assessor_pins = got[1] if isinstance(got[1], list) else []
+    rec.cand_task, rec.cand_applies = cand_task, cand_task is not None
+    await _take_candidates(rec, 0)  # only if already in: the Overview doesn't wait for the Sources panel
     rec.parts_in.add("overview")
     _records.set(rec.id, rec)
     return _response(rec, "overview", [], await _profile(rec))
@@ -440,6 +458,10 @@ async def _part(name: str, claims: dict, have: str | None) -> dict:
         # The server lost this lookup (a restart or eviction): rebuild it from the token. The Overview's calls and
         # the parts the page already has are cached by now, so this is quick; then the asked part runs as usual.
         rec = _record_from_claims(claims)
+        if rec.cand_applies and not (rec.ap_pins or rec.assessor_pins):
+            from backend import main
+
+            rec.cand_task = await main._address_candidates(rec.address_in, None, None, None)
         with _timing.span("rebuild"):
             await _gather_into(rec, _overview_coros(rec))
             rec.parts_in.add("overview")
@@ -453,6 +475,7 @@ async def _part(name: str, claims: dict, have: str | None) -> dict:
         timed_out = await _run_late(rec, name, LATE_DEADLINE_S)
     rec.timed_out[name] = timed_out
     rec.parts_in.add(name)
+    await _take_candidates(rec, LATE_DEADLINE_S)  # started with the Overview: normally long since in
     return _response(rec, name, timed_out, await _profile(rec))
 
 

@@ -65,8 +65,8 @@ async def incentives_domain(
 async def incentives_membership(
     lat: float, lon: float, *, client: httpx.AsyncClient | None = None,
 ) -> IncentivesSummary:
-    """Which programs the point is in (TIF, EZ, OZ, QCT, NMTC), without the TIF district's financial reports or
-    the area's grants: the Profile's Overview part (decision Item 89), which the verdict and the TIF rule chip
+    """Which programs the point is in by point lookup (TIF, EZ, OZ), without the tract-keyed ones (QCT, NMTC),
+    the TIF district's financial reports or the area's grants: the Profile's Overview part (decision Item 89), which the verdict and the TIF rule chip
     read. The full ``incentives_domain`` (a late part) asks the same cached lookups again and adds the rest."""
     owns = client is None
     if owns:
@@ -96,9 +96,12 @@ async def _incentives_by_point(
     phase_a_tasks = {
         "tif": check_tif(lat, lon, client=client),
         "ez": check_enterprise_zone(lat, lon, client=client),
-        "tract": resolve_census_tract(lat, lon, client=client),
         "oz": check_opportunity_zone(lat=lat, lon=lon, client=client),
     }
+    # The tract-keyed programs (QCT, NMTC) wait on the FCC/Census tract lookup (up to 16 s seen): the Overview
+    # leaves them to the full lookup, a late part (decision Item 89), and says nothing about them meanwhile.
+    if not membership_only:
+        phase_a_tasks["tract"] = resolve_census_tract(lat, lon, client=client)
     if ca_name and not membership_only:
         phase_a_tasks["grants"] = grant_programs_by_community_area(ca_name, client=client)
 
@@ -116,8 +119,8 @@ async def _incentives_by_point(
             phase_a[key] = value
 
     tif_result = phase_a["tif"]
-    tract_fips = phase_a["tract"]
-    if "tract" in failed or not tract_fips:
+    tract_fips = phase_a.get("tract")
+    if not membership_only and ("tract" in failed or not tract_fips):
         # No tract (failed, or the FCC placed the point in none): the tract-keyed programs went unasked.
         failed.update({"qct", "nmtc"})
 

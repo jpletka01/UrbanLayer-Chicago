@@ -409,3 +409,33 @@ async def test_the_city_building_records_are_a_late_part_on_a_commercial_lot():
     prop = late["profile"]["context"]["property"]
     assert prop["stories"] == 3 and prop["bldg_sqft"] == 2800 and prop["year_built"] == 1925
     assert "building" not in late["parts_pending"]
+
+
+async def test_the_overview_doesnt_wait_for_the_address_candidates_and_the_last_part_carries_them():
+    async def slow_pins(*_a, **_k):
+        await asyncio.sleep(0.3)
+        return [PIN]
+
+    with _sources(), \
+            patch("backend.retrieval.property.address_points.address_point_pins", new=slow_pins), \
+            patch("backend.retrieval.property.parcel_addresses.assessor_address_pins", new=slow_pins):
+        full = await main._scorecard_payload(ADDRESS, None, None, None)
+        loop = asyncio.get_running_loop()
+        t0 = loop.time()
+        ov = await profile_parts.overview(ADDRESS, None, None, None)
+        assert loop.time() - t0 < 0.25
+        responses = [ov] + [await profile_parts.part(n, ov["lookup"], None) for n in ov["parts_pending"]]
+    last = max(responses, key=lambda r: r["version"])
+    assert _without_arms_length(last["profile"]) == full
+
+
+async def test_program_membership_in_the_overview_never_asks_the_census_tract():
+    from backend.retrieval import incentives as inc_mod
+
+    with patch.object(inc_mod, "check_tif", new=AsyncMock(return_value=None)), \
+            patch.object(inc_mod, "check_enterprise_zone", new=AsyncMock(return_value=None)), \
+            patch.object(inc_mod, "check_opportunity_zone", new=AsyncMock(return_value=None)), \
+            patch.object(inc_mod, "resolve_census_tract", new=AsyncMock(side_effect=AssertionError("asked"))) as tract:
+        summary = await inc_mod.incentives_membership(LAT, LON)
+    assert tract.await_count == 0
+    assert summary.unchecked == [] and summary.in_tif_district is False
