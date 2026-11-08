@@ -385,3 +385,18 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - Not measured: log volume after the change (expected small: 46 info call sites, about two per Profile request).
 
 **Revisit if:** log volume becomes a cost (then move per-request lines to a sampled logger); the app moves to structured (JSON) logs.
+
+## Item 86: the blocked live FEMA probe warns, and never alarms, while the Chicago copy is fresh (2026-11-08)
+
+**Decision: `fed.fema.nfhl` gets `warns_only_while_ok="artifact.fema_flood_chicago"`,** the same rule `cook.gis.parcels` has had with its Parcel Universe fallback. The daily check still probes FEMA from the server. Because FEMA refuses the server (Item 84), that probe fails every day, and now it is a `warn`, which shows on the admin panel and never reaches Sentry, for as long as the committed copy is fresh. When the copy goes stale (warn at 200 days, alarm at 400), the cap lifts and the FEMA failure alarms again. That's right, because then neither path can be trusted.
+
+**Why:** Item 84 moved every Chicago flood answer to the committed copy. The live service now serves only points outside the city and the artifact build, both run from somewhere FEMA answers. An alarm that fires every day for a reason the Profile no longer depends on would train its reader to ignore the data-health alarms.
+
+**Alternatives:** `probe="none"` (stops watching FEMA altogether, so a URL move would go unnoticed until the next rebuild failed); an `Ack` until a date (it silences the alarm whether or not the copy is fresh, and runs out on a calendar date instead of on a condition); running the probe off-box (needs a second machine for one source).
+
+**Numbers:** 
+- Sentry alarm on `fed.fema.nfhl`: firing (weekly report, 2026-11-07) → expected to drop to warn at the first daily check after deploy.
+- Local dry run 2026-11-08 (`PYTHONPATH=. python -m backend.data_health.check --dry-run --only artifact.fema_flood_chicago,fed.fema.nfhl`): both ok, the artifact built 2026-11-07, age 1 day. From the Mac FEMA answers, so this cannot show the production warn. The unit test `test_a_blocked_live_fema_only_warns_while_the_artifact_is_fresh` covers it with a reset connection and the real registry entries.
+- Not measured: the production panel state after the next daily check.
+
+**Revisit if:** FEMA unblocks the server (the probe then goes back to ok on its own); the server moves to a US region.

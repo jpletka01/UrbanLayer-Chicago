@@ -202,6 +202,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         "FEMA National Flood Hazard Layer (flood zones)", "FEMA", "backend/retrieval/regulatory/flood.py",
         surfaces=_PROP, fact_keys=("regulatory.flood",), severity="standard",
         contract=Contract(layer_name="Flood Hazard Zones"),
+        warns_only_while_ok="artifact.fema_flood_chicago",
         availability_only=True,
         note=("Availability and layer name. A known-answer parcel is M4's sentinel work. The app's own lookup "
               "(retrieval/regulatory/flood.py) raises when FEMA doesn't answer, so the Profile, chat and report say "
@@ -210,7 +211,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
               "a point inside Chicago is answered from artifact.fema_flood_chicago; this service answers only "
               "points outside the city and the artifact build. From the production server it resets every TLS "
               "handshake (measured 2026-11-07), so this probe fails there for a reason the Profile no longer "
-              "depends on."),
+              "depends on: it warns, and never alarms, while the artifact is fresh (Item 86)."),
     ),
     _layer(
         "https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services/FRS_INTERESTS_ACRES/FeatureServer/0",
