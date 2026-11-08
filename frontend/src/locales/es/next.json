@@ -273,10 +273,9 @@
     "timedOut": "No se pudieron revisar {{layer}} a tiempo ·",
     "notChecked": "No se pudo revisar a tiempo ·",
     "retry": "Reintentar",
-    "modeLabel": "{{layer}}: encendido, atenuado o apagado",
+    "modeLabel": "{{layer}}: encendido o apagado",
     "mode": {
       "on": "Sí",
-      "dim": "Tenue",
       "off": "No"
     },
     "districtsInView": "Distritos a la vista",
@@ -313,6 +312,7 @@
     },
     "inSentence": {
       "sales": "ventas recientes"
-    }
+    },
+    "back": "Volver a la propiedad"
   }
 }

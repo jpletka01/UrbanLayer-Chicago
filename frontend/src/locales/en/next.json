@@ -273,10 +273,9 @@
     "timedOut": "Couldn't check {{layer}} in time ·",
     "notChecked": "Couldn't check in time ·",
     "retry": "Retry",
-    "modeLabel": "{{layer}}: on, dim or off",
+    "modeLabel": "{{layer}}: on or off",
     "mode": {
       "on": "On",
-      "dim": "Dim",
       "off": "Off"
     },
     "districtsInView": "Districts in view",
@@ -313,6 +312,7 @@
     },
     "inSentence": {
       "sales": "recent sales"
-    }
+    },
+    "back": "Back to the property"
   }
 }

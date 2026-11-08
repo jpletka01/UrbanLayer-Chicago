@@ -9,7 +9,7 @@ import type { GeoJSONSource, Map as MLMap, MapGeoJSONFeature } from "maplibre-gl
 // MapLibre finds its worker beside its own file, which Vite's bundling moves: point it at the worker explicitly.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { LoaderCircle, MapPinOff, RotateCw, SquareArrowOutUpRight, X } from "lucide-react";
+import { LoaderCircle, LocateFixed, MapPinOff, RotateCw, SquareArrowOutUpRight, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, loadMapInfo } from "./mapInfo";
@@ -42,6 +42,9 @@ export interface NextMapProps {
   sales: ComparableSale[] | null;
   salesState: LateState;
   onRetrySales?: () => void;
+  /** The map is the focus of the screen (Expand): the wheel zooms at once, like a full-page map. In the page band
+      the wheel scrolls the page until the map is clicked. */
+  expanded?: boolean;
   className?: string;
 }
 
@@ -63,7 +66,7 @@ type Picked =
   | { kind: "district"; props: Record<string, string>; at: [number, number] }
   | { kind: "sale"; sale: ComparableSale; at: [number, number] };
 
-export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales, className }: NextMapProps) {
+export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales, expanded = false, className }: NextMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
   const theme: Theme = resolvedTheme === "dark" ? "dark" : "light";
@@ -80,6 +83,9 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   const [counts, setCounts] = useState<Partial<Record<GroupId, number>>>({});
   const [districts, setDistricts] = useState<Array<{ zone: string; family: string; level: string }>>([]);
   const [picked, setPicked] = useState<Picked | null>(null);
+  const [away, setAway] = useState(false);
+  const [boxH, setBoxH] = useState(0);
+  const expandedRef = useRef(expanded);
   const themeRef = useRef(theme);
   const modesRef = useRef(modes);
   useEffect(() => { modesRef.current = modes; }, [modes]);
@@ -110,15 +116,15 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       }
       map = m;
       m.touchZoomRotate.disableRotation();
-      m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
       m.addControl(new maplibregl.AttributionControl({
         compact: true,
         customAttribution: t("map.attribution"),
       }), "bottom-left");
-      // Page maps don't trap the page's scroll: wheel zoom turns on after a click on the map.
-      m.scrollZoom.disable();
+      // No +/- buttons (owner): the wheel and pinch zoom. In the page band the wheel scrolls the page until the
+      // map is clicked; in the expanded map it zooms at once.
+      if (!expandedRef.current) m.scrollZoom.disable();
       m.on("click", () => m.scrollZoom.enable());
-      m.on("mouseout", () => m.scrollZoom.disable());
+      m.on("mouseout", () => { if (!expandedRef.current) m.scrollZoom.disable(); });
       // A lost context must not surface as an error ("WebGL context was lost"); the browser restores it.
       m.on("webglcontextlost", () => undefined);
       m.on("load", () => {
@@ -142,10 +148,37 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   useEffect(() => {
     const el = box.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => mapRef.current?.resize());
+    const ro = new ResizeObserver(() => { mapRef.current?.resize(); setBoxH(el.clientHeight); });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  useEffect(() => {
+    expandedRef.current = expanded;
+    const map = mapRef.current;
+    if (!map) return;
+    if (expanded) map.scrollZoom.enable(); else map.scrollZoom.disable();
+  }, [expanded, ready]);
+
+  // "Back to the property" once the visitor has moved the lot out of the middle of the view or zoomed far off.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const check = () => {
+      const p = map.project([lon, lat]);
+      const c = map.getContainer();
+      const inMiddle = p.x > c.clientWidth * 0.15 && p.x < c.clientWidth * 0.85 && p.y > c.clientHeight * 0.15 && p.y < c.clientHeight * 0.85;
+      setAway(!inMiddle || Math.abs(map.getZoom() - view.zoom) > 1.5);
+    };
+    map.on("moveend", check);
+    return () => { map.off("moveend", check); };
+  }, [ready, lat, lon, view.zoom]);
+  const backToProperty = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom };
+    if (reducedMotion()) map.jumpTo(opts); else map.easeTo({ ...opts, duration: 600 });
+  };
 
   // Transit stations near the lot (the list is cached by the API module).
   useEffect(() => {
@@ -332,6 +365,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       {ready && (
         <MapKey
           defaultOpen={bigMap}
+          maxHeight={boxH > 0 ? boxH - 96 : undefined}
           groups={groups}
           districts={districts}
           onMode={(g, m) => setOverride({ viewId: view.id, modes: { ...modes, [g]: m } })}
@@ -354,6 +388,17 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
             </>
           )}
         </p>
+      )}
+      {ready && away && (
+        <button
+          type="button"
+          onClick={backToProperty}
+          className={`absolute ${expanded ? "top-3" : "bottom-3"} left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-nx-primary px-3 py-1.5 text-caption font-semibold text-nx-primary-fg shadow-[0_1px_4px_rgb(0_0_0/0.2)] touch-target`}
+          data-testid="map-back"
+        >
+          <LocateFixed aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
+          {t("map.back")}
+        </button>
       )}
       {picked && <PickedCard picked={picked} onClose={() => setPicked(null)} lang={i18n.language} />}
     </div>

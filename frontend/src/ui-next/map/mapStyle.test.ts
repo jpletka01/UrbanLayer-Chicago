@@ -2,7 +2,7 @@
 // zoomed in, On / Dim / Off, and a theme switch that repaints every layer without a reload.
 import { describe, expect, it } from "vitest";
 import {
-  DIM, GROUPS, LAYER_IDS, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint,
+  GROUPS, LAYER_IDS, ROAD_METERS, metersPerPixel, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint,
   type MapTiles,
 } from "./mapStyle";
 
@@ -58,14 +58,22 @@ describe("themes and modes", () => {
     expect(dark.find((l) => l.id === "lot-line")!.paint["line-color"]).toBe("#FFFFFF");
   });
 
-  it("Dim scales a group's opacity by 0.3 and Off hides it", () => {
+  it("On / Off only (no Dim): Off hides a group, On restores the theme's opacity", () => {
     const on = modeOpacity("zoning", "on", "light");
-    const dim = modeOpacity("zoning", "dim", "light");
     const off = modeOpacity("zoning", "off", "light");
-    const fillOn = on.find((w) => w.id === "zoning-fill")!.paint["fill-opacity"] as number;
-    expect(dim.find((w) => w.id === "zoning-fill")!.paint["fill-opacity"]).toBeCloseTo(fillOn * DIM);
-    expect(off.every((w) => !w.visible)).toBe(true);
     expect(on.every((w) => w.visible)).toBe(true);
+    expect(off.every((w) => !w.visible)).toBe(true);
+    expect(on.find((w) => w.id === "zoning-fill")!.paint["fill-opacity"]).toBe(0.42);
+  });
+
+  it("draws streets at their real width close in, so they fill the gap between lots", () => {
+    const local = buildStyle(input()).layers.find((l) => l.id === "road-local") as { paint: Record<string, unknown> };
+    const expr = local.paint["line-width"] as unknown[];
+    expect(expr[1]).toEqual(["exponential", 2]);
+    // zoom 20 stop = the street's metres in pixels
+    expect(expr[expr.length - 1]).toBeCloseTo(ROAD_METERS.local / metersPerPixel(20));
+    // at zoom 16 a 16 m local street is about 9 px wide
+    expect(ROAD_METERS.local / metersPerPixel(16)).toBeGreaterThan(8);
   });
 
   it("every group the key offers owns at least one layer", () => {

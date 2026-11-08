@@ -14,7 +14,7 @@ export interface GroupState {
   late?: LateState;
 }
 
-const MODES: LayerMode[] = ["on", "dim", "off"];
+const MODES: LayerMode[] = ["on", "off"];
 
 function swatch(id: GroupId): string {
   return {
@@ -22,7 +22,9 @@ function swatch(id: GroupId): string {
   }[id];
 }
 
-export function MapKey({ groups, districts, onMode, onRetry, defaultOpen }: {
+export function MapKey({ groups, districts, onMode, onRetry, defaultOpen, maxHeight }: {
+  /** The map's height less the key button: the open key scrolls inside it instead of running off the map. */
+  maxHeight?: number;
   /** Open at first only on a map tall enough to hold it beside the lot (the Profile's band is not). */
   defaultOpen: boolean;
   groups: GroupState[];
@@ -46,7 +48,7 @@ export function MapKey({ groups, districts, onMode, onRetry, defaultOpen }: {
         <ChevronDown aria-hidden className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={1.5} />
       </button>
       {open && (
-        <ul className="mt-1.5 flex w-64 flex-col gap-2 rounded-xl bg-nx-page p-3 shadow-[0_1px_4px_rgb(0_0_0/0.15)]">
+        <ul className="mt-1.5 flex w-64 flex-col gap-2 overflow-y-auto overscroll-contain rounded-xl bg-nx-page p-3 shadow-[0_1px_4px_rgb(0_0_0/0.15)]" style={maxHeight ? { maxHeight } : undefined}>
           {groups.map((g) => (
             <li key={g.id} className="flex flex-col gap-1" data-testid={`key-${g.id}`}>
               <div className="flex items-center justify-between gap-2">

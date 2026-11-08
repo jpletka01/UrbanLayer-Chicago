@@ -5,15 +5,14 @@
 //
 // What the look is made of (research/15 §2.4): a dim, desaturated base; our shapes filled and outlined thinly in a
 // color that means something; roads drawn by the map over the fills in a few classes; names only zoomed in;
-// On / Dim / Off per layer (Dim multiplies opacity by 0.3).
+// On / Off per layer (the owner dropped Dim after his first review: zoning reads best fully on).
 
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 
 export type Theme = "light" | "dark";
-export type LayerMode = "on" | "dim" | "off";
-export const DIM = 0.3;
+export type LayerMode = "on" | "off";
 
-/** The groups a visitor can turn On / Dim / Off, in the key's order. The base land and water are not a group. */
+/** The groups a visitor can turn On / Off, in the key's order. The base land and water are not a group. */
 export type GroupId = "zoning" | "parcels" | "streets" | "sales" | "transit";
 export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "transit", "streets"];
 
@@ -40,7 +39,7 @@ interface Palette {
 export const PALETTES: Record<Theme, Palette> = {
   light: {
     outside: "#E4E7EB", land: "#EEF0F3", water: "#C6D9E3", park: "#D6E8D8",
-    highway: "#F0A08C", major: "#F6CF9E", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F4B8A8", casing: "#D3D8DE",
+    highway: "#EE9580", major: "#F3C58C", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F2AE9C", casing: "#D3D8DE",
     label: "#3C4249", halo: "#F4F6F8",
     parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
     lot: "#1C1C1C", lotEdge: "#FFFFFF",
@@ -49,7 +48,7 @@ export const PALETTES: Record<Theme, Palette> = {
   },
   dark: {
     outside: "#141516", land: "#1E2023", water: "#18252D", park: "#1B2620",
-    highway: "#E8806F", major: "#D9AE73", minor: "#565B61", local: "#3B3F44", ramp: "#B56F62", casing: "#141516",
+    highway: "#E8806F", major: "#D9AE73", minor: "#8A9097", local: "#6B7178", ramp: "#B56F62", casing: "#141516",
     label: "#C9CDD2", halo: "#1E2023",
     parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
     lot: "#FFFFFF", lotEdge: "#1C1C1C",
@@ -88,7 +87,7 @@ function zoningColorExpr(): unknown {
 interface LayerDef {
   group: GroupId | null;
   spec: (t: Theme) => LayerSpecification;
-  /** Paint properties holding an opacity that On / Dim / Off scales. */
+  /** Paint properties holding an opacity that On restores after a theme change. */
   opacity: string[];
   needs: keyof MapTiles | "sales" | "transit" | "lot" | null;
 }
@@ -96,13 +95,26 @@ interface LayerDef {
 const zoomWidth = (stops: Array<[number, number]>) =>
   ["interpolate", ["exponential", 1.6], ["zoom"], ...stops.flat()] as unknown as number;
 
-const roadLayer = (kind: string, minzoom: number, widths: Array<[number, number]>, color: keyof Palette): LayerDef => ({
+/** Ground metres per pixel at Chicago's latitude (41.88°) at a zoom. */
+export const metersPerPixel = (z: number) => 116_630 / 2 ** z;
+
+/** A road drawn at its real width from zoom 14 up (it scales with the map, base 2, so a street fills the gap between
+    the lots on either side: streets read as clean negative space, owner's review), and at a readable minimum below. */
+export const roadWidth = (meters: number, lowZoomPx: number) =>
+  ["interpolate", ["exponential", 2], ["zoom"],
+    10, lowZoomPx, 14, Math.max(lowZoomPx, meters / metersPerPixel(14)), 20, meters / metersPerPixel(20)] as unknown as number;
+
+/** Street widths in metres, a little under Chicago's usual right-of-way (66 ft local, 80-100 ft arterials) so the lot
+    lines at its edges stay visible. */
+export const ROAD_METERS = { local: 16, minor: 20, major: 24, highway: 34, ramp: 8 } as const;
+
+const roadLayer = (kind: keyof typeof ROAD_METERS, minzoom: number, lowZoomPx: number, color: keyof Palette): LayerDef => ({
   group: "streets", needs: "base", opacity: ["line-opacity"],
   spec: (t) => ({
     id: `road-${kind}`, type: "line", source: "base", "source-layer": "road", minzoom,
     filter: ["==", ["get", "kind"], kind],
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": PALETTES[t][color] as string, "line-width": zoomWidth(widths), "line-opacity": 1 },
+    paint: { "line-color": PALETTES[t][color] as string, "line-width": roadWidth(ROAD_METERS[kind], lowZoomPx), "line-opacity": 1 },
   }),
 });
 
@@ -136,11 +148,11 @@ export const LAYERS: LayerDef[] = [
         "line-width": zoomWidth([[14, 0.3], [16, 0.7], [19, 1.4]]) } }),
   },
   // Roads over the fills, quietest first (a white gap in light, warm arterials in dark).
-  roadLayer("local", 13, [[13, 0.5], [15, 2], [17, 6], [19, 14]], "local"),
-  roadLayer("minor", 12, [[12, 0.6], [15, 3], [17, 8], [19, 18]], "minor"),
-  roadLayer("ramp", 12, [[12, 0.5], [15, 1.6], [17, 4]], "ramp"),
-  roadLayer("major", 10, [[10, 0.7], [13, 1.6], [15, 4], [17, 10], [19, 22]], "major"),
-  roadLayer("highway", 10, [[10, 1.2], [13, 2.4], [15, 5], [17, 12], [19, 26]], "highway"),
+  roadLayer("local", 13, 0.6, "local"),
+  roadLayer("minor", 12, 0.8, "minor"),
+  roadLayer("ramp", 12, 0.6, "ramp"),
+  roadLayer("major", 10, 1.0, "major"),
+  roadLayer("highway", 10, 1.6, "highway"),
   {
     group: null, needs: "lot", opacity: [],
     spec: (t) => ({ id: "lot-edge", type: "line", source: "lot",
@@ -230,22 +242,12 @@ export function themePaint(theme: Theme): Array<{ id: string; paint: Record<stri
   });
 }
 
-/** The opacity values for a group's layers in a mode: Off hides (visibility), Dim scales the theme's opacity by
-    0.3. Returns the property writes; `visible` false means set `visibility: none`. */
+/** A group's layers in a mode: Off hides them (visibility); On restores the theme's opacity. */
 export function modeOpacity(group: GroupId, mode: LayerMode, theme: Theme): Array<{ id: string; visible: boolean; paint: Record<string, unknown> }> {
   return LAYERS.filter((l) => l.group === group).map((l) => {
     const s = l.spec(theme) as { id: string; paint?: Record<string, unknown> };
     const paint: Record<string, unknown> = {};
-    for (const p of l.opacity) {
-      const base = s.paint?.[p] ?? 1;
-      paint[p] = mode === "dim" ? scale(base, DIM) : base;
-    }
+    for (const p of l.opacity) paint[p] = s.paint?.[p] ?? 1;
     return { id: s.id, visible: mode !== "off", paint };
   });
-}
-
-function scale(v: unknown, k: number): unknown {
-  if (typeof v === "number") return v * k;
-  // An expression (the parcel highlight): multiply its result.
-  return ["*", v, k];
 }

@@ -37,11 +37,11 @@ import { useProfileParts, type PartStatus } from "./useProfileParts";
 type TabId = "overview" | "build";
 
 /** Each tab's camera and layers on the one map (map track M1): the Overview looks at the lot among its neighbors and
-    recent sales with zoning dimmed; Build pulls back to the districts around it with zoning on. The visitor's
-    On / Dim / Off choices hold until the tab changes. */
+    recent sales; Build pulls back to the districts around it. Zoning is on in both (owner's review: it reads best
+    fully on). The visitor's On / Off choices hold until the tab changes. */
 const MAP_VIEWS: Record<TabId, MapView> = {
-  overview: { id: "overview", zoom: 17, modes: { zoning: "dim", parcels: "on", sales: "on", transit: "on", streets: "on" } },
-  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", transit: "dim", streets: "on" } },
+  overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", transit: "on", streets: "on" } },
+  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", transit: "on", streets: "on" } },
 };
 const TABS: TabId[] = ["overview", "build"];
 
@@ -334,12 +334,13 @@ function ProfileScreen({
                 sales={data?.comparables?.sales ?? null}
                 salesState={salesState}
                 onRetrySales={() => onRetryParts(["money"])}
+                expanded={mapFocused}
                 className="h-full"
               />
               <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
                 {address}
               </h1>
-              {/* Icon only, bottom-right beside Mapbox's zoom buttons with a gap (owner's call; the key keeps the top-right corner). */}
+              {/* Icon only, in the bottom-right corner (owner: no +/- buttons; the key keeps the top-right corner). */}
               <button
                 ref={mapButtonRef}
                 type="button"
@@ -348,7 +349,7 @@ function ProfileScreen({
                 aria-label={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
                 title={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
                 data-testid="map-focus"
-                className="absolute bottom-2.5 right-12 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
+                className="absolute bottom-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
               >
                 {mapFocused
                   ? <Shrink aria-hidden className="h-4 w-4" strokeWidth={1.5} />
