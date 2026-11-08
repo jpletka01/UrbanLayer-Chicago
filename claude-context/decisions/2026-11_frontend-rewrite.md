@@ -368,3 +368,20 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Still open:** the `fed.fema.nfhl` data-health probe asks FEMA live from the server, so it keeps failing there and its stale alarm will continue. The Profile no longer depends on it. Acknowledging the alarm or running the probe off-box is the owner's call.
 
 **Revisit if:** FEMA unblocks the server's address (then a live check of the copy against FEMA could join data health); FEMA issues a Cook County map revision; UrbanLayer covers places outside Chicago (they would all go to the blocked live path).
+
+## Item 85: the backend's own info lines reach the production logs (2026-11-08)
+
+**Decision: at startup, `log_safety.configure()` gives the root logger a stderr handler (`LEVEL logger: message`) and sets the `backend` logger to INFO; the root stays at WARNING, so libraries (httpx, uvicorn's internals, sentence-transformers) stay quiet.** It runs before `log_safety.install()`, so the CR/LF filter now has a handler to sit on.
+
+**Why: found while verifying Item 84.** The `scorecard timings` lines Item 81 added, and Item 83 planned to re-measure from, never reached production. `grep 'scorecard timings'` over two hours of backend logs returned nothing. Uvicorn configures only its own loggers, so the root logger had no handler. The app's warnings reached stderr through Python's last-resort handler, which shows WARNING and up and runs no filters, and every `log.info` was dropped. The same gap meant `log_safety.install()` (which attaches to root handlers) found nothing to attach to, so the app's own warnings were written unescaped.
+
+**Privacy: two lines move down to DEBUG.** `conversation.py` logged the user's chat message ("Synthesized query", "Neighborhood switch") at INFO. Turning INFO on would have started writing chat text to the production logs, so both are DEBUG now (a test checks that). The remaining info lines, 44 of them, are startup and model loads, migrations, Stripe webhook outcomes (user and Stripe ids, as the existing warnings already log), parcel-lookup notes and the timings.
+
+**Alternatives:** `uvicorn --log-config` with a dictConfig file (the same effect, but it would live in the Dockerfile and compose, apart from the code it serves); `logging.basicConfig(level=INFO)` (turns INFO on for every library too, noisy); raising the timings line to WARNING (it isn't a warning, and every Profile request would then read as one).
+
+**Numbers:**
+- `scorecard timings` lines in two hours of production logs, 2026-11-08: 0 → expected one per Profile request after deploy.
+- Reproduce: `sudo docker logs --since 2h urbanlayer-backend-1 2>&1 | grep 'scorecard timings'` on the server.
+- Not measured: log volume after the change (expected small: 46 info call sites, about two per Profile request).
+
+**Revisit if:** log volume becomes a cost (then move per-request lines to a sampled logger); the app moves to structured (JSON) logs.
