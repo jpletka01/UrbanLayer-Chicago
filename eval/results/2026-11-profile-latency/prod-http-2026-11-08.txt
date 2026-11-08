@@ -1,0 +1,34 @@
+# Production, whole requests from outside, 2026-11-08 morning (Phase 3, Item 87). One visit at a time; a visit starts /api/scorecard/first and /api/scorecard together, as the preview page does.
+# address|visit|endpoint|http status + seconds|resolved_confidence + number of failed sources (full only)
+3500 W Diversey Ave|first|first|200 3.166336|
+3500 W Diversey Ave|first|full|200 17.824838|authoritative 0 
+3500 W Diversey Ave|repeat|first|200 1.054765|
+3500 W Diversey Ave|repeat|full|200 2.029710|authoritative 0 
+6000 N Broadway|first|first|200 4.821105|
+6000 N Broadway|first|full|200 14.430050|authoritative 0 
+6000 N Broadway|repeat|first|200 0.814859|
+6000 N Broadway|repeat|full|200 1.509588|authoritative 0 
+4300 S Archer Ave|first|first|200 2.951816|
+4300 S Archer Ave|first|full|200 22.013488|authoritative 0 
+4300 S Archer Ave|repeat|first|200 0.976823|
+4300 S Archer Ave|repeat|full|200 2.030398|authoritative 0 
+2200 W Chicago Ave|first|first|200 2.650518|
+2200 W Chicago Ave|first|full|200 12.376372|authoritative 0 
+2200 W Chicago Ave|repeat|first|200 1.300344|
+2200 W Chicago Ave|repeat|full|200 2.476318|authoritative 0 
+7900 S Stony Island Ave|first|first|200 2.044621|
+7900 S Stony Island Ave|first|full|200 22.332157|authoritative 0 
+7900 S Stony Island Ave|repeat|first|200 0.963101|
+7900 S Stony Island Ave|repeat|full|200 1.604196|authoritative 0 
+1100 W 18th St|first|first|200 2.334184|
+1100 W 18th St|first|full|200 20.634399|authoritative 0 
+1100 W 18th St|repeat|first|200 1.220397|
+1100 W 18th St|repeat|full|200 1.944706|authoritative 0 
+5800 W Irving Park Rd|first|first|200 1.730806|
+5800 W Irving Park Rd|first|full|200 22.814814|authoritative 0 
+5800 W Irving Park Rd|repeat|first|200 1.137660|
+5800 W Irving Park Rd|repeat|full|200 1.606409|authoritative 0 
+3100 N Sheffield Ave|first|first|200 2.164732|
+3100 N Sheffield Ave|first|full|200 20.269611|approximate 0 
+3100 N Sheffield Ave|repeat|first|200 1.622598|
+3100 N Sheffield Ave|repeat|full|200 1.739633|approximate 0 

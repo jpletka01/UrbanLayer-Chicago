@@ -400,3 +400,27 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - Not measured: the production panel state after the next daily check.
 
 **Revisit if:** FEMA unblocks the server (the probe then goes back to ok on its own); the server moves to a US region.
+
+## Item 87: Phase 3, production Profile latency after the first screen and the FEMA fix (2026-11-08)
+
+**Status: measured from outside; the per-task view from the server's `scorecard timings` lines is still to come** (reading them needs `sudo` on the server, so the owner pulls them). Item 83 asked for this re-measurement once #204 (the first screen) was live; the FEMA fix (Items 84–86) landed the same morning.
+
+**What was measured.** 8 Chicago addresses nobody had opened in this test series (`eval/results/2026-11-profile-latency/prod-http-2026-11-08.txt`), one visit at a time from a home connection outside the US, through Cloudflare. A visit starts `/api/scorecard/first` and `/api/scorecard` together, as the preview page does, and each address was visited twice. No model calls (the Profile has none).
+
+| | first screen (`/first`) p50 · p95 | full Profile p50 · p95 |
+|---|---|---|
+| First visit (n=8) | **2.5 s · 4.8 s** (1.7–4.8 s) | **20.4 s · 22.8 s** (12.4–22.8 s) |
+| Repeat visit (n=8) | 1.1 s · 1.6 s | **1.8 s · 2.5 s** |
+| Item 83, 2026-11-07, before both fixes (n=10) | not live | first 24.7 s · 44.1 s; repeat 4.0 s · 14.4 s |
+
+- **Failed sources: 0 of 16 full responses** (the day before: flood failed on 10 of 10). Flood is answered from the committed copy (Item 84).
+- **Repeat visits dropped from 4.0 s to 1.8 s p50.** Server-side a repeat takes 44–52 ms (Item 84's close-out); the rest is the network route from outside the US to the Nuremberg server, so a US visitor should see less.
+- **The first screen meets Item 81's targets on production**: under 3 s warm at p95 (1.6 s) and under 6 s cold at p95 (4.8 s, n=8).
+- **The full first visit is still 20 s**, as expected: the response split is Phase 4. That's the wait builders see on their own lot in the builder test (Item 88).
+- One of 8 resolved approximately (3100 N Sheffield); its first screen showed no lot, as designed (Item 82).
+
+**Decision: none needed; the latency is fit for the builder test.** The first screen holds; the full-Profile wait on a fresh lot is what case 2 of the test observes.
+
+**Not measured:** the per-task split on production (the `scorecard timings` lines: total, resolution, fetch, three slowest tasks); a US network; more than 8 addresses (p95 of 8 is the slowest run).
+
+**Revisit if:** the server-side log lines show a task far slower than Item 81's local numbers; the first screen's p95 goes above 6 s cold on more visits.
