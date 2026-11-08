@@ -580,3 +580,21 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - **The key fits the band:** it scrolls inside the map's height instead of running off it.
 - **Why the lot looks wavy (found, not changed):** PTAXSIM stores every parcel outline rounded to 5 decimals (about 1 m), so straight edges step. The County's own parcel layer has full precision (`77tz-riq7`, the 2021 vintage, the newest published with geometry). Swapping the source for the map's lot and lot tiles is the owner's call.
 - **How the reference draws roads and buildings:** OSM street centerlines as colored lines of set pixel widths per class over building footprints (OSM buildings); streets read as gaps because the fills are buildings, not lots. Building footprints for us would come from the City's footprints (`syp8-uezg`, last updated 2015) or an outside source; the owner's call.
+
+---
+
+## Item 92: the map draws lots from the County's full-precision outlines where they still match (2026-11-08)
+
+**Decision (owner, "Yes, switch outlines", 2026-11-08): the new map draws each lot from the County's GIS parcel layer at full precision, and falls back to PTAXSIM's outline only where the County's no longer describes today's lot.** PTAXSIM stores every outline rounded to 5 decimals (about 1 m), so a straight edge drew as small steps (the owner's "wave" on 1601 N Milwaukee). The County's newest layer published with geometry is 2021 (`77tz-riq7`, "ccgisdata - Parcel 2021").
+- **The rule** (`backend/map_tiles/county_outlines.py`, `still_matches`): the County's outline is used when its area is within 10% of PTAXSIM's newest outline and the two overlap by at least 85% (intersection over union). A lot split, merged or redrawn since 2021 keeps PTAXSIM's newer outline.
+- **Where it applies:** the lot tiles (`parcel_tiles.load_parcels` reads the local copy when it exists; Discovery's map draws the same tiles, so its outlines sharpen too) and the subject lot (`GET /api/map/lot?pin10=`, which the new map uses in place of the page's rounded outline). MapLibre's own GeoJSON simplification is off for the lot (`tolerance: 0`).
+- **Where it doesn't:** land area, every Profile figure, capacity, the report and chat still read PTAXSIM exactly as before. This is drawing only.
+- **The copy:** `python -m backend.map_tiles.county_outlines` reads Chicago's 612,202 rows (604,830 PIN10s; pieces of one PIN10 united), refuses a read under 500,000 rows, and writes `backend/data/county_outlines_2021.db` (108 MB, 99 s) atomically.
+
+**Numbers (this Mac, citywide, 2026-11-08):** of 604,220 lot outlines, **593,658 (98.3%) now draw the County's outline** and 10,562 keep PTAXSIM's; tile file 28.7 MB (largest tile 74 KB at zoom 14, 10 KB at 16); 133 s. The lot endpoint returns the County outline for 1601 N Milwaukee (12 vertices at full precision, where PTAXSIM's had 15 steps). Zoning accuracy (Item 91) is unaffected: it reads PTAXSIM outlines on purpose, the same lots the Profile reasons about.
+
+**Alternatives:** keep PTAXSIM (the wave stays); the County's live GIS service (times out, Known Issues); smoothing PTAXSIM's outlines (changes the shapes, rejected).
+
+**Production:** once on the server, `docker compose run --rm --no-deps backend python -m backend.map_tiles.county_outlines`, then rebuild the lot tiles (`... python -m backend.discovery.parcel_tiles`; the monthly index rebuild also picks the copy up from then on). Without the copy everything draws PTAXSIM's outlines, as today.
+
+**Revisit if:** the County publishes a newer parcel layer with geometry (swap the dataset id and re-fetch); the fallback share grows past about 5% (the copy has aged); a lot's two outlines disagree in a way the 85% rule misses.

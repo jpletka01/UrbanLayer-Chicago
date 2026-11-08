@@ -260,10 +260,19 @@ def _polygonal(g):
 
 
 def load_parcels(
-    index_path: Path, ptaxsim_path: Path, community_areas: list[int] | None
+    index_path: Path, ptaxsim_path: Path, community_areas: list[int] | None, county_outlines: Path | None = None,
+    stats: dict | None = None,
 ) -> tuple[list[Parcel], int, int]:
     """PIN10s from the Discovery index (optionally a few community areas) with their latest PTAXSIM outline.
-    Returns the parcels, the PIN10s with no usable outline, and the outlines repaired with make_valid."""
+    Returns the parcels, the PIN10s with no usable outline, and the outlines repaired with make_valid.
+
+    With ``county_outlines`` (the local copy of the County's full-precision 2021 layer, Item 92) a lot draws the
+    County's outline where it still matches PTAXSIM's newest one; PTAXSIM rounds to about 1 m, which makes
+    straight edges step. ``stats["county_outlines"]`` counts the lots that use it."""
+    from backend.map_tiles.county_outlines import Outlines, still_matches
+
+    county = Outlines(county_outlines) if county_outlines else None
+    used = 0
     idx = sqlite3.connect(f"file:{index_path}?mode=ro", uri=True)
     want: dict[str, dict[str, str]] = {}
     rows = idx.execute("SELECT pin, attrs, regions FROM parcels")
@@ -290,6 +299,7 @@ def load_parcels(
             f"SELECT pin10, geometry FROM pin_geometry_raw WHERE pin10 IN ({marks}) ORDER BY end_year ASC", chunk
         ):
             latest[pin10] = text  # ascending end_year: the last one written wins
+        precise = county.many(list(latest)) if county else {}
         for pin10, text in latest.items():
             try:
                 g = shapely_wkt.loads(text)
@@ -301,9 +311,17 @@ def load_parcels(
                 continue
             if g is None or g.is_empty or g.geom_type not in ("Polygon", "MultiPolygon"):
                 continue
+            c = precise.get(pin10)
+            if c is not None and still_matches(c, g):
+                c = _polygonal(c)
+                if c is not None and not c.is_empty:
+                    g = c
+                    used += 1
             g = shapely.transform(g, _to_unit_mercator)
             parcels.append(Parcel(pin10, g, want[pin10]))
     geo.close()
+    if stats is not None:
+        stats["county_outlines"] = used
     return parcels, len(want) - len(parcels), repaired
 
 
@@ -345,7 +363,7 @@ def write_mbtiles(
 
 def build_file(
     index_path: Path, ptaxsim_path: Path, out: Path, *, community_areas: list[int] | None = None,
-    minzoom: int = MIN_ZOOM, maxzoom: int = MAX_ZOOM,
+    minzoom: int = MIN_ZOOM, maxzoom: int = MAX_ZOOM, county_outlines: Path | None = None,
 ) -> dict:
     """Build the tile file for an index and swap it in atomically: written beside ``out`` and renamed over it
     only when complete, so the endpoint never reads a half-written file and a failed build leaves the previous
@@ -357,7 +375,12 @@ def build_file(
 
     meta = read_meta(index_path)
     t0 = time.monotonic()
-    parcels, missing, repaired = load_parcels(index_path, ptaxsim_path, community_areas)
+    if county_outlines is None:
+        from backend.config import get_settings
+
+        county_outlines = get_settings().county_outlines_path  # absent file = PTAXSIM outlines only
+    extra: dict = {}
+    parcels, missing, repaired = load_parcels(index_path, ptaxsim_path, community_areas, county_outlines, extra)
     if not parcels:
         raise RuntimeError(f"no parcel outlines for {index_path}: refusing to replace the tile file with an empty one")
     count = len(parcels)
@@ -368,10 +391,12 @@ def build_file(
         "parcels": str(count),
         "pin10_without_outline": str(missing),
         "outlines_repaired": str(repaired),
+        "county_outlines": str(extra.get("county_outlines", 0)),
     })
     tmp.replace(out)
     summary = {
         "parcels_with_outline": count, "pin10_without_outline": missing, "outlines_repaired": repaired,
+        "county_outlines": extra.get("county_outlines", 0),
         "pieces_unclipped": stats.unclipped, "tiles": stats.tiles,
         "mb_gz": {z: round(b / 1e6, 2) for z, b in stats.bytes_gz.items()},
         "max_tile_kb_gz": {z: round(b / 1e3, 1) for z, b in stats.max_tile_gz.items()},

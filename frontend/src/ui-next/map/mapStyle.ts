@@ -217,7 +217,8 @@ const EMPTY = { type: "FeatureCollection", features: [] } as const;
 /** The full style for the first paint. Later changes go through `themePaint` / `modeOpacity`, never a reload. */
 export function buildStyle({ theme, apiOrigin, glyphsBase, tiles }: StyleInput): StyleSpecification {
   const sources: StyleSpecification["sources"] = {
-    lot: { type: "geojson", data: EMPTY as never },
+    // The lot is drawn exactly: no simplification, and cut finely up to zoom 22.
+    lot: { type: "geojson", data: EMPTY as never, tolerance: 0, maxzoom: 22 },
     sales: { type: "geojson", data: EMPTY as never },
     transit: { type: "geojson", data: EMPTY as never },
   };

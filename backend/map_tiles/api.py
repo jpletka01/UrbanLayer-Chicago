@@ -91,3 +91,37 @@ def map_tile(name: str, z: int, x: int, y: int) -> Response:
         return Response(status_code=204, headers=headers)
     headers["Content-Encoding"] = "gzip"
     return Response(content=data, media_type="application/vnd.mapbox-vector-tile", headers=headers)
+
+
+@router.get("/lot")
+def map_lot(pin10: str) -> dict:
+    """The outline the new map draws for one lot (Item 92): the County's full-precision 2021 outline when it still
+    matches PTAXSIM's newest one, else PTAXSIM's. Drawing only; the Profile's land area reads PTAXSIM as before.
+    404 when PTAXSIM has no outline for the PIN10."""
+    import shapely
+    from shapely import wkt as shapely_wkt
+    from shapely.geometry import mapping
+
+    from backend.config import get_settings
+    from backend.map_tiles.county_outlines import best_outline, default_outlines
+
+    digits = "".join(ch for ch in pin10 if ch.isdigit())
+    if len(digits) != 10:
+        raise HTTPException(status_code=400, detail="pin10 must be 10 digits")
+    path = get_settings().ptaxsim_db_path
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="no outline")
+    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        row = db.execute(
+            "SELECT geometry FROM pin_geometry_raw WHERE pin10 = ? ORDER BY end_year DESC LIMIT 1", (digits,)
+        ).fetchone()
+    finally:
+        db.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="no outline")
+    ptaxsim = shapely_wkt.loads(row[0])
+    if not ptaxsim.is_valid:
+        ptaxsim = shapely.make_valid(ptaxsim)
+    geom, source = best_outline(digits, ptaxsim, default_outlines())
+    return {"pin10": digits, "source": source, "geometry": mapping(geom)}

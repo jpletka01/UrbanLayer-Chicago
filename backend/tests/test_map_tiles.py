@@ -198,3 +198,56 @@ def test_tiles_404_when_not_installed_then_serve(client, tmp_path):
     info = client.get("/api/map/info").json()
     assert info["base"] == {"minZoom": 15, "maxZoom": 16, "builtAt": "2026-11-08"}
     assert info["zoning"] is None
+
+
+# ---------------------------------------------------------------- full-precision outlines (Item 92)
+
+
+def test_a_county_outline_is_used_only_while_it_still_matches_todays_lot():
+    from shapely.geometry import box
+
+    from backend.map_tiles.county_outlines import still_matches
+
+    ptaxsim = box(-87.67800, 41.91060, -87.67760, 41.91100)          # today's lot, 1 m rounding
+    precise = box(-87.678004, 41.910603, -87.677597, 41.910998)      # the same lot at full precision
+    split = box(-87.67800, 41.91060, -87.67780, 41.91100)            # half of it: the lot was split since 2021
+    shifted = box(-87.67750, 41.91060, -87.67710, 41.91100)          # a neighbor
+    assert still_matches(precise, ptaxsim)
+    assert not still_matches(split, ptaxsim)
+    assert not still_matches(shifted, ptaxsim)
+
+
+def test_lot_endpoint_prefers_the_matching_county_outline(tmp_path, monkeypatch):
+    import sqlite3 as sq
+
+    import shapely
+    from shapely.geometry import box
+
+    from backend.config import get_settings
+    from backend.main import app
+    from backend.map_tiles import county_outlines
+
+    pt = tmp_path / "ptaxsim.db"
+    db = sq.connect(pt)
+    db.execute("CREATE TABLE pin_geometry_raw (pin10 TEXT, start_year INT, end_year INT, longitude REAL, latitude REAL, geometry TEXT)")
+    db.execute("INSERT INTO pin_geometry_raw VALUES ('1431332018', 2006, 2024, 0, 0, ?)",
+               (box(-87.67800, 41.91060, -87.67760, 41.91100).wkt,))
+    db.commit()
+    db.close()
+    co = tmp_path / "county.db"
+    db = sq.connect(co)
+    db.execute("CREATE TABLE outlines (pin10 TEXT PRIMARY KEY, wkb BLOB)")
+    db.execute("INSERT INTO outlines VALUES ('1431332018', ?)", (shapely.to_wkb(box(-87.678004, 41.910603, -87.677597, 41.910998)),))
+    db.commit()
+    db.close()
+    s = get_settings()
+    monkeypatch.setattr(s, "ptaxsim_db_path", pt)
+    monkeypatch.setattr(county_outlines, "default_outlines", lambda: county_outlines.Outlines(co))
+    client = TestClient(app)
+    r = client.get("/api/map/lot?pin10=1431332018")
+    assert r.status_code == 200 and r.json()["source"] == "county_2021"
+    assert r.json()["geometry"]["coordinates"][0][0][0] == pytest.approx(-87.677597)
+    monkeypatch.setattr(county_outlines, "default_outlines", lambda: county_outlines.Outlines(tmp_path / "missing.db"))
+    assert client.get("/api/map/lot?pin10=1431332018").json()["source"] == "ptaxsim"
+    assert client.get("/api/map/lot?pin10=0000000000").status_code == 404
+    assert client.get("/api/map/lot?pin10=12").status_code == 400

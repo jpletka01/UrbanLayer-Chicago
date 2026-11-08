@@ -181,6 +181,8 @@ class Settings(BaseSettings):
     # The new UI's own map tiles (Items 90+): the base from the City's streets, parks and water; official zoning.
     map_base_tiles_path: Path = PROJECT_ROOT / "backend" / "data" / "map_base.mbtiles"
     map_zoning_tiles_path: Path = PROJECT_ROOT / "backend" / "data" / "map_zoning.mbtiles"
+    # Full-precision County parcel outlines (2021) for drawing lots on the new map (Item 92).
+    county_outlines_path: Path = PROJECT_ROOT / "backend" / "data" / "county_outlines_2021.db"
     # Written daily by `python -m backend.legislation.sync` (prod timer) on the same volume;
     # the app only reads it, reloading when its mtime changes.
     legislation_snapshot_path: Path = PROJECT_ROOT / "backend" / "data" / "legislation_snapshot.json"

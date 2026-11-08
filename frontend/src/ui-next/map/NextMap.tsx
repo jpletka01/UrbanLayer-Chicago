@@ -12,7 +12,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { LoaderCircle, LocateFixed, MapPinOff, RotateCw, SquareArrowOutUpRight, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
-import { apiOrigin, loadMapInfo } from "./mapInfo";
+import { apiOrigin, fetchLotOutline, loadMapInfo } from "./mapInfo";
 import type { ComparableSale, TransitStation } from "../../lib/types";
 import { humanizeShoutyCase } from "../../lib/format";
 import { rowTitle } from "../../discovery/rowFigures";
@@ -84,6 +84,9 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   const [districts, setDistricts] = useState<Array<{ zone: string; family: string; level: string }>>([]);
   const [picked, setPicked] = useState<Picked | null>(null);
   const [away, setAway] = useState(false);
+  // The County's full-precision outline for this lot, when it still matches (Item 92); else the page's own.
+  const [precise, setPrecise] = useState<{ pin10: string; geometry: GeoJSON.Geometry } | null>(null);
+  const lotGeometry = precise && precise.pin10 === pin10 ? precise.geometry : geometry;
   const [boxH, setBoxH] = useState(0);
   const expandedRef = useRef(expanded);
   const themeRef = useRef(theme);
@@ -214,15 +217,22 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     if (map && ready) applyModes(map, modes, theme);
   }, [modes, ready, theme]);
 
+  useEffect(() => {
+    if (!pin10) return;
+    const c = new AbortController();
+    fetchLotOutline(pin10, c.signal).then((g) => { if (g && !c.signal.aborted) setPrecise({ pin10, geometry: g }); });
+    return () => c.abort();
+  }, [pin10]);
+
   // The lot.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     const src = map.getSource("lot") as GeoJSONSource | undefined;
-    src?.setData(geometry
-      ? { type: "FeatureCollection", features: [{ type: "Feature", geometry, properties: { approximate } }] }
+    src?.setData(lotGeometry
+      ? { type: "FeatureCollection", features: [{ type: "Feature", geometry: lotGeometry, properties: { approximate } }] }
       : { type: "FeatureCollection", features: [] });
-  }, [geometry, approximate, ready]);
+  }, [lotGeometry, approximate, ready]);
 
   // The lot's outline is marked in the parcel layer too (feature-state; one tile set serves every page).
   useEffect(() => {
