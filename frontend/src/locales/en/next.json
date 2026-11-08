@@ -185,6 +185,26 @@
       "expand": "Expand map",
       "close": "Close map",
       "focusedLabel": "Map of {{address}}"
+    },
+    "first": {
+      "zonedLotHeight": "Zoned {{zone}}: up to {{floor}} sq ft of floor area on this {{lot}} sq ft lot, up to {{height}} ft tall.",
+      "zonedLot": "Zoned {{zone}}: up to {{floor}} sq ft of floor area on this {{lot}} sq ft lot.",
+      "zonedFarHeight": "Zoned {{zone}}: a floor-area ratio of {{far}}, up to {{height}} ft tall.",
+      "zonedFar": "Zoned {{zone}}: a floor-area ratio of {{far}}.",
+      "zoned": "Zoned {{zone}}.",
+      "noZone": "The City's zoning map shows no district at this point.",
+      "zoningUnchecked": "The zoning district couldn't be checked yet.",
+      "checkingLabel": "Checking",
+      "checking": {
+        "units": "Checking County building records",
+        "tax": "Checking County tax records",
+        "walk": "Checking Walk Score",
+        "lastSale": "Checking County sales"
+      },
+      "stillChecking": "Still checking: overlays and flood (City map, FEMA) · sales and tax history (Cook County) · neighborhood (crime, 311, transit).",
+      "restFailed": "Couldn't load the rest of this profile.",
+      "retry": "Retry",
+      "toolsLater": "Available once the profile has loaded"
     }
   },
   "discovery": {

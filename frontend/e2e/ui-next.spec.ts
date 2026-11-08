@@ -90,3 +90,30 @@ test("keyboard walkthrough of the preview Profile", async ({ page }, testInfo) =
   }
   expect(seen.join(" | ")).toMatch(/Search.*Discovery.*Chat/);
 });
+
+// Progressive loading (decision Item 82): the full response is held back so the first screen can be checked,
+// then released; the map must survive the swap (same canvas) and the figures must not jump.
+test("first screen before the full Profile: axe, no overflow, then one swap", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  let release: () => void = () => {};
+  const held = new Promise<void>((r) => { release = r; });
+  await page.route(/\/api\/scorecard\?/, async (route) => { await held; await route.continue(); });
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto(ROUTES[1].path, { waitUntil: "domcontentloaded" });
+    await page.getByTestId("first-sentence").waitFor({ timeout: 60_000 });
+    await page.waitForTimeout(500);
+    expect(await axe(page), `axe ${scheme}`).toEqual([]);
+  }
+  await expect(page.getByTestId("still-checking")).toBeVisible();
+  await expect(page.getByTestId("tool-ask-top")).toBeDisabled();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "first screen overflow").toBeLessThanOrEqual(1);
+  const floor = (await page.getByTestId("first-sentence").textContent())?.match(/up to ([\d,]+) sq ft of floor area/)?.[1];
+  await page.evaluate(() => { const c = document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas'); if (c) c.dataset.probe = "first"; });
+  release();
+  await page.getByTestId("answer-sentence").waitFor({ timeout: 90_000 });
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("first");
+  await page.getByRole("tab", { name: "Build" }).click();
+  if (floor) await expect(page.getByText(`${floor} sq ft allowed`, { exact: false }).first()).toBeVisible();
+});

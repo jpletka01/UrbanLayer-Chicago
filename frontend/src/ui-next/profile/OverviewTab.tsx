@@ -40,7 +40,7 @@ export function OverviewTab({
   );
 }
 
-function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTab: (tab: "build") => void }) {
+export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTab: (tab: "build") => void }) {
   const { t } = useTranslation("next");
   const Icon = TILE_ICON[tile.key];
   const body = (
@@ -50,10 +50,15 @@ function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTa
         <Icon aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
         {tile.label}
       </span>
-      <span className="flex flex-wrap items-baseline gap-x-1.5">
-        <span className="text-nx-figure tabular-nums [overflow-wrap:anywhere]">{tile.figure}</span>
-        {tile.unit && <span className="text-caption nx-card-muted">{tile.unit}</span>}
-      </span>
+      {tile.checking ? (
+        // Same height as a figure line, so the tile doesn't grow when the figure arrives.
+        <span aria-hidden className="flex items-center text-nx-figure"><span className="block h-[0.8em] w-20 animate-pulse rounded bg-nx-card-ink/10" />&#8203;</span>
+      ) : (
+        <span className="flex flex-wrap items-baseline gap-x-1.5">
+          <span className="text-nx-figure tabular-nums [overflow-wrap:anywhere]">{tile.figure}</span>
+          {tile.unit && <span className="text-caption nx-card-muted">{tile.unit}</span>}
+        </span>
+      )}
       {tile.share != null && (
         <span aria-hidden className="block h-1.5 overflow-hidden rounded bg-nx-card-ink/10">
           <span className="block h-full rounded bg-nx-card-ink" style={{ width: `${tile.share * 100}%` }} />

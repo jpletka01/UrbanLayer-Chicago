@@ -330,6 +330,45 @@ def _chars_describe_prior_structure(
     return has_building_facts
 
 
+def lot_area(
+    land_sqft: int | None, source: str | None, geometry_facts: dict | None,
+) -> tuple[int | None, str | None]:
+    """The lot area the Profile shows and its source, after the stated areas (GIS, then the Assessor's
+    characteristics row): the PTAXSIM outline's area fills a gap. A shared outline is a whole development's
+    (Items 46, 59): its area is no lot's, so it never becomes the land area. One rule for the full Profile
+    (``_build_summary``) and its first-content request (``first_lot_facts``), so the two can't disagree."""
+    shared = int((geometry_facts or {}).get("shared_outline_with") or 0)
+    if not land_sqft and geometry_facts and geometry_facts.get("land_sqft_geom") and not shared:
+        return geometry_facts["land_sqft_geom"], "geometry"
+    return land_sqft, source
+
+
+async def first_lot_facts(pin14: str, *, client: httpx.AsyncClient | None = None) -> dict:
+    """The lot the Profile's first screen draws (decision Item 82): outline and lot area, by the same rules as
+    ``property_domain`` on the PIN path (the PIN row carries no land area, the Assessor's characteristics row
+    wins, a stale vacant-lot row is dropped, the outline fills the gap). Three calls in parallel: two cached
+    County requests and the local PTAXSIM table. A failed characteristics or assessments call raises (the
+    page then waits for the full response rather than show an area the full one might correct)."""
+    from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
+
+    chars, assessments, geometry_facts = await asyncio.gather(
+        timed("first.characteristics", get_characteristics(pin14, client=client)),
+        timed("first.assessments", get_assessments(pin14, client=client)),
+        timed("first.geometry", get_parcel_geometry_facts(pin14)),
+    )
+    if _chars_describe_prior_structure({}, assessments or [], chars):
+        chars = None
+    land = _safe_int((chars or {}).get("char_land_sf")) or None
+    land, source = lot_area(land, "assessor" if land else None, geometry_facts)
+    return {
+        "pin14": pin14,
+        "land_sqft": land,
+        "land_sqft_source": source,
+        "parcel_geometry": (geometry_facts or {}).get("parcel_geometry"),
+        "shared_outline_with": int((geometry_facts or {}).get("shared_outline_with") or 0),
+    }
+
+
 # A building footprint may exceed the lot by this factor before we conclude the
 # building spans several lots (see _build_summary's footprint fallback).
 _FOOTPRINT_SPAN_SLACK = 1.1
@@ -466,14 +505,9 @@ def _build_summary(
     # (commercial/multifamily/exempt/industrial — 0% before 2026-07-02).
     parcel_geometry = parcel.get("geometry")
     shared_outline_with = int((geometry_facts or {}).get("shared_outline_with") or 0)
-    if geometry_facts:
-        # A shared outline is a whole development's (Items 46, 59): its area is no lot's, so it never
-        # becomes the land area. An Assessor-stated area still stands.
-        if not land_sqft and geometry_facts.get("land_sqft_geom") and not shared_outline_with:
-            land_sqft = geometry_facts["land_sqft_geom"]
-            land_sqft_source = "geometry"
-        if parcel_geometry is None:
-            parcel_geometry = geometry_facts.get("parcel_geometry")
+    land_sqft, land_sqft_source = lot_area(land_sqft, land_sqft_source, geometry_facts)
+    if geometry_facts and parcel_geometry is None:
+        parcel_geometry = geometry_facts.get("parcel_geometry")
 
     # Building-fact fallbacks (condo unit chars → commercial valuation →
     # city footprints), applied ONLY into holes the assessor data left, with

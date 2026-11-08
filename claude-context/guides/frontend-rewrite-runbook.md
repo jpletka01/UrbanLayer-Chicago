@@ -18,7 +18,7 @@ Until a route flips, `guides/page-design.md` and the Bento Pro guides govern the
 |---|---|---|
 | 0 | Baseline: Items 73–75 on `main`, success criteria | **Done** 2026-11-07 (PR #201) |
 | 1 | Thin prototype behind the preview boundary: readiness registry, frame, Profile Overview + Build on today's data, cleaned parcel map, Ask drawer, one Discovery flow; old/new isolation test | **Done** 2026-11-07, owner-approved (PR #203; Items 76–80: one tile per tab, no satellite, Cities: Skylines map required) |
-| 2 | Latency spike: p50/p95 per retrieval task, cold and warm; only catastrophic fixes or honest progressive loading (the owner named slow loading, Item 79) | **Measured** 2026-11-07 (Item 81: cold p50 26.8 s / p95 46.0 s; TIF cache fixed); progressive loading proposed, waiting for the owner |
+| 2 | Latency spike: p50/p95 per retrieval task, cold and warm; only catastrophic fixes or honest progressive loading (the owner named slow loading, Item 79) | **Measured** 2026-11-07 (Item 81: cold p50 26.8 s / p95 46.0 s; TIF cache fixed); progressive loading approved and built (Item 82: a first screen in about 2 s from `/api/scorecard/first`), waiting for the owner's localhost review |
 | 3 | Builder test against the pass criteria in Item 75 | Waiting |
 | 4 | Profile response split, designed from the Phase 2 data | Waiting |
 | 5 | Map tracks M1 (base + one persistent map), M2 (parcels), M3 (official zoning geometry); the Cities: Skylines look is required (Item 80) | Waiting |

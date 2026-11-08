@@ -2311,6 +2311,72 @@ async def scorecard(
     return data
 
 
+@app.get("/api/scorecard/first")
+async def scorecard_first(
+    address: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    pin: str | None = None,
+) -> dict:
+    """The Profile's first screen, ahead of the full response (decision Item 82; same parameters, same
+    resolution): the parcel identity and point, the zoning district at the point with its Title 17 row, and
+    for a PIN-resolved parcel the lot outline and lot area. About 2 s cold (Item 81) against 15-40 s for
+    ``/api/scorecard``, which the page requests at the same time and which replaces this answer.
+
+    Everything here is computed by the full response's own functions, so the figures agree when it
+    arrives (``test_scorecard_first.py``). A failed part says so (``zoning_unchecked`` / ``lot_unchecked``)
+    and is never an empty answer. An approximate match carries no PIN and no lot: the full response may
+    still find the parcel near the point, and this request doesn't wait for that 10 s lookup."""
+    with _timing.collect() as timer:
+        ok = False
+        try:
+            data = await _scorecard_first_payload(address, lat, lon, pin)
+            ok = True
+        finally:
+            log.info("scorecard first timings ok=%s total_ms=%.0f", ok, timer.now_ms())
+    return data
+
+
+async def _scorecard_first_payload(
+    address: str | None, lat: float | None, lon: float | None, pin: str | None,
+) -> dict:
+    from dataclasses import asdict
+
+    from backend.retrieval.property import first_lot_facts
+    from backend.retrieval.zoning_definitions import get_zone_definition
+
+    with _timing.span("resolution"):
+        rl = await _resolve_location(address, lat, lon, pin)
+    _require_chicago(rl)
+    lot_coro = _timing.timed("first.lot", first_lot_facts(rl.pin)) if rl.pin else None
+    zoning_res, lot_res = await asyncio.gather(
+        _timing.timed("first.zoning", lookup_zoning(rl.lat, rl.lon)),
+        lot_coro if lot_coro is not None else asyncio.sleep(0, result=None),
+        return_exceptions=True,
+    )
+    zoning_unchecked = isinstance(zoning_res, BaseException)
+    if zoning_unchecked:
+        log.warning("first: zoning lookup failed: %s", zoning_res)
+    zoning = None if zoning_unchecked else zoning_res
+    lot_unchecked = isinstance(lot_res, BaseException)
+    if lot_unchecked:
+        log.warning("first: lot facts failed for %s: %s", rl.pin, lot_res)
+    lot = None if lot_unchecked else lot_res
+    zone_class = (zoning or {}).get("zone_class")
+    return {
+        "address": rl.address,
+        "resolved_pin": rl.pin,
+        "resolved_confidence": rl.confidence,
+        "resolved_lat": rl.lat,
+        "resolved_lon": rl.lon,
+        "zoning": zoning,
+        "zoning_unchecked": zoning_unchecked,
+        "zone_definition": asdict(get_zone_definition(zone_class)) if zone_class else None,
+        "lot": lot,
+        "lot_unchecked": lot_unchecked,
+    }
+
+
 async def _scorecard_payload(
     address: str | None,
     lat: float | None,

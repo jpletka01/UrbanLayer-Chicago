@@ -227,7 +227,7 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 ## Item 81: Phase 2, where a cold Profile's time goes (2026-11-07)
 
-**Status: measured; one defect fixed; the progressive loading below is a proposal waiting for the owner's go** (the phase prompt: propose before building beyond catastrophic fixes).
+**Status: measured; one defect fixed; the progressive loading below was approved by the owner on 2026-11-07 and built (Item 82)** (the phase prompt: propose before building beyond catastrophic fixes).
 
 **Decision: measure with a request-scoped timing collector, not a new code path.** `backend/timing.py` opens a collector per `/api/scorecard` request; `timed(name, awaitable)` / `span(name)` record start, duration, success and (through `main._limited(coro, name)`) the wait on the retrieval semaphore. Tasks started inside the request inherit it, so every domain orchestrator names its sub-tasks (`property.sales`, `regulatory.flood`, `neighborhood.walkscore`, ...) and `socrata_get` records one `socrata.<dataset id>` span per HTTP attempt. Outside a collector (chat, the report) the helpers are pass-throughs; a span re-raises unchanged. Every Profile request logs one `scorecard timings` line (total, resolution, fetch, three slowest tasks); the full breakdown rides the response as `_timings` only with `PROFILE_TIMINGS=true` and never in production (`test_timing.py`). *Alternatives:* OpenTelemetry/Sentry tracing (a new dependency and a vendor for one measurement), a `Server-Timing` header (needs `Response` in the handler signature, which the direct-call tests don't pass; the log line already serves production), timing in the eval script only (it could not see inside the orchestrators).
 
@@ -292,3 +292,36 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - First Profile after process start: 19.2 s (round 0). Payload median 98.9 KB.
 - Lookups alone, cold, 5 runs each (median / max): City portal one row 6.4 / 9.6 s; County portal one row 0.57 / 1.9 s; crime 3.1 / 7.7 s; crime YoY 0.74 / 6.4 s; 311 0.92 / 9.8 s; grants 3.0 / 10.3 s; traffic 2.6 / 6.8 s; parcel flags 1.1 / 2.5 s; energy benchmarking 2.2 / 9.2 s.
 - **Not measured:** production (needs the owner's go; a different network, a 4-vCPU box, other visitors' caches); the browser side (JS parse, map tiles; the new Profile is gated on this one response); `/api/parcel-map`, `/api/area-stats` and `/api/capacity-map` (today's Profile only).
+
+## Item 82: Phase 2, the Profile's first screen while the rest loads (2026-11-07)
+
+**Status: built on the Phase 2 branch, checked locally; waiting for the owner's localhost review.** The owner approved Item 81's proposal ("Yes, build it"). His Sentry weekly report (Oct 31 to Nov 7) shows the same picture on production: `/api/scorecard` p95 17.3 s, the `/scorecard` page p95 13.6 s.
+
+**Decision: a second, small request beside today's, `GET /api/scorecard/first`.** Same parameters, same resolution (`_resolve_location`, the Chicago check). It returns the identity and point, the zoning district at the point with its Title 17 row, and, for a PIN-resolved parcel, the lot outline and lot area. Measured locally (n=5, first visit to each parcel, home network): 3.4 s for 2541 N Spaulding (the process's first request), 2.9 s for 7600 S Halsted, 0.93 to 0.98 s for 5600 N Clark, 233 S Wacker and the PIN 14-28-319-007; the full response took 20.6 s and 29.3 s for the two fresh addresses. A small sample: production timing comes from the request's own log line. *Alternatives:* streaming the full response in parts (Phase 4's job: it changes the response contract the live Profile and chat read); computing the first screen on the client from cached data (nothing is cached on a first visit, which is the slow case); a skeleton with a better message only (the owner named slow loading, Item 79; words don't shorten 27 s).
+
+**Decision: the first screen uses the full response's own rules, so no figure changes at the swap.**
+- *Lot area:* one function, `property.lot_area`, now decides the area for both: the Assessor's stated area wins, the PTAXSIM outline fills a gap, a shared outline is no lot's. `first_lot_facts` reads the same three inputs as the PIN path of `property_domain` (characteristics, assessments, the outline) and drops a stale vacant-lot characteristics row by the same test. `test_scorecard_first.py` runs both on five cases (Assessor area, outline fill, shared outline, stale row, no outline) and asserts equal areas, sources and outlines.
+- *Allowed floor area:* the same arithmetic and rounding as the Build tab's "Allowed vs built" (`fmtInt(FAR × lot area)`); `firstModel.test.tsx` checks the sentence contains the Build tab's figure, and the Playwright check reads it on the live stack (1601 N Milwaukee: 26,292 sq ft in both).
+- *The ratio:* written as the answer sentence that replaces it writes it (`fmtFar`, and in Spanish the same term, "coeficiente de edificabilidad (FAR)").
+- *Edge kept on purpose:* when the PIN lookup misses and the full response falls back to the County GIS point lookup, it can read GIS's area where the first screen used the outline's. Rare (the PIN path carries no GIS area), and the full response wins at the swap.
+
+**Decision: an approximate match shows no lot.** Without an Address Points PIN the first request doesn't wait for the 10 s County GIS lookup (Item 81, point 3): it shows the point, the district, the ratio and the "Approximate match" label. The full response may still find the parcel near the point and draw it.
+
+**Decision: what the page shows while the rest loads.**
+- The map band with the lot and the address, then the tab bar (Build greyed out until the rest arrives), then one sentence in the answer's place: "Zoned B3-2: up to 26,292 sq ft of floor area on this 11,951 sq ft lot." (with "up to N ft tall" when the table's height is one plain number).
+- The four Overview tiles in their final order, each with its label and what it waits for ("Checking County building records", "Checking County tax records", "Checking Walk Score", "Checking County sales"), a placeholder bar the height of a figure, so the grid doesn't move when the figures arrive.
+- One quiet line: "Still checking: overlays and flood (City map, FEMA) · sales and tax history (Cook County) · neighborhood (crime, 311, transit)." No seconds counter. It names what the rest contains, not its progress (the rest is still one response until Phase 4).
+- Ask, Sources and Export stay in place, disabled, with "Available once the profile has loaded" in their names.
+- *Then* the full response fills the same screen: one component (`ProfileScreen`) keyed per lookup, so the map isn't remounted (the Playwright check marks the canvas before the swap and finds it after). If the first request fails or is slower than the full one, today's loading state shows as before. If the full one fails after the first screen, the first screen stays with "Couldn't load the rest of this profile. Retry", and Retry asks for the full response again.
+- Strings in English and Mexican Spanish (usted), under `next:profile.first.*`.
+
+**What this costs.** One extra request per Profile visit: the resolution (Address Points, cached), the zoning point, two County requests (characteristics, assessments) and the local PTAXSIM table. On a cold visit both requests start together and can ask the same source twice (the TTL caches are filled by whichever answers first); Phase 4's shared identity removes that.
+
+**Not done here (Phase 4):** streaming parts, sharing one resolution between the two requests, cancelling, reordering the property domain, the late parts' deadlines.
+
+**Found on the way, not fixed (follow-up):** the preview formats Spanish numbers with Spain's locale (`es`: `24.750`, `2,2`) instead of Mexico's (`es-MX`: `24,750`, `2.2`) in `profileModel.ts`, `BuildTab.tsx` and the money figures; today's live UI already maps `es` to `es-MX` (`lib/format.ts`). The first screen follows the preview's current formatting so the floor area agrees with the Build tab; one change can fix all of them.
+
+**Revisit if:** the builder test (Phase 3) reads the first screen as finished rather than loading, or the tiles' waiting state as broken; production timing of `/api/scorecard/first` (its own `scorecard first timings` log line) is well over 3 s p95; Phase 4 lands (this request becomes the Overview part's first slice or goes away).
+
+**Tests:** `backend/tests/test_scorecard_first.py` (10: the five lot-area cases, a failed County call raises, exact and approximate payloads, failed parts are unchecked, outside Chicago is refused); `frontend/src/ui-next/profile/firstModel.test.tsx` (8: the sentence equals the Build tab's figure, the fallbacks, failures, tile order, axe, Retry, Spanish); `e2e/ui-next.spec.ts` "first screen before the full Profile" (axe light and dark, no overflow at 360 px, disabled tools, one swap with the same map canvas, the Build tab's floor area equals the first screen's).
+
