@@ -85,8 +85,7 @@
     },
     "loading": {
       "at": "Looking up {{address}}…",
-      "plain": "Looking up this property…",
-      "firstLookup": "A first lookup can take 15 to 40 seconds. {{seconds}} s so far."
+      "plain": "Looking up this property…"
     },
     "tiles": {
       "units": "Units allowed",
@@ -205,6 +204,36 @@
       "restFailed": "Couldn't load the rest of this profile.",
       "retry": "Retry",
       "toolsLater": "Available once the profile has loaded"
+    },
+    "parts": {
+      "stillChecking": "Still checking: {{list}}",
+      "timedOut": "Couldn't check in time: {{list}}.",
+      "failed": "Couldn't load: {{list}}.",
+      "retry": "Retry",
+      "cityLists": "Still checking the City's lists (City-owned land, scofflaw, short-term rentals), which can add a caveat.",
+      "part": {
+        "building": "City building records (energy benchmarking, footprints)",
+        "history": "City lists, appeals and Assessor permits",
+        "money": "nearby sales",
+        "incentives": "TIF reports and grants",
+        "neighborhood": "neighborhood (Census tract, transit, traffic, rent)",
+        "activity": "crime, 311 and building violations",
+        "block_face": "the block-face rule"
+      },
+      "source": {
+        "property_history": "City lists, appeals and Assessor permits",
+        "comparables": "nearby sales",
+        "incentives": "TIF reports and grants",
+        "neighborhood": "neighborhood",
+        "aro_housing": "affordable housing projects",
+        "crime": "crime",
+        "crime_yoy": "crime trend",
+        "violations": "building violations",
+        "address_311": "311 requests",
+        "block_face": "the block-face rule",
+        "property": "City building records"
+      },
+      "unitsBuiltChecking": "Checking City building records"
     }
   },
   "discovery": {

@@ -290,6 +290,11 @@ class SaleRecord(BaseModel):
     date: str | None = None
     price: float | None = None
     deed_type: str | None = None
+    # A market (arm's-length) sale by the County's own sale filters (decision Item 89): not under $10,000, not a
+    # deed type the County excludes, not one sale of several parcels. None when the row carries no filters.
+    # Excluded from every dump, so the full Profile, chat context and the report are unchanged; the Profile's
+    # parts add it explicitly (backend/profile_parts.py).
+    arms_length: bool | None = Field(default=None, exclude=True)
 
 
 class TaxLineItem(BaseModel):
@@ -496,6 +501,9 @@ class PropertySummary(BaseModel):
     # source has no record of (no assessments for an exempt parcel). Only these are "couldn't check" (WS6 M7).
     failed_calls: list[str] = Field(default_factory=list)
     assessor_permits: AssessorPermitSummary | None = None
+    # The Profile's Overview part asked no City-portal building lookups (energy benchmarking, footprints) though
+    # this parcel needs them; its late ``building`` part fills them (decision Item 89). Never dumped.
+    city_building_pending: bool = Field(default=False, exclude=True)
 
 
 class GrantProject(BaseModel):

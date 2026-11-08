@@ -1940,87 +1940,78 @@ def _attach_safmr(results: dict) -> None:
     results["neighborhood"] = nb.model_copy(update={"rent": rent})
 
 
-async def _fetch_scorecard_data(
+# The Profile's retrieval tasks by key, in the order their failures are listed (and the full response gathers
+# them). The parts (backend/profile_parts.py, decision Item 89) run subsets of these keys and assemble with the
+# same `_scorecard_data_from`, so a figure can't differ between the full response and the parts.
+SCORECARD_TASK_KEYS = (
+    "property", "regulatory", "zoning", "incentives", "neighborhood", "aro_housing", "crime", "crime_yoy",
+    "violations", "address_311",
+)
+# Keys that only exist with a community area.
+_CA_TASK_KEYS = frozenset({"incentives", "neighborhood", "aro_housing", "crime", "crime_yoy"})
+
+
+def _scorecard_task(
+    key: str, lat: float, lon: float, address: str | None, *, pin: str | None, ca: int | None, ca_name: str | None,
+):
+    """The coroutine behind one task key, as the full Profile runs it (``_limited`` names and times it)."""
+    wf = "property_intelligence"
+    if key == "property":
+        coro = property_domain(lat, lon, pin=pin, workflow=wf)
+    elif key == "regulatory":
+        coro = regulatory_domain(lat, lon, workflow="site_due_diligence")
+    elif key == "zoning":
+        coro = lookup_zoning(lat, lon)
+    elif key == "incentives":
+        coro = incentives_domain(lat, lon, ca_name=ca_name, workflow="site_due_diligence")
+    elif key == "neighborhood":
+        coro = neighborhood_domain(lat, lon, community_area=ca, address=address, workflow=wf)
+    elif key == "aro_housing":
+        coro = aro_housing_by_community_area(ca)
+    elif key == "crime":
+        coro = crime.crime_by_community_area(ca)
+    elif key == "crime_yoy":
+        coro = crime.crime_yoy_by_community_area(ca)
+    elif key == "violations":
+        # Violations + 311 are PARCEL-scoped (address-exact), not area-level — they key off the resolved address.
+        coro = _address_violations_data(address)
+    elif key == "address_311":
+        coro = three11.address_311_complaints(lat, lon)
+    else:  # pragma: no cover - a programming error
+        raise KeyError(key)
+    return _limited(coro, key)
+
+
+def _scorecard_data_from(
+    results: dict[str, Any],
     resolved_lat: float,
     resolved_lon: float,
     resolved_address: str | None,
     *,
-    pin: str | None = None,
+    ca: int | None,
+    ca_name: str | None,
+    comparables: Any = None,
+    block_face: Any = None,
 ) -> dict:
-    """Fetch all domain data for a location. Returns dict with context, metadata, and failures.
+    """Assemble the Profile's data dict from task results (decision Item 89). ``results`` maps a task key to its
+    value or the exception it raised; a key that is absent wasn't asked (a part that hasn't run), which is never
+    a failure. ``property_history`` (a ``PropertyHistory``) is merged onto a core property summary.
+    ``comparables`` / ``block_face``: None = not run, an Exception = failed, else the result."""
+    from backend.retrieval.property import with_history
 
-    ``pin`` (the authoritative parcel key from _resolve_location, when available)
-    keys the property domain by PIN instead of re-deriving identity from the
-    coordinate — INV-2. All other domains stay coordinate-driven on the resolved
-    point.
-    """
-    ca = community_area_by_point(resolved_lat, resolved_lon)
-    ca_name = community_area_name(ca) if ca else None
-
-    tasks: dict[str, asyncio.Task] = {}
-    wf = "property_intelligence"
-
-    tasks["property"] = asyncio.create_task(_limited(
-        property_domain(resolved_lat, resolved_lon, pin=pin, workflow=wf), "property",
-    ))
-    tasks["regulatory"] = asyncio.create_task(_limited(
-        regulatory_domain(resolved_lat, resolved_lon, workflow="site_due_diligence"), "regulatory",
-    ))
-    tasks["zoning"] = asyncio.create_task(_limited(
-        lookup_zoning(resolved_lat, resolved_lon), "zoning",
-    ))
-
-    if ca is not None:
-        tasks["incentives"] = asyncio.create_task(_limited(
-            incentives_domain(
-                resolved_lat, resolved_lon,
-                ca_name=ca_name, workflow="site_due_diligence",
-            ), "incentives",
-        ))
-        tasks["neighborhood"] = asyncio.create_task(_limited(
-            neighborhood_domain(
-                resolved_lat, resolved_lon,
-                community_area=ca,
-                address=resolved_address,
-                workflow=wf,
-            ), "neighborhood",
-        ))
-        tasks["aro_housing"] = asyncio.create_task(_limited(
-            aro_housing_by_community_area(ca), "aro_housing",
-        ))
-        tasks["crime"] = asyncio.create_task(_limited(
-            crime.crime_by_community_area(ca), "crime",
-        ))
-        tasks["crime_yoy"] = asyncio.create_task(_limited(
-            crime.crime_yoy_by_community_area(ca), "crime_yoy",
-        ))
-
-    # Violations + 311 are PARCEL-scoped (address-exact), not area-level — they
-    # live outside the community-area block and key off the resolved address.
-    tasks["violations"] = asyncio.create_task(_limited(
-        _address_violations_data(resolved_address), "violations",
-    ))
-    tasks["address_311"] = asyncio.create_task(_limited(
-        three11.address_311_complaints(resolved_lat, resolved_lon), "address_311",
-    ))
-
-    results: dict[str, Any] = {}
+    results = dict(results)
     partial_failures: list[str] = []
-    comparables_summary = None
-    _FAILURE_MAP = {k: failures.label(k) for k in (
-        "property", "regulatory", "zoning", "incentives", "neighborhood", "aro_housing", "crime", "crime_yoy",
-        "violations", "address_311",
-    )}
-
-    done = await asyncio.gather(*tasks.values(), return_exceptions=True)
-    for key, value in zip(tasks.keys(), done):
+    for key in SCORECARD_TASK_KEYS:
+        if key not in results:
+            continue
+        value = results[key]
         if isinstance(value, Exception):
             log.warning("Scorecard retrieval %s failed: %s", key, value)
             results[key] = None
-            if key in _FAILURE_MAP:
-                partial_failures.append(_FAILURE_MAP[key])
-        else:
-            results[key] = value
+            partial_failures.append(failures.label(key))
+    history = results.pop("property_history", None)
+    if history is not None and not isinstance(history, Exception):
+        results["property"] = with_history(results.get("property"), history)
 
     # Overlay layers the City map couldn't answer: unknown, not "not in it". And the Assessor/PTAXSIM calls that
     # failed (not the figures a source simply has no record of): a Profile that lost its sales history says so.
@@ -2066,63 +2057,18 @@ async def _fetch_scorecard_data(
             partial_failures=partial_failures,
         )
 
-    # Phase 2: comparable sales (needs property class from phase 1). Class
-    # derivation is shared with the report (_comp_class_prefix): exempt /
-    # non-numeric classes resolve through zoning instead of querying a raw
-    # first character (an "EX" subject used to search class LIKE 'E%').
-    prop = results.get("property")
-    if prop and getattr(prop, "bldg_class", None):
-        zone_class_for_comps = (
-            ctx.parcel_zoning.zone_class if ctx.parcel_zoning else None
-        )
-        class_prefix = _comp_class_prefix(prop.bldg_class, zone_class_for_comps)
-        try:
-            from backend.retrieval.property.sales import nearby_comparable_sales
-            from backend.models import ComparableSale, ComparablesSummary
-            comps_data = await _limited(
-                nearby_comparable_sales(resolved_lat, resolved_lon, class_prefix), "comparables.sales",
-            )
-            if comps_data.get("sales"):
-                # Price per BUILDABLE foot — the density-normalized land basis a
-                # developer actually compares on. Degrades quietly to the raw
-                # per-land-foot figures if the zoning quilt is unavailable.
-                from backend.retrieval.property.comps_far import annotate_far_normalized
-                comps_data = await _limited(
-                    annotate_far_normalized(comps_data, resolved_lat, resolved_lon), "comparables.far",
-                )
-                s = comps_data["summary"]
-                comparables_summary = ComparablesSummary(
-                    median_sale_price=s.get("median_sale_price"),
-                    median_price_per_land_sqft=s.get("median_price_per_land_sqft"),
-                    median_price_per_bldg_sqft=s.get("median_price_per_bldg_sqft"),
-                    median_price_per_buildable_sqft=s.get("median_price_per_buildable_sqft"),
-                    buildable_median_basis=s.get("buildable_median_basis"),
-                    buildable_median_n=s.get("buildable_median_n"),
-                    price_range_min=s.get("price_range_min"),
-                    price_range_max=s.get("price_range_max"),
-                    sales_volume=s.get("sales_volume", 0),
-                    comp_basis=s.get("comp_basis"),
-                    comp_radius_mi=s.get("comp_radius_mi"),
-                    comp_window_years=s.get("comp_window_years"),
-                    comp_widened=bool(s.get("comp_widened")),
-                    sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
-                )
-        except Exception as exc:
-            log.warning("Scorecard comparable sales failed: %s", exc)
-            partial_failures.append(failures.label("comparables"))
-
-    # The RS-3 block-face test (§17-2-0303-B.1, Item 67): only RS-3 uses it, so only RS-3 pays for it. A failure is
-    # "unchecked" in the unit yield, never "not met".
-    if ctx.parcel_zoning and (ctx.parcel_zoning.zone_class or "").strip().upper() == "RS-3" and resolved_address:
+    comparables_summary = None
+    if isinstance(comparables, Exception):
+        partial_failures.append(failures.label("comparables"))
+    else:
+        comparables_summary = comparables
+    if isinstance(block_face, Exception):
         from backend.models import BlockFaceTest
-        from backend.retrieval.property.block_face import block_face_test
 
-        try:
-            ctx.block_face = await _limited(block_face_test(resolved_address), "block_face")
-        except Exception as exc:
-            log.warning("Scorecard block-face test failed: %s", exc)
-            ctx.block_face = BlockFaceTest(state="unchecked")
-            partial_failures.append(failures.label("block_face"))
+        ctx.block_face = BlockFaceTest(state="unchecked")
+        partial_failures.append(failures.label("block_face"))
+    elif block_face is not None:
+        ctx.block_face = block_face
 
     # Tri-state for the violations card: a present summary (ctx.violations), a
     # confirmed-zero ("no violations on record"), or an unconfirmed lookup
@@ -2146,6 +2092,121 @@ async def _fetch_scorecard_data(
         "failed_sources": failures.failed_detail(partial_failures),
         "violations_checked": violations_checked,
     }
+
+
+async def _scorecard_comparables(ctx, resolved_lat: float, resolved_lon: float):
+    """Comparable sales (needs the property class and the zoning): the summary, None when there is no class or
+    no sale, or the exception when the lookup failed. Class derivation is shared with the report
+    (_comp_class_prefix): exempt / non-numeric classes resolve through zoning instead of querying a raw first
+    character (an "EX" subject used to search class LIKE 'E%')."""
+    prop = ctx.property
+    if not (prop and getattr(prop, "bldg_class", None)):
+        return None
+    zone_class_for_comps = ctx.parcel_zoning.zone_class if ctx.parcel_zoning else None
+    class_prefix = _comp_class_prefix(prop.bldg_class, zone_class_for_comps)
+    try:
+        from backend.retrieval.property.sales import nearby_comparable_sales
+        from backend.models import ComparableSale, ComparablesSummary
+        comps_data = await _limited(
+            nearby_comparable_sales(resolved_lat, resolved_lon, class_prefix), "comparables.sales",
+        )
+        if not comps_data.get("sales"):
+            return None
+        # Price per BUILDABLE foot — the density-normalized land basis a
+        # developer actually compares on. Degrades quietly to the raw
+        # per-land-foot figures if the zoning quilt is unavailable.
+        from backend.retrieval.property.comps_far import annotate_far_normalized
+        comps_data = await _limited(
+            annotate_far_normalized(comps_data, resolved_lat, resolved_lon), "comparables.far",
+        )
+        s = comps_data["summary"]
+        return ComparablesSummary(
+            median_sale_price=s.get("median_sale_price"),
+            median_price_per_land_sqft=s.get("median_price_per_land_sqft"),
+            median_price_per_bldg_sqft=s.get("median_price_per_bldg_sqft"),
+            median_price_per_buildable_sqft=s.get("median_price_per_buildable_sqft"),
+            buildable_median_basis=s.get("buildable_median_basis"),
+            buildable_median_n=s.get("buildable_median_n"),
+            price_range_min=s.get("price_range_min"),
+            price_range_max=s.get("price_range_max"),
+            sales_volume=s.get("sales_volume", 0),
+            comp_basis=s.get("comp_basis"),
+            comp_radius_mi=s.get("comp_radius_mi"),
+            comp_window_years=s.get("comp_window_years"),
+            comp_widened=bool(s.get("comp_widened")),
+            sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
+        )
+    except Exception as exc:
+        log.warning("Scorecard comparable sales failed: %s", exc)
+        return exc
+
+
+def _block_face_applies(ctx, resolved_address: str | None) -> bool:
+    """The RS-3 block-face test (§17-2-0303-B.1, Item 67): only RS-3 uses it, so only RS-3 pays for it."""
+    return bool(
+        ctx.parcel_zoning and (ctx.parcel_zoning.zone_class or "").strip().upper() == "RS-3" and resolved_address
+    )
+
+
+async def _scorecard_block_face(ctx, resolved_address: str | None):
+    """The block-face result, None when the test doesn't apply, or the exception (a failure is "unchecked" in the
+    unit yield, never "not met")."""
+    if not _block_face_applies(ctx, resolved_address):
+        return None
+    from backend.retrieval.property.block_face import block_face_test
+
+    try:
+        return await _limited(block_face_test(resolved_address), "block_face")
+    except Exception as exc:
+        log.warning("Scorecard block-face test failed: %s", exc)
+        return exc
+
+
+async def _fetch_scorecard_data(
+    resolved_lat: float,
+    resolved_lon: float,
+    resolved_address: str | None,
+    *,
+    pin: str | None = None,
+) -> dict:
+    """Fetch all domain data for a location. Returns dict with context, metadata, and failures.
+
+    ``pin`` (the authoritative parcel key from _resolve_location, when available)
+    keys the property domain by PIN instead of re-deriving identity from the
+    coordinate — INV-2. All other domains stay coordinate-driven on the resolved
+    point.
+    """
+    ca = community_area_by_point(resolved_lat, resolved_lon)
+    ca_name = community_area_name(ca) if ca else None
+
+    keys = [k for k in SCORECARD_TASK_KEYS if ca is not None or k not in _CA_TASK_KEYS]
+    tasks = {
+        k: asyncio.create_task(
+            _scorecard_task(k, resolved_lat, resolved_lon, resolved_address, pin=pin, ca=ca, ca_name=ca_name)
+        )
+        for k in keys
+    }
+    done = await asyncio.gather(*tasks.values(), return_exceptions=True)
+    results: dict[str, Any] = dict(zip(tasks.keys(), done))
+    data = _scorecard_data_from(results, resolved_lat, resolved_lon, resolved_address, ca=ca, ca_name=ca_name)
+
+    # Phase 2: comparable sales (needs the property class from phase 1), then the RS-3 block-face test.
+    ctx = data["context"]
+    comps = await _scorecard_comparables(ctx, resolved_lat, resolved_lon)
+    if isinstance(comps, Exception):
+        data["partial_failures"].append(failures.label("comparables"))
+    else:
+        data["comparables"] = comps
+    bf = await _scorecard_block_face(ctx, resolved_address)
+    if isinstance(bf, Exception):
+        from backend.models import BlockFaceTest
+
+        ctx.block_face = BlockFaceTest(state="unchecked")
+        data["partial_failures"].append(failures.label("block_face"))
+    elif bf is not None:
+        ctx.block_face = bf
+    data["failed_sources"] = failures.failed_detail(data["partial_failures"])
+    return data
 
 
 @app.get("/api/area-stats")
@@ -2346,12 +2407,19 @@ async def _scorecard_first_payload(
     from backend.retrieval.property import first_lot_facts
     from backend.retrieval.zoning_definitions import get_zone_definition
 
+    from backend import inflight
+
     with _timing.span("resolution"):
-        rl = await _resolve_location(address, lat, lon, pin)
+        # Shared with the Overview part the page starts at the same moment (decision Item 89): one resolution.
+        rl = await inflight.shared(
+            ("resolve", address, lat, lon, pin), lambda: _resolve_location(address, lat, lon, pin),
+        )
     _require_chicago(rl)
     lot_coro = _timing.timed("first.lot", first_lot_facts(rl.pin)) if rl.pin else None
     zoning_res, lot_res = await asyncio.gather(
-        _timing.timed("first.zoning", lookup_zoning(rl.lat, rl.lon)),
+        _timing.timed("first.zoning", inflight.shared(
+            ("zoning", rl.lat, rl.lon), lambda: _limited(lookup_zoning(rl.lat, rl.lon), "zoning"),
+        )),
         lot_coro if lot_coro is not None else asyncio.sleep(0, result=None),
         return_exceptions=True,
     )
@@ -2378,46 +2446,46 @@ async def _scorecard_first_payload(
     }
 
 
-async def _scorecard_payload(
-    address: str | None,
-    lat: float | None,
-    lon: float | None,
-    pin: str | None,
-) -> dict:
-    # Every parcel the two address sources list for the typed address, fetched alongside
-    # the resolution so the "how we found this parcel" panel can say when an address
-    # maps to several parcels or the sources disagree (both are cached lookups).
-    cand_task = None
-    if address and lat is None and lon is None and not pin:
-        from backend.retrieval.property.address_points import address_point_pins
-        from backend.retrieval.property.parcel_addresses import assessor_address_pins
+async def _address_candidates(address: str | None, lat, lon, pin):
+    """Every parcel the two address sources list for the typed address, fetched alongside the resolution so the
+    "how we found this parcel" panel can say when an address maps to several parcels or the sources disagree
+    (both are cached lookups). None when the input wasn't a typed address."""
+    if not (address and lat is None and lon is None and not pin):
+        return None
+    from backend.retrieval.property.address_points import address_point_pins
+    from backend.retrieval.property.parcel_addresses import assessor_address_pins
 
-        cand_task = asyncio.gather(
-            _timing.timed("candidates.address_points", address_point_pins(address)),
-            _timing.timed("candidates.assessor", assessor_address_pins(address)),
-            return_exceptions=True,
-        )
-    with _timing.span("resolution"):
-        rl = await _resolve_location(address, lat, lon, pin)
-    _require_chicago(rl)
-    with _timing.span("fetch"):
-        data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
+    return asyncio.gather(
+        _timing.timed("candidates.address_points", address_point_pins(address)),
+        _timing.timed("candidates.assessor", assessor_address_pins(address)),
+        return_exceptions=True,
+    )
 
-    # Reconcile identity. When the authoritative address→PIN path degraded
-    # ("approximate"), the property orchestrator still resolved a parcel from the
-    # point via the nearest-centroid fallback — which is frequently a *neighbour*
-    # (470 vs 481 W Deming; 2401/2403 vs 2400 N Milwaukee). Trust that PIN as the
-    # parcel's identity only if its own address round-trips to the input; else
-    # withhold it (never surface a neighbour as "exact") and flag the property/
-    # comps data as based on a nearest, unverified parcel so the UI can caveat it.
-    # See claude-context/audits/2026-06-21_resolver-investigation.md.
+
+class ProfileIdentity(NamedTuple):
+    """The reconciled parcel identity a Profile shows (``_reconcile_identity``), shared by every part (Item 89)."""
+    pin: str | None
+    confidence: str
+    method: str | None
+    unverified: bool
+    unverified_reason: str | None
+
+
+async def _reconcile_identity(address: str | None, rl: ResolvedLocation, prop) -> ProfileIdentity:
+    """Reconcile identity. When the authoritative address→PIN path degraded
+    ("approximate"), the property orchestrator still resolved a parcel from the
+    point via the nearest-centroid fallback — which is frequently a *neighbour*
+    (470 vs 481 W Deming; 2401/2403 vs 2400 N Milwaukee). Trust that PIN as the
+    parcel's identity only if its own address round-trips to the input; else
+    withhold it (never surface a neighbour as "exact") and flag the property/
+    comps data as based on a nearest, unverified parcel so the UI can caveat it.
+    See claude-context/audits/2026-06-21_resolver-investigation.md."""
     resolved_pin = rl.pin
     resolved_confidence = rl.confidence
     resolution_method = rl.method
     nearest_parcel_unverified = False
     unverified_reason: str | None = None
     if address and resolved_confidence == "approximate":
-        prop = data["context"].property
         candidate_pin = prop.pin14 if prop else None
         if candidate_pin:
             from backend.retrieval.property.address_points import parcel_address_matches
@@ -2435,7 +2503,6 @@ async def _scorecard_payload(
     # resolved PIN, but the property/tax/comps figures describe the neighbor, so
     # they must carry the same caveat the approximate path uses.
     elif resolved_pin and resolved_confidence == "authoritative":
-        prop = data["context"].property
         if prop and prop.pin14 and prop.pin14 != resolved_pin:
             log.warning(
                 "INV-1 mismatch: resolved_pin=%s but property record is %s",
@@ -2443,7 +2510,49 @@ async def _scorecard_payload(
             )
             nearest_parcel_unverified = True
             unverified_reason = "property_record_is_another_parcel"
+    return ProfileIdentity(resolved_pin, resolved_confidence, resolution_method,
+                           nearest_parcel_unverified, unverified_reason)
 
+
+async def _scorecard_payload(
+    address: str | None,
+    lat: float | None,
+    lon: float | None,
+    pin: str | None,
+) -> dict:
+    cand_task = await _address_candidates(address, lat, lon, pin)
+    with _timing.span("resolution"):
+        rl = await _resolve_location(address, lat, lon, pin)
+    _require_chicago(rl)
+    with _timing.span("fetch"):
+        data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
+    identity = await _reconcile_identity(address, rl, data["context"].property)
+    ap_pins: list[str] = []
+    assessor_pins: list[str] = []
+    if cand_task is not None:
+        with _timing.span("candidates.wait"):
+            got = await cand_task
+        ap_pins = got[0] if isinstance(got[0], list) else []
+        assessor_pins = got[1] if isinstance(got[1], list) else []
+    return await _finish_scorecard_payload(
+        data, address=address, rl=rl, identity=identity, ap_pins=ap_pins, assessor_pins=assessor_pins,
+    )
+
+
+async def _finish_scorecard_payload(
+    data: dict,
+    *,
+    address: str | None,
+    rl: ResolvedLocation,
+    identity: ProfileIdentity,
+    ap_pins: list[str],
+    assessor_pins: list[str],
+) -> dict:
+    """Everything after the fetch: identity onto the payload, upcoming zoning, the zoning table row, the
+    resolution record, provenance, pending text impacts, data dates, serialization. One function for the full
+    response and every part (Item 89), so both say the same thing about the same facts."""
+    resolved_pin = identity.pin
+    resolved_confidence = identity.confidence
     data["resolved_pin"] = resolved_pin
     data["resolved_confidence"] = resolved_confidence
     # The context's own identity, so what it derives from the parcel (passed_not_on_map matches on the
@@ -2464,7 +2573,7 @@ async def _scorecard_payload(
         address=rl.address,
         authoritative_pin=resolved_confidence == "authoritative",
     ))
-    data["nearest_parcel_unverified"] = nearest_parcel_unverified
+    data["nearest_parcel_unverified"] = identity.unverified
     data["resolved_lat"] = rl.lat
     data["resolved_lon"] = rl.lon
     # Deterministic Title-17 bulk standards for the parcel's zone (same table
@@ -2482,25 +2591,18 @@ async def _scorecard_payload(
 
     from backend.resolution import build_resolution
 
-    ap_pins: list[str] = []
-    assessor_pins: list[str] = []
-    if cand_task is not None:
-        with _timing.span("candidates.wait"):
-            got = await cand_task
-        ap_pins = got[0] if isinstance(got[0], list) else []
-        assessor_pins = got[1] if isinstance(got[1], list) else []
     _prop = data["context"].property
     data["resolution"] = build_resolution(
         address=address,
-        method=resolution_method,
+        method=identity.method,
         lat=rl.lat,
         lon=rl.lon,
         pin=resolved_pin,
         confidence=resolved_confidence,
         ap_pins=ap_pins,
         assessor_pins=assessor_pins,
-        unverified=nearest_parcel_unverified,
-        unverified_reason=unverified_reason,
+        unverified=identity.unverified,
+        unverified_reason=identity.unverified_reason,
         property_pin=_prop.pin14 if _prop else None,
         parcel_geometry=_prop.parcel_geometry if _prop else None,
     )
@@ -2553,6 +2655,32 @@ async def _scorecard_payload(
         else:
             data["comparables"] = None
     return data
+
+
+@app.get("/api/profile/overview")
+async def profile_overview(
+    request: Request,
+    address: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    pin: str | None = None,
+) -> dict:
+    """The new Profile's Overview part (decision Item 89): the parcel resolved once, its identity reconciled,
+    and what the Overview reads, with a signed ``lookup`` for the late parts. Same parameters and resolution as
+    ``/api/scorecard``, which stays the source for today's Profile, chat and the report."""
+    from backend import profile_parts
+
+    return await profile_parts.overview(address, lat, lon, pin, request)
+
+
+@app.get("/api/profile/part/{name}")
+async def profile_part(request: Request, name: str, lookup: str, have: str | None = None) -> dict:
+    """One late part of the new Profile (decision Item 89): ``history``, ``money``, ``incentives``,
+    ``neighborhood``, ``activity`` or ``block_face``, for the lookup the Overview signed. ``have`` = the parts the
+    page already holds (used only when the server has to rebuild a lookup it lost). A 409 = an expired lookup."""
+    from backend import profile_parts
+
+    return await profile_parts.part(name, lookup, have, request)
 
 
 def render_report_html(

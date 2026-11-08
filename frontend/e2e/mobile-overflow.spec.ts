@@ -65,7 +65,7 @@ const PAGES: Array<{
   {
     id: "profile-next",
     path: "/scorecard?address=1601%20N%20Milwaukee%20Ave&ui=next",
-    awaitApi: "/api/scorecard",
+    awaitApi: "/api/profile/overview",
     settle: 3000,
   },
   { id: "discovery-next", path: "/discovery?ui=next", settle: 1500 },

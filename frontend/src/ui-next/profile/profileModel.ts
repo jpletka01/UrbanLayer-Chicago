@@ -34,7 +34,12 @@ export function heightFeet(text: string | null | undefined): number | null {
   return m ? parseFloat(m[1]) : null;
 }
 
-export function allowedVsBuilt(data: ScorecardResponse, verdict: ScorecardVerdict, t: TFunc, lng = "en"): LimitRow[] {
+/** `buildingPending`: the City's building records (the Profile's late `building` part, Item 89) haven't answered,
+    so a built figure that isn't on record yet reads "checking", not "not on record". */
+export function allowedVsBuilt(
+  data: ScorecardResponse, verdict: ScorecardVerdict, t: TFunc, lng = "en", { buildingPending = false } = {},
+): LimitRow[] {
+  const notYet = () => (buildingPending ? t("profile.parts.unitsBuiltChecking") : t("profile.build.notOnRecord"));
   const ctx = data.context;
   const prop = ctx?.property;
   const sig = verdict.signals;
@@ -52,7 +57,7 @@ export function allowedVsBuilt(data: ScorecardResponse, verdict: ScorecardVerdic
       allowed,
       allowedText: t("profile.build.sqft", { value: fmtInt(allowed, lng) }),
       built,
-      builtText: built != null ? t("profile.build.sqft", { value: fmtInt(built, lng) }) : t("profile.build.notOnRecord"),
+      builtText: built != null ? t("profile.build.sqft", { value: fmtInt(built, lng) }) : notYet(),
       share: built != null && !sig.bldgAreaLowConfidence ? built / allowed : null,
       deciding: false,
       state: sig.bldgAreaLowConfidence && built != null ? { kind: "estimate", low: true } : builtState,
@@ -67,7 +72,7 @@ export function allowedVsBuilt(data: ScorecardResponse, verdict: ScorecardVerdic
       allowed: uy.units,
       allowedText: t("profile.build.units", { count: uy.units }),
       built,
-      builtText: built != null ? t("profile.build.units", { count: built }) : t("profile.build.notOnRecord"),
+      builtText: built != null ? t("profile.build.units", { count: built }) : notYet(),
       share: built != null ? built / uy.units : null,
       deciding: false,
       state: { kind: "estimate", low: false },
@@ -84,7 +89,7 @@ export function allowedVsBuilt(data: ScorecardResponse, verdict: ScorecardVerdic
       allowedText: allowed != null ? t("profile.build.feet", { value: allowed }) : hText,
       // The records give stories, not feet: shown as stories and never compared against feet.
       built: null,
-      builtText: stories != null ? t("profile.build.stories", { count: stories }) : t("profile.build.notOnRecord"),
+      builtText: stories != null ? t("profile.build.stories", { count: stories }) : notYet(),
       share: null,
       deciding: false,
       state: null,
@@ -212,16 +217,15 @@ export interface Tile {
 const money = (n: number, lng: string) =>
   new Intl.NumberFormat(lng.startsWith("es") ? "es-MX" : "en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
-/** Deed types the County treats as arm's-length (its own `sale_filter_deed_type` excludes quit claims, executor
-    and other deeds; comps use the same filters). Unknown deed type = not counted as a market sale. */
-const MARKET_DEEDS = /^(warranty|trustee)$/i;
-const MARKET_MIN_PRICE = 10_000; // the County's `sale_filter_less_than_10k`
-
-export function isMarketSale(s: { price: number | null; deed_type: string | null }): boolean {
-  return s.price != null && s.price >= MARKET_MIN_PRICE && MARKET_DEEDS.test((s.deed_type ?? "").trim());
+/** A market sale, by the County's own sale filters as the server reads them (`arms_length`, decision Item 89; it
+    retired Item 77's client-side deed test). Unknown (null or absent) is not counted as a market sale. */
+export function isMarketSale(s: { price: number | null; arms_length?: boolean | null }): boolean {
+  return s.price != null && s.arms_length === true;
 }
 
-export function overviewTiles(data: ScorecardResponse, verdict: ScorecardVerdict, t: TFunc, lng = "en"): Tile[] {
+export function overviewTiles(
+  data: ScorecardResponse, verdict: ScorecardVerdict, t: TFunc, lng = "en", { buildingPending = false } = {},
+): Tile[] {
   const ctx = data.context;
   const prop = ctx?.property;
   const prov = data.provenance ?? {};
@@ -234,7 +238,9 @@ export function overviewTiles(data: ScorecardResponse, verdict: ScorecardVerdict
     const built = prop?.units ?? null;
     tiles.push({
       key: "units", tabOf: "build", label: label("units"), figure: `≤ ${uy.units}`,
-      note: built != null ? t("profile.tiles.unitsBuilt", { count: built }) : t("profile.tiles.unitsBuiltUnknown"),
+      note: built != null
+        ? t("profile.tiles.unitsBuilt", { count: built })
+        : buildingPending ? t("profile.parts.unitsBuiltChecking") : t("profile.tiles.unitsBuiltUnknown"),
       state: { kind: "estimate", low: false }, tab: "build",
       share: built != null ? Math.min(built / uy.units, 1) : null,
     });

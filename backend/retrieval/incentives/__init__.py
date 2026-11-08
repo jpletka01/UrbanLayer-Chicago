@@ -62,6 +62,22 @@ async def incentives_domain(
             await client.aclose()
 
 
+async def incentives_membership(
+    lat: float, lon: float, *, client: httpx.AsyncClient | None = None,
+) -> IncentivesSummary:
+    """Which programs the point is in by point lookup (TIF, EZ, OZ), without the tract-keyed ones (QCT, NMTC),
+    the TIF district's financial reports or the area's grants: the Profile's Overview part (decision Item 89), which the verdict and the TIF rule chip
+    read. The full ``incentives_domain`` (a late part) asks the same cached lookups again and adds the rest."""
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    try:
+        return await _incentives_by_point(lat, lon, client=client, membership_only=True)
+    finally:
+        if owns:
+            await client.aclose()
+
+
 async def _incentives_by_point(
     lat: float,
     lon: float,
@@ -69,6 +85,7 @@ async def _incentives_by_point(
     ca_name: str | None = None,
     workflow: str = "general",
     client: httpx.AsyncClient,
+    membership_only: bool = False,
 ) -> IncentivesSummary:
     """Full point-based incentive lookup (TIF + EZ + OZ + QCT + NMTC + grants).
 
@@ -79,10 +96,13 @@ async def _incentives_by_point(
     phase_a_tasks = {
         "tif": check_tif(lat, lon, client=client),
         "ez": check_enterprise_zone(lat, lon, client=client),
-        "tract": resolve_census_tract(lat, lon, client=client),
         "oz": check_opportunity_zone(lat=lat, lon=lon, client=client),
     }
-    if ca_name:
+    # The tract-keyed programs (QCT, NMTC) wait on the FCC/Census tract lookup (up to 16 s seen): the Overview
+    # leaves them to the full lookup, a late part (decision Item 89), and says nothing about them meanwhile.
+    if not membership_only:
+        phase_a_tasks["tract"] = resolve_census_tract(lat, lon, client=client)
+    if ca_name and not membership_only:
         phase_a_tasks["grants"] = grant_programs_by_community_area(ca_name, client=client)
 
     done_a = await asyncio.gather(
@@ -99,14 +119,14 @@ async def _incentives_by_point(
             phase_a[key] = value
 
     tif_result = phase_a["tif"]
-    tract_fips = phase_a["tract"]
-    if "tract" in failed or not tract_fips:
+    tract_fips = phase_a.get("tract")
+    if not membership_only and ("tract" in failed or not tract_fips):
         # No tract (failed, or the FCC placed the point in none): the tract-keyed programs went unasked.
         failed.update({"qct", "nmtc"})
 
     phase_b_tasks: dict[str, asyncio.Task] = {}
 
-    skip_financials = workflow in ("business_launch",)
+    skip_financials = membership_only or workflow in ("business_launch",)
     if tif_result and tif_result.get("tif_name") and not skip_financials:
         phase_b_tasks["financials"] = asyncio.create_task(timed(
             "incentives.financials", fetch_tif_financials(tif_result["tif_name"], client=client),

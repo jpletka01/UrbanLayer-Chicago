@@ -71,6 +71,8 @@ test("keyboard walkthrough of the preview Profile", async ({ page }, testInfo) =
   await page.setViewportSize({ width: 1280, height: 800 });
   await open(page, ROUTES[1].path, ROUTES[1].ready);
   const ask = page.getByTestId("tool-ask-top");
+  // Ask reads the whole Profile, so it turns on once every part has answered (Item 89).
+  await expect(ask).toBeEnabled({ timeout: 90_000 });
   await ask.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("ask-drawer")).toBeVisible();
@@ -91,13 +93,17 @@ test("keyboard walkthrough of the preview Profile", async ({ page }, testInfo) =
   expect(seen.join(" | ")).toMatch(/Search.*Discovery.*Chat/);
 });
 
-// Progressive loading (decision Item 82): the full response is held back so the first screen can be checked,
-// then released; the map must survive the swap (same canvas) and the figures must not jump.
-test("first screen before the full Profile: axe, no overflow, then one swap", async ({ page }, testInfo) => {
+// Progressive loading (decision Items 82, 89): the Overview part is held back so the first screen can be checked,
+// then released; a late part is held so its waiting line can be checked. The map must survive every swap (same
+// canvas), the figures must not jump, and the tools that read the whole Profile turn on once every part is in.
+test("first screen, then the Overview, then the late parts: axe, no overflow, one map", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
   let release: () => void = () => {};
   const held = new Promise<void>((r) => { release = r; });
-  await page.route(/\/api\/scorecard\?/, async (route) => { await held; await route.continue(); });
+  let releaseLate: () => void = () => {};
+  const heldLate = new Promise<void>((r) => { releaseLate = r; });
+  await page.route(/\/api\/profile\/overview\?/, async (route) => { await held; await route.continue(); });
+  await page.route(/\/api\/profile\/part\/activity\?/, async (route) => { await heldLate; await route.continue(); });
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await page.goto(ROUTES[1].path, { waitUntil: "domcontentloaded" });
@@ -114,6 +120,16 @@ test("first screen before the full Profile: axe, no overflow, then one swap", as
   release();
   await page.getByTestId("answer-sentence").waitFor({ timeout: 90_000 });
   expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("first");
+  // The Overview is in; the held part is named while it waits, and the whole-Profile tools wait with it.
+  await expect(page.getByTestId("parts-waiting")).toContainText("crime, 311 and building violations");
+  await expect(page.getByTestId("tool-ask-top")).toBeDisabled();
+  expect(await axe(page), "axe with parts waiting").toEqual([]);
+  releaseLate();
+  await expect(page.getByTestId("tool-ask-top")).toBeEnabled({ timeout: 90_000 });
+  await expect(page.getByTestId("parts-waiting")).toHaveCount(0);
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("first");
+  const after = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(after, "complete profile overflow").toBeLessThanOrEqual(1);
   await page.getByRole("tab", { name: "Build" }).click();
   if (floor) await expect(page.getByText(`${floor} sq ft allowed`, { exact: false }).first()).toBeVisible();
 });

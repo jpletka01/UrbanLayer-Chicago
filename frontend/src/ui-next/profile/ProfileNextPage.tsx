@@ -2,16 +2,18 @@
 // `/api/scorecard` response. The page's one map as the top band with the address over it, then a full-width tab
 // bar that turns into one slim sticky bar once scrolled (short address, current tab, Ask / Sources / Export),
 // then the tab. With no address it is the Search destination.
-// Progressive loading (decision Item 82): the page asks `/api/scorecard/first` beside the full `/api/scorecard`.
-// The first answer (about 2 s) draws the screen: map with the lot, address, the district sentence, the four tiles
-// in place saying what each waits for, one "Still checking" line. The full response then fills the same screen
-// (one component, same key, so the map stays mounted). A failed full response keeps the first screen with Retry.
+// Progressive loading: the page asks `/api/scorecard/first` (Item 82) beside the Overview part (Item 89,
+// `useProfileParts`). The first answer (about 1–3 s) draws the screen: map with the lot, address, the district
+// sentence, the four tiles in place saying what each waits for. The Overview then fills the same screen (one
+// component, same key, so the map stays mounted), and the late parts fill in after it, each named while it waits
+// (`PartsStatus`). Ask, Sources and Export read the whole Profile, so they turn on once every part has answered.
+// A failed Overview keeps the first screen with Retry.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Expand, LoaderCircle, RotateCw, Shrink, TriangleAlert } from "lucide-react";
-import { fetchScorecardFirst, type ScorecardFirst, type ScorecardResponse } from "../../lib/api";
+import type { ProfileLatePart, ScorecardFirst, ScorecardResponse } from "../../lib/api";
 import type { ParcelQuery } from "../../lib/types";
 import { useSelectedParcel } from "../../contexts/SelectedParcelContext";
 import { computeVerdict } from "../../lib/scorecardVerdict";
@@ -29,6 +31,8 @@ import { checkingTiles, firstSentence } from "./firstModel";
 import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
 import { SourcesDialog } from "./SourcesDialog";
+import { PartsStatus } from "./PartsStatus";
+import { useProfileParts, type PartStatus } from "./useProfileParts";
 
 type TabId = "overview" | "build";
 const TABS: TabId[] = ["overview", "build"];
@@ -47,28 +51,24 @@ function queryFrom(params: URLSearchParams): ParcelQuery | null {
 export default function ProfileNextPage() {
   const { t } = useTranslation("next");
   const [params, setParams] = useSearchParams();
-  const { select } = useSelectedParcel();
-  const [data, setData] = useState<ScorecardResponse | null>(null);
-  const [first, setFirst] = useState<ScorecardFirst | null>(null);
-  const firstRef = useRef<ScorecardFirst | null>(null);
-  const [fetchStatus, setStatus] = useState<"idle" | "loading" | "ready" | "notFound" | "restFailed">("idle");
-  // One per lookup: the screen's key, so the first answer and the full one share one mounted screen and map.
-  const [lookup, setLookup] = useState(0);
+  const { adopt } = useSelectedParcel();
+  // The URL key this page last resolved to (after canonicalizing to ?pin=), so the replace doesn't refetch.
   const resolvedKey = useRef<string | null>(null);
-
   const query = queryFrom(params);
-  const queryKey = query ? JSON.stringify(query) : null;
-  const pending = useRef<string | null>(null);
+  const rawKey = query ? JSON.stringify(query) : null;
+  const [activeKey, setActiveKey] = useState<string | null>(rawKey);
+  // One per lookup: the screen's key, so the first answer and the parts share one mounted screen and map.
+  const [lookupN, setLookupN] = useState(0);
+  useEffect(() => {
+    if (!rawKey) { setActiveKey(null); return; }
+    if (rawKey === resolvedKey.current) return; // the URL was canonicalized to the parcel we already show
+    setActiveKey(rawKey);
+    setLookupN((n) => n + 1);
+  }, [rawKey]);
 
-  const runFull = (key: string) => {
-    pending.current = key;
-    setStatus("loading");
-    select(JSON.parse(key) as ParcelQuery).then((result) => {
-      if (pending.current !== key) return; // a newer lookup superseded this one
-      // The first answer found the parcel, so a missing full one is a failure of the rest, not "not found".
-      if (!result) { setStatus(firstRef.current ? "restFailed" : "notFound"); setData(null); return; }
-      setData(result);
-      setStatus("ready");
+  const parts = useProfileParts(activeKey, {
+    onOverview: (ov) => {
+      const result = ov.profile;
       track("scorecard_view", { confidence: result.resolved_confidence, pin_resolved: !!result.resolved_pin });
       if (result.address) setTrackingAddress(result.address);
       if (result.resolved_pin) {
@@ -78,29 +78,12 @@ export default function ProfileNextPage() {
         resolvedKey.current = JSON.stringify({ pin: result.resolved_pin });
         setParams(next, { replace: true });
       } else {
-        resolvedKey.current = key;
+        resolvedKey.current = activeKey;
       }
-    });
-  };
-
-  useEffect(() => {
-    if (!queryKey) return;
-    // The URL was canonicalized to the parcel we already show: nothing to fetch.
-    if (queryKey === resolvedKey.current) return;
-    firstRef.current = null;
-    setFirst(null);
-    setData(null);
-    setLookup((n) => n + 1);
-    const ctrl = new AbortController();
-    fetchScorecardFirst(JSON.parse(queryKey) as ParcelQuery, ctrl.signal).then((f) => {
-      if (pending.current !== queryKey || !f) return;
-      firstRef.current = f;
-      setFirst(f);
-    });
-    runFull(queryKey);
-    return () => ctrl.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey]);
+    },
+    // Chat grounding and the rest of the app read the full Profile: hand it over once every part is in.
+    onComplete: (data) => adopt(data),
+  });
 
   useEffect(() => () => setTrackingAddress(null), []);
 
@@ -111,59 +94,105 @@ export default function ProfileNextPage() {
   };
 
   // No address in the URL: the Search destination, whatever was shown before.
-  const status = queryKey ? fetchStatus : "idle";
-  const full = status === "ready" ? data : null;
-  if (full || ((status === "loading" || status === "restFailed") && first)) {
+  const status = rawKey ? parts.status : "idle";
+  const { data, first } = parts;
+  if ((status === "overview" || status === "complete") && data) {
     return (
       <ProfileScreen
-        key={lookup}
-        data={full}
+        key={lookupN}
+        data={data}
         first={first}
-        restFailed={status === "restFailed"}
-        onRetry={() => queryKey && runFull(queryKey)}
+        complete={status === "complete"}
+        parts={parts.parts}
+        timedOut={parts.timedOut}
+        restFailed={false}
+        onRetry={parts.retryAll}
+        onRetryParts={(names) => names.forEach(parts.retryPart)}
         onSearch={search}
       />
+    );
+  }
+  if ((status === "loading" || status === "failed") && first) {
+    return (
+      <ProfileScreen
+        key={lookupN}
+        data={null}
+        first={first}
+        complete={false}
+        parts={{}}
+        timedOut={{}}
+        restFailed={status === "failed"}
+        onRetry={parts.retryAll}
+        onRetryParts={() => {}}
+        onSearch={search}
+      />
+    );
+  }
+
+  if (status === "loading") {
+    return (
+      <AppFrame crumbs={[t("profile.crumb"), params.get("address") ?? t("profile.crumbLoading")]}>
+        <ProfileSkeleton address={params.get("address")} />
+      </AppFrame>
     );
   }
 
   return (
     <AppFrame crumbs={[t("profile.crumb"), status === "idle" ? t("profile.search.crumb") : (params.get("address") ?? t("profile.crumbLoading"))]}>
       <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10 sm:px-7 sm:py-16">
-        {status === "loading" ? (
-          <LoadingState address={params.get("address")} />
-        ) : (
-          <>
-            <div className="flex flex-col gap-2">
-              <h1 className="text-nx-figure">{t("profile.search.title")}</h1>
-              <p className="nx-muted">{status === "notFound" ? t("profile.search.notFound") : t("profile.search.lead")}</p>
-            </div>
-            <AddressInput variant="page" onSubmit={search} defaultValue={params.get("address") ?? ""} placeholder={t("profile.search.placeholder")} />
-            <p className="text-caption nx-muted">
-              {t("profile.search.try")}{" "}
-              <button type="button" className="underline underline-offset-2" onClick={() => search("1601 N Milwaukee Ave")}>1601 N Milwaukee Ave</button>
-            </p>
-          </>
-        )}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-nx-figure">{t("profile.search.title")}</h1>
+          <p className="nx-muted">{status === "notFound" || status === "failed" ? t("profile.search.notFound") : t("profile.search.lead")}</p>
+        </div>
+        <AddressInput variant="page" onSubmit={search} defaultValue={params.get("address") ?? ""} placeholder={t("profile.search.placeholder")} />
+        <p className="text-caption nx-muted">
+          {t("profile.search.try")}{" "}
+          <button type="button" className="underline underline-offset-2" onClick={() => search("1601 N Milwaukee Ave")}>1601 N Milwaukee Ave</button>
+        </p>
+
       </div>
     </AppFrame>
   );
 }
 
-function LoadingState({ address }: { address: string | null }) {
+/** Before the first screen (about 1–3 s): the Profile's own outline in its final sizes (the map band, the tab bar,
+    the answer's line, the four tiles in their pale stat colors), so the first screen fills this exact shape instead
+    of replacing a box (owner, Item 89). The address being looked up, with no time estimate or seconds counter. */
+export function ProfileSkeleton({ address }: { address: string | null }) {
   const { t } = useTranslation("next");
-  const [seconds, setSeconds] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => setSeconds((s) => s + 1), 1000);
-    return () => window.clearInterval(id);
-  }, []);
+  const bar = "block rounded bg-nx-ink/10 motion-safe:animate-pulse";
   return (
-    <div className="flex flex-col gap-4" role="status" aria-live="polite" data-testid="profile-loading">
-      <div className="h-48 animate-pulse rounded-2xl bg-nx-block" />
-      <p className="flex items-center gap-2">
-        <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={1.5} />
-        {address ? t("profile.loading.at", { address }) : t("profile.loading.plain")}
-      </p>
-      <p className="text-caption nx-muted">{t("profile.loading.firstLookup", { seconds })}</p>
+    <div data-testid="profile-loading" aria-busy="true">
+      <div className="px-4 pt-5 sm:px-7 sm:pt-7">
+        <div className="relative h-52 overflow-hidden rounded-2xl bg-nx-block sm:h-64 lg:h-72">
+          <span className="absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
+            {address ?? t("profile.crumbLoading")}
+          </span>
+        </div>
+      </div>
+      <div aria-hidden className="flex gap-5 px-4 pt-5 sm:px-7">
+        <span className={`${bar} my-2 h-4 w-16`} />
+        <span className={`${bar} my-2 h-4 w-10`} />
+      </div>
+      <div className="flex flex-col gap-7 px-4 pt-6 sm:px-7">
+        <div className="flex flex-col gap-3">
+          <p className="flex items-center gap-2" role="status" aria-live="polite">
+            <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={1.5} />
+            {address ? t("profile.loading.at", { address }) : t("profile.loading.plain")}
+          </p>
+          <span aria-hidden className={`${bar} h-6 w-full max-w-2xl`} />
+        </div>
+        <ul aria-hidden className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(190px,1fr))] sm:gap-7" data-testid="skeleton-tiles">
+          {[0, 1, 2, 3].map((i) => (
+            <li key={i} className={`flex flex-col gap-3 rounded-2xl p-4 sm:p-6 ${i % 2 ? "bg-nx-stat-b" : "bg-nx-stat-a"}`}>
+              <span className="block h-3 w-12 rounded bg-nx-card-ink/10 motion-safe:animate-pulse" />
+              <span className="block h-4 w-24 rounded bg-nx-card-ink/10 motion-safe:animate-pulse" />
+              <span className="block h-7 w-20 rounded bg-nx-card-ink/10 motion-safe:animate-pulse" />
+              <span className="block h-3 w-28 rounded bg-nx-card-ink/10 motion-safe:animate-pulse" />
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -171,15 +200,24 @@ function LoadingState({ address }: { address: string | null }) {
 function ProfileScreen({
   data,
   first,
+  complete,
+  parts,
+  timedOut,
   restFailed,
   onRetry,
+  onRetryParts,
   onSearch,
 }: {
-  /** The full response; null while the first screen shows. */
+  /** The Profile so far (the Overview, then each part as it lands); null while the first screen shows. */
   data: ScorecardResponse | null;
   first: ScorecardFirst | null;
+  /** Every part answered: the tools that read the whole Profile (Ask, Sources, Export) turn on. */
+  complete: boolean;
+  parts: Partial<Record<ProfileLatePart, PartStatus>>;
+  timedOut: Partial<Record<ProfileLatePart, string[]>>;
   restFailed: boolean;
   onRetry: () => void;
+  onRetryParts: (names: ProfileLatePart[]) => void;
   onSearch: (text: string) => void;
 }) {
   const { t, i18n } = useTranslation("next");
@@ -197,7 +235,8 @@ function ProfileScreen({
     mapButtonRef.current?.focus({ preventScroll: true });
   }, [mapFocused]);
   const askButtonRef = useRef<HTMLSpanElement | null>(null);
-  const chat = useParcelChat(data, i18n.language);
+  const chat = useParcelChat(complete ? data : null, i18n.language);
+  const ready = complete && !!data;
   const ctx = data?.context;
   const rawAddress = data?.address ?? first?.address ?? null;
   const address = rawAddress ? humanizeShoutyCase(rawAddress) : t("profile.unknownAddress");
@@ -236,10 +275,10 @@ function ProfileScreen({
   const toolsFor = (where: "top" | "slim") => (
     <>
       <span ref={where === "top" ? askButtonRef : undefined} className="contents">
-        <ToolButton label={data ? t("tools.ask") : `${t("tools.ask")}: ${t("profile.first.toolsLater")}`} icon={ICON.ask} onClick={() => { track("investigate_click", { card_name: "next_ask_open" }); setAskOpen((o) => !o); }} pressed={askOpen} testId={`tool-ask-${where}`} disabled={!data} />
+        <ToolButton label={ready ? t("tools.ask") : `${t("tools.ask")}: ${t("profile.first.toolsLater")}`} icon={ICON.ask} onClick={() => { track("investigate_click", { card_name: "next_ask_open" }); setAskOpen((o) => !o); }} pressed={askOpen} testId={`tool-ask-${where}`} disabled={!ready} />
       </span>
-      <ToolButton label={data ? t("tools.sources") : `${t("tools.sources")}: ${t("profile.first.toolsLater")}`} icon={ICON.sources} onClick={() => setSourcesOpen(true)} testId={`tool-sources-${where}`} disabled={!data} />
-      <ToolButton label={data ? t("tools.export") : `${t("tools.export")}: ${t("profile.first.toolsLater")}`} icon={ICON.export} onClick={exportCsv} testId={`tool-export-${where}`} disabled={!data} />
+      <ToolButton label={ready ? t("tools.sources") : `${t("tools.sources")}: ${t("profile.first.toolsLater")}`} icon={ICON.sources} onClick={() => setSourcesOpen(true)} testId={`tool-sources-${where}`} disabled={!ready} />
+      <ToolButton label={ready ? t("tools.export") : `${t("tools.export")}: ${t("profile.first.toolsLater")}`} icon={ICON.export} onClick={exportCsv} testId={`tool-export-${where}`} disabled={!ready} />
     </>
   );
 
@@ -252,7 +291,7 @@ function ProfileScreen({
     <AppFrame
       crumbs={[t("profile.crumb"), address]}
       tools={toolsFor("top")}
-      drawer={askOpen && data ? (
+      drawer={askOpen && ready ? (
         <AskDrawer chat={chat} onClose={() => setAskOpen(false)} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} />
       ) : null}
     >
@@ -325,16 +364,25 @@ function ProfileScreen({
         <div className="px-4 pb-24 pt-6 sm:px-7">
           <Tabs.Content value="overview" className="focus:outline-none">
             {data && verdict ? (
-              <OverviewTab data={data} verdict={verdict} identity={identity} onOpenTab={(id) => { setTab(id); window.scrollTo({ top: 0 }); }} />
+              <OverviewTab
+                data={data}
+                verdict={verdict}
+                identity={identity}
+                checkingCityLists={parts.history === "waiting"}
+                buildingPending={parts.building === "waiting"}
+                onOpenTab={(id) => { setTab(id); window.scrollTo({ top: 0 }); }}
+              />
             ) : first ? (
               <FirstOverview first={first} identity={identity} restFailed={restFailed} onRetry={onRetry} />
             ) : null}
           </Tabs.Content>
           {data && verdict && (
             <Tabs.Content value="build" className="focus:outline-none">
-              <BuildTab data={data} verdict={verdict} />
+              <BuildTab data={data} verdict={verdict} buildingPending={parts.building === "waiting"} />
             </Tabs.Content>
           )}
+
+          {data && <PartsStatus parts={parts} timedOut={timedOut} onRetry={onRetryParts} />}
 
           <div className="mt-12 max-w-xl border-t border-nx-ink/10 pt-6">
             <p className="mb-2 text-caption nx-muted">{t("profile.another")}</p>
@@ -342,7 +390,7 @@ function ProfileScreen({
           </div>
         </div>
       </Tabs.Root>
-      {data && <SourcesDialog data={data} open={sourcesOpen} onOpenChange={setSourcesOpen} />}
+      {ready && <SourcesDialog data={data!} open={sourcesOpen} onOpenChange={setSourcesOpen} />}
     </AppFrame>
   );
 }

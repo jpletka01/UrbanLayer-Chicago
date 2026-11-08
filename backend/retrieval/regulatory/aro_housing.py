@@ -11,7 +11,9 @@ from backend.retrieval.socrata import socrata_get
 
 log = logging.getLogger(__name__)
 
-_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="aro_housing")
+# 24 h (owner, 2026-11-08, Item 89): an area-level list that changes rarely; a second visitor in the same
+# community area gets it at once instead of a 7-22 s wait. Successes only, as before.
+_cache = TTLCache(ttl_seconds=86400, maxsize=256, name="aro_housing")
 
 
 async def aro_housing_by_community_area(

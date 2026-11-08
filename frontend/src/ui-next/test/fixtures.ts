@@ -51,7 +51,7 @@ export function profileFixture(over: DeepPartial<ScorecardResponse> & Record<str
         full_baths: null, half_baths: null, bldg_age: 100, total_assessed_value: 250000,
         estimated_annual_tax: 64000, effective_tax_rate: 0.0515, tax_year: 2024, assessment_level: 0.25,
         implied_market_value: 1000000, tax_code: "71001", tax_breakdown: [], tax_exemptions: [],
-        assessment_history: [], sales_history: [{ date: "2019-06-24T00:00:00.000", price: 1200000, deed_type: "Warranty" }], parcel_geometry: null, assessor_permits: null,
+        assessment_history: [], sales_history: [{ date: "2019-06-24T00:00:00.000", price: 1200000, deed_type: "Warranty", arms_length: true }], parcel_geometry: null, assessor_permits: null,
       },
       regulatory: {
         overlays: [], in_planned_development: false, in_landmark_district: true, is_landmark_building: false,

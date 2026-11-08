@@ -17,6 +17,14 @@ Usage (the repo's .env is read for the Socrata app token and Walk Score key, as 
   PYTHONPATH=. python -m eval.profile_latency --label quick --rounds 1 --parcels milwaukee,pin1
 Results: eval/results/2026-11-profile-latency/<label>.{json,md}.
 
+`--parts` (Phase 4, decision Item 89) times the new Profile as the page loads it: `/api/scorecard/first` and the
+Overview part together, then every late part the Overview names, together; per visit it records the first
+screen, the Overview, each part, the whole Profile ("complete"), and the sources past the late deadline. The
+Overview's p50/p95 is reported for exactly resolved parcels and for approximate ones apart (Item 81, point 3).
+  PYTHONPATH=. python -m eval.profile_latency --parts --label parts-local-2026-11-08 --rounds 5
+  PYTHONPATH=. python -m eval.profile_latency --parts --base https://urbanlayerchicago.com --rounds 1 \
+      --label parts-prod-2026-11-09 --parcels <fresh keys>     (production: the owner's go, one visit at a time)
+
 `--base URL` instead times whole requests against a running server (total wall time only, plus the
 `_timings` breakdown when that server runs with PROFILE_TIMINGS=true). Caches there can't be emptied from
 outside, so "cold" means the first request for a parcel in this run; use parcels nobody has opened since the
@@ -49,6 +57,14 @@ PARCELS: list[tuple[str, dict[str, str], str]] = [
     ("fresh_south", {"address": "7600 S Halsted St"}, "fresh: South Side commercial strip"),
     ("fresh_west", {"address": "3300 W Armitage Ave"}, "fresh: Logan Square mixed street"),
     ("fresh_north", {"address": "5600 N Clark St"}, "fresh: Andersonville commercial"),
+]
+
+# Fresh parcels for Phase 4 (not in Items 81-87's runs), to be added to the panel with --parts.
+PHASE4_FRESH: list[tuple[str, dict[str, str], str]] = [
+    ("p4_uptown", {"address": "4800 N Broadway"}, "fresh (Phase 4): Uptown commercial"),
+    ("p4_westtown", {"address": "2200 W Chicago Ave"}, "fresh (Phase 4): West Town corridor"),
+    ("p4_woodlawn", {"address": "6300 S Cottage Grove Ave"}, "fresh (Phase 4): Woodlawn corridor"),
+    ("p4_bridgeport", {"address": "3500 S Halsted St"}, "fresh (Phase 4): Bridgeport"),
 ]
 
 # The Profile's top-level tasks, in the order Item 81's table lists them. Everything else is a sub-span.
@@ -115,13 +131,10 @@ def _critical(run: dict) -> str | None:
     return max(fetch_tasks, key=lambda k: spans[k]["end_ms"])
 
 
-async def _in_process(parcels: list[tuple[str, dict, str]], rounds: int) -> list[dict]:
-    from backend import main
-    from backend import timing
+async def _preload() -> None:
+    """The server's startup preloads, minus the chat's embedding model (`main._preload_datasets` also loads
+    it; the Profile never embeds anything)."""
     from backend.discovery import parcel_source
-
-    # The server's startup preloads, minus the chat's embedding model (`main._preload_datasets` also loads
-    # it; the Profile never embeds anything).
     import httpx
     from backend.retrieval.incentives import enterprise_zones, tif
     from backend.retrieval.neighborhood import demographics, transit, wards
@@ -137,6 +150,13 @@ async def _in_process(parcels: list[tuple[str, dict, str]], rounds: int) -> list
         if isinstance(res, Exception):
             print(f"preload {name} failed: {res!r}", file=sys.stderr)
     print(f"startup preload {time.perf_counter() - t:.1f}s", file=sys.stderr)
+
+
+async def _in_process(parcels: list[tuple[str, dict, str]], rounds: int) -> list[dict]:
+    from backend import main
+    from backend import timing
+
+    await _preload()
 
     runs: list[dict] = []
     for rnd in range(rounds + 1):
@@ -325,6 +345,161 @@ def render_md(meta: dict, summary: dict, parcels: list[tuple[str, dict, str]]) -
     return "\n".join(lines) + "\n"
 
 
+# ── Phase 4: the Profile in parts (Item 89) ────────────────────────────────────────────────────────────
+
+async def _timed(coro) -> tuple[float, Any]:
+    """(milliseconds, result) — or the exception as the result: a failed request is a result too."""
+    t = time.perf_counter()
+    try:
+        result = await coro
+    except Exception as exc:  # noqa: BLE001
+        result = exc
+    return (time.perf_counter() - t) * 1000, result
+
+
+def _visit_record(key: str, rnd: int, mode: str, t_first, t_ov, late: dict, complete_ms: float, ov) -> dict:
+    ok = not isinstance(ov, Exception) and isinstance(ov, dict)
+    rl_conf = None
+    if ok:
+        from backend import profile_parts
+        rl_conf = profile_parts.read_lookup(ov["lookup"])["rl"][4]
+    return {
+        "parcel": key, "round": rnd, "mode": mode, "ok": ok, "error": None if ok else repr(ov)[:200],
+        "first_ms": round(t_first, 1), "overview_ms": round(t_ov, 1), "complete_ms": round(complete_ms, 1),
+        "exact": rl_conf == "authoritative",
+        "parts": {n: round(ms, 1) for n, (ms, _r) in late.items()},
+        "part_end_ms": {n: round(t_ov + ms, 1) for n, (ms, _r) in late.items()},
+        "timed_out": {n: r.get("timed_out", []) for n, (_ms, r) in late.items() if isinstance(r, dict)},
+        "failed_parts": [n for n, (_ms, r) in late.items() if not isinstance(r, dict)],
+        "failed_sources": [f.get("key") for f in ((ov or {}).get("profile") or {}).get("failed_sources") or []] if ok else [],
+        # the Overview's own per-task spans (only when the server runs with PROFILE_TIMINGS=true)
+        "overview_spans": ((ov.get("_timings") or {}).get("spans") if ok else None) or {},
+    }
+
+
+async def _parts_main(parcels, rounds: int) -> list[dict]:
+    await _preload()
+    return await _parts_in_process(parcels, rounds)
+
+
+async def _parts_in_process(parcels, rounds: int) -> list[dict]:
+    from backend import main, profile_parts
+
+    runs: list[dict] = []
+    for rnd in range(rounds + 1):
+        for key, query, _why in parcels:
+            for mode in ("cold", "warm"):
+                if mode == "cold":
+                    _clear_caches()
+                addr, pin = query.get("address"), query.get("pin")
+                t0 = time.perf_counter()
+                (t_first, _first), (t_ov, ov) = await asyncio.gather(
+                    _timed(main.scorecard_first(address=addr, pin=pin)),
+                    _timed(profile_parts.overview(addr, None, None, pin)),
+                )
+                late: dict = {}
+                if isinstance(ov, dict):
+                    names = ov["parts_pending"]
+                    got = await asyncio.gather(*(_timed(profile_parts.part(n, ov["lookup"], None)) for n in names))
+                    late = dict(zip(names, got))
+                run = _visit_record(key, rnd, mode, t_first, t_ov, late, (time.perf_counter() - t0) * 1000, ov)
+                runs.append(run)
+                print(f"r{rnd} {key:13s} {mode:4s} first {t_first / 1000:5.2f}s overview {t_ov / 1000:5.2f}s "
+                      f"complete {run['complete_ms'] / 1000:5.2f}s exact={run['exact']} timed_out="
+                      f"{ {k: v for k, v in run['timed_out'].items() if v} }", file=sys.stderr)
+    return runs
+
+
+async def _parts_over_http(base: str, parcels, rounds: int) -> list[dict]:
+    import httpx
+
+    runs: list[dict] = []
+    async with httpx.AsyncClient(base_url=base, timeout=httpx.Timeout(120.0)) as client:
+        async def get(path, params):
+            r = await client.get(path, params=params)
+            if r.status_code != 200:
+                raise RuntimeError(f"{path} {r.status_code}")
+            return r.json()
+
+        for rnd in range(rounds):
+            for key, query, _why in parcels:
+                for mode in ("cold", "warm"):
+                    t0 = time.perf_counter()
+                    (t_first, _f), (t_ov, ov) = await asyncio.gather(
+                        _timed(get("/api/scorecard/first", query)), _timed(get("/api/profile/overview", query)),
+                    )
+                    late: dict = {}
+                    if isinstance(ov, dict):
+                        names = ov["parts_pending"]
+                        got = await asyncio.gather(*(
+                            _timed(get(f"/api/profile/part/{n}", {"lookup": ov["lookup"]})) for n in names))
+                        late = dict(zip(names, got))
+                    run = _visit_record(key, rnd + 1, mode, t_first, t_ov, late,
+                                        (time.perf_counter() - t0) * 1000, ov)
+                    if isinstance(ov, dict):
+                        # the HTTP client can't read the signing key; exact = the resolution's own record
+                        run["exact"] = (ov["profile"].get("resolution") or {}).get("method") in ("address_points", "pin", "coordinates", "assessor_addresses")
+                    runs.append(run)
+                    print(f"r{rnd + 1} {key:13s} {mode:4s} first {t_first / 1000:5.2f}s overview {t_ov / 1000:5.2f}s "
+                          f"complete {run['complete_ms'] / 1000:5.2f}s", file=sys.stderr)
+    return runs
+
+
+def summarize_parts(runs: list[dict]) -> dict:
+    measured = [r for r in runs if r["round"] >= 1 and r["ok"]]
+    out: dict[str, Any] = {"n_runs": len(measured), "rows": {}, "timed_out": {}, "failed_parts": {}}
+
+    def row(vals):
+        return {"n": len(vals), "p50": pct(vals, 50), "p95": pct(vals, 95), "max": max(vals, default=None)}
+
+    for mode in ("cold", "warm"):
+        rs = [r for r in measured if r["mode"] == mode]
+        rows = {
+            "first screen": row([r["first_ms"] for r in rs]),
+            "Overview, exact parcels": row([r["overview_ms"] for r in rs if r["exact"]]),
+            "Overview, approximate parcels": row([r["overview_ms"] for r in rs if not r["exact"]]),
+            "whole Profile (every part)": row([r["complete_ms"] for r in rs]),
+        }
+        for name in sorted({n for r in rs for n in r["parts"]}):
+            rows[f"part {name} (own time)"] = row([r["parts"][name] for r in rs if name in r["parts"]])
+            rows[f"part {name} (from visit start)"] = row([r["part_end_ms"][name] for r in rs if name in r["parts"]])
+        out["rows"][mode] = rows
+        to: dict[str, int] = {}
+        for r in rs:
+            for srcs in r["timed_out"].values():
+                for s_ in srcs:
+                    to[s_] = to.get(s_, 0) + 1
+        out["timed_out"][mode] = {"visits": len(rs), "by_source": dict(sorted(to.items(), key=lambda kv: -kv[1]))}
+        fp: dict[str, int] = {}
+        for r in rs:
+            for n in r["failed_parts"]:
+                fp[n] = fp.get(n, 0) + 1
+        out["failed_parts"][mode] = fp
+    first = [r for r in runs if r["round"] == 0 and r["mode"] == "cold"]
+    if first:
+        out["process_first"] = {"overview_ms": first[0]["overview_ms"], "complete_ms": first[0]["complete_ms"]}
+    return out
+
+
+def render_parts_md(meta: dict, summary: dict, parcels) -> str:
+    lines = [f"# Profile in parts: {meta['label']}", "",
+             f"- When: {meta['when']} · host: {meta['host']} · git {meta['git']}",
+             f"- Mode: {meta['mode']} · rounds: {meta['rounds']} · measured visits: {summary['n_runs']}",
+             f"- Parcels: {', '.join(k for k, _q, _w in parcels)}", ""]
+    for mode in ("cold", "warm"):
+        lines += [f"## {mode}", "", "| | n | p50 | p95 | max |", "|---|---|---|---|---|"]
+        for name, r in summary["rows"][mode].items():
+            lines.append(f"| {name} | {r['n']} | {_s(r['p50'])} | {_s(r['p95'])} | {_s(r['max'])} |")
+        to = summary["timed_out"][mode]
+        lines += ["", f"Sources past the late deadline: {to['by_source'] or 'none'} (of {to['visits']} visits). "
+                  f"Failed parts: {summary['failed_parts'][mode] or 'none'}.", ""]
+    if "process_first" in summary:
+        pf = summary["process_first"]
+        lines.append(f"First visit after process start (round 0, not in the percentiles): Overview "
+                     f"{_s(pf['overview_ms'])}, whole Profile {_s(pf['complete_ms'])}.")
+    return "\n".join(lines) + "\n"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--label", required=True)
@@ -333,14 +508,37 @@ def main() -> None:
     ap.add_argument("--base", help="time a running server over HTTP instead of in-process")
     ap.add_argument("--from-json", action="store_true",
                     help="re-summarize results/<label>.json without running anything")
+    ap.add_argument("--parts", action="store_true",
+                    help="time the Profile in parts (first screen, Overview, each late part; Item 89)")
     ap.add_argument("--isolate", action="store_true",
                     help="run each slow lookup alone, cold, --rounds times, on the first parcel")
     args = ap.parse_args()
 
-    parcels = PARCELS
+    parcels = PARCELS + PHASE4_FRESH if args.parts else PARCELS
     if args.parcels:
         want = set(args.parcels.split(","))
-        parcels = [p for p in PARCELS if p[0] in want]
+        parcels = [p for p in PARCELS + PHASE4_FRESH if p[0] in want]
+
+    if args.parts:
+        import logging
+        logging.basicConfig(level=logging.WARNING)
+        if args.base:
+            runs = asyncio.run(_parts_over_http(args.base.rstrip("/"), parcels, args.rounds))
+        else:
+            runs = asyncio.run(_parts_main(parcels, args.rounds))
+        git = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
+        meta = {"label": args.label, "when": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "host": f"{platform.system()} {platform.machine()}, py{platform.python_version()}",
+                "git": git, "mode": f"parts over http {args.base}" if args.base else "parts in-process",
+                "rounds": args.rounds}
+        summary = summarize_parts(runs)
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        (RESULTS_DIR / f"{args.label}.json").write_text(
+            json.dumps({"meta": meta, "summary": summary, "runs": runs}, separators=(",", ":"), default=str))
+        md = render_parts_md(meta, summary, parcels)
+        (RESULTS_DIR / f"{args.label}.md").write_text(md)
+        print(md)
+        return
 
     if args.from_json:
         saved = json.loads((RESULTS_DIR / f"{args.label}.json").read_text())

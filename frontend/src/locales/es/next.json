@@ -85,8 +85,7 @@
     },
     "loading": {
       "at": "Buscando {{address}}…",
-      "plain": "Buscando esta propiedad…",
-      "firstLookup": "La primera búsqueda puede tardar de 15 a 40 segundos. Van {{seconds}} s."
+      "plain": "Buscando esta propiedad…"
     },
     "tiles": {
       "units": "Unidades permitidas",
@@ -205,6 +204,36 @@
       "restFailed": "No se pudo cargar el resto de esta ficha.",
       "retry": "Reintentar",
       "toolsLater": "Disponible cuando termine de cargar la ficha"
+    },
+    "parts": {
+      "stillChecking": "Seguimos revisando: {{list}}",
+      "timedOut": "No se pudo revisar a tiempo: {{list}}.",
+      "failed": "No se pudo cargar: {{list}}.",
+      "retry": "Reintentar",
+      "cityLists": "Seguimos revisando las listas de la Ciudad (terrenos municipales, infractores, rentas de corto plazo), que pueden agregar una advertencia.",
+      "part": {
+        "building": "registros de edificios de la Ciudad (benchmarking de energía, huellas de edificios)",
+        "history": "listas de la Ciudad, apelaciones y permisos del Asesor",
+        "money": "ventas cercanas",
+        "incentives": "informes TIF y subvenciones",
+        "neighborhood": "vecindario (sector censal, transporte, tráfico, renta)",
+        "activity": "delitos, 311 e infracciones de construcción",
+        "block_face": "la regla del frente de cuadra"
+      },
+      "source": {
+        "property_history": "listas de la Ciudad, apelaciones y permisos del Asesor",
+        "comparables": "ventas cercanas",
+        "incentives": "informes TIF y subvenciones",
+        "neighborhood": "vecindario",
+        "aro_housing": "proyectos de vivienda asequible",
+        "crime": "delitos",
+        "crime_yoy": "tendencia de delitos",
+        "violations": "infracciones de construcción",
+        "address_311": "solicitudes al 311",
+        "block_face": "la regla del frente de cuadra",
+        "property": "registros de edificios de la Ciudad"
+      },
+      "unitsBuiltChecking": "Revisando los registros de edificios de la Ciudad"
     }
   },
   "discovery": {

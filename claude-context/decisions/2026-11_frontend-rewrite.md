@@ -400,3 +400,98 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - Not measured: the production panel state after the next daily check.
 
 **Revisit if:** FEMA unblocks the server (the probe then goes back to ok on its own); the server moves to a US region.
+
+## Item 87: Phase 3, production Profile latency after the first screen and the FEMA fix (2026-11-08)
+
+**Status: measured from outside; the per-task view from the server's `scorecard timings` lines is still to come** (reading them needs `sudo` on the server, so the owner pulls them). Item 83 asked for this re-measurement once #204 (the first screen) was live; the FEMA fix (Items 84–86) landed the same morning.
+
+**What was measured.** 8 Chicago addresses nobody had opened in this test series (`eval/results/2026-11-profile-latency/prod-http-2026-11-08.txt`), one visit at a time from a home connection outside the US, through Cloudflare. A visit starts `/api/scorecard/first` and `/api/scorecard` together, as the preview page does, and each address was visited twice. No model calls (the Profile has none).
+
+| | first screen (`/first`) p50 · p95 | full Profile p50 · p95 |
+|---|---|---|
+| First visit (n=8) | **2.5 s · 4.8 s** (1.7–4.8 s) | **20.4 s · 22.8 s** (12.4–22.8 s) |
+| Repeat visit (n=8) | 1.1 s · 1.6 s | **1.8 s · 2.5 s** |
+| Item 83, 2026-11-07, before both fixes (n=10) | not live | first 24.7 s · 44.1 s; repeat 4.0 s · 14.4 s |
+
+- **Failed sources: 0 of 16 full responses** (the day before: flood failed on 10 of 10). Flood is answered from the committed copy (Item 84).
+- **Repeat visits dropped from 4.0 s to 1.8 s p50.** Server-side a repeat takes 44–52 ms (Item 84's close-out); the rest is the network route from outside the US to the Nuremberg server, so a US visitor should see less.
+- **The first screen meets Item 81's targets on production**: under 3 s warm at p95 (1.6 s) and under 6 s cold at p95 (4.8 s, n=8).
+- **The full first visit is still 20 s**, as expected: the response split is Phase 4. That's the wait builders see on their own lot in the builder test (Item 88).
+- One of 8 resolved approximately (3100 N Sheffield); its first screen showed no lot, as designed (Item 82).
+
+**Decision: none needed; the latency is fit for the builder test.** The first screen holds; the full-Profile wait on a fresh lot is what case 2 of the test observes.
+
+**Not measured:** the per-task split on production (the `scorecard timings` lines: total, resolution, fetch, three slowest tasks); a US network; more than 8 addresses (p95 of 8 is the slowest run).
+
+**Revisit if:** the server-side log lines show a task far slower than Item 81's local numbers; the first screen's p95 goes above 6 s cold on more visits.
+
+## Item 88: the builder test is deferred; the kit stays ready (2026-11-08)
+
+**Decision (owner, 2026-11-08): Phase 3's builder test doesn't run now, because no builders are lined up to interview.** The rewrite moves on to Phase 4 (the Profile response split). Item 75's pass criteria are unchanged and still unapplied: nothing in the rewrite has been tested with a first-time builder yet.
+
+**What is ready for when it runs.** A moderated test kit, kept locally in `research/16-builder-test-kit/` (gitignored, since it will hold builders' names): a no-coaching moderator script, a consent form and task cards (one per Item 75 criterion) in English and Mexican Spanish, an observation sheet, an answer key, and a template for scoring. The owner's choices so far: he moderates over video with screen share, English only, prewarmed parcel 2541 N Spaulding Ave (an RS-3 two-flat; its bars have real fills, units 2 of 2 is the deciding limit). The alternative, 1601 N Milwaukee, has every bar hatched, so the bars criterion can't be scored there. Model budget still $2, for the follow-up task only (Item 83).
+
+**What can proceed without it, and what can't.**
+- *Phase 4 (response split)* and *Phase 5 (map tracks)* proceed. Both are driven by measurements (Items 81, 87) and the map requirement (Item 80), not by how builders read the page.
+- *The gate moves:* the builder test runs **before any route flips to the new UI by default**, and before the page-design rules are rewritten for the new system (Item 75). The test's "revise the structure before building more pages" still holds: if the test fails then, pages built in the meantime are revised first.
+- *Retest cost goes up with every page built before it.* Running it on Phase 4's faster Profile is fine (the criteria don't depend on load time); running it after Phase 6 means several tabs could need rework.
+
+**Alternatives:** an unmoderated link sent to builders (can't observe hesitation or coaching, so it can't score Item 75's criteria); testing with people who aren't builders (the brief's audience is small developers, and Item 75 names builders); holding the rewrite until builders are found (blocks work the test doesn't inform).
+
+**Revisit if:** builders become available (run the kit, record results as a new Item); Phase 6 is about to start without a test (raise it with the owner first).
+
+**Numbers:** none measured on users. n = 0 builders.
+
+## Item 89: Phase 4, the Profile in parts (2026-11-08)
+
+**Status: built on `feat/ui-next-phase-4-parts`, checked locally; the contract was approved by the owner before it was built ("Yes, build it", 2026-11-08), with his four answers below and two more during the build (the City's building records; grants and ARO cached 24 h). The local Overview target is not yet shown at p95 (numbers below); production after deploy is the measurement of record (the owner: no more hour-long local runs until a change promises a large cut).** The full `/api/scorecard` is unchanged and still serves today's Profile, chat grounding and the $25 report (owner: the old Profile stays on it until its route flips).
+
+**Production per-task numbers first** (the `scorecard timings` lines since #206, pulled by the owner, 48 h to 2026-11-08, 50 lines, no addresses in them). `/api/scorecard/first`: n=18, all ok, p50 0.2 s, p95 2.0 s server-side. Full Profile, first visit (> 3 s): n=16, **p50 18.8 s, p95 25.6 s**, max 29.7 s; resolution p50 0.8 s / p95 2.8 s. Repeat: n=16, p50 57 ms, p95 0.9 s. Slowest task on first visits: property 6 of 16, 311 4, incentives 4, crime 1, violations 1; in the top three: property 12× (median 12.8 s), 311 7× (16.2 s), crime YoY 7× (9.2 s), crime 7× (8.3 s), incentives 6× (11.5 s), neighborhood 5× (9.2 s). No failures. These include Item 87's 16 test visits. They match Item 81's local picture: the property domain holds the Overview, and 311, crime and incentives are the tail.
+
+**Decision: separate part endpoints with a signed lookup (owner's pick).**
+- `GET /api/profile/overview?address|pin|lat&lon` resolves once, reconciles identity (the approximate round trip runs here and only here), and returns `lookup` (HMAC-signed with the JWT secret under its own context string, 30 minutes) plus the Profile so far.
+- `GET /api/profile/part/{building|history|money|incentives|neighborhood|activity|block_face}?lookup=…&have=…` never resolves again; a forged or expired lookup is a 409 and the page asks the Overview again.
+- `/api/scorecard/first` (Item 82) stays as the first slice; it and the Overview start together and share one resolution, one zoning lookup and the County characteristics/assessments calls (`backend/inflight.py`).
+- *Alternative:* one streamed response (NDJSON/SSE): one request and server-side ordering, but nginx needs an unbuffered location, a failed part still needs its own endpoint for Retry, and one slow source holds the connection.
+
+**Decision: one record per lookup; every response is the whole Profile so far.** Derived figures read several parts at once (the unit yield reads the zoning, the lot, the 606 layer and the block face; code currency reads the CHRS flag; coverage notes, provenance and the data dates read everything), so a part can't compute them alone. Each part writes its raw results into an in-memory record (`TTLCache`, 30 min) and every response is assembled from all of it by the full path's own functions (`main._scorecard_data_from`, `main._finish_scorecard_payload`). The page keeps the response with the highest `version`, so nothing is merged by hand and the order parts land in doesn't matter. Once every part is in, the Profile equals `/api/scorecard`'s for the same sources (`test_profile_parts.py`, four cases incl. a commercial lot, a failed block face and an approximate match). A record the server lost is rebuilt from the token plus the parts the page says it has. *Cost:* each response carries the whole Profile (about 100 KB, gzipped on the wire), up to eight per first visit. *Alternative:* each part returns only its own keys and the page merges them (the derived figures would be wrong until a final recompute, and every derived field would need its own merge rule).
+
+**What the Overview holds.** Identity and resolution record, the zoning point and its Title 17 row, the core property record (characteristics, assessments, sales with a per-sale arm's-length flag, PTAXSIM tax and outline, the County's building records: condo rows and Commercial Valuation), regulatory (overlays, flood, brownfield), program membership by point (TIF, EZ, OZ), Walk Score, upcoming zoning, code currency and the passed-ordinance checks, with their provenance and data dates.
+- **Late parts:** `building` (the City portal's building records: energy benchmarking and footprints), `history` (parcel flags, appeals, Assessor permits), `money` (comparables and FAR comps), `incentives` (TIF reports, grants, and the tract-keyed QCT and NMTC: the FCC/Census tract lookup took up to 16 s inside the Overview), `neighborhood` (tract, transit, traffic, Divvy, rent, HUD SAFMR), `activity` (crime, crime trend, 311, violations, ARO), `block_face` (RS-3 only). A part that doesn't apply isn't asked (no History without a property record, no Money without a class, no area parts without a community area, no block face outside RS-3, no building part when the Assessor's row has the facts).
+- **The verdict shows with the Overview and can update late (owner's pick).** It reads parcel flags, the TIF fund balance, appeals and open violations, which are late; while History waits the Overview says "Still checking the City's lists (City-owned land, scofflaw, short-term rentals), which can add a caveat."
+- **The City's building records are a late part (owner's pick, during the build).** The first measurement showed the Overview's tail on commercial lots was two City-portal lookups in the building-facts fallback: energy benchmarking (`xq83-jr8c`, up to 22.7 s) and footprints (`syp8-uezg`, up to 12.9 s). The Overview keeps the County's records; the `building` part reruns the core with the City's (the County calls are cached by then) through the same fill-only merge. Until it lands a missing built figure reads "Checking City building records", never "not on record". *Alternatives:* the Overview waits (17–26 s p95 on commercial lots); a 4 s deadline inside the Overview.
+- **The address candidates** (every parcel the address sources list, read only by the "how we found this parcel" panel in Sources) start with the Overview but no longer hold it (up to 10.8 s seen); the late parts take them, and Sources turns on only once every part is in.
+- **Grants and ARO per community area cache 24 h** (owner's pick; were 1 h): area-level lists that change rarely, the main reason incentives passed the deadline (grants 15 s p50 in the run below). Successes only (Item 65). *Alternative:* a daily background pre-warm of all 77 areas (about 154 City requests a day), not chosen.
+- **The building-facts fallback starts once characteristics, assessments and the outline are in** (Item 81 point 4; it waited for the parcel flags), and with an exact 14-digit PIN the core lookups start beside the parcel row instead of after it (1.4 s p50, Item 81); if the row names another parcel they are redone for it. Both apply to the full path too, with the same output.
+
+**Decision: a 20 s deadline per late source (owner's pick), counted from the source's own start.** Past it the part answers without that source and lists it in `timed_out`; the page says "Couldn't check in time: crime and 311 requests. Retry", never "none", and it is not a failure label. The fetch keeps running so its cache fills, and a Retry joins it or finds it cached. Late sources share a cap of 8 at a time, the retrieval semaphore's (the contract proposed 4: it halved today's parallelism and the whole Profile took 41.5 s p50 locally, so it was raised). The first build counted the wait for a slot against the 20 s, which made queued sources (311, crime trend) time out on a third of visits, fixed. A visitor who leaves (a new lookup, or leaving the page) aborts the requests and the server cancels work nobody else waits for.
+
+**Decision: a per-sale arm's-length flag from the County's own filters** (`property.arms_length`): not under $10,000, not an excluded deed type, not a multi-parcel sale, the three filters the comparables already use; null when the row carries none. Only the parts carry it (`SaleRecord.arms_length` is excluded from every dump, so the full response, chat context and the report are byte-identical). It retires Item 77's client-side deed test.
+
+**What the page does** (`useProfileParts`, `PartsStatus`). The first screen (Item 82), then the Overview in the same screen (one component per lookup, so the map is never remounted; the Playwright check marks the canvas before the Overview and finds it after every part), then the late parts once the Overview has painted, each named while it waits ("Still checking: nearby sales, TIF reports and grants, …"). Ask, Sources and Export read the whole Profile, so they turn on once every part has answered; then the assembled Profile goes to the parcel context (`adopt`) for chat grounding, so grounding still reads the full shape. Strings in English and Mexican Spanish (usted).
+
+**The owner's localhost review (2026-11-08).**
+- *Search on the Profile (for Phase 6):* "Look up another address" should be pinned to the bottom of the screen and stay there on every Profile tab, so a visitor can search again without scrolling down to the end of the page. Deferred by the owner to Phase 6, built with the phone layout (the bottom of the screen also holds the preview badge, the expanded map's controls and the phone keyboard).
+- *Fixed here:* the line before the first screen said "A first lookup can take 15 to 40 seconds" with a seconds counter; the Overview now follows within seconds, so the line and counter are gone (the address being looked up stays).
+- *Skeletons (owner: "the outline of the website that loads ... before the whole thing comes in"; before, one dark pulsing box).* **Built here:** the moment before the first screen draws the Profile's own outline in its final sizes (`ProfileSkeleton`: the map band with the address, the tab bar, the answer's line, the four tiles in their pale stat colors), so the first screen fills that exact shape. **Rule for Phase 6 and later:** every block that waits on a late part shows its own skeleton in its final size and shape (a chart: its axes and a faint placeholder; a map layer: the map with a small "Loading crime…" tag), named while it waits; if its source passes the deadline it says "Couldn't check in time · Retry" in that same place, never a blank. Seen on the way, not changed: while the browser downloads a new page's code, the preview shows an empty page (`VersionedRoute`'s Suspense fallback is blank, mostly noticeable on the dev server); Phase 6 should give that moment the frame's outline too.
+
+**Alternatives considered:** keeping the full response and only caching more (the cold first visit is the slow case); hard timeouts on today's endpoint (a product change on the live page); streaming (above).
+
+**Revisit if:** production `scorecard part timings` lines show the Overview over 8 s at p95 on exact parcels; the deadline fires on more than about 10% of first visits for any source (then look at that source, not the deadline); the builder test reads the late fill-in as broken; the old Profile's route flips (then it moves to the parts and `/api/scorecard` serves chat and the report only).
+
+**Numbers:** 2026-11-08, MacBook Pro arm64, home network, in-process (`PYTHONPATH=. python -m eval.profile_latency --parts`, PROFILE_TIMINGS on for spans); the 7 parcels of Item 81 plus 4 fresh ones (`PHASE4_FRESH`); a visit = the first screen and the Overview together, then every late part the Overview names, together; cold = every TTL cache emptied first; nearest-rank percentiles. **The City portal was slow all evening**: the first screen alone took 3.5–3.6 s p50 in every run (Item 81: 1.9 s; production, Item 87: 2.5 s), so these are pessimistic.
+
+| Run (results in `eval/results/2026-11-profile-latency/`) | Overview, exact parcels p50 · p95 (n) | Overview, approximate p50 | whole Profile p50 · p95 | deadline fired (of 55 cold visits) |
+|---|---|---|---|---|
+| Item 81 baseline: Overview deps as ordered today / full response | 15.7 s · 45.9 s / 26.8 s · 46.0 s (35) | – | 26.8 s · 46.0 s | – |
+| `parts-local-2026-11-08`: first build | 5.99 s · 17.40 s (45) | 17.9 s | 26.5 s · 45.4 s | 311 17, crime YoY 10, incentives 5, violations 4, neighborhood 4, … |
+| `parts-diag-2026-11-08`: same, with spans | 7.05 s · 26.18 s (18) | 19.3 s | – | – |
+| `parts-local-2026-11-08b`: + City building records late, deadline from the source's start | **4.13 s · 10.73 s (45)** | 16.7 s | 41.5 s · 66.0 s (cap 4) | incentives 18, 311 13, crime 7, neighborhood 7, building 5, crime YoY 5, history 5, ARO 2 |
+| `parts-smoke-2026-11-08c`: + cap 8, candidates and tract off the Overview, grants/ARO 24 h; the three slowest parcels of run b only | 3.5–4.8 s (3; 5.6 s in round 0) | – | 17.0–26.6 s (3) | incentives 1 of 3 |
+
+- What held the slowest Overviews of run b (spans): resolution at Address Points 10.8 s (p4_uptown, 20.0 s), the Census tract 16.0 s (fresh_north, 18.6 s), the address candidates 10.7 s and 8.2 s (twoflat, p4_westtown), County sales 8.7 s (downtown). The last two fixes take the tract and the candidates off the Overview; a slow resolution or County sales request can still hold it (single public requests; nothing on our side to shorten).
+- Warm (run b): Overview 31 ms p50 / 1.56 s p95 on exact parcels; whole Profile 2.6 s p50 (its p95 20 s = sources still past the deadline from the cold visit, by design).
+- First screen (run b, cold): 3.58 s p50 / 10.11 s p95.
+- Approximate parcels wait on County GIS (Item 81 point 3, about 10 s), so their Overview is reported apart.
+- **Not measured:** run b's full panel with the last fixes (the owner asked for no more hour-long local runs); production (after deploy, one visit at a time, as in Item 87; the `scorecard part timings` lines give the per-part split).
+- The eval script can hang at interpreter exit on idle worker threads after writing its results (seen once, local); it is not a request path.

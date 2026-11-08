@@ -320,6 +320,9 @@ export interface SaleRecord {
   date: string | null;
   price: number | null;
   deed_type: string | null;
+  /** A market sale by the County's own sale filters (decision Item 89). Only the new Profile's parts
+      (`/api/profile/*`) carry it; null = the County row has no filters. */
+  arms_length?: boolean | null;
 }
 
 export interface TaxLineItem {

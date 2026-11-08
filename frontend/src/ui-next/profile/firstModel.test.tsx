@@ -9,7 +9,7 @@ import { profileFixture } from "../test/fixtures";
 import { axeViolations } from "../test/axe";
 import { checkingTiles, firstSentence } from "./firstModel";
 import { allowedVsBuilt, overviewTiles } from "./profileModel";
-import { FirstOverview } from "./ProfileNextPage";
+import { FirstOverview, ProfileSkeleton } from "./ProfileNextPage";
 
 const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "next", ...opts }) as string;
 const tp = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts }) as string;
@@ -99,5 +99,22 @@ describe("FirstOverview", () => {
     expect(screen.getByText("Coincidencia aproximada")).toBeTruthy();
     expect(screen.getByTestId("still-checking").textContent).toMatch(/^Seguimos revisando/);
     expect(screen.getByTestId("overview-tiles").textContent).not.toMatch(/Checking/);
+  });
+});
+
+describe("ProfileSkeleton (before the first screen, Item 89)", () => {
+  it("draws the Profile's outline: the address, the four tiles in place, a status line, no time estimate", async () => {
+    render(<ProfileSkeleton address="3500 S Halsted St" />);
+    expect(screen.getByTestId("skeleton-tiles").querySelectorAll("li")).toHaveLength(4);
+    expect(screen.getByRole("status").textContent).toContain("3500 S Halsted St");
+    expect(screen.getByTestId("profile-loading").textContent).not.toMatch(/second/i);
+    expect(await axeViolations(document.body)).toEqual([]);
+  });
+
+  it("reads in Spanish", async () => {
+    await i18n.changeLanguage("es");
+    render(<ProfileSkeleton address="3500 S Halsted St" />);
+    expect(screen.getByRole("status").textContent).toContain("3500 S Halsted St");
+    expect(screen.getByRole("status").textContent).not.toBe(i18n.t("profile.loading.at", { ns: "next", lng: "en", address: "3500 S Halsted St" }));
   });
 });
