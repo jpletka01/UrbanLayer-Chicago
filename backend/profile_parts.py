@@ -192,11 +192,12 @@ def _context(rec: Record):
 
 def applicable_parts(rec: Record) -> list[str]:
     """The late parts this parcel has: no History without a property record, no Money without a class (the
-    comparables need it), no area parts without a community area, no block face outside RS-3."""
-    from backend import main
-
-    ctx = _context(rec)
-    prop = ctx.property
+    comparables need it), no area parts without a community area, no block face outside RS-3. Read from the raw
+    results (no assembly), by the same tests the full path applies."""
+    prop = rec.results.get("property")
+    prop = None if isinstance(prop, Exception) else prop
+    zoning = rec.results.get("zoning")
+    zone_class = zoning.get("zone_class") if isinstance(zoning, dict) else None
     out: list[str] = []
     if prop is not None and prop.pin14:
         out.append("history")
@@ -205,7 +206,8 @@ def applicable_parts(rec: Record) -> list[str]:
     if rec.ca is not None:
         out += ["incentives", "neighborhood"]
     out.append("activity")
-    if main._block_face_applies(ctx, rec.rl.address):
+    # main._block_face_applies, on the zoning row the context's parcel_zoning is built from
+    if (zone_class or "").strip().upper() == "RS-3" and rec.rl.address:
         out.append("block_face")
     return out
 
