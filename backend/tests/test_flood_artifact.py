@@ -149,3 +149,21 @@ def test_the_artifact_is_registered_and_the_flood_fact_cites_it():
     spec = BY_ID["artifact.fema_flood_chicago"]
     assert spec.locator == "ingestion/data/fema_flood_chicago.json.gz" and spec.probe == "artifact_sidecar"
     assert FACTS["regulatory.flood"].source_id == "artifact.fema_flood_chicago"
+
+
+def test_a_blocked_live_fema_only_warns_while_the_artifact_is_fresh():
+    """Item 86: FEMA refuses the production server, so the live probe fails there every day; with a fresh
+    artifact answering the city, that is a warn on the panel (never Sentry), and an alarm once the copy is stale."""
+    from datetime import date
+
+    from backend.data_health.evaluate import evaluate
+    from backend.data_health.probes import ProbeError, ProbeResult
+
+    live_spec = BY_ID["fed.fema.nfhl"]
+    assert live_spec.warns_only_while_ok == "artifact.fema_flood_chicago"
+    reset = ProbeResult(error=ProbeError("transient", "Connection reset by peer"))
+    today = date(2026, 11, 8)
+    fresh = evaluate(live_spec, reset, today, previous_error=True, peers={"artifact.fema_flood_chicago": "ok"})
+    assert fresh.state == "warn"
+    stale = evaluate(live_spec, reset, today, previous_error=True, peers={"artifact.fema_flood_chicago": "alarm"})
+    assert stale.state == "alarm"
