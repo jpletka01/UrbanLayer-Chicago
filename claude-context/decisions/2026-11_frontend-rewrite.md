@@ -424,3 +424,20 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Not measured:** the per-task split on production (the `scorecard timings` lines: total, resolution, fetch, three slowest tasks); a US network; more than 8 addresses (p95 of 8 is the slowest run).
 
 **Revisit if:** the server-side log lines show a task far slower than Item 81's local numbers; the first screen's p95 goes above 6 s cold on more visits.
+
+## Item 88: the builder test is deferred; the kit stays ready (2026-11-08)
+
+**Decision (owner, 2026-11-08): Phase 3's builder test doesn't run now, because no builders are lined up to interview.** The rewrite moves on to Phase 4 (the Profile response split). Item 75's pass criteria are unchanged and still unapplied: nothing in the rewrite has been tested with a first-time builder yet.
+
+**What is ready for when it runs.** A moderated test kit, kept locally in `research/16-builder-test-kit/` (gitignored, since it will hold builders' names): a no-coaching moderator script, a consent form and task cards (one per Item 75 criterion) in English and Mexican Spanish, an observation sheet, an answer key, and a template for scoring. The owner's choices so far: he moderates over video with screen share, English only, prewarmed parcel 2541 N Spaulding Ave (an RS-3 two-flat; its bars have real fills, units 2 of 2 is the deciding limit). The alternative, 1601 N Milwaukee, has every bar hatched, so the bars criterion can't be scored there. Model budget still $2, for the follow-up task only (Item 83).
+
+**What can proceed without it, and what can't.**
+- *Phase 4 (response split)* and *Phase 5 (map tracks)* proceed. Both are driven by measurements (Items 81, 87) and the map requirement (Item 80), not by how builders read the page.
+- *The gate moves:* the builder test runs **before any route flips to the new UI by default**, and before the page-design rules are rewritten for the new system (Item 75). The test's "revise the structure before building more pages" still holds: if the test fails then, pages built in the meantime are revised first.
+- *Retest cost goes up with every page built before it.* Running it on Phase 4's faster Profile is fine (the criteria don't depend on load time); running it after Phase 6 means several tabs could need rework.
+
+**Alternatives:** an unmoderated link sent to builders (can't observe hesitation or coaching, so it can't score Item 75's criteria); testing with people who aren't builders (the brief's audience is small developers, and Item 75 names builders); holding the rewrite until builders are found (blocks work the test doesn't inform).
+
+**Revisit if:** builders become available (run the kit, record results as a new Item); Phase 6 is about to start without a test (raise it with the owner first).
+
+**Numbers:** none measured on users. n = 0 builders.
