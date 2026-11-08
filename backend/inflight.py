@@ -7,8 +7,8 @@ caller its result (or its exception). The TTL caches behind each source still de
 so nothing here caches: a key leaves the map the moment its call finishes.
 
 Cancellation is reference-counted. A caller that goes away (a visitor left the page) stops waiting; the call
-itself is cancelled only when no caller is waiting for it any more, unless it was started with ``keep=True``,
-which a late part uses for a source past its deadline: it stops waiting but lets the fetch finish, so the source's
+itself is cancelled only when no caller is waiting for it any more. The exception is a late source past its
+deadline (``shared_with_deadline``): the caller stops waiting but the call is kept to its end, so the source's
 cache fills and the visitor's Retry is usually instant (or joins the same call).
 
 One process: production runs a single uvicorn worker, so a module-level map sees every request.
@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 import contextvars
 from collections.abc import Awaitable, Callable, Hashable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -28,7 +28,7 @@ class _Entry:
     task: asyncio.Task
     waiters: int = 0
     keep: bool = False
-    joined: int = field(default=0)  # callers that found the call already running (tests, logs)
+    joined: int = 0  # callers that found the call already running (tests, logs)
 
 
 _inflight: dict[Hashable, _Entry] = {}
