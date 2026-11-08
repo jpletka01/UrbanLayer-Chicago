@@ -71,6 +71,8 @@ test("keyboard walkthrough of the preview Profile", async ({ page }, testInfo) =
   await page.setViewportSize({ width: 1280, height: 800 });
   await open(page, ROUTES[1].path, ROUTES[1].ready);
   const ask = page.getByTestId("tool-ask-top");
+  // Ask reads the whole Profile, so it turns on once every part has answered (Item 89).
+  await expect(ask).toBeEnabled({ timeout: 90_000 });
   await ask.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("ask-drawer")).toBeVisible();
