@@ -598,3 +598,8 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Production:** once on the server, `docker compose run --rm --no-deps backend python -m backend.map_tiles.county_outlines`, then rebuild the lot tiles (`... python -m backend.discovery.parcel_tiles`; the monthly index rebuild also picks the copy up from then on). Without the copy everything draws PTAXSIM's outlines, as today.
 
 **Revisit if:** the County publishes a newer parcel layer with geometry (swap the dataset id and re-fetch); the fallback share grows past about 5% (the copy has aged); a lot's two outlines disagree in a way the 85% rule misses.
+
+**The owner's second look (2026-11-08), changed the same day (Item 91 continued):**
+- **Side streets near-black in dark** (`#101112` for local, collector and ramp classes). The gray side streets clashed with the residential lavender; near-black is consistent and stands out. Arterials and expressways keep their warm colors: that split is the City's own centerline class (`pr57-gg9e`: North, Chicago and Ashland are class 2 arterials; Damen, Division and Milwaukee are class 3 collectors, drawn like side streets). Light keeps white streets (not asked to change).
+- **Parks and water draw over the zoning fill.** The City zones parks and their lagoons POS, and the POS fill tinted park and water the same green; now parks are an opaque green and water a clear blue (dark `#2C4A30` / `#1F4E6B`, light `#C4E3BD` / `#9FCBE3`), with district outlines, lot lines and streets still above them.
+- **Noted for later (owner):** a land-use map with surface parking. That is map track M5 (Phase 7); CMAP's 2020 Land Use Inventory has a surface-parking category.
