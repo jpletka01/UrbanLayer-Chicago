@@ -2798,6 +2798,24 @@ Consumers → Property Profile (renders pin + confidence badge)
             while answering elsewhere, and a failure is never cached, so every visit asks again (Items 81–83).
           </P>
 
+          <Sub>A federal map that refused our server</Sub>
+          <P>
+            Every Property Profile on the live site said the flood zone couldn't be checked. From a home connection
+            FEMA's flood map answered the same query in about a second. From our server, which sits in Germany, it
+            accepted the connection and then cut it off during the secure handshake, ten times out of ten, on both of its
+            addresses, while fema.gov itself answered 403. No retry or client setting gets past a block on where the
+            caller is. Flood zones change only when FEMA revises a map, so the polygons covering Chicago now ship with
+            the app: FEMA's own layer, fetched tile by tile from a machine it answers, clipped to the city, and
+            matched by point-in-polygon in about 22 microseconds. The build refuses to write a copy that covers less
+            than 98% of the city, a guard that caught its own first run (it de-duplicated on an ID that isn't
+            unique and kept 3 polygons). The copy agreed with live FEMA at 400 of 400 test points. The cost is
+            vintage: a map revision FEMA issues later won't show until the next rebuild, so data health warns at
+            200 days and alarms at 400, and the blocked live check now only warns while the copy is fresh. Verifying
+            the fix also showed the per-request timing lines had never reached the production logs (the app set no log
+            level, so Python dropped every info line); with that fixed, a repeat Profile takes about 50 ms on the
+            server (Items 84–86).
+          </P>
+
           <Sub>A page that grew one honest sentence at a time</Sub>
           <P>
             Every workstream added a correct caveat, date or method note to the Property Profile, and each passed

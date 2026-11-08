@@ -60,7 +60,7 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
 
 ## Archive & Audits (pointers — full stories on the About page)
 - `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Full list in `decisions/README.md`; the largest: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phases 0–1, WS5 PR1–PR4, Profile redesign, decisions build, Enterprise Zone source, the honest-failure sweep; Items 1–67) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
-- `archive/*` — one-paragraph markers for each shipped feature/incident (`2026-11-03_honest-failures-ws5` [failed sources say "not checked" + typical lot + RS-3 block-face rule], deployment, expansion, revenue, i18n,
+- `archive/*` — one-paragraph markers for each shipped feature/incident (`2026-11-08_fema-flood-artifact` [FEMA blocks the prod server → committed Chicago NFHL copy; backend info logging; probe capped at warn], `2026-11-03_honest-failures-ws5` [failed sources say "not checked" + typical lot + RS-3 block-face rule], deployment, expansion, revenue, i18n,
   a-la-carte reports, coherence steps 1–3, selected-parcel, scorecard-ux, report-oom-reranker,
   `2026-06-report-saga` [V3→V6 + R5–R7], pin-resolution-seam, scorecard-chat-grounding, verdict-grounding-ux,
   chat-usability, lot-info-robustness, growth-instrumentation [attribution/funnel/SEO/privacy/capture +
