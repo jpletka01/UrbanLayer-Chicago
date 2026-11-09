@@ -439,3 +439,37 @@ async def test_program_membership_in_the_overview_never_asks_the_census_tract():
         summary = await inc_mod.incentives_membership(LAT, LON)
     assert tract.await_count == 0
     assert summary.unchecked == [] and summary.in_tif_district is False
+
+
+async def test_concurrent_parts_never_stamp_older_data_with_a_newer_version():
+    """The page keeps the response with the highest version, so a version must order the DATA a response was
+    assembled from, not the moment its assembly finished. Assembly awaits (upcoming zoning and text impacts run
+    in a thread): a part that snapshotted the record before the incentives part landed used to finish after it
+    and take the higher version, so the page swapped the full incentives for the Overview's membership-only ones
+    (no tract, no TIF reports, QCT/NMTC "No"; 6300 S Cottage Grove, 2026-11-09)."""
+    full = INC_FULL.model_copy(update={"census_tract": "17031420700", "in_qct": True})
+    real_finish = main._finish_scorecard_payload
+    calls = {"n": 0}
+
+    async def slow_then_fast(data, **kw):
+        # each later assembly finishes sooner, so the ones that started first finish last
+        calls["n"] += 1
+        await asyncio.sleep(max(0.0, 0.08 - 0.01 * calls["n"]))
+        return await real_finish(data, **kw)
+
+    with _sources(), patch.object(main, "incentives_domain", new=AsyncMock(return_value=full)), \
+            patch.object(main, "_finish_scorecard_payload", new=slow_then_fast):
+        ov = await profile_parts.overview(ADDRESS, None, None, None)
+        parts = await asyncio.gather(*(profile_parts.part(n, ov["lookup"], None) for n in ov["parts_pending"]))
+
+    by_version = sorted([ov, *parts], key=lambda r: r["version"])
+    assert len({r["version"] for r in by_version}) == len(by_version)
+    landed = next(r for r in by_version if r["part"] == "incentives")["version"]
+    for r in by_version:
+        tract = r["profile"]["context"]["incentives"].get("census_tract")
+        if r["version"] >= landed:
+            assert tract == "17031420700", (r["part"], r["version"])
+            assert "incentives" in r["parts_in"]
+    newest = by_version[-1]
+    assert newest["parts_pending"] == []
+    assert newest["profile"]["context"]["incentives"]["in_qct"] is True

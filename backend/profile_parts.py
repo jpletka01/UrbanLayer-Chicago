@@ -321,21 +321,27 @@ async def _run_late(rec: Record, part: str, deadline_s: float) -> list[str]:
 
 # ── Assembling a response ──────────────────────────────────────────────────────────────────────────────
 
-async def _profile(rec: Record) -> dict:
-    """The Profile from everything the record holds, by the full response's own functions, plus each sale's
-    arm's-length flag (excluded from the full response's dump)."""
+def _assemble(rec: Record) -> dict:
+    """The Profile's data from everything the record holds right now, by the full response's own assembly.
+    Synchronous on purpose: no other part can write the record while it runs (see ``_respond``)."""
     from backend import main
 
     rl = rec.rl
-    data = main._scorecard_data_from(
+    return main._scorecard_data_from(
         rec.results, rl.lat, rl.lon, rl.address, ca=rec.ca, ca_name=rec.ca_name,
         comparables=rec.comparables, block_face=rec.block_face,
     )
-    ctx = data["context"]
-    sales = list(getattr(ctx.property, "sales_history", None) or [])
+
+
+async def _finish(rec: Record, data: dict, ap_pins: list[str], assessor_pins: list[str]) -> dict:
+    """The payload from assembled data by the full response's own finish, plus each sale's arm's-length flag
+    (excluded from the full response's dump)."""
+    from backend import main
+
+    sales = list(getattr(data["context"].property, "sales_history", None) or [])
     payload = await main._finish_scorecard_payload(
-        data, address=rec.address_in, rl=rl, identity=rec.identity,
-        ap_pins=rec.ap_pins, assessor_pins=rec.assessor_pins,
+        data, address=rec.address_in, rl=rec.rl, identity=rec.identity,
+        ap_pins=ap_pins, assessor_pins=assessor_pins,
     )
     dumped = ((payload.get("context") or {}).get("property") or {}).get("sales_history") or []
     for row, sale in zip(dumped, sales):
@@ -343,7 +349,19 @@ async def _profile(rec: Record) -> dict:
     return payload
 
 
-def _response(rec: Record, part: str, timed_out: list[str], profile: dict) -> dict:
+async def _respond(rec: Record, part: str, timed_out: list[str]) -> dict:
+    """One response. The version is taken in the same synchronous step that snapshots the record, so it orders
+    the data each response holds. The finish awaits (upcoming zoning and text impacts run in a thread), and
+    stamping the version after it let a part that snapshotted the record BEFORE the incentives part landed take
+    a higher version than the incentives response: the page, which keeps the highest version, then swapped the
+    full incentives for the Overview's membership-only ones (decision Item 100)."""
+    data = _assemble(rec)
+    head = _stamp(rec, part, timed_out)
+    profile = await _finish(rec, data, list(rec.ap_pins), list(rec.assessor_pins))
+    return {**head, "profile": profile}
+
+
+def _stamp(rec: Record, part: str, timed_out: list[str]) -> dict:
     rec.version += 1
     pending = [p for p in applicable_parts(rec) if p not in rec.parts_in]
     return {
@@ -356,7 +374,6 @@ def _response(rec: Record, part: str, timed_out: list[str], profile: dict) -> di
         "timed_out": timed_out,
         # every source still past its deadline, by part, so a page that missed a response still knows
         "timed_out_by_part": {k: v for k, v in rec.timed_out.items() if v},
-        "profile": profile,
     }
 
 
@@ -435,7 +452,7 @@ async def _overview(address, lat, lon, pin) -> dict:
     await _take_candidates(rec, 0)  # only if already in: the Overview doesn't wait for the Sources panel
     rec.parts_in.add("overview")
     _records.set(rec.id, rec)
-    return _response(rec, "overview", [], await _profile(rec))
+    return await _respond(rec, "overview", [])
 
 
 async def part(name: str, lookup: str, have: str | None, request: Request | None = None) -> dict:
@@ -476,7 +493,7 @@ async def _part(name: str, claims: dict, have: str | None) -> dict:
     rec.timed_out[name] = timed_out
     rec.parts_in.add(name)
     await _take_candidates(rec, LATE_DEADLINE_S)  # started with the Overview: normally long since in
-    return _response(rec, name, timed_out, await _profile(rec))
+    return await _respond(rec, name, timed_out)
 
 
 def _reset_for_tests() -> None:
