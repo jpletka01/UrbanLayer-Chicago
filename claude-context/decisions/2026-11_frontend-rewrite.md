@@ -677,6 +677,8 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 **Changed the same day (owner):** the hatch became small separate "+" marks (3 px arms on an 8 px grid): continuous lines, diagonal or straight, read like the lot lines they sit among. Transportation keeps its dots. The key's swatches use a stronger ink so the marks read at 16 px.
 
+**Changed again (owner):** planned development's fill moved from gray `#C9CED6` to Coastal's Bubblegum `#FDC1B4` (the gray took over downtown, where most districts are PDs). Of seven candidates measured against the other families as drawn, it stands furthest from all of them (min ΔE×100 5.0 light / 4.3 dark, vs residential); the "+" marks keep it apart for color-blind readers. Not yet looked at downtown in the browser (usage limit).
+
 **Effect:** the weakest pairs (business vs transportation ΔE 1.0 under protanopia; park, residential or downtown vs the grays at 1.7-4.0 under the three deficiencies) are now told apart by texture, not hue. Checked in the browser: the marks on PD 1235/1258/58 (and, before the change, hatching on PD 569/847) in light and dark; dots on the 606 trail's transportation strip.
 
 **What still depends on color (measured, ΔE×100 of the fills as drawn):** among the five colored families the closest pairs are residential vs downtown 3.6 (protanopia, light), business vs manufacturing 4.2 (deuteranopia) and 3.5 (tritanopia), residential vs park 3.2 (tritanopia, dark); with full color vision residential vs business is 6.4 light / 5.5 dark. These lean on the district-code labels and the click card. Residential and downtown are rarely neighbors.

@@ -64,7 +64,9 @@ export const ZONING_COLORS: Record<string, [string, string, string, string]> = {
   downtown: ["#A6CCE3", "#63A8CF", "#3F86B0", "#2A6488"],
   park: ["#A7E2B2", "#A7E2B2", "#A7E2B2", "#A7E2B2"],
   transport: ["#8F959C", "#8F959C", "#8F959C", "#8F959C"],
-  planned: ["#C9CED6", "#C9CED6", "#C9CED6", "#C9CED6"],
+  // Planned development: Coastal's Bubblegum, not gray (owner: the gray took over downtown); its "+" marks carry it
+  // for color-blind readers (Item 97).
+  planned: ["#FDC1B4", "#FDC1B4", "#FDC1B4", "#FDC1B4"],
   other: ["#C9CED6", "#C9CED6", "#C9CED6", "#C9CED6"],
 };
 export const ZONING_FAMILIES = ["residential", "business", "manufacturing", "downtown", "planned", "park", "transport"] as const;
