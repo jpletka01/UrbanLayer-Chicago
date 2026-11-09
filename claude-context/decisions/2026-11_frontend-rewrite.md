@@ -700,3 +700,5 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Planned development, in one line (owner's question):** a site-specific zoning district Council adopts by ordinance for a large or special project (required above certain size or height thresholds, along the lakefront and in some downtown areas), with its own rules on uses, height and density in place of the base district's; it can cover a single building or a whole campus, and its number points to that ordinance.
 
 **Owner's call on the teal dots (2026-11-09): back to gray** (the try was reverted). **Noted for later (owner):** the darkest downtown blue (`#2A6488`, DX/DC-12 and up) sits close to the water color, especially the river through the Loop in dark; revisit the downtown ramp or the water color when the zoning palette is settled (Item 74 still calls it provisional).
+
+**Phase 5 approved (2026-11-09):** the owner reviewed the map on localhost in light and dark against the reference and gave a thumbs up after the reviews recorded in Items 91–98. Item 80's gate is met for the Profile's map; Discovery's map follows in Phase 6.

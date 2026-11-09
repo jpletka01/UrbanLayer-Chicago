@@ -2832,6 +2832,24 @@ Consumers → Property Profile (renders pin + confidence badge)
             server (Items 84–86).
           </P>
 
+          <Sub>A map drawn from the City's own records, a meter at a time</Sub>
+          <P>
+            The new map had to look like a city-builder game's map: dim land, meaningful fills, streets as clean gaps.
+            A stock map style can only hide layers, so the map is now our own: MapLibre over tiles cut from government
+            data with the same hand-written tile encoder Discovery uses. The base is the City's 54,557 street
+            centerline segments with their own road classes, plus parks, water and the city boundary; a close-in view
+            downloads about 15 KB of it, where Mapbox's stock base cost about 440 KB. Zoning is the City's 15,043
+            districts. Simplifying them as one shared-edge surface (the fix for the slivers of the old map) was refused
+            outright: the City's layer is not a valid coverage, so its output couldn't be trusted, and zoning ships
+            unsimplified instead. A check reads the district of 510 lots, 400 of them straddling a district line,
+            from the source and from the tiles at four zooms: no differences. Two errors only an eye caught: the
+            County's tax-system parcel outlines are rounded to about a meter, so straight lot edges stepped (the
+            County's own 2021 layer at full precision now draws 98.3% of lots, where it still matches today's lot),
+            and zoning sat about half a meter west and a meter north of every lot line, because the City's service
+            applies a datum shift when asked for GPS coordinates that no other layer has. Asked in the datum its data
+            is stored in, zoning lands on the lot lines (median gap 0.00 m) (Items 90–93).
+          </P>
+
           <Sub>A page that grew one honest sentence at a time</Sub>
           <P>
             Every workstream added a correct caveat, date or method note to the Property Profile, and each passed
