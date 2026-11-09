@@ -632,6 +632,8 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - **In the expanded map:** a "Street View" button under the address; while on, the cursor is a crosshair and a hint says "Click a street to open Street View · Esc cancels"; the next click opens Street View there and the mode turns off (no card opens). Esc cancels without closing the expanded map. Not in the page band (no room; the card link covers it).
 - Cards opened near the map's bottom edge now open above the click.
 
+**The owner's first try (2026-11-09): it often opened the alley behind the lot, not facing the building.** Google opens the panorama nearest the point it is sent, and a point inside a lot is often nearer the alley. Now the viewpoint is moved onto the street first (`map/streetView.ts`, `viewpointFor`): for a lot, the nearest spot on its own address street (the address from the lot lookup, matched to the City centerline names in our base tiles); otherwise the nearest named, non-expressway street; within 60 m, else the point as clicked. The link carries a `heading` facing the clicked place. Checked on 1530 N Milwaukee Ave: the link stands 0.0 m from N Milwaukee Ave's centerline facing 220° (toward the lot). Tests: `map/streetView.test.ts`.
+
 **Alternatives:** a draggable figure like Google's (about a day more for the same result as click-to-open); Street View inside the page (needs a Google API key, and Google's terms are stricter about its imagery beside another map; not worth it); Mapillary (free and open, patchy Chicago coverage).
 
 **Revisit if:** builders ask to see frontage without leaving the page (then price the Maps Embed API's Street View mode, which needs a key), or Google changes the Maps URL format.

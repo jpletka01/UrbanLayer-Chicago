@@ -13,6 +13,7 @@ import { LoaderCircle, LocateFixed, MapPinOff, PersonStanding, RotateCw, SquareA
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, fetchLotOutline, loadMapInfo, streetViewUrl } from "./mapInfo";
+import { streetOfAddress, viewpointFor, type RoadLine, type Viewpoint } from "./streetView";
 import type { ComparableSale, TransitStation } from "../../lib/types";
 import { humanizeShoutyCase } from "../../lib/format";
 import { rowTitle } from "../../discovery/rowFigures";
@@ -63,9 +64,20 @@ function km(aLat: number, aLon: number, bLat: number, bLon: number): number {
 
 /** `at` = the click in screen pixels (where the card opens); `ll` = the click on the ground [lon, lat] (Street View). */
 type Picked =
-  | { kind: "parcel"; pin10: string; at: [number, number]; ll: [number, number]; lookup: DiscoveryOutlineLookup | null }
-  | { kind: "district"; props: Record<string, string>; at: [number, number]; ll: [number, number] }
-  | { kind: "sale"; sale: ComparableSale; at: [number, number]; ll: [number, number] };
+  | { kind: "parcel"; pin10: string; at: [number, number]; ll: [number, number]; sv: Viewpoint; lookup: DiscoveryOutlineLookup | null }
+  | { kind: "district"; props: Record<string, string>; at: [number, number]; ll: [number, number]; sv: Viewpoint }
+  | { kind: "sale"; sale: ComparableSale; at: [number, number]; ll: [number, number]; sv: Viewpoint };
+
+/** The City street centerlines the map has loaded (Street View's viewpoint snaps onto them). */
+function loadedRoads(map: MLMap): RoadLine[] {
+  if (!map.getSource("base")) return [];
+  return map.querySourceFeatures("base", { sourceLayer: "road" }).map((f) => {
+    const g = f.geometry;
+    const lines = g.type === "LineString" ? [g.coordinates as [number, number][]]
+      : g.type === "MultiLineString" ? (g.coordinates as [number, number][][]) : [];
+    return { name: String(f.properties?.name ?? ""), kind: String(f.properties?.kind ?? ""), lines };
+  });
+}
 
 export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales, expanded = false, className }: NextMapProps) {
   const { t, i18n } = useTranslation("next");
@@ -301,7 +313,8 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       const at: [number, number] = [e.point.x, e.point.y];
       const ll: [number, number] = [e.lngLat.lng, e.lngLat.lat];
       if (streetViewRef.current) {
-        window.open(streetViewUrl(ll[1], ll[0]), "_blank", "noopener,noreferrer");
+        const v = viewpointFor(ll, loadedRoads(map), null);
+        window.open(streetViewUrl(v.lat, v.lon, v.heading), "_blank", "noopener,noreferrer");
         streetViewRef.current = false;
         setStreetView(false);
         return;
@@ -314,7 +327,8 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       const sale = hit(["sales-circle"]);
       if (sale && sales) {
         const s = sales.filter((x) => x.lat != null && x.lon != null)[Number(sale.properties.i)];
-        setPicked({ kind: "sale", sale: s, at, ll: [s.lon!, s.lat!] });
+        const sll: [number, number] = [s.lon!, s.lat!];
+        setPicked({ kind: "sale", sale: s, at, ll: sll, sv: viewpointFor(sll, loadedRoads(map), null) });
         return;
       }
       const lot = map.queryRenderedFeatures(e.point, { layers: ["parcel-fill"].filter(has) })[0];
@@ -323,15 +337,20 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
         ctrl.current?.abort();
         const c = new AbortController();
         ctrl.current = c;
-        setPicked({ kind: "parcel", pin10: pin, at, ll, lookup: null });
+        const roads = loadedRoads(map);
+        setPicked({ kind: "parcel", pin10: pin, at, ll, sv: viewpointFor(ll, roads, null), lookup: null });
         discoveryOutlineRow(pin, "lot_size", c.signal).then((lookup) => {
-          if (!c.signal.aborted) setPicked((p) => (p && p.kind === "parcel" && p.pin10 === pin ? { ...p, lookup } : p));
+          if (c.signal.aborted) return;
+          // With the address, stand on the lot's own street (its frontage), facing the lot.
+          const street = lookup.status === "found" ? streetOfAddress(lookup.row.address) : null;
+          const sv = viewpointFor(ll, roads, street);
+          setPicked((p) => (p && p.kind === "parcel" && p.pin10 === pin ? { ...p, lookup, sv } : p));
         });
         return;
       }
       const district = map.queryRenderedFeatures(e.point, { layers: ["zoning-fill"].filter(has) })[0];
       if (district) {
-        setPicked({ kind: "district", props: district.properties as Record<string, string>, at, ll });
+        setPicked({ kind: "district", props: district.properties as Record<string, string>, at, ll, sv: viewpointFor(ll, loadedRoads(map), null) });
         return;
       }
       setPicked(null);
@@ -519,7 +538,7 @@ function PickedCard({ picked, onClose, lang, boxH }: { picked: Picked; onClose: 
       </button>
       <div className="flex flex-col gap-0.5 pr-5">
         {body}
-        <a href={streetViewUrl(picked.ll[1], picked.ll[0])} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-caption underline underline-offset-2" data-testid="map-card-street-view">
+        <a href={streetViewUrl(picked.sv.lat, picked.sv.lon, picked.sv.heading)} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-caption underline underline-offset-2" data-testid="map-card-street-view">
           <PersonStanding aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />{t("map.streetView.link")}
         </a>
       </div>

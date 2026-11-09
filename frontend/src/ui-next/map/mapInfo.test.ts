@@ -11,4 +11,8 @@ describe("streetViewUrl", () => {
     expect(url.searchParams.get("viewpoint")).toBe("41.909712,-87.677346");
     expect([...url.searchParams.keys()].sort()).toEqual(["api", "map_action", "viewpoint"]);
   });
+
+  it("faces the place when given a heading", () => {
+    expect(new URL(streetViewUrl(41.9, -87.6, 89.6)).searchParams.get("heading")).toBe("90");
+  });
 });
