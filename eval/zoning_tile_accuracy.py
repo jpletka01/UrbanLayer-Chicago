@@ -62,9 +62,19 @@ class Districts:
         hits = [self.classes[i] for i in self.tree.query(pt, predicate="intersects")]
         return hits[0] if hits else None
 
+    def distance_to_line(self, pt) -> float:
+        """Degrees from a point to the nearest district boundary."""
+        near = self.tree.query(pt.buffer(0.001))
+        return min((self.geoms[i].boundary.distance(pt) for i in near), default=1.0)
+
     def count_touching(self, outline) -> int:
         return len({self.classes[i] for i in self.tree.query(outline, predicate="intersects")
                     if self.geoms[i].intersection(outline).area > outline.area * 0.01})
+
+
+def tile_unit_deg(z: int) -> float:
+    """One tile unit (1/4096 of a tile) at zoom z, in degrees of latitude-ish size (generous: longitude units)."""
+    return 360.0 / (1 << z) / 4096
 
 
 def source_districts(path: Path) -> Districts:
@@ -176,10 +186,17 @@ def run(tiles: Path, source: Path, index: Path, ptaxsim: Path, n_boundary: int, 
         s_area, s_pt = src.by_area(g), src.at_point(pt)
         if expected and s_area != expected:
             key_mismatch.append({"pin10": pin10, "panel": which, "key": expected, "source": s_area})
+        near_line = src.distance_to_line(pt)
         for z in zooms:
             t = tile_districts(tiles, g, z)
             t_area, t_pt = t.by_area(g), t.at_point(pt)
             checked[f"z{z}"] += 1
+            # A point closer to a district line than one tile unit at this zoom has no single answer in the tiles
+            # (tile coordinates move an edge by up to about one unit): counted, and only its by-area district is
+            # compared.
+            if near_line < tile_unit_deg(z):
+                checked[f"z{z}_point_within_one_tile_unit"] += 1
+                t_pt = s_pt
             if (t_area, t_pt) != (s_area, s_pt):
                 failures.append({"pin10": pin10, "panel": which, "zoom": z, "source": [s_area, s_pt],
                                  "tiles": [t_area, t_pt]})

@@ -386,7 +386,8 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
         />
       )}
       {/* The skeleton rule on the map (Item 89): a layer that waits on a late part is named in place. */}
-      {ready && late && (
+      {/* Not in the expanded map (owner): there the key's row says it. */}
+      {ready && late && !expanded && (
         <p className="absolute bottom-9 left-2 z-10 flex items-center gap-1.5 rounded-lg bg-nx-page/95 px-2 py-1 text-caption shadow-[0_1px_2px_rgb(0_0_0/0.12)]" role="status" data-testid="map-late-tag">
           {salesState === "loading" ? (
             <><LoaderCircle aria-hidden className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />{t("map.loading", { layer: t("map.inSentence.sales") })}</>

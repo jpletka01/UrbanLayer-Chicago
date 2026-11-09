@@ -43,6 +43,11 @@ OUT_FIELDS = ("OBJECTID,ZONING_ID,CASE_NUMBER,ZONE_TYPE,ZONE_CLASS,ORDINANCE_NUM
 MIN_ZOOM, MAX_ZOOM = 13, 16
 LAYERS = ["zoning", "zoning_label"]
 PAGE = 2000
+# NAD83 latitude/longitude, not WGS84 (owner's review, Item 93): the layer is stored in Illinois State Plane on
+# NAD83, and asking for 4326 makes the server apply a datum shift (about 0.5 m west, 0.9 m north in Chicago)
+# that no other layer has. The County's parcels and the City's portal layers are NAD83 coordinates as published,
+# so 4269 keeps zoning on the lot lines.
+OUT_SR = 4269
 
 _DOWNTOWN = re.compile(r"^D[CXRS]")
 
@@ -98,7 +103,7 @@ def _fetch_all() -> list[dict]:
         offset = 0
         while True:
             r = client.get(LAYER_URL, params={
-                "where": "1=1", "outFields": OUT_FIELDS, "outSR": 4326, "f": "geojson",
+                "where": "1=1", "outFields": OUT_FIELDS, "outSR": OUT_SR, "f": "geojson",
                 "orderByFields": "OBJECTID", "resultOffset": offset, "resultRecordCount": PAGE,
             })
             r.raise_for_status()

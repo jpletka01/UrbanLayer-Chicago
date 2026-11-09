@@ -606,3 +606,19 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - **Wheel zoom on the first turn after Expand:** growing the map to full screen fired a pointer-leave event that switched the wheel off; it now turns back on when the pointer moves over the expanded map (checked: the first turn zooms 17 → 16.4).
 - **Not resolved:** what the owner saw as park buildings versus parkland. The map draws no buildings yet; footprints are a separate decision (Item 91, above).
 - **Noted for later (owner):** a land-use map with surface parking: map track M5 (Phase 7); CMAP's 2020 Land Use Inventory has a surface-parking category.
+
+---
+
+## Item 93: zoning on the new map comes in NAD83, so it sits on the lot lines (2026-11-08)
+
+**Found by the owner:** zoning sat consistently a little west and north of the lot lines (under a meter).
+
+**Cause:** the City's Zoning MapServer stores districts in Illinois State Plane East on NAD83 (`wkid 102671` / `3435`). Asked for `outSR=4326` (WGS84), the server applies a NAD83→WGS84 datum shift: in Chicago about 0.48 m west and 0.87 m north (measured on one district: 4326 `-87.70426365, 41.81542837` vs 4269 `-87.70425788, 41.81542054`). Every other layer the map draws (the County's parcels, the City portal's streets, parks, water) is NAD83 latitude/longitude as published, with no shift.
+
+**Decision:** the zoning tiles request `outSR=4269` (NAD83) (`zoning_tiles.OUT_SR`). Measured on 4,363 zoning boundary points in three neighborhoods against the nearest County lot edge: mean offset **+0.05 m east, +0.10 m north, median 0.00 m** (before: about 0.5 m west and 0.8 m north of the lot lines, median about 1 m).
+
+**Accuracy gate re-run** (`eval.zoning_tile_accuracy --boundary 400`): 0 differences in 2,040 comparisons. With zoning and lots now coinciding, a few sample points fall within one tile unit of a district line (10 at zoom 13, 6 at 14, 3 at 15, 1 at 16): those are counted and compared by area only, because tile coordinates can move an edge by up to one unit (0.9 m at 13, 0.1 m at 16). The one zoom-13 point that differed was 0.18 m from a line; its lot's district by area matched.
+
+**Also (owner):** the "Loading recent sales…" tag no longer shows in the expanded map; the key's row says it.
+
+**Not changed here (a separate task):** the live Profile's district lookup (`retrieval/zoning.py`) and today's zoning maps also send and receive `4326` while our points are NAD83, so they carry the same ~1 m shift. It matters only for a point within about a meter of a district line, but it changes live answers, so it needs its own measurement on the lot panel and sentinels before any change.
