@@ -675,7 +675,9 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 **Decision (owner, "Yes, add textures", after the color-blind check in Item 96):** planned development gets a light diagonal hatch and transportation a dot grid (`map/patterns.ts`, layer `zoning-texture` over their fill), in the lot's ink at low opacity (black ~40% in light, white ~38% in dark); the key's swatches show the same textures. The colors themselves are unchanged.
 
-**Effect:** the weakest pairs (business vs transportation ΔE 1.0 under protanopia; park, residential or downtown vs the grays at 1.7-4.0 under the three deficiencies) are now told apart by texture, not hue. Checked in the browser: hatching on PD 1235/1258/58/569/847 in light and dark; dots on the 606 trail's transportation strip.
+**Changed the same day (owner):** the hatch became small separate "+" marks (3 px arms on an 8 px grid): continuous lines, diagonal or straight, read like the lot lines they sit among. Transportation keeps its dots. The key's swatches use a stronger ink so the marks read at 16 px.
+
+**Effect:** the weakest pairs (business vs transportation ΔE 1.0 under protanopia; park, residential or downtown vs the grays at 1.7-4.0 under the three deficiencies) are now told apart by texture, not hue. Checked in the browser: the marks on PD 1235/1258/58 (and, before the change, hatching on PD 569/847) in light and dark; dots on the 606 trail's transportation strip.
 
 **What still depends on color (measured, ΔE×100 of the fills as drawn):** among the five colored families the closest pairs are residential vs downtown 3.6 (protanopia, light), business vs manufacturing 4.2 (deuteranopia) and 3.5 (tritanopia), residential vs park 3.2 (tritanopia, dark); with full color vision residential vs business is 6.4 light / 5.5 dark. These lean on the district-code labels and the click card. Residential and downtown are rarely neighbors.
 

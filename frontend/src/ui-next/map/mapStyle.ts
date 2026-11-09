@@ -125,13 +125,13 @@ export const LAYERS: LayerDef[] = [
     spec: (t) => ({ id: "zoning-fill", type: "fill", source: "zoning", "source-layer": "zoning",
       paint: { "fill-color": zoningColorExpr() as string, "fill-opacity": PALETTES[t].zoningFill } }),
   },
-  // Textures for the two gray families (color-blind check, Item 97): planned development hatched, transportation
-  // dotted, so neither depends on hue.
+  // Textures for the two gray families (color-blind check, Item 97): planned development with small "+" marks,
+  // transportation dotted, so neither depends on hue; no continuous lines, which read like lot lines.
   {
     group: "zoning", needs: "zoning", opacity: ["fill-opacity"],
     spec: (t) => ({ id: "zoning-texture", type: "fill", source: "zoning", "source-layer": "zoning",
       filter: ["match", ["get", "family"], ["planned", "transport"], true, false],
-      paint: { "fill-pattern": ["match", ["get", "family"], "planned", PATTERN_IMAGE("hatch", t), PATTERN_IMAGE("dots", t)] as unknown as string,
+      paint: { "fill-pattern": ["match", ["get", "family"], "planned", PATTERN_IMAGE("plus", t), PATTERN_IMAGE("dots", t)] as unknown as string,
         "fill-opacity": 1 } }),
   },
   // Water draws over the zoning fill (owner's review): the City zones lagoons with their parks (POS), and the
