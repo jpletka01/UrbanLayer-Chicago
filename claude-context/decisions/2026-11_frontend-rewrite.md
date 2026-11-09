@@ -661,3 +661,10 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - **The property's own pin** (`lot-pin`) below zoom 15.5 (where a lot is roughly 15-30 px wide): a house in "this lot" ink, black with a white edge in light and white with a black edge in dark, on top of every other pin. A theme switch swaps its image in place (a layout property, set beside the paint).
 
 **Numbers:** checked in the browser at 1601 N Milwaukee Ave in dark and light, close in (no pin, filled lot) and zoomed out (house pin above the sales and station pins). Test: `mapStyle.test.ts` (the property's pin is the top layer).
+
+**Color-blind check (owner's question, 2026-11-09; measured, nothing changed yet).** The zoning fills as drawn (family color at 42% over the light land, 30% over the dark), Machado 2009 simulation, OKLab ΔE×100 (under about 6 is hard to tell apart; 6-10 needs labels):
+- Even with full color vision some families sit close because the fills are pale: downtown vs transportation 3.5, residential vs planned development 3.6, park vs planned 4.0 (light; dark slightly lower).
+- **Protanopia:** business vs transportation 1.0 (the same color), park vs planned 3.0, downtown vs transportation 3.1, residential vs planned 3.4. **Deuteranopia:** park vs planned 2.2, downtown vs transportation 2.9, residential vs planned 3.0. **Tritanopia:** residential vs planned 1.7, park vs planned 2.5.
+- The weak pairs mostly involve the two gray families (planned development, transportation).
+- **What already does not depend on color:** every district's code is on the map as a label (by size, from zoom 13), a click names the district, and the lot (light/dark fill and outline), the pins (icon shapes: $, train, house), the streets (width) and the approximate-match dash all read by lightness or shape.
+- **Candidate fix, for the owner:** a texture for the two gray families (a light diagonal hatch for planned development, a dotted fill for transportation) so they no longer depend on hue, leaving the main colors as they are.
