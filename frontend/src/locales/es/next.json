@@ -287,7 +287,8 @@
         "belowSale": "El valor del Tasador está {{pct}}% por debajo de la venta de {{year}} de este terreno",
         "exemptShort": "Sin recibo; un terreno gravable de su clase paga alrededor de {{rate}}% del valor al año",
         "nominalShort": "Tasación nominal: sin cifra de impuesto",
-        "noneShort": "No hay recibo de impuesto registrado"
+        "noneShort": "No hay recibo de impuesto registrado",
+        "exemptNoRate": "Sin recibo: propiedad exenta de impuestos"
       },
       "rent": {
         "title": "Renta cercana",
@@ -367,6 +368,77 @@
         "none": "No hay tasaciones registradas",
         "chartLabel": "Valor del Tasador por año: {{list}}",
         "latest": "{{year}}: {{value}}"
+      }
+    },
+    "program": {
+      "forThisLot": "Qué significa para este terreno",
+      "checking": "Todavía estamos revisando este programa para este terreno.",
+      "notChecked": "Hoy no pudimos revisar este programa para este terreno, así que no podemos decir si aplica.",
+      "tract": "Sector censal {{tract}}",
+      "whoDecides": "Quién decide",
+      "whatItIs": "Qué es",
+      "status": {
+        "in": "Este terreno está dentro",
+        "out": "No está en uno"
+      },
+      "tif": {
+        "named": "Distrito TIF {{name}}",
+        "meansIn": "Este terreno está dentro del distrito TIF {{name}}. Un proyecto aquí puede pedir apoyo TIF a la Ciudad (dinero del fondo del distrito, que a menudo se paga con los nuevos impuestos que genera el proyecto) hasta que el distrito termine. Nada está garantizado: la Ciudad decide proyecto por proyecto.",
+        "meansOut": "Este terreno no está en ningún distrito TIF, así que un proyecto aquí no puede recibir fondos TIF. Otros programas y subvenciones de la Ciudad pueden aplicar.",
+        "who": "El Departamento de Planeación y Desarrollo de la Ciudad negocia el apoyo TIF; el Concejo Municipal aprueba cada acuerdo.",
+        "source": "Fuente: límites e informes anuales de TIF de la Ciudad de Chicago",
+        "runs": "Vigencia",
+        "yearsLeft_one": "Le queda {{count}} año",
+        "yearsLeft_other": "Le quedan {{count}} años",
+        "balance": "Saldo del fondo",
+        "asOfReport": "Informe anual {{year}}",
+        "balanceByYear": "Saldo del fondo por año",
+        "projects": "Proyectos que ha financiado",
+        "publicFunds": "{{value}} TIF",
+        "privateFunds": "{{value}} privados",
+        "allProjects": "Todos los proyectos TIF (datos de la Ciudad)",
+        "reportsChecking": "Todavía estamos revisando los informes anuales del distrito.",
+        "reportsLate": "No se pudieron revisar a tiempo los informes anuales del distrito.",
+        "reportsMissing": "Los informes anuales del distrito no llegaron en esta consulta."
+      },
+      "oz": {
+        "meansIn": "Este terreno está en una Zona de Oportunidad (sector censal {{tract}}). Los inversionistas que inviertan ganancias de capital en un proyecto aquí mediante un Fondo de Oportunidad Calificado pueden diferir o reducir el impuesto federal sobre ellas. No cambia la zonificación ni lo que se puede construir.",
+        "meansOut": "Este terreno no está en una Zona de Oportunidad, así que quienes inviertan en un proyecto aquí no reciben ese beneficio fiscal.",
+        "who": "No requiere aprobación de la Ciudad: los inversionistas reclaman el beneficio en sus impuestos federales mediante un Fondo de Oportunidad Calificado.",
+        "source": "Fuente: Zonas de Oportunidad del Tesoro de EE. UU. y HUD"
+      },
+      "ez": {
+        "meansIn": "Este terreno está en {{name}}. Un proyecto aquí puede reclamar los beneficios de Zona Empresarial de Illinois, como la exención del impuesto sobre ventas en los materiales de construcción comprados para él.",
+        "meansOut": "Este terreno no está en una Zona Empresarial, así que no hay exención del impuesto sobre ventas en materiales de construcción por esa vía.",
+        "who": "Los beneficios se reclaman bajo las reglas del Estado de Illinois a través del administrador de la zona (la Ciudad, en las zonas de Chicago).",
+        "source": "Fuente: límites de Zonas Empresariales de la Ciudad de Chicago"
+      },
+      "qct": {
+        "meansIn": "Este terreno está en un Sector Censal Calificado de HUD (sector {{tract}}). Un proyecto de vivienda asequible con Créditos Fiscales para Vivienda de Bajos Ingresos puede contar hasta 130% de sus costos elegibles, lo que significa un crédito mayor. Otros tipos de proyectos no se ven afectados.",
+        "meansOut": "Este terreno no está en un Sector Censal Calificado, así que un proyecto de vivienda asequible aquí no recibe un aumento automático del crédito por esa vía.",
+        "who": "Los créditos fiscales de vivienda se otorgan en concursos del Departamento de Vivienda de la Ciudad y de la Autoridad de Desarrollo de Vivienda de Illinois.",
+        "source": "Fuente: Sectores Censales Calificados de HUD"
+      },
+      "nmtc": {
+        "meansIn": "Este terreno está en un sector de bajos ingresos elegible para Créditos Fiscales de Nuevos Mercados (sector {{tract}}). Los proyectos comerciales y comunitarios aquí pueden buscar financiamiento NMTC, que a menudo tiene condiciones por debajo del mercado.",
+        "meansOut": "Este terreno no está en un sector elegible, así que el financiamiento de Créditos Fiscales de Nuevos Mercados no está disponible aquí por su ubicación.",
+        "who": "Las Entidades de Desarrollo Comunitario que tienen asignaciones federales eligen qué proyectos financiar.",
+        "source": "Fuente: elegibilidad del Fondo CDFI (Tesoro de EE. UU.)",
+        "poverty": "Tasa de pobreza",
+        "distress": "Dificultad severa",
+        "severe": "Sí",
+        "notSevere": "No"
+      },
+      "grants": {
+        "title": "Subvenciones de la Ciudad en esta área comunitaria",
+        "summary_one": "{{count}} proyecto, {{funding}}",
+        "summary_other": "{{count}} proyectos, {{funding}}",
+        "by": "{{program}} {{count}}",
+        "what": "Las subvenciones del Fondo de Mejoras para Pequeños Negocios se pagan con dinero TIF; las del Fondo de Oportunidad Vecinal provienen de cuotas de densidad del centro.",
+        "name": {
+          "SBIF": "Fondo de Mejoras para Pequeños Negocios",
+          "NOF": "Fondo de Oportunidad Vecinal"
+        }
       }
     }
   },

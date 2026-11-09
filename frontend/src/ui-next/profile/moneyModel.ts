@@ -200,13 +200,20 @@ export type IncentiveAnswer = "yes" | "no" | "notChecked" | "checking";
 export interface IncentiveChip { key: IncentiveKey; answer: IncentiveAnswer; name: string | null }
 
 /** TIF, Opportunity Zone and Enterprise Zone come with the Overview (by point); QCT and NMTC are tract-keyed and
-    come with the late `incentives` part (Item 89), so they read "checking" until it lands. */
-export function incentiveChips(data: ScorecardResponse, incentivesPending: boolean): IncentiveChip[] {
+    come with the late `incentives` part (Item 89): "checking" while it waits, and "not checked" if it timed out or
+    failed (its fields then hold defaults, and a default `false` must never read as "No"). */
+export function incentiveChips(data: ScorecardResponse, incentives: LateBlockState | boolean): IncentiveChip[] {
+  const state: LateBlockState = incentives === true ? "loading" : incentives === false ? "ready" : incentives;
   const inc = data.context?.incentives ?? null;
   const unchecked = new Set(inc?.unchecked ?? []);
   const late = new Set<IncentiveKey>(["qct", "nmtc"]);
+  // A tract-keyed answer needs the tract: without it the false is a default, not a check (seen when a later part's
+  // response lost the incentives part's data; Item 99).
+  const noTract = !inc?.census_tract && !inc?.qct_tract && !inc?.nmtc_tract;
   const ans = (k: IncentiveKey, yes: boolean | undefined): IncentiveAnswer =>
-    incentivesPending && late.has(k) ? "checking" : inc == null || unchecked.has(k) || (k === "ez" && inc.enterprise_zone_unchecked) ? "notChecked" : yes ? "yes" : "no";
+    late.has(k) && state === "loading" ? "checking"
+    : late.has(k) && (state === "timedOut" || state === "failed" || (noTract && !yes)) ? "notChecked"
+    : inc == null || unchecked.has(k) || (k === "ez" && inc.enterprise_zone_unchecked) ? "notChecked" : yes ? "yes" : "no";
   const chips: IncentiveChip[] = [
     { key: "tif", answer: ans("tif", inc?.in_tif_district), name: inc?.tif_name ?? null },
     { key: "oz", answer: ans("oz", inc?.in_opportunity_zone), name: null },

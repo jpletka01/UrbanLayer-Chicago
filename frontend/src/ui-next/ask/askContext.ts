@@ -8,6 +8,8 @@ export interface AskHandoff {
   /** The parcel's address, so a question carries it (a "this lot" question routes to clarification). */
   address: string;
   open: (question: string) => void;
+  /** Opens a program's page in the same right panel (Item 99), in place of the analyst. */
+  openProgram?: (program: "tif" | "oz" | "ez" | "qct" | "nmtc") => void;
 }
 
 export const AskContext = createContext<AskHandoff | null>(null);

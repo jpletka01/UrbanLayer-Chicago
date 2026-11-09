@@ -287,7 +287,8 @@
         "belowSale": "The Assessor's value is {{pct}}% below this lot's {{year}} sale",
         "exemptShort": "No bill; a taxable lot of its class pays about {{rate}}% of value a year",
         "nominalShort": "Nominal assessment: no tax figure",
-        "noneShort": "No tax bill on record"
+        "noneShort": "No tax bill on record",
+        "exemptNoRate": "No bill: tax-exempt ownership"
       },
       "rent": {
         "title": "Rent nearby",
@@ -367,6 +368,77 @@
         "none": "No assessments on record",
         "chartLabel": "Assessor's value by year: {{list}}",
         "latest": "{{year}}: {{value}}"
+      }
+    },
+    "program": {
+      "forThisLot": "What it means for this lot",
+      "checking": "Still checking this program for this lot.",
+      "notChecked": "We couldn't check this program for this lot today, so we can't say whether it applies.",
+      "tract": "Census tract {{tract}}",
+      "whoDecides": "Who decides",
+      "whatItIs": "What it is",
+      "status": {
+        "in": "This lot is inside",
+        "out": "Not in one"
+      },
+      "tif": {
+        "named": "{{name}} TIF district",
+        "meansIn": "This lot is inside the {{name}} TIF district. A project here can ask the City for TIF help (money from the district's fund, often repaid from the new taxes the project creates) until the district ends. Nothing is promised: the City decides project by project.",
+        "meansOut": "This lot is in no TIF district, so a project here can't get TIF money. Other City programs and grants can still apply.",
+        "who": "The City's Department of Planning and Development negotiates TIF help; City Council approves each agreement.",
+        "source": "Source: City of Chicago TIF boundaries and annual reports",
+        "runs": "Runs",
+        "yearsLeft_one": "{{count}} year left",
+        "yearsLeft_other": "{{count}} years left",
+        "balance": "Fund balance",
+        "asOfReport": "{{year}} annual report",
+        "balanceByYear": "Fund balance by year",
+        "projects": "Projects it has paid for",
+        "publicFunds": "{{value}} TIF",
+        "privateFunds": "{{value}} private",
+        "allProjects": "All TIF projects (City data)",
+        "reportsChecking": "Still checking the district's annual reports.",
+        "reportsLate": "Couldn't check the district's annual reports in time.",
+        "reportsMissing": "The district's annual reports didn't come back for this lookup."
+      },
+      "oz": {
+        "meansIn": "This lot is in an Opportunity Zone (Census tract {{tract}}). Investors who put capital gains into a project here through a Qualified Opportunity Fund can defer or reduce federal tax on them. It doesn't change the zoning or what can be built.",
+        "meansOut": "This lot is not in an Opportunity Zone, so investors in a project here get no Opportunity Zone tax benefit.",
+        "who": "No City approval: investors claim the benefit on their federal taxes through a Qualified Opportunity Fund.",
+        "source": "Source: US Treasury and HUD Opportunity Zones"
+      },
+      "ez": {
+        "meansIn": "This lot is in {{name}}. A project here can claim Illinois Enterprise Zone benefits, such as a sales-tax exemption on building materials bought for it.",
+        "meansOut": "This lot is not in an Enterprise Zone, so there's no Enterprise Zone sales-tax exemption on building materials.",
+        "who": "Benefits are claimed under State of Illinois rules through the zone's administrator (the City, for Chicago's zones).",
+        "source": "Source: City of Chicago Enterprise Zone boundaries"
+      },
+      "qct": {
+        "meansIn": "This lot is in a HUD Qualified Census Tract (tract {{tract}}). An affordable-housing project using Low-Income Housing Tax Credits can count up to 130% of its eligible costs, which means a larger credit. Other kinds of projects aren't affected.",
+        "meansOut": "This lot is not in a Qualified Census Tract, so an affordable-housing project here gets no automatic credit boost from it.",
+        "who": "Housing tax credits are awarded in competitions run by the City's Department of Housing and the Illinois Housing Development Authority.",
+        "source": "Source: HUD Qualified Census Tracts"
+      },
+      "nmtc": {
+        "meansIn": "This lot is in a low-income tract eligible for New Markets Tax Credits (tract {{tract}}). Commercial and community projects here can seek NMTC financing, which often comes on below-market terms.",
+        "meansOut": "This lot is not in an eligible tract, so New Markets Tax Credit financing isn't available here by location.",
+        "who": "Community Development Entities that hold federal allocations choose which projects to finance.",
+        "source": "Source: CDFI Fund (US Treasury) eligibility",
+        "poverty": "Poverty rate",
+        "distress": "Severe distress",
+        "severe": "Yes",
+        "notSevere": "No"
+      },
+      "grants": {
+        "title": "City grants in this community area",
+        "summary_one": "{{count}} project, {{funding}}",
+        "summary_other": "{{count}} projects, {{funding}}",
+        "by": "{{program}} {{count}}",
+        "what": "Small Business Improvement Fund grants are paid from TIF money; Neighborhood Opportunity Fund grants come from downtown density fees.",
+        "name": {
+          "SBIF": "Small Business Improvement Fund",
+          "NOF": "Neighborhood Opportunity Fund"
+        }
       }
     }
   },

@@ -172,3 +172,11 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* The map's canvas follows its box while the page's width animates (the Ask drawer, Item 99): MapLibre resizes the
+   canvas a frame or two after the box, which flashed a blank strip; stretching the last frame for those frames
+   reads as smooth. MapLibre reads sizes from the container, so input coordinates are unaffected. */
+.ui-next .maplibregl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}

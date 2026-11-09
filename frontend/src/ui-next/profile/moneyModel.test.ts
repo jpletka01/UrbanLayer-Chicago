@@ -83,7 +83,7 @@ describe("rent", () => {
 
 describe("incentives", () => {
   it("says checking for the tract programs until the incentives part lands, and not checked for a failed source", () => {
-    const data = profileFixture({ context: { incentives: { in_tif_district: true, tif_name: "Milwaukee/Ashland", unchecked: ["ez"] } } } as never);
+    const data = profileFixture({ context: { incentives: { in_tif_district: true, tif_name: "Milwaukee/Ashland", census_tract: "17031240900", unchecked: ["ez"] } } } as never);
     const pending = incentiveChips(data, true);
     expect(pending[0]).toMatchObject({ key: "tif", answer: "yes" });
     expect(pending.find((c) => c.key === "qct")!.answer).toBe("checking");
@@ -107,5 +107,26 @@ describe("chart scale", () => {
     expect(niceCeil(3_480_000)).toBe(5_000_000);
     expect(niceCeil(1_592_480)).toBe(2_000_000);
     expect(niceCeil(240_000)).toBe(250_000);
+  });
+});
+
+describe("incentives that ran out of time", () => {
+  it("never turn the late programs' default false into 'No'", () => {
+    const data = profileFixture({ context: { incentives: { in_tif_district: true, in_qct: false, in_nmtc: false, unchecked: [] } } } as never);
+    for (const state of ["timedOut", "failed"] as const) {
+      const chips = incentiveChips(data, state);
+      expect(chips.find((c) => c.key === "qct")!.answer).toBe("notChecked");
+      expect(chips.find((c) => c.key === "nmtc")!.answer).toBe("notChecked");
+      expect(chips.find((c) => c.key === "tif")!.answer).toBe("yes"); // by point, with the Overview
+    }
+  });
+});
+
+describe("incentives without a tract", () => {
+  it("read the tract programs as not checked, never 'No'", () => {
+    const data = profileFixture({ context: { incentives: { in_tif_district: true, in_qct: false, in_nmtc: false, census_tract: null, unchecked: [] } } } as never);
+    const chips = incentiveChips(data, "ready");
+    expect(chips.find((c) => c.key === "qct")!.answer).toBe("notChecked");
+    expect(chips.find((c) => c.key === "nmtc")!.answer).toBe("notChecked");
   });
 });

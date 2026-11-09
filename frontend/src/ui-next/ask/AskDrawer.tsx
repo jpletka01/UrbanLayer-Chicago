@@ -3,8 +3,9 @@
 // the page (useParcelChat), so it survives closing the drawer and switching tabs. "Open in full chat" opens a
 // new tab and never replaces the page. Same chat path as today's dock: no new endpoint, no new model call path.
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { RightDrawer } from "../ui/RightDrawer";
 import { useTranslation } from "react-i18next";
-import { ArrowUp, RotateCcw, SquareArrowOutUpRight, X } from "lucide-react";
+import { ArrowUp, RotateCcw, SquareArrowOutUpRight } from "lucide-react";
 import { MessageBubble } from "../../components/MessageBubble";
 import type { useParcelChat } from "../../lib/useParcelChat";
 import { ICON, STROKE } from "../icons";
@@ -39,23 +40,11 @@ export function AskDrawer({
   const boxRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const AskIcon = ICON.ask;
-  // Slide in on the frame after mounting (from the right on a desktop, from the bottom on a phone); slide out while
-  // `closing`. Reduced motion skips both.
-  const [entered, setEntered] = useState(instant);
-  useEffect(() => {
-    if (entered) return;
-    const id = requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
-    return () => cancelAnimationFrame(id);
-  }, [entered]);
-  const shown = entered && !closing;
 
   useEffect(() => {
     const box = boxRef.current;
-    box?.focus();
     if (box && box.value) box.setSelectionRange(box.value.length, box.value.length);
-    const back = returnFocusRef.current;
-    return () => back?.focus();
-  }, [returnFocusRef]);
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -69,37 +58,17 @@ export function AskDrawer({
   };
 
   return (
-    // The wrapper takes the drawer's width beside the page on a desktop and animates it, so the page makes room
-    // smoothly; on a phone the drawer covers the screen and slides up.
-    <div
-      className={`lg:sticky lg:top-0 lg:h-dvh lg:shrink-0 lg:overflow-hidden lg:transition-[width] lg:duration-200 lg:ease-out motion-reduce:transition-none ${shown ? "lg:w-[clamp(360px,33vw,480px)]" : "lg:w-0"}`}
-      data-state={shown ? "open" : "closed"}
+    <RightDrawer
+      testId="ask-drawer"
+      title={<span className="block truncate">{chat.address ? t("next:ask.titleAt", { address: chat.address }) : t("next:ask.title")}</span>}
+      subtitle={t("next:ask.notSaved")}
+      onClose={onClose}
+      closing={closing}
+      instant={instant}
+      returnFocusRef={returnFocusRef}
+      initialFocusRef={boxRef}
+      closeLabel={t("next:ask.close")}
     >
-    <section
-      role="dialog"
-      aria-modal="false"
-      aria-labelledby={titleId}
-      data-testid="ask-drawer"
-      onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } }}
-      className={`fixed inset-0 z-50 flex flex-col gap-4 bg-nx-page p-5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none lg:static lg:z-auto lg:h-full lg:w-[clamp(360px,33vw,480px)] lg:border-l lg:border-nx-ink/10 lg:translate-y-0 ${shown ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 lg:translate-x-8"}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 id={titleId} className="truncate text-body font-semibold">
-            {chat.address ? t("next:ask.titleAt", { address: chat.address }) : t("next:ask.title")}
-          </h2>
-          <p className="text-caption nx-muted">{t("next:ask.notSaved")}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("next:ask.close")}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target"
-        >
-          <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-        </button>
-      </div>
-
       {/* The question box: SnowUI's lavender-to-blue edge, the only place the gradient appears. */}
       <form
         className="nx-ai-edge rounded-2xl focus-within:shadow-[0_0_0_3px_rgb(var(--nx-ai-a)/0.6)]"
@@ -193,7 +162,6 @@ export function AskDrawer({
           <p className="mt-1 text-caption nx-muted" role="status" data-testid="ask-tab-blocked">{t("common:newTabBlocked")}</p>
         )}
       </div>
-    </section>
-    </div>
+    </RightDrawer>
   );
 }

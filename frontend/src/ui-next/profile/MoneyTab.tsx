@@ -9,7 +9,7 @@
 // follow Item 89's skeleton rule. No figure here is a forecast (rule 11).
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, LoaderCircle, MapPin, RotateCw, TriangleAlert } from "lucide-react";
+import { ChevronDown, ChevronRight, LoaderCircle, MapPin, RotateCw, TriangleAlert } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import { ConfidenceState } from "../../components/ui/ConfidenceState";
 import { Block, Pill, StatTile, type PillTone } from "../ui/Blocks";
@@ -49,7 +49,7 @@ export function MoneyTab({
   const history = valueHistory(data);
   const flag = assessorBelowSale(data);
   const rent = rentModel(data);
-  const chips = incentiveChips(data, late.incentives === "loading");
+  const chips = incentiveChips(data, late.incentives);
   const prop = data.context?.property;
   const inc = data.context?.incentives;
   const latestYear = history.years.length ? history.years[history.years.length - 1].year : null;
@@ -69,6 +69,7 @@ export function MoneyTab({
             ? [tax.year ? t("profile.money.tax.billYear", { year: tax.year }) : null,
                tax.rate != null ? (tax.typicalRate != null ? t("profile.money.tax.rateVsTypical", { rate: pct(tax.rate), typical: pct(tax.typicalRate, 1) }) : t("profile.tiles.taxRate", { rate: pct(tax.rate) })) : null,
               ].filter(Boolean).join(" · ")
+            : tax.kind === "exempt" && tax.typicalRate == null ? t("profile.money.tax.exemptNoRate")
             : t(`profile.money.tax.${tax.kind}Short`, { rate: tax.typicalRate != null ? pct(tax.typicalRate, 1) : "" })}
           state={tax.kind === "bill" ? stateOf(tax.state) : undefined}
         />
@@ -136,12 +137,19 @@ export function MoneyTab({
           icon={ICON.incentives} labelledBy="nx-incentives">
           <ul className="flex flex-wrap gap-2" data-testid="incentive-chips">
             {chips.map((c) => (
-              <li key={c.key} className="flex items-center gap-1.5 rounded-xl bg-nx-page px-2.5 py-1.5" data-incentive={c.key} data-answer={c.answer}>
-                <Term label={t(`profile.money.incentives.program.${c.key}`)} definition={def(`program.${c.key}`)}
-                  question={t("profile.money.ask.program", { program: t(`profile.money.incentives.program.${c.key}`), address: ask?.address ?? "" })}>
+              <li key={c.key} data-incentive={c.key} data-answer={c.answer}>
+                {/* The whole chip opens the program's page in the right panel (owner: pills should be clickable). */}
+                <button
+                  type="button"
+                  onClick={() => ask?.openProgram?.(c.key)}
+                  disabled={!ask?.openProgram}
+                  className="group flex items-center gap-1.5 rounded-xl bg-nx-page py-1.5 pl-2.5 pr-1.5 text-left hover:bg-nx-ink/5 disabled:cursor-default touch-target"
+                  aria-haspopup="dialog"
+                >
                   <span className="text-caption">{t(`profile.money.incentives.program.${c.key}`)}</span>
-                </Term>
-                <IncentivePill answer={c.answer} />
+                  <IncentivePill answer={c.answer} />
+                  <ChevronRight aria-hidden className="h-3.5 w-3.5 nx-muted transition-transform group-hover:translate-x-0.5" strokeWidth={STROKE} />
+                </button>
               </li>
             ))}
           </ul>
