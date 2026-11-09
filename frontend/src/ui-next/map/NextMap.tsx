@@ -15,6 +15,7 @@ import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup 
 import { apiOrigin, fetchLotOutline, loadMapInfo, streetViewUrl } from "./mapInfo";
 import { streetOfAddress, viewpointFor, type RoadLine, type Viewpoint } from "./streetView";
 import { addPinImages } from "./pins";
+import { addPatternImages } from "./patterns";
 import type { ComparableSale, TransitStation } from "../../lib/types";
 import { humanizeShoutyCase } from "../../lib/format";
 import { rowTitle } from "../../discovery/rowFigures";
@@ -152,8 +153,8 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       // A lost context must not surface as an error ("WebGL context was lost"); the browser restores it.
       m.on("webglcontextlost", () => undefined);
       // The pins are drawn once on a canvas; added before any point arrives, and again if a style ever asks.
-      m.on("styleimagemissing", () => addPinImages(m));
-      m.once("load", () => addPinImages(m));
+      m.on("styleimagemissing", () => { addPinImages(m); addPatternImages(m); });
+      m.once("load", () => { addPinImages(m); addPatternImages(m); });
       m.on("load", () => {
         if (cancelled) return;
         const el = m.getContainer();

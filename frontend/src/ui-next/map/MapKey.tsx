@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, Layers } from "lucide-react";
 import { ZONING_COLORS, ZONING_FAMILIES, type GroupId, type LayerMode } from "./mapStyle";
 import { PIN_COLORS } from "./pins";
+import { patternCss } from "./patterns";
+import { useThemeContext } from "../../contexts/ThemeContext";
 import type { LateState } from "./NextMap";
 
 export interface GroupState {
@@ -40,6 +42,8 @@ export function MapKey({ groups, families, onMode, onRetry, onShow, defaultOpen,
   onShow?: (g: GroupId) => void;
 }) {
   const { t } = useTranslation("next");
+  const { resolvedTheme } = useThemeContext();
+  const theme = resolvedTheme === "dark" ? "dark" : "light";
   const [open, setOpen] = useState(defaultOpen);
   if (!groups.length) return null;
   return (
@@ -102,10 +106,15 @@ export function MapKey({ groups, families, onMode, onRetry, onShow, defaultOpen,
                     {ZONING_FAMILIES.filter((f) => families.includes(f)).map((f) => (
                       <li key={f} className="flex items-center gap-1.5">
                         {/* Two steps of the family's ramp: lighter and darker. */}
-                        <span aria-hidden className="flex overflow-hidden rounded-sm">
-                          <span className="h-2.5 w-2" style={{ background: ZONING_COLORS[f][0] }} />
-                          <span className="h-2.5 w-2" style={{ background: ZONING_COLORS[f][2] }} />
-                        </span>
+                        {f === "planned" || f === "transport" ? (
+                          // The same texture as on the map (Item 97).
+                          <span aria-hidden className="h-2.5 w-4 rounded-sm" style={{ background: `${patternCss(f === "planned" ? "hatch" : "dots", theme)}, ${ZONING_COLORS[f][0]}` }} />
+                        ) : (
+                          <span aria-hidden className="flex overflow-hidden rounded-sm">
+                            <span className="h-2.5 w-2" style={{ background: ZONING_COLORS[f][0] }} />
+                            <span className="h-2.5 w-2" style={{ background: ZONING_COLORS[f][2] }} />
+                          </span>
+                        )}
                         {t(`map.families.${f}`)}
                       </li>
                     ))}

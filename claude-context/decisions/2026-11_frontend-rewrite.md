@@ -668,3 +668,15 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - The weak pairs mostly involve the two gray families (planned development, transportation).
 - **What already does not depend on color:** every district's code is on the map as a label (by size, from zoom 13), a click names the district, and the lot (light/dark fill and outline), the pins (icon shapes: $, train, house), the streets (width) and the approximate-match dash all read by lightness or shape.
 - **Candidate fix, for the owner:** a texture for the two gray families (a light diagonal hatch for planned development, a dotted fill for transportation) so they no longer depend on hue, leaving the main colors as they are.
+
+---
+
+## Item 97: textures for the two gray zoning families (2026-11-09)
+
+**Decision (owner, "Yes, add textures", after the color-blind check in Item 96):** planned development gets a light diagonal hatch and transportation a dot grid (`map/patterns.ts`, layer `zoning-texture` over their fill), in the lot's ink at low opacity (black ~40% in light, white ~38% in dark); the key's swatches show the same textures. The colors themselves are unchanged.
+
+**Effect:** the weakest pairs (business vs transportation ΔE 1.0 under protanopia; park, residential or downtown vs the grays at 1.7-4.0 under the three deficiencies) are now told apart by texture, not hue. Checked in the browser: hatching on PD 1235/1258/58/569/847 in light and dark; dots on the 606 trail's transportation strip.
+
+**What still depends on color (measured, ΔE×100 of the fills as drawn):** among the five colored families the closest pairs are residential vs downtown 3.6 (protanopia, light), business vs manufacturing 4.2 (deuteranopia) and 3.5 (tritanopia), residential vs park 3.2 (tritanopia, dark); with full color vision residential vs business is 6.4 light / 5.5 dark. These lean on the district-code labels and the click card. Residential and downtown are rarely neighbors.
+
+**Revisit if:** a color-blind tester still confuses business and manufacturing (then a second texture for manufacturing, or Item 74's "Teal and coral" alternative, which passes the color-blind check more cleanly).

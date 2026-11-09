@@ -8,6 +8,7 @@
 // On / Off per layer (the owner dropped Dim after his first review: zoning reads best fully on).
 
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
+import { PATTERN_IMAGE } from "./patterns";
 
 export type Theme = "light" | "dark";
 export type LayerMode = "on" | "off";
@@ -123,6 +124,15 @@ export const LAYERS: LayerDef[] = [
     group: "zoning", needs: "zoning", opacity: ["fill-opacity"],
     spec: (t) => ({ id: "zoning-fill", type: "fill", source: "zoning", "source-layer": "zoning",
       paint: { "fill-color": zoningColorExpr() as string, "fill-opacity": PALETTES[t].zoningFill } }),
+  },
+  // Textures for the two gray families (color-blind check, Item 97): planned development hatched, transportation
+  // dotted, so neither depends on hue.
+  {
+    group: "zoning", needs: "zoning", opacity: ["fill-opacity"],
+    spec: (t) => ({ id: "zoning-texture", type: "fill", source: "zoning", "source-layer": "zoning",
+      filter: ["match", ["get", "family"], ["planned", "transport"], true, false],
+      paint: { "fill-pattern": ["match", ["get", "family"], "planned", PATTERN_IMAGE("hatch", t), PATTERN_IMAGE("dots", t)] as unknown as string,
+        "fill-opacity": 1 } }),
   },
   // Water draws over the zoning fill (owner's review): the City zones lagoons with their parks (POS), and the
   // zoning fill covered the water. Parks stay under the zoning, so their green is the POS fill over the park color.
