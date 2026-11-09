@@ -14,6 +14,7 @@ import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, fetchLotOutline, loadMapInfo, streetViewUrl } from "./mapInfo";
 import { streetOfAddress, viewpointFor, type RoadLine, type Viewpoint } from "./streetView";
+import { addPinImages } from "./pins";
 import type { ComparableSale, TransitStation } from "../../lib/types";
 import { humanizeShoutyCase } from "../../lib/format";
 import { rowTitle } from "../../discovery/rowFigures";
@@ -94,7 +95,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   const modes = override && override.viewId === view.id ? override.modes : view.modes;
   const [bigMap, setBigMap] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<GroupId, number>>>({});
-  const [districts, setDistricts] = useState<Array<{ zone: string; family: string; level: string }>>([]);
+  const [families, setFamilies] = useState<string[]>([]);
   const [picked, setPicked] = useState<Picked | null>(null);
   const [away, setAway] = useState(false);
   // Street View mode (expanded map only): the next click on the map opens Google Street View there in a new tab.
@@ -150,6 +151,9 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       m.on("mousemove", () => { if (expandedRef.current && !m.scrollZoom.isEnabled()) m.scrollZoom.enable(); });
       // A lost context must not surface as an error ("WebGL context was lost"); the browser restores it.
       m.on("webglcontextlost", () => undefined);
+      // The pins are drawn once on a canvas; added before any point arrives, and again if a style ever asks.
+      m.on("styleimagemissing", () => addPinImages(m));
+      m.once("load", () => addPinImages(m));
       m.on("load", () => {
         if (cancelled) return;
         const el = m.getContainer();
@@ -295,10 +299,10 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       }
       setCounts({
         parcels: lots.size, zoning: zones.size,
-        sales: new Set(q(["sales-circle"]).map((f) => f.id)).size,
-        transit: new Set(q(["transit-circle"]).map((f) => f.id)).size,
+        sales: new Set(q(["sales-pin"]).map((f) => f.id)).size,
+        transit: new Set(q(["transit-pin"]).map((f) => f.id)).size,
       });
-      setDistricts([...zones.values()].sort((a, b) => a.zone.localeCompare(b.zone)).slice(0, 8));
+      setFamilies([...new Set([...zones.values()].map((z) => z.family))]);
     };
     map.on("idle", recount);
     return () => { map.off("idle", recount); };
@@ -324,7 +328,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
         const live = ids.filter(has);
         return live.length ? map.queryRenderedFeatures([[at[0] - 6, at[1] - 6], [at[0] + 6, at[1] + 6]], { layers: live })[0] : undefined;
       };
-      const sale = hit(["sales-circle"]);
+      const sale = hit(["sales-pin"]);
       if (sale && sales) {
         const s = sales.filter((x) => x.lat != null && x.lon != null)[Number(sale.properties.i)];
         const sll: [number, number] = [s.lon!, s.lat!];
@@ -357,7 +361,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     };
     const pointer = (e: maplibregl.MapMouseEvent) => {
       if (streetViewRef.current) { map.getCanvas().style.cursor = "crosshair"; return; }
-      const ids = ["sales-circle", "parcel-fill", "zoning-fill"].filter((id) => !!map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
+      const ids = ["sales-pin", "parcel-fill", "zoning-fill"].filter((id) => !!map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
       map.getCanvas().style.cursor = ids.length && map.queryRenderedFeatures(e.point, { layers: ids }).length ? "pointer" : "";
     };
     map.on("click", onClick);
@@ -389,13 +393,27 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     return () => window.removeEventListener("keydown", onKey);
   }, [picked]);
 
+  // Fit the lot and a group's points on screen (the key's "Show").
+  const showGroup = (g: GroupId) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const pts: [number, number][] = [[lon, lat]];
+    if (g === "sales") for (const f of saleFeatures) pts.push(f.geometry.coordinates as [number, number]);
+    if (g === "transit") for (const s of stations) pts.push([s.lon, s.lat]);
+    if (pts.length < 2) return;
+    const w = Math.min(...pts.map((p) => p[0])), e = Math.max(...pts.map((p) => p[0]));
+    const so = Math.min(...pts.map((p) => p[1])), n = Math.max(...pts.map((p) => p[1]));
+    map.fitBounds([[w, so], [e, n]], { padding: { top: 70, bottom: 60, left: 60, right: 300 }, maxZoom: 17, duration: reducedMotion() ? 0 : 600 });
+  };
+
   const groups: GroupState[] = GROUPS.flatMap((g): GroupState[] => {
     if (g === "zoning" && !tiles?.zoning) return [];
     if (g === "parcels" && !tiles?.parcels) return [];
     if (g === "streets" && !tiles?.base) return [];
     if (g === "sales" && salesState === "absent") return [];
     if (g === "transit" && stations.length === 0) return [];
-    return [{ id: g, mode: modes[g], count: counts[g], late: g === "sales" ? salesState : undefined }];
+    const total = g === "sales" ? saleFeatures.length : g === "transit" ? stations.length : undefined;
+    return [{ id: g, mode: modes[g], count: counts[g], total, late: g === "sales" ? salesState : undefined }];
   });
 
   const late = salesState === "loading" || salesState === "timedOut" || salesState === "failed";
@@ -420,9 +438,10 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
           defaultOpen={bigMap}
           maxHeight={boxH > 0 ? boxH - 96 : undefined}
           groups={groups}
-          districts={districts}
+          families={families}
           onMode={(g, m) => setOverride({ viewId: view.id, modes: { ...modes, [g]: m } })}
           onRetry={onRetrySales}
+          onShow={showGroup}
         />
       )}
       {/* The skeleton rule on the map (Item 89): a layer that waits on a late part is named in place. */}

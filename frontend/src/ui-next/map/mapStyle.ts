@@ -30,7 +30,6 @@ interface Palette {
   label: string; halo: string;
   parcelLine: string; parcelLineOpacity: number; parcelHit: string;
   lot: string; lotEdge: string;
-  sale: string; saleEdge: string; transit: string; transitEdge: string;
   zoningLabel: string; zoningFill: number; zoningLine: number;
 }
 
@@ -43,7 +42,6 @@ export const PALETTES: Record<Theme, Palette> = {
     label: "#3C4249", halo: "#F4F6F8",
     parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
     lot: "#1C1C1C", lotEdge: "#FFFFFF",
-    sale: "#72B0AB", saleEdge: "#FFFFFF", transit: "#355E58", transitEdge: "#FFFFFF",
     zoningLabel: "#1C1C1C", zoningFill: 0.42, zoningLine: 0.85,
   },
   dark: {
@@ -52,7 +50,6 @@ export const PALETTES: Record<Theme, Palette> = {
     label: "#C9CDD2", halo: "#1E2023",
     parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
     lot: "#FFFFFF", lotEdge: "#1C1C1C",
-    sale: "#72B0AB", saleEdge: "#1C1C1C", transit: "#B1E3D9", transitEdge: "#1C1C1C",
     zoningLabel: "#FFFFFF", zoningFill: 0.30, zoningLine: 0.75,
   },
 };
@@ -168,18 +165,6 @@ export const LAYERS: LayerDef[] = [
         "line-dasharray": ["case", ["==", ["get", "approximate"], true], ["literal", [2, 1.5]], ["literal", [1, 0]]] as unknown as number[] } }),
   },
   {
-    group: "sales", needs: "sales", opacity: ["circle-opacity", "circle-stroke-opacity"],
-    spec: (t) => ({ id: "sales-circle", type: "circle", source: "sales",
-      paint: { "circle-color": PALETTES[t].sale, "circle-radius": zoomWidth([[13, 3], [16, 6], [18, 9]]),
-        "circle-stroke-color": PALETTES[t].saleEdge, "circle-stroke-width": 1.5, "circle-opacity": 1, "circle-stroke-opacity": 1 } }),
-  },
-  {
-    group: "transit", needs: "transit", opacity: ["circle-opacity", "circle-stroke-opacity"],
-    spec: (t) => ({ id: "transit-circle", type: "circle", source: "transit",
-      paint: { "circle-color": PALETTES[t].transit, "circle-radius": zoomWidth([[12, 3], [16, 6], [18, 8]]),
-        "circle-stroke-color": PALETTES[t].transitEdge, "circle-stroke-width": 1.5, "circle-opacity": 1, "circle-stroke-opacity": 1 } }),
-  },
-  {
     group: "streets", needs: "base", opacity: ["text-opacity"],
     spec: (t) => ({ id: "road-label", type: "symbol", source: "base", "source-layer": "road", minzoom: STREET_LABEL_MIN_ZOOM,
       filter: ["all", ["!=", ["get", "name"], ""], ["match", ["get", "kind"], ["highway", "major", "minor", "local"], true, false]],
@@ -193,6 +178,21 @@ export const LAYERS: LayerDef[] = [
       layout: { "text-field": ["get", "zone_class"], "text-font": ["Noto Sans Regular"],
         "text-size": zoomWidth([[13, 10], [17, 13]]), "text-padding": 6, "text-allow-overlap": false },
       paint: { "text-color": PALETTES[t].zoningLabel, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.6, "text-opacity": 1 } }),
+  },
+  // Points as pins, above everything, labels included (owner's review, Item 95): the point is the pin's tip.
+  {
+    group: "sales", needs: "sales", opacity: ["icon-opacity"],
+    spec: () => ({ id: "sales-pin", type: "symbol", source: "sales",
+      layout: { "icon-image": "pin-sale", "icon-anchor": "bottom", "icon-allow-overlap": true, "icon-ignore-placement": true,
+        "icon-size": zoomWidth([[12, 0.7], [14, 0.85], [15.5, 1]]) },
+      paint: { "icon-opacity": 1 } }),
+  },
+  {
+    group: "transit", needs: "transit", opacity: ["icon-opacity"],
+    spec: () => ({ id: "transit-pin", type: "symbol", source: "transit",
+      layout: { "icon-image": "pin-transit", "icon-anchor": "bottom", "icon-allow-overlap": true, "icon-ignore-placement": true,
+        "icon-size": zoomWidth([[12, 0.7], [14, 0.85], [15.5, 1]]) },
+      paint: { "icon-opacity": 1 } }),
   },
 ];
 

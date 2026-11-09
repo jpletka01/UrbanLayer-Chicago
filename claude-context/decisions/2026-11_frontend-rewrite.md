@@ -639,3 +639,15 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Revisit if:** builders ask to see frontage without leaving the page (then price the Maps Embed API's Street View mode, which needs a key), or Google changes the Maps URL format.
 
 **Numbers:** checked in the browser with `window.open` stubbed: the mode's click opened `…viewpoint=41.909845,-87.677183` with `_blank` and `noopener,noreferrer`; the card link's `href` and `target="_blank"` checked; test `map/mapInfo.test.ts`.
+
+---
+
+## Item 95: points as pins, a key that explains zoning by color family, and "Show" for off-screen points (2026-11-09)
+
+**From the owner's review:**
+- **Recent sales and transit are map pins** (`map/pins.ts`), like Google Maps': a teardrop with a white edge and a soft shadow, its tip on the point, a white Lucide icon inside ($ for a sale, a train for a station), 32 × 42 px drawn at 2x, slightly smaller below zoom 15.5; drawn above every other layer, labels included, never hidden by collision. Sales use Coastal's Spruce `#355E58` and stations ink `#1C1C1C` (Item 74: maps use Sapphire, Spruce and black). They replace 6 px dots that disappeared under the zoning fills. Our own icons, not Google's yellow figure or pin art.
+- **Points out of view are said, not lost.** The owner could find only one of three sales: all three sat about half a mile north of the lot (0.44–0.53 mi), outside the default view. When some of a group's points are off screen the key says "0 of 3 in view" with **Show**, which fits the map to the lot and those points.
+- **The key explains zoning by color family**, for the families in view (Residential, Business and commercial, Manufacturing, Downtown, Planned development, Parks and open space, Transportation), each with a lighter and a darker swatch and "Darker = more intensive (taller, denser)", instead of up to eight individual district codes. The codes stay on the map as labels.
+- **Kept simple (owner):** no drag-a-figure Street View; the card link and the expanded-map mode are enough.
+
+**Numbers:** checked in the browser at 1601 N Milwaukee Ave (dark): key reads "Recent sales 0 of 3 in view · Show", "Transit 1 of 3 in view · Show"; Show framed the lot and all three sale pins. Tests: `mapStyle.test.ts` (pins are the top two layers), `streetView.test.ts`, `mapInfo.test.ts`.

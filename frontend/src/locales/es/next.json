@@ -278,7 +278,6 @@
       "on": "Sí",
       "off": "No"
     },
-    "districtsInView": "Distritos a la vista",
     "groups": {
       "zoning": "Zonificación",
       "parcels": "Terrenos",
@@ -318,6 +317,19 @@
       "button": "Street View",
       "hint": "Haga clic en una calle para abrir Street View · Esc cancela",
       "link": "Street View (Google)"
-    }
+    },
+    "families": {
+      "residential": "Residencial",
+      "business": "Comercial y de negocios",
+      "manufacturing": "Manufactura",
+      "downtown": "Centro",
+      "planned": "Desarrollo planificado",
+      "park": "Parques y espacios abiertos",
+      "transport": "Transporte"
+    },
+    "familiesNote": "Más oscuro = más intensivo (más alto, más denso)",
+    "familiesInView": "Colores de zonificación a la vista",
+    "inView": "{{count}} de {{total}} a la vista",
+    "show": "Mostrar"
   }
 }

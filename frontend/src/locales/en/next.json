@@ -278,7 +278,6 @@
       "on": "On",
       "off": "Off"
     },
-    "districtsInView": "Districts in view",
     "groups": {
       "zoning": "Zoning",
       "parcels": "Lots",
@@ -318,6 +317,19 @@
       "button": "Street View",
       "hint": "Click a street to open Street View · Esc cancels",
       "link": "Street View (Google)"
-    }
+    },
+    "families": {
+      "residential": "Residential",
+      "business": "Business and commercial",
+      "manufacturing": "Manufacturing",
+      "downtown": "Downtown",
+      "planned": "Planned development",
+      "park": "Parks and open space",
+      "transport": "Transportation"
+    },
+    "familiesNote": "Darker = more intensive (taller, denser)",
+    "familiesInView": "Zoning colors in view",
+    "inView": "{{count}} of {{total}} in view",
+    "show": "Show"
   }
 }
