@@ -493,7 +493,8 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - Warm (run b): Overview 31 ms p50 / 1.56 s p95 on exact parcels; whole Profile 2.6 s p50 (its p95 20 s = sources still past the deadline from the cold visit, by design).
 - First screen (run b, cold): 3.58 s p50 / 10.11 s p95.
 - Approximate parcels wait on County GIS (Item 81 point 3, about 10 s), so their Overview is reported apart.
-- **Not measured:** run b's full panel with the last fixes (the owner asked for no more hour-long local runs); production (after deploy, one visit at a time, as in Item 87; the `scorecard part timings` lines give the per-part split).
+- **Production, after the deploy** (2026-11-08, PR #210 merged as `3d5025b`; `parts-prod-2026-11-08`; 4 addresses nobody had opened, one visit at a time from a home connection outside the US through Cloudflare, each visited twice, as in Item 87): first screen 1.4–7.6 s (p50 2.1 s); **Overview on exact parcels 3.1, 7.2 and 7.9 s** (n=3; one approximate match 11.7 s); whole Profile 22.6–32.8 s (p50 25.0 s), a few seconds over Item 87's single response (20.4 s p50), the expected cost of starting the late parts after the Overview; deadline fired twice in 4 first visits (City lists once, 311 once). Repeat visits: Overview 0.6–2.1 s, whole Profile 2.1–4.0 s. n=3 can't show a p95; the server's `scorecard part timings` lines (the owner pulls them, as for this Item's first numbers) are the next read.
+- **Not measured:** run b's full panel with the last fixes (the owner asked for no more hour-long local runs).
 - The eval script can hang at interpreter exit on idle worker threads after writing its results (seen once, local); it is not a request path.
 
 ---

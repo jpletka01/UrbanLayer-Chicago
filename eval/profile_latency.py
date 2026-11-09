@@ -67,6 +67,14 @@ PHASE4_FRESH: list[tuple[str, dict[str, str], str]] = [
     ("p4_bridgeport", {"address": "3500 S Halsted St"}, "fresh (Phase 4): Bridgeport"),
 ]
 
+# Fresh addresses for a production pass (never opened by these runs), one visit at a time (Item 87's method).
+PROD_FRESH: list[tuple[str, dict[str, str], str]] = [
+    ("prod_lakeview", {"address": "1100 W Belmont Ave"}, "fresh (prod): Lakeview corridor"),
+    ("prod_humboldt", {"address": "4300 W North Ave"}, "fresh (prod): Humboldt Park corridor"),
+    ("prod_auburn", {"address": "8000 S Ashland Ave"}, "fresh (prod): Auburn Gresham corridor"),
+    ("prod_littlevillage", {"address": "2800 W 26th St"}, "fresh (prod): Little Village corridor"),
+]
+
 # The Profile's top-level tasks, in the order Item 81's table lists them. Everything else is a sub-span.
 TOP_LEVEL = [
     "resolution", "property", "regulatory", "zoning", "incentives", "neighborhood", "aro_housing",
@@ -357,10 +365,11 @@ async def _timed(coro) -> tuple[float, Any]:
     return (time.perf_counter() - t) * 1000, result
 
 
-def _visit_record(key: str, rnd: int, mode: str, t_first, t_ov, late: dict, complete_ms: float, ov) -> dict:
+def _visit_record(key: str, rnd: int, mode: str, t_first, t_ov, late: dict, complete_ms: float, ov,
+                  *, over_http: bool = False) -> dict:
     ok = not isinstance(ov, Exception) and isinstance(ov, dict)
     rl_conf = None
-    if ok:
+    if ok and not over_http:  # a server's lookup is signed with its own key; only in-process can read it
         from backend import profile_parts
         rl_conf = profile_parts.read_lookup(ov["lookup"])["rl"][4]
     return {
@@ -435,7 +444,7 @@ async def _parts_over_http(base: str, parcels, rounds: int) -> list[dict]:
                             _timed(get(f"/api/profile/part/{n}", {"lookup": ov["lookup"]})) for n in names))
                         late = dict(zip(names, got))
                     run = _visit_record(key, rnd + 1, mode, t_first, t_ov, late,
-                                        (time.perf_counter() - t0) * 1000, ov)
+                                        (time.perf_counter() - t0) * 1000, ov, over_http=True)
                     if isinstance(ov, dict):
                         # the HTTP client can't read the signing key; exact = the resolution's own record
                         run["exact"] = (ov["profile"].get("resolution") or {}).get("method") in ("address_points", "pin", "coordinates", "assessor_addresses")
@@ -517,7 +526,7 @@ def main() -> None:
     parcels = PARCELS + PHASE4_FRESH if args.parts else PARCELS
     if args.parcels:
         want = set(args.parcels.split(","))
-        parcels = [p for p in PARCELS + PHASE4_FRESH if p[0] in want]
+        parcels = [p for p in PARCELS + PHASE4_FRESH + PROD_FRESH if p[0] in want]
 
     if args.parts:
         import logging
