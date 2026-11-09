@@ -9,10 +9,10 @@ import type { GeoJSONSource, Map as MLMap, MapGeoJSONFeature } from "maplibre-gl
 // MapLibre finds its worker beside its own file, which Vite's bundling moves: point it at the worker explicitly.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { LoaderCircle, LocateFixed, MapPinOff, RotateCw, SquareArrowOutUpRight, X } from "lucide-react";
+import { LoaderCircle, LocateFixed, MapPinOff, PersonStanding, RotateCw, SquareArrowOutUpRight, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
-import { apiOrigin, fetchLotOutline, loadMapInfo } from "./mapInfo";
+import { apiOrigin, fetchLotOutline, loadMapInfo, streetViewUrl } from "./mapInfo";
 import type { ComparableSale, TransitStation } from "../../lib/types";
 import { humanizeShoutyCase } from "../../lib/format";
 import { rowTitle } from "../../discovery/rowFigures";
@@ -61,10 +61,11 @@ function km(aLat: number, aLon: number, bLat: number, bLon: number): number {
   return Math.sqrt(x * x + y * y) * 6371;
 }
 
+/** `at` = the click in screen pixels (where the card opens); `ll` = the click on the ground [lon, lat] (Street View). */
 type Picked =
-  | { kind: "parcel"; pin10: string; at: [number, number]; lookup: DiscoveryOutlineLookup | null }
-  | { kind: "district"; props: Record<string, string>; at: [number, number] }
-  | { kind: "sale"; sale: ComparableSale; at: [number, number] };
+  | { kind: "parcel"; pin10: string; at: [number, number]; ll: [number, number]; lookup: DiscoveryOutlineLookup | null }
+  | { kind: "district"; props: Record<string, string>; at: [number, number]; ll: [number, number] }
+  | { kind: "sale"; sale: ComparableSale; at: [number, number]; ll: [number, number] };
 
 export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales, expanded = false, className }: NextMapProps) {
   const { t, i18n } = useTranslation("next");
@@ -84,6 +85,10 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   const [districts, setDistricts] = useState<Array<{ zone: string; family: string; level: string }>>([]);
   const [picked, setPicked] = useState<Picked | null>(null);
   const [away, setAway] = useState(false);
+  // Street View mode (expanded map only): the next click on the map opens Google Street View there in a new tab.
+  const [streetView, setStreetView] = useState(false);
+  const streetViewRef = useRef(false);
+  useEffect(() => { streetViewRef.current = streetView && expanded; }, [streetView, expanded]);
   // The County's full-precision outline for this lot, when it still matches (Item 92); else the page's own.
   const [precise, setPrecise] = useState<{ pin10: string; geometry: GeoJSON.Geometry } | null>(null);
   const lotGeometry = precise && precise.pin10 === pin10 ? precise.geometry : geometry;
@@ -294,6 +299,13 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     const ctrl = { current: null as AbortController | null };
     const onClick = (e: maplibregl.MapMouseEvent) => {
       const at: [number, number] = [e.point.x, e.point.y];
+      const ll: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+      if (streetViewRef.current) {
+        window.open(streetViewUrl(ll[1], ll[0]), "_blank", "noopener,noreferrer");
+        streetViewRef.current = false;
+        setStreetView(false);
+        return;
+      }
       const has = (id: string) => !!map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none";
       const hit = (ids: string[]): MapGeoJSONFeature | undefined => {
         const live = ids.filter(has);
@@ -301,7 +313,8 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       };
       const sale = hit(["sales-circle"]);
       if (sale && sales) {
-        setPicked({ kind: "sale", sale: sales.filter((s) => s.lat != null && s.lon != null)[Number(sale.properties.i)], at });
+        const s = sales.filter((x) => x.lat != null && x.lon != null)[Number(sale.properties.i)];
+        setPicked({ kind: "sale", sale: s, at, ll: [s.lon!, s.lat!] });
         return;
       }
       const lot = map.queryRenderedFeatures(e.point, { layers: ["parcel-fill"].filter(has) })[0];
@@ -310,7 +323,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
         ctrl.current?.abort();
         const c = new AbortController();
         ctrl.current = c;
-        setPicked({ kind: "parcel", pin10: pin, at, lookup: null });
+        setPicked({ kind: "parcel", pin10: pin, at, ll, lookup: null });
         discoveryOutlineRow(pin, "lot_size", c.signal).then((lookup) => {
           if (!c.signal.aborted) setPicked((p) => (p && p.kind === "parcel" && p.pin10 === pin ? { ...p, lookup } : p));
         });
@@ -318,12 +331,13 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       }
       const district = map.queryRenderedFeatures(e.point, { layers: ["zoning-fill"].filter(has) })[0];
       if (district) {
-        setPicked({ kind: "district", props: district.properties as Record<string, string>, at });
+        setPicked({ kind: "district", props: district.properties as Record<string, string>, at, ll });
         return;
       }
       setPicked(null);
     };
     const pointer = (e: maplibregl.MapMouseEvent) => {
+      if (streetViewRef.current) { map.getCanvas().style.cursor = "crosshair"; return; }
       const ids = ["sales-circle", "parcel-fill", "zoning-fill"].filter((id) => !!map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
       map.getCanvas().style.cursor = ids.length && map.queryRenderedFeatures(e.point, { layers: ids }).length ? "pointer" : "";
     };
@@ -341,6 +355,13 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     map.setFeatureState({ source: "parcels", sourceLayer: "parcels", id }, { match: true });
     return () => { if (map.getSource("parcels") && pickedPin !== pin10) map.setFeatureState({ source: "parcels", sourceLayer: "parcels", id }, { match: false }); };
   }, [pickedPin, ready, pin10]);
+
+  useEffect(() => {
+    if (!streetView) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setStreetView(false); } };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [streetView]);
 
   useEffect(() => {
     if (!picked) return;
@@ -414,7 +435,25 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
           {t("map.back")}
         </button>
       )}
-      {picked && <PickedCard picked={picked} onClose={() => setPicked(null)} lang={i18n.language} />}
+      {ready && expanded && (
+        <button
+          type="button"
+          onClick={() => { setPicked(null); setStreetView((v) => !v); }}
+          aria-pressed={streetView && expanded}
+          title={t("map.streetView.button")}
+          className={`absolute left-3 top-14 z-10 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.15)] touch-target ${streetView ? "bg-nx-primary text-nx-primary-fg" : "bg-nx-page hover:bg-nx-block"}`}
+          data-testid="map-street-view"
+        >
+          <PersonStanding aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
+          {t("map.streetView.button")}
+        </button>
+      )}
+      {ready && expanded && streetView && (
+        <p className="absolute left-1/2 top-14 z-10 -translate-x-1/2 rounded-full bg-nx-page px-3 py-1.5 text-caption shadow-[0_1px_4px_rgb(0_0_0/0.2)]" role="status" data-testid="map-street-view-hint">
+          {t("map.streetView.hint")}
+        </p>
+      )}
+      {picked && <PickedCard picked={picked} onClose={() => setPicked(null)} lang={i18n.language} boxH={boxH} />}
     </div>
   );
 }
@@ -431,9 +470,13 @@ function applyModes(map: MLMap, modes: Record<GroupId, LayerMode>, theme: Theme)
   }
 }
 
-function PickedCard({ picked, onClose, lang }: { picked: Picked; onClose: () => void; lang: string }) {
+function PickedCard({ picked, onClose, lang, boxH }: { picked: Picked; onClose: () => void; lang: string; boxH: number }) {
   const { t } = useTranslation("next");
-  const style = { left: Math.max(8, picked.at[0] - 120), top: Math.max(8, picked.at[1] + 12) };
+  // Below the click, or above it when the click is near the map's bottom edge (the card is about 150 px tall).
+  const above = boxH > 0 && picked.at[1] > boxH - 170;
+  const style = above
+    ? { left: Math.max(8, picked.at[0] - 120), bottom: Math.max(8, boxH - picked.at[1] + 12) }
+    : { left: Math.max(8, picked.at[0] - 120), top: Math.max(8, picked.at[1] + 12) };
   const money = (n: number | null) => (n == null ? t("map.card.noPrice") : new Intl.NumberFormat(lang === "es" ? "es-MX" : "en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n));
   let body: React.ReactNode;
   if (picked.kind === "parcel") {
@@ -474,7 +517,12 @@ function PickedCard({ picked, onClose, lang }: { picked: Picked; onClose: () => 
       <button type="button" onClick={onClose} aria-label={t("map.card.close")} className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded hover:bg-nx-block">
         <X aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
       </button>
-      <div className="flex flex-col gap-0.5 pr-5">{body}</div>
+      <div className="flex flex-col gap-0.5 pr-5">
+        {body}
+        <a href={streetViewUrl(picked.ll[1], picked.ll[0])} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-caption underline underline-offset-2" data-testid="map-card-street-view">
+          <PersonStanding aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />{t("map.streetView.link")}
+        </a>
+      </div>
     </div>
   );
 }

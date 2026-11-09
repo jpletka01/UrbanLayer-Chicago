@@ -31,3 +31,9 @@ export async function fetchLotOutline(pin10: string, signal?: AbortSignal): Prom
     return null;
   }
 }
+
+/** Google's public Maps link for Street View at a point (Maps URLs: no key, no account, no billing). Opens in a new
+    tab; only the coordinates leave the page. Google snaps to the nearest panorama. */
+export function streetViewUrl(lat: number, lon: number): string {
+  return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}`;
+}

@@ -313,6 +313,11 @@
     "inSentence": {
       "sales": "recent sales"
     },
-    "back": "Back to the property"
+    "back": "Back to the property",
+    "streetView": {
+      "button": "Street View",
+      "hint": "Click a street to open Street View · Esc cancels",
+      "link": "Street View (Google)"
+    }
   }
 }

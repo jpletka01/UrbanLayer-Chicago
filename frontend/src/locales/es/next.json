@@ -313,6 +313,11 @@
     "inSentence": {
       "sales": "ventas recientes"
     },
-    "back": "Volver a la propiedad"
+    "back": "Volver a la propiedad",
+    "streetView": {
+      "button": "Street View",
+      "hint": "Haga clic en una calle para abrir Street View · Esc cancela",
+      "link": "Street View (Google)"
+    }
   }
 }

@@ -622,3 +622,18 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Also (owner):** the "Loading recent sales…" tag no longer shows in the expanded map; the key's row says it.
 
 **Not changed here (a separate task):** the live Profile's district lookup (`retrieval/zoning.py`) and today's zoning maps also send and receive `4326` while our points are NAD83, so they carry the same ~1 m shift. It matters only for a point within about a meter of a district line, but it changes live answers, so it needs its own measurement on the lot panel and sentinels before any change.
+
+---
+
+## Item 94: Street View as a link out to Google (2026-11-09)
+
+**Decision (owner, "Yes, link-out"):** the new map offers Google Street View by opening Google's public Maps link in a new tab (`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=<lat>,<lon>`; Maps URLs need no key, no account and no billing; only the coordinates leave the page, and Google snaps to the nearest panorama).
+- **On every map card** (a lot, a district, a sale): "Street View (Google)", at the clicked point (a sale: its own point).
+- **In the expanded map:** a "Street View" button under the address; while on, the cursor is a crosshair and a hint says "Click a street to open Street View · Esc cancels"; the next click opens Street View there and the mode turns off (no card opens). Esc cancels without closing the expanded map. Not in the page band (no room; the card link covers it).
+- Cards opened near the map's bottom edge now open above the click.
+
+**Alternatives:** a draggable figure like Google's (about a day more for the same result as click-to-open); Street View inside the page (needs a Google API key, and Google's terms are stricter about its imagery beside another map; not worth it); Mapillary (free and open, patchy Chicago coverage).
+
+**Revisit if:** builders ask to see frontage without leaving the page (then price the Maps Embed API's Street View mode, which needs a key), or Google changes the Maps URL format.
+
+**Numbers:** checked in the browser with `window.open` stubbed: the mode's click opened `…viewpoint=41.909845,-87.677183` with `_blank` and `noopener,noreferrer`; the card link's `href` and `target="_blank"` checked; test `map/mapInfo.test.ts`.
