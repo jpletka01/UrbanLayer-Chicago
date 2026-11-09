@@ -10,6 +10,10 @@ export type PatternKind = "plus" | "dots";
 const SIZE = 10; // CSS px per repeat (sparser, owner: the lot lines must stay readable)
 const RATIO = 2;
 
+/** The dots take a color of their own (owner's try, Item 98): Coastal's Sapphire, so a planned development's gray
+    reads as a family with an accent rather than a dull gray; deeper in light, lighter in dark. */
+export const DOT_INK: Record<PatternTheme, string> = { light: "rgba(53,140,133,0.85)", dark: "rgba(140,214,206,0.75)" };
+
 export const PATTERN_IMAGE = (kind: PatternKind, theme: PatternTheme) => `pattern-${kind}-${theme}`;
 
 /** The pattern colors: the lot's ink at low opacity (toned down, owner), so the texture never competes with the lot
@@ -36,8 +40,9 @@ export function drawPattern(kind: PatternKind, theme: PatternTheme): { width: nu
     ctx.moveTo(c, c - 1.5); ctx.lineTo(c, c + 1.5);
     ctx.stroke();
   } else {
+    ctx.fillStyle = DOT_INK[theme];
     ctx.beginPath();
-    ctx.arc(SIZE / 2, SIZE / 2, 1, 0, Math.PI * 2);
+    ctx.arc(SIZE / 2, SIZE / 2, 1.2, 0, Math.PI * 2);
     ctx.fill();
   }
   const img = ctx.getImageData(0, 0, n, n);
@@ -60,7 +65,7 @@ export function addPatternImages(map: { hasImage(id: string): boolean; addImage(
 export function patternCss(kind: PatternKind, theme: PatternTheme): string {
   // Stronger than on the map: a 16 px swatch needs it to read at all.
   const ink = theme === "dark" ? "rgba(255,255,255,0.85)" : "rgba(28,28,28,0.8)";
-  if (kind === "dots") return `radial-gradient(${ink} 0.9px, transparent 1.1px) 0 0 / 4px 4px`;
+  if (kind === "dots") return `radial-gradient(${DOT_INK[theme]} 0.9px, transparent 1.1px) 0 0 / 4px 4px`;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='6' height='6'><path d='M1.5 3h3M3 1.5v3' stroke='${ink}' stroke-width='1'/></svg>`;
   return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") 0 0 / 6px 6px`;
 }
