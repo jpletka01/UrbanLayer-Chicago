@@ -365,7 +365,8 @@
         "label": "Assessor's value",
         "year": "{{year}} assessment",
         "none": "No assessments on record",
-        "chartLabel": "Assessor's value by year: {{list}}"
+        "chartLabel": "Assessor's value by year: {{list}}",
+        "latest": "{{year}}: {{value}}"
       }
     }
   },
@@ -465,7 +466,8 @@
   },
   "term": {
     "what": "What is {{term}}?",
-    "ask": "Ask about this",
-    "askLater": "Ask opens once the Profile has loaded"
+    "ask": "Ask the analyst",
+    "askLater": "Ask opens once the Profile has loaded",
+    "close": "Close"
   }
 }

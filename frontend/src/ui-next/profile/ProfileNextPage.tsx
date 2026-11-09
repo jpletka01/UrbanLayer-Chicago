@@ -240,9 +240,22 @@ function ProfileScreen({
   const previewOn = useUiVersion().version === "next";
   const verdict = useMemo(() => (data ? computeVerdict(data, tp) : null), [data, tp]);
   const [tab, setTab] = useState<TabId>("overview");
-  const [askOpen, setAskOpen] = useState(false);
+  const [askOpen, setAskOpenRaw] = useState(false);
+  // Closing slides the drawer out first (Item 99): it stays mounted for the slide, then goes.
+  const [askClosing, setAskClosing] = useState(false);
+  const closeTimer = useRef<number | null>(null);
+  const setAskOpen = (next: boolean | ((o: boolean) => boolean)) => {
+    const value = typeof next === "function" ? next(askOpen) : next;
+    if (closeTimer.current) { window.clearTimeout(closeTimer.current); closeTimer.current = null; }
+    if (value) { setAskClosing(false); setAskOpenRaw(true); return; }
+    if (!askOpen) return;
+    setAskOpenRaw(false);
+    setAskClosing(true);
+    closeTimer.current = window.setTimeout(() => setAskClosing(false), 220);
+  };
+  useEffect(() => () => { if (closeTimer.current) window.clearTimeout(closeTimer.current); }, []);
   // A question "Ask about this" wrote (Item 99); `n` remounts the drawer so the box takes it.
-  const [askDraft, setAskDraft] = useState<{ text: string; n: number } | null>(null);
+  const [askDraft, setAskDraft] = useState<{ text: string; n: number; instant: boolean } | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [mapFocused, setMapFocused] = useState(false);
   const mapButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -317,10 +330,11 @@ function ProfileScreen({
     address,
     open: (text: string) => {
       track("investigate_click", { card_name: "next_term_ask" });
-      setAskDraft((d) => ({ text, n: (d?.n ?? 0) + 1 }));
+      setAskDraft((d) => ({ text, n: (d?.n ?? 0) + 1, instant: askOpen }));
       setAskOpen(true);
     },
-  }), [ready, address]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [ready, address, askOpen]);
 
   const focusAsk = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -331,8 +345,8 @@ function ProfileScreen({
     <AppFrame
       crumbs={[t("profile.crumb"), address]}
       tools={toolsFor("top")}
-      drawer={askOpen && ready ? (
-        <AskDrawer key={askDraft?.n ?? 0} chat={chat} onClose={() => setAskOpen(false)} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} initialDraft={askDraft?.text} />
+      drawer={(askOpen || askClosing) && ready ? (
+        <AskDrawer key={askDraft?.n ?? 0} chat={chat} onClose={() => setAskOpen(false)} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} initialDraft={askDraft?.text} closing={!askOpen} instant={askDraft?.instant} />
       ) : null}
     >
       <AskContext.Provider value={askHandoff}>

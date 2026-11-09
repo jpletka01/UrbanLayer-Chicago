@@ -111,6 +111,24 @@ describe("Money", () => {
     expect(open).toHaveBeenCalledWith("What rent could units at 1601 N Milwaukee Ave get, and how good is that figure?");
   });
 
+  it("on a phone, the same definition opens as a bottom sheet with its title, the words and a quiet Ask link", async () => {
+    const open = vi.fn();
+    render(
+      <div className="ui-next">
+        <AskContext.Provider value={{ ready: true, address: "1601 N Milwaukee Ave", open }}>
+          <MoneyTab data={moneyData()} late={ready} onRetry={vi.fn()} />
+        </AskContext.Provider>
+      </div>,
+    );
+    // The second trigger is the phone's (CSS shows one per screen size; jsdom has both).
+    fireEvent.click(screen.getAllByRole("button", { name: "What is Rent nearby?" })[1]);
+    const sheet = await screen.findByTestId("term-sheet");
+    expect(within(sheet).getByRole("heading", { name: "Rent nearby" })).toBeTruthy();
+    expect(sheet.textContent).toContain("What renters nearby pay each month");
+    fireEvent.click(within(sheet).getByTestId("term-ask"));
+    expect(open).toHaveBeenCalledWith("What rent could units at 1601 N Milwaukee Ave get, and how good is that figure?");
+  });
+
   it("shows each late block's own outline while it waits, and Retry in place when it ran out of time", () => {
     const onRetry = vi.fn();
     const { rerender } = render(<div className="ui-next"><MoneyTab data={moneyData()} late={{ ...ready, money: "loading", incentives: "loading" }} onRetry={onRetry} /></div>);

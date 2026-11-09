@@ -17,6 +17,8 @@ export function AskDrawer({
   returnFocusRef,
   tabLabel,
   initialDraft = "",
+  closing = false,
+  instant = false,
 }: {
   chat: ParcelChat;
   onClose: () => void;
@@ -26,6 +28,10 @@ export function AskDrawer({
   tabLabel: string;
   /** A question written into the box by "Ask about this" (Item 99); the visitor sends it, never the page. */
   initialDraft?: string;
+  /** The page is closing the drawer: it slides out, then the page unmounts it. */
+  closing?: boolean;
+  /** Already open (a new question replaced the box): appear without sliding in again. */
+  instant?: boolean;
 }) {
   const { t } = useTranslation(["next", "chat", "common"]);
   const titleId = useId();
@@ -33,6 +39,15 @@ export function AskDrawer({
   const boxRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const AskIcon = ICON.ask;
+  // Slide in on the frame after mounting (from the right on a desktop, from the bottom on a phone); slide out while
+  // `closing`. Reduced motion skips both.
+  const [entered, setEntered] = useState(instant);
+  useEffect(() => {
+    if (entered) return;
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
+    return () => cancelAnimationFrame(id);
+  }, [entered]);
+  const shown = entered && !closing;
 
   useEffect(() => {
     const box = boxRef.current;
@@ -54,13 +69,19 @@ export function AskDrawer({
   };
 
   return (
+    // The wrapper takes the drawer's width beside the page on a desktop and animates it, so the page makes room
+    // smoothly; on a phone the drawer covers the screen and slides up.
+    <div
+      className={`lg:sticky lg:top-0 lg:h-dvh lg:shrink-0 lg:overflow-hidden lg:transition-[width] lg:duration-200 lg:ease-out motion-reduce:transition-none ${shown ? "lg:w-[clamp(360px,33vw,480px)]" : "lg:w-0"}`}
+      data-state={shown ? "open" : "closed"}
+    >
     <section
       role="dialog"
       aria-modal="false"
       aria-labelledby={titleId}
       data-testid="ask-drawer"
       onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } }}
-      className="fixed inset-0 z-50 flex flex-col gap-4 bg-nx-page p-5 lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:w-[min(33vw,480px)] lg:min-w-[360px] lg:shrink-0 lg:border-l lg:border-nx-ink/10"
+      className={`fixed inset-0 z-50 flex flex-col gap-4 bg-nx-page p-5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none lg:static lg:z-auto lg:h-full lg:w-[clamp(360px,33vw,480px)] lg:border-l lg:border-nx-ink/10 lg:translate-y-0 ${shown ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 lg:translate-x-8"}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -173,5 +194,6 @@ export function AskDrawer({
         )}
       </div>
     </section>
+    </div>
   );
 }

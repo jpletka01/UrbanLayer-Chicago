@@ -18,7 +18,7 @@ import { useAskHandoff } from "../ask/askContext";
 import { ICON, STROKE } from "../icons";
 import { numLocale, type FigureState } from "./profileModel";
 import {
-  assessorBelowSale, compsModel, moneySentence, usd, incentiveChips, rentModel, taxModel, valueHistory,
+  assessorBelowSale, compsModel, niceCeil, moneySentence, usd, incentiveChips, rentModel, taxModel, valueHistory,
   type CompsModel, type IncentiveAnswer, type LateBlockState, type RentModel, type ValueYear,
 } from "./moneyModel";
 
@@ -332,30 +332,44 @@ function SalesList({ sales }: { sales: CompsModel["sales"] }) {
 
 // ── The Assessor's value by year ───────────────────────────────────────────────────────────────────────
 
-/** SnowUI's column chart: gray-green (Sapphire) columns, this lot's latest year in black, the year under every
-    column and the latest value above it. */
+/** SnowUI's column chart: a dollar scale on the left with faint gridlines (0, half, top), Sapphire columns, this
+    lot's latest year in black, the year under every column and the latest value above it. */
 function ValueColumns({ years }: { years: ValueYear[] }) {
   const { t, i18n } = useTranslation("next");
   const lng = i18n.language;
-  const max = Math.max(...years.map((y) => y.total));
+  const top = niceCeil(Math.max(...years.map((y) => y.total)));
+  const ticks = [top, top / 2, 0];
   const last = years[years.length - 1];
   return (
     <figure className="flex flex-col gap-2">
-      <div className="flex h-36 items-end gap-2" role="img" data-testid="value-bars"
-        aria-label={t("profile.money.value.chartLabel", { list: years.map((y) => `${y.year}: ${usd(y.total, lng)}`).join(", ") })}>
-        {years.map((y) => {
-          const isLast = y === last;
-          return (
-            <div key={y.year} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${y.year}: ${usd(y.total, lng)}`}>
-              {isLast && <span aria-hidden className="text-caption font-semibold tabular-nums">{usdShort(y.total, lng)}</span>}
-              <span className={`block w-full max-w-10 rounded-t-md ${isLast ? "bg-nx-lot" : "bg-nx-chart-1"}`} style={{ height: `${Math.max(4, (y.total / max) * 100)}%` }} />
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
+        <div aria-hidden className="flex h-36 flex-col justify-between text-right text-caption nx-muted tabular-nums" data-testid="value-scale">
+          {ticks.map((v) => <span key={v} className="-my-2 leading-4">{usdShort(v, lng)}</span>)}
+        </div>
+        <div className="relative h-36">
+          {ticks.map((v) => (
+            <span key={v} aria-hidden className="absolute inset-x-0 border-t border-nx-ink/10" style={{ bottom: `${(v / top) * 100}%` }} />
+          ))}
+          <div className="absolute inset-0 flex items-end gap-2" role="img" data-testid="value-bars"
+            aria-label={t("profile.money.value.chartLabel", { list: years.map((y) => `${y.year}: ${usd(y.total, lng)}`).join(", ") })}>
+            {years.map((y) => {
+              const isLast = y === last;
+              return (
+                <div key={y.year} className="relative flex h-full min-w-0 flex-1 flex-col items-center justify-end" title={`${y.year}: ${usd(y.total, lng)}`}>
+                  <span className={`block w-full max-w-10 rounded-t-md ${isLast ? "bg-nx-lot" : "bg-nx-chart-1"}`} style={{ height: `${Math.max(2, (y.total / top) * 100)}%` }} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <span aria-hidden />
+        <div aria-hidden className="mt-2 flex gap-2 text-caption nx-muted tabular-nums">
+          {years.map((y) => (
+            <span key={y.year} className={`min-w-0 flex-1 text-center ${y === last ? "font-semibold text-nx-ink" : ""}`}>{`’${String(y.year).slice(2)}`}</span>
+          ))}
+        </div>
       </div>
-      <div aria-hidden className="flex gap-2 text-caption nx-muted tabular-nums">
-        {years.map((y) => <span key={y.year} className="min-w-0 flex-1 text-center">{`’${String(y.year).slice(2)}`}</span>)}
-      </div>
+      <figcaption className="text-caption nx-muted">{t("profile.money.value.latest", { year: last.year, value: usd(last.total, lng) })}</figcaption>
     </figure>
   );
 }

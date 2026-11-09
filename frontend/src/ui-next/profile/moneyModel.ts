@@ -95,6 +95,16 @@ export function assessorBelowSale(data: ScorecardResponse, now = new Date()): { 
   return { pctBelow: Math.round((1 - mv / sale.price) * 100), saleYear: sale.date!.slice(0, 4), salePrice: sale.price };
 }
 
+// ── Chart scales ───────────────────────────────────────────────────────────────────────────────────────
+
+/** A round top for a chart's scale (1, 2, 2.5 or 5 × a power of ten) at or above `max`. */
+export function niceCeil(max: number): number {
+  if (max <= 0) return 1;
+  const p = 10 ** Math.floor(Math.log10(max));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= max) return m * p;
+  return 10 * p;
+}
+
 // ── Comparable sales ───────────────────────────────────────────────────────────────────────────────────
 
 export interface CompsModel {

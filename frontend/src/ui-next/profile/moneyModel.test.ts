@@ -99,3 +99,13 @@ describe("numbers in Spanish (Item 82)", () => {
     expect(fmtInt(11250, "en")).toBe("11,250");
   });
 });
+
+describe("chart scale", () => {
+  it("rounds the top up to 1, 2, 2.5 or 5 times a power of ten", async () => {
+    const { niceCeil } = await import("./moneyModel");
+    expect(niceCeil(619_000)).toBe(1_000_000);
+    expect(niceCeil(3_480_000)).toBe(5_000_000);
+    expect(niceCeil(1_592_480)).toBe(2_000_000);
+    expect(niceCeil(240_000)).toBe(250_000);
+  });
+});

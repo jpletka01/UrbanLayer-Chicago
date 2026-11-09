@@ -365,7 +365,8 @@
         "label": "Valor del Tasador",
         "year": "Tasación {{year}}",
         "none": "No hay tasaciones registradas",
-        "chartLabel": "Valor del Tasador por año: {{list}}"
+        "chartLabel": "Valor del Tasador por año: {{list}}",
+        "latest": "{{year}}: {{value}}"
       }
     }
   },
@@ -465,7 +466,8 @@
   },
   "term": {
     "what": "¿Qué es {{term}}?",
-    "ask": "Preguntar sobre esto",
-    "askLater": "Podrá preguntar cuando el Perfil termine de cargar"
+    "ask": "Preguntar al analista",
+    "askLater": "Podrá preguntar cuando el Perfil termine de cargar",
+    "close": "Cerrar"
   }
 }
