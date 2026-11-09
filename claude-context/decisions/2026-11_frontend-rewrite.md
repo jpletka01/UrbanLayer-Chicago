@@ -493,5 +493,213 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - Warm (run b): Overview 31 ms p50 / 1.56 s p95 on exact parcels; whole Profile 2.6 s p50 (its p95 20 s = sources still past the deadline from the cold visit, by design).
 - First screen (run b, cold): 3.58 s p50 / 10.11 s p95.
 - Approximate parcels wait on County GIS (Item 81 point 3, about 10 s), so their Overview is reported apart.
-- **Not measured:** run b's full panel with the last fixes (the owner asked for no more hour-long local runs); production (after deploy, one visit at a time, as in Item 87; the `scorecard part timings` lines give the per-part split).
+- **Production, after the deploy** (2026-11-08, PR #210 merged as `3d5025b`; `parts-prod-2026-11-08`; 4 addresses nobody had opened, one visit at a time from a home connection outside the US through Cloudflare, each visited twice, as in Item 87): first screen 1.4–7.6 s (p50 2.1 s); **Overview on exact parcels 3.1, 7.2 and 7.9 s** (n=3; one approximate match 11.7 s); whole Profile 22.6–32.8 s (p50 25.0 s), a few seconds over Item 87's single response (20.4 s p50), the expected cost of starting the late parts after the Overview; deadline fired twice in 4 first visits (City lists once, 311 once). Repeat visits: Overview 0.6–2.1 s, whole Profile 2.1–4.0 s. n=3 can't show a p95; the server's `scorecard part timings` lines (the owner pulls them, as for this Item's first numbers) are the next read.
+- **Not measured:** run b's full panel with the last fixes (the owner asked for no more hour-long local runs).
 - The eval script can hang at interpreter exit on idle worker threads after writing its results (seen once, local); it is not a request path.
+
+---
+
+## Item 90: Phase 5 (M1), the map stack: MapLibre over a base made from the City's own streets (2026-11-08)
+
+**Status: decided by the owner on the measurements below (2026-11-08), before any of the look was built.**
+
+**Decision: the new UI's maps run on MapLibre GL (6.15) with our own vector tiles and our own style document; deck.gl stays (`MapboxOverlay` works on MapLibre).** Owner's pick over keeping Mapbox with a custom style. Today's pages keep Mapbox until their routes flip (Phase 10 deletes it with the old UI).
+
+**Decision: the base is ours, cut from government data.** Roads from the City's street centerlines (`pr57-gg9e`: 57k segments, `class` 1 expressway, 2 arterial, 3 collector, 4 local, street names, one-way, z-levels; rows last updated 2021), with parks, the lake and the river, drawn dimmed in light and dark. Chicago only: outside the city the map is a plain dim fill. Owner's pick over a hosted OpenStreetMap vector base (OpenFreeMap: free, keyless, no SLA) and a keyed raster like the reference's.
+
+**Decision: street names use Noto Sans glyphs committed to the repo** (Latin ranges from `protomaps/basemaps-assets` at commit `028c18f`, SIL Open Font License, license file beside them), served by us. Owner's pick over OpenFreeMap's font server.
+
+**Decision: only the Profile's map moves in Phase 5;** Discovery's map moves with its route in Phase 6 (owner). **The builder test stays undated** (Item 88; owner).
+
+**Evidence (2026-11-08, this Mac: Playwright Chromium on the real GPU, ANGLE Metal / Apple M4 Pro; cache off).** Same view on every stack: 1601 N Milwaukee at zoom 16 with our parcel tiles (community areas 22 and 24, built from the citywide 2026-10-29 index). Desktop 1440×900 at 2×; "phone" 390×844 at 3×, touch, CPU slowed 4×. Frame rate = frame intervals over an 8 s scripted pan and zoom between zooms 14.5 and 17. First view = bytes transferred until the map first went idle.
+
+| Stack | Library (gzip) | Base, first view: desktop / phone | Our parcels: desktop / phone | Frame rate: desktop / phone |
+|---|---:|---:|---:|---|
+| Mapbox GL 3, `light-v11`/`dark-v11` (today) | 511 KB (worker inside) | ≈442 / ≈288 KB | 81 / 44 KB | 60 / 60 fps, p95 16.8 ms, no frame over 50 ms |
+| MapLibre 6.15 + OpenFreeMap vector | 285 + 143 KB worker = 428 KB | ≈560 / ≈408 KB (incl. a 120 KB sprite) | 81 / 44 KB | 60 / 60 |
+| MapLibre 6.15 + CARTO raster, dimmed | 428 KB | 73–89 / 31–38 KB | 81 / 44 KB | 60 / 60 |
+| MapLibre + the City's streets (estimate) | 428 KB | zoom-16 view: 516 segments, 14 KB as gzipped GeoJSON | 81 / 44 KB | not measured |
+
+- **Frame rate didn't separate the stacks** on this machine (the CPU slow-down doesn't slow the GPU); a real phone is the check that counts.
+- **The base is the heavy part of a first view**; a hosted vector base costs 300–560 KB, our streets about 15 KB close in.
+- **CARTO's free raster tiles now carry "API KEY REQUIRED" watermarks**, so a raster base like the reference's means a keyed or paid service.
+- **Mapbox bills per map load** (each `new Map()`; about 50,000 a month free, then roughly $5 per 1,000 per third-party pricing write-ups; not confirmed on mapbox.com). MapLibre with our tiles has no per-load bill.
+- `mapbox-gl` rides in today's main chunk (the app imports every page eagerly), so a `?ui=next` visitor downloads both libraries until today's maps load lazily or are deleted; that split is a separate, cheap win (not done here).
+
+**Revisit if:** a real phone drops frames on the new map; the City stops publishing street centerlines or they fall far behind (then OpenFreeMap or Protomaps tiles of OSM roads, attributed); Mapbox's billing stops mattering.
+
+**Numbers:** above; harness (bench page, tile server, Playwright runner) kept in the session notes, not in the repo.
+
+---
+
+## Item 91: Phase 5 (M1–M3), the one map: our tiles, its gates, and what it does (2026-11-08)
+
+**Status: built on `feat/ui-next-phase-5-maps`, checked locally; waiting for the owner's look review against the Cities: Skylines reference in light and dark (Item 80's gate).** Production also needs the two tile files built once on the server (below).
+
+**Decision: three tile sets, all ours, served by one route.** `GET /api/map/tiles/{base|zoning}/{z}/{x}/{y}.mvt` (MBTiles on the `backend/data` volume, 404 = not installed, 204 = empty, gzipped, a day of caching) plus Discovery's parcel tiles (Item 68) for the lots; `GET /api/map/info` says which are installed. The encoder is Item 68's hand-written one, extended with lines, points, several layers per tile and per-layer minimum zooms (`backend/map_tiles/tiler.py`); no new dependency.
+- **Base** (`base_tiles.py`, zooms 10–16): the City boundary as land, water incl. the lake (`knfe-65pw`), Park District parks (`ejsh-fztr`, from 11) and street centerlines (`pr57-gg9e`) as highway / major / minor / local / ramp with sign-style names (arterials from 10, collectors and ramps from 12, locals from 13). Lower-level streets, river lines, runways and proposed/vacated/closed segments are left out and counted. Citywide: 54,557 road segments, 617 parks, 605 water shapes, 8.4 MB, 72 s; largest tile 3.9 KB at 16, 15 KB at 14.
+- **Zoning** (`zoning_tiles.py`, zooms 13–16): the City's Zoning MapServer layer 1, all 15,043 districts with their source attributes (zone class and type, ordinance number and date, case number, PD number, PMD sub-area, Clerk document number; staff user ids are not copied), plus a `family` and intensity `level` for color, and one label point per district part (polylabel, from a zoom by size). 11.3 MB, 18 s; largest tile 93 KB at 13, 8.8 KB at 16.
+
+**Decision: zoning is never simplified.** Shared-edge simplification (`coverage_simplify`) was tried and refused: the City's layer is not a valid coverage (`coverage_is_valid` false; 124 districts needed repair), so its output can't be trusted. The tiles carry the source polygons quantized only to the tile grid (about 0.9 m at zoom 13, 0.1 m at 16), which ends the sliver problem (research/15 §1.2) and can't move a lot's district. Cost: payload at zoom 13 (93 KB tiles), hence zoning starts at 13. Streets stay visible because roads draw above zoning, never by clipping zoning to blocks. *Alternatives:* per-feature simplification (the old slivers), clipping zoning to blocks (rejected in Item 75).
+
+**Gate: boundary accuracy** (`PYTHONPATH=. python -m eval.zoning_tile_accuracy --boundary 400`, no network, 7 s). For the lot panel (97 of 100 with an outline), the 13 data-health sentinels and 400 seeded boundary parcels (a PTAXSIM outline touching two or more districts), the district by largest share and at the representative point, from the source and from the decoded tiles at each zoom 13–16: **0 differences in 2,040 comparisons; all 13 sentinels match their answer key.** A recorded-fixture test does the same on a point grid at every zoom (`test_map_tiles.py`).
+
+**Decision: one MapLibre map per page, never remounted** (`ui-next/map/NextMap.tsx`). The Profile hands it the active tab's `view` (camera + On / Dim / Off): Overview = zoom 17 at the lot, zoning dimmed, lots, recent sales and transit on; Build = zoom 15.6, zoning on, sales off, transit dimmed. A visitor's choice holds until the tab changes. Camera moves ease, or jump under reduced motion, and never take focus. **A theme switch repaints every layer in place** (`themePaint`), so sources, feature state, the camera and the key survive it (no style reload). The Playwright check still finds the same canvas across every Profile swap.
+- **Look** (`mapStyle.ts`): light = pale cool land with streets as white gaps and warm arterials; dark = dim gray land with the reference's warm arterials and quiet gray side streets; zoning in Item 74's provisional family hues, four steps darker as intensity rises, fill 0.42 light / 0.30 dark, thin same-hue outlines; parcel lines at 14–16% ink; street names from zoom 15; district codes as labels; this lot black with a white edge (white with a dark edge in dark), dashed when the match is approximate.
+- **The key builds itself:** one row per layer with something to show, its count on screen ("14 districts", "285 lots", "1 station"), On / Dim / Off (Dim = opacity × 0.3), and the districts in view with their colors. It starts collapsed on a map under 440 × 640 px (the Profile's band) and open on the expanded map.
+- **Every outline opens something:** a lot → its address, use and "Open its Profile" (`/api/discovery/parcel` by PIN10), and the lot is marked; a district → its code and ordinance; a sale → price and date. The lot's own outline is marked in the parcel layer by feature-state (exact matches only).
+- **Late layers follow Item 89's skeleton rule:** recent sales wait on the `money` part; the map says "Loading recent sales…" in place, and "Couldn't check recent sales in time · Retry" when the source passed the deadline.
+- **Failure states:** no WebGL → a note in the map's place, the page works; no base file → "Street map not installed" over the parcels and zoning; a lost GL context is swallowed so the browser restores it. *Not shown:* Sentry's "Failed to initialize WebGL" can only be checked after deploy.
+
+**Gate: first-view payload** (this Mac, local stack built the production way with relative API URLs, cache off; transferred bytes until the map settled). Library: MapLibre 285 KB + worker 143 KB gzip (Mapbox was 511 KB; both still ship until today's maps load lazily, Item 90).
+
+| View | Base | Zoning | Lots | Glyphs | Total map data |
+|---|---:|---:|---:|---:|---:|
+| Before (Item 90): Mapbox `dark-v11`/`light-v11`, desktop / phone | ≈442 / ≈288 KB | – | – | (inside) | ≈442 / ≈288 KB |
+| Overview, desktop (zoom 17) | 6.5 KB | 21.4 KB | 29.3 KB | 150.6 KB* | 208 KB* |
+| Overview, phone | 3.1 KB | 11.8 KB | 14.4 KB | 150.6 KB* | 180 KB* |
+| Build, desktop (zoom 15.6; after the Overview) | 21.6 KB | 72.5 KB | 128.9 KB | – | 223 KB |
+| Build, phone | 9.1 KB | 33.5 KB | 60.3 KB | – | 103 KB |
+
+*Measured with two font weights from the dev server, uncompressed. Since then the second weight is dropped and nginx gzips glyphs (one 0–255 range: 76 KB raw, 46 KB gzipped), so production should spend roughly 50–60 KB on glyphs; to re-measure after deploy.
+
+**Gate: frame rate.** 60 fps with no frame over 50 ms on this Mac for every stack (Item 90); the page's map is the same engine and tiles. **Not measured on a real phone** (owner's phone at the localhost review, or after deploy).
+
+**Gate: coverage.** Base and zoning cover the whole city; lots = Discovery's tiles (604,220 outlines, 0.14% of PIN10s without one, Item 68).
+
+**Production steps (once, on the server, then monthly with the index timer later):** `docker compose run --rm --no-deps backend python -m backend.map_tiles.base_tiles` and `... python -m backend.map_tiles.zoning_tiles` (they read the City portal and the zoning layer; outputs and a source copy land in `backend/data/`). Until then the new map shows "Street map not installed" with lots only. Also new in this change: the CSP allows same-origin workers (`worker-src 'self' blob:`, MapLibre's worker) and nginx serves `/map/fonts/` gzipped with a month's caching (not syntax-checked locally: no Docker or nginx on this Mac).
+
+**Not done, for later:** a refresh timer and data-health sources for the two tile files (zoning changes with every passed map amendment; the base rarely); Discovery's map (Phase 6, owner); the zoning palette's final check at real size by the owner (Item 74 still calls it provisional); deck.gl isn't used by the new map (nothing needed it yet).
+
+**Revisit if:** the owner's review asks for a different look; a phone drops frames; zoning tiles at zoom 13 matter (then a valid shared-edge simplification after repairing the coverage, re-run through the accuracy gate).
+
+**The owner's first look (2026-11-08), changed the same day:**
+- **On / Off only.** Dim is gone ("it looks much better with On"); zoning is on in both tabs. With zoning dimmed, the side streets and the districts had blurred into one shade.
+- **Streets at their real width.** From zoom 14 up each street class is drawn in ground metres (local 16 m, collector 20, arterial 24, expressway 34, ramp 8: a little under Chicago's usual right-of-way), scaling with the map, so a street fills the gap between the lots on either side. Below 14 they keep a readable minimum. In dark the side streets are lighter grays (`#6B7178` / `#8A9097`) so every street shows, not only the arterials.
+- **Map controls like a full-page map.** No +/- buttons. In the expanded map the wheel zooms at once; in the page band the wheel still scrolls the page until the map is clicked (so the page can't get stuck on the map). The expand button sits in the bottom-right corner.
+- **"Back to the property"** appears once the lot leaves the middle of the view or the zoom moves more than 1.5 steps from the tab's; it eases back (jumps under reduced motion).
+- **The key fits the band:** it scrolls inside the map's height instead of running off it.
+- **Why the lot looks wavy (found, not changed):** PTAXSIM stores every parcel outline rounded to 5 decimals (about 1 m), so straight edges step. The County's own parcel layer has full precision (`77tz-riq7`, the 2021 vintage, the newest published with geometry). Swapping the source for the map's lot and lot tiles is the owner's call.
+- **How the reference draws roads and buildings:** OSM street centerlines as colored lines of set pixel widths per class over building footprints (OSM buildings); streets read as gaps because the fills are buildings, not lots. Building footprints for us would come from the City's footprints (`syp8-uezg`, last updated 2015) or an outside source; the owner's call.
+
+---
+
+## Item 92: the map draws lots from the County's full-precision outlines where they still match (2026-11-08)
+
+**Decision (owner, "Yes, switch outlines", 2026-11-08): the new map draws each lot from the County's GIS parcel layer at full precision, and falls back to PTAXSIM's outline only where the County's no longer describes today's lot.** PTAXSIM stores every outline rounded to 5 decimals (about 1 m), so a straight edge drew as small steps (the owner's "wave" on 1601 N Milwaukee). The County's newest layer published with geometry is 2021 (`77tz-riq7`, "ccgisdata - Parcel 2021").
+- **The rule** (`backend/map_tiles/county_outlines.py`, `still_matches`): the County's outline is used when its area is within 10% of PTAXSIM's newest outline and the two overlap by at least 85% (intersection over union). A lot split, merged or redrawn since 2021 keeps PTAXSIM's newer outline.
+- **Where it applies:** the lot tiles (`parcel_tiles.load_parcels` reads the local copy when it exists; Discovery's map draws the same tiles, so its outlines sharpen too) and the subject lot (`GET /api/map/lot?pin10=`, which the new map uses in place of the page's rounded outline). MapLibre's own GeoJSON simplification is off for the lot (`tolerance: 0`).
+- **Where it doesn't:** land area, every Profile figure, capacity, the report and chat still read PTAXSIM exactly as before. This is drawing only.
+- **The copy:** `python -m backend.map_tiles.county_outlines` reads Chicago's 612,202 rows (604,830 PIN10s; pieces of one PIN10 united), refuses a read under 500,000 rows, and writes `backend/data/county_outlines_2021.db` (108 MB, 99 s) atomically.
+
+**Numbers (this Mac, citywide, 2026-11-08):** of 604,220 lot outlines, **593,658 (98.3%) now draw the County's outline** and 10,562 keep PTAXSIM's; tile file 28.7 MB (largest tile 74 KB at zoom 14, 10 KB at 16); 133 s. The lot endpoint returns the County outline for 1601 N Milwaukee (12 vertices at full precision, where PTAXSIM's had 15 steps). Zoning accuracy (Item 91) is unaffected: it reads PTAXSIM outlines on purpose, the same lots the Profile reasons about.
+
+**Alternatives:** keep PTAXSIM (the wave stays); the County's live GIS service (times out, Known Issues); smoothing PTAXSIM's outlines (changes the shapes, rejected).
+
+**Production:** once on the server, `docker compose run --rm --no-deps backend python -m backend.map_tiles.county_outlines`, then rebuild the lot tiles (`... python -m backend.discovery.parcel_tiles`; the monthly index rebuild also picks the copy up from then on). Without the copy everything draws PTAXSIM's outlines, as today.
+
+**Revisit if:** the County publishes a newer parcel layer with geometry (swap the dataset id and re-fetch); the fallback share grows past about 5% (the copy has aged); a lot's two outlines disagree in a way the 85% rule misses.
+
+**The owner's second look (2026-11-08):**
+- **Tried and reverted the same day (owner):** near-black side streets in dark, and parks and water redrawn in a new green and blue. The owner preferred the earlier street grays and park green ("the colors aren't in harmony").
+- **Kept: water draws above the zoning fill.** The City zones lagoons with their parks (POS), and the zoning fill covered the water, so a lagoon barely showed. Now water draws over zoning in its original color; parks stay under the zoning, so their green is the POS fill over the park color, as before.
+- **Why some streets are colored:** the City's own centerline class (`pr57-gg9e`): North, Chicago and Ashland are class 2 arterials (warm); Damen, Division and Milwaukee are class 3 collectors (drawn gray like side streets). The owner: no change needed.
+- **Wheel zoom on the first turn after Expand:** growing the map to full screen fired a pointer-leave event that switched the wheel off; it now turns back on when the pointer moves over the expanded map (checked: the first turn zooms 17 → 16.4).
+- **Not resolved:** what the owner saw as park buildings versus parkland. The map draws no buildings yet; footprints are a separate decision (Item 91, above).
+- **Noted for later (owner):** a land-use map with surface parking: map track M5 (Phase 7); CMAP's 2020 Land Use Inventory has a surface-parking category.
+
+---
+
+## Item 93: zoning on the new map comes in NAD83, so it sits on the lot lines (2026-11-08)
+
+**Found by the owner:** zoning sat consistently a little west and north of the lot lines (under a meter).
+
+**Cause:** the City's Zoning MapServer stores districts in Illinois State Plane East on NAD83 (`wkid 102671` / `3435`). Asked for `outSR=4326` (WGS84), the server applies a NAD83→WGS84 datum shift: in Chicago about 0.48 m west and 0.87 m north (measured on one district: 4326 `-87.70426365, 41.81542837` vs 4269 `-87.70425788, 41.81542054`). Every other layer the map draws (the County's parcels, the City portal's streets, parks, water) is NAD83 latitude/longitude as published, with no shift.
+
+**Decision:** the zoning tiles request `outSR=4269` (NAD83) (`zoning_tiles.OUT_SR`). Measured on 4,363 zoning boundary points in three neighborhoods against the nearest County lot edge: mean offset **+0.05 m east, +0.10 m north, median 0.00 m** (before: about 0.5 m west and 0.8 m north of the lot lines, median about 1 m).
+
+**Accuracy gate re-run** (`eval.zoning_tile_accuracy --boundary 400`): 0 differences in 2,040 comparisons. With zoning and lots now coinciding, a few sample points fall within one tile unit of a district line (10 at zoom 13, 6 at 14, 3 at 15, 1 at 16): those are counted and compared by area only, because tile coordinates can move an edge by up to one unit (0.9 m at 13, 0.1 m at 16). The one zoom-13 point that differed was 0.18 m from a line; its lot's district by area matched.
+
+**Also (owner):** the "Loading recent sales…" tag no longer shows in the expanded map; the key's row says it.
+
+**Not changed here (a separate task):** the live Profile's district lookup (`retrieval/zoning.py`) and today's zoning maps also send and receive `4326` while our points are NAD83, so they carry the same ~1 m shift. It matters only for a point within about a meter of a district line, but it changes live answers, so it needs its own measurement on the lot panel and sentinels before any change.
+
+---
+
+## Item 94: Street View as a link out to Google (2026-11-09)
+
+**Decision (owner, "Yes, link-out"):** the new map offers Google Street View by opening Google's public Maps link in a new tab (`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=<lat>,<lon>`; Maps URLs need no key, no account and no billing; only the coordinates leave the page, and Google snaps to the nearest panorama).
+- **On every map card** (a lot, a district, a sale): "Street View (Google)", at the clicked point (a sale: its own point).
+- **In the expanded map:** a "Street View" button under the address; while on, the cursor is a crosshair and a hint says "Click a street to open Street View · Esc cancels"; the next click opens Street View there and the mode turns off (no card opens). Esc cancels without closing the expanded map. Not in the page band (no room; the card link covers it).
+- Cards opened near the map's bottom edge now open above the click.
+
+**The owner's first try (2026-11-09): it often opened the alley behind the lot, not facing the building.** Google opens the panorama nearest the point it is sent, and a point inside a lot is often nearer the alley. Now the viewpoint is moved onto the street first (`map/streetView.ts`, `viewpointFor`): for a lot, the nearest spot on its own address street (the address from the lot lookup, matched to the City centerline names in our base tiles); otherwise the nearest named, non-expressway street; within 60 m, else the point as clicked. The link carries a `heading` facing the clicked place. Checked on 1530 N Milwaukee Ave: the link stands 0.0 m from N Milwaukee Ave's centerline facing 220° (toward the lot). Tests: `map/streetView.test.ts`.
+
+**Alternatives:** a draggable figure like Google's (about a day more for the same result as click-to-open); Street View inside the page (needs a Google API key, and Google's terms are stricter about its imagery beside another map; not worth it); Mapillary (free and open, patchy Chicago coverage).
+
+**Revisit if:** builders ask to see frontage without leaving the page (then price the Maps Embed API's Street View mode, which needs a key), or Google changes the Maps URL format.
+
+**Numbers:** checked in the browser with `window.open` stubbed: the mode's click opened `…viewpoint=41.909845,-87.677183` with `_blank` and `noopener,noreferrer`; the card link's `href` and `target="_blank"` checked; test `map/mapInfo.test.ts`.
+
+---
+
+## Item 95: points as pins, a key that explains zoning by color family, and "Show" for off-screen points (2026-11-09)
+
+**From the owner's review:**
+- **Recent sales and transit are map pins** (`map/pins.ts`), like Google Maps': a teardrop with a white edge and a soft shadow, its tip on the point, a white Lucide icon inside ($ for a sale, a train for a station), 32 × 42 px drawn at 2x, slightly smaller below zoom 15.5; drawn above every other layer, labels included, never hidden by collision. Sales use Coastal's Spruce `#355E58` and stations ink `#1C1C1C` (Item 74: maps use Sapphire, Spruce and black). They replace 6 px dots that disappeared under the zoning fills. Our own icons, not Google's yellow figure or pin art.
+- **Points out of view are said, not lost.** The owner could find only one of three sales: all three sat about half a mile north of the lot (0.44–0.53 mi), outside the default view. When some of a group's points are off screen the key says "0 of 3 in view" with **Show**, which fits the map to the lot and those points.
+- **The key explains zoning by color family**, for the families in view (Residential, Business and commercial, Manufacturing, Downtown, Planned development, Parks and open space, Transportation), each with a lighter and a darker swatch and "Darker = more intensive (taller, denser)", instead of up to eight individual district codes. The codes stay on the map as labels.
+- **Kept simple (owner):** no drag-a-figure Street View; the card link and the expanded-map mode are enough.
+
+**Numbers:** checked in the browser at 1601 N Milwaukee Ave (dark): key reads "Recent sales 0 of 3 in view · Show", "Transit 1 of 3 in view · Show"; Show framed the lot and all three sale pins. Tests: `mapStyle.test.ts` (pins are the top two layers), `streetView.test.ts`, `mapInfo.test.ts`.
+
+---
+
+## Item 96: the property stands out, and gets its own pin when zoomed out (2026-11-09)
+
+**From the owner's review:** the lot was only a slightly different shade from its neighbors, and it disappears when the map is zoomed out.
+- **The lot stands out:** a fill in "this lot" ink over the zoning (black at 30% in light, white at 32% in dark), a wider contrasting edge (6.5 px) and a 3 px line (was 5 px and 2.5 px, no fill). Approximate matches stay dashed.
+- **The property's own pin** (`lot-pin`) below zoom 15.5 (where a lot is roughly 15-30 px wide): a house in "this lot" ink, black with a white edge in light and white with a black edge in dark, on top of every other pin. A theme switch swaps its image in place (a layout property, set beside the paint).
+
+**Numbers:** checked in the browser at 1601 N Milwaukee Ave in dark and light, close in (no pin, filled lot) and zoomed out (house pin above the sales and station pins). Test: `mapStyle.test.ts` (the property's pin is the top layer).
+
+**Color-blind check (owner's question, 2026-11-09; measured, nothing changed yet).** The zoning fills as drawn (family color at 42% over the light land, 30% over the dark), Machado 2009 simulation, OKLab ΔE×100 (under about 6 is hard to tell apart; 6-10 needs labels):
+- Even with full color vision some families sit close because the fills are pale: downtown vs transportation 3.5, residential vs planned development 3.6, park vs planned 4.0 (light; dark slightly lower).
+- **Protanopia:** business vs transportation 1.0 (the same color), park vs planned 3.0, downtown vs transportation 3.1, residential vs planned 3.4. **Deuteranopia:** park vs planned 2.2, downtown vs transportation 2.9, residential vs planned 3.0. **Tritanopia:** residential vs planned 1.7, park vs planned 2.5.
+- The weak pairs mostly involve the two gray families (planned development, transportation).
+- **What already does not depend on color:** every district's code is on the map as a label (by size, from zoom 13), a click names the district, and the lot (light/dark fill and outline), the pins (icon shapes: $, train, house), the streets (width) and the approximate-match dash all read by lightness or shape.
+- **Candidate fix, for the owner:** a texture for the two gray families (a light diagonal hatch for planned development, a dotted fill for transportation) so they no longer depend on hue, leaving the main colors as they are.
+
+---
+
+## Item 97: textures for the two gray zoning families (2026-11-09)
+
+**Decision (owner, "Yes, add textures", after the color-blind check in Item 96):** planned development gets a light diagonal hatch and transportation a dot grid (`map/patterns.ts`, layer `zoning-texture` over their fill), in the lot's ink at low opacity (black ~40% in light, white ~38% in dark); the key's swatches show the same textures. The colors themselves are unchanged.
+
+**Changed the same day (owner):** the hatch became small separate "+" marks (3 px arms on an 8 px grid): continuous lines, diagonal or straight, read like the lot lines they sit among. Transportation keeps its dots. The key's swatches use a stronger ink so the marks read at 16 px.
+
+**Changed again (owner):** planned development's fill moved from gray `#C9CED6` to Coastal's Bubblegum `#FDC1B4` (the gray took over downtown, where most districts are PDs). Of seven candidates measured against the other families as drawn, it stands furthest from all of them (min ΔE×100 5.0 light / 4.3 dark, vs residential); the "+" marks keep it apart for color-blind readers. Not yet looked at downtown in the browser (usage limit).
+
+**Effect:** the weakest pairs (business vs transportation ΔE 1.0 under protanopia; park, residential or downtown vs the grays at 1.7-4.0 under the three deficiencies) are now told apart by texture, not hue. Checked in the browser: the marks on PD 1235/1258/58 (and, before the change, hatching on PD 569/847) in light and dark; dots on the 606 trail's transportation strip.
+
+**What still depends on color (measured, ΔE×100 of the fills as drawn):** among the five colored families the closest pairs are residential vs downtown 3.6 (protanopia, light), business vs manufacturing 4.2 (deuteranopia) and 3.5 (tritanopia), residential vs park 3.2 (tritanopia, dark); with full color vision residential vs business is 6.4 light / 5.5 dark. These lean on the district-code labels and the click card. Residential and downtown are rarely neighbors.
+
+**Revisit if:** a color-blind tester still confuses business and manufacturing (then a second texture for manufacturing, or Item 74's "Teal and coral" alternative, which passes the color-blind check more cleanly).
+
+---
+
+## Item 98: parks read as parks, the two textures swapped and softened, failed tiles retried (2026-11-09)
+
+**From the owner's review:**
+- **Parks zoned as planned developments looked like downtown.** The City zones some lakefront parks as PDs (Northerly Island PD 618; the Museum Campus PDs 664, 778, 794; Millennium Park PD 677), so they took the PD color. The Park District's outlines now draw over the zoning fill and textures in the open-space look (`park-top` = the park color, `park-tint` = the POS green at the zoning opacity, part of the Zoning group); district outlines and labels stay above, so a park's zoning code is still on the map. Millennium Park is run by the City, not the Park District, so it is not in that layer and keeps its PD look (said, not hidden). Checked: the Museum Campus parks read green with their PD labels.
+- **The two textures swapped, and planned development took transportation's look** (owner: the gray with dots suits the far more common PDs): planned development = gray `#8F959C` with dots; transportation = Bubblegum `#FDC1B4` with "+" marks.
+- **Softer textures:** ink at about 23% instead of about 40%, a 10 px repeat instead of 8, dots of radius 1 px, so the lot lines stay readable through them.
+- **Square holes after zooming out and in (owner, at 1259 N Wood St).** Not reproduced here; every tile in the three files decodes with MapLibre's own parser (`@mapbox/vector-tile`: 4,309 zoning, 6,387 base, 4,143 lot tiles, 0 failures), the server logged no errors and only the two empty lake tiles are absent at zoom 13. The likely cause is a tile request that failed during a fast zoom: MapLibre does not retry it, which leaves exactly one tile-sized gap. The map now reloads that source's tiles 1.5 s after a tile error (at most every 4 s) and logs other map errors as warnings. **Revisit if** a hole still appears: note the address and theme, and check the console.
+
+- **Tried (owner's question, pending his call):** the planned-development dots in Coastal's Sapphire (deeper teal in light, lighter in dark) instead of ink, radius 1.2 px; the fill stays gray. At this size the color reads as a faint accent rather than a pop; a stronger effect would need bigger or denser dots, which start to compete with the lot lines again.
+
+**Planned development, in one line (owner's question):** a site-specific zoning district Council adopts by ordinance for a large or special project (required above certain size or height thresholds, along the lakefront and in some downtown areas), with its own rules on uses, height and density in place of the base district's; it can cover a single building or a whole campus, and its number points to that ordinance.
+
+**Owner's call on the teal dots (2026-11-09): back to gray** (the try was reverted). **Noted for later (owner):** the darkest downtown blue (`#2A6488`, DX/DC-12 and up) sits close to the water color, especially the river through the Loop in dark; revisit the downtown ramp or the water color when the zoning palette is settled (Item 74 still calls it provisional).
+
+**Phase 5 approved (2026-11-09):** the owner reviewed the map on localhost in light and dark against the reference and gave a thumbs up after the reviews recorded in Items 91–98. Item 80's gate is met for the Profile's map; Discovery's map follows in Phase 6.

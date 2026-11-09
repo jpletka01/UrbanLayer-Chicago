@@ -262,5 +262,74 @@
       "nominal": "Nominal assessment",
       "open": "Open profile"
     }
+  },
+  "map": {
+    "key": "Map key",
+    "attribution": "City of Chicago, Cook County",
+    "unavailable": "The map can't be drawn in this browser. The rest of the page works.",
+    "noBase": "Street map not installed",
+    "loading": "Loading {{layer}}…",
+    "loadingShort": "Loading…",
+    "timedOut": "Couldn't check {{layer}} in time ·",
+    "notChecked": "Couldn't check in time ·",
+    "retry": "Retry",
+    "modeLabel": "{{layer}}: on or off",
+    "mode": {
+      "on": "On",
+      "off": "Off"
+    },
+    "groups": {
+      "zoning": "Zoning",
+      "parcels": "Lots",
+      "sales": "Recent sales",
+      "transit": "Transit",
+      "streets": "Streets"
+    },
+    "count": {
+      "zoning_one": "{{count}} district",
+      "zoning_other": "{{count}} districts",
+      "parcels_one": "{{count}} lot",
+      "parcels_other": "{{count}} lots",
+      "sales_one": "{{count}} sale",
+      "sales_other": "{{count}} sales",
+      "transit_one": "{{count}} station",
+      "transit_other": "{{count}} stations"
+    },
+    "card": {
+      "label": "What is here",
+      "close": "Close",
+      "looking": "Looking up this lot…",
+      "noAddress": "Lot without an address",
+      "openProfile": "Open its Profile",
+      "notIndexed": "Lot {{pin}} isn't in our data yet",
+      "failed": "Couldn't look up this lot. Try again.",
+      "district": "Zoning district {{zone}}",
+      "ordinance": "Ordinance {{num}}, {{date}}",
+      "districtSource": "From the City's zoning map",
+      "noPrice": "Price not recorded",
+      "approx": "Approx."
+    },
+    "inSentence": {
+      "sales": "recent sales"
+    },
+    "back": "Back to the property",
+    "streetView": {
+      "button": "Street View",
+      "hint": "Click a street to open Street View · Esc cancels",
+      "link": "Street View (Google)"
+    },
+    "families": {
+      "residential": "Residential",
+      "business": "Business and commercial",
+      "manufacturing": "Manufacturing",
+      "downtown": "Downtown",
+      "planned": "Planned development",
+      "park": "Parks and open space",
+      "transport": "Transportation"
+    },
+    "familiesNote": "Darker = more intensive (taller, denser)",
+    "familiesInView": "Zoning colors in view",
+    "inView": "{{count}} of {{total}} in view",
+    "show": "Show"
   }
 }
