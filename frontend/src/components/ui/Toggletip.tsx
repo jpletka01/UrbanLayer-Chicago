@@ -6,7 +6,7 @@
 //
 // One icon, one meaning, everywhere (see ICON). A date that changes the decision keeps its year visible
 // beside the calendar (`visible`).
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Calendar, ChevronDown, Info, Scale, SquareArrowOutUpRight, type LucideIcon } from "lucide-react";
 
 export type ToggletipKind = "info" | "date" | "code" | "source" | "more";
@@ -38,6 +38,16 @@ export function Toggletip({
   const id = useId();
   const wrapRef = useRef<HTMLSpanElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const popRef = useRef<HTMLSpanElement | null>(null);
+  // A popover that would leave the window flips to the other edge of its trigger (set on the element itself,
+  // before paint, so it never shows on the wrong side).
+  useLayoutEffect(() => {
+    const el = popRef.current;
+    if (!open || !el) return;
+    const r = el.getBoundingClientRect();
+    if (align !== "end" && r.right > window.innerWidth - 8) { el.style.left = "auto"; el.style.right = "0"; }
+    else if (align === "end" && r.left < 8) { el.style.right = "auto"; el.style.left = "0"; }
+  }, [open, align]);
   const leaveTimer = useRef<number | null>(null);
 
   const close = () => {
@@ -95,6 +105,7 @@ export function Toggletip({
       </button>
       {open && (
         <span
+          ref={popRef}
           id={id}
           role="dialog"
           aria-label={label}

@@ -5,7 +5,7 @@
 //  - the Assessor's value is flagged only against this lot's own recent market sale (Item 99);
 //  - rent is read for this building's unit size only when the records give bedrooms and units (Item 99).
 import type { Provenance, ScorecardResponse } from "../../lib/api";
-import type { ComparableSale, TaxLineItem } from "../../lib/types";
+import type { ComparableSale } from "../../lib/types";
 import { confidenceStateFor, displayState } from "../../lib/confidence";
 import type { TFunc } from "../../lib/scorecardVerdict";
 import type { FigureState } from "./profileModel";
@@ -28,12 +28,8 @@ export interface TaxModel {
   /** The Assessor's value: assessed ÷ the class's assessment level. */
   marketValue: number | null;
   state: FigureState;
-  /** The bill by taxing body, largest first; the smallest folded into "others" past `TOP_AGENCIES`. */
-  agencies: Array<{ name: string; amount: number; share: number; others?: boolean }>;
   exemptions: string[];
 }
-
-export const TOP_AGENCIES = 4;
 
 function provValue(entry: Provenance | undefined): number | null {
   const v = (entry as (Provenance & { value?: unknown }) | undefined)?.value;
@@ -44,7 +40,7 @@ export function taxModel(data: ScorecardResponse): TaxModel {
   const prop = data.context?.property ?? null;
   const prov = data.provenance ?? {};
   const typicalRate = provValue(prov["property.tax_class_norm"]);
-  const base = { tax: null, year: null, rate: null, typicalRate, marketValue: null, state: null, agencies: [], exemptions: [] };
+  const base = { tax: null, year: null, rate: null, typicalRate, marketValue: null, state: null, exemptions: [] };
   if (!prop) return { kind: "none", ...base };
   if (prop.nominal_assessment) return { kind: "nominal", ...base };
   if (prop.tax_exempt) return { kind: "exempt", ...base };
@@ -58,31 +54,8 @@ export function taxModel(data: ScorecardResponse): TaxModel {
     typicalRate,
     marketValue: prop.implied_market_value ?? null,
     state: confidenceStateFor(prov["property.tax_estimate"]),
-    agencies: agencyBars(prop.tax_breakdown ?? []),
     exemptions: [...new Set((prop.tax_exemptions ?? []).map((e) => e.kind))],
   };
-}
-
-const SMALL_WORDS = new Set(["of", "the", "and", "for", "in", "on"]);
-const ACRONYMS = new Set(["TIF", "SSA", "CTA", "MWRD", "II", "III"]);
-/** "CITY OF CHICAGO" → "City of Chicago" (the County's agency names arrive in capitals). */
-export function agencyName(raw: string): string {
-  return raw.trim().split(/\s+/).map((w, i) => {
-    const up = w.toUpperCase();
-    if (ACRONYMS.has(up) || /\d/.test(w)) return up;
-    const low = w.toLowerCase();
-    if (i > 0 && SMALL_WORDS.has(low)) return low;
-    return low.replace(/(^|[-/(])([a-z])/g, (_, p: string, c: string) => p + c.toUpperCase());
-  }).join(" ");
-}
-
-export function agencyBars(items: TaxLineItem[]): TaxModel["agencies"] {
-  const rows = items.filter((i) => i.amount > 0).sort((a, b) => b.amount - a.amount);
-  const total = rows.reduce((s, r) => s + r.amount, 0);
-  if (total <= 0) return [];
-  const top = rows.slice(0, TOP_AGENCIES).map((r) => ({ name: r.agency, amount: r.amount, share: r.amount / total }));
-  const rest = rows.slice(TOP_AGENCIES).reduce((s, r) => s + r.amount, 0);
-  return rest > 0 ? [...top, { name: "", amount: rest, share: rest / total, others: true }] : top;
 }
 
 // ── The Assessor's value over time, and against this lot's own sale ────────────────────────────────────

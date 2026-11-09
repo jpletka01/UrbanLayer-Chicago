@@ -26,6 +26,7 @@ import { NextMap, type LateState, type MapView } from "../map/NextMap";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
 import { useUiVersion } from "../uiVersionContext";
 import { AskDrawer } from "../ask/AskDrawer";
+import { AskContext, type AskHandoff } from "../ask/askContext";
 import { ICON } from "../icons";
 import { OverviewTab, TileCard } from "./OverviewTab";
 import { checkingTiles, firstSentence } from "./firstModel";
@@ -240,6 +241,8 @@ function ProfileScreen({
   const verdict = useMemo(() => (data ? computeVerdict(data, tp) : null), [data, tp]);
   const [tab, setTab] = useState<TabId>("overview");
   const [askOpen, setAskOpen] = useState(false);
+  // A question "Ask about this" wrote (Item 99); `n` remounts the drawer so the box takes it.
+  const [askDraft, setAskDraft] = useState<{ text: string; n: number } | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [mapFocused, setMapFocused] = useState(false);
   const mapButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -309,6 +312,16 @@ function ProfileScreen({
     </>
   );
 
+  const askHandoff = useMemo<AskHandoff>(() => ({
+    ready,
+    address,
+    open: (text: string) => {
+      track("investigate_click", { card_name: "next_term_ask" });
+      setAskDraft((d) => ({ text, n: (d?.n ?? 0) + 1 }));
+      setAskOpen(true);
+    },
+  }), [ready, address]);
+
   const focusAsk = useRef<HTMLElement | null>(null);
   useEffect(() => {
     focusAsk.current = askButtonRef.current?.querySelector("button") ?? null;
@@ -319,9 +332,10 @@ function ProfileScreen({
       crumbs={[t("profile.crumb"), address]}
       tools={toolsFor("top")}
       drawer={askOpen && ready ? (
-        <AskDrawer chat={chat} onClose={() => setAskOpen(false)} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} />
+        <AskDrawer key={askDraft?.n ?? 0} chat={chat} onClose={() => setAskOpen(false)} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} initialDraft={askDraft?.text} />
       ) : null}
     >
+      <AskContext.Provider value={askHandoff}>
       <Tabs.Root value={tab} onValueChange={(v) => setTab(v as TabId)} className="flex flex-col">
         <div className="px-4 pt-5 sm:px-7 sm:pt-7">
           {/* The page's one map. "Expand map" makes it the focus of the screen; Escape or "Close" returns. */}
@@ -434,6 +448,7 @@ function ProfileScreen({
           </div>
         </div>
       </Tabs.Root>
+      </AskContext.Provider>
       {ready && <SourcesDialog data={data!} open={sourcesOpen} onOpenChange={setSourcesOpen} />}
     </AppFrame>
   );

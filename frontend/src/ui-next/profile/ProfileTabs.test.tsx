@@ -8,6 +8,7 @@ import { axeViolations } from "../test/axe";
 import { OverviewTab } from "./OverviewTab";
 import { BuildTab } from "./BuildTab";
 import { MoneyTab } from "./MoneyTab";
+import { AskContext } from "../ask/askContext";
 
 const tp = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts }) as string;
 
@@ -81,23 +82,40 @@ describe("Money", () => {
     } },
   } as never);
 
-  it("leads with the sentence, then sales with their rule, taxes, rent and incentives", async () => {
+  it("leads with the sentence, then stat tiles, the sales as bars with their rule, value by year, rent and incentives", async () => {
     const { container } = render(<div className="ui-next"><MoneyTab data={moneyData()} late={ready} onRetry={vi.fn()} /></div>);
     expect(screen.getByTestId("money-sentence").textContent).toBe("About $64,000 a year in property tax, on an Assessor's value of $1,000,000; 3 nearby market sales, median $900,000.");
+    expect(within(screen.getByTestId("money-tiles")).getAllByRole("listitem").map((li) => li.getAttribute("data-testid")))
+      .toEqual(["tile-tax", "tile-value", "tile-sales", "tile-rent"]);
+    expect(screen.getByTestId("tile-tax").textContent).toContain("$64,000");
     expect(within(screen.getByTestId("sales-rule")).getByText("Within 0.25 mi")).toBeTruthy();
-    expect(screen.getByTestId("price-strip")).toBeTruthy();
-    expect(within(screen.getByTestId("sales-list")).getAllByRole("row")).toHaveLength(4);
-    expect(screen.getByTestId("agency-bar").getAttribute("aria-label")).toContain("Board of Education");
+    expect(within(screen.getByTestId("sales-bars")).getAllByRole("img")).toHaveLength(3);
     expect(screen.getByTestId("value-bars")).toBeTruthy();
-    expect(screen.getByText("Couldn't check rent today")).toBeTruthy(); // the fixture has no rent: never "none"
+    // Where the bill goes is not shown (cut by design 2026-07-07): only what the owner pays.
+    expect(screen.queryByText(/Board of Education/i)).toBeNull();
+    expect(screen.getAllByText("Couldn't check rent today").length).toBeGreaterThan(0); // the fixture has no rent: never "none"
     expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("defines a title in a popover whose Ask writes a question about this lot, without sending it", () => {
+    const open = vi.fn();
+    render(
+      <div className="ui-next">
+        <AskContext.Provider value={{ ready: true, address: "1601 N Milwaukee Ave", open }}>
+          <MoneyTab data={moneyData()} late={ready} onRetry={vi.fn()} />
+        </AskContext.Provider>
+      </div>,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "What is Rent nearby?" })[0]);
+    fireEvent.click(screen.getByTestId("term-ask"));
+    expect(open).toHaveBeenCalledWith("What rent could units at 1601 N Milwaukee Ave get, and how good is that figure?");
   });
 
   it("shows each late block's own outline while it waits, and Retry in place when it ran out of time", () => {
     const onRetry = vi.fn();
     const { rerender } = render(<div className="ui-next"><MoneyTab data={moneyData()} late={{ ...ready, money: "loading", incentives: "loading" }} onRetry={onRetry} /></div>);
-    expect(screen.getByText("Checking nearby sales…")).toBeTruthy();
-    expect(screen.queryByTestId("sales-list")).toBeNull();
+    expect(screen.getAllByText("Checking nearby sales…").length).toBe(2); // the tile and the block
+    expect(screen.queryByTestId("sales-bars")).toBeNull();
     expect(document.querySelector('[data-incentive="qct"]')!.getAttribute("data-answer")).toBe("checking");
     rerender(<div className="ui-next"><MoneyTab data={moneyData()} late={{ ...ready, money: "timedOut" }} onRetry={onRetry} /></div>);
     fireEvent.click(screen.getByRole("button", { name: /Retry/ }));
@@ -109,7 +127,7 @@ describe("Money", () => {
     render(<div className="ui-next"><MoneyTab data={moneyData()} late={ready} onRetry={vi.fn()} /></div>);
     const text = screen.getByTestId("money-tab").textContent ?? "";
     expect(text).toContain("Ventas de mercado cercanas");
-    expect(text).toContain("Impuestos y valor");
-    expect(text).not.toMatch(/Nearby market sales|Taxes and value|Rent nearby/);
+    expect(text).toContain("Valor del Tasador");
+    expect(text).not.toMatch(/Nearby market sales|Rent nearby|Property tax/);
   });
 });

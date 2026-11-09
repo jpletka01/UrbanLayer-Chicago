@@ -265,32 +265,29 @@
           "widened": "La búsqueda se amplió para encontrar suficientes"
         },
         "median": "Precio mediano",
-        "perBuildable": "Mediana por pie² edificable",
-        "medianMark": "Línea = mediana",
-        "stripLabel_one": "{{count}} venta en {{min}}",
-        "stripLabel_other": "{{count}} ventas de {{min}} a {{max}}",
         "col": {
           "date": "Vendida",
           "price": "Precio",
           "buildable": "Por pie² edificable",
           "district": "Zonificación",
           "distance": "Distancia"
-        }
+        },
+        "tileNote_one": "{{count}} venta a menos de {{mi}} mi",
+        "tileNote_other": "{{count}} ventas a menos de {{mi}} mi",
+        "barLabel": "Vendida en {{date}} por {{price}}, a {{distance}} mi",
+        "medianIs": "Mediana {{median}}",
+        "perBuildableIs": "{{value}} por pie² edificable",
+        "moreInDetails_one": "{{count}} más en los detalles",
+        "moreInDetails_other": "{{count}} más en los detalles"
       },
       "tax": {
-        "title": "Impuestos y valor",
         "billYear": "Recibo {{year}}",
         "rateVsTypical": "{{rate}}% del valor al año; lo típico para su clase es {{typical}}%",
-        "exempt": "Los propietarios exentos no pagan impuesto predial. A una tasa típica para su clase pagaría alrededor de {{rate}}% del valor al año.",
-        "nominal": "La cifra del Condado es simbólica (un área común o el resto de un terreno dividido), así que no se muestra impuesto.",
-        "none": "El Condado no tiene recibo de impuesto registrado para este terreno.",
-        "whereItGoes": "A dónde va el recibo",
-        "others": "Otros",
         "valueOverTime": "Valor del Tasador por año",
-        "assessedOverTime": "Valor tasado por año",
-        "building": "Edificio",
-        "land": "Terreno",
-        "belowSale": "El valor del Tasador está {{pct}}% por debajo de la venta de {{year}} de este terreno"
+        "belowSale": "El valor del Tasador está {{pct}}% por debajo de la venta de {{year}} de este terreno",
+        "exemptShort": "Sin recibo; un terreno gravable de su clase paga alrededor de {{rate}}% del valor al año",
+        "nominalShort": "Tasación nominal: sin cifra de impuesto",
+        "noneShort": "No hay recibo de impuesto registrado"
       },
       "rent": {
         "title": "Renta cercana",
@@ -308,8 +305,10 @@
         "noSize": "El tamaño de las unidades no está registrado para este edificio",
         "area": "mediana del área {{rent}}/mes",
         "puma": "algunas de un área más amplia",
-        "howToRead": "Cómo leer la renta",
-        "howToReadBody": "Renta bruta mediana (renta más servicios) que midió el Censo en este sector censal, o en un área más amplia a su alrededor. Es una encuesta de lo que pagan los inquilinos, no precios de anuncios ni lo que obtendría un edificio nuevo."
+        "tileSize": "Renta, {{size}}",
+        "aMonth": "al mes",
+        "tileNoteSize": "La unidad típica de este edificio, mediana del Censo cercana",
+        "tileNoteArea": "Mediana del área, todos los tamaños"
       },
       "incentives": {
         "title": "Incentivos",
@@ -322,9 +321,7 @@
           "nmtc": "Crédito fiscal de Nuevos Mercados"
         },
         "standardClass": "Clase de impuesto estándar: no aplica ningún incentivo de clase.",
-        "classIncentive": "La clase de impuesto de este terreno tiene un incentivo (vea los detalles).",
-        "howToRead": "Qué son estos programas",
-        "howToReadBody": "Lugares donde el dinero público o las reducciones de impuestos pueden ayudar a un proyecto. Estar dentro de uno hace que un proyecto pueda solicitarlos, no que esté aprobado."
+        "classIncentive": "La clase de impuesto de este terreno tiene un incentivo (vea los detalles)."
       },
       "details": {
         "title": "Todos los detalles de dinero",
@@ -338,7 +335,37 @@
         "taxCode": "Código de impuesto",
         "classNote": "Clase de impuesto",
         "allSales_one": "{{count}} venta cercana",
-        "allSales_other": "Las {{count}} ventas cercanas"
+        "allSales_other": "Las {{count}} ventas cercanas",
+        "valueYear": "Valor del Tasador, {{year}}",
+        "landBuilding": "{{total}} (terreno {{land}}, edificio {{building}})"
+      },
+      "define": {
+        "tax": "El recibo anual de impuesto predial, como lo calcula el Condado para el año de recibo más reciente. El recibo de un nuevo propietario puede cambiar si se pierden exenciones o si se vuelve a tasar el terreno.",
+        "value": "Lo que el Tasador del Condado de Cook dice que vale la propiedad: su valor tasado dividido entre la proporción que la ley tasa para su clase. Define el recibo de impuestos; no es un precio de venta.",
+        "sales": "Ventas registradas de propiedades similares cerca de este terreno (misma clase de impuesto), contadas solo cuando el Condado las trata como ventas de mercado. Las etiquetas indican qué tan cerca y qué tan recientes.",
+        "rent": "Lo que pagan al mes los inquilinos cercanos, renta más servicios, según la encuesta del Censo para este sector censal (o un área más amplia). No son precios de anuncios ni lo que obtendría un edificio nuevo.",
+        "incentives": "Programas que pueden ayudar a pagar un proyecto en este lugar: fondos de incremento fiscal, créditos fiscales y zonas con reducciones de impuestos. Estar dentro de uno significa que un proyecto puede solicitarlo, no que esté aprobado.",
+        "program": {
+          "tif": "Financiamiento por Incremento Fiscal: un distrito donde el aumento del impuesto predial paga obras públicas y puede apoyar desarrollos privados.",
+          "oz": "Una Zona de Oportunidad federal: los inversionistas pueden diferir o reducir el impuesto sobre ganancias de capital al invertir aquí.",
+          "ez": "Una Zona Empresarial del Estado de Illinois: reducciones de impuesto sobre ventas y otras para construcción y negocios.",
+          "qct": "Un Sector Censal Calificado de HUD: los proyectos de vivienda asequible aquí pueden recibir un crédito fiscal federal mayor.",
+          "nmtc": "Un sector elegible para Créditos Fiscales de Nuevos Mercados, un crédito federal para invertir en zonas de bajos ingresos."
+        }
+      },
+      "ask": {
+        "tax": "¿Cómo se calcula el impuesto predial de {{address}} y qué podría cambiarlo?",
+        "value": "¿Cómo valora el Tasador {{address}} y cómo se compara con lo que podría venderse?",
+        "sales": "¿Qué dicen las ventas de mercado cercanas sobre {{address}}?",
+        "rent": "¿Qué renta podrían obtener las unidades de {{address}} y qué tan confiable es esa cifra?",
+        "incentives": "¿Qué programas de incentivos podrían ayudar a un proyecto en {{address}}?",
+        "program": "¿Qué significaría {{program}} para un proyecto en {{address}}?"
+      },
+      "value": {
+        "label": "Valor del Tasador",
+        "year": "Tasación {{year}}",
+        "none": "No hay tasaciones registradas",
+        "chartLabel": "Valor del Tasador por año: {{list}}"
       }
     }
   },
@@ -420,8 +447,6 @@
     },
     "back": "Volver a la propiedad",
     "streetView": {
-      "button": "Street View",
-      "hint": "Haga clic en una calle para abrir Street View · Esc cancela",
       "link": "Street View (Google)"
     },
     "families": {
@@ -437,5 +462,10 @@
     "familiesInView": "Colores de zonificación a la vista",
     "inView": "{{count}} de {{total}} a la vista",
     "show": "Mostrar"
+  },
+  "term": {
+    "what": "¿Qué es {{term}}?",
+    "ask": "Preguntar sobre esto",
+    "askLater": "Podrá preguntar cuando el Perfil termine de cargar"
   }
 }

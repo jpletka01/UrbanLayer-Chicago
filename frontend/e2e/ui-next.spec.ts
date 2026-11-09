@@ -146,7 +146,7 @@ test("Money tab: late sales outline, same map, axe light and dark, no overflow",
   await page.evaluate(() => { const c = document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas'); if (c) c.dataset.probe = "overview"; });
   await page.getByRole("tab", { name: "Money" }).click();
   await expect(page.getByTestId("money-sentence")).toBeVisible();
-  await expect(page.getByText("Checking nearby sales…")).toBeVisible();
+  await expect(page.getByText("Checking nearby sales…").first()).toBeVisible();
   releaseMoney();
   await expect(page.getByText("Checking nearby sales…")).toHaveCount(0, { timeout: 90_000 });
   expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("overview");

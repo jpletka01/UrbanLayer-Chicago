@@ -1,11 +1,10 @@
 // The Money tab's rules (decision Item 99): the Assessor flag reads only this lot's own recent market sale, rent
-// is read for a unit size only when the records give one, late incentive programs say "checking", and the tax bill
-// folds its small taxing bodies into "others".
+// is read for a unit size only when the records give one, and late incentive programs say "checking".
 import { describe, expect, it } from "vitest";
 import i18n from "../../lib/i18n";
 import { profileFixture } from "../test/fixtures";
 import {
-  agencyBars, agencyName, assessorBelowSale, compsModel, incentiveChips, moneySentence, rentModel, taxModel, unitSize, valueHistory,
+  assessorBelowSale, compsModel, incentiveChips, moneySentence, rentModel, taxModel, unitSize, valueHistory,
 } from "./moneyModel";
 
 const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "next", ...opts }) as string;
@@ -37,17 +36,6 @@ describe("taxes", () => {
   it("says exempt and nominal in words, never as a figure", () => {
     expect(taxModel(profileFixture({ context: { property: { tax_exempt: true } } } as never)).kind).toBe("exempt");
     expect(taxModel(profileFixture({ context: { property: { nominal_assessment: true } } } as never)).kind).toBe("nominal");
-  });
-  it("folds the smaller taxing bodies into others and keeps shares summing to one", () => {
-    const bars = agencyBars(["A", "B", "C", "D", "E", "F"].map((agency, i) => ({ agency, rate: 1, amount: 60 - i * 10 })));
-    expect(bars).toHaveLength(5);
-    expect(bars[4].others).toBe(true);
-    expect(bars.reduce((s, b) => s + b.share, 0)).toBeCloseTo(1);
-  });
-  it("re-cases the County's agency names", () => {
-    expect(agencyName("CITY OF CHICAGO")).toBe("City of Chicago");
-    expect(agencyName("METRO WATER RECLAMATION DIST OF CHGO")).toBe("Metro Water Reclamation Dist of Chgo");
-    expect(agencyName("CHICAGO PARK DISTRICT")).toBe("Chicago Park District");
   });
 });
 

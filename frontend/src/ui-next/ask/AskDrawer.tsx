@@ -16,6 +16,7 @@ export function AskDrawer({
   onClose,
   returnFocusRef,
   tabLabel,
+  initialDraft = "",
 }: {
   chat: ParcelChat;
   onClose: () => void;
@@ -23,16 +24,20 @@ export function AskDrawer({
   returnFocusRef: RefObject<HTMLElement | null>;
   /** The Profile tab the visitor is on (shown as what the analyst knows). */
   tabLabel: string;
+  /** A question written into the box by "Ask about this" (Item 99); the visitor sends it, never the page. */
+  initialDraft?: string;
 }) {
   const { t } = useTranslation(["next", "chat", "common"]);
   const titleId = useId();
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft);
   const boxRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const AskIcon = ICON.ask;
 
   useEffect(() => {
-    boxRef.current?.focus();
+    const box = boxRef.current;
+    box?.focus();
+    if (box && box.value) box.setSelectionRange(box.value.length, box.value.length);
     const back = returnFocusRef.current;
     return () => back?.focus();
   }, [returnFocusRef]);

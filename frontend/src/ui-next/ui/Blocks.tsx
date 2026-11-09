@@ -85,3 +85,36 @@ export function ShareBar({ share, emphasis = false, hatched = false, label }: {
     </div>
   );
 }
+
+/** SnowUI's stat card (Item 74): one key figure on a pale fill (alternate `a` / `b`), its label above, a short
+    note and at most one warning below. The tile row reflows from four to two to one. */
+export function StatTile({ label, figure, unit, note, warning, state, tone = "a", checking = false, testId }: {
+  label: ReactNode;
+  figure: ReactNode;
+  unit?: string;
+  note?: ReactNode;
+  warning?: ReactNode;
+  /** The confidence state, below the note (Estimate, Withheld, …). */
+  state?: ReactNode;
+  tone?: "a" | "b";
+  /** The figure waits on a late part: a placeholder the figure's own height. */
+  checking?: boolean;
+  testId?: string;
+}) {
+  return (
+    <li className={`flex min-w-0 flex-col gap-2 rounded-2xl p-4 text-nx-card-ink sm:p-6 ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
+      <span className="text-caption font-semibold">{label}</span>
+      {checking ? (
+        <span aria-hidden className="flex items-center text-nx-figure"><span className="block h-[0.8em] w-24 animate-pulse rounded bg-nx-card-ink/10" />&#8203;</span>
+      ) : (
+        <span className="flex flex-wrap items-baseline gap-x-1.5">
+          <span className="text-nx-figure tabular-nums [overflow-wrap:anywhere]">{figure}</span>
+          {unit && <span className="text-caption nx-card-muted">{unit}</span>}
+        </span>
+      )}
+      {note && <span className="text-caption nx-card-muted">{note}</span>}
+      {warning && <span className="text-caption font-medium">{warning}</span>}
+      {state && <span className="nx-on-card mt-auto inline-flex">{state}</span>}
+    </li>
+  );
+}

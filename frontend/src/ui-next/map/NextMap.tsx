@@ -102,10 +102,6 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   const [families, setFamilies] = useState<string[]>([]);
   const [picked, setPicked] = useState<Picked | null>(null);
   const [away, setAway] = useState(false);
-  // Street View mode (expanded map only): the next click on the map opens Google Street View there in a new tab.
-  const [streetView, setStreetView] = useState(false);
-  const streetViewRef = useRef(false);
-  useEffect(() => { streetViewRef.current = streetView && expanded; }, [streetView, expanded]);
   // The County's full-precision outline for this lot, when it still matches (Item 92); else the page's own.
   const [precise, setPrecise] = useState<{ pin10: string; geometry: GeoJSON.Geometry } | null>(null);
   const lotGeometry = precise && precise.pin10 === pin10 ? precise.geometry : geometry;
@@ -205,13 +201,28 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     if (expanded) map.scrollZoom.enable(); else map.scrollZoom.disable();
   }, [expanded, ready]);
 
-  // "Back to the property" once the visitor has moved the lot out of the middle of the view or zoomed far off.
+  // "Back to the property" once the visitor has moved the lot out of the middle of the view or zoomed far off. A view
+  // that frames its points (`fit`) counts its framed camera as home: the next stop after the frame records it.
+  const fitHome = useRef<{ x: number; y: number; zoom: number } | "pending" | null>(null);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     const check = () => {
-      const p = map.project([lon, lat]);
       const c = map.getContainer();
+      const home = fitHome.current;
+      if (home === "pending") {
+        const p = map.project([lon, lat]);
+        fitHome.current = { x: p.x, y: p.y, zoom: map.getZoom() };
+        setAway(false);
+        return;
+      }
+      if (home) {
+        const p = map.project([lon, lat]);
+        const moved = Math.hypot(p.x - home.x, p.y - home.y) > Math.min(c.clientWidth, c.clientHeight) * 0.35;
+        setAway(moved || Math.abs(map.getZoom() - home.zoom) > 1.5);
+        return;
+      }
+      const p = map.project([lon, lat]);
       const inMiddle = p.x > c.clientWidth * 0.15 && p.x < c.clientWidth * 0.85 && p.y > c.clientHeight * 0.15 && p.y < c.clientHeight * 0.85;
       setAway(!inMiddle || Math.abs(map.getZoom() - view.zoom) > 1.5);
     };
@@ -251,7 +262,9 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    if (view.fit && fitGroup(view.fit)) return;
+    // A framing view frames once here; the effect below frames it instead if its points arrive later.
+    if (view.fit && fitGroup(view.fit)) { fittedFor.current = view.id; return; }
+    fitHome.current = null;
     const opts = { center: [lon, lat] as [number, number], zoom: view.zoom };
     if (reducedMotion()) map.jumpTo(opts); else map.easeTo({ ...opts, duration: 600 });
     // view.id is the trigger; the modes object changes identity with it.
@@ -341,13 +354,6 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     const onClick = (e: maplibregl.MapMouseEvent) => {
       const at: [number, number] = [e.point.x, e.point.y];
       const ll: [number, number] = [e.lngLat.lng, e.lngLat.lat];
-      if (streetViewRef.current) {
-        const v = viewpointFor(ll, loadedRoads(map), null);
-        window.open(streetViewUrl(v.lat, v.lon, v.heading), "_blank", "noopener,noreferrer");
-        streetViewRef.current = false;
-        setStreetView(false);
-        return;
-      }
       const has = (id: string) => !!map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none";
       const hit = (ids: string[]): MapGeoJSONFeature | undefined => {
         const live = ids.filter(has);
@@ -385,7 +391,6 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       setPicked(null);
     };
     const pointer = (e: maplibregl.MapMouseEvent) => {
-      if (streetViewRef.current) { map.getCanvas().style.cursor = "crosshair"; return; }
       const ids = ["sales-pin", "parcel-fill", "zoning-fill"].filter((id) => !!map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
       map.getCanvas().style.cursor = ids.length && map.queryRenderedFeatures(e.point, { layers: ids }).length ? "pointer" : "";
     };
@@ -403,13 +408,6 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     map.setFeatureState({ source: "parcels", sourceLayer: "parcels", id }, { match: true });
     return () => { if (map.getSource("parcels") && pickedPin !== pin10) map.setFeatureState({ source: "parcels", sourceLayer: "parcels", id }, { match: false }); };
   }, [pickedPin, ready, pin10]);
-
-  useEffect(() => {
-    if (!streetView) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setStreetView(false); } };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [streetView]);
 
   useEffect(() => {
     if (!picked) return;
@@ -431,6 +429,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     const so = Math.min(...pts.map((p) => p[1])), n = Math.max(...pts.map((p) => p[1]));
     const width = map.getContainer().clientWidth;
     const right = Math.min(300, Math.round(width / 3));
+    fitHome.current = "pending";
     map.fitBounds([[w, so], [e, n]], { padding: { top: 56, bottom: 44, left: 48, right }, maxZoom: 17, duration: reducedMotion() ? 0 : 600 });
     return true;
   }
@@ -511,24 +510,6 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
           <LocateFixed aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t("map.back")}
         </button>
-      )}
-      {ready && expanded && (
-        <button
-          type="button"
-          onClick={() => { setPicked(null); setStreetView((v) => !v); }}
-          aria-pressed={streetView && expanded}
-          title={t("map.streetView.button")}
-          className={`absolute left-3 top-14 z-10 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.15)] touch-target ${streetView ? "bg-nx-primary text-nx-primary-fg" : "bg-nx-page hover:bg-nx-block"}`}
-          data-testid="map-street-view"
-        >
-          <PersonStanding aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
-          {t("map.streetView.button")}
-        </button>
-      )}
-      {ready && expanded && streetView && (
-        <p className="absolute left-1/2 top-14 z-10 -translate-x-1/2 rounded-full bg-nx-page px-3 py-1.5 text-caption shadow-[0_1px_4px_rgb(0_0_0/0.2)]" role="status" data-testid="map-street-view-hint">
-          {t("map.streetView.hint")}
-        </p>
       )}
       {picked && <PickedCard picked={picked} onClose={() => setPicked(null)} lang={i18n.language} boxH={boxH} />}
     </div>
