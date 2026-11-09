@@ -108,7 +108,7 @@ export function MapKey({ groups, families, onMode, onRetry, onShow, defaultOpen,
                         {/* Two steps of the family's ramp: lighter and darker. */}
                         {f === "planned" || f === "transport" ? (
                           // The same texture as on the map (Item 97).
-                          <span aria-hidden className="h-2.5 w-4 rounded-sm" style={{ background: `${patternCss(f === "planned" ? "plus" : "dots", theme)}, ${ZONING_COLORS[f][0]}` }} />
+                          <span aria-hidden className="h-2.5 w-4 rounded-sm" style={{ background: `${patternCss(f === "planned" ? "dots" : "plus", theme)}, ${ZONING_COLORS[f][0]}` }} />
                         ) : (
                           <span aria-hidden className="flex overflow-hidden rounded-sm">
                             <span className="h-2.5 w-2" style={{ background: ZONING_COLORS[f][0] }} />

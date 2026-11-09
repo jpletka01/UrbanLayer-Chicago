@@ -63,10 +63,9 @@ export const ZONING_COLORS: Record<string, [string, string, string, string]> = {
   manufacturing: ["#D9C47E", "#B99C3A", "#977C24", "#735D16"],
   downtown: ["#A6CCE3", "#63A8CF", "#3F86B0", "#2A6488"],
   park: ["#A7E2B2", "#A7E2B2", "#A7E2B2", "#A7E2B2"],
-  transport: ["#8F959C", "#8F959C", "#8F959C", "#8F959C"],
-  // Planned development: Coastal's Bubblegum, not gray (owner: the gray took over downtown); its "+" marks carry it
-  // for color-blind readers (Item 97).
-  planned: ["#FDC1B4", "#FDC1B4", "#FDC1B4", "#FDC1B4"],
+  // Transportation and planned development swapped looks (owner: the gray with dots suits the far more common PDs).
+  transport: ["#FDC1B4", "#FDC1B4", "#FDC1B4", "#FDC1B4"],
+  planned: ["#8F959C", "#8F959C", "#8F959C", "#8F959C"],
   other: ["#C9CED6", "#C9CED6", "#C9CED6", "#C9CED6"],
 };
 export const ZONING_FAMILIES = ["residential", "business", "manufacturing", "downtown", "planned", "park", "transport"] as const;
@@ -133,11 +132,24 @@ export const LAYERS: LayerDef[] = [
     group: "zoning", needs: "zoning", opacity: ["fill-opacity"],
     spec: (t) => ({ id: "zoning-texture", type: "fill", source: "zoning", "source-layer": "zoning",
       filter: ["match", ["get", "family"], ["planned", "transport"], true, false],
-      paint: { "fill-pattern": ["match", ["get", "family"], "planned", PATTERN_IMAGE("plus", t), PATTERN_IMAGE("dots", t)] as unknown as string,
+      paint: { "fill-pattern": ["match", ["get", "family"], "planned", PATTERN_IMAGE("dots", t), PATTERN_IMAGE("plus", t)] as unknown as string,
         "fill-opacity": 1 } }),
   },
+  // Parks read as parks over any zoning (owner's review, Item 98): the City zones some parks as planned developments
+  // (Northerly Island PD 618), which painted them like downtown. The Park District's outlines draw over the zoning
+  // fill and textures in exactly the open-space look (the park color, then the POS green at the zoning opacity);
+  // district outlines and labels still draw above, so the zoning stays readable.
+  {
+    group: null, needs: "base", opacity: [],
+    spec: (t) => ({ id: "park-top", type: "fill", source: "base", "source-layer": "park", paint: { "fill-color": PALETTES[t].park } }),
+  },
+  {
+    group: "zoning", needs: "base", opacity: ["fill-opacity"],
+    spec: (t) => ({ id: "park-tint", type: "fill", source: "base", "source-layer": "park",
+      paint: { "fill-color": ZONING_COLORS.park[0], "fill-opacity": PALETTES[t].zoningFill } }),
+  },
   // Water draws over the zoning fill (owner's review): the City zones lagoons with their parks (POS), and the
-  // zoning fill covered the water. Parks stay under the zoning, so their green is the POS fill over the park color.
+  // zoning fill covered the water.
   { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "water", type: "fill", source: "base", "source-layer": "water", paint: { "fill-color": PALETTES[t].water } }) },
   {
     group: "parcels", needs: "parcels", opacity: ["fill-opacity"],

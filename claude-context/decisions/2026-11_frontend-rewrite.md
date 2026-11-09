@@ -684,3 +684,15 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **What still depends on color (measured, ΔE×100 of the fills as drawn):** among the five colored families the closest pairs are residential vs downtown 3.6 (protanopia, light), business vs manufacturing 4.2 (deuteranopia) and 3.5 (tritanopia), residential vs park 3.2 (tritanopia, dark); with full color vision residential vs business is 6.4 light / 5.5 dark. These lean on the district-code labels and the click card. Residential and downtown are rarely neighbors.
 
 **Revisit if:** a color-blind tester still confuses business and manufacturing (then a second texture for manufacturing, or Item 74's "Teal and coral" alternative, which passes the color-blind check more cleanly).
+
+---
+
+## Item 98: parks read as parks, the two textures swapped and softened, failed tiles retried (2026-11-09)
+
+**From the owner's review:**
+- **Parks zoned as planned developments looked like downtown.** The City zones some lakefront parks as PDs (Northerly Island PD 618; the Museum Campus PDs 664, 778, 794; Millennium Park PD 677), so they took the PD color. The Park District's outlines now draw over the zoning fill and textures in the open-space look (`park-top` = the park color, `park-tint` = the POS green at the zoning opacity, part of the Zoning group); district outlines and labels stay above, so a park's zoning code is still on the map. Millennium Park is run by the City, not the Park District, so it is not in that layer and keeps its PD look (said, not hidden). Checked: the Museum Campus parks read green with their PD labels.
+- **The two textures swapped, and planned development took transportation's look** (owner: the gray with dots suits the far more common PDs): planned development = gray `#8F959C` with dots; transportation = Bubblegum `#FDC1B4` with "+" marks.
+- **Softer textures:** ink at about 23% instead of about 40%, a 10 px repeat instead of 8, dots of radius 1 px, so the lot lines stay readable through them.
+- **Square holes after zooming out and in (owner, at 1259 N Wood St).** Not reproduced here; every tile in the three files decodes with MapLibre's own parser (`@mapbox/vector-tile`: 4,309 zoning, 6,387 base, 4,143 lot tiles, 0 failures), the server logged no errors and only the two empty lake tiles are absent at zoom 13. The likely cause is a tile request that failed during a fast zoom: MapLibre does not retry it, which leaves exactly one tile-sized gap. The map now reloads that source's tiles 1.5 s after a tile error (at most every 4 s) and logs other map errors as warnings. **Revisit if** a hole still appears: note the address and theme, and check the console.
+
+**Planned development, in one line (owner's question):** a site-specific zoning district Council adopts by ordinance for a large or special project (required above certain size or height thresholds, along the lakefront and in some downtown areas), with its own rules on uses, height and density in place of the base district's; it can cover a single building or a whole campus, and its number points to that ordinance.

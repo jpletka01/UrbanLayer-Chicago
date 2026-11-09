@@ -152,6 +152,20 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       m.on("mousemove", () => { if (expandedRef.current && !m.scrollZoom.isEnabled()) m.scrollZoom.enable(); });
       // A lost context must not surface as an error ("WebGL context was lost"); the browser restores it.
       m.on("webglcontextlost", () => undefined);
+      // A tile request that fails mid-zoom is never retried by MapLibre, which leaves a square gap (owner saw them).
+      // Reload that source's tiles once the burst is over; at most every 4 s.
+      let retryAt = 0;
+      m.on("error", (e) => {
+        const id = (e as unknown as { sourceId?: string }).sourceId;
+        if (!id || !["base", "zoning", "parcels"].includes(id)) { console.warn("map:", e.error ?? e); return; }
+        const now = Date.now();
+        if (now - retryAt < 4000) return;
+        retryAt = now;
+        window.setTimeout(() => {
+          const src = m.getSource(id) as unknown as { tiles?: string[]; setTiles?: (t: string[]) => void } | undefined;
+          if (src?.tiles && src.setTiles) src.setTiles(src.tiles);
+        }, 1500);
+      });
       // The pins are drawn once on a canvas; added before any point arrives, and again if a style ever asks.
       m.on("styleimagemissing", () => { addPinImages(m); addPatternImages(m); });
       m.once("load", () => { addPinImages(m); addPatternImages(m); });

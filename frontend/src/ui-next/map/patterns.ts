@@ -7,13 +7,14 @@
 export type PatternTheme = "light" | "dark";
 export type PatternKind = "plus" | "dots";
 
-const SIZE = 8; // CSS px per repeat
+const SIZE = 10; // CSS px per repeat (sparser, owner: the lot lines must stay readable)
 const RATIO = 2;
 
 export const PATTERN_IMAGE = (kind: PatternKind, theme: PatternTheme) => `pattern-${kind}-${theme}`;
 
-/** The pattern colors: the lot's ink at low opacity, so the texture reads without competing with the lot. */
-export const PATTERN_INK: Record<PatternTheme, string> = { light: "rgba(28,28,28,0.42)", dark: "rgba(255,255,255,0.38)" };
+/** The pattern colors: the lot's ink at low opacity (toned down, owner), so the texture never competes with the lot
+    lines or the lot. */
+export const PATTERN_INK: Record<PatternTheme, string> = { light: "rgba(28,28,28,0.24)", dark: "rgba(255,255,255,0.22)" };
 
 export function drawPattern(kind: PatternKind, theme: PatternTheme): { width: number; height: number; data: Uint8ClampedArray } | null {
   if (typeof document === "undefined") return null;
@@ -36,7 +37,7 @@ export function drawPattern(kind: PatternKind, theme: PatternTheme): { width: nu
     ctx.stroke();
   } else {
     ctx.beginPath();
-    ctx.arc(SIZE / 2, SIZE / 2, 1.1, 0, Math.PI * 2);
+    ctx.arc(SIZE / 2, SIZE / 2, 1, 0, Math.PI * 2);
     ctx.fill();
   }
   const img = ctx.getImageData(0, 0, n, n);
