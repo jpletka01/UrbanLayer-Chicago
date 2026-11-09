@@ -38,7 +38,7 @@ interface Palette {
 // arterials. "This lot" is black with a white edge in light and white with a dark edge in dark (Item 74).
 export const PALETTES: Record<Theme, Palette> = {
   light: {
-    outside: "#E4E7EB", land: "#EEF0F3", water: "#9FCBE3", park: "#C4E3BD",
+    outside: "#E4E7EB", land: "#EEF0F3", water: "#C6D9E3", park: "#D6E8D8",
     highway: "#EE9580", major: "#F3C58C", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F2AE9C", casing: "#D3D8DE",
     label: "#3C4249", halo: "#F4F6F8",
     parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
@@ -47,8 +47,8 @@ export const PALETTES: Record<Theme, Palette> = {
     zoningLabel: "#1C1C1C", zoningFill: 0.42, zoningLine: 0.85,
   },
   dark: {
-    outside: "#141516", land: "#1E2023", water: "#1F4E6B", park: "#2C4A30",
-    highway: "#E8806F", major: "#D9AE73", minor: "#101112", local: "#101112", ramp: "#101112", casing: "#141516",
+    outside: "#141516", land: "#1E2023", water: "#18252D", park: "#1B2620",
+    highway: "#E8806F", major: "#D9AE73", minor: "#8A9097", local: "#6B7178", ramp: "#B56F62", casing: "#141516",
     label: "#C9CDD2", halo: "#1E2023",
     parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
     lot: "#FFFFFF", lotEdge: "#1C1C1C",
@@ -121,14 +121,14 @@ const roadLayer = (kind: keyof typeof ROAD_METERS, minzoom: number, lowZoomPx: n
 export const LAYERS: LayerDef[] = [
   { group: null, needs: null, opacity: [], spec: (t) => ({ id: "background", type: "background", paint: { "background-color": PALETTES[t].outside } }) },
   { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "city", type: "fill", source: "base", "source-layer": "city", paint: { "fill-color": PALETTES[t].land } }) },
+  { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "park", type: "fill", source: "base", "source-layer": "park", paint: { "fill-color": PALETTES[t].park } }) },
   {
     group: "zoning", needs: "zoning", opacity: ["fill-opacity"],
     spec: (t) => ({ id: "zoning-fill", type: "fill", source: "zoning", "source-layer": "zoning",
       paint: { "fill-color": zoningColorExpr() as string, "fill-opacity": PALETTES[t].zoningFill } }),
   },
-  // Parks and water draw over the zoning fill (owner's review): the City zones parks and their lagoons POS, whose
-  // fill tinted both the same green. Distinct opaque colors; district outlines and streets still draw above them.
-  { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "park", type: "fill", source: "base", "source-layer": "park", paint: { "fill-color": PALETTES[t].park } }) },
+  // Water draws over the zoning fill (owner's review): the City zones lagoons with their parks (POS), and the
+  // zoning fill covered the water. Parks stay under the zoning, so their green is the POS fill over the park color.
   { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "water", type: "fill", source: "base", "source-layer": "water", paint: { "fill-color": PALETTES[t].water } }) },
   {
     group: "parcels", needs: "parcels", opacity: ["fill-opacity"],

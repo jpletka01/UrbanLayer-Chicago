@@ -599,7 +599,10 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 **Revisit if:** the County publishes a newer parcel layer with geometry (swap the dataset id and re-fetch); the fallback share grows past about 5% (the copy has aged); a lot's two outlines disagree in a way the 85% rule misses.
 
-**The owner's second look (2026-11-08), changed the same day (Item 91 continued):**
-- **Side streets near-black in dark** (`#101112` for local, collector and ramp classes). The gray side streets clashed with the residential lavender; near-black is consistent and stands out. Arterials and expressways keep their warm colors: that split is the City's own centerline class (`pr57-gg9e`: North, Chicago and Ashland are class 2 arterials; Damen, Division and Milwaukee are class 3 collectors, drawn like side streets). Light keeps white streets (not asked to change).
-- **Parks and water draw over the zoning fill.** The City zones parks and their lagoons POS, and the POS fill tinted park and water the same green; now parks are an opaque green and water a clear blue (dark `#2C4A30` / `#1F4E6B`, light `#C4E3BD` / `#9FCBE3`), with district outlines, lot lines and streets still above them.
-- **Noted for later (owner):** a land-use map with surface parking. That is map track M5 (Phase 7); CMAP's 2020 Land Use Inventory has a surface-parking category.
+**The owner's second look (2026-11-08):**
+- **Tried and reverted the same day (owner):** near-black side streets in dark, and parks and water redrawn in a new green and blue. The owner preferred the earlier street grays and park green ("the colors aren't in harmony").
+- **Kept: water draws above the zoning fill.** The City zones lagoons with their parks (POS), and the zoning fill covered the water, so a lagoon barely showed. Now water draws over zoning in its original color; parks stay under the zoning, so their green is the POS fill over the park color, as before.
+- **Why some streets are colored:** the City's own centerline class (`pr57-gg9e`): North, Chicago and Ashland are class 2 arterials (warm); Damen, Division and Milwaukee are class 3 collectors (drawn gray like side streets). The owner: no change needed.
+- **Wheel zoom on the first turn after Expand:** growing the map to full screen fired a pointer-leave event that switched the wheel off; it now turns back on when the pointer moves over the expanded map (checked: the first turn zooms 17 → 16.4).
+- **Not resolved:** what the owner saw as park buildings versus parkland. The map draws no buildings yet; footprints are a separate decision (Item 91, above).
+- **Noted for later (owner):** a land-use map with surface parking: map track M5 (Phase 7); CMAP's 2020 Land Use Inventory has a surface-parking category.

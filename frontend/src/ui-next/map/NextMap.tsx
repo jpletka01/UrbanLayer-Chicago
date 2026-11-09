@@ -128,6 +128,9 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       if (!expandedRef.current) m.scrollZoom.disable();
       m.on("click", () => m.scrollZoom.enable());
       m.on("mouseout", () => { if (!expandedRef.current) m.scrollZoom.disable(); });
+      // Growing to full screen fires a leave event under the pointer; entering again turns the wheel back on.
+      m.on("mouseover", () => { if (expandedRef.current) m.scrollZoom.enable(); });
+      m.on("mousemove", () => { if (expandedRef.current && !m.scrollZoom.isEnabled()) m.scrollZoom.enable(); });
       // A lost context must not surface as an error ("WebGL context was lost"); the browser restores it.
       m.on("webglcontextlost", () => undefined);
       m.on("load", () => {
