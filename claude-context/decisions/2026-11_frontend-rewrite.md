@@ -651,3 +651,13 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - **Kept simple (owner):** no drag-a-figure Street View; the card link and the expanded-map mode are enough.
 
 **Numbers:** checked in the browser at 1601 N Milwaukee Ave (dark): key reads "Recent sales 0 of 3 in view · Show", "Transit 1 of 3 in view · Show"; Show framed the lot and all three sale pins. Tests: `mapStyle.test.ts` (pins are the top two layers), `streetView.test.ts`, `mapInfo.test.ts`.
+
+---
+
+## Item 96: the property stands out, and gets its own pin when zoomed out (2026-11-09)
+
+**From the owner's review:** the lot was only a slightly different shade from its neighbors, and it disappears when the map is zoomed out.
+- **The lot stands out:** a fill in "this lot" ink over the zoning (black at 30% in light, white at 32% in dark), a wider contrasting edge (6.5 px) and a 3 px line (was 5 px and 2.5 px, no fill). Approximate matches stay dashed.
+- **The property's own pin** (`lot-pin`) below zoom 15.5 (where a lot is roughly 15-30 px wide): a house in "this lot" ink, black with a white edge in light and white with a black edge in dark, on top of every other pin. A theme switch swaps its image in place (a layout property, set beside the paint).
+
+**Numbers:** checked in the browser at 1601 N Milwaukee Ave in dark and light, close in (no pin, filled lot) and zoomed out (house pin above the sales and station pins). Test: `mapStyle.test.ts` (the property's pin is the top layer).

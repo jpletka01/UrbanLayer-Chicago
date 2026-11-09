@@ -29,7 +29,7 @@ interface Palette {
   highway: string; major: string; minor: string; local: string; ramp: string; casing: string;
   label: string; halo: string;
   parcelLine: string; parcelLineOpacity: number; parcelHit: string;
-  lot: string; lotEdge: string;
+  lot: string; lotEdge: string; lotFill: number;
   zoningLabel: string; zoningFill: number; zoningLine: number;
 }
 
@@ -41,7 +41,7 @@ export const PALETTES: Record<Theme, Palette> = {
     highway: "#EE9580", major: "#F3C58C", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F2AE9C", casing: "#D3D8DE",
     label: "#3C4249", halo: "#F4F6F8",
     parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
-    lot: "#1C1C1C", lotEdge: "#FFFFFF",
+    lot: "#1C1C1C", lotEdge: "#FFFFFF", lotFill: 0.30,
     zoningLabel: "#1C1C1C", zoningFill: 0.42, zoningLine: 0.85,
   },
   dark: {
@@ -49,7 +49,7 @@ export const PALETTES: Record<Theme, Palette> = {
     highway: "#E8806F", major: "#D9AE73", minor: "#8A9097", local: "#6B7178", ramp: "#B56F62", casing: "#141516",
     label: "#C9CDD2", halo: "#1E2023",
     parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
-    lot: "#FFFFFF", lotEdge: "#1C1C1C",
+    lot: "#FFFFFF", lotEdge: "#1C1C1C", lotFill: 0.32,
     zoningLabel: "#FFFFFF", zoningFill: 0.30, zoningLine: 0.75,
   },
 };
@@ -152,15 +152,21 @@ export const LAYERS: LayerDef[] = [
   roadLayer("ramp", 12, 0.6, "ramp"),
   roadLayer("major", 10, 1.0, "major"),
   roadLayer("highway", 10, 1.6, "highway"),
+  // This lot stands out (owner's review, Item 96): a fill in "this lot" ink over the zoning, a wider edge, a 3 px line.
+  {
+    group: null, needs: "lot", opacity: [],
+    spec: (t) => ({ id: "lot-fill", type: "fill", source: "lot",
+      paint: { "fill-color": PALETTES[t].lot, "fill-opacity": PALETTES[t].lotFill } }),
+  },
   {
     group: null, needs: "lot", opacity: [],
     spec: (t) => ({ id: "lot-edge", type: "line", source: "lot",
-      paint: { "line-color": PALETTES[t].lotEdge, "line-width": 5, "line-opacity": 0.9 } }),
+      paint: { "line-color": PALETTES[t].lotEdge, "line-width": 6.5, "line-opacity": 0.95 } }),
   },
   {
     group: null, needs: "lot", opacity: [],
     spec: (t) => ({ id: "lot-line", type: "line", source: "lot",
-      paint: { "line-color": PALETTES[t].lot, "line-width": 2.5,
+      paint: { "line-color": PALETTES[t].lot, "line-width": 3,
         // Approximate identity is drawn dashed: "confidence in the drawing" (Items 80, 89).
         "line-dasharray": ["case", ["==", ["get", "approximate"], true], ["literal", [2, 1.5]], ["literal", [1, 0]]] as unknown as number[] } }),
   },
@@ -194,7 +200,18 @@ export const LAYERS: LayerDef[] = [
         "icon-size": zoomWidth([[12, 0.7], [14, 0.85], [15.5, 1]]) },
       paint: { "icon-opacity": 1 } }),
   },
+  // The property's own pin once the map is zoomed out far enough that the lot is small (owner's review, Item 96).
+  {
+    group: null, needs: "lot", opacity: [],
+    spec: (t) => ({ id: "lot-pin", type: "symbol", source: "lot-point", maxzoom: LOT_PIN_MAX_ZOOM,
+      layout: { "icon-image": lotPinImage(t), "icon-anchor": "bottom", "icon-allow-overlap": true, "icon-ignore-placement": true,
+        "icon-size": zoomWidth([[10, 0.9], [15, 1.1]]) } }),
+  },
 ];
+
+/** Below this zoom the property also gets a pin (at 15.5 a lot is roughly 15-30 px wide). */
+export const LOT_PIN_MAX_ZOOM = 15.5;
+export const lotPinImage = (t: Theme) => (t === "dark" ? "pin-lot-dark" : "pin-lot-light");
 
 export const LAYER_IDS = LAYERS.map((l) => l.spec("light").id);
 
@@ -221,6 +238,7 @@ export function buildStyle({ theme, apiOrigin, glyphsBase, tiles }: StyleInput):
   const sources: StyleSpecification["sources"] = {
     // The lot is drawn exactly: no simplification, and cut finely up to zoom 22.
     lot: { type: "geojson", data: EMPTY as never, tolerance: 0, maxzoom: 22 },
+    "lot-point": { type: "geojson", data: EMPTY as never },
     sales: { type: "geojson", data: EMPTY as never },
     transit: { type: "geojson", data: EMPTY as never },
   };

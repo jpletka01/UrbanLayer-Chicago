@@ -30,8 +30,10 @@ describe("the style document", () => {
     expect(at("lot-line")).toBeGreaterThan(at("road-highway"));
     expect(at("road-label")).toBeGreaterThan(at("lot-line"));
     // Pins draw above everything, labels included, so a sale or a station is never hidden (Item 95).
-    expect(at("sales-pin")).toBe(ids.length - 2);
-    expect(at("transit-pin")).toBe(ids.length - 1);
+    expect(at("sales-pin")).toBe(ids.length - 3);
+    expect(at("transit-pin")).toBe(ids.length - 2);
+    // The property's own pin is on top, and only when zoomed out (Item 96).
+    expect(at("lot-pin")).toBe(ids.length - 1);
   });
 
   it("names streets only zoomed in", () => {
@@ -42,7 +44,7 @@ describe("the style document", () => {
 
   it("leaves out the layers of a tile set the server doesn't have", () => {
     const ids = buildStyle(input({ base: null, parcels: null, zoning: null })).layers.map((l) => l.id);
-    expect(ids).toEqual(["background", "lot-edge", "lot-line", "sales-pin", "transit-pin"]);
+    expect(ids).toEqual(["background", "lot-fill", "lot-edge", "lot-line", "sales-pin", "transit-pin", "lot-pin"]);
   });
 
   it("colors every zoning family in four steps", () => {

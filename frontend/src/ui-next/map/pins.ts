@@ -6,6 +6,9 @@
 const ICONS: Record<string, string[]> = {
   // Lucide "dollar-sign"
   sale: ["M12 2v20", "M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"],
+  // Lucide "house": the property's own pin (Item 96)
+  lot: ["M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8",
+    "M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"],
   // Lucide "train-front"
   transit: [
     "M8 3.1V7a4 4 0 0 0 8 0V3.1", "m9 15-1-1", "m15 15 1-1",
@@ -15,8 +18,19 @@ const ICONS: Record<string, string[]> = {
 
 /** Pin fills: Coastal's Spruce for sales and ink for transit (Item 74: maps use Sapphire, Spruce and black). */
 export const PIN_COLORS = { sale: "#355E58", transit: "#1C1C1C" } as const;
-export type PinKind = keyof typeof PIN_COLORS;
-export const PIN_IMAGE: Record<PinKind, string> = { sale: "pin-sale", transit: "pin-transit" };
+export type PinKind = keyof typeof PIN_COLORS | "lot-light" | "lot-dark";
+export const PIN_IMAGE: Record<PinKind, string> = {
+  sale: "pin-sale", transit: "pin-transit", "lot-light": "pin-lot-light", "lot-dark": "pin-lot-dark",
+};
+
+/** Fill, edge and icon per pin. The property's pin is "this lot" ink (Item 74): black with a white edge in light,
+    white with a black edge in dark, a house inside. */
+const STYLE: Record<PinKind, { fill: string; edge: string; icon: string; glyph: keyof typeof ICONS }> = {
+  sale: { fill: PIN_COLORS.sale, edge: "#FFFFFF", icon: "#FFFFFF", glyph: "sale" },
+  transit: { fill: PIN_COLORS.transit, edge: "#FFFFFF", icon: "#FFFFFF", glyph: "transit" },
+  "lot-light": { fill: "#1C1C1C", edge: "#FFFFFF", icon: "#FFFFFF", glyph: "lot" },
+  "lot-dark": { fill: "#FFFFFF", edge: "#1C1C1C", icon: "#1C1C1C", glyph: "lot" },
+};
 
 /** CSS pixel size of a pin (the image is drawn at 2x). */
 export const PIN_W = 32;
@@ -47,29 +61,29 @@ export function drawPin(kind: PinKind): { width: number; height: number; data: U
   ctx.shadowBlur = 3;
   ctx.shadowOffsetY = 1;
   head();
-  ctx.fillStyle = PIN_COLORS[kind];
+  ctx.fillStyle = STYLE[kind].fill;
   ctx.fill();
   ctx.restore();
   head();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = "#FFFFFF";
+  ctx.strokeStyle = STYLE[kind].edge;
   ctx.stroke();
   // The icon, 15 px, centered in the head.
   ctx.save();
   const s = 15 / 24;
   ctx.translate(cx - 7.5, cy - 7.5);
   ctx.scale(s, s);
-  ctx.strokeStyle = "#FFFFFF";
+  ctx.strokeStyle = STYLE[kind].icon;
   ctx.lineWidth = 2.4;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  if (typeof Path2D !== "undefined") for (const d of ICONS[kind]) ctx.stroke(new Path2D(d));
+  if (typeof Path2D !== "undefined") for (const d of ICONS[STYLE[kind].glyph]) ctx.stroke(new Path2D(d));
   ctx.restore();
   const img = ctx.getImageData(0, 0, w, h);
   return { width: w, height: h, data: img.data };
 }
 
-/** Add both pin images to a map once (idempotent); MapLibre draws them at the 2x pixel ratio. */
+/** Add every pin image to a map once (idempotent); MapLibre draws them at the 2x pixel ratio. */
 export function addPinImages(map: { hasImage(id: string): boolean; addImage(id: string, img: { width: number; height: number; data: Uint8ClampedArray }, opts: { pixelRatio: number }): void }): void {
   for (const kind of Object.keys(PIN_IMAGE) as PinKind[]) {
     const id = PIN_IMAGE[kind];

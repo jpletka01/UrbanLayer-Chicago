@@ -19,7 +19,7 @@ import type { ComparableSale, TransitStation } from "../../lib/types";
 import { humanizeShoutyCase } from "../../lib/format";
 import { rowTitle } from "../../discovery/rowFigures";
 import {
-  GROUPS, buildStyle, modeOpacity, themePaint, type GroupId, type LayerMode, type MapTiles, type Theme,
+  GROUPS, buildStyle, lotPinImage, modeOpacity, themePaint, type GroupId, type LayerMode, type MapTiles, type Theme,
 } from "./mapStyle";
 import { MapKey, type GroupState } from "./MapKey";
 
@@ -223,6 +223,8 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       if (!map.getLayer(id)) continue;
       for (const [k, v] of Object.entries(paint)) map.setPaintProperty(id, k as never, v as never);
     }
+    // The property's pin is an image per theme (a layout property, so set apart from the paint).
+    if (map.getLayer("lot-pin")) map.setLayoutProperty("lot-pin", "icon-image", lotPinImage(theme));
     applyModes(map, modesRef.current, theme);
   }, [theme, ready]);
 
@@ -256,7 +258,10 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     src?.setData(lotGeometry
       ? { type: "FeatureCollection", features: [{ type: "Feature", geometry: lotGeometry, properties: { approximate } }] }
       : { type: "FeatureCollection", features: [] });
-  }, [lotGeometry, approximate, ready]);
+    (map.getSource("lot-point") as GeoJSONSource | undefined)?.setData({
+      type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: {} }],
+    });
+  }, [lotGeometry, approximate, ready, lat, lon]);
 
   // The lot's outline is marked in the parcel layer too (feature-state; one tile set serves every page).
   useEffect(() => {
