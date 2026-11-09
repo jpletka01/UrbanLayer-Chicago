@@ -24,17 +24,20 @@ import { humanizeShoutyCase } from "../../lib/format";
 import { AddressInput } from "../../components/AddressInput";
 import { NextMap, type LateState, type MapView } from "../map/NextMap";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
+import { useUiVersion } from "../uiVersionContext";
 import { AskDrawer } from "../ask/AskDrawer";
 import { ICON } from "../icons";
 import { OverviewTab, TileCard } from "./OverviewTab";
 import { checkingTiles, firstSentence } from "./firstModel";
 import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
+import { MoneyTab } from "./MoneyTab";
+import type { LateBlockState } from "./moneyModel";
 import { SourcesDialog } from "./SourcesDialog";
 import { PartsStatus } from "./PartsStatus";
 import { useProfileParts, type PartStatus } from "./useProfileParts";
 
-type TabId = "overview" | "build";
+type TabId = "overview" | "build" | "money";
 
 /** Each tab's camera and layers on the one map (map track M1): the Overview looks at the lot among its neighbors and
     recent sales; Build pulls back to the districts around it. Zoning is on in both (owner's review: it reads best
@@ -42,8 +45,11 @@ type TabId = "overview" | "build";
 const MAP_VIEWS: Record<TabId, MapView> = {
   overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", transit: "on", streets: "on" } },
   build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", transit: "on", streets: "on" } },
+  // Money: the nearby market sales around the lot (brief: "market sales within ¼ mile"); zoning off so the sale pins
+  // read (Item 99). It opens framed on the lot and its sales (`fit`), which a widened search can find half a mile out.
+  money: { id: "money", zoom: 15.2, fit: "sales", modes: { zoning: "off", parcels: "on", sales: "on", transit: "off", streets: "on" } },
 };
-const TABS: TabId[] = ["overview", "build"];
+const TABS: TabId[] = ["overview", "build", "money"];
 
 function queryFrom(params: URLSearchParams): ParcelQuery | null {
   const pin = params.get("pin");
@@ -230,6 +236,7 @@ function ProfileScreen({
 }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
+  const previewOn = useUiVersion().version === "next";
   const verdict = useMemo(() => (data ? computeVerdict(data, tp) : null), [data, tp]);
   const [tab, setTab] = useState<TabId>("overview");
   const [askOpen, setAskOpen] = useState(false);
@@ -270,6 +277,10 @@ function ProfileScreen({
     : parts.money === "failed" ? "failed"
     : (timedOut.money ?? []).includes("comparables") ? "timedOut"
     : (data.comparables?.sales?.length ?? 0) > 0 ? "ready" : "absent";
+
+  // Where each late part stands for the blocks that read it (Item 89's skeleton rule).
+  const lateOf = (p: ProfileLatePart): LateBlockState =>
+    !data || parts[p] === "waiting" ? "loading" : parts[p] === "failed" ? "failed" : (timedOut[p]?.length ?? 0) > 0 ? "timedOut" : "ready";
 
   // The tab bar is sticky; once it is stuck it also shows the short address (the slim header).
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -377,7 +388,7 @@ function ProfileScreen({
           {stuck && <div className="flex shrink-0 items-center gap-1">{toolsFor("slim")}</div>}
         </div>
 
-        <div className="px-4 pb-24 pt-6 sm:px-7">
+        <div className="px-4 pb-10 pt-6 sm:px-7">
           <Tabs.Content value="overview" className="focus:outline-none">
             {data && verdict ? (
               <OverviewTab
@@ -398,11 +409,28 @@ function ProfileScreen({
             </Tabs.Content>
           )}
 
+          {data && verdict && (
+            <Tabs.Content value="money" className="focus:outline-none">
+              <MoneyTab
+                data={data}
+                late={{ money: lateOf("money"), incentives: lateOf("incentives"), neighborhood: lateOf("neighborhood") }}
+                onRetry={(p) => onRetryParts([p])}
+              />
+            </Tabs.Content>
+          )}
+
           {data && <PartsStatus parts={parts} timedOut={timedOut} onRetry={onRetryParts} />}
 
-          <div className="mt-12 max-w-xl border-t border-nx-ink/10 pt-6">
-            <p className="mb-2 text-caption nx-muted">{t("profile.another")}</p>
-            <AddressInput variant="page" size="sm" onSubmit={onSearch} placeholder={t("profile.search.placeholder")} />
+        </div>
+
+        {/* "Look up another address", pinned to the bottom of the screen on every tab (owner, Item 89). It leaves room
+            for the preview badge below it; the expanded map covers it; suggestions open upward. */}
+        <div
+          className={`sticky bottom-0 z-20 border-t border-nx-ink/10 bg-nx-page/95 px-4 pt-3 backdrop-blur sm:px-7 ${previewOn ? "pb-[calc(env(safe-area-inset-bottom)+4.25rem)]" : "pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"}`}
+          data-testid="search-again"
+        >
+          <div className="max-w-xl">
+            <AddressInput variant="page" size="sm" dropUp onSubmit={onSearch} placeholder={t("profile.another")} label={t("profile.another")} />
           </div>
         </div>
       </Tabs.Root>

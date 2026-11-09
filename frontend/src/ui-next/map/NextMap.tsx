@@ -29,6 +29,9 @@ export interface MapView {
   id: string;
   zoom: number;
   modes: Record<GroupId, LayerMode>;
+  /** Frame the lot and this group's points when the view opens (and when they arrive late), instead of the
+      fixed zoom; the zoom stays the fallback when the group has no points (Money: the nearby sales, Item 99). */
+  fit?: GroupId;
 }
 
 /** A layer that waits on a late part (Item 89's skeleton rule): loading, ready, or couldn't be checked in time. */
@@ -218,6 +221,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   const backToProperty = () => {
     const map = mapRef.current;
     if (!map) return;
+    if (view.fit && fitGroup(view.fit)) return;
     const opts = { center: [lon, lat] as [number, number], zoom: view.zoom };
     if (reducedMotion()) map.jumpTo(opts); else map.easeTo({ ...opts, duration: 600 });
   };
@@ -247,6 +251,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
+    if (view.fit && fitGroup(view.fit)) return;
     const opts = { center: [lon, lat] as [number, number], zoom: view.zoom };
     if (reducedMotion()) map.jumpTo(opts); else map.easeTo({ ...opts, duration: 600 });
     // view.id is the trigger; the modes object changes identity with it.
@@ -413,18 +418,32 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     return () => window.removeEventListener("keydown", onKey);
   }, [picked]);
 
-  // Fit the lot and a group's points on screen (the key's "Show").
-  const showGroup = (g: GroupId) => {
+  // Fit the lot and a group's points on screen (the key's "Show", and a view's `fit`). False when there is nothing
+  // to fit. The right padding leaves room for the open key, but never more than a third of a narrow band.
+  function fitGroup(g: GroupId): boolean {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map) return false;
     const pts: [number, number][] = [[lon, lat]];
-    if (g === "sales") for (const f of saleFeatures) pts.push(f.geometry.coordinates as [number, number]);
+    if (g === "sales" && salesState === "ready") for (const f of saleFeatures) pts.push(f.geometry.coordinates as [number, number]);
     if (g === "transit") for (const s of stations) pts.push([s.lon, s.lat]);
-    if (pts.length < 2) return;
+    if (pts.length < 2) return false;
     const w = Math.min(...pts.map((p) => p[0])), e = Math.max(...pts.map((p) => p[0]));
     const so = Math.min(...pts.map((p) => p[1])), n = Math.max(...pts.map((p) => p[1]));
-    map.fitBounds([[w, so], [e, n]], { padding: { top: 70, bottom: 60, left: 60, right: 300 }, maxZoom: 17, duration: reducedMotion() ? 0 : 600 });
-  };
+    const width = map.getContainer().clientWidth;
+    const right = Math.min(300, Math.round(width / 3));
+    map.fitBounds([[w, so], [e, n]], { padding: { top: 56, bottom: 44, left: 48, right }, maxZoom: 17, duration: reducedMotion() ? 0 : 600 });
+    return true;
+  }
+  const showGroup = (g: GroupId) => { fitGroup(g); };
+
+  // A view that frames its points: once they arrive (the sales come with a late part), frame them once per view.
+  const fittedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ready || !view.fit) { fittedFor.current = null; return; }
+    if (fittedFor.current === view.id) return;
+    if (fitGroup(view.fit)) fittedFor.current = view.id;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, view.id, view.fit, saleFeatures, salesState, stations]);
 
   const groups: GroupState[] = GROUPS.flatMap((g): GroupState[] => {
     if (g === "zoning" && !tiles?.zoning) return [];

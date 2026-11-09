@@ -703,3 +703,38 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 **Owner's call on the teal dots (2026-11-09): back to gray** (the try was reverted). **Noted for later (owner):** the darkest downtown blue (`#2A6488`, DX/DC-12 and up) sits close to the water color, especially the river through the Loop in dark; revisit the downtown ramp or the water color when the zoning palette is settled (Item 74 still calls it provisional).
 
 **Phase 5 approved (2026-11-09):** the owner reviewed the map on localhost in light and dark against the reference and gave a thumbs up after the reviews recorded in Items 91–98. Item 80's gate is met for the Profile's map; Discovery's map follows in Phase 6.
+
+---
+
+## Item 99: Phase 6, the Money tab, and the pinned search bar (2026-11-09)
+
+**Status: built on `feat/ui-next-phase-6-money` (cut from Phase 5's `feat/ui-next-phase-5-maps`, which is not merged yet; the owner chose to build on it and batch the merge), checked locally, waiting for the owner's localhost review.** The owner's answers before the build (2026-11-09): Money first, then Neighborhood, History, then Discovery; Discovery marks its matches as lot outlines only (no dots or pins); the builder test runs later, so no route flips yet (Item 88 stands); #212 merges with the first Phase 6 PR.
+
+**Decision: the Money tab takes the shape every tab has (brief, "Property Profile").** One sentence, then one wide visual, then three smaller ones, then a collapsed details table.
+- **The sentence:** the tax bill and the Assessor's value ("About $12,478 a year in property tax, on an Assessor's value of $619,000"), plus the nearby sales' median only when the backend shows that median (a withheld median stays out of the sentence). Exempt, nominal and no-bill lots say so in words.
+- **Main visual, nearby market sales:** the search's own rule as chips (class "like this lot", radius, years, count, and "Search widened to find enough" when it did), the median and the median per buildable sq ft with the backend's confidence state (both withheld below its sample threshold), a price strip (3 or more sales only: one dot says nothing) and the five newest sales (date, price, per buildable sq ft, zoning, distance); the rest in the details. The same sales are the map's pins.
+- **Taxes and value:** the bill with its year and confidence state, its rate beside the class's typical rate (`property.tax_class_norm`, the backend's own figure), where the bill goes (one stacked bar, the four largest taxing bodies and "others"), and the Assessor's value by year (assessed ÷ the class's level; building and land stacked, the latest year in this lot's black).
+- **Rent nearby:** the Census's 1, 2 and 3-bedroom medians for the tract (or its PUMA, said), one "Estimate" state for the survey, the area median, and this building's typical unit size in black when the records give bedrooms and units on a residential class (2xx/3xx; bedrooms ÷ units, rounded).
+- **Incentives:** TIF, Opportunity Zone, Enterprise Zone, QCT and NMTC as yes / no / not checked chips (a failed source is never "no"); QCT and NMTC are tract-keyed and late (Item 89), so they read "Checking" until the incentives part lands.
+- **Details:** assessed value, assessment level, Assessor's value, effective and typical rates, exemptions, tax code, every taxing body's dollars, the tax-class note, and all nearby sales.
+
+**Decision: the Assessor's value is flagged only against this lot's own recent market sale** (brief: "flagged when far below sales"): when it is under 60% of a market sale (the server's `arms_length`) from the last 5 years, one warning line says "The Assessor's value is N% below this lot's YEAR sale". *Alternatives:* against the nearby median (other buildings of other sizes and classes, and the median is often withheld on small samples); a tighter ratio such as the County's 0.9–1.1 sales-ratio band (reassessment cycles and remodels would flag ordinary lots). *Revisit if* builders read the flag as an appeal tip (rule 11: no advice), or the backend gains a sales-ratio figure of its own.
+
+**Decision: the map's Money view frames the lot and its sales.** `MapView.fit` (new) frames the lot plus a group's points when the view opens and once when they arrive late, instead of a fixed zoom; zoning is off on this tab so the sale pins read, parcels and streets stay on. Reason: on both test lots the widened search found its sales about half a mile out, off the band at any useful fixed zoom. "Back to the property" re-frames the same way.
+
+**Decision: "Look up another address" is pinned to the bottom of the screen on every tab** (owner, Item 89): a sticky bar with the compact address field, its suggestions opening upward (`AddressInput dropUp`, a shared prop; today's pages don't pass it), room left under it for the preview badge (52 px tall on touch screens, so 4.25 rem plus the safe area while the preview is on), and the expanded map covers it. The preview badge no longer wraps "Exit preview" to two lines on a phone.
+
+**Also from the carried-over list:** while the browser downloads a new page's code, `VersionedRoute` now shows the frame's outline (`frame/FrameOutline`: side panel, header, map band and a line) instead of a blank page; the new UI formats numbers in Spanish as Mexico's `es-MX`, never Spain's `es` (`profileModel.numLocale`, used by the Build table, the first screen's sentence and Discovery's counts; Item 82).
+
+**Late parts (Item 89's skeleton rule):** the sales block and the rent block each show their own outline in their final shape, named ("Checking nearby sales…", "Checking rent…"), while `money` or `neighborhood` waits, and "Couldn't check in time" or "Couldn't load" with Retry in the same place.
+
+**Gates (local, 2026-11-09):**
+- *Words:* 112 visible words on the whole tab with the details closed, 19 on its first screen under the map (2541 N Spaulding Ave, 1024 × 768). The new UI has no budget spec yet; these are the baseline for one.
+- *Timing:* the `money` part 14.3 s cold locally on 1601 N Milwaukee (comparables only; the City portal was returning 503s that morning); Overview p50/p95 unchanged (nothing moved into it). Production per-part timing comes from the `scorecard part timings` lines after deploy.
+- *Failure states:* a held `money` part shows the sales outline and its name (Playwright); timed out and failed show Retry in place (vitest); a failed incentive source reads "Not checked"; no rent reads "Couldn't check rent today", never "none".
+- *Map:* the Playwright check finds the same canvas after the switch to Money; `mapNoSatellite.test.tsx` passes.
+- `npm run build`, `npm run test` (1,098), `npm run lint` (67 warnings, the cap), `e2e/ui-next.spec.ts` (with the new Money check, light and dark axe, 360 px) pass.
+
+**Not measured:** how builders read the tab (the builder test, Item 88); production timings.
+
+**Numbers on the two test lots (local, live sources):** 2541 N Spaulding Ave (RS-3 two-flat, class 211): tax $12,478 (2024), 2.02% vs typical 2.1%, Assessor's value $619,000; 1 nearby sale ($395,000, Class 2xx within 0.55 mi, last 5 years, widened; median withheld); 2-bedroom rent $2,106 in black (4 bedrooms ÷ 2 units). 1601 N Milwaukee Ave (B3-2, class 592): tax $82,586, 5.19% vs 5.3%, Assessor's value $1,592,480 (down from about $3.5 M in 2023); 2 nearby sales, median withheld; no unit size (commercial class).

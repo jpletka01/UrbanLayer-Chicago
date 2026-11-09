@@ -134,3 +134,28 @@ test("first screen, then the Overview, then the late parts: axe, no overflow, on
   await page.getByRole("tab", { name: "Build" }).click();
   if (floor) await expect(page.getByText(`${floor} sq ft allowed`, { exact: false }).first()).toBeVisible();
 });
+
+// The Money tab (decision Item 99): its late block waits in its own outline while `money` is held, the map is the
+// same canvas after the switch (one persistent map), and the tab passes axe in both themes with nothing overflowing.
+test("Money tab: late sales outline, same map, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  let releaseMoney: () => void = () => {};
+  const heldMoney = new Promise<void>((r) => { releaseMoney = r; });
+  await page.route(/\/api\/profile\/part\/money\?/, async (route) => { await heldMoney; await route.continue(); });
+  await open(page, ROUTES[1].path, ROUTES[1].ready);
+  await page.evaluate(() => { const c = document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas'); if (c) c.dataset.probe = "overview"; });
+  await page.getByRole("tab", { name: "Money" }).click();
+  await expect(page.getByTestId("money-sentence")).toBeVisible();
+  await expect(page.getByText("Checking nearby sales…")).toBeVisible();
+  releaseMoney();
+  await expect(page.getByText("Checking nearby sales…")).toHaveCount(0, { timeout: 90_000 });
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("overview");
+  await expect(page.getByTestId("search-again")).toBeVisible();
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(400);
+    expect(await axe(page), `axe ${scheme}`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "money overflow").toBeLessThanOrEqual(1);
+});

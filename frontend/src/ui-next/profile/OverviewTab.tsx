@@ -9,7 +9,7 @@ import { answerSentence } from "../../lib/answerSentence";
 import { ConfidenceState } from "../../components/ui/ConfidenceState";
 import { ICON, STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
-import { overviewTiles, type Tile } from "./profileModel";
+import { overviewTiles, type Tile, type TileTab } from "./profileModel";
 
 const TILE_ICON = { units: ICON.units, tax: ICON.tax, walk: ICON.walk, lastSale: ICON.sale } as const;
 
@@ -28,7 +28,7 @@ export function OverviewTab({
   checkingCityLists?: boolean;
   /** The City's building records (the `building` part) haven't answered. */
   buildingPending?: boolean;
-  onOpenTab: (tab: "build") => void;
+  onOpenTab: (tab: TileTab) => void;
 }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
@@ -49,7 +49,7 @@ export function OverviewTab({
   );
 }
 
-export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTab: (tab: "build") => void }) {
+export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTab: (tab: TileTab) => void }) {
   const { t } = useTranslation("next");
   const Icon = TILE_ICON[tile.key];
   const body = (

@@ -11,7 +11,7 @@ import { Toggletip } from "../../components/ui/Toggletip";
 import { formatDay } from "../../lib/format";
 import { Block, Pill, ShareBar, type PillTone } from "../ui/Blocks";
 import { ICON, STROKE } from "../icons";
-import { allowedVsBuilt, pendingRezonings, ruleChips, STAGES, type RuleChip } from "./profileModel";
+import { allowedVsBuilt, numLocale, pendingRezonings, ruleChips, STAGES, type RuleChip } from "./profileModel";
 
 const LIMIT_ICON = { floorArea: ICON.floorArea, units: ICON.units, height: ICON.height } as const;
 
@@ -118,8 +118,8 @@ export function BuildTab({ data, verdict, buildingPending = false }: { data: Sco
               [t("profile.build.row.section"), zdef?.code_section || "—"],
               [t("profile.build.row.far"), zdef?.far != null ? String(zdef.far) : "—"],
               [t("profile.build.row.height"), zdef?.max_height || "—"],
-              [t("profile.build.row.perUnit"), zdef?.min_lot_area_per_unit != null ? t("profile.build.sqft", { value: zdef.min_lot_area_per_unit.toLocaleString(i18n.language) }) : "—"],
-              [t("profile.build.row.lot"), data.context?.property?.land_sqft != null ? t("profile.build.sqft", { value: data.context.property.land_sqft.toLocaleString(i18n.language) }) : "—"],
+              [t("profile.build.row.perUnit"), zdef?.min_lot_area_per_unit != null ? t("profile.build.sqft", { value: zdef.min_lot_area_per_unit.toLocaleString(numLocale(i18n.language)) }) : "—"],
+              [t("profile.build.row.lot"), data.context?.property?.land_sqft != null ? t("profile.build.sqft", { value: data.context.property.land_sqft.toLocaleString(numLocale(i18n.language)) }) : "—"],
               [t("profile.build.row.unitMath"), data.context?.unit_yield?.arithmetic || "—"],
             ].map(([k, v]) => (
               <tr key={k} className="border-b border-nx-ink/5 last:border-0">

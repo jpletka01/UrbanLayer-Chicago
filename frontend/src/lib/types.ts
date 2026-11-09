@@ -754,6 +754,12 @@ export interface ComparablesSummary {
   price_range_max: number | null;
   sales_volume: number;
   sales: ComparableSale[];
+  /** The search that found them, in words ("Class 2xx sales within 0.55 mi, last 5 yr (n=1)"). */
+  comp_basis?: string | null;
+  comp_radius_mi?: number | null;
+  comp_window_years?: number | null;
+  /** The search widened past its first radius and window to find enough sales. */
+  comp_widened?: boolean | null;
 }
 
 // Pre-resolved parcel grounding shipped to /chat on a Scorecard handoff. Mirrors

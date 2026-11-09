@@ -234,6 +234,112 @@
         "property": "registros de edificios de la Ciudad"
       },
       "unitsBuiltChecking": "Revisando los registros de edificios de la Ciudad"
+    },
+    "money": {
+      "checking": "Revisando {{what}}…",
+      "perSqft": "{{value}}/pie²",
+      "perMonth": "{{value}}/mes",
+      "miles": "{{mi}} mi",
+      "sentence": {
+        "billValue": "Alrededor de {{tax}} al año de impuesto predial, sobre un valor del Tasador de {{value}}",
+        "bill": "Alrededor de {{tax}} al año de impuesto predial",
+        "exempt": "Exento de impuestos: no tiene recibo de impuesto predial",
+        "nominal": "Una tasación nominal: no aplica una cifra de impuesto",
+        "none": "No hay recibo de impuesto registrado",
+        "comps_one": "{{count}} venta de mercado cercana en {{median}}",
+        "comps_other": "{{count}} ventas de mercado cercanas, mediana {{median}}"
+      },
+      "sales": {
+        "title": "Ventas de mercado cercanas",
+        "onMap": "Marcadores en el mapa",
+        "none": "No se revisaron ventas cercanas para este terreno",
+        "noneFound": "No se encontraron ventas de mercado con esta regla",
+        "ruleLabel": "Cómo se eligieron las ventas cercanas",
+        "rule": {
+          "class": "Clase {{group}}xx, como este terreno",
+          "radius": "A menos de {{mi}} mi",
+          "years_one": "Último {{count}} año",
+          "years_other": "Últimos {{count}} años",
+          "count_one": "{{count}} venta",
+          "count_other": "{{count}} ventas",
+          "widened": "La búsqueda se amplió para encontrar suficientes"
+        },
+        "median": "Precio mediano",
+        "perBuildable": "Mediana por pie² edificable",
+        "medianMark": "Línea = mediana",
+        "stripLabel_one": "{{count}} venta en {{min}}",
+        "stripLabel_other": "{{count}} ventas de {{min}} a {{max}}",
+        "col": {
+          "date": "Vendida",
+          "price": "Precio",
+          "buildable": "Por pie² edificable",
+          "district": "Zonificación",
+          "distance": "Distancia"
+        }
+      },
+      "tax": {
+        "title": "Impuestos y valor",
+        "billYear": "Recibo {{year}}",
+        "rateVsTypical": "{{rate}}% del valor al año; lo típico para su clase es {{typical}}%",
+        "exempt": "Los propietarios exentos no pagan impuesto predial. A una tasa típica para su clase pagaría alrededor de {{rate}}% del valor al año.",
+        "nominal": "La cifra del Condado es simbólica (un área común o el resto de un terreno dividido), así que no se muestra impuesto.",
+        "none": "El Condado no tiene recibo de impuesto registrado para este terreno.",
+        "whereItGoes": "A dónde va el recibo",
+        "others": "Otros",
+        "valueOverTime": "Valor del Tasador por año",
+        "assessedOverTime": "Valor tasado por año",
+        "building": "Edificio",
+        "land": "Terreno",
+        "belowSale": "El valor del Tasador está {{pct}}% por debajo de la venta de {{year}} de este terreno"
+      },
+      "rent": {
+        "title": "Renta cercana",
+        "what": "la renta",
+        "census": "Censo {{period}}",
+        "notChecked": "No se pudo revisar la renta hoy",
+        "bed": {
+          "1_bedroom": "1 recámara",
+          "2_bedrooms": "2 recámaras",
+          "3_bedrooms": "3 recámaras"
+        },
+        "barLabel": "{{size}}: renta mediana de {{rent}} al mes",
+        "barNone": "{{size}}: sin mediana utilizable",
+        "thisSize": "En negro: {{size}}, la unidad típica de este edificio",
+        "noSize": "El tamaño de las unidades no está registrado para este edificio",
+        "area": "mediana del área {{rent}}/mes",
+        "puma": "algunas de un área más amplia",
+        "howToRead": "Cómo leer la renta",
+        "howToReadBody": "Renta bruta mediana (renta más servicios) que midió el Censo en este sector censal, o en un área más amplia a su alrededor. Es una encuesta de lo que pagan los inquilinos, no precios de anuncios ni lo que obtendría un edificio nuevo."
+      },
+      "incentives": {
+        "title": "Incentivos",
+        "checking": "Revisando",
+        "program": {
+          "tif": "Distrito TIF",
+          "oz": "Zona de Oportunidad",
+          "ez": "Zona Empresarial",
+          "qct": "Sector censal calificado (QCT)",
+          "nmtc": "Crédito fiscal de Nuevos Mercados"
+        },
+        "standardClass": "Clase de impuesto estándar: no aplica ningún incentivo de clase.",
+        "classIncentive": "La clase de impuesto de este terreno tiene un incentivo (vea los detalles).",
+        "howToRead": "Qué son estos programas",
+        "howToReadBody": "Lugares donde el dinero público o las reducciones de impuestos pueden ayudar a un proyecto. Estar dentro de uno hace que un proyecto pueda solicitarlos, no que esté aprobado."
+      },
+      "details": {
+        "title": "Todos los detalles de dinero",
+        "assessed": "Valor tasado",
+        "level": "Nivel de tasación para su clase",
+        "marketValue": "Valor del Tasador (tasado ÷ nivel)",
+        "rate": "Tasa efectiva de impuesto",
+        "typicalRate": "Tasa típica para su clase",
+        "exemptions": "Exenciones en el recibo",
+        "noneOnBill": "Ninguna",
+        "taxCode": "Código de impuesto",
+        "classNote": "Clase de impuesto",
+        "allSales_one": "{{count}} venta cercana",
+        "allSales_other": "Las {{count}} ventas cercanas"
+      }
     }
   },
   "discovery": {

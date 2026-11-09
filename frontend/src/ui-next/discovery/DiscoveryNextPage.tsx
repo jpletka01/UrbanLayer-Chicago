@@ -126,7 +126,7 @@ function ResultCard({ row }: { row: ResultRow }) {
   const { t, i18n } = useTranslation("next");
   const navigate = useNavigate();
   const { title, approx } = rowTitle(row);
-  const n = (v: number) => Math.round(v).toLocaleString(i18n.language);
+  const n = (v: number) => Math.round(v).toLocaleString(i18n.language.startsWith("es") ? "es-MX" : "en-US");
   const { t: tp } = useTranslation("pages");
   // The exact district when the index has it, else the family in words (same keys as today's dot preview).
   const zone = row.zone_class

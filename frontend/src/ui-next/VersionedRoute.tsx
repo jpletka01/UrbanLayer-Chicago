@@ -5,6 +5,7 @@ import { useUiVersion } from "./uiVersionContext";
 import { useNoindex } from "./useNoindex";
 import { isReady } from "./readiness";
 import { NEXT_PAGES } from "./pages";
+import { FrameOutline } from "./frame/FrameOutline";
 
 export function VersionedRoute({ id, old }: { id: keyof typeof NEXT_PAGES; old: ReactNode }) {
   const { version } = useUiVersion();
@@ -13,7 +14,7 @@ export function VersionedRoute({ id, old }: { id: keyof typeof NEXT_PAGES; old: 
   if (!next) return <>{old}</>;
   const Page = NEXT_PAGES[id];
   return (
-    <Suspense fallback={<div className="ui-next min-h-screen bg-nx-page" aria-busy="true" />}>
+    <Suspense fallback={<FrameOutline />}>
       <Page />
     </Suspense>
   );

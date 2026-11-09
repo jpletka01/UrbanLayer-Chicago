@@ -234,6 +234,112 @@
         "property": "City building records"
       },
       "unitsBuiltChecking": "Checking City building records"
+    },
+    "money": {
+      "checking": "Checking {{what}}…",
+      "perSqft": "{{value}}/sq ft",
+      "perMonth": "{{value}}/mo",
+      "miles": "{{mi}} mi",
+      "sentence": {
+        "billValue": "About {{tax}} a year in property tax, on an Assessor's value of {{value}}",
+        "bill": "About {{tax}} a year in property tax",
+        "exempt": "Tax-exempt: no property tax bill",
+        "nominal": "A nominal assessment: no tax figure applies",
+        "none": "No tax bill on record",
+        "comps_one": "{{count}} nearby market sale at {{median}}",
+        "comps_other": "{{count}} nearby market sales, median {{median}}"
+      },
+      "sales": {
+        "title": "Nearby market sales",
+        "onMap": "Pins on the map",
+        "none": "Nearby sales weren't checked for this lot",
+        "noneFound": "No market sales found by this rule",
+        "ruleLabel": "How nearby sales were chosen",
+        "rule": {
+          "class": "Class {{group}}xx, like this lot",
+          "radius": "Within {{mi}} mi",
+          "years_one": "Last {{count}} year",
+          "years_other": "Last {{count}} years",
+          "count_one": "{{count}} sale",
+          "count_other": "{{count}} sales",
+          "widened": "Search widened to find enough"
+        },
+        "median": "Median price",
+        "perBuildable": "Median per buildable sq ft",
+        "medianMark": "Line = median",
+        "stripLabel_one": "{{count}} sale at {{min}}",
+        "stripLabel_other": "{{count}} sales from {{min}} to {{max}}",
+        "col": {
+          "date": "Sold",
+          "price": "Price",
+          "buildable": "Per buildable sq ft",
+          "district": "Zoning",
+          "distance": "Distance"
+        }
+      },
+      "tax": {
+        "title": "Taxes and value",
+        "billYear": "{{year}} bill",
+        "rateVsTypical": "{{rate}}% of value a year; typical for its class {{typical}}%",
+        "exempt": "Exempt owners pay no property tax. At a typical rate for its class it would pay about {{rate}}% of value a year.",
+        "nominal": "The County's figure is a token amount (a common area or the rest of a divided lot), so no tax is shown.",
+        "none": "The County has no tax bill on record for this lot.",
+        "whereItGoes": "Where the bill goes",
+        "others": "Others",
+        "valueOverTime": "Assessor's value by year",
+        "assessedOverTime": "Assessed value by year",
+        "building": "Building",
+        "land": "Land",
+        "belowSale": "The Assessor's value is {{pct}}% below this lot's {{year}} sale"
+      },
+      "rent": {
+        "title": "Rent nearby",
+        "what": "rent",
+        "census": "Census {{period}}",
+        "notChecked": "Couldn't check rent today",
+        "bed": {
+          "1_bedroom": "1 bedroom",
+          "2_bedrooms": "2 bedrooms",
+          "3_bedrooms": "3 bedrooms"
+        },
+        "barLabel": "{{size}}: median rent {{rent}} a month",
+        "barNone": "{{size}}: no usable median",
+        "thisSize": "In black: {{size}}, this building's typical unit",
+        "noSize": "Unit sizes not on record for this building",
+        "area": "area median {{rent}}/mo",
+        "puma": "some from a wider area",
+        "howToRead": "How to read rent",
+        "howToReadBody": "Median gross rent (rent plus utilities) the Census measured in this tract, else a wider area around it. A survey of what renters pay, not listing prices or what a new building would get."
+      },
+      "incentives": {
+        "title": "Incentives",
+        "checking": "Checking",
+        "program": {
+          "tif": "TIF district",
+          "oz": "Opportunity Zone",
+          "ez": "Enterprise Zone",
+          "qct": "Qualified Census Tract",
+          "nmtc": "New Markets Tax Credit"
+        },
+        "standardClass": "Standard tax class: no class incentive applies.",
+        "classIncentive": "This lot's tax class carries an incentive (see details).",
+        "howToRead": "What these programs are",
+        "howToReadBody": "Places where public money or tax breaks can help a project. Being inside one makes a project eligible to apply, not approved."
+      },
+      "details": {
+        "title": "All money details",
+        "assessed": "Assessed value",
+        "level": "Assessment level for its class",
+        "marketValue": "Assessor's value (assessed ÷ level)",
+        "rate": "Effective tax rate",
+        "typicalRate": "Typical rate for its class",
+        "exemptions": "Exemptions on the bill",
+        "noneOnBill": "None",
+        "taxCode": "Tax code",
+        "classNote": "Tax class",
+        "allSales_one": "{{count}} nearby sale",
+        "allSales_other": "All {{count}} nearby sales"
+      }
     }
   },
   "discovery": {
