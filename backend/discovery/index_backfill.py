@@ -32,7 +32,7 @@ from backend.discovery.lot_sources import DEFAULT_PATH as SOURCES_PATH
 log = logging.getLogger(__name__)
 
 # Keys this pass owns: cleared before each fill so a rerun never keeps a stale answer.
-OWNED = ("bldg_sqft_unknown", "room_sqft", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
+OWNED = ("bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
          "warn_landmark")
 
 
@@ -105,6 +105,43 @@ def enrich_rows(rows: list[tuple], *, ptaxsim: Path, sources: Path = SOURCES_PAT
     for pin, _lat, _lon, attrs, _regions in rows:
         p = pin.replace("-", "")
         enrich(attrs, p, lots.get(p[:10]), src, pending)
+    complex_room(rows)
+
+
+def complex_room(rows: list[tuple]) -> None:
+    """Room to build for the lots of a multi-parcel complex, as one site (Item 104).
+
+    The Assessor's Commercial Valuation gives one building area for a complex spanning several PIN10s (a shopping
+    center, a campus), which describes no single lot (Item 40). Read as a site: allowed floor area summed over its
+    lots (each lot's own FAR x land) minus the complex's area. Each member lot with no room of its own carries the
+    site's figure, marked ``room_scope: complex`` with ``complex_lots``; a member whose land or FAR is unknown, or
+    outside these rows, leaves the whole complex unknown."""
+    from backend.discovery.index_build import _commercial_area
+    from backend.retrieval.property.commercial_artifact import MultiPinMember
+
+    base = {r[0].replace("-", "")[:10]: r[3] for r in rows if r[0].replace("-", "").endswith("0000")}
+    done: dict[tuple[str, ...], float | None] = {}
+    for pin10, attrs in base.items():
+        if attrs.get("room_sqft") is not None:
+            continue
+        unit = _commercial_area(pin10 + "0000")
+        if not isinstance(unit, MultiPinMember) or not unit.complex_bldg_sqft:
+            continue
+        members = tuple(sorted({u.replace("-", "")[:10] for u in unit.unit_pins}))
+        if members not in done:
+            allowed = 0.0
+            for m in members:
+                a = base.get(m)
+                if not a or not a.get("land_sqft") or not a.get("density_band"):
+                    allowed = -1.0
+                    break
+                allowed += a["density_band"] * a["land_sqft"]
+            done[members] = None if allowed < 0 else float(max(0.0, round(allowed - unit.complex_bldg_sqft)))
+        room = done[members]
+        if room is not None:
+            attrs["room_sqft"] = room
+            attrs["room_scope"] = "complex"
+            attrs["complex_lots"] = len(members)
 
 
 def coverage(rows: Iterable[tuple[str, dict]]) -> dict[str, dict[str, Any]]:

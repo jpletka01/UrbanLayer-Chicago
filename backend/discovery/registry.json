@@ -12,7 +12,8 @@
     { "key": "sale_recency", "field": "sale_recency_days" },
     { "key": "price_per_sf", "field": "price_per_sf" },
     { "key": "value_percentile", "field": "value_percentile" },
-    { "key": "upside_score", "field": "upside_score" }
+    { "key": "upside_score", "field": "upside_score" },
+    { "key": "room_to_build", "field": "room_sqft" }
   ],
   "topics": [
     { "id": "vacant_mf_transit", "label": "Vacant land in residential zoning near transit",

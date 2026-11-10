@@ -222,3 +222,30 @@ test("History tab: late sources in place, same map, kind chips, axe light and da
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow, "history overflow").toBeLessThanOrEqual(1);
 });
+
+test("Discovery: a search, matches on the map as outlines, the list, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, ROUTES[2].path);
+  const canvas = page.locator('[data-testid="explore-map"] canvas');
+  await canvas.waitFor({ timeout: 30_000 });
+  await canvas.evaluate((c) => { (c as HTMLCanvasElement).dataset.probe = "explore"; });
+  // A quick filter in Explore asks the server about the view; nothing is evaluated in the page.
+  const search = page.waitForRequest((r) => r.url().includes("/api/discovery/search") && r.method() === "POST");
+  await page.getByTestId("quick-filters").getByRole("button", { name: "Vacant" }).click();
+  expect((await search).postDataJSON().userFilters.vacancy).toEqual({ kind: "flag", value: true });
+  await page.getByTestId("quick-filters").getByRole("button", { name: "Vacant" }).click();
+  // A goal: the list in the sheet over the map, the same canvas, matches handed to the map as outlines.
+  const goal = page.waitForResponse((r) => r.url().includes("/api/discovery/search") && r.request().postDataJSON()?.includeAreaCounts === true);
+  await page.getByRole("group", { name: "Try:" }).getByRole("button").first().click();
+  const body = await (await goal).json();
+  expect(body.areaCounts).toBeTruthy();
+  await expect(page.getByTestId("next-results").getByRole("button").first()).toBeVisible({ timeout: 30_000 });
+  expect(await canvas.evaluate((c) => (c as HTMLCanvasElement).dataset.probe)).toBe("explore");
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(400);
+    expect(await axe(page), `axe ${scheme}`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "discovery overflow").toBeLessThanOrEqual(1);
+});

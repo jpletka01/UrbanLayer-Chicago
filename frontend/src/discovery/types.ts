@@ -5,9 +5,10 @@
 export type FilterId = string;
 export type RegionRef = string;
 
-export type EnumPredicate = { kind: "enum"; values: string[] };
-export type RangePredicate = { kind: "range"; min?: number; max?: number };
-export type FlagPredicate = { kind: "flag"; value: boolean };
+// `includeUnknown` overrides the filter's unknown policy ("also include lots with no data", Item 104); absent = the policy.
+export type EnumPredicate = { kind: "enum"; values: string[]; includeUnknown?: boolean };
+export type RangePredicate = { kind: "range"; min?: number; max?: number; includeUnknown?: boolean };
+export type FlagPredicate = { kind: "flag"; value: boolean; includeUnknown?: boolean };
 export type RegionPredicate = { kind: "region"; regions: RegionRef[] };
 export type Predicate = EnumPredicate | RangePredicate | FlagPredicate | RegionPredicate;
 
@@ -190,6 +191,7 @@ export interface SearchRequest {
   offset?: number; // window start into the ordered result
   includePins?: boolean; // also return the map's points from this same evaluation (SearchResponse.pins)
   includeUnusual?: boolean; // opt in to the parcels the default `hide_unusual` filter keeps out (Item 60)
+  includeAreaCounts?: boolean; // also return matches per community area (the new map's city view, Item 104)
 }
 
 // One hydrated result parcel. `pin` is the frozen identity; the rest is hydrated from the
@@ -222,6 +224,15 @@ export interface ResultRow {
   zone_class?: string | null;
   allowed_far?: number | null;
   nominal_assessment?: boolean;
+  /** Room to build: allowed floor area minus the building's; null = unknown (Item 104). */
+  room_sqft?: number | null;
+  /** Where the building area came from: assessor, commercial_valuation or footprint. */
+  bldg_sqft_source?: string | null;
+  /** "complex" = the room of the multi-parcel site the lot belongs to (`complex_lots` lots). */
+  room_scope?: string | null;
+  complex_lots?: number | null;
+  /** The card's one serious warning (Item 104). */
+  warning?: { kind: "demolition" | "vacant_case" | "pending_rezoning" | "landmark" | "nominal"; detail?: string | null } | null;
   sortValue: number | string | null; // value of the active sort key, for row display
 }
 
@@ -264,6 +275,8 @@ export interface SearchResponse {
   // Only when the request set `includePins`, and only from a backend that supports it: the
   // /search/pins body computed from the same evaluation as `result`. Absent/null otherwise.
   pins?: PinsResponse | null;
+  /** Only with `includeAreaCounts`: community area number (as a string) -> matches in it (Item 104). */
+  areaCounts?: Record<string, number> | null;
 }
 
 // --- Frontend-only: filter-panel control state ---

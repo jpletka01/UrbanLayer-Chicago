@@ -1,173 +1,701 @@
-// One Discovery flow in the new frame (decision Item 76; brief "Discovery"): one search box for a description,
-// the goals as "Try" chips, results as cards, and every card opens its Profile. Same search engine as today's
-// page (useDiscoverySearch → searchClient → /api/discovery/search); the list only, the map comes with M1–M3.
-import { useEffect, useState } from "react";
+// Discovery in the new frame (brief "Discovery — Approved"; decision Item 104). It opens on the map of the city
+// (Explore): every lot drawn as its shape and filled by one measure, five quick filters that dim the lots that don't
+// match (the server evaluates them for the view), and "Search these lots". One search box takes an address, a
+// community area or a description (the rule-based compiler; words it can't read are said). The goals are "Try"
+// chips. After a search, one focus at a time: List (picture cards) or Map (matches only, as outlines). On a phone the
+// map comes first and the list is a sheet over it. Same engine as today's page: useDiscoverySearch → /search.
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, LoaderCircle, Search, TriangleAlert } from "lucide-react";
+import {
+  ArrowRight, Circle, Hammer, House, Landmark, List, LoaderCircle, Map as MapIcon, MapPin, Palette, Search, SlidersHorizontal,
+  TriangleAlert, X, type LucideIcon,
+} from "lucide-react";
 import { loadRegistry } from "../../discovery/registryClient";
 import { useDiscoverySearch } from "../../discovery/useDiscoverySearch";
 import { recipeStatus } from "../../discovery/recipeStatus";
-import { rowTitle } from "../../discovery/rowFigures";
-import type { Registry, ResultRow } from "../../discovery/types";
+import { chipLabel } from "../../discovery/chips";
+import { COMMUNITY_AREAS } from "../../discovery/communityAreas";
+import { HIDE_UNUSUAL } from "../../discovery/draftModel";
+import type { FilterDef, PanelState, Predicate, Registry, ResultRow } from "../../discovery/types";
+import { getAutocomplete } from "../../lib/api";
+import type { AddressSuggestion } from "../../lib/types";
 import { track } from "../../lib/tracking";
+import { useIsPhone } from "../../lib/useIsPhone";
 import { AppFrame } from "../frame/AppFrame";
 import { ICON, STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
+import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
+import { FiltersSheet } from "./FiltersSheet";
+import { fetchLotShape, shapePath, useViewMatches } from "./discoveryData";
+import {
+  DEFAULT_MEASURE, LOTS_MIN_ZOOM, MEASURES, QUICK_FILTERS, RING_MILES, areaSuggestions, cardModel, classifyQuery,
+  ROOM_SORT, measureSteps, quickFromPanel, quickPanel, ringMiles, ringRegion, type CardWarning, type MeasureId, type QuickId,
+} from "./discoveryModel";
+
+type Focus = "map" | "list";
+interface Place { lat: number; lon: number; label: string }
+
+const numLocale = (lang: string) => (lang.startsWith("es") ? "es-MX" : "en-US");
 
 export default function DiscoveryNextPage() {
-  const { t } = useTranslation("next");
+  const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
+  const navigate = useNavigate();
+  const phone = useIsPhone();
+  const fmt = useMemo(() => new Intl.NumberFormat(numLocale(i18n.language)), [i18n.language]);
   const [registry, setRegistry] = useState<Registry | null>(null);
   const [registryFailed, setRegistryFailed] = useState(false);
   const search = useDiscoverySearch(registry, {
-    onCommit: (_inputs, response) => track("discovery_search", { total: response.result.total, source: "next_text" }),
+    includeAreaCounts: true,
+    onCommit: (_inputs, response) => track("discovery_search", { total: response.result.total, source: "next" }),
   });
-
   useEffect(() => {
     loadRegistry().then((r) => (r ? setRegistry(r) : setRegistryFailed(true))).catch(() => setRegistryFailed(true));
   }, []);
 
-  const topics = (registry?.topics ?? []).filter((topic) => recipeStatus(registry!, topic, tp).live).slice(0, 6);
   const response = search.applied;
-  const rows = search.rows;
+  const [focus, setFocus] = useState<Focus>("map");
+  const [measure, setMeasure] = useState<MeasureId>(DEFAULT_MEASURE);
+  const [showZoning, setShowZoning] = useState(false);
+  const [view, setView] = useState<ViewBox | null>(null);
+  const [camera, setCamera] = useState<{ bbox?: [number, number, number, number]; center?: [number, number]; zoom?: number; seq: number } | null>(null);
+  const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [place, setPlace] = useState<Place | null>(null);
+  const [ring, setRing] = useState<Ring | null>(null);
+  const [sheet, setSheet] = useState<"peek" | "half" | "full">("peek");
+
+  // Explore's quick filters (no search yet): the server evaluates them for the view.
+  const [quick, setQuick] = useState<Set<QuickId>>(new Set());
+  const explorePanel = useMemo(() => (quick.size ? quickPanel(quick) : null), [quick]);
+  const viewMatches = useViewMatches(registry, response ? null : explorePanel, view);
+
+  // What the map outlines and labels.
+  const searchPins = useMemo(
+    () => (response?.pins?.points ?? search.map.points).map((p) => p.pin.replace(/-/g, "").slice(0, 10)),
+    [response, search.map.points],
+  );
+  const matches = response ? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
+  const areaCounts = response ? response.areaCounts ?? null : explorePanel ? viewMatches.data?.areaCounts ?? null : null;
+  const lotZoom = !!view && view.zoom >= LOTS_MIN_ZOOM;
+  const inView = useMemo(() => {
+    if (!response || !view) return null;
+    const [w, s, e, n] = view.bbox;
+    return (response.pins?.points ?? search.map.points).filter((p) => p.lat != null && p.lon != null && p.lon >= w && p.lon <= e && p.lat >= s && p.lat <= n).length;
+  }, [response, view, search.map.points]);
+
+  // The search's quick filters mirror its panel (a goal can turn some on).
+  const searchQuick = useMemo(() => quickFromPanel(search.draft.panelState), [search.draft.panelState]);
+  const quickOn = response ? searchQuick : quick;
+  const toggleQuick = (id: QuickId) => {
+    const next = new Set(quickOn);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    if (response) {
+      search.startWith({ ...search.draft, panelState: quickPanel(next, search.draft.panelState), topicId: null });
+    } else {
+      setQuick(next);
+    }
+  };
+
+  // Search these lots: the quick filters (or every lot) in the current view become a search.
+  const searchView = () => {
+    if (!registry) return;
+    const scope = view && lotZoom ? { mode: "viewport" as const, bbox: view.bbox } : null;
+    search.startWith({ panelState: quickPanel(quick), text: "", sort: { ...ROOM_SORT }, topicId: null, scope });
+    setFocus(phone ? "map" : "list");
+    setSheet("half");
+  };
+  const listInView = () => {
+    if (!view) return;
+    search.startWith({ ...search.draft, scope: { mode: "viewport", bbox: view.bbox } });
+    setFocus("list");
+    setSheet("full");
+  };
+  const startOver = () => {
+    search.startOver();
+    setQuick(new Set());
+    setRing(null);
+    setPlace(null);
+    setFocus("map");
+    setSheet("peek");
+  };
+
+  // The ring around an address: a radius filter the server evaluates (re-run after a resize settles).
+  const ringTimer = useRef<number | undefined>(undefined);
+  const searchRing = useCallback((r: Ring) => {
+    if (!registry) return;
+    const base = { ...(response ? search.draft.panelState : quickPanel(quick)) };
+    delete base.neighborhood;
+    search.startWith({
+      panelState: { ...base, radius: { kind: "region", regions: [ringRegion(r.lat, r.lon, r.miles)] } as PanelState[string] },
+      text: "", sort: { ...ROOM_SORT }, topicId: null, scope: null,
+    });
+    setFocus(phone ? "map" : "list");
+    setSheet("half");
+  }, [registry, response, search, quick, phone]);
+  const ringActive = !!response && !!search.draft.panelState.radius;
+  const resizeRing = (miles: number) => {
+    if (!ring) return;
+    const next = { ...ring, miles };
+    setRing(next);
+    if (ringActive) {
+      window.clearTimeout(ringTimer.current);
+      ringTimer.current = window.setTimeout(() => searchRing(next), 450);
+    }
+  };
+
+  // The one search box.
+  const [text, setText] = useState("");
+  const submit = (raw = text) => {
+    const kind = classifyQuery(raw, COMMUNITY_AREAS);
+    if (kind.kind === "address") {
+      getAutocomplete(raw).then((s) => { if (s[0]) pickAddress(s[0]); });
+      return;
+    }
+    if (kind.kind === "area") { pickArea(kind.id); return; }
+    search.setText(raw);
+    search.setSort({ ...ROOM_SORT });
+    window.setTimeout(() => { search.apply(); setFocus(phone ? "map" : "list"); setSheet("half"); }, 0);
+  };
+  const pickAddress = (s: AddressSuggestion) => {
+    setPlace({ lat: s.lat, lon: s.lon, label: s.address });
+    setRing(null);
+    moveTo({ center: [s.lon, s.lat], zoom: 16.4 });
+    setFocus("map");
+  };
+  const pickArea = (id: number) => {
+    if (!registry) return;
+    search.startWith({
+      panelState: { neighborhood: { kind: "region", regions: [`neighborhood:${id}`] } as PanelState[string] },
+      text: "", sort: { ...ROOM_SORT }, topicId: null, scope: null,
+    });
+    setFocus(phone ? "map" : "list");
+    setSheet("half");
+  };
+  // A new search frames its matches once (the visitor's own moves win after that); a view search keeps its view.
+  const fit = useMemo(() => {
+    if (!response || response.cqs.scope?.mode === "viewport") return null;
+    const pts = (response.pins?.points ?? []).filter((p) => p.lat != null && p.lon != null);
+    if (!pts.length) return null;
+    let w = 180, s = 90, e = -180, n = -90;
+    for (const p of pts) { w = Math.min(w, p.lon!); e = Math.max(e, p.lon!); s = Math.min(s, p.lat!); n = Math.max(n, p.lat!); }
+    return { bbox: [w, s, e, n] as [number, number, number, number], key: response };
+  }, [response]);
+
+  const topics = (registry?.topics ?? []).map((topic) => ({ topic, status: recipeStatus(registry!, topic, tp) }));
+  const filterCount = Object.keys(search.draft.panelState).filter((k) => k !== HIDE_UNUSUAL).length;
+  const chips = response
+    ? Object.entries(response.cqs.filters).filter(([id, a]) => id !== HIDE_UNUSUAL && a.source !== "default")
+    : [];
+  const defOf = (id: string): FilterDef | undefined => registry?.filters.find((f) => f.id === id);
+  const label = (id: string, p: Predicate) => {
+    const mi = id === "radius" && p.kind === "region" ? ringMiles(p.regions[0]) : null;
+    return mi != null ? t("discovery.ringChip", { mi: new Intl.NumberFormat(numLocale(i18n.language), { maximumFractionDigits: 2 }).format(mi) }) : chipLabel(id, p, defOf(id));
+  };
+
+  const map = (
+    <ExploreMap
+      measure={measure}
+      matches={matches}
+      areaCounts={areaCounts}
+      ring={ring}
+      onRingChange={resizeRing}
+      place={place}
+      focus={camera}
+      fit={fit}
+      showZoning={showZoning}
+      onView={setView}
+      onPickArea={pickArea}
+      sortKey={response?.cqs.sort.key ?? registry?.defaultSort.key ?? "lot_size"}
+      className="absolute inset-0"
+    />
+  );
+
+  const countLine = response
+    ? response.result.total === 0
+      ? t("discovery.none")
+      : t("discovery.count", { count: response.result.total, total: fmt.format(response.result.total) })
+    : null;
 
   return (
     <AppFrame crumbs={[t("discovery.crumb")]}>
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-7">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-nx-figure">{t("discovery.title")}</h1>
-          <p className="nx-muted">{t("discovery.lead")}</p>
+      <h1 className="sr-only">{t("discovery.title")}</h1>
+      <div className="flex h-[calc(100dvh-68px)] flex-col">
+        {/* The search bar: one box, Filters, and (after a search) List | Map. */}
+        <div className="z-20 flex flex-col gap-2 border-b border-nx-ink/10 bg-nx-page px-4 py-3 sm:px-7">
+          <div className="flex items-center gap-2">
+            <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onArea={pickArea} busy={search.loading} disabled={!registry} />
+            <button type="button" onClick={() => setFiltersOpen(true)} disabled={!registry}
+              className="relative inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-nx-ink/5 px-3 hover:bg-nx-ink/10 disabled:opacity-50 touch-target"
+              aria-label={filterCount > 0 ? t("discovery.filters.openCount", { count: filterCount }) : t("discovery.filters.open")}
+              data-testid="filters-open">
+              <SlidersHorizontal aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+              <span className="hidden sm:inline">{t("discovery.filters.open")}</span>
+              {filterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-nx-ink px-1 text-[11px] text-nx-on-ink">{filterCount}</span>}
+            </button>
+            {response && !phone && (
+              <div role="group" aria-label={t("discovery.focus.label")} className="hidden shrink-0 rounded-xl bg-nx-ink/5 p-1 md:flex">
+                {(["list", "map"] as const).map((f) => {
+                  const Icon = f === "list" ? List : MapIcon;
+                  return (
+                    <button key={f} type="button" aria-pressed={focus === f} onClick={() => setFocus(f)}
+                      className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 ${focus === f ? "bg-nx-page shadow-sm" : "hover:bg-nx-ink/5"}`}>
+                      <Icon aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t(`discovery.focus.${f}`)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {search.textNotice && (
+            <p role="status" className="flex flex-wrap items-center gap-2 text-caption">
+              <Pill tone="yellow" icon={TriangleAlert}>{t("discovery.notUnderstood")}</Pill>
+              <span className="nx-muted">{search.textNotice.words.join(", ")}</span>
+            </p>
+          )}
+          {response && search.appliedText && (response.cqs.meta?.textResidual?.length ?? 0) > 0 && (
+            <p role="status" className="flex flex-wrap items-center gap-2 text-caption">
+              <Pill tone="yellow" icon={TriangleAlert}>{t("discovery.notUnderstood")}</Pill>
+              <span className="nx-muted">{response.cqs.meta!.textResidual!.join(", ")}</span>
+            </p>
+          )}
+          {!response ? (
+            topics.length > 0 && (
+              <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]" role="group" aria-label={t("discovery.try")}>
+                <span className="shrink-0 text-caption nx-muted">{t("discovery.try")}</span>
+                {topics.map(({ topic, status }) => (
+                  <button key={topic.id} type="button" disabled={!status.live}
+                    onClick={() => { search.pickRecipe(topic); setFocus(phone ? "map" : "list"); setSheet("half"); }}
+                    title={status.live ? undefined : t("discovery.goalNeedsData")}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-nx-block px-3 py-1.5 text-caption hover:bg-nx-ink/10 disabled:cursor-not-allowed disabled:opacity-50 touch-target">
+                    {t(`discovery.goal.${topic.id}`, { defaultValue: tp(`discovery.topic.${topic.id}.label`, { defaultValue: topic.label ?? topic.id }) })}
+                    {status.live && registry?.recipeCounts?.[topic.id] != null && (
+                      <span className="nx-muted tabular-nums">{fmt.format(registry.recipeCounts[topic.id])}</span>
+                    )}
+                    {!status.live && <span className="nx-muted">{t("discovery.goalSoon")}</span>}
+                  </button>
+                ))}
+              </div>
+            )
+          ) : (
+            <div className="flex flex-wrap items-center gap-2 text-caption" data-testid="search-summary">
+              <span className="font-semibold" role="status">{countLine}</span>
+              {chips.map(([id, a]) => (
+                <span key={id} className="inline-flex items-center gap-1 rounded-full bg-nx-ink/5 py-1 pl-3 pr-1">
+                  {label(id, a.predicate as Predicate)}
+                  <button type="button" aria-label={t("discovery.removeFilter", { label: label(id, a.predicate as Predicate) })}
+                    onClick={() => { const panel = { ...search.draft.panelState }; delete panel[id]; search.startWith({ ...search.draft, panelState: panel, text: "", topicId: null }); }}
+                    className="grid h-6 w-6 place-items-center rounded-full hover:bg-nx-ink/10 touch-hit">
+                    <X aria-hidden className="h-3 w-3" strokeWidth={STROKE} />
+                  </button>
+                </span>
+              ))}
+              {response.cqs.scope?.mode === "viewport" && <Pill tone="gray" icon={MapIcon}>{t("discovery.inThisView")}</Pill>}
+              <button type="button" onClick={startOver} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 underline underline-offset-2 hover:bg-nx-ink/5">
+                {t("discovery.newSearch")}
+              </button>
+            </div>
+          )}
+          {registryFailed && <p role="alert" className="text-caption nx-muted">{t("discovery.unavailable")}</p>}
+          {search.unavailable && <p role="alert" className="text-caption nx-muted">{t("discovery.searchFailed")}</p>}
         </div>
 
-        <form
-          role="search"
-          className="flex flex-col gap-2 sm:flex-row"
-          onSubmit={(e) => { e.preventDefault(); search.apply(); }}
-        >
-          <label htmlFor="nx-discovery-q" className="sr-only">{t("discovery.label")}</label>
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-nx-ink/5 px-3">
-            <Search aria-hidden className="h-4 w-4 shrink-0 nx-muted" strokeWidth={STROKE} />
-            <input
-              id="nx-discovery-q"
-              type="search"
-              value={search.draft.text}
-              onChange={(e) => search.setText(e.target.value)}
-              placeholder={t("discovery.placeholder")}
-              className="h-11 min-w-0 flex-1 bg-transparent text-body text-nx-ink placeholder:text-nx-ink/[0.64] focus:outline-none"
-            />
+        {/* The map, always mounted; List covers it on a desktop, a sheet sits over it on a phone. */}
+        <div className="relative min-h-0 flex-1">
+          {map}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3">
+            <QuickFilters on={quickOn} onToggle={toggleQuick} loading={!response && viewMatches.loading} />
+            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} showZoning={showZoning} onZoning={setShowZoning} compact={phone} />
           </div>
-          <button
-            type="submit"
-            disabled={!registry || search.draftIsInFlight}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-nx-primary px-4 font-medium text-nx-primary-fg disabled:opacity-50"
-          >
-            {search.loading ? <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={STROKE} /> : <Search aria-hidden className="h-4 w-4" strokeWidth={STROKE} />}
-            {t("discovery.search")}
-          </button>
-        </form>
+          {place && <PlaceCard place={place} ring={ring} onRing={(miles) => { const r = { lat: place.lat, lon: place.lon, miles }; setRing(r); }}
+            onSearchRing={() => ring && searchRing(ring)} ringActive={ringActive}
+            onClose={() => { setPlace(null); setRing(null); }} />}
 
-        {topics.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2" aria-label={t("discovery.try")} role="group">
-            <span className="text-caption nx-muted">{t("discovery.try")}</span>
-            {topics.map((topic) => (
-              <button
-                key={topic.id}
-                type="button"
-                onClick={() => search.pickRecipe(topic)}
-                className="rounded-full bg-nx-block px-3 py-1.5 text-caption hover:bg-nx-ink/10 touch-target"
-              >
-                {tp(`discovery.topic.${topic.id}.label`, { defaultValue: topic.label ?? topic.id })}
-              </button>
-            ))}
-          </div>
-        )}
+          {/* Explore's call to action, and Map focus's "N lots in view · List them". */}
+          {!phone && focus === "map" && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-20 z-10 flex justify-center px-4">
+              {!response ? (
+                <button type="button" onClick={searchView} className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-nx-primary px-5 py-2.5 font-medium text-nx-primary-fg shadow-[0_6px_24px_rgb(0_0_0/0.18)]" data-testid="search-view">
+                  <Search aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+                  {exploreLabel(t, fmt, explorePanel, viewMatches.data, lotZoom)}
+                </button>
+              ) : lotZoom && inView != null ? (
+                <button type="button" onClick={listInView} className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-nx-primary px-5 py-2.5 font-medium text-nx-primary-fg shadow-[0_6px_24px_rgb(0_0_0/0.18)]" data-testid="list-in-view">
+                  {t("discovery.inView", { count: inView, n: fmt.format(inView) })}
+                  <span aria-hidden>·</span>{t("discovery.listThem")}
+                </button>
+              ) : null}
+            </div>
+          )}
+          {(search.map.truncated || viewMatches.data?.truncated) && lotZoom && (
+            <p className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full bg-nx-page px-3 py-1 text-caption shadow">{t("discovery.capped")}</p>
+          )}
 
-        {registryFailed && <p role="alert" className="nx-muted">{t("discovery.unavailable")}</p>}
-        {search.textNotice && (
-          <p role="status" className="text-caption">
-            <Pill tone="yellow" icon={TriangleAlert}>{t("discovery.notUnderstood")}</Pill>{" "}
-            <span className="nx-muted">{search.textNotice.words.join(", ")}</span>
-          </p>
-        )}
-        {search.unavailable && <p role="alert" className="nx-muted">{t("discovery.searchFailed")}</p>}
+          {!phone && focus === "list" && response && (
+            <div className="absolute inset-0 z-20 overflow-y-auto bg-nx-page" data-testid="list-focus">
+              <Results response={response} rows={search.rows} fmt={fmt} onMore={search.nextOffset != null && !response.result.gated ? () => void search.loadMore() : null}
+                loadingMore={search.loadingMore} refreshing={search.refreshing} hiddenUnusual={response.diagnostics.hiddenUnusual ?? 0}
+                onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} />
+            </div>
+          )}
 
-        {response && (
-          <section aria-labelledby="nx-results" aria-busy={search.refreshing || undefined} className={search.refreshing ? "opacity-60" : ""}>
-            <div role="status"><h2 id="nx-results" className="mb-4 text-body font-semibold">
-              {response.result.total === 0
-                ? t("discovery.none")
-                : response.result.gated
-                  ? t("discovery.countTop", { shown: rows.length, total: response.result.total.toLocaleString() })
-                  : t("discovery.count", { count: response.result.total, total: response.result.total.toLocaleString() })}
-            </h2></div>
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-7 lg:grid-cols-3" data-testid="next-results">
-              {rows.map((row) => <ResultCard key={row.pin} row={row} />)}
-            </ul>
-            {search.nextOffset != null && !response.result.gated && (
-              <button
-                type="button"
-                onClick={() => void search.loadMore()}
-                disabled={search.loadingMore}
-                className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-nx-ink/5 px-4 py-2 hover:bg-nx-ink/10 disabled:opacity-50"
-              >
-                {search.loadingMore && <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={STROKE} />}
-                {t("discovery.more")}
-              </button>
-            )}
-          </section>
-        )}
+          {phone && (
+            <PhoneSheet state={sheet} setState={setSheet}
+              head={response
+                ? <span className="font-semibold">{countLine}</span>
+                : <button type="button" onClick={searchView} className="inline-flex items-center gap-2 font-medium" data-testid="search-view">
+                    <Search aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{exploreLabel(t, fmt, explorePanel, viewMatches.data, lotZoom)}
+                  </button>}>
+              {response ? (
+                <Results response={response} rows={search.rows} fmt={fmt} onMore={search.nextOffset != null && !response.result.gated ? () => void search.loadMore() : null}
+                  loadingMore={search.loadingMore} refreshing={search.refreshing} hiddenUnusual={response.diagnostics.hiddenUnusual ?? 0}
+                  onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} />
+              ) : (
+                <p className="px-4 pb-4 text-caption nx-muted">{t("discovery.exploreHint")}</p>
+              )}
+            </PhoneSheet>
+          )}
+        </div>
       </div>
+      {registry && (
+        <FiltersSheet key={filtersOpen ? "open" : "closed"} open={filtersOpen} onOpenChange={setFiltersOpen} registry={registry}
+          panel={response ? search.draft.panelState : quickPanel(quick)} scope={response ? search.draft.scope ?? null : null}
+          onApply={(panel) => {
+            search.startWith({ ...search.draft, panelState: panel, sort: response ? search.draft.sort ?? { ...ROOM_SORT } : { ...ROOM_SORT }, topicId: null, text: response ? search.draft.text : "" });
+            setFocus(phone ? "map" : "list");
+            setSheet("half");
+          }} />
+      )}
     </AppFrame>
   );
 }
 
-function ResultCard({ row }: { row: ResultRow }) {
-  const { t, i18n } = useTranslation("next");
-  const navigate = useNavigate();
-  const { title, approx } = rowTitle(row);
-  const n = (v: number) => Math.round(v).toLocaleString(i18n.language.startsWith("es") ? "es-MX" : "en-US");
-  const { t: tp } = useTranslation("pages");
-  // The exact district when the index has it, else the family in words (same keys as today's dot preview).
-  const zone = row.zone_class
-    ?? (row.zoning_group ? tp(`discovery.enum.zoning_group.${row.zoning_group}`, { defaultValue: row.zoning_group }) : null);
-  const room = row.allowed_far != null && row.lot_sqft != null && row.bldg_sqft != null
-    ? Math.max(0, row.allowed_far * row.lot_sqft - row.bldg_sqft)
-    : null;
-  const open = () => {
-    const q = new URLSearchParams({ pin: row.pin });
-    if (row.address && !approx) q.set("address", title);
-    navigate(`/scorecard?${q}`);
-  };
-  const facts: Array<[keyof typeof ICON, string, string]> = [];
-  if (zone) facts.push(["zoning", t("discovery.card.zoning"), zone]);
-  if (row.lot_sqft != null) facts.push(["lot", t("discovery.card.lot"), t("profile.build.sqft", { value: n(row.lot_sqft) })]);
-  if (room != null) facts.push(["floorArea", t("discovery.card.room"), t("profile.build.sqft", { value: n(room) })]);
-  if (row.last_sale_price != null && row.last_sale_date) {
-    facts.push(["sale", t("discovery.card.sale"), t("discovery.card.saleValue", { price: `$${n(row.last_sale_price)}`, year: row.last_sale_date.slice(0, 4) })]);
-  }
+function exploreLabel(
+  t: (k: string, o?: Record<string, unknown>) => string, fmt: Intl.NumberFormat, panel: PanelState | null,
+  data: { total: number } | null, lotZoom: boolean,
+): string {
+  if (!panel) return lotZoom ? t("discovery.searchTheseLots") : t("discovery.searchAllLots");
+  if (!data) return t("discovery.searchTheseLots");
+  return t(lotZoom ? "discovery.searchNInView" : "discovery.searchNCity", { count: data.total, n: fmt.format(data.total) });
+}
+
+function openProfile(navigate: ReturnType<typeof useNavigate>, row: ResultRow) {
+  const c = cardModel(row);
+  const q = new URLSearchParams({ pin: row.pin });
+  if (row.address && !c.approx) q.set("address", c.title);
+  navigate(`/scorecard?${q}`);
+}
+
+// ---------------------------------------------------------------- the search box
+
+function SearchBox({ text, setText, onSubmit, onAddress, onArea, busy, disabled }: {
+  text: string; setText: (s: string) => void; onSubmit: (s?: string) => void; onAddress: (s: AddressSuggestion) => void;
+  onArea: (id: number) => void; busy: boolean; disabled: boolean;
+}) {
+  const { t } = useTranslation("next");
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [found, setFound] = useState<{ q: string; list: AddressSuggestion[] }>({ q: "", list: [] });
+  const isAddress = /^\d+\s+\S/.test(text.trim());
+  useEffect(() => {
+    if (!isAddress) return;
+    const q = text.trim();
+    const timer = window.setTimeout(() => { getAutocomplete(q).then((s) => setFound({ q, list: s.slice(0, 4) })); }, 300);
+    return () => window.clearTimeout(timer);
+  }, [text, isAddress]);
+  const addresses = isAddress ? found.list : [];
+  const areas = areaSuggestions(text, COMMUNITY_AREAS);
+  type Opt = { key: string; icon: LucideIcon; label: string; hint: string; run: () => void };
+  const opts: Opt[] = [
+    ...addresses.map((a) => ({ key: `a${a.address}`, icon: MapPin, label: a.address, hint: t("discovery.box.address"), run: () => { setText(a.address); onAddress(a); } })),
+    ...areas.map((a) => ({ key: `n${a.id}`, icon: MapIcon, label: a.name, hint: t("discovery.box.area"), run: () => { setText(a.name); onArea(a.id); } })),
+    ...(text.trim() && !/^\d/.test(text.trim()) ? [{ key: "d", icon: Search, label: text.trim(), hint: t("discovery.box.describe"), run: () => onSubmit(text) }] : []),
+  ];
+  const show = open && opts.length > 0;
   return (
-    <li className="flex min-w-0">
-      <button type="button" onClick={open} className="flex w-full flex-col gap-3 rounded-2xl bg-nx-block p-5 text-left hover:bg-nx-ink/5" data-pin={row.pin}>
-        <span className="flex items-start justify-between gap-2">
-          <span className="font-semibold [overflow-wrap:anywhere]">{approx ? t("discovery.card.near", { address: title }) : title}</span>
-        </span>
-        <dl className="grid grid-cols-1 gap-1.5 text-caption">
-          {facts.map(([icon, label, value]) => {
-            const Icon = ICON[icon];
+    <form role="search" className="relative min-w-0 flex-1" onSubmit={(e) => { e.preventDefault(); setOpen(false); if (active >= 0 && opts[active]) opts[active].run(); else onSubmit(); }}>
+      <label htmlFor="nx-discovery-q" className="sr-only">{t("discovery.label")}</label>
+      <div className="flex h-11 items-center gap-2 rounded-xl bg-nx-ink/5 px-3">
+        {busy ? <LoaderCircle aria-hidden className="h-4 w-4 shrink-0 animate-spin nx-muted" strokeWidth={STROKE} /> : <Search aria-hidden className="h-4 w-4 shrink-0 nx-muted" strokeWidth={STROKE} />}
+        <input
+          id="nx-discovery-q" type="search" value={text} disabled={disabled} autoComplete="off"
+          role="combobox" aria-expanded={show} aria-controls="nx-discovery-options" aria-autocomplete="list"
+          aria-activedescendant={show && active >= 0 ? `nx-opt-${active}` : undefined}
+          onChange={(e) => { setText(e.target.value); setOpen(true); setActive(-1); }}
+          onFocus={() => setOpen(true)} onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(opts.length - 1, i + 1)); }
+            if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(-1, i - 1)); }
+            if (e.key === "Escape") setOpen(false);
+          }}
+          placeholder={t("discovery.placeholder")}
+          className="h-11 min-w-0 flex-1 bg-transparent text-body text-nx-ink placeholder:text-nx-ink/[0.64] focus:outline-none"
+        />
+      </div>
+      {show && (
+        <ul id="nx-discovery-options" role="listbox" className="absolute inset-x-0 top-12 z-30 overflow-hidden rounded-xl bg-nx-page py-1 shadow-[0_8px_32px_rgb(0_0_0/0.18)]">
+          {opts.map((o, i) => {
+            const Icon = o.icon;
             return (
-              <div key={label} className="flex items-center gap-2">
-                <Icon aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={STROKE} />
-                <dt className="nx-muted">{label}</dt>
-                <dd className="ml-auto tabular-nums">{value}</dd>
-              </div>
+              <li key={o.key} id={`nx-opt-${i}`} role="option" aria-selected={i === active}
+                onMouseDown={(e) => { e.preventDefault(); setOpen(false); o.run(); }}
+                className={`flex cursor-pointer items-center gap-3 px-3 py-2.5 ${i === active ? "bg-nx-ink/5" : "hover:bg-nx-ink/5"}`}>
+                <Icon aria-hidden className="h-4 w-4 shrink-0 nx-muted" strokeWidth={STROKE} />
+                <span className="min-w-0 flex-1 truncate">{o.label}</span>
+                <span className="shrink-0 text-caption nx-muted">{o.hint}</span>
+              </li>
             );
           })}
-        </dl>
-        {row.nominal_assessment && <Pill tone="yellow" icon={TriangleAlert}>{t("discovery.card.nominal")}</Pill>}
-        <span className="mt-auto inline-flex items-center gap-1 text-caption underline underline-offset-2">
-          {t("discovery.card.open")}
-          <ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
+        </ul>
+      )}
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------- map overlays
+
+function QuickFilters({ on, onToggle, loading }: { on: ReadonlySet<QuickId>; onToggle: (id: QuickId) => void; loading: boolean }) {
+  const { t } = useTranslation("next");
+  return (
+    <div className="pointer-events-auto -mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" role="group" aria-label={t("discovery.quick.label")} data-testid="quick-filters">
+      {QUICK_FILTERS.map((q) => {
+        const active = on.has(q.id);
+        return (
+          <button key={q.id} type="button" aria-pressed={active} onClick={() => onToggle(q.id)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-caption shadow-[0_2px_8px_rgb(0_0_0/0.12)] touch-target ${active ? "bg-nx-ink text-nx-on-ink" : "bg-nx-page hover:bg-nx-block"}`}>
+            {t(`discovery.quick.${q.id}`)}
+          </button>
+        );
+      })}
+      {loading && <LoaderCircle aria-label={t("discovery.quick.checking")} className="h-4 w-4 shrink-0 animate-spin" strokeWidth={STROKE} />}
+    </div>
+  );
+}
+
+function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact }: {
+  measure: MeasureId; onMeasure: (m: MeasureId) => void; showZoning: boolean; onZoning: (b: boolean) => void; compact: boolean;
+}) {
+  const { t } = useTranslation("next");
+  // Open on a desktop, folded on a phone (the page remounts it when that changes: `key`).
+  const [open, setOpen] = useState(!compact);
+  const steps = measureSteps(measure);
+  return (
+    <div className={`pointer-events-auto shrink-0 rounded-2xl bg-nx-page text-caption shadow-[0_4px_16px_rgb(0_0_0/0.14)] ${open ? "w-[13.5rem] p-3" : "p-1"}`} data-testid="measure-key">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        aria-label={open ? undefined : t("discovery.measure.colorBy")}
+        className={`flex items-center gap-2 font-medium ${open ? "w-full" : "h-9 rounded-xl px-2.5 touch-target"}`}>
+        <Palette aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+        {(open || !compact) && <span className="flex-1 text-left">{t("discovery.measure.colorBy")}</span>}
+      </button>
+      {open && (
+        <div className="mt-2 flex flex-col gap-2">
+          <label className="sr-only" htmlFor="nx-measure">{t("discovery.measure.colorBy")}</label>
+          <select id="nx-measure" value={measure} onChange={(e) => onMeasure(e.target.value as MeasureId)}
+            className="h-9 w-full appearance-none rounded-lg bg-nx-ink/5 px-2">
+            {MEASURES.map((m) => <option key={m} value={m}>{t(`discovery.measure.${m}.name`)}</option>)}
+          </select>
+          <ul className="flex flex-col gap-1">
+            {steps.map((s) => (
+              <li key={s.value} className="flex items-center gap-2">
+                <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm" style={{ background: s.color }} />
+                <span>{t(`discovery.measure.${s.key}`)}</span>
+              </li>
+            ))}
+            {measure === "zoning" && <li className="nx-muted">{t("discovery.measure.zoning.note")}</li>}
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm border border-nx-ink/20 [background-image:radial-gradient(currentColor_1px,transparent_1.2px)] [background-size:5px_5px] opacity-70" />
+              <span>{t("discovery.measure.unknown")}</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm border-2 border-nx-ink" />
+              <span>{t("discovery.measure.match")}</span>
+            </li>
+          </ul>
+          {measure === "room" && <p className="nx-muted">{t("discovery.measure.room.note")}</p>}
+          <label className="mt-1 flex items-center gap-2">
+            <input type="checkbox" checked={showZoning} onChange={(e) => onZoning(e.target.checked)} className="h-4 w-4" />
+            {t("discovery.measure.showZoning")}
+          </label>
+          <p className="nx-muted">{t("discovery.measure.zoomHint")}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlaceCard({ place, ring, onRing, onSearchRing, ringActive, onClose }: {
+  place: Place; ring: Ring | null; onRing: (miles: number) => void; onSearchRing: () => void; ringActive: boolean; onClose: () => void;
+}) {
+  const { t, i18n } = useTranslation("next");
+  const navigate = useNavigate();
+  const mi = (m: number) => new Intl.NumberFormat(numLocale(i18n.language), { maximumFractionDigits: 2 }).format(m);
+  return (
+    <div className="absolute left-3 top-16 z-10 w-[18rem] max-w-[calc(100%-1.5rem)] rounded-2xl bg-nx-page p-4 text-caption shadow-[0_8px_32px_rgb(0_0_0/0.18)]" data-testid="place-card">
+      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target">
+        <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+      </button>
+      <p className="flex items-center gap-2 pr-6 text-body font-semibold"><MapPin aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{place.label}</p>
+      <div className="mt-3 flex flex-col gap-2">
+        <button type="button" onClick={() => navigate(`/scorecard?${new URLSearchParams({ address: place.label })}`)}
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-nx-primary font-medium text-nx-primary-fg">
+          {t("discovery.place.profile")}<ArrowRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+        </button>
+        {!ring ? (
+          <button type="button" onClick={() => onRing(0.5)} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-nx-ink/5 hover:bg-nx-ink/10">
+            <Circle aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t("discovery.place.around")}
+          </button>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("discovery.place.size")}>
+              {RING_MILES.map((m) => (
+                <button key={m} type="button" aria-pressed={ring.miles === m} onClick={() => onRing(m)}
+                  className={`rounded-full px-3 py-1 touch-target ${ring.miles === m ? "bg-nx-ink text-nx-on-ink" : "bg-nx-ink/5 hover:bg-nx-ink/10"}`}>
+                  {t("discovery.place.miles", { mi: mi(m) })}
+                </button>
+              ))}
+              {!RING_MILES.includes(ring.miles as (typeof RING_MILES)[number]) && <span className="nx-muted">{t("discovery.place.miles", { mi: mi(ring.miles) })}</span>}
+            </div>
+            <p className="nx-muted">{t("discovery.place.drag")}</p>
+            {!ringActive && (
+              <button type="button" onClick={onSearchRing} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-nx-ink/5 hover:bg-nx-ink/10" data-testid="search-ring">
+                <Search aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t("discovery.place.searchRing", { mi: mi(ring.miles) })}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PhoneSheet({ state, setState, head, children }: {
+  state: "peek" | "half" | "full"; setState: (s: "peek" | "half" | "full") => void; head: React.ReactNode; children: React.ReactNode;
+}) {
+  const { t } = useTranslation("next");
+  // The peek clears the preview badge pinned to the bottom of every page (52 px on touch screens, Item 99).
+  const height = state === "peek" ? "9.5rem" : state === "half" ? "52%" : "92%";
+  const start = useRef<number | null>(null);
+  return (
+    <section aria-label={t("discovery.sheet.label")} data-testid="phone-sheet" data-state={state}
+      className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-3xl bg-nx-page shadow-[0_-8px_32px_rgb(0_0_0/0.18)] transition-[height] duration-200 motion-reduce:transition-none"
+      style={{ height }}>
+      <div
+        onPointerDown={(e) => { start.current = e.clientY; }}
+        onPointerUp={(e) => {
+          if (start.current == null) return;
+          const dy = e.clientY - start.current;
+          start.current = null;
+          if (dy < -30) setState(state === "peek" ? "half" : "full");
+          else if (dy > 30) setState(state === "full" ? "half" : "peek");
+        }}
+        className="flex shrink-0 touch-none flex-col items-center gap-2 px-4 pb-2 pt-2">
+        <button type="button" aria-label={state === "full" ? t("discovery.sheet.less") : t("discovery.sheet.more")}
+          onClick={() => setState(state === "full" ? "peek" : state === "peek" ? "half" : "full")}
+          className="grid h-6 w-16 place-items-center touch-target">
+          <span aria-hidden className="h-1.5 w-10 rounded-full bg-nx-ink/20" />
+        </button>
+        <div className="flex w-full items-center justify-between gap-2 text-body">{head}</div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">{state !== "peek" && children}</div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------- the list
+
+function Results({ response, rows, fmt, onMore, loadingMore, refreshing, hiddenUnusual, onShowUnusual, onOpen }: {
+  response: NonNullable<ReturnType<typeof useDiscoverySearch>["applied"]>; rows: ResultRow[]; fmt: Intl.NumberFormat;
+  onMore: (() => void) | null; loadingMore: boolean; refreshing: boolean; hiddenUnusual: number; onShowUnusual: () => void;
+  onOpen: (row: ResultRow) => void;
+}) {
+  const { t } = useTranslation("next");
+  return (
+    <section aria-labelledby="nx-results" aria-busy={refreshing || undefined} className={`nx-cq px-4 pb-8 pt-4 sm:px-7 ${refreshing ? "opacity-60" : ""}`}>
+      <h2 id="nx-results" className="sr-only">{t("discovery.resultsTitle")}</h2>
+      {response.result.gated && response.result.total > rows.length && (
+        <p className="mb-4 text-caption nx-muted" data-testid="gated">{t("discovery.topOf", { shown: rows.length, total: fmt.format(response.result.total) })}</p>
+      )}
+      {response.result.total === 0 && <p className="nx-muted">{t("discovery.noneHint")}</p>}
+      <ul className="nx-cards grid gap-4" data-testid="next-results">
+        {rows.map((row) => <ResultCard key={row.pin} row={row} onOpen={() => onOpen(row)} />)}
+      </ul>
+      {hiddenUnusual > 0 && (
+        <p className="mt-4 text-caption nx-muted">
+          {t("discovery.hiddenUnusual", { count: hiddenUnusual, n: fmt.format(hiddenUnusual) })}{" "}
+          <button type="button" onClick={onShowUnusual} className="underline underline-offset-2">{t("discovery.show")}</button>
+        </p>
+      )}
+      {onMore && (
+        <button type="button" onClick={onMore} disabled={loadingMore} className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-nx-ink/5 px-4 py-2 hover:bg-nx-ink/10 disabled:opacity-50">
+          {loadingMore && <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={STROKE} />}
+          {t("discovery.more")}
+        </button>
+      )}
+    </section>
+  );
+}
+
+const WARNING_ICON: Record<CardWarning["kind"], LucideIcon> = {
+  demolition: Hammer, vacant_case: House, pending_rezoning: ICON.pending, landmark: Landmark, nominal: TriangleAlert,
+};
+
+function LotPicture({ pin10 }: { pin10: string }) {
+  const [path, setPath] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    fetchLotShape(pin10).then((g) => { if (live) setPath(g ? shapePath(g, 160, 72) : null); });
+    return () => { live = false; };
+  }, [pin10]);
+  return (
+    <svg viewBox="0 0 160 72" className="h-[4.5rem] w-full rounded-t-2xl bg-nx-block" aria-hidden>
+      {path && <path d={path} fill="rgb(var(--nx-lot) / 0.12)" stroke="rgb(var(--nx-lot))" strokeWidth={1.8} strokeLinejoin="round" />}
+    </svg>
+  );
+}
+
+function ResultCard({ row, onOpen }: { row: ResultRow; onOpen: () => void }) {
+  const { t, i18n } = useTranslation("next");
+  const n = (v: number) => Math.round(v).toLocaleString(numLocale(i18n.language));
+  const c = cardModel(row);
+  const facts: Array<[keyof typeof ICON, string, string]> = [];
+  if (c.zone) facts.push(["zoning", t("discovery.card.zoning"), c.zone]);
+  if (c.lotSqft != null) facts.push(["lot", t("discovery.card.lot"), t("profile.build.sqft", { value: n(c.lotSqft) })]);
+  facts.push(["floorArea", t("discovery.card.room"), c.roomSqft != null ? t("profile.build.sqft", { value: n(c.roomSqft) }) : t("discovery.card.unknown")]);
+  facts.push(["sale", t("discovery.card.sale"), c.sale
+    ? c.sale.transfer ? t("discovery.card.transfer", { year: c.sale.year }) : t("discovery.card.saleValue", { price: `$${n(c.sale.price)}`, year: c.sale.year })
+    : t("discovery.card.noSale")]);
+  const W = c.warning ? WARNING_ICON[c.warning.kind] : null;
+  return (
+    <li className="flex min-w-0">
+      <button type="button" onClick={onOpen} className="flex w-full flex-col overflow-hidden rounded-2xl bg-nx-block text-left hover:bg-nx-ink/5" data-pin={row.pin}>
+        <LotPicture pin10={row.pin.replace(/-/g, "").slice(0, 10)} />
+        <span className="flex flex-1 flex-col gap-3 p-4">
+          <span className="font-semibold [overflow-wrap:anywhere]">{c.approx ? t("discovery.card.near", { address: c.title }) : c.title}</span>
+          <dl className="grid grid-cols-1 gap-1.5 text-caption">
+            {facts.map(([icon, label, value]) => {
+              const Icon = ICON[icon];
+              return (
+                <div key={label} className="flex items-center gap-2">
+                  <Icon aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={STROKE} />
+                  <dt className="nx-muted">{label}</dt>
+                  <dd className="ml-auto text-right tabular-nums">{value}</dd>
+                </div>
+              );
+            })}
+          </dl>
+          {c.complexLots != null && <span className="text-caption nx-muted">{t("discovery.card.complex", { count: c.complexLots })}</span>}
+          {c.roomBasis && c.complexLots == null && <span className="text-caption nx-muted">{t(`discovery.card.basis.${c.roomBasis}`)}</span>}
+          {c.warning && W && (
+            <span className="self-start">
+              <Pill tone={c.warning.kind === "nominal" ? "gray" : "yellow"} icon={W}>
+                {t(`discovery.warning.${c.warning.kind}`, { date: c.warning.detail ?? "", name: c.warning.detail ?? "" })}
+              </Pill>
+            </span>
+          )}
+          <span className="mt-auto inline-flex items-center gap-1 text-caption underline underline-offset-2">
+            {t("discovery.card.open")}<ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
+          </span>
         </span>
       </button>
     </li>

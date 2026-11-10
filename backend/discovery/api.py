@@ -123,6 +123,9 @@ class ResultRow(BaseModel):
     # commercial_valuation or footprint (Item 104). None = unknown, never 0.
     room_sqft: float | None = None
     bldg_sqft_source: str | None = None
+    # "complex" = the room of the multi-parcel site this lot belongs to (complex_lots lots), not of the lot alone.
+    room_scope: str | None = None
+    complex_lots: int | None = None
     # At most one serious warning for the card (Item 104): {"kind": demolition | vacant_case | pending_rezoning |
     # landmark | nominal, "detail": a date or a name, when there is one}.
     warning: dict[str, str | None] | None = None
@@ -293,6 +296,8 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         nominal_assessment=nominal,
         room_sqft=g("room_sqft"),
         bldg_sqft_source=g("bldg_sqft_source"),
+        room_scope=g("room_scope"),
+        complex_lots=g("complex_lots"),
         warning=_warning(g, nominal),
         sortValue=_display_sort_value(parcel, sort_field),
     )

@@ -1097,7 +1097,8 @@
       "sale_recency": "sale recency",
       "price_per_sf": "price per sf",
       "value_percentile": "value percentile",
-      "upside_score": "upside score"
+      "upside_score": "upside score",
+      "room_to_build": "Room to build"
     },
     "unit": {
       "mi": "mi",

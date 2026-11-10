@@ -5,7 +5,7 @@
 // sentence, the count and the rows always come from the evaluated response (INV-4).
 
 import { compilePanel } from "./uiCompiler";
-import type { CQS, FilterId, PanelState, Predicate, SortSpec } from "./types";
+import type { CQS, FilterId, PanelState, Predicate, SortSpec, SpatialScope } from "./types";
 
 export interface DiscoveryDraft {
   panelState: PanelState;
@@ -15,6 +15,8 @@ export interface DiscoveryDraft {
   topicId: string | null;
   /** Opt in to the parcels the server's default `hide_unusual` filter keeps out (decision Item 60). */
   includeUnusual?: boolean;
+  /** Where to search: the whole city (absent) or the map's view ("Search these lots", the new UI, Item 104). */
+  scope?: SpatialScope | null;
 }
 
 /** The server's default filter for unusual parcels (decision Item 60): it is not a filter the user chose,
@@ -135,6 +137,7 @@ export function inputsSignature(inputs: {
   text?: string | null;
   sort?: SortSpec | null;
   includeUnusual?: boolean;
+  scope?: SpatialScope | null;
 }): string {
   const filters = compilePanel(inputs.panelState);
   const ids = Object.keys(filters).sort();
@@ -143,6 +146,7 @@ export function inputsSignature(inputs: {
     t: (inputs.text ?? "").trim(),
     s: inputs.sort ? [inputs.sort.key, inputs.sort.dir] : null,
     u: !!inputs.includeUnusual,
+    ...(inputs.scope && inputs.scope.mode !== "all" ? { v: inputs.scope } : {}),
   });
 }
 

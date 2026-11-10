@@ -1141,9 +1141,8 @@
   "discovery": {
     "crumb": "Discovery",
     "title": "Find lots",
-    "lead": "Describe what you're looking for, or start from a goal.",
-    "label": "Describe the lots",
-    "placeholder": "Vacant lots near the L in Logan Square",
+    "label": "Search an address, a neighborhood or describe the lots",
+    "placeholder": "Address, neighborhood, or \"vacant lots near the L\"",
     "search": "Search",
     "try": "Try:",
     "unavailable": "Discovery isn't available right now.",
@@ -1152,7 +1151,6 @@
     "none": "No lots match.",
     "count_one": "{{total}} lot",
     "count_other": "{{total}} lots",
-    "countTop": "The top {{shown}} of {{total}} lots",
     "more": "Show more",
     "card": {
       "near": "Near {{address}}",
@@ -1162,8 +1160,195 @@
       "sale": "Last sale",
       "saleValue": "{{price}} in {{year}}",
       "nominal": "Nominal assessment",
-      "open": "Open profile"
-    }
+      "open": "Open profile",
+      "transfer": "Transfer in {{year}}, no market price",
+      "noSale": "None on record",
+      "unknown": "Not known",
+      "lotValue": "{{value}} sq ft lot",
+      "roomValue": "Room to build: {{value}} sq ft",
+      "roomUnknown": "Room to build: not known",
+      "complex_one": "Room for the whole {{count}}-lot complex",
+      "complex_other": "Room for the whole {{count}}-lot complex",
+      "basis": {
+        "commercial_valuation": "Building area from the Assessor's commercial records",
+        "footprint": "Building area from City footprints × stories"
+      }
+    },
+    "goalSoon": "needs data",
+    "goalNeedsData": "The index doesn't hold the data this goal needs yet",
+    "goal": {
+      "vacant_mf_transit": "Vacant land near transit",
+      "teardown": "Teardown candidates",
+      "undervalued_mf": "Undervalued 2–6 flats",
+      "underused_commercial_tif": "Underused commercial in a TIF",
+      "adu_2flats": "Coach house candidates",
+      "fresh_comps": "Recent sales"
+    },
+    "noneHint": "No lots match. Remove a filter or widen the area.",
+    "topOf": "The top {{shown}} of {{total}} lots. The full list and the CSV come with Pro.",
+    "resultsTitle": "Matching lots",
+    "removeFilter": "Remove {{label}}",
+    "inThisView": "In this map view",
+    "newSearch": "New search",
+    "searchTheseLots": "Search these lots",
+    "searchAllLots": "Search every lot",
+    "searchNInView_one": "Search {{n}} lot in view",
+    "searchNInView_other": "Search {{n}} lots in view",
+    "searchNCity_one": "Search {{n}} lot citywide",
+    "searchNCity_other": "Search {{n}} lots citywide",
+    "inView_one": "{{n}} lot in view",
+    "inView_other": "{{n}} lots in view",
+    "listThem": "List them",
+    "capped": "More matches than the map can outline at once: zoom in",
+    "exploreHint": "Zoom in to see every lot. Turn on a quick filter to dim the lots that don't match.",
+    "hiddenUnusual_one": "{{n}} unusual lot hidden (rail, utility or common land).",
+    "hiddenUnusual_other": "{{n}} unusual lots hidden (rail, utility or common land).",
+    "show": "Show",
+    "focus": {
+      "label": "Show as",
+      "list": "List",
+      "map": "Map"
+    },
+    "quick": {
+      "label": "Quick filters",
+      "checking": "Checking the lots in view",
+      "vacant": "Vacant",
+      "nearL": "Near the L",
+      "lot5k": "Lot 5,000+ sq ft",
+      "sold2y": "Sold in 2 years",
+      "tif": "In a TIF"
+    },
+    "box": {
+      "address": "Address",
+      "area": "Neighborhood",
+      "describe": "Describe"
+    },
+    "measure": {
+      "colorBy": "Color lots by",
+      "unknown": "Not known (dotted)",
+      "match": "Matches the search",
+      "showZoning": "Show zoning districts",
+      "zoomHint": "Lots appear as you zoom in; the city view shows neighborhoods.",
+      "room": {
+        "name": "Room to build",
+        "note": "Allowed floor area minus what's built, by the base district's FAR.",
+        "0": "Built out",
+        "1": "Under 2,500 sq ft",
+        "2": "2,500–5,000 sq ft",
+        "3": "5,000–10,000 sq ft",
+        "4": "10,000 sq ft or more"
+      },
+      "lot": {
+        "name": "Lot size",
+        "0": "Under 2,500 sq ft",
+        "1": "2,500–5,000 sq ft",
+        "2": "5,000–10,000 sq ft",
+        "3": "10,000 sq ft to an acre",
+        "4": "An acre or more"
+      },
+      "sale": {
+        "name": "Last sale",
+        "0": "Within a year",
+        "1": "1–3 years ago",
+        "2": "3–5 years ago",
+        "3": "5–10 years ago",
+        "4": "10 years or more"
+      },
+      "use": {
+        "name": "Land use",
+        "0": "Vacant",
+        "1": "Residential",
+        "2": "Multifamily",
+        "3": "Commercial",
+        "4": "Industrial",
+        "5": "Exempt"
+      },
+      "zoning": {
+        "name": "Zoning family",
+        "note": "In the zoning map's colors"
+      }
+    },
+    "map": {
+      "label": "Map of Chicago's lots",
+      "noWebgl": "The map can't be drawn in this browser. Search and the list still work.",
+      "lot": "Lot",
+      "close": "Close",
+      "loading": "Loading the lot…",
+      "missing": "This lot isn't in Discovery's index.",
+      "failed": "Couldn't load this lot. Try again."
+    },
+    "place": {
+      "profile": "Open its Profile",
+      "around": "Search around it",
+      "size": "Ring size",
+      "miles": "{{mi}} mi",
+      "drag": "Drag the ring's handle to resize it.",
+      "searchRing": "Search within {{mi}} mi"
+    },
+    "sheet": {
+      "label": "Lots",
+      "more": "Show more of the list",
+      "less": "Show less of the list"
+    },
+    "warning": {
+      "demolition": "Demolition permit {{date}}",
+      "vacant_case": "Vacant-building case {{date}}",
+      "pending_rezoning": "Rezoning filed",
+      "landmark": "Landmark: {{name}}",
+      "nominal": "Nominal assessment"
+    },
+    "filters": {
+      "open": "Filters",
+      "title": "Filters",
+      "hint": "Only filters with data are listed.",
+      "clear": "Clear",
+      "close": "Close",
+      "show_one": "Show {{n}} lot",
+      "show_other": "Show {{n}} lots",
+      "showUnknown": "Show lots",
+      "coverage": "Known for {{share}}% of lots",
+      "any": "Any",
+      "yes": "Yes",
+      "no": "No",
+      "min": "From",
+      "max": "To",
+      "minOf": "{{label}}, from",
+      "maxOf": "{{label}}, to",
+      "presets": "{{label}} presets",
+      "includeUnknown": "Also include lots with no data ({{n}})",
+      "histogram": "{{label}} across Chicago's lots; {{unknown}} not known",
+      "walk": "{{minutes}}-minute walk",
+      "transitNote": "To the nearest L stop, at 20 minutes a mile. Metra, bus and Divvy aren't in the index yet.",
+      "soon": "More filters appear as the index gains their data (units, violations, flood zones, overlays).",
+      "unit": {
+        "sqft": "sq ft",
+        "usd": "$",
+        "days": "days",
+        "mi": "mi",
+        "year": "",
+        "percent": "%",
+        "far": "FAR",
+        "count": "",
+        "percentile": "percentile",
+        "index": "",
+        "ratio": "",
+        "units": "units"
+      },
+      "group": {
+        "location": "Location",
+        "property_use": "The property",
+        "financial": "Money",
+        "incentives": "Incentives",
+        "zoning": "Zoning",
+        "risk": "Risk",
+        "other": "Other",
+        "zoning_dev": "Zoning and building",
+        "condition_risk": "Condition and risk"
+      },
+      "openCount_one": "Filters, {{count}} on",
+      "openCount_other": "Filters, {{count}} on"
+    },
+    "ringChip": "Within {{mi}} mi of the address"
   },
   "map": {
     "key": "Map key",

@@ -177,3 +177,20 @@ def test_distribution_counts_unknowns_apart(monkeypatch):
     assert d["bins"][-1]["n"] == 1  # above the domain lands in the last bin
     v = discovery_api._distribution("v-dist", "vacancy")
     assert v["values"] == {"true": 1} and v["unknown"] == 2
+
+
+def test_a_complex_is_read_as_one_site(monkeypatch):
+    from backend.discovery import index_backfill
+    from backend.retrieval.property.commercial_artifact import MultiPinMember
+
+    unit = MultiPinMember(complex_bldg_sqft=10_000.0, unit_pins=("1111111111", "2222222222"), year="2024")
+    monkeypatch.setattr("backend.discovery.index_build._commercial_area", lambda pin14: unit)
+    a = {"land_sqft": 5_000.0, "density_band": 2.2}
+    b = {"land_sqft": 5_000.0, "density_band": 2.2}
+    rows = [("11111111110000", 0, 0, a, []), ("22222222220000", 0, 0, b, [])]
+    index_backfill.complex_room(rows)
+    assert a["room_sqft"] == 12_000.0 and a["room_scope"] == "complex" and a["complex_lots"] == 2
+    c = {"density_band": 2.2}  # a member with no land leaves the site unknown
+    rows = [("11111111110000", 0, 0, {"land_sqft": 5_000.0, "density_band": 2.2}, []), ("22222222220000", 0, 0, c, [])]
+    index_backfill.complex_room(rows)
+    assert "room_sqft" not in rows[0][3]

@@ -27,6 +27,7 @@ export interface SearchInputs {
   limit?: number; // window size (omitted = server default)
   includePins?: boolean; // ask for the map's points in the same response (one evaluation)
   includeUnusual?: boolean; // opt in to the parcels the default `hide_unusual` filter keeps out (Item 60)
+  includeAreaCounts?: boolean; // matches per community area from the same evaluation (Item 104)
 }
 
 /** Build the wire envelope. `userFilters` is the compiled panel (cleared controls dropped). */
@@ -43,6 +44,7 @@ export function buildRequest(inputs: SearchInputs, registry: Registry): SearchRe
   if (inputs.limit != null) req.limit = inputs.limit;
   if (inputs.includePins) req.includePins = true;
   if (inputs.includeUnusual) req.includeUnusual = true;
+  if (inputs.includeAreaCounts) req.includeAreaCounts = true;
   return req;
 }
 
