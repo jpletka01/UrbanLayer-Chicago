@@ -1954,7 +1954,12 @@ _CA_TASK_KEYS = frozenset({"incentives", "neighborhood", "aro_housing", "crime",
 # Sources only the new UI's Profile parts fetch (the Neighborhood tab, decision Item 102): the full
 # /api/scorecard never asks them, so today's Profile, chat grounding and the report are unchanged. Their results
 # ride under the payload's own ``next_ui`` key; a failed one is listed in ``next_ui.failed`` (never "none").
-NEXT_UI_TASK_KEYS = ("schools", "construction_within", "area_311", "area_demographics")
+NEXT_UI_TASK_KEYS = (
+    "schools", "construction_within", "area_311", "area_demographics",
+    # The History tab (Item 103), in the ``history`` part: the City's permits and violations at the address over
+    # every year on record, and every source's value per building fact.
+    "permits_at_address", "violations_at_address", "building_records",
+)
 
 # Crime as violent vs property for the Neighborhood tab (Item 102), on the Chicago Police Department's own primary
 # types: violent = crimes against a person, property = taking or damaging property. The other types (narcotics,
@@ -2021,6 +2026,10 @@ def _scorecard_task(
         coro = assigned_schools(lat, lon)
     elif key == "construction_within":
         coro = buildings.construction_within(lat, lon)
+    elif key == "permits_at_address":
+        coro = buildings.permits_at_address(address)
+    elif key == "violations_at_address":
+        coro = buildings.violations_at_address(address)
     elif key == "area_311":
         coro = three11.top_311_by_community_area(ca)
     elif key == "area_demographics":
