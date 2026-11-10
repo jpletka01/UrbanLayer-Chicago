@@ -197,7 +197,7 @@ export function ruleChips(data: ScorecardResponse, verdict: ScorecardVerdict): R
 
 export type TabId = "build" | "money" | "neighborhood" | "history";
 /** The tabs built so far, which a tile can open. */
-export type TileTab = "build" | "money" | "neighborhood";
+export type TileTab = "build" | "money" | "neighborhood" | "history";
 
 export interface Tile {
   key: "units" | "tax" | "walk" | "lastSale";
@@ -291,19 +291,19 @@ export function overviewTiles(
   const newerTransfer = market ? sales.find((s) => s.date! > market.date! && !isMarketSale(s)) : null;
   const year = (d: string) => d.slice(0, 4);
   if (!prop) {
-    tiles.push({ key: "lastSale", tabOf: "history", label: label("lastSale"), figure: "—", note: t("profile.tiles.notOnRecord"), state: { kind: "not_checked", low: false }, tab: null });
+    tiles.push({ key: "lastSale", tabOf: "history", label: label("lastSale"), figure: "—", note: t("profile.tiles.notOnRecord"), state: { kind: "not_checked", low: false }, tab: "history" });
   } else if (market) {
     tiles.push({
       key: "lastSale", tabOf: "history", label: label("lastSale"), figure: money(market.price!, lng),
       note: t("profile.tiles.soldIn", { year: year(market.date!) }),
       warning: newerTransfer ? t("profile.tiles.laterTransfer", { year: year(newerTransfer.date!) }) : undefined,
-      state: confidenceStateFor(prov["property.sales"]), tab: null,
+      state: confidenceStateFor(prov["property.sales"]), tab: "history",
     });
   } else {
     tiles.push({
       key: "lastSale", tabOf: "history", label: label("lastSale"), figure: "—",
       note: sales.length > 0 ? t("profile.tiles.onlyTransfers", { count: sales.length }) : t("profile.tiles.noSaleOnRecord"),
-      state: { kind: "none_found", low: false }, tab: null,
+      state: { kind: "none_found", low: false }, tab: "history",
     });
   }
   return tiles;

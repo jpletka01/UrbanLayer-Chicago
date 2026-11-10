@@ -13,7 +13,9 @@ export interface AskHandoff {
   /** Opens a Build rule's page in the same right panel (Item 99). */
   openRule?: (rule: "landmark" | "historic" | "pd" | "flood" | "lakefront" | "tod" | "adu" | "aro") => void;
   /** Opens a building permit's page in the same right panel (Neighborhood, Item 102). */
-  openPermit?: (permit: import("../../lib/api").ConstructionProject) => void;
+  openPermit?: (permit: import("../../lib/api").ConstructionProject | import("../../lib/api").AddressPermit) => void;
+  /** Opens the building records page: what each source says about the building (History, Item 103). */
+  openRecords?: (fact?: import("../profile/historyModel").BuildingFact) => void;
 }
 
 export const AskContext = createContext<AskHandoff | null>(null);

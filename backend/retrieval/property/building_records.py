@@ -36,6 +36,15 @@ def _num(v: Any) -> float | None:
     return n if n > 0 else None
 
 
+def _spans_lots(prop: Any, footprint_sqft: Any) -> bool:
+    """``_build_summary``'s footprint rule: a footprint larger than the lot by ``_FOOTPRINT_SPAN_SLACK`` belongs to a
+    building that spans several lots, so its area isn't this lot's."""
+    from backend.retrieval.property import _FOOTPRINT_SPAN_SLACK
+
+    land, area = _num(getattr(prop, "land_sqft", None)), _num(footprint_sqft)
+    return bool(land and area and area > land * _FOOTPRINT_SPAN_SLACK)
+
+
 def differs(fact: str, values: list[float]) -> bool:
     """Whether a fact's values from different sources disagree, by the rule above."""
     if len(values) < 2:
@@ -98,6 +107,8 @@ async def building_records(prop: Any, lat: float, lon: float) -> dict[str, Any] 
             continue
         as_of = value.get("valuation_year") if name == "commercial_valuation" else None
         for f in FACTS:
+            if f == "bldg_sqft" and name == "footprint" and _spans_lots(prop, value.get(f)):
+                continue  # the Profile's own rule: a footprint this much larger than the lot is a building on several lots
             add(f, name, value.get(f), as_of)
 
     energy = getattr(prop, "energy", None)

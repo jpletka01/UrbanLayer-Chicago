@@ -90,7 +90,7 @@ def test_records_differ_rule(fact, values, differ):
 
 
 def _prop(**kw):
-    base = dict(bldg_class="211", pin14="14331030110000", parcel_geometry=None, energy=None,
+    base = dict(bldg_class="211", pin14="14331030110000", parcel_geometry=None, energy=None, land_sqft=3225,
                 year_built=1992, year_built_source="assessor", stories=2.0, stories_source="assessor",
                 bldg_sqft=2268, bldg_sqft_source="assessor")
     base.update(kw)
@@ -124,3 +124,12 @@ async def test_building_records_take_the_commercial_valuations_year_and_name_a_f
 async def test_vacant_land_has_no_building_records():
     assert await br.building_records(_prop(bldg_class="100"), 41.9, -87.7) is None
     assert await br.building_records(None, 41.9, -87.7) is None
+
+
+async def test_a_footprint_spanning_several_lots_gives_no_floor_area():
+    """The Profile's own rule (1601 N Milwaukee: a 21,800 sq ft footprint on an 11,951 sq ft lot)."""
+    fp = AsyncMock(return_value={"year_built": 1921, "stories": 2, "bldg_sqft": 21800})
+    prop = _prop(land_sqft=11951, bldg_sqft=None, bldg_sqft_source=None)
+    with patch("backend.retrieval.property.building_facts.get_footprint_facts", new=fp):
+        got = await br.building_records(prop, 41.9, -87.7)
+    assert got["facts"]["bldg_sqft"] == [] and got["facts"]["stories"][1]["source"] == "footprint"

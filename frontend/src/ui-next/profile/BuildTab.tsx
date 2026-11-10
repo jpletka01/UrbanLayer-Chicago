@@ -6,7 +6,7 @@ import { ChevronDown, ChevronRight, SquareArrowOutUpRight } from "lucide-react";
 import { useAskHandoff } from "../ask/askContext";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict } from "../../lib/scorecardVerdict";
-import { buildClause } from "../../lib/answerSentence";
+import { blockersFor, buildClause } from "../../lib/answerSentence";
 import { ConfidenceState } from "../../components/ui/ConfidenceState";
 import { Toggletip } from "../../components/ui/Toggletip";
 import { formatDay } from "../../lib/format";
@@ -24,10 +24,12 @@ export function BuildTab({ data, verdict, buildingPending = false }: { data: Sco
   const rules = ruleChips(data, verdict);
   const zdef = data.zone_definition;
   const deciding = rows.find((r) => r.deciding);
+  // The Overview sentence's landmark clause, when the lot is a landmark or in a landmark district (owner, Item 103).
+  const landmark = blockersFor(data, verdict).find((b) => b === "landmark_bldg" || b === "landmark_dist");
 
   return (
     <div className="flex flex-col gap-7">
-      <p className="text-nx-answer">{buildClause(data, verdict, tp)}.</p>
+      <p className="text-nx-answer" data-testid="build-sentence">{buildClause(data, verdict, tp)}{landmark ? `; ${tp(`scorecard.answer.blocker.${landmark}`)}` : ""}.</p>
 
       <Block
         title={t("profile.build.allowedVsBuilt")}
