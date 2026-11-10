@@ -180,3 +180,22 @@
   width: 100% !important;
   height: 100% !important;
 }
+
+/* Layout by the space a block has, not the screen (owner's review of Neighborhood, Item 102: with the right drawer
+   open, tiles and charts sized for the full width squeezed into each other). `.nx-cq` makes an element a size
+   container; the grids below pick their columns from its width. */
+.ui-next .nx-cq { container-type: inline-size; }
+.ui-next .nx-tiles { display: grid; gap: 0.75rem; grid-template-columns: minmax(0, 1fr); }
+.ui-next .nx-split { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.ui-next .nx-cards { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@container (min-width: 26rem) {
+  .ui-next .nx-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ui-next .nx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (min-width: 50rem) {
+  .ui-next .nx-split { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+}
+@container (min-width: 56rem) {
+  .ui-next .nx-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+  .ui-next .nx-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

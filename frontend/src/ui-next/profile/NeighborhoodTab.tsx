@@ -6,12 +6,13 @@
 // On a phone a row of jump links sticks under the tab bar (owner's pick). Race and ethnicity are left out (owner); the
 // tract is compared with its community area, never the city (rule 6). Late blocks follow Item 89's skeleton rule.
 // Nothing here is advice or a forecast (rule 11).
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Bike, Building2, Car, ChevronDown, ChevronRight, Landmark, Mail, MapPin, Phone, SquareArrowOutUpRight, TrainFront, TrainTrack, Users as UsersIcon, Wrench,
+  Bike, Building2, Bus, Car, Footprints, Shield, ChevronDown, ChevronRight, Landmark, Mail, MapPin, Phone, SquareArrowOutUpRight, TrainFront, TrainTrack, Users as UsersIcon, Wrench,
 } from "lucide-react";
 import type { ConstructionProject, NextUiSchool, ScorecardResponse, TractShare } from "../../lib/api";
+import { ConfidenceState } from "../../components/ui/ConfidenceState";
 import { humanizeShoutyCase } from "../../lib/format";
 import { Block, Pill, StatTile } from "../ui/Blocks";
 import { Term } from "../ui/Term";
@@ -24,20 +25,23 @@ import { niceCeil, usd, type LateBlockState } from "./moneyModel";
 import { BarsSkeleton, LateSlot } from "./LateSlot";
 import { PIN_COLORS } from "../map/pins";
 import { Donut } from "../ui/Donut";
-import { LabeledColumns } from "../ui/LabeledColumns";
 import {
   areaDemographics, constructionModel, crimeModel, designationTone, neighborhoodSentence, peopleModel, permitList,
   permitQuarters, permitWords, schoolsModel, scores, sourceState, three11Model, totalCost, trendModel,
   type ConstructionModel, type CrimeModel, type PeopleModel, type PermitFilter, type PermitSort,
 } from "./neighborhoodModel";
 
-const SECTIONS = ["around", "building", "changing", "people", "safety", "311", "schools", "nearby"] as const;
+const SECTIONS = ["around", "nearby", "building", "changing", "people", "safety", "311", "schools"] as const;
 type SectionId = (typeof SECTIONS)[number];
 const PROJECTS_SHOWN = 5;
 // CTA's own line colors (the line dot on the rail card).
 const CTA_LINE: Record<string, string> = {
   Red: "#C60C30", Blue: "#00A1DE", Brown: "#62361B", Green: "#009B3A", Orange: "#F9461C", Pink: "#E27EA6", Purple: "#522398", Yellow: "#F9E300",
 };
+
+// The Coastal palette in order (Item 74), and a neutral gray for "everything else".
+const SERIES = ["#72B0AB", "#FE9179", "#355E58", "#B89D47", "#FDC1B4"];
+const OTHER = "#B4B4B4";
 
 const compactUsd = (n: number, lng: string) =>
   new Intl.NumberFormat(numLocale(lng), { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(n);
@@ -95,14 +99,17 @@ export function NeighborhoodTab({
   const anchorCls = "scroll-mt-[calc(var(--nx-tabbar-h,3rem)+3.5rem)] md:scroll-mt-[calc(var(--nx-tabbar-h,3rem)+1rem)]";
   const anchor = (id: SectionId) => ({ "data-section": id, id: `nb-${id}`, className: anchorCls });
 
+  const TILE_ICON = { walk: Footprints, transit: Bus, bike: Bike } as const;
   const scoreTile = (key: "walk" | "transit" | "bike", tone: "a" | "b") => {
     const s = sc?.find((x) => x.key === key);
     const label = t(`profile.nb.score.${key}`);
+    const Icon = TILE_ICON[key];
     return (
       <StatTile
         key={key} testId={`tile-${key}`} tone={tone}
+        icon={<Icon className="h-5 w-5" strokeWidth={STROKE} />}
         label={<Term label={label} definition={def(key)} question={q("scores")} />}
-        note={s?.score != null ? s.description ?? undefined : t("profile.tiles.walkUnchecked")}
+        note={s?.score != null ? [t("profile.nb.score.of100", { score: s.score }), s.description].filter(Boolean).join(" · ") : t("profile.tiles.walkUnchecked")}
         visual={s?.score != null ? <ScoreRing value={s.score} label={t("profile.nb.score.ringLabel", { label, score: s.score })} testId={`ring-${key}`} /> : <span className="text-nx-figure">—</span>}
       />
     );
@@ -132,12 +139,14 @@ export function NeighborhoodTab({
       <p className="text-nx-answer" data-testid="nb-sentence">{neighborhoodSentence(data, t, { building: buildSt === "ready", crime: crimeSt === "ready" })}</p>
 
       <section {...anchor("around")} aria-label={t("profile.nb.jump.around")}>
-        <ul className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-7 xl:grid-cols-4" data-testid="nb-tiles">
+        <div className="nx-cq">
+        <ul className="nx-tiles" data-testid="nb-tiles">
           {scoreTile("walk", "a")}
           {scoreTile("transit", "b")}
           {scoreTile("bike", "b")}
           <StatTile
             testId="tile-violent" tone="a"
+            icon={<Shield className="h-5 w-5" strokeWidth={STROKE} />}
             label={<Term label={t("profile.nb.crime.tile")} definition={def("crime")} question={q("crime")} />}
             checking={crimeSt === "loading"}
             figure={crime?.violentPer1k != null ? nf(crime.violentPer1k, 1) : crime ? nf(crime.violent) : "—"}
@@ -147,6 +156,12 @@ export function NeighborhoodTab({
               : t("profile.nb.crime.notChecked")}
           />
         </ul>
+        </div>
+      </section>
+
+      <section data-section="nearby" id="nb-nearby" aria-labelledby="nx-nearby" className={`${anchorCls} flex flex-col gap-4`}>
+        <h3 id="nx-nearby" className="text-body font-semibold">{t("profile.nb.near.title")}</h3>
+        <NearbyCards data={data} area={area} />
       </section>
 
       <section {...anchor("building")}>
@@ -200,19 +215,19 @@ export function NeighborhoodTab({
               <LateSlot state={s311} what={t("profile.nb.r311.what")} onRetry={() => onRetry("activity")} skeleton={<BarsSkeleton rows={5} />}>
                 {t311 ? (
                     t311.top.length === 0 ? <p className="nx-muted">{t("profile.nb.r311.none", { area, days: t311.days })}</p> : (
-                      <figure className="flex flex-col gap-3">
-                        <ul className="flex flex-col gap-2.5" data-testid="nb-311-bars">
-                          {t311.top.map((r) => (
-                              <li key={r.type} className="flex flex-col gap-1 text-caption">
-                                <span className="flex items-baseline justify-between gap-2"><span>{r.type}</span><span className="tabular-nums">{nf(r.count)}</span></span>
-                                <span className="relative block h-2.5 overflow-hidden rounded bg-nx-ink/5" aria-hidden>
-                                  <span className="absolute inset-y-0 left-0 rounded bg-nx-chart-1" style={{ width: `${(r.count / t311.top[0].count) * 100}%` }} />
-                                </span>
-                              </li>
-                          ))}
-                        </ul>
-                        <figcaption className="text-caption nx-muted">{t("profile.nb.r311.caption", { total: nf(t311.total), area, days: t311.days })}</figcaption>
-                      </figure>
+                      <div className="flex flex-col gap-3" data-testid="nb-311-bars">
+                        <Donut testId="nb-311-donut" title={t("profile.nb.r311.byType")} size={136}
+                          center={{ label: t("profile.nb.r311.requests"), value: nf(t311.total) }}
+                          segments={[
+                            ...t311.top.map((r, i) => ({ key: r.type, label: r.type, pct: (r.count / t311.total) * 100, color: SERIES[i], note: nf(r.count) })),
+                            ...(t311.total > t311.top.reduce((a, r) => a + r.count, 0) ? [{
+                              key: "other", label: t("profile.nb.r311.other"), color: OTHER,
+                              pct: ((t311.total - t311.top.reduce((a, r) => a + r.count, 0)) / t311.total) * 100,
+                              note: nf(t311.total - t311.top.reduce((a, r) => a + r.count, 0)),
+                            }] : []),
+                          ]} />
+                        <p className="text-caption nx-muted">{t("profile.nb.r311.caption", { total: nf(t311.total), area, days: t311.days })}</p>
+                      </div>
                     )
                 ) : null}
               </LateSlot>
@@ -238,10 +253,6 @@ export function NeighborhoodTab({
         </div>
       </div>
 
-      <section data-section="nearby" id="nb-nearby" aria-labelledby="nx-nearby" className={`${anchorCls} flex flex-col gap-4`}>
-        <h3 id="nx-nearby" className="text-body font-semibold">{t("profile.nb.near.title")}</h3>
-        <NearbyCards data={data} area={area} />
-      </section>
     </div>
   );
 }
@@ -272,6 +283,12 @@ function BuildingBody({ build }: { build: ConstructionModel }) {
   const [filter, setFilter] = useState<PermitFilter>("all");
   const [sort, setSort] = useState<PermitSort>("newest");
   const [all, setAll] = useState(false);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const toggleAll = () => {
+    setAll((a) => !a);
+    listRef.current?.scrollTo?.({ top: 0 });
+    if (all) listRef.current?.scrollIntoView?.({ block: "nearest" });
+  };
   const chips = [
     t("profile.nb.building.rule.radius", { mi: build.radiusMi.toLocaleString(numLocale(lng)) }),
     t("profile.nb.building.rule.months", { count: build.months }),
@@ -302,7 +319,9 @@ function BuildingBody({ build }: { build: ConstructionModel }) {
         {build.capped && <li><Pill tone="yellow">{t("profile.nb.building.capped")}</Pill></li>}
       </ul>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="nb-building-counts">
+      <div className="nx-cq"><div className="nx-split">
+        <div className="flex min-w-0 flex-col gap-5">
+      <div className="grid grid-cols-2 gap-3" data-testid="nb-building-counts">
         {stat(String(build.newCount), t("profile.nb.building.statNew", { count: build.newCount }), "new")}
         {stat(String(build.renovationCount), t("profile.nb.building.statReno", { count: build.renovationCount }), "renovation")}
         {stat(build.unitsAdded.toLocaleString(numLocale(lng)), t("profile.nb.building.statHomes", { count: build.unitsAdded }))}
@@ -331,6 +350,8 @@ function BuildingBody({ build }: { build: ConstructionModel }) {
         />
       </figure>
 
+        </div>
+        <div className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="radiogroup" aria-label={t("profile.nb.building.filterLabel")} className="flex overflow-hidden rounded-lg border border-nx-ink/15 text-caption" data-testid="nb-building-filter">
           {(["all", "new", "renovation"] as const).map((f) => {
@@ -343,6 +364,12 @@ function BuildingBody({ build }: { build: ConstructionModel }) {
             );
           })}
         </div>
+        {list.length > PROJECTS_SHOWN && (
+          <button type="button" onClick={toggleAll} aria-expanded={all}
+            className="inline-flex items-center gap-1 text-caption underline underline-offset-2 touch-target" data-testid="nb-projects-toggle">
+            {all ? t("profile.nb.building.fewer") : t("profile.nb.building.showAll", { count: list.length })}
+          </button>
+        )}
         <label className="flex items-center gap-2 text-caption">
           <span className="nx-muted">{t("profile.nb.building.sortLabel")}</span>
           <select value={sort} onChange={(e) => setSort(e.target.value as PermitSort)} className="appearance-none rounded-lg border border-nx-ink/15 bg-nx-page px-2.5 py-1.5 touch-field" data-testid="nb-building-sort">
@@ -351,16 +378,19 @@ function BuildingBody({ build }: { build: ConstructionModel }) {
         </label>
       </div>
 
-      <ul className="flex flex-col gap-2" data-testid="nb-projects">
+      {/* Expanded, the list scrolls inside its own height, so "Show fewer" (above and below) stays near (owner). */}
+      <ul ref={listRef} className={`flex flex-col gap-2 ${all ? "max-h-[34rem] overflow-y-auto overscroll-contain pr-1" : ""}`} data-testid="nb-projects">
         {shown.map((p, i) => <ProjectRow key={`${p.permit ?? i}`} p={p} onOpen={ask?.openPermit ? () => ask.openPermit!(p) : undefined} />)}
       </ul>
       {list.length > PROJECTS_SHOWN && (
-        <button type="button" onClick={() => setAll((a) => !a)} aria-expanded={all}
+        <button type="button" onClick={toggleAll} aria-expanded={all}
           className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-nx-page px-3 py-2 text-caption font-semibold hover:bg-nx-ink/5 touch-target" data-testid="nb-projects-more">
           <ChevronDown aria-hidden className={`h-4 w-4 transition-transform ${all ? "rotate-180" : ""}`} strokeWidth={STROKE} />
           {all ? t("profile.nb.building.fewer") : t("profile.nb.building.showAll", { count: list.length })}
         </button>
       )}
+        </div>
+      </div></div>
     </div>
   );
 }
@@ -511,29 +541,72 @@ function SafetyBody({ crime, area }: { crime: CrimeModel; area: string }) {
   );
 }
 
-// ── Who lives here (owner's reference: Census Reporter's profiles) ───────────────────────────────────────────
-// Headline figures with a comparison line, shares as donuts, breakdowns as labeled columns. The comparison is the
-// community area where the City publishes the same figure (rule 6); everything else is the tract's own.
+// ── Who lives here (owner's second review: the data from the Census Reporter reference, in our own style) ─────
+// Headline figures as small cards, then one card per chart so two charts never read as one: Money's hover column
+// chart for breakdowns that run in order, bars for the rest, donuts for shares of a whole. A chart with any share
+// whose margin of error is at least 10% of it says "Low confidence" once, in its header, explained under the section.
+// The comparison is the community area where the City publishes the same figure (rule 6).
 
-const DONUT = { a: "#72B0AB", b: "#FE9179", c: "#355E58", d: "#B89D47" } as const;
+const DONUT = { a: "#72B0AB", b: "#FE9179", c: "#355E58", d: "#B89D47", e: "#FDC1B4" } as const;
+const DONUT_SERIES = [DONUT.a, DONUT.b, DONUT.c, DONUT.d, DONUT.e, OTHER];
 
-function Headline({ value, label, compare, low, testId }: { value: string; label: string; compare?: string | null; low?: boolean; testId?: string }) {
+function FigureCard({ value, label, compare, testId }: { value: string; label: string; compare?: string | null; testId?: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1" data-testid={testId}>
-      <span className="text-[2rem] font-semibold leading-none tabular-nums">{value}{low ? <sup className="text-caption">†</sup> : null}</span>
-      <span>{label}</span>
+    <div className="flex min-w-0 flex-col gap-1 rounded-xl bg-nx-page p-4" data-testid={testId}>
+      <span className="text-nx-figure tabular-nums leading-tight">{value}</span>
+      <span className="text-caption">{label}</span>
       {compare && <span className="text-caption nx-muted">{compare}</span>}
     </div>
   );
 }
 
-function SubSection({ title, children, dagger }: { title: string; children: ReactNode; dagger?: boolean }) {
-  const { t } = useTranslation("next");
+function ChartCard({ title, low, children, testId }: { title: string; low?: boolean; children: ReactNode; testId?: string }) {
   return (
-    <section className="flex flex-col gap-4 border-t border-nx-ink/10 pt-5 first:border-0 first:pt-0">
+    <figure className="flex min-w-0 flex-col gap-3 rounded-xl bg-nx-page p-4" data-testid={testId}>
+      <figcaption className="flex flex-wrap items-center justify-between gap-2 text-caption font-semibold">
+        {title}
+        {low && <ConfidenceState kind="estimate" low />}
+      </figcaption>
+      {children}
+    </figure>
+  );
+}
+
+/** Rows of bars, the share at the end (Money's rent bars). */
+function ShareBars({ rows }: { rows: Array<{ key: string; label: string; pct: number }> }) {
+  const max = Math.max(1, ...rows.map((r) => r.pct));
+  return (
+    <ul className="flex flex-col gap-2">
+      {rows.map((r) => (
+        <li key={r.key} className="flex flex-col gap-1 text-caption">
+          <span className="flex items-baseline justify-between gap-2"><span className="nx-muted">{r.label}</span><span className="tabular-nums">{Math.round(r.pct)}%</span></span>
+          <span aria-hidden className="relative block h-2.5 overflow-hidden rounded bg-nx-ink/5">
+            <span className="absolute inset-y-0 left-0 rounded bg-nx-chart-1" style={{ width: `${(r.pct / max) * 100}%` }} />
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Shares in order as Money's column chart: hover or tap a column for its value. */
+function ShareColumns({ rows, title }: { rows: Array<{ key: string; label: string; tick: string; pct: number }>; title: string }) {
+  const { t } = useTranslation("next");
+  const top = niceCeil(Math.max(1, ...rows.map((r) => r.pct)));
+  return (
+    <div className="flex flex-col gap-1.5">
+      <ColumnChart ariaLabel={title} top={top} heightClass="h-28" scale={[`${top}%`, `${top / 2}%`, "0%"]}
+        columns={rows.map((r) => ({ key: r.key, tick: r.tick, label: r.label, value: r.pct, valueText: `${Math.round(r.pct)}%` }))} />
+      <span className="text-caption nx-muted">{t("profile.nb.people.hoverHint")}</span>
+    </div>
+  );
+}
+
+function SubSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3 border-t border-nx-ink/10 pt-5 first:border-0 first:pt-0">
       <h4 className="font-semibold">{title}</h4>
       {children}
-      {dagger && <p className="text-caption nx-muted">{t("profile.nb.people.dagger")}</p>}
     </section>
   );
 }
@@ -546,10 +619,16 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
   const h = x?.tract;
   const nf = (n: number, d = 0) => n.toLocaleString(numLocale(lng), { maximumFractionDigits: d, minimumFractionDigits: d });
   const L = (group: string, key: string) => t(`profile.nb.people.k.${group}.${key}`, { defaultValue: periodLabel(key, lng) });
-  const cols = (group: string, list: TractShare[] | null | undefined) => (list ?? []).map((s) => ({ key: s.key, label: L(group, s.key), pct: s.pct, low: s.low }));
-  const anyLow = (...lists: Array<TractShare[] | null | undefined>) => lists.some((l) => (l ?? []).some((s) => s.low));
+  const rows = (group: string, list: TractShare[] | null | undefined) => (list ?? []).map((s) => ({ key: s.key, label: L(group, s.key), tick: t(`profile.nb.people.tick.${group}.${s.key}`, { defaultValue: shortPeriod(s.key) }), pct: s.pct }));
+  const low = (list: TractShare[] | null | undefined) => (list ?? []).some((s) => s.low);
   const dist = (key: "age_distribution" | "education_distribution" | "transportation_distribution") =>
-    (ct?.[key] ?? []).map((b) => ({ key: b.label, label: t(`profile.nb.people.bucket.${b.label}`, { defaultValue: b.label }), pct: b.value }));
+    (ct?.[key] ?? []).map((b) => ({ key: b.label, label: t(`profile.nb.people.bucket.${b.label}`, { defaultValue: b.label }), tick: t(`profile.nb.people.tick.age.${b.label}`, { defaultValue: b.label }), pct: b.value }));
+  const donut = (title: string, list: Array<{ key: string; label: string; pct: number }>, opts: { lead?: string; low?: boolean; testId?: string } = {}) => (
+    <ChartCard title={title} low={opts.low} testId={opts.testId}>
+      <Donut title={title} showTitle={false} size={112} lead={opts.lead ?? [...list].sort((a, b) => b.pct - a.pct)[0]?.key}
+        segments={list.map((s, i) => ({ key: s.key, label: s.label, pct: s.pct, color: DONUT_SERIES[i % DONUT_SERIES.length] }))} />
+    </ChartCard>
+  );
   const inc = people.income;
   const ratio = (v: number | null, ref: number | null) => {
     if (v == null || ref == null || ref <= 0) return null;
@@ -561,76 +640,68 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
   const fact = (k: string) => people.facts.find((f) => f.key === k);
   const poverty = fact("poverty_rate"), bach = fact("bachelors_or_higher_pct");
   const pctText = (f?: { value: number | null; withheld: boolean }) => (f?.withheld ? t("profile.nb.people.withheldShort") : f?.value != null ? `${nf(f.value, 1)}%` : "—");
+  const anyLow = [x?.income, x?.structure, x?.tenure, x?.occupancy, x?.moved_in, x?.home_value, x?.household_type, x?.mobility, x?.travel_time].some(low);
 
   return (
     <div className="flex flex-col gap-6">
-      <SubSection title={t("profile.nb.people.sec.income")} dagger={anyLow(x?.income)}>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Headline testId="nb-income-headline" value={inc.tract != null ? usd(inc.tract, lng) : inc.tractWithheld ? t("profile.nb.people.withheldShort") : "—"} label={t("profile.nb.people.medianIncome")}
+      <SubSection title={t("profile.nb.people.sec.income")}>
+        <div className="nx-cq"><div className="nx-cards">
+          <FigureCard testId="nb-income-headline" value={inc.tract != null ? usd(inc.tract, lng) : inc.tractWithheld ? t("profile.nb.people.withheldShort") : "—"} label={t("profile.nb.people.medianIncome")}
             compare={areaPending && inc.area == null ? t("profile.money.checking", { what: area }) : ratio(inc.tract, inc.area)} />
-          <div className="flex flex-col gap-4">
-            {h?.per_capita_income != null && <Headline value={usd(h.per_capita_income, lng)} label={t("profile.nb.people.perCapita")} />}
-            {poverty && <Headline value={pctText(poverty)} label={t("profile.nb.people.fact.poverty_rate")} low={!!poverty.state?.low} />}
-          </div>
-          {x?.income && <LabeledColumns testId="nb-income-cols" title={t("profile.nb.people.chart.income")} columns={cols("income", x.income)} />}
-        </div>
+          {h?.per_capita_income != null && <FigureCard value={usd(h.per_capita_income, lng)} label={t("profile.nb.people.perCapita")} />}
+          {poverty && <FigureCard value={pctText(poverty)} label={t("profile.nb.people.fact.poverty_rate")} />}
+          {x?.income && <ChartCard title={t("profile.nb.people.chart.income")} low={low(x.income)} testId="nb-income-cols"><ShareColumns title={t("profile.nb.people.chart.income")} rows={rows("income", x.income)} /></ChartCard>}
+        </div></div>
       </SubSection>
 
       {h && (
-        <SubSection title={t("profile.nb.people.sec.housing")} dagger={anyLow(x?.structure, x?.tenure, x?.occupancy, x?.moved_in, x?.home_value)}>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="flex flex-col gap-4">
-              {h.housing_units != null && <Headline value={nf(h.housing_units)} label={t("profile.nb.people.housingUnits")} />}
-              {h.median_home_value != null && <Headline value={usd(h.median_home_value, lng)} label={t("profile.nb.people.homeValue")} />}
-            </div>
-            {x?.occupancy && <Donut testId="nb-donut-occupancy" title={t("profile.nb.people.chart.occupancy")} lead="occupied"
-              segments={x.occupancy.map((s, i) => ({ key: s.key, label: L("occupancy", s.key), pct: s.pct, low: s.low, color: i ? DONUT.b : DONUT.a }))} />}
-            {x?.tenure && <Donut testId="nb-donut-tenure" title={t("profile.nb.people.chart.tenure")} lead={x.tenure[1] && x.tenure[1].pct > x.tenure[0].pct ? "renter" : "owner"}
-              segments={x.tenure.map((s, i) => ({ key: s.key, label: L("tenure", s.key), pct: s.pct, low: s.low, color: i ? DONUT.b : DONUT.a }))} />}
-          </div>
-          <div className="grid gap-6 lg:grid-cols-2">
-            {x?.structure && <LabeledColumns testId="nb-structure-cols" title={t("profile.nb.people.chart.structure")} columns={cols("structure", x.structure)} />}
-            {x?.moved_in && <LabeledColumns title={t("profile.nb.people.chart.movedIn")} columns={cols("moved_in", x.moved_in)} />}
-          </div>
-          {x?.home_value && <LabeledColumns title={t("profile.nb.people.chart.homeValue")} columns={cols("home_value", x.home_value)} />}
+        <SubSection title={t("profile.nb.people.sec.housing")}>
+          <div className="nx-cq"><div className="nx-cards">
+            {h.housing_units != null && <FigureCard value={nf(h.housing_units)} label={t("profile.nb.people.housingUnits")} />}
+            {h.median_home_value != null && <FigureCard value={usd(h.median_home_value, lng)} label={t("profile.nb.people.homeValue")} />}
+            {x?.occupancy && donut(t("profile.nb.people.chart.occupancy"), rows("occupancy", x.occupancy), { lead: "occupied", low: low(x.occupancy), testId: "nb-donut-occupancy" })}
+            {x?.tenure && donut(t("profile.nb.people.chart.tenure"), rows("tenure", x.tenure), { low: low(x.tenure), testId: "nb-donut-tenure" })}
+            {x?.structure && <ChartCard title={t("profile.nb.people.chart.structure")} low={low(x.structure)} testId="nb-structure-cols"><ShareBars rows={rows("structure", x.structure)} /></ChartCard>}
+            {x?.moved_in && <ChartCard title={t("profile.nb.people.chart.movedIn")} low={low(x.moved_in)}><ShareColumns title={t("profile.nb.people.chart.movedIn")} rows={rows("moved_in", x.moved_in)} /></ChartCard>}
+            {x?.home_value && <ChartCard title={t("profile.nb.people.chart.homeValue")} low={low(x.home_value)}><ShareBars rows={rows("home_value", x.home_value)} /></ChartCard>}
+          </div></div>
         </SubSection>
       )}
 
       {h && (h.households != null || x?.household_type) && (
-        <SubSection title={t("profile.nb.people.sec.households")} dagger={anyLow(x?.household_type)}>
-          <div className="grid gap-6 lg:grid-cols-3">
-            {h.households != null && <Headline value={nf(h.households)} label={t("profile.nb.people.households")} />}
-            {h.persons_per_household != null && <Headline value={nf(h.persons_per_household, 1)} label={t("profile.nb.people.perHousehold")} />}
-            {x?.household_type && <Donut testId="nb-donut-households" title={t("profile.nb.people.chart.householdType")}
-              lead={[...x.household_type].sort((a, b) => b.pct - a.pct)[0].key}
-              segments={x.household_type.map((s, i) => ({ key: s.key, label: L("household_type", s.key), pct: s.pct, low: s.low, color: [DONUT.a, DONUT.c, DONUT.b, DONUT.d][i] }))} />}
-          </div>
+        <SubSection title={t("profile.nb.people.sec.households")}>
+          <div className="nx-cq"><div className="nx-cards">
+            {h.households != null && <FigureCard value={nf(h.households)} label={t("profile.nb.people.households")} />}
+            {h.persons_per_household != null && <FigureCard value={nf(h.persons_per_household, 1)} label={t("profile.nb.people.perHousehold")} />}
+            {x?.household_type && donut(t("profile.nb.people.chart.householdType"), rows("household_type", x.household_type), { low: low(x.household_type), testId: "nb-donut-households" })}
+          </div></div>
         </SubSection>
       )}
 
-      <SubSection title={t("profile.nb.people.sec.work")} dagger={anyLow(x?.travel_time)}>
-        <div className="grid gap-6 lg:grid-cols-3">
-          {h?.travel_minutes != null && <Headline value={t("profile.nb.people.minutes", { n: nf(h.travel_minutes, 1) })} label={t("profile.nb.people.travel")} />}
-          <div className="lg:col-span-2">{dist("transportation_distribution").length > 0 && <LabeledColumns testId="nb-commute-cols" title={t("profile.nb.people.dist.transportation_distribution")} columns={dist("transportation_distribution")} />}</div>
-        </div>
-        {x?.travel_time && <LabeledColumns title={t("profile.nb.people.chart.travelTime")} columns={cols("travel_time", x.travel_time)} />}
+      <SubSection title={t("profile.nb.people.sec.work")}>
+        <div className="nx-cq"><div className="nx-cards">
+          {h?.travel_minutes != null && <FigureCard value={t("profile.nb.people.minutes", { n: nf(h.travel_minutes, 1) })} label={t("profile.nb.people.travel")} />}
+          {dist("transportation_distribution").length > 0 && <ChartCard title={t("profile.nb.people.dist.transportation_distribution")} testId="nb-commute-cols"><ShareBars rows={dist("transportation_distribution")} /></ChartCard>}
+          {x?.travel_time && <ChartCard title={t("profile.nb.people.chart.travelTime")} low={low(x.travel_time)}><ShareColumns title={t("profile.nb.people.chart.travelTime")} rows={rows("travel_time", x.travel_time)} /></ChartCard>}
+        </div></div>
       </SubSection>
 
-      <SubSection title={t("profile.nb.people.sec.people")} dagger={anyLow(x?.mobility)}>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="flex flex-col gap-4">
-            {h?.median_age != null && <Headline value={nf(h.median_age, 1)} label={t("profile.nb.people.fact.median_age")} />}
-            {bach && <Headline value={pctText(bach)} label={t("profile.nb.people.fact.bachelors_or_higher_pct")} low={!!bach.state?.low} />}
-          </div>
-          <div className="lg:col-span-2">{dist("age_distribution").length > 0 && <LabeledColumns title={t("profile.nb.people.dist.age_distribution")} columns={dist("age_distribution")} />}</div>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-3">
-          {h?.moved_pct != null && <Headline value={`${nf(h.moved_pct, 1)}%`} label={t("profile.nb.people.moved")} />}
-          <div className="lg:col-span-2">{x?.mobility && <LabeledColumns title={t("profile.nb.people.chart.mobility")} columns={cols("mobility", x.mobility)} />}</div>
-        </div>
-        {dist("education_distribution").length > 0 && <LabeledColumns title={t("profile.nb.people.dist.education_distribution")} columns={dist("education_distribution")} />}
+      <SubSection title={t("profile.nb.people.sec.people")}>
+        <div className="nx-cq"><div className="nx-cards">
+          {h?.median_age != null && <FigureCard value={nf(h.median_age, 1)} label={t("profile.nb.people.fact.median_age")} />}
+          {bach && <FigureCard value={pctText(bach)} label={t("profile.nb.people.fact.bachelors_or_higher_pct")} />}
+          {h?.moved_pct != null && <FigureCard value={`${nf(h.moved_pct, 1)}%`} label={t("profile.nb.people.moved")} />}
+          {dist("age_distribution").length > 0 && <ChartCard title={t("profile.nb.people.dist.age_distribution")}><ShareColumns title={t("profile.nb.people.dist.age_distribution")} rows={dist("age_distribution")} /></ChartCard>}
+          {dist("education_distribution").length > 0 && donut(t("profile.nb.people.dist.education_distribution"), dist("education_distribution"), { testId: "nb-donut-education" })}
+          {x?.mobility && donut(t("profile.nb.people.chart.mobility"), rows("mobility", x.mobility), { lead: "same_house", low: low(x.mobility), testId: "nb-donut-mobility" })}
+        </div></div>
       </SubSection>
 
+      {anyLow && (
+        <p className="flex flex-wrap items-center gap-2 text-caption nx-muted" data-testid="nb-low-note">
+          <ConfidenceState kind="estimate" low />{t("profile.nb.people.lowNote")}
+        </p>
+      )}
       <p className="text-caption nx-muted">{t("profile.nb.people.caption", { area })}</p>
     </div>
   );
@@ -640,6 +711,17 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
 function periodLabel(key: string, lng: string): string {
   if (!lng.startsWith("es")) return key;
   return key.replace(" to ", " a ").replace(" or later", " o después").replace(" or earlier", " o antes");
+}
+
+/** A short column tick for a Census period ("2020 to 2022" → "’20–22", "2023 or later" → "’23+"). */
+function shortPeriod(key: string): string {
+  const m = key.match(/^(\d{4}) to (\d{4})$/);
+  if (m) return `’${m[1].slice(2)}–${m[2].slice(2)}`;
+  const later = key.match(/^(\d{4}) or later$/);
+  if (later) return `’${later[1].slice(2)}+`;
+  const earlier = key.match(/^(\d{4}) or earlier$/);
+  if (earlier) return `<’${String(Number(earlier[1]) + 1).slice(2)}`;
+  return key;
 }
 
 // ── Schools ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -758,7 +840,7 @@ function NearbyCards({ data, area }: { data: ScorecardResponse; area: string }) 
   }
   if (!cards.length) return <p className="nx-muted">{t("profile.nb.near.none")}</p>;
   return (
-    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="nb-nearby">
+    <div className="nx-cq"><ul className="nx-cards" data-testid="nb-nearby">
       {cards.map((c) => (
         <li key={c.key} className="flex gap-3 rounded-2xl bg-nx-block p-4" data-card={c.key}>
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-nx-page">{c.icon}</span>
@@ -769,6 +851,6 @@ function NearbyCards({ data, area }: { data: ScorecardResponse; area: string }) 
           </span>
         </li>
       ))}
-    </ul>
+    </ul></div>
   );
 }

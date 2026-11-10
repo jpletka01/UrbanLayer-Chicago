@@ -539,7 +539,8 @@
         "walk": "Walk score",
         "transit": "Transit score",
         "bike": "Bike score",
-        "ringLabel": "{{label}}: {{score}} of 100"
+        "ringLabel": "{{label}}: {{score}} of 100",
+        "of100": "{{score}} of 100"
       },
       "define": {
         "walk": "Walk Score's 0 to 100 index of how many daily errands can be done on foot from this address. A private company's index, not a City figure.",
@@ -585,7 +586,10 @@
         "title": "Top 311 requests",
         "what": "311 requests",
         "none": "No 311 requests on record in {{area}} over the last {{days}} days.",
-        "caption": "{{total}} requests in {{area}} over the last {{days}} days, duplicates removed."
+        "caption": "{{total}} requests in {{area}} over the last {{days}} days, duplicates removed.",
+        "byType": "By type",
+        "requests": "requests",
+        "other": "Everything else"
       },
       "building": {
         "title": "Construction nearby",
@@ -700,7 +704,6 @@
         "travel": "Average travel time to work",
         "moved": "Moved in the last year",
         "withheldShort": "Not shown",
-        "dagger": "† The margin of error is at least 10% of this figure; read it with care.",
         "cmp": {
           "same": "about the same as {{area}}",
           "times": "about {{r}} times {{area}}'s {{value}}",
@@ -768,6 +771,26 @@
             "30_44": "30–44 min",
             "45_59": "45–59 min",
             "60_plus": "60+ min"
+          }
+        },
+        "hoverHint": "Point at a column for its share.",
+        "lowNote": "Some shares on these charts have a margin of error of at least 10% of the share (a small area's survey); read them as rough.",
+        "tick": {
+          "income": {
+            "under_50k": "<$50K",
+            "50_100k": "$50–100K",
+            "100_200k": "$100–200K",
+            "over_200k": "$200K+"
+          },
+          "travel_time": {
+            "under_15": "<15",
+            "15_29": "15–29",
+            "30_44": "30–44",
+            "45_59": "45–59",
+            "60_plus": "60+"
+          },
+          "age": {
+            "Under 18": "<18"
           }
         }
       },

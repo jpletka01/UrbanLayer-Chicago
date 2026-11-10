@@ -78,7 +78,9 @@ describe("Neighborhood", () => {
     expect(screen.getByTestId("nb-income-headline").textContent).toContain("about 1.2 times West Town's $90,000");
     expect(screen.getByTestId("nb-donut-tenure").textContent).toContain("Renter occupied");
     expect(screen.getByTestId("nb-structure-cols").textContent).toContain("3–4 units");
-    expect(screen.getByText(/margin of error is at least 10%/)).toBeTruthy(); // a low share carries the dagger
+    expect(screen.getByTestId("nb-low-note").textContent).toContain("margin of error of at least 10%"); // said once, not per value
+    expect(screen.getByTestId("nb-structure-cols").textContent).toContain("Low confidence");
+    expect(screen.getByTestId("nb-311-donut").textContent).toContain("Graffiti Removal Request");
     const cards = within(screen.getByTestId("nb-nearby")).getAllByRole("listitem").map((li) => li.getAttribute("data-card"));
     expect(cards).toEqual(["cta", "ward", "area"]);
     // Pages open in a new tab; mailto and tel open another app (the repo's link rule).

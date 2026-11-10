@@ -539,7 +539,8 @@
         "walk": "Puntaje para caminar",
         "transit": "Puntaje de transporte",
         "bike": "Puntaje para bicicleta",
-        "ringLabel": "{{label}}: {{score}} de 100"
+        "ringLabel": "{{label}}: {{score}} de 100",
+        "of100": "{{score}} de 100"
       },
       "define": {
         "walk": "Índice de 0 a 100 de Walk Score sobre cuántos mandados diarios se pueden hacer a pie desde esta dirección. Es el índice de una empresa privada, no una cifra de la Ciudad.",
@@ -585,7 +586,10 @@
         "title": "Principales solicitudes al 311",
         "what": "las solicitudes al 311",
         "none": "No hay solicitudes al 311 registradas en {{area}} en los últimos {{days}} días.",
-        "caption": "{{total}} solicitudes en {{area}} en los últimos {{days}} días, sin duplicados."
+        "caption": "{{total}} solicitudes en {{area}} en los últimos {{days}} días, sin duplicados.",
+        "byType": "Por tipo",
+        "requests": "solicitudes",
+        "other": "Todo lo demás"
       },
       "building": {
         "title": "Obras cercanas",
@@ -700,7 +704,6 @@
         "travel": "Tiempo promedio de traslado al trabajo",
         "moved": "Se mudaron en el último año",
         "withheldShort": "No se muestra",
-        "dagger": "† El margen de error es de al menos 10% de esta cifra; léala con cuidado.",
         "cmp": {
           "same": "más o menos igual que {{area}}",
           "times": "unas {{r}} veces los {{value}} de {{area}}",
@@ -768,6 +771,26 @@
             "30_44": "30–44 min",
             "45_59": "45–59 min",
             "60_plus": "60+ min"
+          }
+        },
+        "hoverHint": "Señale una columna para ver su porcentaje.",
+        "lowNote": "Algunos porcentajes de estas gráficas tienen un margen de error de al menos 10% del porcentaje (la encuesta de una zona pequeña); tómelos como aproximados.",
+        "tick": {
+          "income": {
+            "under_50k": "<$50 mil",
+            "50_100k": "$50–100 mil",
+            "100_200k": "$100–200 mil",
+            "over_200k": "$200 mil+"
+          },
+          "travel_time": {
+            "under_15": "<15",
+            "15_29": "15–29",
+            "30_44": "30–44",
+            "45_59": "45–59",
+            "60_plus": "60+"
+          },
+          "age": {
+            "Under 18": "<18"
           }
         }
       },

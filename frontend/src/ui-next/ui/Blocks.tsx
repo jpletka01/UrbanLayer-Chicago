@@ -88,8 +88,10 @@ export function ShareBar({ share, emphasis = false, hatched = false, label }: {
 
 /** SnowUI's stat card (Item 74): one key figure on a pale fill (alternate `a` / `b`), its label above, a short
     note and at most one warning below. The tile row reflows from four to two to one. */
-export function StatTile({ label, figure, unit, note, warning, state, tone = "a", checking = false, testId, visual }: {
+export function StatTile({ label, figure, unit, note, warning, state, tone = "a", checking = false, testId, visual, icon }: {
   label: ReactNode;
+  /** An icon in a square at the card's start, like the Neighborhood tab's "Around the lot" cards (owner, Item 102). */
+  icon?: ReactNode;
   figure?: ReactNode;
   /** A small graphic on the card's right (a score ring); with it, the figure line is left out when `figure` is unset. */
   visual?: ReactNode;
@@ -103,10 +105,12 @@ export function StatTile({ label, figure, unit, note, warning, state, tone = "a"
   checking?: boolean;
   testId?: string;
 }) {
+  const iconBox = icon ? <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/60 text-nx-card-ink">{icon}</span> : null;
   if (visual) {
     return (
-      <li className={`flex min-w-0 items-center justify-between gap-4 rounded-2xl p-4 text-nx-card-ink sm:p-6 ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
-        <span className="flex min-w-0 flex-col gap-2">
+      <li className={`flex min-w-0 items-center gap-3 rounded-2xl p-4 text-nx-card-ink ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
+        {iconBox}
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-caption font-semibold">{label}</span>
           {figure != null && <span className="text-nx-figure tabular-nums">{figure}</span>}
           {note && <span className="text-caption nx-card-muted">{note}</span>}
@@ -117,8 +121,8 @@ export function StatTile({ label, figure, unit, note, warning, state, tone = "a"
     );
   }
   return (
-    <li className={`flex min-w-0 flex-col gap-2 rounded-2xl p-4 text-nx-card-ink sm:p-6 ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
-      <span className="text-caption font-semibold">{label}</span>
+    <li className={`flex min-w-0 flex-col gap-2 rounded-2xl p-4 text-nx-card-ink ${icon ? "" : "sm:p-6"} ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
+      {icon ? <span className="flex items-center gap-3">{iconBox}<span className="text-caption font-semibold">{label}</span></span> : <span className="text-caption font-semibold">{label}</span>}
       {checking ? (
         <span aria-hidden className="flex items-center text-nx-figure"><span className="block h-[0.8em] w-24 animate-pulse rounded bg-nx-card-ink/10" />&#8203;</span>
       ) : (

@@ -63,8 +63,11 @@ export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; o
       {tile.score != null ? (
         // A score as a ring on the right, its words on the left (owner's review, Item 102).
         <span className="flex items-center justify-between gap-3">
-          <span className="text-caption nx-card-muted">{tile.note}</span>
-          <ScoreRing value={tile.score} label={`${tile.label}: ${tile.figure} ${tile.unit ?? ""}`.trim()} size={68} testId={`ring-${tile.key}`} />
+          <span className="flex min-w-0 flex-col gap-0.5 text-caption">
+            <span className="font-semibold">{tile.figure} {tile.unit}</span>
+            <span className="nx-card-muted">{tile.note}</span>
+          </span>
+          <ScoreRing value={tile.score} label={`${tile.label}: ${tile.figure} ${tile.unit ?? ""}`.trim()} testId={`ring-${tile.key}`} />
         </span>
       ) : tile.checking ? (
         // Same height as a figure line, so the tile doesn't grow when the figure arrives.
