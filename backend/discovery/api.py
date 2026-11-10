@@ -13,10 +13,11 @@ import io
 import logging
 import re
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Iterator
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.auth import get_current_user, require_tier
@@ -38,6 +39,7 @@ from backend.discovery.evaluator import EvalResult
 from backend.discovery.result_cache import cached_evaluate
 from backend.discovery.registry import Coverage, ParcelTiles, Registry
 from backend.discovery.registry import load as load_registry
+from backend.discovery.lot_facts import WARNING_ORDER
 from backend.retrieval.property.assessment_level import is_nominal_assessment
 
 log = logging.getLogger(__name__)
@@ -76,6 +78,9 @@ class SearchRequest(BaseModel):
     includePins: bool = False
     # Opt in to the parcels the default `hide_unusual` filter keeps out (decision Item 60).
     includeUnusual: bool = False
+    # Also return how many matches fall in each community area, from the same evaluation (the new map's city view
+    # labels each area with its count: matches are drawn as lot outlines only, Item 104).
+    includeAreaCounts: bool = False
 
 
 class ResultRow(BaseModel):
@@ -114,6 +119,13 @@ class ResultRow(BaseModel):
     allowed_far: float | None = None
     # A nominal assessment ($1 common area; decision Item 46): the row says "Nominal", never "$1".
     nominal_assessment: bool = False
+    # Room to build (allowed floor area minus the building's) and where the building area came from: assessor,
+    # commercial_valuation or footprint (Item 104). None = unknown, never 0.
+    room_sqft: float | None = None
+    bldg_sqft_source: str | None = None
+    # At most one serious warning for the card (Item 104): {"kind": demolition | vacant_case | pending_rezoning |
+    # landmark | nominal, "detail": a date or a name, when there is one}.
+    warning: dict[str, str | None] | None = None
     # The value of the ACTIVE sort key for this row — so the list can always surface
     # "what you sorted by" even when that field is not one of the displayed columns.
     sortValue: float | str | None = None
@@ -154,6 +166,8 @@ class SearchResponse(BaseModel):
     # same request, computed from the SAME evaluation as `result` (one dataVersion, one
     # total, one ordering), so list and map cannot disagree. Not tier-capped, like /pins.
     pins: PinsResponse | None = None
+    # Only with `includeAreaCounts`: community area number (as a string) -> matches in it.
+    areaCounts: dict[str, int] | None = None
 
 
 ALL_COMMUNITY_AREAS = 77  # Chicago has 77 community areas → coverage "all"
@@ -239,14 +253,24 @@ def _nominal(av: float | None, cls: str | None, land_use: str | None) -> bool:
     return bool(av) and av > 0 and land_use != "exempt" and is_nominal_assessment(av, cls)
 
 
+def _warning(g, nominal: bool) -> dict[str, str | None] | None:
+    """The one serious warning a card shows, in the owner's order (Item 104)."""
+    for key in WARNING_ORDER:
+        v = g(key)
+        if v:
+            return {"kind": key.removeprefix("warn_"), "detail": v if isinstance(v, str) else None}
+    return {"kind": "nominal", "detail": None} if nominal else None
+
+
 def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
     g = parcel.get
+    nominal = _nominal(g("total_assessed_value"), g("class"), g("land_use_class"))
     return ResultRow(
         pin=parcel.pin,
         lat=parcel.lat,
         lon=parcel.lon,
         address=g("address"),
-        community_area=g("community_area"),
+        community_area=g("community_area") or _community_area_of(parcel),
         land_use=g("land_use_class"),
         # Display reads the REAL assessed value (exempt/$0 included); only the sort key
         # is nulled for exempt/$0, via parcel_index.derive_sort_fields.
@@ -266,7 +290,10 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         zoning_group=g("zoning_group"),
         zone_class=g("zone_class"),
         allowed_far=g("density_band"),
-        nominal_assessment=_nominal(g("total_assessed_value"), g("class"), g("land_use_class")),
+        nominal_assessment=nominal,
+        room_sqft=g("room_sqft"),
+        bldg_sqft_source=g("bldg_sqft_source"),
+        warning=_warning(g, nominal),
         sortValue=_display_sort_value(parcel, sort_field),
     )
 
@@ -340,7 +367,62 @@ def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) ->
         result=SearchResult(rows=rows, total=result.total, nextOffset=next_offset, gated=gated),
         diagnostics=diagnostics,
         pins=_pins_payload(result, data_version) if req.includePins else None,
+        areaCounts=_area_counts(result, data_version) if req.includeAreaCounts else None,
     )
+
+
+def _community_area_of(parcel) -> int | None:
+    """The community area from the parcel's own region handle (the index keeps it there, not in attrs)."""
+    for region in getattr(parcel, "_regions", ()):
+        if region.startswith("neighborhood:"):
+            try:
+                return int(region.split(":", 1)[1])
+            except ValueError:
+                return None
+    return None
+
+
+def _area_counts(result, data_version: str) -> dict[str, int]:
+    """Matches per community area, read from each matched parcel's own region handles."""
+    lookup = _pin_lookup(data_version)
+    counts: dict[str, int] = {}
+    for pin in result.pins:
+        parcel = lookup.get(pin)
+        ca = _community_area_of(parcel) if parcel is not None else None
+        if ca is not None:
+            counts[str(ca)] = counts.get(str(ca), 0) + 1
+    return counts
+
+
+@router.get("/areas")
+def community_area_outlines() -> Response:
+    """The 77 community areas, simplified to about 15 m, with a label point each: the new map's city view."""
+    return Response(content=_areas_geojson(), media_type="application/geo+json",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@lru_cache(maxsize=1)
+def _areas_geojson() -> bytes:
+    import json as _json
+
+    import shapely
+    from shapely.geometry import mapping, shape
+
+    from backend.config import get_settings
+
+    raw = _json.loads((get_settings().data_dir / "community_areas.geojson").read_text())
+    feats = []
+    for f in raw.get("features", []):
+        props = f.get("properties") or {}
+        num = props.get("community_area")
+        if num is None or not f.get("geometry"):
+            continue
+        g = shape(f["geometry"]).simplify(0.00015, preserve_topology=True)
+        label = shapely.point_on_surface(g)
+        feats.append({"type": "Feature", "id": int(num), "geometry": mapping(g),
+                      "properties": {"ca": int(num), "name": str(props.get("name") or ""),
+                                     "lx": round(label.x, 5), "ly": round(label.y, 5)}})
+    return _json.dumps({"type": "FeatureCollection", "features": feats}, separators=(",", ":")).encode()
 
 
 @router.get("/parcel", response_model=ResultRow)

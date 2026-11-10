@@ -37,6 +37,8 @@ from shapely import wkt as shapely_wkt
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.geometry.polygon import orient
 
+from backend.discovery.lot_facts import measure_bands
+
 log = logging.getLogger(__name__)
 
 EXTENT = 4096
@@ -280,11 +282,15 @@ def load_parcels(
     for pin, attrs, regions in rows:
         if regions_wanted and not regions_wanted.intersection(json.loads(regions)):
             continue
-        pin10 = pin.replace("-", "")[:10]
-        if pin10 in want:
+        p = pin.replace("-", "")
+        pin10 = p[:10]
+        # The base parcel (suffix 0000) speaks for the lot when the index has it; else the first row seen.
+        if pin10 in want and p[10:] != "0000":
             continue
         a = json.loads(attrs)
-        want[pin10] = {"g": str(a.get("zoning_group") or "")} if a.get("zoning_group") else {}
+        props = {"g": str(a.get("zoning_group"))} if a.get("zoning_group") else {}
+        props.update(measure_bands(a))  # Item 104: the Explore map's measures, banded
+        want[pin10] = props
     idx.close()
 
     geo = sqlite3.connect(f"file:{ptaxsim_path}?mode=ro", uri=True)
@@ -349,7 +355,7 @@ def write_mbtiles(
         log.info("z%d: %d tiles, %.1f MB, max %.0f KB", z, len(sizes), sum(sizes) / 1e6, max(sizes, default=0) / 1e3)
     meta = {
         "name": "parcels", "format": "pbf", "minzoom": str(minzoom), "maxzoom": str(maxzoom),
-        "json": json.dumps({"vector_layers": [{"id": LAYER, "fields": {"g": "String"}}]}),
+        "json": json.dumps({"vector_layers": [{"id": LAYER, "fields": {"g": "String", "r": "String", "s": "String", "y": "String", "u": "String"}}]}),
         "pieces_unclipped": str(sum(stats.unclipped.values())),
         **(extra_meta or {}),
     }
