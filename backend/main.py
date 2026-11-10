@@ -1950,11 +1950,11 @@ SCORECARD_TASK_KEYS = (
     "violations", "address_311",
 )
 # Keys that only exist with a community area.
-_CA_TASK_KEYS = frozenset({"incentives", "neighborhood", "aro_housing", "crime", "crime_yoy", "area_311"})
+_CA_TASK_KEYS = frozenset({"incentives", "neighborhood", "aro_housing", "crime", "crime_yoy", "area_311", "area_demographics"})
 # Sources only the new UI's Profile parts fetch (the Neighborhood tab, decision Item 102): the full
 # /api/scorecard never asks them, so today's Profile, chat grounding and the report are unchanged. Their results
 # ride under the payload's own ``next_ui`` key; a failed one is listed in ``next_ui.failed`` (never "none").
-NEXT_UI_TASK_KEYS = ("schools", "construction_within", "area_311")
+NEXT_UI_TASK_KEYS = ("schools", "construction_within", "area_311", "area_demographics")
 
 # Crime as violent vs property for the Neighborhood tab (Item 102), on the Chicago Police Department's own primary
 # types: violent = crimes against a person, property = taking or damaging property. The other types (narcotics,
@@ -2023,6 +2023,16 @@ def _scorecard_task(
         coro = buildings.construction_within(lat, lon)
     elif key == "area_311":
         coro = three11.top_311_by_community_area(ca)
+    elif key == "area_demographics":
+        # The Profile's neighborhood lookup skips the community area's figures for a parcel; the Neighborhood tab needs
+        # its population (crime per resident) and income (the tract beside its area). Preloaded at startup.
+        from backend.retrieval.neighborhood.demographics import fetch_demographics
+
+        async def _area(ca=ca):
+            d = await fetch_demographics(ca)
+            return d.model_dump() if d is not None else None
+
+        coro = _area()
     else:  # pragma: no cover - a programming error
         raise KeyError(key)
     return _limited(coro, key)

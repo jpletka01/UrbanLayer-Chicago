@@ -144,7 +144,7 @@ async def address_311_complaints(
 
 
 _area_cache = TTLCache(ttl_seconds=86_400, maxsize=128, name="311_area_top")
-AREA_311_DAYS = 365
+AREA_311_DAYS = 90  # the crime window too; a year took 43 s from the City portal (2026-11-09), past the 20 s deadline
 # Request types that are not a neighborhood concern (an information call, a parking-ticket review).
 _NOT_CONCERNS = ("311 INFORMATION ONLY CALL", "Finance Parking Code Enforcement Review", "Aircraft Noise Complaint")
 
@@ -154,7 +154,7 @@ def _clean_type(sr_type: str) -> str:
 
 
 async def top_311_by_community_area(community_area: int, *, client: httpx.AsyncClient | None = None) -> dict[str, Any]:
-    """The community area's most frequent 311 requests over the last year, duplicates excluded (the new UI's
+    """The community area's most frequent 311 requests over the last 90 days, duplicates excluded (the new UI's
     Neighborhood tab, decision Item 102): {days, total, top: [{type, count}] (5)}. ``total`` counts every
     request type in the window except the non-concerns. Raises on failure, caches successes for a day."""
     key = f"311_area_top:{community_area}"

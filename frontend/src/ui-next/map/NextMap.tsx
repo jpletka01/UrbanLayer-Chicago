@@ -17,6 +17,7 @@ import { streetOfAddress, viewpointFor, type RoadLine, type Viewpoint } from "./
 import { addPinImages } from "./pins";
 import { addPatternImages } from "./patterns";
 import type { ComparableSale, TransitStation } from "../../lib/types";
+import type { ConstructionProject } from "../../lib/api";
 import { humanizeShoutyCase } from "../../lib/format";
 import { rowTitle } from "../../discovery/rowFigures";
 import {
@@ -48,6 +49,10 @@ export interface NextMapProps {
   sales: ComparableSale[] | null;
   salesState: LateState;
   onRetrySales?: () => void;
+  /** Construction nearby (the Neighborhood tab, Item 102): permits as pins, a new building and a renovation by color. */
+  building?: ConstructionProject[] | null;
+  buildingState?: LateState;
+  onRetryBuilding?: () => void;
   /** The map is the focus of the screen (Expand): the wheel zooms at once, like a full-page map. In the page band
       the wheel scrolls the page until the map is clicked. */
   expanded?: boolean;
@@ -71,7 +76,8 @@ function km(aLat: number, aLon: number, bLat: number, bLon: number): number {
 type Picked =
   | { kind: "parcel"; pin10: string; at: [number, number]; ll: [number, number]; sv: Viewpoint; lookup: DiscoveryOutlineLookup | null }
   | { kind: "district"; props: Record<string, string>; at: [number, number]; ll: [number, number]; sv: Viewpoint }
-  | { kind: "sale"; sale: ComparableSale; at: [number, number]; ll: [number, number]; sv: Viewpoint };
+  | { kind: "sale"; sale: ComparableSale; at: [number, number]; ll: [number, number]; sv: Viewpoint }
+  | { kind: "building"; project: ConstructionProject; at: [number, number]; ll: [number, number]; sv: Viewpoint };
 
 /** The City street centerlines the map has loaded (Street View's viewpoint snaps onto them). */
 function loadedRoads(map: MLMap): RoadLine[] {
@@ -84,7 +90,10 @@ function loadedRoads(map: MLMap): RoadLine[] {
   });
 }
 
-export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales, expanded = false, className }: NextMapProps) {
+export function NextMap({
+  lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales,
+  building = null, buildingState = "absent", onRetryBuilding, expanded = false, className,
+}: NextMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
   const theme: Theme = resolvedTheme === "dark" ? "dark" : "light";
@@ -314,6 +323,14 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     if (!map || !ready) return;
     (map.getSource("sales") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: salesState === "ready" ? saleFeatures : [] });
   }, [saleFeatures, salesState, ready]);
+  const buildingFeatures = useMemo(() => (building ?? []).map((p, i) => ({
+    type: "Feature" as const, id: i, geometry: { type: "Point" as const, coordinates: [p.lon, p.lat] }, properties: { i, kind: p.kind },
+  })), [building]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    (map.getSource("building") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: buildingState === "ready" ? buildingFeatures : [] });
+  }, [buildingFeatures, buildingState, ready]);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
@@ -338,6 +355,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       setCounts({
         parcels: lots.size, zoning: zones.size,
         sales: new Set(q(["sales-pin"]).map((f) => f.id)).size,
+        building: new Set(q(["building-pin"]).map((f) => f.id)).size,
         transit: new Set(q(["transit-pin"]).map((f) => f.id)).size,
       });
       setFamilies([...new Set([...zones.values()].map((z) => z.family))]);
@@ -359,6 +377,13 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
         const live = ids.filter(has);
         return live.length ? map.queryRenderedFeatures([[at[0] - 6, at[1] - 6], [at[0] + 6, at[1] + 6]], { layers: live })[0] : undefined;
       };
+      const permit = hit(["building-pin"]);
+      if (permit && building) {
+        const p = building[Number(permit.properties.i)];
+        const pll: [number, number] = [p.lon, p.lat];
+        setPicked({ kind: "building", project: p, at, ll: pll, sv: viewpointFor(pll, loadedRoads(map), streetOfAddress(p.address)) });
+        return;
+      }
       const sale = hit(["sales-pin"]);
       if (sale && sales) {
         const s = sales.filter((x) => x.lat != null && x.lon != null)[Number(sale.properties.i)];
@@ -391,13 +416,13 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       setPicked(null);
     };
     const pointer = (e: maplibregl.MapMouseEvent) => {
-      const ids = ["sales-pin", "parcel-fill", "zoning-fill"].filter((id) => !!map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
+      const ids = ["building-pin", "sales-pin", "parcel-fill", "zoning-fill"].filter((id) => !!map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
       map.getCanvas().style.cursor = ids.length && map.queryRenderedFeatures(e.point, { layers: ids }).length ? "pointer" : "";
     };
     map.on("click", onClick);
     map.on("mousemove", pointer);
     return () => { map.off("click", onClick); map.off("mousemove", pointer); ctrl.current?.abort(); };
-  }, [ready, sales]);
+  }, [ready, sales, building]);
 
   // The lot a visitor opened is marked while its card is open.
   const pickedPin = picked?.kind === "parcel" ? picked.pin10 : null;
@@ -423,6 +448,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     if (!map) return false;
     const pts: [number, number][] = [[lon, lat]];
     if (g === "sales" && salesState === "ready") for (const f of saleFeatures) pts.push(f.geometry.coordinates as [number, number]);
+    if (g === "building" && buildingState === "ready") for (const f of buildingFeatures) pts.push(f.geometry.coordinates as [number, number]);
     if (g === "transit") for (const s of stations) pts.push([s.lon, s.lat]);
     if (pts.length < 2) return false;
     const w = Math.min(...pts.map((p) => p[0])), e = Math.max(...pts.map((p) => p[0]));
@@ -442,19 +468,24 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
     if (fittedFor.current === view.id) return;
     if (fitGroup(view.fit)) fittedFor.current = view.id;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, view.id, view.fit, saleFeatures, salesState, stations]);
+  }, [ready, view.id, view.fit, saleFeatures, salesState, buildingFeatures, buildingState, stations]);
 
   const groups: GroupState[] = GROUPS.flatMap((g): GroupState[] => {
     if (g === "zoning" && !tiles?.zoning) return [];
     if (g === "parcels" && !tiles?.parcels) return [];
     if (g === "streets" && !tiles?.base) return [];
     if (g === "sales" && salesState === "absent") return [];
+    if (g === "building" && buildingState === "absent") return [];
     if (g === "transit" && stations.length === 0) return [];
-    const total = g === "sales" ? saleFeatures.length : g === "transit" ? stations.length : undefined;
-    return [{ id: g, mode: modes[g], count: counts[g], total, late: g === "sales" ? salesState : undefined }];
+    const total = g === "sales" ? saleFeatures.length : g === "building" ? buildingFeatures.length : g === "transit" ? stations.length : undefined;
+    return [{ id: g, mode: modes[g], count: counts[g], total, late: g === "sales" ? salesState : g === "building" ? buildingState : undefined }];
   });
 
-  const late = salesState === "loading" || salesState === "timedOut" || salesState === "failed";
+  // The waiting layer named on the map: the one this view shows (the permits on Neighborhood, else the sales).
+  const lateGroup: "sales" | "building" = modes.building === "on" && buildingState !== "absent" ? "building" : "sales";
+  const lateState = lateGroup === "building" ? buildingState : salesState;
+  const lateRetry = lateGroup === "building" ? onRetryBuilding : onRetrySales;
+  const late = lateState === "loading" || lateState === "timedOut" || lateState === "failed";
 
   return (
     <div className={`relative h-full w-full ${className ?? ""}`} data-testid="next-map" data-theme-applied={theme}>
@@ -478,7 +509,7 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
           groups={groups}
           families={families}
           onMode={(g, m) => setOverride({ viewId: view.id, modes: { ...modes, [g]: m } })}
-          onRetry={onRetrySales}
+          onRetry={(g) => (g === "building" ? onRetryBuilding : onRetrySales)?.()}
           onShow={showGroup}
         />
       )}
@@ -486,13 +517,13 @@ export function NextMap({ lat, lon, geometry, approximate, pin10, view, sales, s
       {/* Not in the expanded map (owner): there the key's row says it. */}
       {ready && late && !expanded && (
         <p className="absolute bottom-9 left-2 z-10 flex items-center gap-1.5 rounded-lg bg-nx-page/95 px-2 py-1 text-caption shadow-[0_1px_2px_rgb(0_0_0/0.12)]" role="status" data-testid="map-late-tag">
-          {salesState === "loading" ? (
-            <><LoaderCircle aria-hidden className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />{t("map.loading", { layer: t("map.inSentence.sales") })}</>
+          {lateState === "loading" ? (
+            <><LoaderCircle aria-hidden className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />{t("map.loading", { layer: t(`map.inSentence.${lateGroup}`) })}</>
           ) : (
             <>
-              {t("map.timedOut", { layer: t("map.inSentence.sales") })}
-              {onRetrySales && (
-                <button type="button" onClick={onRetrySales} className="ml-1 inline-flex items-center gap-1 underline underline-offset-2">
+              {t("map.timedOut", { layer: t(`map.inSentence.${lateGroup}`) })}
+              {lateRetry && (
+                <button type="button" onClick={lateRetry} className="ml-1 inline-flex items-center gap-1 underline underline-offset-2">
                   <RotateCw aria-hidden className="h-3 w-3" strokeWidth={1.5} />{t("map.retry")}
                 </button>
               )}
@@ -559,6 +590,17 @@ function PickedCard({ picked, onClose, lang, boxH }: { picked: Picked; onClose: 
         <p className="font-semibold">{t("map.card.district", { zone: p.zone_class })}</p>
         {p.ordinance_num && <p className="text-caption nx-muted">{t("map.card.ordinance", { num: p.ordinance_num, date: p.ordinance_date ?? "" })}</p>}
         <p className="text-caption nx-muted">{t("map.card.districtSource")}</p>
+      </>
+    );
+  } else if (picked.kind === "building") {
+    const p = picked.project;
+    const words = p.description ? p.description.charAt(0) + p.description.slice(1).toLowerCase() : null;
+    body = (
+      <>
+        <p className="font-semibold">{p.address ?? t(p.kind === "new" ? "map.card.kindNew" : "map.card.kindReno")}</p>
+        <p className="text-caption nx-muted">{[t(p.kind === "new" ? "map.card.kindNew" : "map.card.kindReno"), p.cost != null ? money(p.cost) : null].filter(Boolean).join(" · ")}</p>
+        {words && <p className="line-clamp-3 text-caption">{words}</p>}
+        {p.issued && <p className="text-caption nx-muted">{t("map.card.issued", { date: p.issued })}</p>}
       </>
     );
   } else {

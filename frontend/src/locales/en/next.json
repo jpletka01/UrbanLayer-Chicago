@@ -511,6 +511,171 @@
         "nearby_one": "{{count}} affordable project in this community area ({{units}} homes).",
         "nearby_other": "{{count}} affordable projects in this community area ({{units}} homes)."
       }
+    },
+    "nb": {
+      "theArea": "the area",
+      "jumpLabel": "Jump to a part of this tab",
+      "jump": {
+        "around": "Getting around",
+        "building": "Building",
+        "safety": "Safety",
+        "311": "311",
+        "people": "People",
+        "schools": "Schools"
+      },
+      "sentence": {
+        "walk": "walk score {{score}} ({{desc}})",
+        "building_one": "{{count}} permit for new buildings or major renovations within half a mile",
+        "building_other": "{{count}} permits for new buildings or major renovations within half a mile",
+        "noBuilding": "no new buildings or major renovations permitted within half a mile",
+        "violentDown": "violent crime in the area down {{pct}}% from a year ago",
+        "violentUp": "violent crime in the area up {{pct}}% from a year ago",
+        "violentFlat": "violent crime in the area level with a year ago",
+        "none": "Still checking the area around this lot."
+      },
+      "score": {
+        "walk": "Walk score",
+        "transit": "Transit score",
+        "bike": "Bike score"
+      },
+      "define": {
+        "walk": "Walk Score's 0 to 100 index of how many daily errands can be done on foot from this address. A private company's index, not a City figure.",
+        "transit": "Walk Score's 0 to 100 index of how well public transit serves this address: how close the stops are, how often they run and where they go. A private company's index.",
+        "bike": "Walk Score's 0 to 100 index of how good this address is for biking: bike lanes, hills, destinations and how many people ride. A private company's index.",
+        "crime": "Crimes the Chicago Police Department recorded in this lot's community area over the last 90 days (the newest week is left out while reports settle), per 1,000 residents. Violent means crimes against a person: homicide, sexual assault, robbery, assault and battery, kidnapping, human trafficking. Property means burglary, theft, motor vehicle theft, arson and criminal damage. Other types (narcotics, weapons, fraud) count in neither. It describes the whole community area, not this block.",
+        "building": "City building permits issued in the last 2 years within half a mile of this lot: every new building, plus renovations with a reported cost of $250,000 or more. A permit means work was approved, not that it is finished. The same permits are the pins on the map.",
+        "r311": "Requests residents made to the City's 311 line in this community area over the last 90 days, duplicates removed, by type. Information calls and parking-ticket reviews are left out. More requests can mean more problems or more people who report them.",
+        "people": "Census survey figures (American Community Survey, 5-year) for this lot's census tract, a few blocks around it, beside its community area where the City publishes the same figure. Survey estimates have margins of error; a figure too uncertain to show is withheld.",
+        "schools": "The Chicago Public Schools elementary and high school whose attendance boundary includes this lot, with the State of Illinois's own report card for each: its designation, the share of students meeting state standards and, for a high school, the graduation rate. Families can also apply to other schools; these are the ones assigned by address."
+      },
+      "ask": {
+        "scores": "How easy is it to get around without a car from {{address}}?",
+        "crime": "How does safety around {{address}} compare with the rest of its community area, and how is it changing?",
+        "building": "What is being built near {{address}}, and what does it say about the area?",
+        "r311": "What do the 311 requests near {{address}} say about the area?",
+        "people": "Who lives around {{address}}, and how does the tract compare with its community area?",
+        "schools": "Which public schools serve {{address}}, and how does the state rate them?"
+      },
+      "crime": {
+        "tile": "Violent crime",
+        "title": "Safety",
+        "what": "crime",
+        "perThousand": "per 1,000",
+        "crimes": "crimes",
+        "window": "90 days in {{area}}",
+        "notChecked": "Couldn't check crime today",
+        "violent": "Violent crime",
+        "property": "Property crime",
+        "down": "down {{pct}}% from a year ago",
+        "up": "up {{pct}}% from a year ago",
+        "flat": "level with a year ago",
+        "barLabel": "{{kind}}: {{now}} in the last 90 days, {{prior}} in the same days a year earlier",
+        "legendNow": "Last 90 days",
+        "legendPrior": "Same days a year earlier ({{period}})",
+        "caption": "Per 1,000 of {{area}}'s {{pop}} residents. The whole community area, not this block.",
+        "captionNoPop": "Crimes in {{area}}. The whole community area, not this block."
+      },
+      "r311": {
+        "title": "Top 311 requests",
+        "what": "311 requests",
+        "none": "No 311 requests on record in {{area}} over the last {{days}} days.",
+        "caption": "{{total}} requests in {{area}} over the last {{days}} days, duplicates removed."
+      },
+      "building": {
+        "title": "Construction nearby",
+        "what": "building permits",
+        "onMap": "Pins on the map",
+        "ruleLabel": "Which permits count",
+        "rule": {
+          "radius": "Within {{mi}} mi",
+          "months_one": "Last {{count}} month",
+          "months_other": "Last {{count}} months",
+          "floor": "Renovations {{floor}}+"
+        },
+        "none": "No new buildings or major renovations permitted within half a mile in the last 2 years.",
+        "newCount_one": "{{count}} new building",
+        "newCount_other": "{{count}} new buildings",
+        "renoCount_one": "{{count}} major renovation",
+        "renoCount_other": "{{count}} major renovations",
+        "units_one": "adds {{count}} home",
+        "units_other": "adds {{count}} homes",
+        "capped": "the newest 300 shown",
+        "more_one": "{{count}} more in the details below",
+        "more_other": "{{count}} more in the details below",
+        "kind": {
+          "new": "New building",
+          "renovation": "Renovation"
+        },
+        "noAddress": "Address not on the permit",
+        "cost": "Reported cost {{cost}}",
+        "addsUnits_one": "adds {{count}} home",
+        "addsUnits_other": "adds {{count}} homes",
+        "removesUnits_one": "removes {{count}} home",
+        "removesUnits_other": "removes {{count}} homes",
+        "permit": "Permit {{n}}"
+      },
+      "people": {
+        "title": "Who lives here",
+        "what": "census figures",
+        "notChecked": "Couldn't check the census figures today.",
+        "income": "Median household income",
+        "thisTract": "This lot's census tract",
+        "withheld": "The tract's figure is too uncertain to show.",
+        "fact": {
+          "owner_occupied_pct": "Homes lived in by their owners",
+          "bachelors_or_higher_pct": "Adults with a bachelor's degree or more",
+          "poverty_rate": "People below the poverty line",
+          "median_age": "Median age"
+        },
+        "years": "{{n}} years",
+        "caption": "The tract's own figures; only income is published for {{area}} as a whole."
+      },
+      "schools": {
+        "title": "Assigned public schools",
+        "what": "schools",
+        "level": {
+          "elementary": "Elementary school",
+          "high": "High school"
+        },
+        "grades": "grades {{grades}}",
+        "unnamed": "School name not on record",
+        "designation": {
+          "Exemplary": "Exemplary",
+          "Commendable": "Commendable",
+          "Targeted": "Targeted",
+          "Comprehensive": "Comprehensive",
+          "Intensive": "Intensive"
+        },
+        "reading": "Meets state standard, reading",
+        "math": "Meets state standard, math",
+        "graduation": "Graduates in 4 years",
+        "enrollment": "Students",
+        "notPublished": "Not published",
+        "hsTest": "(high school test)",
+        "noReportCard": "No state report card figures for this school.",
+        "reportCard": "Illinois Report Card {{year}}",
+        "noBoundary": {
+          "elementary": "No CPS elementary attendance boundary covers this lot.",
+          "high": "No CPS high school attendance boundary covers this lot; citywide and selective schools have none."
+        },
+        "caption": "Assigned by CPS attendance boundary, school year {{boundary}}. Designation and figures: Illinois State Board of Education, {{year}} report card."
+      },
+      "details": {
+        "title": "All neighborhood details",
+        "rail": "Nearest CTA rail station",
+        "metra": "Nearest Metra station",
+        "divvy": "Nearest Divvy station",
+        "at": "{{name}}, {{mi}} mi",
+        "traffic": "Traffic on the nearest counted street",
+        "trafficValue": "{{road}}: about {{n}} vehicles a day",
+        "ward": "Ward",
+        "wardValue": "Ward {{ward}} · {{name}}",
+        "areaPop": "Community area population",
+        "property": "Property crimes, last 90 days",
+        "tract": "Census tract",
+        "allProjects_one": "The {{count}} permit within half a mile",
+        "allProjects_other": "All {{count}} permits within half a mile"
+      }
     }
   },
   "discovery": {
@@ -560,7 +725,8 @@
       "parcels": "Lots",
       "sales": "Recent sales",
       "transit": "Transit",
-      "streets": "Streets"
+      "streets": "Streets",
+      "building": "Construction"
     },
     "count": {
       "zoning_one": "{{count}} district",
@@ -570,7 +736,9 @@
       "sales_one": "{{count}} sale",
       "sales_other": "{{count}} sales",
       "transit_one": "{{count}} station",
-      "transit_other": "{{count}} stations"
+      "transit_other": "{{count}} stations",
+      "building_one": "{{count}} permit",
+      "building_other": "{{count}} permits"
     },
     "card": {
       "label": "What is here",
@@ -584,10 +752,14 @@
       "ordinance": "Ordinance {{num}}, {{date}}",
       "districtSource": "From the City's zoning map",
       "noPrice": "Price not recorded",
-      "approx": "Approx."
+      "approx": "Approx.",
+      "kindNew": "New building",
+      "kindReno": "Renovation",
+      "issued": "Permit issued {{date}}"
     },
     "inSentence": {
-      "sales": "recent sales"
+      "sales": "recent sales",
+      "building": "construction"
     },
     "back": "Back to the property",
     "streetView": {

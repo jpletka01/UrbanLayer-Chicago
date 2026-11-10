@@ -53,7 +53,7 @@ def _school(row: dict[str, Any], level: str) -> dict[str, Any]:
     art = _artifact()
     sid = str(row.get("school_id") or "")
     rec = art["schools"].get(sid)
-    name = (rec or {}).get("name") or (row.get("short_name") or row.get("school_nam") or "").title() or None
+    name = (rec or {}).get("name")  # the boundary layers name schools in different columns; the artifact names all
     out: dict[str, Any] = {
         "school_id": sid,
         "level": level,

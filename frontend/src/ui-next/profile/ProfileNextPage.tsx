@@ -33,6 +33,8 @@ import { checkingTiles, firstSentence } from "./firstModel";
 import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
 import { MoneyTab } from "./MoneyTab";
+import { NeighborhoodTab } from "./NeighborhoodTab";
+import { sourceState } from "./neighborhoodModel";
 import { ProgramPanel } from "./ProgramPanel";
 import { RulePanel } from "./RulePanel";
 import type { RuleKey } from "./ruleModel";
@@ -43,19 +45,22 @@ import { SourcesDialog } from "./SourcesDialog";
 import { PartsStatus } from "./PartsStatus";
 import { useProfileParts, type PartStatus } from "./useProfileParts";
 
-type TabId = "overview" | "build" | "money";
+type TabId = "overview" | "build" | "money" | "neighborhood";
 
 /** Each tab's camera and layers on the one map (map track M1): the Overview looks at the lot among its neighbors and
     recent sales; Build pulls back to the districts around it. Zoning is on in both (owner's review: it reads best
     fully on). The visitor's On / Off choices hold until the tab changes. */
 const MAP_VIEWS: Record<TabId, MapView> = {
-  overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", transit: "on", streets: "on" } },
-  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", transit: "on", streets: "on" } },
+  overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", building: "off", transit: "on", streets: "on" } },
+  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "on", streets: "on" } },
   // Money: the nearby market sales around the lot (brief: "market sales within ¼ mile"); zoning off so the sale pins
   // read (Item 99). It opens framed on the lot and its sales (`fit`), which a widened search can find half a mile out.
-  money: { id: "money", zoom: 15.2, fit: "sales", modes: { zoning: "off", parcels: "on", sales: "on", transit: "off", streets: "on" } },
+  money: { id: "money", zoom: 15.2, fit: "sales", modes: { zoning: "off", parcels: "on", sales: "on", building: "off", transit: "off", streets: "on" } },
+  // Neighborhood: new construction within half a mile (the brief's map default for this tab, Item 102), framed on the
+  // permits; zoning off so the pins read, transit on (getting around).
+  neighborhood: { id: "neighborhood", zoom: 14.6, fit: "building", modes: { zoning: "off", parcels: "on", sales: "off", building: "on", transit: "on", streets: "on" } },
 };
-const TABS: TabId[] = ["overview", "build", "money"];
+const TABS: TabId[] = ["overview", "build", "money", "neighborhood"];
 
 function queryFrom(params: URLSearchParams): ParcelQuery | null {
   const pin = params.get("pin");
@@ -304,6 +309,21 @@ function ProfileScreen({
   // Where each late part stands for the blocks that read it (Item 89's skeleton rule).
   const lateOf = (p: ProfileLatePart): LateBlockState =>
     !data || parts[p] === "waiting" ? "loading" : parts[p] === "failed" ? "failed" : (timedOut[p]?.length ?? 0) > 0 ? "timedOut" : "ready";
+  // Construction nearby comes with the late `activity` part (the Neighborhood tab's map pins, Item 102).
+  const buildingBlock = data ? sourceState(data, lateOf("activity"), "construction_within", timedOut.activity ?? []) : "loading";
+  const buildingProjects = data?.next_ui?.construction_within?.projects ?? null;
+  const buildingState: LateState = buildingBlock === "ready" ? (buildingProjects?.length ? "ready" : "absent") : buildingBlock;
+
+  // The tab bar's height, for what sticks under it (the Neighborhood tab's jump links on a phone).
+  const tabBarRef = useRef<HTMLDivElement | null>(null);
+  const [tabBarH, setTabBarH] = useState(48);
+  useEffect(() => {
+    const el = tabBarRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setTabBarH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // The tab bar is sticky; once it is stuck it also shows the short address (the slim header).
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -315,6 +335,12 @@ function ProfileScreen({
     io.observe(el);
     return () => io.disconnect();
   }, []);
+
+  // On a phone the tabs scroll sideways (and the slim header's tools take room): keep the open tab in view.
+  const tabListRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    tabListRef.current?.querySelector('[data-state="active"]')?.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+  }, [tab, stuck]);
 
   const exportCsv = () => {
     if (!data || !ctx) return;
@@ -370,7 +396,7 @@ function ProfileScreen({
       ) : null}
     >
       <AskContext.Provider value={askHandoff}>
-      <Tabs.Root value={tab} onValueChange={(v) => setTab(v as TabId)} className="flex flex-col">
+      <Tabs.Root value={tab} onValueChange={(v) => setTab(v as TabId)} className="flex flex-col" style={{ ["--nx-tabbar-h" as string]: `${tabBarH}px` }}>
         <div className="px-4 pt-5 sm:px-7 sm:pt-7">
           {/* The page's one map. "Expand map" makes it the focus of the screen; Escape or "Close" returns. */}
           <div
@@ -393,6 +419,9 @@ function ProfileScreen({
                 sales={data?.comparables?.sales ?? null}
                 salesState={salesState}
                 onRetrySales={() => onRetryParts(["money"])}
+                building={buildingProjects}
+                buildingState={buildingState}
+                onRetryBuilding={() => onRetryParts(["activity"])}
                 expanded={mapFocused}
                 className="h-full"
               />
@@ -419,9 +448,9 @@ function ProfileScreen({
         </div>
 
         <div ref={sentinelRef} aria-hidden className="h-px" />
-        <div className={`sticky top-0 z-30 flex items-center gap-4 bg-nx-page px-4 sm:px-7 ${stuck ? "border-b border-nx-ink/10 py-2" : "pt-5"}`} data-testid="tab-bar" data-stuck={stuck || undefined}>
+        <div ref={tabBarRef} className={`sticky top-0 z-30 flex items-center gap-4 bg-nx-page px-4 sm:px-7 ${stuck ? "border-b border-nx-ink/10 py-2" : "pt-5"}`} data-testid="tab-bar" data-stuck={stuck || undefined}>
           {stuck && <span className="hidden max-w-[16rem] truncate font-semibold md:block">{address}</span>}
-          <Tabs.List aria-label={t("profile.tabsLabel")} className="flex min-w-0 flex-1 gap-5 overflow-x-auto">
+          <Tabs.List ref={tabListRef} aria-label={t("profile.tabsLabel")} className="flex min-w-0 flex-1 gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {TABS.map((id) => (
               <Tabs.Trigger
                 key={id}
@@ -462,6 +491,17 @@ function ProfileScreen({
               <MoneyTab
                 data={data}
                 late={{ money: lateOf("money"), incentives: lateOf("incentives"), neighborhood: lateOf("neighborhood") }}
+                onRetry={(p) => onRetryParts([p])}
+              />
+            </Tabs.Content>
+          )}
+
+          {data && verdict && (
+            <Tabs.Content value="neighborhood" className="focus:outline-none">
+              <NeighborhoodTab
+                data={data}
+                late={{ neighborhood: lateOf("neighborhood"), activity: lateOf("activity") }}
+                timedOutActivity={timedOut.activity ?? []}
                 onRetry={(p) => onRetryParts([p])}
               />
             </Tabs.Content>

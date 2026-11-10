@@ -287,7 +287,7 @@ async def _run_late(rec: Record, part: str, deadline_s: float) -> list[str]:
     elif part == "activity":
         keys = ["violations", "address_311", "schools", "construction_within"]
         if rec.ca is not None:
-            keys = ["aro_housing", "crime", "crime_yoy", "area_311", *keys]
+            keys = ["aro_housing", "crime", "crime_yoy", "area_311", "area_demographics", *keys]
         for k in keys:
             sources[k] = (
                 (k, rl.lat, rl.lon, rl.address, rec.ca),

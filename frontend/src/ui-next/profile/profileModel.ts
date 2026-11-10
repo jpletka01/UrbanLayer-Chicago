@@ -197,7 +197,7 @@ export function ruleChips(data: ScorecardResponse, verdict: ScorecardVerdict): R
 
 export type TabId = "build" | "money" | "neighborhood" | "history";
 /** The tabs built so far, which a tile can open. */
-export type TileTab = "build" | "money";
+export type TileTab = "build" | "money" | "neighborhood";
 
 export interface Tile {
   key: "units" | "tax" | "walk" | "lastSale";
@@ -277,10 +277,10 @@ export function overviewTiles(
     tiles.push({
       key: "walk", tabOf: "neighborhood", label: label("walk"), figure: String(ws.walk_score), unit: t("profile.tiles.of100"),
       note: [ws.walk_description, t("profile.tiles.walkSource")].filter(Boolean).join(" · "),
-      state: null, tab: null, share: ws.walk_score / 100,
+      state: null, tab: "neighborhood", share: ws.walk_score / 100,
     });
   } else {
-    tiles.push({ key: "walk", tabOf: "neighborhood", label: label("walk"), figure: "—", note: t("profile.tiles.walkUnchecked"), state: { kind: "not_checked", low: false }, tab: null });
+    tiles.push({ key: "walk", tabOf: "neighborhood", label: label("walk"), figure: "—", note: t("profile.tiles.walkUnchecked"), state: { kind: "not_checked", low: false }, tab: "neighborhood" });
   }
 
   // History: last market sale. A $1 transfer, a quit claim or an unknown deed is never shown as the sale price.

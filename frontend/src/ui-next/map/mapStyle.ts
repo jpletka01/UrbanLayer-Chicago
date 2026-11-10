@@ -14,8 +14,8 @@ export type Theme = "light" | "dark";
 export type LayerMode = "on" | "off";
 
 /** The groups a visitor can turn On / Off, in the key's order. The base land and water are not a group. */
-export type GroupId = "zoning" | "parcels" | "streets" | "sales" | "transit";
-export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "transit", "streets"];
+export type GroupId = "zoning" | "parcels" | "streets" | "sales" | "building" | "transit";
+export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "building", "transit", "streets"];
 
 /** Street names appear from this zoom (brief: names only when zoomed in). */
 export const STREET_LABEL_MIN_ZOOM = 15;
@@ -88,7 +88,7 @@ interface LayerDef {
   spec: (t: Theme) => LayerSpecification;
   /** Paint properties holding an opacity that On restores after a theme change. */
   opacity: string[];
-  needs: keyof MapTiles | "sales" | "transit" | "lot" | null;
+  needs: keyof MapTiles | "sales" | "building" | "transit" | "lot" | null;
 }
 
 const zoomWidth = (stops: Array<[number, number]>) =>
@@ -217,6 +217,14 @@ export const LAYERS: LayerDef[] = [
         "icon-size": zoomWidth([[12, 0.7], [14, 0.85], [15.5, 1]]) },
       paint: { "icon-opacity": 1 } }),
   },
+  // Construction nearby (Neighborhood, Item 102): a new building and a renovation by pin color.
+  {
+    group: "building", needs: "building", opacity: ["icon-opacity"],
+    spec: () => ({ id: "building-pin", type: "symbol", source: "building",
+      layout: { "icon-image": ["match", ["get", "kind"], "new", "pin-build", "pin-reno"] as unknown as string, "icon-anchor": "bottom",
+        "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-size": zoomWidth([[12, 0.7], [14, 0.85], [15.5, 1]]) },
+      paint: { "icon-opacity": 1 } }),
+  },
   {
     group: "transit", needs: "transit", opacity: ["icon-opacity"],
     spec: () => ({ id: "transit-pin", type: "symbol", source: "transit",
@@ -264,12 +272,13 @@ export function buildStyle({ theme, apiOrigin, glyphsBase, tiles }: StyleInput):
     lot: { type: "geojson", data: EMPTY as never, tolerance: 0, maxzoom: 22 },
     "lot-point": { type: "geojson", data: EMPTY as never },
     sales: { type: "geojson", data: EMPTY as never },
+    building: { type: "geojson", data: EMPTY as never },
     transit: { type: "geojson", data: EMPTY as never },
   };
   if (tiles.base) sources.base = { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/base/{z}/{x}/{y}.mvt`], minzoom: tiles.base.minZoom, maxzoom: tiles.base.maxZoom };
   if (tiles.zoning) sources.zoning = { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/zoning/{z}/{x}/{y}.mvt`], minzoom: tiles.zoning.minZoom, maxzoom: tiles.zoning.maxZoom };
   if (tiles.parcels) sources.parcels = { type: "vector", tiles: [`${apiOrigin}/api/discovery/tiles/{z}/{x}/{y}.mvt`], minzoom: tiles.parcels.minZoom, maxzoom: tiles.parcels.maxZoom, promoteId: undefined };
-  const layers = LAYERS.filter((l) => l.needs === null || l.needs === "lot" || l.needs === "sales" || l.needs === "transit" || tiles[l.needs] != null)
+  const layers = LAYERS.filter((l) => l.needs === null || l.needs === "lot" || l.needs === "sales" || l.needs === "building" || l.needs === "transit" || tiles[l.needs] != null)
     .map((l) => l.spec(theme));
   return {
     version: 8,

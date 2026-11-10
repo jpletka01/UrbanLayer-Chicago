@@ -1069,6 +1069,87 @@ export interface ScorecardResponse {
   // Lets the UI show "no violations on record" for a confirmed-zero vs. omitting
   // for an unconfirmed lookup — silence must not mean two different things.
   violations_checked?: boolean;
+  /** Sources only the new UI's Profile parts fetch (the Neighborhood tab, decision Item 102); absent from
+      /api/scorecard. A key that is absent wasn't asked (or hasn't landed); a failed one is listed in `failed`. */
+  next_ui?: NextUiData;
+}
+
+export interface CrimeSplit { violent: number; property: number; other: number }
+
+export interface NextUiCrime {
+  window_days: number;
+  current: CrimeSplit;
+  /** The same 90 days a year earlier; null when that comparison didn't answer. */
+  prior: CrimeSplit | null;
+  current_label?: string | null;
+  prior_label?: string | null;
+}
+
+export interface NextUiSchoolReportCard {
+  year: number;
+  designation?: "Exemplary" | "Commendable" | "Targeted" | "Comprehensive" | "Intensive";
+  enrollment?: number;
+  ela_pct?: number;
+  math_pct?: number;
+  graduation_4yr_pct?: number;
+  ela_source?: "hs_assessment";
+  math_source?: "hs_assessment";
+}
+
+export interface NextUiSchool {
+  school_id: string;
+  level: "elementary" | "high";
+  name: string | null;
+  grades: string | null;
+  address: string | null;
+  cps_url: string | null;
+  report_card_url: string | null;
+  report_card: NextUiSchoolReportCard | null;
+}
+
+export interface NextUiSchools {
+  elementary: NextUiSchool | null;
+  high: NextUiSchool | null;
+  boundary_year: string;
+  report_year: number | null;
+  source?: string | null;
+}
+
+export interface ConstructionProject {
+  permit: string | null;
+  kind: "new" | "renovation";
+  description: string | null;
+  issued: string | null;
+  cost: number | null;
+  units_added: number | null;
+  address: string | null;
+  lat: number;
+  lon: number;
+  distance_mi: number;
+}
+
+export interface NextUiConstruction {
+  radius_mi: number;
+  months: number;
+  renovation_cost_floor: number;
+  projects: ConstructionProject[];
+  capped: boolean;
+}
+
+export interface NextUiArea311 {
+  days: number;
+  total: number;
+  top: Array<{ type: string; count: number }>;
+}
+
+export interface NextUiData {
+  crime?: NextUiCrime;
+  schools?: NextUiSchools;
+  construction_within?: NextUiConstruction;
+  area_311?: NextUiArea311;
+  /** The community area's own figures (population, a bracket-estimated median income); null when none. */
+  area_demographics?: import("./types").DemographicsSummary | null;
+  failed?: Array<"schools" | "construction_within" | "area_311" | "area_demographics">;
 }
 
 export async function fetchScorecard(params: {

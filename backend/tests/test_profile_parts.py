@@ -127,6 +127,7 @@ def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL, 
     p(patch("backend.retrieval.neighborhood.schools.assigned_schools", new=AsyncMock(return_value=SCHOOLS)))
     p(patch.object(main.buildings, "construction_within", new=AsyncMock(return_value=CONSTRUCTION)))
     p(patch.object(main.three11, "top_311_by_community_area", new=AsyncMock(return_value=AREA_311)))
+    p(patch("backend.retrieval.neighborhood.demographics.fetch_demographics", new=AsyncMock(return_value=None)))
     p(patch("backend.retrieval.property.sales.nearby_comparable_sales", new=AsyncMock(return_value={"sales": []})))
     p(patch("backend.retrieval.property.block_face.block_face_test", new=AsyncMock(
         return_value=BlockFaceTest(state="met", lots=8, counted=8, two_plus=6), side_effect=block_face_exc)))

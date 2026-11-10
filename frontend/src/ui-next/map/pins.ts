@@ -9,6 +9,9 @@ const ICONS: Record<string, string[]> = {
   // Lucide "house": the property's own pin (Item 96)
   lot: ["M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8",
     "M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"],
+  // Lucide "hammer": construction nearby (Item 102)
+  build: ["m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9", "m18 15 4-4",
+    "m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"],
   // Lucide "train-front"
   transit: [
     "M8 3.1V7a4 4 0 0 0 8 0V3.1", "m9 15-1-1", "m15 15 1-1",
@@ -16,11 +19,13 @@ const ICONS: Record<string, string[]> = {
   ],
 };
 
-/** Pin fills: Coastal's Spruce for sales and ink for transit (Item 74: maps use Sapphire, Spruce and black). */
-export const PIN_COLORS = { sale: "#355E58", transit: "#1C1C1C" } as const;
+/** Pin fills: Coastal's Spruce for sales and ink for transit (Item 74: maps use Sapphire, Spruce and black); the
+    Neighborhood tab's permits in Coastal's Ballet Slipper (a new building) and Bubblegum (a renovation), dark icons
+    for contrast on the light fills (Item 102). */
+export const PIN_COLORS = { sale: "#355E58", transit: "#1C1C1C", build: "#FE9179", reno: "#FDC1B4" } as const;
 export type PinKind = keyof typeof PIN_COLORS | "lot-light" | "lot-dark";
 export const PIN_IMAGE: Record<PinKind, string> = {
-  sale: "pin-sale", transit: "pin-transit", "lot-light": "pin-lot-light", "lot-dark": "pin-lot-dark",
+  sale: "pin-sale", transit: "pin-transit", build: "pin-build", reno: "pin-reno", "lot-light": "pin-lot-light", "lot-dark": "pin-lot-dark",
 };
 
 /** Fill, edge and icon per pin. The property's pin is "this lot" ink (Item 74): black with a white edge in light,
@@ -28,6 +33,8 @@ export const PIN_IMAGE: Record<PinKind, string> = {
 const STYLE: Record<PinKind, { fill: string; edge: string; icon: string; glyph: keyof typeof ICONS }> = {
   sale: { fill: PIN_COLORS.sale, edge: "#FFFFFF", icon: "#FFFFFF", glyph: "sale" },
   transit: { fill: PIN_COLORS.transit, edge: "#FFFFFF", icon: "#FFFFFF", glyph: "transit" },
+  build: { fill: PIN_COLORS.build, edge: "#FFFFFF", icon: "#1C1C1C", glyph: "build" },
+  reno: { fill: PIN_COLORS.reno, edge: "#FFFFFF", icon: "#1C1C1C", glyph: "build" },
   "lot-light": { fill: "#1C1C1C", edge: "#FFFFFF", icon: "#FFFFFF", glyph: "lot" },
   "lot-dark": { fill: "#FFFFFF", edge: "#1C1C1C", icon: "#1C1C1C", glyph: "lot" },
 };

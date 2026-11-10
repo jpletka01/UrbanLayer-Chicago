@@ -2,6 +2,7 @@
  "chi.311": [
   "community_area",
   "created_date",
+  "duplicate",
   "latitude",
   "longitude",
   "owner_department",
@@ -51,6 +52,20 @@
   "pin",
   "property_status",
   "sales_status"
+ ],
+ "chi.cps_boundaries_es": [
+  "boundarygr",
+  "grade_cat",
+  "school_add",
+  "school_id",
+  "the_geom"
+ ],
+ "chi.cps_boundaries_hs": [
+  "boundarygr",
+  "grade_cat",
+  "school_add",
+  "school_id",
+  "the_geom"
  ],
  "chi.crime": [
   "arrest",
@@ -123,10 +138,12 @@
   "contact_3_type",
   "issue_date",
   "latitude",
+  "location",
   "longitude",
   "permit_",
   "permit_type",
   "reported_cost",
+  "residential_unit_change",
   "street_direction",
   "street_name",
   "street_number",
@@ -211,6 +228,7 @@
   "inspection_number",
   "inspector_id",
   "latitude",
+  "location",
   "longitude",
   "street_direction",
   "street_name",

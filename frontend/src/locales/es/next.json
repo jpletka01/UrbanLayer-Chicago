@@ -511,6 +511,171 @@
         "nearby_one": "{{count}} proyecto asequible en esta área comunitaria ({{units}} viviendas).",
         "nearby_other": "{{count}} proyectos asequibles en esta área comunitaria ({{units}} viviendas)."
       }
+    },
+    "nb": {
+      "theArea": "la zona",
+      "jumpLabel": "Ir a una parte de esta pestaña",
+      "jump": {
+        "around": "Moverse",
+        "building": "Obras",
+        "safety": "Seguridad",
+        "311": "311",
+        "people": "Población",
+        "schools": "Escuelas"
+      },
+      "sentence": {
+        "walk": "puntaje para caminar {{score}} ({{desc}})",
+        "building_one": "{{count}} permiso para edificios nuevos o remodelaciones mayores a menos de media milla",
+        "building_other": "{{count}} permisos para edificios nuevos o remodelaciones mayores a menos de media milla",
+        "noBuilding": "ningún edificio nuevo ni remodelación mayor con permiso a menos de media milla",
+        "violentDown": "los delitos violentos en la zona bajaron {{pct}}% respecto al año pasado",
+        "violentUp": "los delitos violentos en la zona subieron {{pct}}% respecto al año pasado",
+        "violentFlat": "los delitos violentos en la zona, iguales que hace un año",
+        "none": "Todavía revisando la zona alrededor de este terreno."
+      },
+      "score": {
+        "walk": "Puntaje para caminar",
+        "transit": "Puntaje de transporte",
+        "bike": "Puntaje para bicicleta"
+      },
+      "define": {
+        "walk": "Índice de 0 a 100 de Walk Score sobre cuántos mandados diarios se pueden hacer a pie desde esta dirección. Es el índice de una empresa privada, no una cifra de la Ciudad.",
+        "transit": "Índice de 0 a 100 de Walk Score sobre qué tan bien sirve el transporte público a esta dirección: qué tan cerca están las paradas, con qué frecuencia pasan y a dónde van. Es el índice de una empresa privada.",
+        "bike": "Índice de 0 a 100 de Walk Score sobre qué tan buena es esta dirección para andar en bicicleta: ciclovías, pendientes, destinos y cuánta gente la usa. Es el índice de una empresa privada.",
+        "crime": "Delitos que el Departamento de Policía de Chicago registró en el área comunitaria de este terreno en los últimos 90 días (se deja fuera la semana más reciente mientras se asientan los reportes), por cada 1,000 habitantes. Violentos son los delitos contra una persona: homicidio, agresión sexual, robo con violencia, asalto y lesiones, secuestro y trata de personas. Contra la propiedad son allanamiento, robo, robo de vehículo, incendio provocado y daños. Los demás tipos (narcóticos, armas, fraude) no cuentan en ninguno. Describe toda el área comunitaria, no esta cuadra.",
+        "building": "Permisos de construcción de la Ciudad emitidos en los últimos 2 años a menos de media milla de este terreno: todo edificio nuevo, más las remodelaciones con un costo declarado de $250,000 o más. Un permiso significa que la obra se aprobó, no que esté terminada. Los mismos permisos son los marcadores del mapa.",
+        "r311": "Solicitudes que los residentes hicieron a la línea 311 de la Ciudad en esta área comunitaria en los últimos 90 días, sin duplicados, por tipo. Se dejan fuera las llamadas de información y las revisiones de multas de estacionamiento. Más solicitudes pueden significar más problemas o más gente que los reporta.",
+        "people": "Cifras de la encuesta del Censo (Encuesta sobre la Comunidad Estadounidense, 5 años) para el sector censal de este terreno, unas cuantas cuadras a su alrededor, junto a su área comunitaria cuando la Ciudad publica la misma cifra. Las estimaciones de encuesta tienen márgenes de error; una cifra demasiado incierta no se muestra.",
+        "schools": "La primaria y la preparatoria de las Escuelas Públicas de Chicago cuya zona de asistencia incluye este terreno, con la boleta del Estado de Illinois para cada una: su designación, la proporción de alumnos que cumple los estándares estatales y, para una preparatoria, la tasa de graduación. Las familias también pueden solicitar otras escuelas; estas son las asignadas por domicilio."
+      },
+      "ask": {
+        "scores": "¿Qué tan fácil es moverse sin auto desde {{address}}?",
+        "crime": "¿Cómo se compara la seguridad alrededor de {{address}} con el resto de su área comunitaria, y cómo está cambiando?",
+        "building": "¿Qué se está construyendo cerca de {{address}} y qué dice eso de la zona?",
+        "r311": "¿Qué dicen las solicitudes al 311 cerca de {{address}} sobre la zona?",
+        "people": "¿Quién vive alrededor de {{address}} y cómo se compara el sector censal con su área comunitaria?",
+        "schools": "¿Qué escuelas públicas le corresponden a {{address}} y cómo las califica el estado?"
+      },
+      "crime": {
+        "tile": "Delitos violentos",
+        "title": "Seguridad",
+        "what": "los delitos",
+        "perThousand": "por 1,000",
+        "crimes": "delitos",
+        "window": "90 días en {{area}}",
+        "notChecked": "No se pudieron revisar los delitos hoy",
+        "violent": "Delitos violentos",
+        "property": "Delitos contra la propiedad",
+        "down": "bajaron {{pct}}% respecto al año pasado",
+        "up": "subieron {{pct}}% respecto al año pasado",
+        "flat": "iguales que hace un año",
+        "barLabel": "{{kind}}: {{now}} en los últimos 90 días, {{prior}} en los mismos días un año antes",
+        "legendNow": "Últimos 90 días",
+        "legendPrior": "Mismos días un año antes ({{period}})",
+        "caption": "Por cada 1,000 de los {{pop}} habitantes de {{area}}. Toda el área comunitaria, no esta cuadra.",
+        "captionNoPop": "Delitos en {{area}}. Toda el área comunitaria, no esta cuadra."
+      },
+      "r311": {
+        "title": "Principales solicitudes al 311",
+        "what": "las solicitudes al 311",
+        "none": "No hay solicitudes al 311 registradas en {{area}} en los últimos {{days}} días.",
+        "caption": "{{total}} solicitudes en {{area}} en los últimos {{days}} días, sin duplicados."
+      },
+      "building": {
+        "title": "Obras cercanas",
+        "what": "los permisos de construcción",
+        "onMap": "Marcadores en el mapa",
+        "ruleLabel": "Qué permisos cuentan",
+        "rule": {
+          "radius": "A menos de {{mi}} mi",
+          "months_one": "Último {{count}} mes",
+          "months_other": "Últimos {{count}} meses",
+          "floor": "Remodelaciones de {{floor}} o más"
+        },
+        "none": "Ningún edificio nuevo ni remodelación mayor con permiso a menos de media milla en los últimos 2 años.",
+        "newCount_one": "{{count}} edificio nuevo",
+        "newCount_other": "{{count}} edificios nuevos",
+        "renoCount_one": "{{count}} remodelación mayor",
+        "renoCount_other": "{{count}} remodelaciones mayores",
+        "units_one": "agrega {{count}} vivienda",
+        "units_other": "agrega {{count}} viviendas",
+        "capped": "se muestran los 300 más recientes",
+        "more_one": "{{count}} más en los detalles de abajo",
+        "more_other": "{{count}} más en los detalles de abajo",
+        "kind": {
+          "new": "Edificio nuevo",
+          "renovation": "Remodelación"
+        },
+        "noAddress": "Dirección no indicada en el permiso",
+        "cost": "Costo declarado {{cost}}",
+        "addsUnits_one": "agrega {{count}} vivienda",
+        "addsUnits_other": "agrega {{count}} viviendas",
+        "removesUnits_one": "quita {{count}} vivienda",
+        "removesUnits_other": "quita {{count}} viviendas",
+        "permit": "Permiso {{n}}"
+      },
+      "people": {
+        "title": "Quién vive aquí",
+        "what": "las cifras del Censo",
+        "notChecked": "No se pudieron revisar las cifras del Censo hoy.",
+        "income": "Ingreso mediano por hogar",
+        "thisTract": "Sector censal de este terreno",
+        "withheld": "La cifra del sector es demasiado incierta para mostrarla.",
+        "fact": {
+          "owner_occupied_pct": "Viviendas habitadas por sus dueños",
+          "bachelors_or_higher_pct": "Adultos con licenciatura o más",
+          "poverty_rate": "Personas bajo la línea de pobreza",
+          "median_age": "Edad mediana"
+        },
+        "years": "{{n}} años",
+        "caption": "Cifras propias del sector; para {{area}} en conjunto solo se publica el ingreso."
+      },
+      "schools": {
+        "title": "Escuelas públicas asignadas",
+        "what": "las escuelas",
+        "level": {
+          "elementary": "Primaria",
+          "high": "Preparatoria"
+        },
+        "grades": "grados {{grades}}",
+        "unnamed": "Nombre de la escuela no registrado",
+        "designation": {
+          "Exemplary": "Ejemplar",
+          "Commendable": "Encomiable",
+          "Targeted": "Apoyo focalizado",
+          "Comprehensive": "Apoyo integral",
+          "Intensive": "Apoyo intensivo"
+        },
+        "reading": "Cumple el estándar estatal, lectura",
+        "math": "Cumple el estándar estatal, matemáticas",
+        "graduation": "Se gradúa en 4 años",
+        "enrollment": "Alumnos",
+        "notPublished": "No publicado",
+        "hsTest": "(examen de preparatoria)",
+        "noReportCard": "No hay cifras de la boleta estatal para esta escuela.",
+        "reportCard": "Boleta de Illinois {{year}}",
+        "noBoundary": {
+          "elementary": "Ninguna zona de asistencia de primaria de CPS incluye este terreno.",
+          "high": "Ninguna zona de asistencia de preparatoria de CPS incluye este terreno; las escuelas de toda la ciudad y las selectivas no tienen zona."
+        },
+        "caption": "Asignadas por zona de asistencia de CPS, ciclo escolar {{boundary}}. Designación y cifras: Junta de Educación del Estado de Illinois, boleta {{year}}."
+      },
+      "details": {
+        "title": "Todos los detalles de la zona",
+        "rail": "Estación del tren CTA más cercana",
+        "metra": "Estación de Metra más cercana",
+        "divvy": "Estación de Divvy más cercana",
+        "at": "{{name}}, {{mi}} mi",
+        "traffic": "Tránsito en la calle aforada más cercana",
+        "trafficValue": "{{road}}: unos {{n}} vehículos al día",
+        "ward": "Distrito (ward)",
+        "wardValue": "Distrito {{ward}} · {{name}}",
+        "areaPop": "Población del área comunitaria",
+        "property": "Delitos contra la propiedad, últimos 90 días",
+        "tract": "Sector censal",
+        "allProjects_one": "El {{count}} permiso a menos de media milla",
+        "allProjects_other": "Los {{count}} permisos a menos de media milla"
+      }
     }
   },
   "discovery": {
@@ -560,7 +725,8 @@
       "parcels": "Terrenos",
       "sales": "Ventas recientes",
       "transit": "Transporte",
-      "streets": "Calles"
+      "streets": "Calles",
+      "building": "Obras"
     },
     "count": {
       "zoning_one": "{{count}} distrito",
@@ -570,7 +736,9 @@
       "sales_one": "{{count}} venta",
       "sales_other": "{{count}} ventas",
       "transit_one": "{{count}} estación",
-      "transit_other": "{{count}} estaciones"
+      "transit_other": "{{count}} estaciones",
+      "building_one": "{{count}} permiso",
+      "building_other": "{{count}} permisos"
     },
     "card": {
       "label": "Qué hay aquí",
@@ -584,10 +752,14 @@
       "ordinance": "Ordenanza {{num}}, {{date}}",
       "districtSource": "Del mapa de zonificación de la Ciudad",
       "noPrice": "Precio no registrado",
-      "approx": "Aprox."
+      "approx": "Aprox.",
+      "kindNew": "Edificio nuevo",
+      "kindReno": "Remodelación",
+      "issued": "Permiso emitido {{date}}"
     },
     "inSentence": {
-      "sales": "ventas recientes"
+      "sales": "ventas recientes",
+      "building": "las obras"
     },
     "back": "Volver a la propiedad",
     "streetView": {
