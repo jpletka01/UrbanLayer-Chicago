@@ -10,6 +10,8 @@ export interface AskHandoff {
   open: (question: string) => void;
   /** Opens a program's page in the same right panel (Item 99), in place of the analyst. */
   openProgram?: (program: "tif" | "oz" | "ez" | "qct" | "nmtc") => void;
+  /** Opens a Build rule's page in the same right panel (Item 99). */
+  openRule?: (rule: "landmark" | "historic" | "pd" | "flood" | "lakefront" | "tod" | "adu" | "aro") => void;
 }
 
 export const AskContext = createContext<AskHandoff | null>(null);

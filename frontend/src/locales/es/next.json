@@ -440,6 +440,77 @@
           "NOF": "Fondo de Oportunidad Vecinal"
         }
       }
+    },
+    "rule": {
+      "status": {
+        "applies": "Aplica a este terreno",
+        "doesNot": "No aplica",
+        "changesBuild": "Cambia lo que se puede construir"
+      },
+      "records_one": "El registro de la Ciudad",
+      "records_other": "Los registros de la Ciudad ({{count}})",
+      "readSource": "Leer la fuente",
+      "ask": "¿Qué significa {{rule}} para un proyecto en {{address}}?",
+      "flood": {
+        "zone": "Zona de inundación de FEMA",
+        "special": "Zona de riesgo especial de inundación",
+        "meansIn": "FEMA ubica este terreno en la zona de inundación {{zone}}. Construir aquí debe cumplir las reglas de la Ciudad para zonas inundables, y una hipoteca con respaldo federal sobre un edificio en una zona de riesgo especial requiere seguro contra inundaciones.",
+        "meansOut": "FEMA ubica este terreno fuera de la llanura de inundación de 100 años, así que las reglas de la Ciudad para zonas inundables no agregan requisitos aquí.",
+        "who": "El Departamento de Edificios de la Ciudad aplica las reglas para zonas inundables en los permisos; FEMA traza los mapas.",
+        "what": "Las zonas de inundación de FEMA: A y AE son la llanura de 100 años (1% de probabilidad de inundación cada año); X está fuera de ella.",
+        "source": "Fuente: Capa Nacional de Riesgo de Inundación de FEMA (copia de Chicago)"
+      },
+      "landmark": {
+        "meansIn": "Este terreno es un Monumento de Chicago o está en un distrito de monumentos. Los permisos para modificar o demoler un edificio, ampliarlo o construir algo nuevo aquí requieren la revisión y aprobación de la Comisión de Monumentos de Chicago.",
+        "meansOut": "Este terreno no es un Monumento de Chicago ni está en un distrito de monumentos, así que sus permisos no pasan por la Comisión de Monumentos.",
+        "who": "La Comisión de Monumentos de Chicago: su personal revisa la mayoría de los permisos y la Comisión atiende los cambios mayores.",
+        "what": "Un edificio o distrito que el Concejo Municipal designó por su historia o diseño; sus cambios requieren la aprobación de la Comisión.",
+        "source": "Fuente: mapas de monumentos de la Ciudad de Chicago"
+      },
+      "historic": {
+        "meansIn": "Este terreno está en un distrito histórico. Estar en el Registro Nacional por sí solo no limita lo que un propietario puede hacer con dinero privado y puede abrir créditos fiscales federales y estatales para una rehabilitación certificada; un distrito de Monumentos de Chicago además requiere la aprobación de la Comisión para obras exteriores.",
+        "meansOut": "Este terreno no está en un distrito histórico en los mapas que revisamos.",
+        "who": "Registro Nacional: el Servicio de Parques Nacionales, con la Oficina Estatal de Preservación Histórica de Illinois. Distritos de Monumentos de Chicago: la Comisión de Monumentos de Chicago.",
+        "what": "Un área reconocida por su historia: en el Registro Nacional (federal, honorífico, con créditos fiscales) o un distrito de Monumentos de Chicago (aplican reglas de la Ciudad).",
+        "source": "Fuente: mapas de distritos históricos y del Registro Nacional de la Ciudad de Chicago"
+      },
+      "pd": {
+        "meansIn": "Este terreno está dentro de un Desarrollo Planificado. Su propia ordenanza, no el distrito base, define los usos, la altura y la densidad, así que cambiar lo permitido implica modificar esa ordenanza.",
+        "meansOut": "Este terreno no está en un Desarrollo Planificado, así que aplican las reglas del distrito base.",
+        "who": "El Concejo Municipal modifica un Desarrollo Planificado tras la revisión de la Comisión de Planeación; el Administrador de Zonificación atiende los cambios menores.",
+        "what": "Un distrito de zonificación específico que el Concejo adopta por ordenanza para un proyecto grande o especial; su número remite a esa ordenanza.",
+        "source": "Fuente: mapa de zonificación de la Ciudad de Chicago"
+      },
+      "lakefront": {
+        "meansIn": "Este terreno está en el Distrito de Protección de la Ribera del Lago. La mayoría de los desarrollos aquí requieren una revisión de Protección de la Ribera y la aprobación de la Comisión de Planeación.",
+        "meansOut": "Este terreno no está en el Distrito de Protección de la Ribera del Lago.",
+        "who": "La Comisión de Planeación de Chicago.",
+        "what": "El área a lo largo del Lago Michigan cubierta por la Ordenanza de Protección del Lago Michigan y la Ribera de Chicago.",
+        "source": "Fuente: mapa del Distrito de Protección de la Ribera de la Ciudad de Chicago"
+      },
+      "tod": {
+        "meansIn": "Este terreno está cerca de una estación de CTA o Metra, en una zona con servicio de transporte: el estacionamiento mínimo se puede reducir y algunos distritos permiten más densidad.",
+        "meansOut": "Este terreno no está en una zona con servicio de transporte, así que aplican los mínimos de estacionamiento habituales.",
+        "who": "El Administrador de Zonificación de la Ciudad aplica las reducciones en los permisos; algunos bonos requieren un ajuste administrativo o una rezonificación.",
+        "what": "Zonas cerca de estaciones de CTA y Metra donde el código de zonificación de Chicago flexibiliza el estacionamiento y puede permitir más viviendas.",
+        "source": "Fuente: mapas de ubicaciones con servicio de transporte de la Ciudad de Chicago"
+      },
+      "adu": {
+        "meansIn": "Aquí se pueden agregar casas de cochera y unidades en sótano o ático a una vivienda, dentro de las reglas de la Ciudad para unidades accesorias.",
+        "meansOut": "En este terreno no se permiten casas de cochera ni unidades de conversión.",
+        "who": "El Departamento de Edificios emite los permisos de unidades accesorias; algunas áreas limitan cuántas se aprueban al año.",
+        "what": "Unidades de vivienda accesorias: una casa de cochera, o una unidad en un sótano o ático, agregada a una vivienda existente.",
+        "source": "Fuente: mapa de áreas de unidades accesorias y código de zonificación de la Ciudad de Chicago"
+      },
+      "aro": {
+        "meansIn": "Este terreno está en un área de la Ordenanza de Requisitos de Vivienda Asequible, que define la proporción asequible de los proyectos cubiertos: en general, 10 o más viviendas que requieren un cambio de zonificación, terreno de la Ciudad o fondos de la Ciudad.",
+        "meansOut": "No hay un área ARO en el mapa que revisamos para este terreno. La ordenanza aún puede cubrir un proyecto aquí que requiera un cambio de zonificación o apoyo de la Ciudad.",
+        "who": "El Departamento de Vivienda de la Ciudad.",
+        "what": "La Ordenanza de Requisitos de Vivienda Asequible de Chicago: los proyectos residenciales cubiertos incluyen viviendas asequibles o, donde se permite, pagan una cuota en su lugar.",
+        "source": "Fuente: mapa de áreas ARO de la Ciudad de Chicago",
+        "nearby_one": "{{count}} proyecto asequible en esta área comunitaria ({{units}} viviendas).",
+        "nearby_other": "{{count}} proyectos asequibles en esta área comunitaria ({{units}} viviendas)."
+      }
     }
   },
   "discovery": {

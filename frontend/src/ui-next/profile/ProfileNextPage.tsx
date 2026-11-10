@@ -34,6 +34,9 @@ import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
 import { MoneyTab } from "./MoneyTab";
 import { ProgramPanel } from "./ProgramPanel";
+import { RulePanel } from "./RulePanel";
+import type { RuleKey } from "./ruleModel";
+import { ruleChips } from "./profileModel";
 import { incentiveChips, type IncentiveKey } from "./moneyModel";
 import type { LateBlockState } from "./moneyModel";
 import { SourcesDialog } from "./SourcesDialog";
@@ -245,7 +248,7 @@ function ProfileScreen({
   // The right panel: the analyst or a program's page, one at a time (Item 99). Closing slides it out first, so the
   // last panel stays mounted (`shownPanel`) for the slide; `seq` remounts it for a new question or program, and
   // `instant` skips the slide when the panel was already open.
-  type Panel = { kind: "ask"; text?: string } | { kind: "program"; program: IncentiveKey };
+  type Panel = { kind: "ask"; text?: string } | { kind: "program"; program: IncentiveKey } | { kind: "rule"; rule: RuleKey };
   const [panel, setPanel] = useState<Panel | null>(null);
   const [shownPanel, setShownPanel] = useState<{ p: Panel; seq: number; instant: boolean } | null>(null);
   const openPanel = (p: Panel) => {
@@ -329,6 +332,10 @@ function ProfileScreen({
     </>
   );
 
+  const ruleState = (rule: RuleKey) => {
+    const chip = data && verdict ? ruleChips(data, verdict).find((c) => c.key === rule) : undefined;
+    return { answer: chip?.answer ?? ("notChecked" as const), blocks: chip?.blocks ?? false };
+  };
   const programAnswer = (program: IncentiveKey) =>
     (data ? incentiveChips(data, lateOf("incentives")).find((c) => c.key === program)?.answer : undefined) ?? "notChecked";
 
@@ -340,6 +347,7 @@ function ProfileScreen({
       openPanel({ kind: "ask", text });
     },
     openProgram: (program) => { track("investigate_click", { card_name: `next_program_${program}` }); openPanel({ kind: "program", program }); },
+    openRule: (rule) => { track("investigate_click", { card_name: `next_rule_${rule}` }); openPanel({ kind: "rule", rule }); },
   };
 
   const focusAsk = useRef<HTMLElement | null>(null);
@@ -354,6 +362,8 @@ function ProfileScreen({
       drawer={shownPanel && data ? (
         shownPanel.p.kind === "ask" ? (
           ready ? <AskDrawer key={shownPanel.seq} chat={chat} onClose={closePanel} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} initialDraft={shownPanel.p.text} closing={!panel} instant={shownPanel.instant} /> : null
+        ) : shownPanel.p.kind === "rule" ? (
+          <RulePanel key={shownPanel.seq} data={data} rule={shownPanel.p.rule} {...ruleState(shownPanel.p.rule)} onClose={closePanel} closing={!panel} instant={shownPanel.instant} />
         ) : (
           <ProgramPanel key={shownPanel.seq} data={data} program={shownPanel.p.program} answer={programAnswer(shownPanel.p.program)} reports={lateOf("incentives")} onRetry={() => onRetryParts(["incentives"])} onClose={closePanel} closing={!panel} instant={shownPanel.instant} />
         )

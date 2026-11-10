@@ -440,6 +440,77 @@
           "NOF": "Neighborhood Opportunity Fund"
         }
       }
+    },
+    "rule": {
+      "status": {
+        "applies": "Applies to this lot",
+        "doesNot": "Doesn't apply",
+        "changesBuild": "Changes what can be built"
+      },
+      "records_one": "The City's record",
+      "records_other": "The City's records ({{count}})",
+      "readSource": "Read the source",
+      "ask": "What does {{rule}} mean for a project at {{address}}?",
+      "flood": {
+        "zone": "FEMA flood zone",
+        "special": "Special flood hazard area",
+        "meansIn": "FEMA maps this lot in flood zone {{zone}}. Building here has to meet the City's floodplain rules, and a federally backed mortgage on a building in a special flood hazard area needs flood insurance.",
+        "meansOut": "FEMA maps this lot outside the 100-year floodplain, so the City's floodplain rules don't add requirements here.",
+        "who": "The City's Department of Buildings applies the floodplain rules on permits; FEMA draws the flood maps.",
+        "what": "FEMA's flood zones: A and AE are the 100-year floodplain (a 1% chance of flooding each year); X is outside it.",
+        "source": "Source: FEMA National Flood Hazard Layer (Chicago copy)"
+      },
+      "landmark": {
+        "meansIn": "This lot is a Chicago Landmark or sits in a landmark district. Permits to alter or demolish a building, add on, or build new here need the Commission on Chicago Landmarks' review and approval.",
+        "meansOut": "This lot is not a Chicago Landmark and not in a landmark district, so permits here don't go to the Landmarks Commission.",
+        "who": "The Commission on Chicago Landmarks: its staff review most permits, and the Commission hears larger changes.",
+        "what": "A building or district the City Council has designated for its history or design; changes to it need the Commission's approval.",
+        "source": "Source: City of Chicago landmark maps"
+      },
+      "historic": {
+        "meansIn": "This lot is in a historic district. A National Register listing on its own doesn't limit what an owner can do with private money, and can open federal and state tax credits for a certified rehabilitation; a Chicago Landmark district also needs the Commission's approval for exterior work.",
+        "meansOut": "This lot is not in a historic district on the maps we check.",
+        "who": "National Register: the National Park Service, with Illinois's State Historic Preservation Office. Chicago Landmark districts: the Commission on Chicago Landmarks.",
+        "what": "An area recognized for its history: on the National Register (federal, honorary with tax credits) or a Chicago Landmark district (City rules apply).",
+        "source": "Source: City of Chicago historic and National Register district maps"
+      },
+      "pd": {
+        "meansIn": "This lot is inside a Planned Development. Its own ordinance, not the base district, sets the uses, height and density here, so changing what's allowed means amending that ordinance.",
+        "meansOut": "This lot is not in a Planned Development, so the base district's rules apply.",
+        "who": "City Council amends a Planned Development after Plan Commission review; the Zoning Administrator handles minor changes.",
+        "what": "A site-specific zoning district Council adopts by ordinance for a large or special project; its number points to that ordinance.",
+        "source": "Source: City of Chicago zoning map"
+      },
+      "lakefront": {
+        "meansIn": "This lot is in the Lakefront Protection District. Most development here needs a Lakefront Protection review and the Plan Commission's approval.",
+        "meansOut": "This lot is not in the Lakefront Protection District.",
+        "who": "The Chicago Plan Commission.",
+        "what": "The area along Lake Michigan covered by the Lake Michigan and Chicago Lakefront Protection Ordinance.",
+        "source": "Source: City of Chicago Lakefront Protection District map"
+      },
+      "tod": {
+        "meansIn": "This lot is near a CTA or Metra station, in a transit-served area: minimum parking can be reduced, and some districts allow more density.",
+        "meansOut": "This lot is not in a transit-served area, so the usual parking minimums apply.",
+        "who": "The City's Zoning Administrator applies the reductions on permits; some bonuses need an administrative adjustment or a rezoning.",
+        "what": "Areas near CTA and Metra stations where Chicago's zoning code relaxes parking and can allow more homes.",
+        "source": "Source: City of Chicago transit-served location maps"
+      },
+      "adu": {
+        "meansIn": "Coach houses and basement or attic units can be added to a home here, within the City's ADU rules.",
+        "meansOut": "Coach houses and conversion units aren't allowed on this lot.",
+        "who": "The Department of Buildings issues ADU permits; some areas cap how many are approved each year.",
+        "what": "Accessory dwelling units: a coach house, or a unit in a basement or attic, added to an existing home.",
+        "source": "Source: City of Chicago ADU area map and zoning code"
+      },
+      "aro": {
+        "meansIn": "This lot is in an Affordable Requirements Ordinance area, which sets the affordable share for covered projects: generally 10 or more homes that need a zoning change, City land or City money.",
+        "meansOut": "There's no ARO area on the map we check for this lot. The ordinance can still cover a project here that needs a zoning change or City help.",
+        "who": "The City's Department of Housing.",
+        "what": "Chicago's Affordable Requirements Ordinance: covered residential projects include affordable homes or, where allowed, pay a fee instead.",
+        "source": "Source: City of Chicago ARO area map",
+        "nearby_one": "{{count}} affordable project in this community area ({{units}} homes).",
+        "nearby_other": "{{count}} affordable projects in this community area ({{units}} homes)."
+      }
     }
   },
   "discovery": {

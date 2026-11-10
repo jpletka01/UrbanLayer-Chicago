@@ -2,7 +2,8 @@
 // built, the deciding limit in black) → two smaller visuals (pending rezonings as a stage tracker, rules as
 // yes/no chips) → a collapsed details table. Missing data keeps its slot.
 import { useTranslation } from "react-i18next";
-import { ChevronDown, SquareArrowOutUpRight } from "lucide-react";
+import { ChevronDown, ChevronRight, SquareArrowOutUpRight } from "lucide-react";
+import { useAskHandoff } from "../ask/askContext";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict } from "../../lib/scorecardVerdict";
 import { buildClause } from "../../lib/answerSentence";
@@ -153,11 +154,25 @@ function StageTracker({ stage, status }: { stage: (typeof STAGES)[number] | null
 
 function RuleItem({ rule }: { rule: RuleChip }) {
   const { t } = useTranslation("next");
+  const ask = useAskHandoff();
   const tone: PillTone = rule.answer === "notChecked" ? "gray" : rule.answer === "yes" ? (rule.blocks ? "yellow" : "blue") : "gray";
+  // The whole chip opens the rule's page in the right panel, like Money's incentive chips (owner, Item 99); the TIF
+  // chip opens the TIF's program page.
+  const open = rule.key === "tif" ? (ask?.openProgram ? () => ask.openProgram!("tif") : undefined)
+    : ask?.openRule ? () => ask.openRule!(rule.key as Exclude<RuleChip["key"], "tif">) : undefined;
   return (
-    <li className="flex items-center gap-1.5 rounded-xl bg-nx-page px-2.5 py-1.5" data-rule={rule.key} data-answer={rule.answer}>
-      <span className="text-caption">{t(`profile.build.rule.${rule.key}`)}</span>
-      <Pill tone={tone}>{t(`profile.build.answer.${rule.answer}`)}</Pill>
+    <li data-rule={rule.key} data-answer={rule.answer}>
+      <button
+        type="button"
+        onClick={open}
+        disabled={!open}
+        aria-haspopup="dialog"
+        className="group flex items-center gap-1.5 rounded-xl bg-nx-page py-1.5 pl-2.5 pr-1.5 text-left hover:bg-nx-ink/5 disabled:cursor-default touch-target"
+      >
+        <span className="text-caption">{t(`profile.build.rule.${rule.key}`)}</span>
+        <Pill tone={tone}>{t(`profile.build.answer.${rule.answer}`)}</Pill>
+        <ChevronRight aria-hidden className="h-3.5 w-3.5 nx-muted transition-transform group-hover:translate-x-0.5" strokeWidth={STROKE} />
+      </button>
     </li>
   );
 }
