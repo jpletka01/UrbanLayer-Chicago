@@ -45,6 +45,15 @@
   --nx-chart-3: 53 94 88;
   --nx-chart-4: 184 157 71;
   --nx-chart-5: 253 193 180;
+  /* Categories in a donut, in an order where neighbors read apart (owner's review, Item 102: two pinks side by side
+     and Spruce on a dark card looked like missing key entries): Sapphire, Ballet Slipper, Pistachio, Spruce,
+     Bubblegum, then a neutral for "everything else". Spruce lightens in dark, where #355E58 vanishes. */
+  --nx-cat-1: 114 176 171;
+  --nx-cat-2: 254 145 121;
+  --nx-cat-3: 184 157 71;
+  --nx-cat-4: 53 94 88;
+  --nx-cat-5: 253 193 180;
+  --nx-cat-6: 180 180 180;
 
   /* Today's role variables, re-pointed for components reused inside the new UI */
   --bg: 255 255 255;
@@ -83,6 +92,8 @@
 [data-theme="dark"] .ui-next,
 .ui-next[data-theme="dark"] {
   color-scheme: dark;
+  --nx-cat-4: 98 156 146;          /* Spruce, lightened: the light value disappears on dark cards */
+  --nx-cat-6: 120 120 120;
   --nx-page: 28 28 28;
   --nx-block: 40 40 40;
   --nx-stat-a: 227 245 255;

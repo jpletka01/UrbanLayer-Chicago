@@ -784,7 +784,9 @@
             "Under 18": "<18"
           }
         },
-        "areaIs": "{{area}}: {{value}}"
+        "areaIs": "{{area}}: {{value}}",
+        "scope": "Sector censal {{tract}}, unas cuadras alrededor del terreno",
+        "scopeNoNumber": "El sector censal de este terreno, unas cuadras alrededor"
       },
       "schools": {
         "title": "Escuelas públicas asignadas",
@@ -825,6 +827,12 @@
           "moderately_organized": "Moderadamente organizada",
           "organized": "Organizada",
           "well_organized": "Bien organizada"
+        },
+        "short": {
+          "reading": "Lectura",
+          "math": "Matemáticas",
+          "graduation": "Se gradúan",
+          "students": "Alumnos"
         }
       },
       "trend": {

@@ -784,7 +784,9 @@
             "Under 18": "<18"
           }
         },
-        "areaIs": "{{area}}: {{value}}"
+        "areaIs": "{{area}}: {{value}}",
+        "scope": "Census tract {{tract}}, a few blocks around the lot",
+        "scopeNoNumber": "This lot's census tract, a few blocks around it"
       },
       "schools": {
         "title": "Assigned public schools",
@@ -825,6 +827,12 @@
           "moderately_organized": "Moderately organized",
           "organized": "Organized",
           "well_organized": "Well organized"
+        },
+        "short": {
+          "reading": "Reading",
+          "math": "Math",
+          "graduation": "Graduates",
+          "students": "Students"
         }
       },
       "trend": {

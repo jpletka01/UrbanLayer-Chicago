@@ -5,7 +5,7 @@ export interface DonutSegment { key: string; label: string; pct: number; color: 
   /** Beside the label in the key (a count). */
   note?: string }
 
-export function Donut({ segments, lead, center, title, showTitle = true, size = 120, testId }: {
+export function Donut({ segments: all, lead, center, title, showTitle = true, size = 120, testId }: {
   segments: DonutSegment[];
   /** The segment named in the middle. */
   lead?: string;
@@ -17,6 +17,8 @@ export function Donut({ segments, lead, center, title, showTitle = true, size = 
   size?: number;
   testId?: string;
 }) {
+  // A 0% slice draws nothing, so it has no place in the key either (owner: entries without a slice read as missing).
+  const segments = all.filter((s) => s.pct > 0);
   const stroke = Math.round(size * 0.16);
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -32,7 +34,7 @@ export function Donut({ segments, lead, center, title, showTitle = true, size = 
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden className="absolute inset-0 -rotate-90">
             {segments.map((s, i) => {
               const len = (s.pct / total) * c;
-              return <circle key={s.key} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={s.color} strokeWidth={stroke} strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-starts[i]} />;
+              return <circle key={s.key} cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: s.color }} strokeWidth={stroke} strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-starts[i]} />;
             })}
           </svg>
           <span aria-hidden className="relative flex max-w-[64%] flex-col items-center text-center leading-tight">

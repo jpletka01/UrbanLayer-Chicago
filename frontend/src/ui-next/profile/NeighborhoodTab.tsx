@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Bike, Building2, Bus, Car, Footprints, Minus, Shield, TrendingDown, TrendingUp, ChevronDown, ChevronRight, Landmark, Mail, MapPin, Phone, SquareArrowOutUpRight, TrainFront, TrainTrack, Users as UsersIcon, Wrench,
+  Bike, BookOpen, Building2, Bus, Calculator, Car, GraduationCap, Footprints, Minus, Shield, TrendingDown, TrendingUp, ChevronDown, ChevronRight, Landmark, Mail, MapPin, Phone, SquareArrowOutUpRight, TrainFront, TrainTrack, Users as UsersIcon, Wrench,
 } from "lucide-react";
 import type { ConstructionProject, NextUiSchool, ScorecardResponse, TractShare } from "../../lib/api";
 import { humanizeShoutyCase } from "../../lib/format";
@@ -41,8 +41,8 @@ const CTA_LINE: Record<string, string> = {
 };
 
 // The Coastal palette in order (Item 74), and a neutral gray for "everything else".
-const SERIES = ["#72B0AB", "#FE9179", "#355E58", "#B89D47", "#FDC1B4"];
-const OTHER = "#B4B4B4";
+const SERIES = [1, 2, 3, 4, 5].map((n) => `rgb(var(--nx-cat-${n}))`);
+const OTHER = "rgb(var(--nx-cat-6))";
 
 const compactUsd = (n: number, lng: string) =>
   new Intl.NumberFormat(numLocale(lng), { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(n);
@@ -149,13 +149,16 @@ export function NeighborhoodTab({
             testId="tile-violent" tone="a"
             icon={<Shield className="h-5 w-5" strokeWidth={STROKE} />}
             label={<Term label={t("profile.nb.crime.tile")} definition={def("crime")} question={q("crime")} />}
-            checking={crimeSt === "loading"}
-            figure={crime?.violentPer1k != null ? nf(crime.violentPer1k, 1) : crime ? nf(crime.violent) : "—"}
-            unit={crime?.violentPer1k != null ? t("profile.nb.crime.perThousand") : crime ? t("profile.nb.crime.crimes") : undefined}
-            note={crimeSt === "loading" ? t("profile.money.checking", { what: t("profile.nb.crime.what") })
-              : crime ? t("profile.nb.crime.window", { area })
-              : t("profile.nb.crime.notChecked")}
-            state={crime?.violentChange != null ? <ChangeBadge pct={crime.violentChange} goodWhen="down" text={t("profile.nb.badge.vsYear", { pct: Math.abs(crime.violentChange) })} testId="nb-violent-badge" /> : undefined}
+            // The figure and its window together on the card's right, like the score rings (owner).
+            note={crimeSt === "loading" ? t("profile.money.checking", { what: t("profile.nb.crime.what") }) : !crime ? t("profile.nb.crime.notChecked") : undefined}
+            visual={crime ? (
+              <span className="flex shrink-0 flex-col items-end text-right" data-testid="nb-violent-figure">
+                <span className="flex items-baseline gap-1"><span className="text-nx-figure tabular-nums leading-none">{crime.violentPer1k != null ? nf(crime.violentPer1k, 1) : nf(crime.violent)}</span>
+                  <span className="text-caption nx-card-muted">{crime.violentPer1k != null ? t("profile.nb.crime.perThousand") : t("profile.nb.crime.crimes")}</span></span>
+                <span className="mt-1 text-caption nx-card-muted">{t("profile.nb.crime.window", { area })}</span>
+                {crime.violentChange != null && <span className="mt-1.5"><ChangeBadge pct={crime.violentChange} goodWhen="down" text={t("profile.nb.badge.vsYear", { pct: Math.abs(crime.violentChange) })} testId="nb-violent-badge" /></span>}
+              </span>
+            ) : crimeSt === "loading" ? <span aria-hidden className="block h-8 w-20 animate-pulse rounded bg-nx-card-ink/10" /> : <span className="text-nx-figure">—</span>}
           />
         </ul>
         </div>
@@ -569,8 +572,7 @@ function SafetyBody({ crime, area }: { crime: CrimeModel; area: string }) {
 // whose margin of error is at least 10% of it says "Low confidence" once, in its header, explained under the section.
 // The comparison is the community area where the City publishes the same figure (rule 6).
 
-const DONUT = { a: "#72B0AB", b: "#FE9179", c: "#355E58", d: "#B89D47", e: "#FDC1B4" } as const;
-const DONUT_SERIES = [DONUT.a, DONUT.b, DONUT.c, DONUT.d, DONUT.e, OTHER];
+const DONUT_SERIES = [...SERIES, OTHER];
 
 function FigureCard({ value, label, compare, badge, testId }: { value: string; label: string; compare?: string | null; badge?: ReactNode; testId?: string }) {
   return (
@@ -625,10 +627,14 @@ function ShareColumns({ rows, title }: { rows: Array<{ key: string; label: strin
   );
 }
 
-function SubSection({ title, children }: { title: string; children: ReactNode }) {
+function SubSection({ title, scope, children }: { title: string; scope?: string | null; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3 border-t border-nx-ink/10 pt-5 first:border-0 first:pt-0">
-      <h4 className="font-semibold">{title}</h4>
+      {/* Each section names the area its figures describe (owner: tract, neighborhood or city?). */}
+      <h4 className="flex flex-wrap items-center gap-x-3 gap-y-1 font-semibold">
+        {title}
+        {scope && <span className="inline-flex items-center gap-1 text-caption font-normal nx-muted" data-testid="nb-scope"><MapPin aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{scope}</span>}
+      </h4>
       {children}
     </section>
   );
@@ -653,13 +659,15 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
     </ChartCard>
   );
   const inc = people.income;
+  const tractNo = (people.tractName ?? "").match(/Census Tract ([\d.]+)/i)?.[1];
+  const scope = tractNo ? t("profile.nb.people.scope", { tract: tractNo }) : t("profile.nb.people.scopeNoNumber");
   const fact = (k: string) => people.facts.find((f) => f.key === k);
   const poverty = fact("poverty_rate"), bach = fact("bachelors_or_higher_pct");
   const pctText = (f?: { value: number | null; withheld: boolean }) => (f?.withheld ? t("profile.nb.people.withheldShort") : f?.value != null ? `${nf(f.value, 1)}%` : "—");
 
   return (
     <div className="flex flex-col gap-6">
-      <SubSection title={t("profile.nb.people.sec.income")}>
+      <SubSection title={t("profile.nb.people.sec.income")} scope={scope}>
         <div className="nx-cq"><div className="nx-masonry">
           <FigureCard testId="nb-income-headline" value={inc.tract != null ? usd(inc.tract, lng) : inc.tractWithheld ? t("profile.nb.people.withheldShort") : "—"} label={t("profile.nb.people.medianIncome")}
             badge={inc.tract != null && inc.area != null ? <RatioBadge v={inc.tract} ref_={inc.area} area={area} /> : undefined}
@@ -671,7 +679,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
       </SubSection>
 
       {h && (
-        <SubSection title={t("profile.nb.people.sec.housing")}>
+        <SubSection title={t("profile.nb.people.sec.housing")} scope={scope}>
           <div className="nx-cq"><div className="nx-masonry">
             {h.housing_units != null && <FigureCard value={nf(h.housing_units)} label={t("profile.nb.people.housingUnits")} />}
             {h.median_home_value != null && <FigureCard value={usd(h.median_home_value, lng)} label={t("profile.nb.people.homeValue")} />}
@@ -685,7 +693,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
       )}
 
       {h && (h.households != null || x?.household_type) && (
-        <SubSection title={t("profile.nb.people.sec.households")}>
+        <SubSection title={t("profile.nb.people.sec.households")} scope={scope}>
           <div className="nx-cq"><div className="nx-masonry">
             {h.households != null && <FigureCard value={nf(h.households)} label={t("profile.nb.people.households")} />}
             {h.persons_per_household != null && <FigureCard value={nf(h.persons_per_household, 1)} label={t("profile.nb.people.perHousehold")} />}
@@ -694,7 +702,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
         </SubSection>
       )}
 
-      <SubSection title={t("profile.nb.people.sec.work")}>
+      <SubSection title={t("profile.nb.people.sec.work")} scope={scope}>
         <div className="nx-cq"><div className="nx-masonry">
           {h?.travel_minutes != null && <FigureCard value={t("profile.nb.people.minutes", { n: nf(h.travel_minutes, 1) })} label={t("profile.nb.people.travel")} />}
           {dist("transportation_distribution").length > 0 && <ChartCard title={t("profile.nb.people.dist.transportation_distribution")} testId="nb-commute-cols"><ShareBars rows={dist("transportation_distribution")} /></ChartCard>}
@@ -702,7 +710,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
         </div></div>
       </SubSection>
 
-      <SubSection title={t("profile.nb.people.sec.people")}>
+      <SubSection title={t("profile.nb.people.sec.people")} scope={scope}>
         <div className="nx-cq"><div className="nx-masonry">
           {h?.median_age != null && <FigureCard value={nf(h.median_age, 1)} label={t("profile.nb.people.fact.median_age")} />}
           {bach && <FigureCard value={pctText(bach)} label={t("profile.nb.people.fact.bachelors_or_higher_pct")} />}
@@ -762,13 +770,6 @@ function SchoolCard({ school }: { school: NextUiSchool }) {
   const { t, i18n } = useTranslation("next");
   const lng = i18n.language;
   const rc = school.report_card;
-  const pct = (v: number | undefined, src?: string) => (v == null ? t("profile.nb.schools.notPublished") : `${v.toFixed(0)}%${src ? ` ${t("profile.nb.schools.hsTest")}` : ""}`);
-  const rows: Array<[string, string]> = rc ? [
-    [t("profile.nb.schools.reading"), pct(rc.ela_pct, rc.ela_source)],
-    [t("profile.nb.schools.math"), pct(rc.math_pct, rc.math_source)],
-    ...(school.level === "high" ? [[t("profile.nb.schools.graduation"), pct(rc.graduation_4yr_pct)] as [string, string]] : []),
-    [t("profile.nb.schools.enrollment"), rc.enrollment != null ? rc.enrollment.toLocaleString(numLocale(lng)) : "—"],
-  ] : [];
   return (
     <article className="flex flex-col gap-2 rounded-xl bg-nx-page p-4" data-testid={`nb-school-${school.level}`}>
       <span className="text-caption nx-muted">{t(`profile.nb.schools.level.${school.level}`)}{school.grades ? ` · ${t("profile.nb.schools.grades", { grades: school.grades })}` : ""}</span>
@@ -788,11 +789,28 @@ function SchoolCard({ school }: { school: NextUiSchool }) {
           steps={CULTURE.map((c) => t(`profile.nb.schools.cultureLevel.${c.replace(/ /g, "_")}`))} at={CULTURE.indexOf(rc.culture.toLowerCase())} tone="gray" />
       )}
       {rc ? (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-caption">
-          {rows.map(([k, v]) => (
-            <div key={k} className="flex flex-col"><dt className="nx-muted">{k}</dt><dd className="font-semibold tabular-nums">{v}</dd></div>
+        // The rates as rings with icons, like the score tiles (owner: the numbers read tight as a list).
+        <ul className="grid grid-cols-2 gap-3 min-[360px]:grid-cols-4" data-testid={`nb-school-rates-${school.level}`}>
+          {([
+            ["reading", BookOpen, rc.ela_pct, rc.ela_source],
+            ["math", Calculator, rc.math_pct, rc.math_source],
+            ...(school.level === "high" ? [["graduation", GraduationCap, rc.graduation_4yr_pct, undefined] as const] : []),
+          ] as const).map(([key, Icon, v, src]) => (
+            <li key={key} className="flex flex-col items-center gap-1 text-center">
+              {v != null
+                ? <ScoreRing value={Math.round(v)} suffix="%" size={48} inkClass="text-nx-ink" label={`${t(`profile.nb.schools.${key}`)}: ${Math.round(v)}%`} />
+                : <span className="grid h-12 w-12 place-items-center rounded-full border-4 border-nx-ink/10 text-caption nx-muted">—</span>}
+              <span className="inline-flex items-center gap-1 text-caption leading-tight"><Icon aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={STROKE} />{t(`profile.nb.schools.short.${key}`)}</span>
+              {src && <span className="text-[0.6875rem] leading-tight nx-muted">{t("profile.nb.schools.hsTest")}</span>}
+              {v == null && <span className="text-[0.6875rem] leading-tight nx-muted">{t("profile.nb.schools.notPublished")}</span>}
+            </li>
           ))}
-        </dl>
+          <li className="flex flex-col items-center gap-1 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-nx-block"><UsersIcon aria-hidden className="h-5 w-5" strokeWidth={STROKE} /></span>
+            <span className="text-caption font-semibold tabular-nums leading-tight">{rc.enrollment != null ? rc.enrollment.toLocaleString(numLocale(lng)) : "—"}</span>
+            <span className="text-caption leading-tight nx-muted">{t("profile.nb.schools.short.students")}</span>
+          </li>
+        </ul>
       ) : <p className="text-caption nx-muted">{t("profile.nb.schools.noReportCard")}</p>}
       {school.report_card_url && (
         <a href={school.report_card_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-caption underline underline-offset-2">
