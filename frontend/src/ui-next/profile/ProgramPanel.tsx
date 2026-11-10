@@ -6,10 +6,11 @@ import { useTranslation } from "react-i18next";
 import { CircleCheck, CircleDashed, CircleMinus, LoaderCircle, RotateCw, SquareArrowOutUpRight } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import { RightDrawer } from "../ui/RightDrawer";
+import { ColumnChart } from "../ui/ColumnChart";
 import { Pill } from "../ui/Blocks";
 import { useAskHandoff } from "../ask/askContext";
 import { ICON, STROKE } from "../icons";
-import { niceCeil, usd, type IncentiveAnswer, type IncentiveKey, type LateBlockState } from "./moneyModel";
+import { niceCeil, type IncentiveAnswer, type IncentiveKey, type LateBlockState } from "./moneyModel";
 import { numLocale } from "./profileModel";
 import { programDetail, tractLabel, type FundYear } from "./programModel";
 
@@ -177,7 +178,7 @@ function Fact({ label, value, note }: { label: string; value: string; note?: str
   );
 }
 
-/** The district's fund balance by report year, on a dollar scale (Sapphire; the latest year in black). */
+/** The district's fund balance by report year: hover a column for its value, click to keep it shown. */
 function FundBars({ funds }: { funds: FundYear[] }) {
   const { t, i18n } = useTranslation("next");
   const lng = i18n.language;
@@ -186,26 +187,16 @@ function FundBars({ funds }: { funds: FundYear[] }) {
   return (
     <figure className="flex flex-col gap-2" data-testid="tif-funds">
       <figcaption className="text-caption font-semibold uppercase tracking-wide nx-muted">{t("profile.program.tif.balanceByYear")}</figcaption>
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
-        <div aria-hidden className="flex h-24 flex-col justify-between text-right text-caption nx-muted tabular-nums">
-          {[top, top / 2, 0].map((v) => <span key={v} className="-my-2 leading-4">{usdShort(v, lng)}</span>)}
-        </div>
-        <div className="relative h-24">
-          {[top, top / 2, 0].map((v) => <span key={v} aria-hidden className="absolute inset-x-0 border-t border-nx-ink/10" style={{ bottom: `${(v / top) * 100}%` }} />)}
-          <div className="absolute inset-0 flex items-end gap-1.5" role="img"
-            aria-label={funds.map((f) => `${f.year}: ${usd(f.balance, lng)}`).join(", ")}>
-            {funds.map((f) => (
-              <span key={f.year} title={`${f.year}: ${usd(f.balance, lng)}`}
-                className={`block min-w-0 flex-1 rounded-t ${f === last ? "bg-nx-lot" : "bg-nx-chart-1"}`}
-                style={{ height: `${Math.max(2, (f.balance / top) * 100)}%` }} />
-            ))}
-          </div>
-        </div>
-        <span aria-hidden />
-        <div aria-hidden className="mt-1 flex gap-1.5 text-caption nx-muted tabular-nums">
-          {funds.map((f) => <span key={f.year} className={`min-w-0 flex-1 text-center ${f === last ? "font-semibold text-nx-ink" : ""}`}>{`’${String(f.year).slice(2)}`}</span>)}
-        </div>
-      </div>
+      <ColumnChart
+        heightClass="h-24"
+        ariaLabel={t("profile.program.tif.balanceByYear")}
+        top={top}
+        scale={[usdShort(top, lng), usdShort(top / 2, lng), usdShort(0, lng)]}
+        columns={funds.map((f) => ({
+          key: String(f.year), tick: `’${String(f.year).slice(2)}`, label: String(f.year),
+          value: f.balance, valueText: usdShort(f.balance, lng), highlight: f === last,
+        }))}
+      />
     </figure>
   );
 }

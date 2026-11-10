@@ -367,7 +367,7 @@
         "year": "{{year}} assessment",
         "none": "No assessments on record",
         "chartLabel": "Assessor's value by year: {{list}}",
-        "latest": "{{year}}: {{value}}"
+        "hint": "Hover a year for its value; click to keep it shown."
       }
     },
     "program": {

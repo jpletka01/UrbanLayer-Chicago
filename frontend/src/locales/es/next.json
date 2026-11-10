@@ -367,7 +367,7 @@
         "year": "Tasación {{year}}",
         "none": "No hay tasaciones registradas",
         "chartLabel": "Valor del Tasador por año: {{list}}",
-        "latest": "{{year}}: {{value}}"
+        "hint": "Pase el cursor sobre un año para ver su valor; haga clic para mantenerlo visible."
       }
     },
     "program": {
