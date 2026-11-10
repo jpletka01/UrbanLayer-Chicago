@@ -394,6 +394,49 @@ def _area_counts(result, data_version: str) -> dict[str, int]:
     return counts
 
 
+@router.get("/distribution")
+def distribution(filter: str = Query(..., alias="filter")) -> dict:
+    """A filter's values across the whole index, and how many lots have no value (Item 104): the filters sheet's
+    coverage line and histogram, with the unknowns as their own hatched bar. A range filter is binned over its
+    registry domain; an enum or flag is counted by value. Display only: never a search."""
+    try:
+        fdef = load_registry().filter_def(filter)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="unknown filter")
+    if fdef.kind == "region":
+        raise HTTPException(status_code=422, detail="a region filter has no distribution")
+    return _distribution(parcel_source.current_version(), filter)
+
+
+@lru_cache(maxsize=64)
+def _distribution(version: str, filter_id: str) -> dict:
+    fdef = load_registry().filter_def(filter_id)
+    ranged = fdef.kind == "range" and fdef.range is not None
+    lo, hi = fdef.range.domain if ranged else (0.0, 1.0)
+    n_bins = 16
+    width = (hi - lo) / n_bins or 1
+    counts = [0] * n_bins
+    values: dict[str, int] = {}
+    unknown = total = 0
+    for parcel in parcel_source.pin_lookup(version).values():
+        total += 1
+        v = parcel.get(fdef.field)
+        if v is None:
+            unknown += 1
+        elif ranged:
+            i = int((float(v) - lo) // width)
+            counts[min(max(i, 0), n_bins - 1)] += 1
+        else:
+            key = str(v).lower() if isinstance(v, bool) else str(v)
+            values[key] = values.get(key, 0) + 1
+    out: dict = {"filter": filter_id, "dataVersion": version, "total": total, "unknown": unknown}
+    if ranged:
+        out["bins"] = [{"min": lo + i * width, "max": lo + (i + 1) * width, "n": c} for i, c in enumerate(counts)]
+    else:
+        out["values"] = values
+    return out
+
+
 @router.get("/areas")
 def community_area_outlines() -> Response:
     """The 77 community areas, simplified to about 15 m, with a label point each: the new map's city view."""

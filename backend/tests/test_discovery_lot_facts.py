@@ -143,3 +143,37 @@ def test_community_area_comes_from_the_region_handle():
 
     assert discovery_api._community_area_of(DictParcel("1", {}, regions=["neighborhood:24"])) == 24
     assert discovery_api._community_area_of(DictParcel("2", {})) is None
+
+
+def test_a_predicate_can_include_lots_with_no_data():
+    from backend.discovery import parcel as parcel_mod
+    from backend.discovery.cqs import CQS, FilterAssignment, RangePredicate, SortSpec
+    from backend.discovery.evaluator import evaluate
+
+    parcel_mod.default_source.register("v-unknown", [
+        parcel_mod.DictParcel("A", {"land_sqft": 6000.0}),
+        parcel_mod.DictParcel("B", {"land_sqft": 2000.0}),
+        parcel_mod.DictParcel("C", {}),
+    ])
+
+    def run(include):
+        cqs = CQS(filters={"lot_size": FilterAssignment(predicate=RangePredicate(min=5000, includeUnknown=include), source="user")},
+                  sort=SortSpec(key="pin", dir="asc"))
+        return list(evaluate(cqs, "v-unknown").pins)
+
+    assert run(None) == ["A"]
+    assert run(True) == ["A", "C"]
+
+
+def test_distribution_counts_unknowns_apart(monkeypatch):
+    from backend.discovery import parcel as parcel_mod
+
+    rows = {"A": parcel_mod.DictParcel("A", {"land_sqft": 3000.0, "is_vacant": True}),
+            "B": parcel_mod.DictParcel("B", {"land_sqft": 60000.0}), "C": parcel_mod.DictParcel("C", {})}
+    monkeypatch.setattr(discovery_api.parcel_source, "pin_lookup", lambda v: rows)
+    discovery_api._distribution.cache_clear()
+    d = discovery_api._distribution("v-dist", "lot_size")
+    assert d["total"] == 3 and d["unknown"] == 1 and sum(b["n"] for b in d["bins"]) == 2
+    assert d["bins"][-1]["n"] == 1  # above the domain lands in the last bin
+    v = discovery_api._distribution("v-dist", "vacancy")
+    assert v["values"] == {"true": 1} and v["unknown"] == 2

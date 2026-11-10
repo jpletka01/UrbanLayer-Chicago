@@ -83,8 +83,11 @@ def evaluate(cqs: CQS, data_version: str) -> OrderedResult:
     applied = []
     for fid, a in cqs.filters.items():
         fdef = registry.filter_def(fid)
-        track = fdef.unknownPolicy == "exclude" and fdef.kind in _SCALAR_KINDS
-        applied.append((fid, a.predicate, fdef.field, fdef.unknownPolicy, track))
+        # A predicate may override the filter's unknown policy ("include lots with no data", Item 104).
+        override = getattr(a.predicate, "includeUnknown", None)
+        policy = fdef.unknownPolicy if override is None else ("include" if override else "exclude")
+        track = policy == "exclude" and fdef.kind in _SCALAR_KINDS
+        applied.append((fid, a.predicate, fdef.field, policy, track))
     scope = cqs.scope
 
     # --- Stage 1: filter (AND across filters; scope ANDs too, 05) ---

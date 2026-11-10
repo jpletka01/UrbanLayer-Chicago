@@ -12,27 +12,41 @@ from __future__ import annotations
 import json
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 # --- Predicates (discriminated union on `kind`) -----------------------------
 
 Source = Literal["user", "text", "topic", "default"]
 
 
-class EnumPredicate(BaseModel):
+class _UnknownOverride(BaseModel):
+    """`includeUnknown` is written only when set, so every wire shape and cache key from before it is unchanged."""
+
+    @model_serializer(mode="wrap")
+    def _drop_unset_override(self, handler):
+        d = handler(self)
+        if isinstance(d, dict) and d.get("includeUnknown") is None:
+            d.pop("includeUnknown", None)
+        return d
+
+
+class EnumPredicate(_UnknownOverride):
     kind: Literal["enum"] = "enum"
     values: list[str] = Field(default_factory=list)  # OR within; non-empty when valid
+    includeUnknown: bool | None = None  # overrides the filter's unknownPolicy when set (Item 104)
 
 
-class RangePredicate(BaseModel):
+class RangePredicate(_UnknownOverride):
     kind: Literal["range"] = "range"
     min: float | None = None  # inclusive
     max: float | None = None  # inclusive; min>max is valid-but-unsatisfiable (R6)
+    includeUnknown: bool | None = None  # overrides the filter's unknownPolicy when set (Item 104)
 
 
-class FlagPredicate(BaseModel):
+class FlagPredicate(_UnknownOverride):
     kind: Literal["flag"] = "flag"
     value: bool  # true = must have; false = must not have
+    includeUnknown: bool | None = None  # overrides the filter's unknownPolicy when set (Item 104)
 
 
 class RegionPredicate(BaseModel):
@@ -127,6 +141,8 @@ def predicate_is_valid(p: Predicate) -> bool:
 def _predicate_canonical(p: Predicate) -> dict:
     """Predicate value with OR-sets normalized (order-insensitive) for stable keys."""
     d = p.model_dump()
+    if d.get("includeUnknown") is None:
+        d.pop("includeUnknown", None)  # unset = the filter's own policy; keeps every earlier key unchanged
     if isinstance(p, EnumPredicate):
         d["values"] = sorted(p.values)
     elif isinstance(p, RegionPredicate):
