@@ -900,3 +900,57 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - `make test` (2,880 backend, 188 eval, 1,146 vitest), `npm run build`, `npm run lint` (67 warnings, the cap), `e2e/ui-next.spec.ts` (with the new History check: late sources in place, same map, kind chips, axe light and dark at 360 px, no overflow) and the mobile matrix.
 
 **Not measured:** how builders read the tab (the builder test, Item 88); production timings. A failed parcel-flags lookup still reads as nothing flagged (the property history lookup logs and leaves it empty, as the live Profile does).
+
+## Item 104: Phase 6, Discovery on the one map (2026-11-10)
+
+**Status: built on `feat/ui-next-phase-6-discovery` (cut from History's branch, PR #216, unmerged: owner's call), checked locally; waiting for the owner's localhost review. No route flips (Item 88).**
+
+**The owner's calls before the build (2026-11-10), from a mockup of the Explore map, the list cards and two phone layouts:**
+- **Quick filters:** Vacant · Near the L (½ mi) · Lot 5,000+ sq ft · Sold in 2 years · In a TIF (all 68-100% known).
+- **The map's measure:** room to build, **on condition that its coverage is fixed** ("50% known is super unreliable"). Fixed in this route (below).
+- **Phone:** the map first, the list in a bottom sheet over it.
+- **Card picture:** the lot's own outline, drawn by us (free); Street View stays a link (Item 94).
+- **Serious warnings (one per card):** a demolition permit, a vacant-building case, a pending rezoning, a landmark; and a nominal assessment.
+- **No bookmark until Saved (Phase 9); the address ring now.**
+
+**Decision: room to build is known for 85.7% of lots, up from 0% stored (its inputs 80%).** Measured on the citywide index (590,174 lots, base PINs; the 292,154 condo unit PINs have no lot of their own, which is why the old "50%" read low):
+
+| Lots | Count | Room known before | After |
+|---|---:|---:|---:|
+| Residential | 446,351 | 97% (inputs) | 95% |
+| Vacant | 32,280 | 100% (inputs) | 93% |
+| Multifamily (7+) | 14,191 | 9% | 77% |
+| Commercial | 44,666 | 2% | 72% |
+| Industrial | 479 | 0% | 31% |
+| No land use (exempt, railroad) | 52,207 | 6% | 13% |
+| **All** | 590,174 | 80% (inputs) | **85.7%** |
+
+How (`backend/discovery/lot_facts.py`, `index_backfill.py`; the monthly build runs the same `enrich_rows`): one building-area source per lot, named in `bldg_sqft_source`: the Assessor's characteristics, else the Assessor's Commercial Valuation for a building that is this lot's own (already in the builder since 2026-11-02; the local index predated it), else the City's building footprints (`syp8-uezg`) whose own interior point is inside the lot, area x stories, withheld when a footprint has no stories (48% of footprints) or is larger than the lot by the Profile's 1.1 slack. A **multi-parcel complex** (a shopping center, a campus: one Commercial Valuation area for several PIN10s) is read as one site: allowed floor area summed over its lots minus the complex's area, shown on each member as "room for the whole N-lot complex" (`room_scope: complex`; 21,742 of 27,143 commercial complex lots computable). Room = the base district's FAR x lot area minus the building, never below 0, absent when any input is unknown. *Alternatives:* footprints alone (adds only 9,877 lots: most commercial lots lacking an area are complex members); apportioning a complex's area by land share (a guess about which building sits where). *Revisit if* the County publishes per-PIN commercial areas, or the City's footprints gain stories.
+
+**Decision: a local copy of the City sources lots need** (`lot_sources.py` → `backend/data/discovery_lot_sources.db`, 139 MB, 5 min): 820,456 active footprints, vacant-building cases (`kc9i-wq85`, 3 years), demolition permits (`ydr8-5enu`, 24 months), Chicago Landmarks (zoning layer 5) and landmark districts (layer 6). Refuses a partial read. Card warnings from it: 2,619 lots with a demolition permit, 19,732 in a landmark or landmark district, 2,406 listed by a pending rezoning filing (`pending_legislation.db`), and **only 11 vacant-building cases**: the City's dataset has few recent rows (5,012 since 2011), so that warning is nearly silent; said here, not hidden.
+
+**Decision: the lot tiles carry the measures as bands** (`measure_bands`: `r` room, `s` lot size, `y` years since the last sale, `u` land use; `g` zoning family as before). Display only: which lots match a search is never in the tiles (Item 68). Tile file 28.7 → 33.4 MB (+16%). A lot with no value is drawn dotted, never as "low".
+
+**Decision: the page** (`ui-next/discovery/`):
+- **Explore** opens on the city: below zoom 14 the 77 community areas (`GET /api/discovery/areas`, simplified outlines, 103 KB), from 14 every lot filled by the measure (Room to build by default; Lot size, Last sale, Land use, Zoning family), zoning off by default and one switch away.
+- **Quick filters dim rather than hide:** the server evaluates them for the view (`scope: viewport`, one row, the points), the matches are outlined, the rest fade; in the city view each area is labeled with its count (`includeAreaCounts`, from the same evaluation). "Search N lots in view" turns the view into a search.
+- **Matches are outlines only** (owner, Item 99): a black line over a white edge by feature state on the lot tiles; no dots, no pins.
+- **One search box:** an address (autocomplete) offers its Profile or "Search around it" with a ring of ¼, ½ or 1 mi and a drag handle (the existing `radius` filter); a community area by name; anything else is a description for the rule-based compiler, its unread words shown as "Not understood".
+- **Goals as "Try" chips** with their counts; a goal with no data says "needs data" (coach houses: 0 matches, units and ADU areas aren't in the index).
+- **One focus at a time:** List (picture cards) or Map ("N lots in view · List them"). Cards: the lot's outline, address, zoning, lot size, room to build (with its source when it isn't the Assessor's record, or the complex), the last sale (a sale under $10,000 reads "Transfer", the County's own filter), one warning.
+- **New sort key `room_to_build`** (most room first, unknowns last; the server sorts): the new page's default. The registry's default (assessed value ascending) put 10 sq ft slivers first.
+- **Filters sheet:** only filters with data, each with "Known for N% of lots" (`GET /api/discovery/distribution`), presets plus a custom value, a histogram across the city with the unknowns as their own hatched bar, "Also include lots with no data" (a new optional `includeUnknown` on a predicate, overriding the filter's policy in the evaluator; unset it serializes as before, so every cache key and wire shape is unchanged), and a live "Show N lots" count from the server. Transit is one control (5/10/15-minute walk to the L; Metra, bus and Divvy aren't in the index, said once).
+- **Phone:** the map first; the list a sheet (peek, half, full; drag or tap), its peek clearing the preview badge.
+
+**Gates (local, 2026-11-10):**
+- `make test` (2,896 backend, 188 eval, 1,158 vitest), `npm run build`, `npm run lint` (67 warnings, the cap), `e2e/ui-next.spec.ts` (new Discovery check at 360 px: a quick filter's request, a goal's area counts, the list, the same map canvas, axe light and dark, no overflow; axe on the preview routes), the mobile matrix: see the PR.
+- *Map:* MapLibre over our tiles, no satellite (`mapNoSatellite.test.tsx` passes); the Cities: Skylines look of Items 90-98, unchanged.
+- *Words:* not measured against a budget (none exists yet for the new UI).
+- *Timing:* a quick-filter view search answers in well under a second locally (cached evaluation over the in-memory index); `/api/discovery/distribution` scans the index once per filter per data version.
+- *Failure states:* no WebGL says so and the list still works; a failed search says so; a lot card says "not in Discovery's index" or "couldn't load", never "none".
+
+**Production steps (with the merge):** `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources`, then `... python -m backend.discovery.index_backfill` (minutes; or the monthly `--refresh` does it), then `... python -m backend.discovery.parcel_tiles`. Without the source copy the build skips the footprint fill and the warnings, with a warning in the log.
+
+**Found on the way:** each card fetched its outline at once (50 requests), which knocked over a local dev server's worker once; the page now fetches four at a time.
+
+**Not done:** Metra, bus and Divvy in the transit control; units, violations, flood and overlays as filters (0% in the index); a land-use map (M5, Phase 7); production timings.
