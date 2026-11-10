@@ -866,3 +866,5 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - `make test`, `npm run build`, `npm run test` (1,137), `npm run lint` (67 warnings, the cap), `e2e/ui-next.spec.ts` (with the new Neighborhood check: late outlines, same map, jump links, axe light and dark at 360 px) and the mobile matrix: see the PR for the final run.
 
 **Not measured:** how builders read the tab (the builder test, Item 88); production timings. **Open, the owner's call:** whether "Who lives here" also compares with Chicago (rule 6 says the community area; the same Census request already returns Chicago's figures, in `next_ui.tract.city`).
+
+**After approval (2026-11-10), two small requests from the owner:** how people get to work lists its key from the largest share to the smallest; the 311 donut's key gives each type's count and its share ("1,835 · 23%").

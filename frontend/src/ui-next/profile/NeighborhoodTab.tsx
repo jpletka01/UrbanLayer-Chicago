@@ -226,11 +226,11 @@ export function NeighborhoodTab({
                         <Donut testId="nb-311-donut" title={t("profile.nb.r311.byType")} size={136}
                           center={{ label: t("profile.nb.r311.requests"), value: nf(t311.total) }}
                           segments={[
-                            ...t311.top.map((r, i) => ({ key: r.type, label: r.type, pct: (r.count / t311.total) * 100, color: SERIES[i], note: nf(r.count) })),
+                            ...t311.top.map((r, i) => ({ key: r.type, label: r.type, pct: (r.count / t311.total) * 100, color: SERIES[i], note: `${nf(r.count)} · ${Math.round((r.count / t311.total) * 100)}%` })),
                             ...(t311.total > t311.top.reduce((a, r) => a + r.count, 0) ? [{
                               key: "other", label: t("profile.nb.r311.other"), color: OTHER,
                               pct: ((t311.total - t311.top.reduce((a, r) => a + r.count, 0)) / t311.total) * 100,
-                              note: nf(t311.total - t311.top.reduce((a, r) => a + r.count, 0)),
+                              note: `${nf(t311.total - t311.top.reduce((a, r) => a + r.count, 0))} · ${Math.round(((t311.total - t311.top.reduce((a, r) => a + r.count, 0)) / t311.total) * 100)}%`,
                             }] : []),
                           ]} />
                         <p className="text-caption nx-muted">{t("profile.nb.r311.caption", { total: nf(t311.total), area, days: t311.days })}</p>
@@ -709,7 +709,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
       <SubSection title={t("profile.nb.people.sec.work")} scope={scope}>
         <div className="nx-cq"><div className="nx-masonry">
           {h?.travel_minutes != null && <FigureCard value={t("profile.nb.people.minutes", { n: nf(h.travel_minutes, 1) })} label={t("profile.nb.people.travel")} />}
-          {dist("transportation_distribution").length > 0 && donut(t("profile.nb.people.dist.transportation_distribution"), dist("transportation_distribution"), { testId: "nb-commute-cols" })}
+          {dist("transportation_distribution").length > 0 && donut(t("profile.nb.people.dist.transportation_distribution"), [...dist("transportation_distribution")].sort((a, b) => b.pct - a.pct), { testId: "nb-commute-cols" })}
           {x?.travel_time && <ChartCard title={t("profile.nb.people.chart.travelTime")} low={low(x.travel_time)}><ShareColumns title={t("profile.nb.people.chart.travelTime")} rows={rows("travel_time", x.travel_time)} /></ChartCard>}
         </div></div>
       </SubSection>

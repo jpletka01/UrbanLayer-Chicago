@@ -87,6 +87,9 @@ describe("Neighborhood", () => {
     fireEvent.click(low);
     expect(screen.getByText(/margin is at least 10% of the figure/)).toBeTruthy();
     expect(screen.getByTestId("nb-311-donut").textContent).toContain("Graffiti Removal Request");
+    expect(screen.getByTestId("nb-311-donut").textContent).toContain("700 · 23%"); // count and share
+    const commute = within(screen.getByTestId("nb-commute-cols")).getAllByRole("listitem", { hidden: true }).map((li) => li.textContent);
+    expect(commute[0]).toContain("Drove alone"); // highest first
     const cards = within(screen.getByTestId("nb-nearby")).getAllByRole("listitem").map((li) => li.getAttribute("data-card"));
     expect(cards).toEqual(["cta", "ward", "area"]);
     // Pages open in a new tab; mailto and tel open another app (the repo's link rule).
