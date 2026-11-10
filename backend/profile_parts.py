@@ -138,6 +138,7 @@ def _claims(rec: Record) -> dict:
         "rl": [rl.lat, rl.lon, rl.address, rl.pin, rl.confidence, rl.method],
         "id": [idn.pin, idn.confidence, idn.method, idn.unverified, idn.unverified_reason],
         "ap": rec.ap_pins, "as": rec.assessor_pins, "c": rec.cand_applies,
+        "v": rec.version,
         "exp": int(time.time()) + LOOKUP_TTL_S,
     }
 
@@ -469,23 +470,49 @@ async def part(name: str, lookup: str, have: str | None, request: Request | None
             _log(name, ok, timer)
 
 
+def _rebuilt_version(claims: dict) -> int:
+    """Where a rebuilt record's versions start: above any answer the page can hold. The token names the version of
+    the response it came from (the newest the page had when it asked); at most one answer per part can have
+    landed after it, so ``len(PARTS)`` higher clears them (decision Item 101)."""
+    try:
+        return int(claims.get("v") or 0) + len(PARTS)
+    except (TypeError, ValueError):
+        return len(PARTS)
+
+
+async def _rebuild(claims: dict, have: list[str]) -> Record:
+    """A lookup the server lost (a restart or eviction), rebuilt from the token: the Overview's calls and the parts
+    the page already has are cached by now, so this is quick."""
+    rec = _record_from_claims(claims)
+    if rec.cand_applies and not (rec.ap_pins or rec.assessor_pins):
+        from backend import main
+
+        rec.cand_task = await main._address_candidates(rec.address_in, None, None, None)
+    with _timing.span("rebuild"):
+        await _gather_into(rec, _overview_coros(rec))
+        rec.parts_in.add("overview")
+        await _run_have(rec, have)
+    _records.set(rec.id, rec)
+    return rec
+
+
+async def _run_have(rec: Record, have: list[str]) -> None:
+    for p in have:
+        if p not in rec.parts_in:
+            rec.timed_out[p] = await _run_late(rec, p, LATE_DEADLINE_S)
+            rec.parts_in.add(p)
+
+
 async def _part(name: str, claims: dict, have: str | None) -> dict:
     rec = _records.get(claims["i"])
     if rec is None:
-        # The server lost this lookup (a restart or eviction): rebuild it from the token. The Overview's calls and
-        # the parts the page already has are cached by now, so this is quick; then the asked part runs as usual.
-        rec = _record_from_claims(claims)
-        if rec.cand_applies and not (rec.ap_pins or rec.assessor_pins):
-            from backend import main
-
-            rec.cand_task = await main._address_candidates(rec.address_in, None, None, None)
-        with _timing.span("rebuild"):
-            await _gather_into(rec, _overview_coros(rec))
-            rec.parts_in.add("overview")
-            for p in [p for p in (have or "").split(",") if p in LATE_PARTS and p != name]:
-                rec.timed_out[p] = await _run_late(rec, p, LATE_DEADLINE_S)
-                rec.parts_in.add(p)
-        _records.set(rec.id, rec)
+        # The page asks every late part at once, so after a restart they all find the record missing: ONE rebuild,
+        # shared by the record id. Each built its own record before (versions from 1 under the same id), and the
+        # page dropped their answers as older than the ones it held (decision Item 101).
+        wanted = [p for p in (have or "").split(",") if p in LATE_PARTS and p != name]
+        rec = await inflight.shared(("profile_rebuild", claims["i"]), lambda: _rebuild(claims, wanted))
+        rec.version = max(rec.version, _rebuilt_version(claims))
+        await _run_have(rec, [p for p in wanted if p != name])  # what this request's page has that the shared rebuild didn't
     if name not in applicable_parts(rec):
         timed_out: list[str] = []
     else:
