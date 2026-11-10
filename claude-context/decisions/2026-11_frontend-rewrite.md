@@ -708,7 +708,7 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 ## Item 99: Phase 6, the Money tab, and the pinned search bar (2026-11-09)
 
-**Status: built on `feat/ui-next-phase-6-money` (cut from Phase 5's `feat/ui-next-phase-5-maps`, which is not merged yet; the owner chose to build on it and batch the merge), checked locally, waiting for the owner's localhost review.** The owner's answers before the build (2026-11-09): Money first, then Neighborhood, History, then Discovery; Discovery marks its matches as lot outlines only (no dots or pins); the builder test runs later, so no route flips yet (Item 88 stands); #212 merges with the first Phase 6 PR.
+**Status: approved by the owner ("Thumbs up", 2026-11-09) after five localhost review rounds (below), built on `feat/ui-next-phase-6-money` (cut from Phase 5's branch, rebased onto `main` once #212 merged); not merged (merge = deploy, the owner's call). No route flips (Item 88).** The owner's answers before the build (2026-11-09): Money first, then Neighborhood, History, then Discovery; Discovery marks its matches as lot outlines only (no dots or pins); the builder test runs later, so no route flips yet (Item 88 stands); #212 merges with the first Phase 6 PR.
 
 **Decision: the Money tab takes the shape every tab has (brief, "Property Profile").** One sentence, then one wide visual, then three smaller ones, then a collapsed details table.
 - **The sentence:** the tax bill and the Assessor's value ("About $12,478 a year in property tax, on an Assessor's value of $619,000"), plus the nearby sales' median only when the backend shows that median (a withheld median stays out of the sentence). Exempt, nominal and no-bill lots say so in words.
