@@ -1,7 +1,7 @@
 {
  "builder": "ingestion/build_cps_schools_artifact.py",
- "built_at": "2026-11-09",
+ "built_at": "2026-11-10",
  "report_year": 2025,
- "retrieved": "2026-11-09",
+ "retrieved": "2026-11-10",
  "schools": 621
 }

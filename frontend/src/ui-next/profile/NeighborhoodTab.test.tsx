@@ -75,11 +75,17 @@ describe("Neighborhood", () => {
     expect(screen.getByTestId("nb-311-bars").textContent).toContain("Graffiti Removal Request");
     expect(container.textContent).not.toContain("RACE-SHOULD-NOT-SHOW"); // race and ethnicity left out (owner)
     expect(screen.getByTestId("nb-commute-cols").textContent).toContain("Public transit");
-    expect(screen.getByTestId("nb-income-headline").textContent).toContain("about 1.2 times West Town's $90,000");
+    expect(screen.getByTestId("nb-ratio-badge").textContent).toBe("1.2× West Town");
+    expect(screen.getByTestId("nb-income-headline").textContent).toContain("West Town: $90,000");
+    expect(screen.getByTestId("nb-violent-badge").textContent).toBe("17% vs a year ago");
+    expect(screen.getByTestId("nb-violent-badge").querySelector("[data-pill]")!.getAttribute("data-pill")).toBe("green"); // down is good
+    expect(screen.getByTestId("nb-rating-elementary").textContent).toContain("Commendable");
     expect(screen.getByTestId("nb-donut-tenure").textContent).toContain("Renter occupied");
     expect(screen.getByTestId("nb-structure-cols").textContent).toContain("3–4 units");
-    expect(screen.getByTestId("nb-low-note").textContent).toContain("margin of error of at least 10%"); // said once, not per value
-    expect(screen.getByTestId("nb-structure-cols").textContent).toContain("Low confidence");
+    // "Low confidence" defines itself on hover or tap, in place of a note far below
+    const low = within(screen.getByTestId("nb-structure-cols")).getByRole("button", { name: "What does Low confidence mean?" });
+    fireEvent.click(low);
+    expect(screen.getByText(/margin is at least 10% of the figure/)).toBeTruthy();
     expect(screen.getByTestId("nb-311-donut").textContent).toContain("Graffiti Removal Request");
     const cards = within(screen.getByTestId("nb-nearby")).getAllByRole("listitem").map((li) => li.getAttribute("data-card"));
     expect(cards).toEqual(["cta", "ward", "area"]);

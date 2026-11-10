@@ -105,13 +105,14 @@ export function StatTile({ label, figure, unit, note, warning, state, tone = "a"
   checking?: boolean;
   testId?: string;
 }) {
-  const iconBox = icon ? <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/60 text-nx-card-ink">{icon}</span> : null;
+  const iconBox = icon ? <span aria-hidden className={`grid shrink-0 place-items-center rounded-xl bg-white/60 text-nx-card-ink ${visual ? "h-8 w-8" : "h-10 w-10"}`}>{icon}</span> : null;
   if (visual) {
     return (
+      // Icon and label on top, the words below, the visual on the right with the card's own padding around it.
       <li className={`flex min-w-0 items-center gap-3 rounded-2xl p-4 text-nx-card-ink ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
-        {iconBox}
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-caption font-semibold">{label}</span>
+        <span className="flex min-w-0 flex-1 flex-col gap-2">
+          {iconBox ? <span className="flex items-center gap-2">{iconBox}<span className="min-w-0 text-caption font-semibold">{label}</span></span> : null}
+          {!iconBox && <span className="text-caption font-semibold">{label}</span>}
           {figure != null && <span className="text-nx-figure tabular-nums">{figure}</span>}
           {note && <span className="text-caption nx-card-muted">{note}</span>}
           {state && <span className="nx-on-card inline-flex">{state}</span>}

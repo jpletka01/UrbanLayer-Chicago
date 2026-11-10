@@ -573,9 +573,6 @@
         "notChecked": "No se pudieron revisar los delitos hoy",
         "violent": "Delitos violentos",
         "property": "Delitos contra la propiedad",
-        "down": "bajaron {{pct}}% respecto al año pasado",
-        "up": "subieron {{pct}}% respecto al año pasado",
-        "flat": "iguales que hace un año",
         "barLabel": "{{kind}}: {{now}} en los últimos 90 días, {{prior}} en los mismos días un año antes",
         "legendNow": "Últimos 90 días",
         "legendPrior": "Mismos días un año antes ({{period}})",
@@ -704,11 +701,6 @@
         "travel": "Tiempo promedio de traslado al trabajo",
         "moved": "Se mudaron en el último año",
         "withheldShort": "No se muestra",
-        "cmp": {
-          "same": "más o menos igual que {{area}}",
-          "times": "unas {{r}} veces los {{value}} de {{area}}",
-          "share": "cerca del {{pct}}% de los {{value}} de {{area}}"
-        },
         "chart": {
           "income": "Ingreso del hogar",
           "occupancy": "Ocupadas y vacías",
@@ -774,7 +766,6 @@
           }
         },
         "hoverHint": "Señale una columna para ver su porcentaje.",
-        "lowNote": "Algunos porcentajes de estas gráficas tienen un margen de error de al menos 10% del porcentaje (la encuesta de una zona pequeña); tómelos como aproximados.",
         "tick": {
           "income": {
             "under_50k": "<$50 mil",
@@ -792,7 +783,8 @@
           "age": {
             "Under 18": "<18"
           }
-        }
+        },
+        "areaIs": "{{area}}: {{value}}"
       },
       "schools": {
         "title": "Escuelas públicas asignadas",
@@ -822,7 +814,18 @@
           "elementary": "Ninguna zona de asistencia de primaria de CPS incluye este terreno.",
           "high": "Ninguna zona de asistencia de preparatoria de CPS incluye este terreno; las escuelas de toda la ciudad y las selectivas no tienen zona."
         },
-        "caption": "Asignadas por zona de asistencia de CPS, ciclo escolar {{boundary}}. Designación y cifras: Junta de Educación del Estado de Illinois, boleta {{year}}."
+        "caption": "Asignadas por zona de asistencia de CPS, ciclo escolar {{boundary}}. Designación y cifras: Junta de Educación del Estado de Illinois, boleta {{year}}.",
+        "stateRating": "Calificación de Illinois, {{year}}",
+        "stateRatingDef": "La calificación propia de la Junta de Educación del Estado de Illinois para cada escuela, a partir de resultados de exámenes, crecimiento, graduación, asistencia y el avance de quienes aprenden inglés. De menor a mayor: Apoyo intensivo, Apoyo integral (el 5% de escuelas con menor desempeño, o una preparatoria que gradúa a dos tercios o menos), Apoyo focalizado (uno o más grupos de alumnos con desempeño como el 5% más bajo), Encomiable, Ejemplar (el 10% más alto, sin ningún grupo rezagado).",
+        "culture": "Cultura y clima (CPS)",
+        "cultureDef": "La calificación 5Essentials de las Escuelas Públicas de Chicago, de su encuesta anual a alumnos y maestros: liderazgo, colaboración entre maestros, participación de las familias, un ambiente de apoyo y enseñanza exigente. De menor a mayor: aún no organizada, parcialmente, moderadamente, organizada, bien organizada.",
+        "cultureLevel": {
+          "not_yet_organized": "Aún no organizada",
+          "partially_organized": "Parcialmente organizada",
+          "moderately_organized": "Moderadamente organizada",
+          "organized": "Organizada",
+          "well_organized": "Bien organizada"
+        }
       },
       "trend": {
         "title": "Cómo está cambiando {{area}}",
@@ -837,12 +840,9 @@
         },
         "salesN_one": "{{count}} venta",
         "salesN_other": "{{count}} ventas",
-        "salesUp": "Subió {{pct}}% de {{from}} a {{to}}.",
-        "salesDown": "Bajó {{pct}}% de {{from}} a {{to}}.",
         "rent": "Renta mediana, antes y ahora",
-        "rentChange": "Subió {{pct}}%; {{real}}% descontando la inflación.",
         "notSignificant": "El Censo no lo considera un cambio claro (dentro de su margen).",
-        "households": "Hogares que rentan: {{from}} → {{to}} ({{pct}}%)",
+        "households": "Hogares que rentan: {{from}} → {{to}}",
         "caption": "Toda el área de {{area}}. Ventas: ventas de mercado del Condado por año; renta: encuesta del Censo, periodos de cinco años."
       },
       "near": {
@@ -866,7 +866,8 @@
         "website": "Sitio web",
         "area": "{{area}}",
         "residents": "{{n}} habitantes",
-        "renters": "hogares que rentan {{sign}}{{pct}}% desde {{period}}"
+        "renters": "hogares que rentan {{sign}}{{pct}}% desde {{period}}",
+        "what": "lo que hay alrededor del terreno"
       },
       "permit": {
         "what": "Qué se está construyendo",
@@ -896,6 +897,13 @@
         "buildingRecordsHow": "Busque ahí {{address}} para ver el permiso, sus inspecciones y cualquier infracción.",
         "dataset": "Permisos de construcción en el portal de datos de la Ciudad",
         "unitsNotStated": "No indicado en el permiso"
+      },
+      "badge": {
+        "same": "Igual que {{area}}",
+        "times": "{{r}}× {{area}}",
+        "vsYear": "{{pct}}% vs. hace un año",
+        "since": "{{pct}}% desde {{from}}",
+        "rent": "{{pct}}% · {{real}}% descontando la inflación"
       }
     }
   },
@@ -1005,5 +1013,9 @@
     "ask": "Preguntar al analista",
     "askLater": "Podrá preguntar cuando el Perfil termine de cargar",
     "close": "Cerrar"
+  },
+  "lowConfidence": {
+    "label": "¿Qué significa Confianza baja?",
+    "census": "La encuesta del Censo pregunta a una muestra de hogares, así que cada cifra tiene un margen de error. Aquí el margen es de al menos 10% de la cifra en algunos de estos valores (común en una zona de pocas cuadras): tómelos como aproximados, no exactos."
   }
 }

@@ -3,11 +3,12 @@
  "source": "Illinois State Board of Education, Illinois Report Card public data set",
  "source_url": "https://www.isbe.net/pages/illinois-state-report-card-data.aspx",
  "join": "CPS School Progress Reports SY2425 (twrw-chuq): report-card link -> RCDTS",
- "retrieved": "2026-11-09",
+ "retrieved": "2026-11-10",
  "unmatched_progress_rows": 28,
  "schools": {
   "400009": {
    "name": "Academy for Global Citizenship Charter School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400009",
    "rcdts": "15016299025229C",
@@ -22,6 +23,7 @@
   },
   "400011": {
    "name": "Alain Locke Charter School",
+   "culture": null,
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400011",
    "rcdts": "15016299025206C",
@@ -36,6 +38,7 @@
   },
   "400013": {
    "name": "ASPIRA Charter School - Early College High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400013",
    "rcdts": "15016299025074C",
@@ -51,6 +54,7 @@
   },
   "400017": {
    "name": "ASPIRA Charter School - Haugan Middle School",
+   "culture": "Organized",
    "category": "MS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400017",
    "rcdts": "15016299025110C",
@@ -65,6 +69,7 @@
   },
   "400021": {
    "name": "Catalyst Elementary Charter School - Circle Rock",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400021",
    "rcdts": "15016299025228C",
@@ -79,6 +84,7 @@
   },
   "400022": {
    "name": "Chicago High School for the Arts (ChiArts)",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400022",
    "rcdts": "150162990250851",
@@ -93,6 +99,7 @@
   },
   "400023": {
    "name": "CICS - Avalon/South Shore",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400023",
    "rcdts": "15016299025252C",
@@ -107,6 +114,7 @@
   },
   "400024": {
    "name": "CICS - Basil",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400024",
    "rcdts": "15016299025277C",
@@ -121,6 +129,7 @@
   },
   "400025": {
    "name": "CICS - Bucktown",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400025",
    "rcdts": "15016299025246C",
@@ -135,6 +144,7 @@
   },
   "400026": {
    "name": "CICS - Loomis Primary",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400026",
    "rcdts": "15016299025255C",
@@ -149,6 +159,7 @@
   },
   "400027": {
    "name": "CICS - Irving Park",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400027",
    "rcdts": "15016299025254C",
@@ -163,6 +174,7 @@
   },
   "400028": {
    "name": "CICS - Prairie",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400028",
    "rcdts": "15016299025248C",
@@ -177,6 +189,7 @@
   },
   "400029": {
    "name": "CICS - Washington Park",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400029",
    "rcdts": "15016299025249C",
@@ -191,6 +204,7 @@
   },
   "400030": {
    "name": "CICS - West Belden",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400030",
    "rcdts": "15016299025251C",
@@ -205,6 +219,7 @@
   },
   "400031": {
    "name": "CICS - Wrightwood",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400031",
    "rcdts": "15016299025278C",
@@ -219,6 +234,7 @@
   },
   "400032": {
    "name": "CICS - Ralph Ellison",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400032",
    "rcdts": "15016299025083C",
@@ -234,6 +250,7 @@
   },
   "400033": {
    "name": "CICS - Longwood",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400033",
    "rcdts": "15016299025247C",
@@ -248,6 +265,7 @@
   },
   "400034": {
    "name": "CICS - Northtown",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400034",
    "rcdts": "15016299025082C",
@@ -262,6 +280,7 @@
   },
   "400035": {
    "name": "Chicago Math and Science Academy Charter School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400035",
    "rcdts": "15016299025217C",
@@ -276,6 +295,7 @@
   },
   "400039": {
    "name": "Erie Elementary Charter School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400039",
    "rcdts": "15016299025219C",
@@ -290,6 +310,7 @@
   },
   "400044": {
    "name": "KIPP Ascend Charter School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400044",
    "rcdts": "15016299025282C",
@@ -304,6 +325,7 @@
   },
   "400046": {
    "name": "L.E.A.R.N. - Romano Butler Campus",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400046",
    "rcdts": "15016299025283C",
@@ -318,6 +340,7 @@
   },
   "400047": {
    "name": "L.E.A.R.N. - Charles and Dorothy Campbell Campus",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400047",
    "rcdts": "15016299025273C",
@@ -332,6 +355,7 @@
   },
   "400048": {
    "name": "L.E.A.R.N. - Excel Campus",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400048",
    "rcdts": "15016299025272C",
@@ -346,6 +370,7 @@
   },
   "400049": {
    "name": "Legacy Charter School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400049",
    "rcdts": "15016299025221C",
@@ -360,6 +385,7 @@
   },
   "400050": {
    "name": "Namaste Charter School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400050",
    "rcdts": "15016299025218C",
@@ -374,6 +400,7 @@
   },
   "400051": {
    "name": "Noble - Noble College Prep",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400051",
    "rcdts": "15016299025041C",
@@ -388,6 +415,7 @@
   },
   "400052": {
    "name": "Noble - Gary Comer College Prep",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400052",
    "rcdts": "15016299025032C",
@@ -402,6 +430,7 @@
   },
   "400053": {
    "name": "Noble - Golder College Prep",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400053",
    "rcdts": "15016299025031C",
@@ -416,6 +445,7 @@
   },
   "400054": {
    "name": "Noble - Pritzker College Prep",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400054",
    "rcdts": "15016299025028C",
@@ -430,6 +460,7 @@
   },
   "400055": {
    "name": "Noble - Rauner College Prep",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400055",
    "rcdts": "15016299025029C",
@@ -444,6 +475,7 @@
   },
   "400056": {
    "name": "Noble - Rowe-Clark Math and Science Academy",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400056",
    "rcdts": "15016299025030C",
@@ -459,6 +491,7 @@
   },
   "400057": {
    "name": "Noble - UIC College Prep",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400057",
    "rcdts": "15016299025033C",
@@ -473,6 +506,7 @@
   },
   "400058": {
    "name": "North Lawndale College Prep - Christiana",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400058",
    "rcdts": "15016299025084C",
@@ -489,6 +523,7 @@
   },
   "400059": {
    "name": "North Lawndale College Prep - Collins",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400059",
    "rcdts": "15016299025046C",
@@ -505,6 +540,7 @@
   },
   "400060": {
    "name": "Passages Charter School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400060",
    "rcdts": "15016299025214C",
@@ -519,6 +555,7 @@
   },
   "400061": {
    "name": "Perspectives - Leadership Academy",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400061",
    "rcdts": "15016299025051C",
@@ -534,6 +571,7 @@
   },
   "400062": {
    "name": "Perspectives - High School of Technology",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400062",
    "rcdts": "15016299025052C",
@@ -549,6 +587,7 @@
   },
   "400064": {
    "name": "Perspectives - Rodney D. Joslin",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400064",
    "rcdts": "15016299025050C",
@@ -563,6 +602,7 @@
   },
   "400066": {
    "name": "Perspectives - Math and Science Academy",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400066",
    "rcdts": "15016299025053C",
@@ -578,6 +618,7 @@
   },
   "400068": {
    "name": "Plato Learning Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400068",
    "rcdts": "150162990252951",
@@ -592,6 +633,7 @@
   },
   "400069": {
    "name": "Polaris Charter Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400069",
    "rcdts": "15016299025226C",
@@ -606,6 +648,7 @@
   },
   "400071": {
    "name": "Providence Englewood Charter School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400071",
    "rcdts": "15016299025224C",
@@ -620,6 +663,7 @@
   },
   "400075": {
    "name": "University of Chicago - Donoghue",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400075",
    "rcdts": "15016299025281C",
@@ -634,6 +678,7 @@
   },
   "400076": {
    "name": "University of Chicago - North Kenwood/Oakland",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400076",
    "rcdts": "15016299025258C",
@@ -648,6 +693,7 @@
   },
   "400077": {
    "name": "University of Chicago - Woodlawn",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400077",
    "rcdts": "15016299025107C",
@@ -662,6 +708,7 @@
   },
   "400079": {
    "name": "Acero Charter Schools - SPC Daniel Zizumbo",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400079",
    "rcdts": "15016299025264C",
@@ -676,6 +723,7 @@
   },
   "400080": {
    "name": "Acero Charter Schools - PFC Omar E. Torres",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400080",
    "rcdts": "15016299025285C",
@@ -690,6 +738,7 @@
   },
   "400081": {
    "name": "Acero Charter Schools - Bartolomé de las Casas",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400081",
    "rcdts": "15016299025262C",
@@ -704,6 +753,7 @@
   },
   "400082": {
    "name": "Acero Charter Schools - Carlos Fuentes",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400082",
    "rcdts": "15016299025261C",
@@ -718,6 +768,7 @@
   },
   "400083": {
    "name": "Acero Charter Schools - Octavio Paz Campus",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400083",
    "rcdts": "15016299025259C",
@@ -732,6 +783,7 @@
   },
   "400084": {
    "name": "Acero Charter Schools - Rufino Tamayo",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400084",
    "rcdts": "15016299025260C",
@@ -746,6 +798,7 @@
   },
   "400085": {
    "name": "Acero Charter Schools - Major Hector P. Garcia MD",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400085",
    "rcdts": "15016299025085C",
@@ -761,6 +814,7 @@
   },
   "400086": {
    "name": "Urban Prep Academy for Young Men - Englewood",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400086",
    "rcdts": "15016299025010C",
@@ -777,6 +831,7 @@
   },
   "400089": {
    "name": "Acero Charter Schools - Officer Donald J. Marquez",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400089",
    "rcdts": "15016299025263C",
@@ -791,6 +846,7 @@
   },
   "400091": {
    "name": "Chicago Technology Academy High School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400091",
    "rcdts": "150162990250850",
@@ -806,6 +862,7 @@
   },
   "400092": {
    "name": "CICS - Lloyd Bond",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400092",
    "rcdts": "15016299025280C",
@@ -820,6 +877,7 @@
   },
   "400094": {
    "name": "EPIC Academy Charter High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400094",
    "rcdts": "15016299025015C",
@@ -835,6 +893,7 @@
   },
   "400096": {
    "name": "Rowe Elementary Charter School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400096",
    "rcdts": "15016299025230C",
@@ -849,6 +908,7 @@
   },
   "400097": {
    "name": "Noble - Chicago Bulls College Prep",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400097",
    "rcdts": "15016299025034C",
@@ -863,6 +923,7 @@
   },
   "400098": {
    "name": "Noble - Muchin College Prep",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400098",
    "rcdts": "15016299025035C",
@@ -877,6 +938,7 @@
   },
   "400101": {
    "name": "Acero Charter Schools - Sandra Cisneros",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400101",
    "rcdts": "15016299025266C",
@@ -891,6 +953,7 @@
   },
   "400104": {
    "name": "Instituto Health Sciences Career Academy",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400104",
    "rcdts": "15016299025012C",
@@ -905,6 +968,7 @@
   },
   "400105": {
    "name": "Urban Prep Academy for Young Men - Bronzeville",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400105",
    "rcdts": "15016299025013C",
@@ -921,6 +985,7 @@
   },
   "400106": {
    "name": "Noble - John and Eunice Johnson College Prep",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400106",
    "rcdts": "15016299025036C",
@@ -936,6 +1001,7 @@
   },
   "400107": {
    "name": "L.E.A.R.N. - South Chicago Campus",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400107",
    "rcdts": "15016299025274C",
@@ -950,6 +1016,7 @@
   },
   "400111": {
    "name": "L.E.A.R.N. - Hunter Perkins Campus",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400111",
    "rcdts": "15016299025275C",
@@ -964,6 +1031,7 @@
   },
   "400112": {
    "name": "Acero Charter Schools - Jovita Idar",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400112",
    "rcdts": "15016299025284C",
@@ -978,6 +1046,7 @@
   },
   "400114": {
    "name": "Acero Charter Schools - Esmeralda Santiago",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400114",
    "rcdts": "15016299025267C",
@@ -992,6 +1061,7 @@
   },
   "400115": {
    "name": "Catalyst - Maria Charter School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400115",
    "rcdts": "15016299025232C",
@@ -1006,6 +1076,7 @@
   },
   "400116": {
    "name": "The Montessori School of Englewood Charter",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400116",
    "rcdts": "15016299025233C",
@@ -1020,6 +1091,7 @@
   },
   "400117": {
    "name": "Noble - Hansberry College Prep",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400117",
    "rcdts": "15016299025037C",
@@ -1035,6 +1107,7 @@
   },
   "400118": {
    "name": "Noble - DRW College Prep",
+   "culture": null,
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400118",
    "rcdts": "15016299025038C",
@@ -1051,6 +1124,7 @@
   },
   "400119": {
    "name": "Legal Prep Charter Academy",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400119",
    "rcdts": "15016299025019C",
@@ -1067,6 +1141,7 @@
   },
   "400120": {
    "name": "Acero Charter Schools - Roberto Clemente",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400120",
    "rcdts": "15016299025268C",
@@ -1081,6 +1156,7 @@
   },
   "400121": {
    "name": "Acero Charter Schools - Sor Juana Inés de la Cruz",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400121",
    "rcdts": "15016299025049C",
@@ -1095,6 +1171,7 @@
   },
   "400123": {
    "name": "YCCS- Academy of Scholastic Achievement HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400123",
    "rcdts": "15016299025054C",
@@ -1111,6 +1188,7 @@
   },
   "400124": {
    "name": "YCCS- McKinley Lakeside Leadership HS",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400124",
    "rcdts": "15016299025055C",
@@ -1127,6 +1205,7 @@
   },
   "400125": {
    "name": "YCCS-ASPIRA,Antonia Pantoja Alternative HS",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400125",
    "rcdts": "15016299025056C",
@@ -1143,6 +1222,7 @@
   },
   "400126": {
    "name": "YCCS-Association House HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400126",
    "rcdts": "15016299025057C",
@@ -1159,6 +1239,7 @@
   },
   "400128": {
    "name": "YCCS-CCA Academy HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400128",
    "rcdts": "15016299025059C",
@@ -1175,6 +1256,7 @@
   },
   "400129": {
    "name": "YCCS-Progressive Leadership Academy",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400129",
    "rcdts": "15016299025060C",
@@ -1191,6 +1273,7 @@
   },
   "400130": {
    "name": "YCCS-Community Youth Development Institute HS",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400130",
    "rcdts": "15016299025061C",
@@ -1207,6 +1290,7 @@
   },
   "400131": {
    "name": "YCCS-Dr. Pedro Albizu Campos Puerto Rican HS",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400131",
    "rcdts": "15016299025062C",
@@ -1223,6 +1307,7 @@
   },
   "400133": {
    "name": "YCCS- Innovations HS of Arts Integration",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400133",
    "rcdts": "15016299025063C",
@@ -1239,6 +1324,7 @@
   },
   "400135": {
    "name": "YCCS-Latino Youth Alternative HS",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400135",
    "rcdts": "15016299025065C",
@@ -1255,6 +1341,7 @@
   },
   "400136": {
    "name": "YCCS-Olive Harvey Middle College HS",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400136",
    "rcdts": "15016299025066C",
@@ -1271,6 +1358,7 @@
   },
   "400139": {
    "name": "YCCS-Sullivan House Alternative HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400139",
    "rcdts": "15016299025067C",
@@ -1287,6 +1375,7 @@
   },
   "400141": {
    "name": "YCCS-Truman Middle College HS",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400141",
    "rcdts": "15016299025068C",
@@ -1303,6 +1392,7 @@
   },
   "400143": {
    "name": "YCCS-West Town Acad Alternative HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400143",
    "rcdts": "15016299025070C",
@@ -1319,6 +1409,7 @@
   },
   "400144": {
    "name": "YCCS-West HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400144",
    "rcdts": "15016299025071C",
@@ -1335,6 +1426,7 @@
   },
   "400145": {
    "name": "YCCS-Youth Connection Leadership Acad HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400145",
    "rcdts": "15016299025072C",
@@ -1351,6 +1443,7 @@
   },
   "400146": {
    "name": "KIPP Academy Chicago Campus",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400146",
    "rcdts": "15016299025101C",
@@ -1365,6 +1458,7 @@
   },
   "400149": {
    "name": "Acero Charter Schools - Victoria Soto",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400149",
    "rcdts": "15016299025086C",
@@ -1380,6 +1474,7 @@
   },
   "400150": {
    "name": "YCCS-Chatham AcademyHS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400150",
    "rcdts": "15016299025073C",
@@ -1396,6 +1491,7 @@
   },
   "400151": {
    "name": "L.E.A.R.N. Charter School - 7th Campus",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400151",
    "rcdts": "15016299025276C",
@@ -1410,6 +1506,7 @@
   },
   "400153": {
    "name": "Acero Charter Schools - Brighton Park",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400153",
    "rcdts": "15016299025270C",
@@ -1424,6 +1521,7 @@
   },
   "400156": {
    "name": "Noble - Butler College Prep",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400156",
    "rcdts": "15016299025039C",
@@ -1438,6 +1536,7 @@
   },
   "400157": {
    "name": "Noble - Baker College Prep",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400157",
    "rcdts": "15016299025040C",
@@ -1453,6 +1552,7 @@
   },
   "400159": {
    "name": "Christopher House Charter School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400159",
    "rcdts": "15016299025235C",
@@ -1467,6 +1567,7 @@
   },
   "400161": {
    "name": "Chicago Collegiate Charter School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400161",
    "rcdts": "15016299025236C",
@@ -1482,6 +1583,7 @@
   },
   "400162": {
    "name": "Intrinsic Charter School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400162",
    "rcdts": "15016299025022C",
@@ -1496,6 +1598,7 @@
   },
   "400163": {
    "name": "KIPP Chicago Charter School - KIPP Bloom",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400163",
    "rcdts": "15016299025103C",
@@ -1510,6 +1613,7 @@
   },
   "400164": {
    "name": "Instituto - Justice and Leadership",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400164",
    "rcdts": "15016299025020C",
@@ -1526,6 +1630,7 @@
   },
   "400165": {
    "name": "L.E.A.R.N. - Middle School Campus",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400165",
    "rcdts": "15016299025109C",
@@ -1540,6 +1645,7 @@
   },
   "400167": {
    "name": "Horizon Science Academy Southwest Chicago Charter",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400167",
    "rcdts": "15016299025240C",
@@ -1554,6 +1660,7 @@
   },
   "400168": {
    "name": "Great Lakes Academy Charter School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400168",
    "rcdts": "15016299025241C",
@@ -1568,6 +1675,7 @@
   },
   "400169": {
    "name": "Noble - ITW David Speer Academy",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400169",
    "rcdts": "15016299025042C",
@@ -1582,6 +1690,7 @@
   },
   "400170": {
    "name": "Noble - The Noble Academy",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400170",
    "rcdts": "15016299025043C",
@@ -1596,6 +1705,7 @@
   },
   "400172": {
    "name": "ASPIRA Business and Finance",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400172",
    "rcdts": "15016299025079C",
@@ -1611,6 +1721,7 @@
   },
   "400178": {
    "name": "Moving Everest Charter School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400178",
    "rcdts": "15016299025244C",
@@ -1625,6 +1736,7 @@
   },
   "400179": {
    "name": "Noble Mansueto High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400179",
    "rcdts": "15016299025044C",
@@ -1639,6 +1751,7 @@
   },
   "400180": {
    "name": "KIPP One Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400180",
    "rcdts": "15016299025245C",
@@ -1653,6 +1766,7 @@
   },
   "400181": {
    "name": "Art in Motion Charter School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/400181",
    "rcdts": "15016299025111C",
@@ -1667,6 +1781,7 @@
   },
   "609674": {
    "name": "Chicago Vocational Career Academy High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609674",
    "rcdts": "150162990250526",
@@ -1682,6 +1797,7 @@
   },
   "609676": {
    "name": "Paul Laurence Dunbar Career Academy High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609676",
    "rcdts": "150162990250531",
@@ -1698,6 +1814,7 @@
   },
   "609678": {
    "name": "William Jones College Preparatory High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609678",
    "rcdts": "150162990250533",
@@ -1712,6 +1829,7 @@
   },
   "609679": {
    "name": "Charles Allen Prosser Career Academy High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609679",
    "rcdts": "150162990250534",
@@ -1726,6 +1844,7 @@
   },
   "609680": {
    "name": "Walter Payton College Preparatory High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609680",
    "rcdts": "150162990250796",
@@ -1740,6 +1859,7 @@
   },
   "609682": {
    "name": "Ellen H Richards Career Academy High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609682",
    "rcdts": "150162990250536",
@@ -1756,6 +1876,7 @@
   },
   "609691": {
    "name": "North-Grand High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609691",
    "rcdts": "150162990250825",
@@ -1770,6 +1891,7 @@
   },
   "609692": {
    "name": "Neal F Simeon Career Academy High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609692",
    "rcdts": "150162990250537",
@@ -1784,6 +1906,7 @@
   },
   "609693": {
    "name": "George Westinghouse College Prep",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609693",
    "rcdts": "150162990250857",
@@ -1798,6 +1921,7 @@
   },
   "609694": {
    "name": "John Hancock College Preparatory High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609694",
    "rcdts": "150162990250779",
@@ -1812,6 +1936,7 @@
   },
   "609695": {
    "name": "Roald Amundsen High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609695",
    "rcdts": "150162990250001",
@@ -1826,6 +1951,7 @@
   },
   "609698": {
    "name": "William J Bogan High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609698",
    "rcdts": "150162990250003",
@@ -1841,6 +1967,7 @@
   },
   "609704": {
    "name": "David G Farragut Career Academy High School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609704",
    "rcdts": "150162990250011",
@@ -1856,6 +1983,7 @@
   },
   "609705": {
    "name": "Christian Fenger Academy High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609705",
    "rcdts": "150162990250012",
@@ -1872,6 +2000,7 @@
   },
   "609708": {
    "name": "Edwin G. Foreman College and Career Academy",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609708",
    "rcdts": "150162990250013",
@@ -1887,6 +2016,7 @@
   },
   "609709": {
    "name": "Gage Park High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609709",
    "rcdts": "150162990250015",
@@ -1903,6 +2033,7 @@
   },
   "609710": {
    "name": "John M Harlan Community Academy High School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609710",
    "rcdts": "150162990250016",
@@ -1919,6 +2050,7 @@
   },
   "609712": {
    "name": "Emil G Hirsch Metropolitan High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609712",
    "rcdts": "150162990250019",
@@ -1935,6 +2067,7 @@
   },
   "609713": {
    "name": "Hyde Park Academy High School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609713",
    "rcdts": "150162990250021",
@@ -1950,6 +2083,7 @@
   },
   "609715": {
    "name": "Thomas Kelly College Preparatory",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609715",
    "rcdts": "150162990250022",
@@ -1964,6 +2098,7 @@
   },
   "609716": {
    "name": "Kelvyn Park High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609716",
    "rcdts": "150162990250023",
@@ -1979,6 +2114,7 @@
   },
   "609718": {
    "name": "John F Kennedy High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609718",
    "rcdts": "150162990250024",
@@ -1993,6 +2129,7 @@
   },
   "609719": {
    "name": "Lake View High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609719",
    "rcdts": "150162990250026",
@@ -2007,6 +2144,7 @@
   },
   "609720": {
    "name": "Albert G Lane Technical High School",
+   "culture": null,
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609720",
    "rcdts": "150162990250027",
@@ -2021,6 +2159,7 @@
   },
   "609722": {
    "name": "Manley Career Academy High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609722",
    "rcdts": "150162990250616",
@@ -2037,6 +2176,7 @@
   },
   "609723": {
    "name": "John Marshall Metropolitan High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609723",
    "rcdts": "150162990250029",
@@ -2053,6 +2193,7 @@
   },
   "609724": {
    "name": "Stephen T Mather High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609724",
    "rcdts": "150162990250030",
@@ -2067,6 +2208,7 @@
   },
   "609725": {
    "name": "Morgan Park High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609725",
    "rcdts": "150162990250031",
@@ -2081,6 +2223,7 @@
   },
   "609726": {
    "name": "Gwendolyn Brooks College Preparatory Academy HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609726",
    "rcdts": "150162990250788",
@@ -2095,6 +2238,7 @@
   },
   "609727": {
    "name": "Wendell Phillips Academy High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609727",
    "rcdts": "150162990250034",
@@ -2110,6 +2254,7 @@
   },
   "609728": {
    "name": "Theodore Roosevelt High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609728",
    "rcdts": "150162990250035",
@@ -2124,6 +2269,7 @@
   },
   "609729": {
    "name": "Carl Schurz High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609729",
    "rcdts": "150162990250036",
@@ -2138,6 +2284,7 @@
   },
   "609730": {
    "name": "Nicholas Senn High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609730",
    "rcdts": "150162990250037",
@@ -2152,6 +2299,7 @@
   },
   "609732": {
    "name": "Charles P Steinmetz College Preparatory HS",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609732",
    "rcdts": "150162990250041",
@@ -2166,6 +2314,7 @@
   },
   "609733": {
    "name": "Roger C Sullivan High School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609733",
    "rcdts": "150162990250042",
@@ -2180,6 +2329,7 @@
   },
   "609734": {
    "name": "William Howard Taft High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609734",
    "rcdts": "150162990250043",
@@ -2194,6 +2344,7 @@
   },
   "609735": {
    "name": "Edward Tilden Career Community Academy HS",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609735",
    "rcdts": "150162990250044",
@@ -2210,6 +2361,7 @@
   },
   "609737": {
    "name": "Friedrich W Von Steuben Metropolitan Science HS",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609737",
    "rcdts": "150162990250046",
@@ -2224,6 +2376,7 @@
   },
   "609738": {
    "name": "Lincoln Park High School",
+   "culture": null,
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609738",
    "rcdts": "150162990250047",
@@ -2238,6 +2391,7 @@
   },
   "609739": {
    "name": "George Washington High School",
+   "culture": null,
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609739",
    "rcdts": "150162990250048",
@@ -2252,6 +2406,7 @@
   },
   "609740": {
    "name": "Wells Community Academy High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609740",
    "rcdts": "150162990250049",
@@ -2268,6 +2423,7 @@
   },
   "609741": {
    "name": "Gurdon S Hubbard High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609741",
    "rcdts": "150162990250020",
@@ -2282,6 +2438,7 @@
   },
   "609746": {
    "name": "Kenwood Academy High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609746",
    "rcdts": "150162990250025",
@@ -2296,6 +2453,7 @@
   },
   "609749": {
    "name": "Northside College Preparatory High School",
+   "culture": null,
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609749",
    "rcdts": "150162990250794",
@@ -2310,6 +2468,7 @@
   },
   "609751": {
    "name": "Dr  Martin Luther King  Jr  College Prep HS",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609751",
    "rcdts": "150162990250039",
@@ -2324,6 +2483,7 @@
   },
   "609753": {
    "name": "Chicago High School for Agricultural Sciences",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609753",
    "rcdts": "150162990250772",
@@ -2338,6 +2498,7 @@
   },
   "609754": {
    "name": "Chicago Military Academy High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609754",
    "rcdts": "150162990250795",
@@ -2354,6 +2515,7 @@
   },
   "609755": {
    "name": "Whitney M Young Magnet High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609755",
    "rcdts": "150162990250764",
@@ -2368,6 +2530,7 @@
   },
   "609756": {
    "name": "Marie Sklodowska Curie Metropolitan High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609756",
    "rcdts": "150162990250617",
@@ -2382,6 +2545,7 @@
   },
   "609759": {
    "name": "Roberto Clemente Community Academy High School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609759",
    "rcdts": "150162990250545",
@@ -2397,6 +2561,7 @@
   },
   "609760": {
    "name": "George Washington Carver Military Academy HS",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609760",
    "rcdts": "150162990250006",
@@ -2412,6 +2577,7 @@
   },
   "609761": {
    "name": "George H Corliss High School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609761",
    "rcdts": "150162990250543",
@@ -2428,6 +2594,7 @@
   },
   "609762": {
    "name": "Percy L Julian High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609762",
    "rcdts": "150162990250763",
@@ -2444,6 +2611,7 @@
   },
   "609764": {
    "name": "Benito Juarez Community Academy High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609764",
    "rcdts": "150162990250767",
@@ -2458,6 +2626,7 @@
   },
   "609772": {
    "name": "Jane Addams Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609772",
    "rcdts": "150162990252051",
@@ -2472,6 +2641,7 @@
   },
   "609773": {
    "name": "Harriet Tubman Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609773",
    "rcdts": "150162990252052",
@@ -2486,6 +2656,7 @@
   },
   "609774": {
    "name": "Louisa May Alcott College Preparatory ES",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609774",
    "rcdts": "150162990252053",
@@ -2500,6 +2671,7 @@
   },
   "609777": {
    "name": "Phillip D Armour Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609777",
    "rcdts": "150162990252058",
@@ -2514,6 +2686,7 @@
   },
   "609779": {
    "name": "George Armstrong International Studies ES",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609779",
    "rcdts": "150162990252059",
@@ -2528,6 +2701,7 @@
   },
   "609780": {
    "name": "Marine Leadership Academy at Ames",
+   "culture": null,
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609780",
    "rcdts": "150162990252912",
@@ -2542,6 +2716,7 @@
   },
   "609782": {
    "name": "John J Audubon Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609782",
    "rcdts": "150162990252062",
@@ -2556,6 +2731,7 @@
   },
   "609786": {
    "name": "Avalon Park Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609786",
    "rcdts": "150162990252063",
@@ -2570,6 +2746,7 @@
   },
   "609788": {
    "name": "Alice L Barnard Computer Math & Science Ctr ES",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609788",
    "rcdts": "150162990252066",
@@ -2584,6 +2761,7 @@
   },
   "609789": {
    "name": "John Barry Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609789",
    "rcdts": "150162990252067",
@@ -2598,6 +2776,7 @@
   },
   "609790": {
    "name": "Clara Barton Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609790",
    "rcdts": "150162990252068",
@@ -2612,6 +2791,7 @@
   },
   "609791": {
    "name": "Perkins Bass Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609791",
    "rcdts": "150162990252069",
@@ -2626,6 +2806,7 @@
   },
   "609792": {
    "name": "Newton Bateman Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609792",
    "rcdts": "150162990252070",
@@ -2640,6 +2821,7 @@
   },
   "609793": {
    "name": "Lillian R. Nicholson STEM Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609793",
    "rcdts": "150162990252072",
@@ -2654,6 +2836,7 @@
   },
   "609794": {
    "name": "Thomas A Edison Regional Gifted Center ES",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609794",
    "rcdts": "150162990252184",
@@ -2668,6 +2851,7 @@
   },
   "609795": {
    "name": "George Rogers Clark Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609795",
    "rcdts": "150162990252700",
@@ -2682,6 +2866,7 @@
   },
   "609796": {
    "name": "Jean Baptiste Beaubien Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609796",
    "rcdts": "150162990252078",
@@ -2696,6 +2881,7 @@
   },
   "609797": {
    "name": "Jacob Beidler Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609797",
    "rcdts": "150162990252080",
@@ -2710,6 +2896,7 @@
   },
   "609798": {
    "name": "Hiram H Belding Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609798",
    "rcdts": "150162990252081",
@@ -2724,6 +2911,7 @@
   },
   "609799": {
    "name": "Alexander Graham Bell Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609799",
    "rcdts": "150162990252082",
@@ -2738,6 +2926,7 @@
   },
   "609800": {
    "name": "Frank I Bennett Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609800",
    "rcdts": "150162990252083",
@@ -2752,6 +2941,7 @@
   },
   "609803": {
    "name": "James G Blaine Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609803",
    "rcdts": "150162990252087",
@@ -2766,6 +2956,7 @@
   },
   "609804": {
    "name": "Mosaic School of Fine Arts",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609804",
    "rcdts": "150162990252089",
@@ -2780,6 +2971,7 @@
   },
   "609805": {
    "name": "Scott Joplin Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609805",
    "rcdts": "150162990252775",
@@ -2794,6 +2986,7 @@
   },
   "609806": {
    "name": "Myra Bradwell Communications Arts & Sciences ES",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609806",
    "rcdts": "150162990252090",
@@ -2808,6 +3001,7 @@
   },
   "609807": {
    "name": "Lionel Hampton Fine & Performing Arts ES",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609807",
    "rcdts": "150162990252916",
@@ -2822,6 +3016,7 @@
   },
   "609808": {
    "name": "Alex Haley Elementary Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609808",
    "rcdts": "150162990252092",
@@ -2836,6 +3031,7 @@
   },
   "609809": {
    "name": "Lorenz Brentano Math & Science Academy ES",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609809",
    "rcdts": "150162990252094",
@@ -2850,6 +3046,7 @@
   },
   "609810": {
    "name": "Norman A Bridge Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609810",
    "rcdts": "150162990252095",
@@ -2864,6 +3061,7 @@
   },
   "609811": {
    "name": "Orville T Bright Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609811",
    "rcdts": "150162990252096",
@@ -2878,6 +3076,7 @@
   },
   "609812": {
    "name": "William H Brown STEM Magnet Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609812",
    "rcdts": "150162990252097",
@@ -2892,6 +3091,7 @@
   },
   "609813": {
    "name": "Charles S Brownell Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609813",
    "rcdts": "150162990252098",
@@ -2906,6 +3106,7 @@
   },
   "609815": {
    "name": "Edward A Bouchet Math & Science Academy ES",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609815",
    "rcdts": "150162990252100",
@@ -2920,6 +3121,7 @@
   },
   "609817": {
    "name": "Lyman A Budlong Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609817",
    "rcdts": "150162990252101",
@@ -2934,6 +3136,7 @@
   },
   "609818": {
    "name": "Luther Burbank Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609818",
    "rcdts": "150162990252102",
@@ -2948,6 +3151,7 @@
   },
   "609819": {
    "name": "Edmond Burke Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609819",
    "rcdts": "150162990252103",
@@ -2962,6 +3166,7 @@
   },
   "609820": {
    "name": "Augustus H Burley Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609820",
    "rcdts": "150162990252104",
@@ -2976,6 +3181,7 @@
   },
   "609821": {
    "name": "Burnham Elementary Inclusive Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609821",
    "rcdts": "150162990252105",
@@ -2990,6 +3196,7 @@
   },
   "609827": {
    "name": "Burnside Elementary Scholastic Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609827",
    "rcdts": "150162990252107",
@@ -3004,6 +3211,7 @@
   },
   "609828": {
    "name": "Jonathan Burr Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609828",
    "rcdts": "150162990252108",
@@ -3018,6 +3226,7 @@
   },
   "609829": {
    "name": "John C Burroughs Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609829",
    "rcdts": "150162990252109",
@@ -3032,6 +3241,7 @@
   },
   "609830": {
    "name": "Milton Brunson Math & Science Specialty ES",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609830",
    "rcdts": "150162990252110",
@@ -3046,6 +3256,7 @@
   },
   "609832": {
    "name": "Michael M Byrne Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609832",
    "rcdts": "150162990252112",
@@ -3060,6 +3271,7 @@
   },
   "609833": {
    "name": "Daisy Bates Academy of Social Justice",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609833",
    "rcdts": "150162990252113",
@@ -3074,6 +3286,7 @@
   },
   "609834": {
    "name": "Little Village Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609834",
    "rcdts": "150162990252896",
@@ -3088,6 +3301,7 @@
   },
   "609835": {
    "name": "Daniel R Cameron Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609835",
    "rcdts": "150162990252118",
@@ -3102,6 +3316,7 @@
   },
   "609836": {
    "name": "Arthur E Canty Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609836",
    "rcdts": "150162990252119",
@@ -3116,6 +3331,7 @@
   },
   "609837": {
    "name": "Andrew Carnegie Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609837",
    "rcdts": "150162990252120",
@@ -3130,6 +3346,7 @@
   },
   "609839": {
    "name": "Carroll-Rosenwald Specialty Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609839",
    "rcdts": "150162990252122",
@@ -3144,6 +3361,7 @@
   },
   "609842": {
    "name": "Rachel Carson Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609842",
    "rcdts": "150162990252876",
@@ -3158,6 +3376,7 @@
   },
   "609844": {
    "name": "William W Carter Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609844",
    "rcdts": "150162990252123",
@@ -3172,6 +3391,7 @@
   },
   "609845": {
    "name": "George Washington Carver Primary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609845",
    "rcdts": "150162990252372",
@@ -3186,6 +3406,7 @@
   },
   "609848": {
    "name": "Ira F Aldridge Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609848",
    "rcdts": "150162990252054",
@@ -3200,6 +3421,7 @@
   },
   "609849": {
    "name": "George F Cassell Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609849",
    "rcdts": "150162990252126",
@@ -3214,6 +3436,7 @@
   },
   "609850": {
    "name": "Horace Greeley Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609850",
    "rcdts": "150162990252227",
@@ -3228,6 +3451,7 @@
   },
   "609851": {
    "name": "Thomas Chalmers STEAM Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609851",
    "rcdts": "150162990252128",
@@ -3242,6 +3466,7 @@
   },
   "609852": {
    "name": "Eliza Chappell Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609852",
    "rcdts": "150162990252129",
@@ -3256,6 +3481,7 @@
   },
   "609853": {
    "name": "Salmon P Chase Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609853",
    "rcdts": "150162990252130",
@@ -3270,6 +3496,7 @@
   },
   "609854": {
    "name": "Frederic Chopin Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609854",
    "rcdts": "150162990252155",
@@ -3284,6 +3511,7 @@
   },
   "609855": {
    "name": "Walter S Christopher Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609855",
    "rcdts": "150162990252904",
@@ -3298,6 +3526,7 @@
   },
   "609856": {
    "name": "Henry Clay Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609856",
    "rcdts": "150162990252132",
@@ -3312,6 +3541,7 @@
   },
   "609857": {
    "name": "Grover Cleveland Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609857",
    "rcdts": "150162990252133",
@@ -3326,6 +3556,7 @@
   },
   "609859": {
    "name": "DeWitt Clinton Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609859",
    "rcdts": "150162990252134",
@@ -3340,6 +3571,7 @@
   },
   "609861": {
    "name": "Henry R Clissold Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609861",
    "rcdts": "150162990252135",
@@ -3354,6 +3586,7 @@
   },
   "609862": {
    "name": "Edward Coles Elementary Language Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609862",
    "rcdts": "150162990252136",
@@ -3368,6 +3601,7 @@
   },
   "609863": {
    "name": "Ruth Bader Ginsburg Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609863",
    "rcdts": "150162990252138",
@@ -3382,6 +3616,7 @@
   },
   "609864": {
    "name": "John W Cook Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609864",
    "rcdts": "150162990252139",
@@ -3396,6 +3631,7 @@
   },
   "609865": {
    "name": "Jordan Elementary Community School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609865",
    "rcdts": "150162990252889",
@@ -3410,6 +3646,7 @@
   },
   "609866": {
    "name": "John C Coonley Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609866",
    "rcdts": "150162990252141",
@@ -3424,6 +3661,7 @@
   },
   "609867": {
    "name": "Peter Cooper Elementary Dual Language Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609867",
    "rcdts": "150162990252142",
@@ -3438,6 +3676,7 @@
   },
   "609869": {
    "name": "Anna R. Langford Community Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609869",
    "rcdts": "150162990252704",
@@ -3452,6 +3691,7 @@
   },
   "609870": {
    "name": "Daniel J Corkery Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609870",
    "rcdts": "150162990252145",
@@ -3466,6 +3706,7 @@
   },
   "609871": {
    "name": "Barbara Vick Early Childhood & Family Center",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609871",
    "rcdts": "150162990253781",
@@ -3480,6 +3721,7 @@
   },
   "609872": {
    "name": "Manuel Perez Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609872",
    "rcdts": "150162990252864",
@@ -3494,6 +3736,7 @@
   },
   "609873": {
    "name": "Crown Community Academy of Fine Arts Center ES",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609873",
    "rcdts": "150162990252147",
@@ -3508,6 +3751,7 @@
   },
   "609874": {
    "name": "Everett McKinley Dirksen Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609874",
    "rcdts": "150162990252603",
@@ -3522,6 +3766,7 @@
   },
   "609875": {
    "name": "Charles R Darwin Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609875",
    "rcdts": "150162990252148",
@@ -3536,6 +3781,7 @@
   },
   "609876": {
    "name": "Nathan S Davis Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609876",
    "rcdts": "150162990252149",
@@ -3550,6 +3796,7 @@
   },
   "609879": {
    "name": "Charles Gates Dawes Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609879",
    "rcdts": "150162990252150",
@@ -3564,6 +3811,7 @@
   },
   "609880": {
    "name": "Stephen Decatur Classical Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609880",
    "rcdts": "150162990252805",
@@ -3578,6 +3826,7 @@
   },
   "609883": {
    "name": "Charles S Deneen Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609883",
    "rcdts": "150162990252153",
@@ -3592,6 +3841,7 @@
   },
   "609884": {
    "name": "William E Dever Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609884",
    "rcdts": "150162990252158",
@@ -3606,6 +3856,7 @@
   },
   "609885": {
    "name": "Dewey Elementary Academy of Fine Arts",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609885",
    "rcdts": "150162990252159",
@@ -3620,6 +3871,7 @@
   },
   "609887": {
    "name": "Arthur Dixon Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609887",
    "rcdts": "150162990252161",
@@ -3634,6 +3886,7 @@
   },
   "609891": {
    "name": "James R Doolittle Jr Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609891",
    "rcdts": "150162990252937",
@@ -3648,6 +3901,7 @@
   },
   "609893": {
    "name": "John C Dore Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609893",
    "rcdts": "150162990252167",
@@ -3662,6 +3916,7 @@
   },
   "609894": {
    "name": "John B Drake Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609894",
    "rcdts": "150162990252169",
@@ -3676,6 +3931,7 @@
   },
   "609895": {
    "name": "Turner-Drew Elementary Language Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609895",
    "rcdts": "150162990252826",
@@ -3690,6 +3946,7 @@
   },
   "609896": {
    "name": "Thomas Drummond Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609896",
    "rcdts": "150162990252172",
@@ -3704,6 +3961,7 @@
   },
   "609897": {
    "name": "Charles W Earle Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609897",
    "rcdts": "150162990252180",
@@ -3718,6 +3976,7 @@
   },
   "609898": {
    "name": "John F Eberhart Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609898",
    "rcdts": "150162990252181",
@@ -3732,6 +3991,7 @@
   },
   "609899": {
    "name": "Christian Ebinger Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609899",
    "rcdts": "150162990252182",
@@ -3746,6 +4006,7 @@
   },
   "609900": {
    "name": "George W Curtis Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609900",
    "rcdts": "150162990252799",
@@ -3760,6 +4021,7 @@
   },
   "609901": {
    "name": "Edgebrook Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609901",
    "rcdts": "150162990252183",
@@ -3774,6 +4036,7 @@
   },
   "609902": {
    "name": "Ralph H Metcalfe Elementary Community Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609902",
    "rcdts": "150162990252804",
@@ -3788,6 +4051,7 @@
   },
   "609903": {
    "name": "Richard Edwards Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609903",
    "rcdts": "150162990252185",
@@ -3802,6 +4066,7 @@
   },
   "609904": {
    "name": "Edward K Ellington Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609904",
    "rcdts": "150162990252187",
@@ -3816,6 +4081,7 @@
   },
   "609907": {
    "name": "Leif Ericson Elementary Scholastic Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609907",
    "rcdts": "150162990252190",
@@ -3830,6 +4096,7 @@
   },
   "609908": {
    "name": "Esmond Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609908",
    "rcdts": "150162990252191",
@@ -3844,6 +4111,7 @@
   },
   "609909": {
    "name": "Edward Everett Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609909",
    "rcdts": "150162990252192",
@@ -3858,6 +4126,7 @@
   },
   "609910": {
    "name": "Laughlin Falconer Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609910",
    "rcdts": "150162990252194",
@@ -3872,6 +4141,7 @@
   },
   "609912": {
    "name": "James B Farnsworth Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609912",
    "rcdts": "150162990252198",
@@ -3886,6 +4156,7 @@
   },
   "609917": {
    "name": "Fernwood Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609917",
    "rcdts": "150162990252202",
@@ -3900,6 +4171,7 @@
   },
   "609918": {
    "name": "Eugene Field Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609918",
    "rcdts": "150162990252203",
@@ -3914,6 +4186,7 @@
   },
   "609919": {
    "name": "John Fiske Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609919",
    "rcdts": "150162990252204",
@@ -3928,6 +4201,7 @@
   },
   "609920": {
    "name": "Gerald Delgado Kanoon Elementary Magnet School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609920",
    "rcdts": "150162990252806",
@@ -3942,6 +4216,7 @@
   },
   "609921": {
    "name": "Telpochcalli Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609921",
    "rcdts": "150162990252901",
@@ -3956,6 +4231,7 @@
   },
   "609922": {
    "name": "Belmont-Cragin Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609922",
    "rcdts": "150162990252923",
@@ -3970,6 +4246,7 @@
   },
   "609924": {
    "name": "Fort Dearborn Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609924",
    "rcdts": "150162990252206",
@@ -3984,6 +4261,7 @@
   },
   "609925": {
    "name": "Joseph Kellman Corporate Community ES",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609925",
    "rcdts": "150162990252892",
@@ -3998,6 +4276,7 @@
   },
   "609926": {
    "name": "Franklin Elementary Fine Arts Center",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609926",
    "rcdts": "150162990252207",
@@ -4012,6 +4291,7 @@
   },
   "609927": {
    "name": "Foster Park Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609927",
    "rcdts": "150162990252618",
@@ -4026,6 +4306,7 @@
   },
   "609928": {
    "name": "James Farmer Jr Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609928",
    "rcdts": "150162990252209",
@@ -4040,6 +4321,7 @@
   },
   "609929": {
    "name": "Robert Fulton Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609929",
    "rcdts": "150162990252210",
@@ -4054,6 +4336,7 @@
   },
   "609930": {
    "name": "Frederick Funston Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609930",
    "rcdts": "150162990252211",
@@ -4068,6 +4351,7 @@
   },
   "609933": {
    "name": "Stephen F Gale Elementary Community Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609933",
    "rcdts": "150162990252212",
@@ -4082,6 +4366,7 @@
   },
   "609935": {
    "name": "Matthew Gallistel Elementary Language Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609935",
    "rcdts": "150162990252213",
@@ -4096,6 +4381,7 @@
   },
   "609937": {
    "name": "John W Garvy Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609937",
    "rcdts": "150162990252214",
@@ -4110,6 +4396,7 @@
   },
   "609938": {
    "name": "Joseph E Gary Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609938",
    "rcdts": "150162990252215",
@@ -4124,6 +4411,7 @@
   },
   "609939": {
    "name": "Frank L Gillespie Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609939",
    "rcdts": "150162990252236",
@@ -4138,6 +4426,7 @@
   },
   "609941": {
    "name": "Asa Philip Randolph Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609941",
    "rcdts": "150162990252807",
@@ -4152,6 +4441,7 @@
   },
   "609942": {
    "name": "Johann W von Goethe Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609942",
    "rcdts": "150162990252220",
@@ -4166,6 +4456,7 @@
   },
   "609943": {
    "name": "Jesse Owens Elementary Community Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609943",
    "rcdts": "150162990252222",
@@ -4180,6 +4471,7 @@
   },
   "609944": {
    "name": "Virgil Grissom Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609944",
    "rcdts": "150162990252622",
@@ -4194,6 +4486,7 @@
   },
   "609945": {
    "name": "William C. Goudy Technology Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609945",
    "rcdts": "150162990252223",
@@ -4208,6 +4501,7 @@
   },
   "609947": {
    "name": "Alexander Graham Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609947",
    "rcdts": "150162990252224",
@@ -4222,6 +4516,7 @@
   },
   "609949": {
    "name": "William P Gray Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609949",
    "rcdts": "150162990252226",
@@ -4236,6 +4531,7 @@
   },
   "609950": {
    "name": "Josefa Ortiz De Dominguez Elementary School",
+   "culture": null,
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609950",
    "rcdts": "150162990252898",
@@ -4250,6 +4546,7 @@
   },
   "609951": {
    "name": "Ariel Elementary Community Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609951",
    "rcdts": "150162990252895",
@@ -4264,6 +4561,7 @@
   },
   "609952": {
    "name": "Nathanael Greene Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609952",
    "rcdts": "150162990252229",
@@ -4278,6 +4576,7 @@
   },
   "609954": {
    "name": "John Milton Gregory Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609954",
    "rcdts": "150162990252230",
@@ -4292,6 +4591,7 @@
   },
   "609955": {
    "name": "Walter Q Gresham Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609955",
    "rcdts": "150162990252231",
@@ -4306,6 +4606,7 @@
   },
   "609956": {
    "name": "Robert L Grimes Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609956",
    "rcdts": "150162990252232",
@@ -4320,6 +4621,7 @@
   },
   "609958": {
    "name": "Frank W Gunsaulus Elementary Scholastic Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609958",
    "rcdts": "150162990252811",
@@ -4334,6 +4636,7 @@
   },
   "609959": {
    "name": "John Charles Haines Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609959",
    "rcdts": "150162990252235",
@@ -4348,6 +4651,7 @@
   },
   "609960": {
    "name": "Nathan Hale Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609960",
    "rcdts": "150162990252239",
@@ -4362,6 +4666,7 @@
   },
   "609961": {
    "name": "Ninos Heroes Elementary Academic Center",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609961",
    "rcdts": "150162990252823",
@@ -4376,6 +4681,7 @@
   },
   "609963": {
    "name": "Alexander Hamilton Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609963",
    "rcdts": "150162990252240",
@@ -4390,6 +4696,7 @@
   },
   "609964": {
    "name": "John H Hamline Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609964",
    "rcdts": "150162990252241",
@@ -4404,6 +4711,7 @@
   },
   "609966": {
    "name": "Charles G Hammond Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609966",
    "rcdts": "150162990252242",
@@ -4418,6 +4726,7 @@
   },
   "609967": {
    "name": "William F Finkl Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609967",
    "rcdts": "150162990252893",
@@ -4432,6 +4741,7 @@
   },
   "609968": {
    "name": "Sharon Christa McAuliffe Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609968",
    "rcdts": "150162990252877",
@@ -4446,6 +4756,7 @@
   },
   "609969": {
    "name": "Bret Harte Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609969",
    "rcdts": "150162990252244",
@@ -4460,6 +4771,7 @@
   },
   "609971": {
    "name": "John Harvard Elementary School of Excellence",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609971",
    "rcdts": "150162990252246",
@@ -4474,6 +4786,7 @@
   },
   "609972": {
    "name": "Helge A Haugan Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609972",
    "rcdts": "150162990252247",
@@ -4488,6 +4801,7 @@
   },
   "609973": {
    "name": "Emiliano Zapata Elementary Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609973",
    "rcdts": "150162990252897",
@@ -4502,6 +4816,7 @@
   },
   "609974": {
    "name": "Hawthorne Elementary Scholastic Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609974",
    "rcdts": "150162990252249",
@@ -4516,6 +4831,7 @@
   },
   "609975": {
    "name": "John Hay Elementary Community Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609975",
    "rcdts": "150162990252636",
@@ -4530,6 +4846,7 @@
   },
   "609976": {
    "name": "Stephen K Hayt Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609976",
    "rcdts": "150162990252252",
@@ -4544,6 +4861,7 @@
   },
   "609977": {
    "name": "Woodlawn Community Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609977",
    "rcdts": "150162990252903",
@@ -4558,6 +4876,7 @@
   },
   "609978": {
    "name": "Wendell Smith Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609978",
    "rcdts": "150162990252768",
@@ -4572,6 +4891,7 @@
   },
   "609979": {
    "name": "Robert Healy Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609979",
    "rcdts": "150162990252254",
@@ -4586,6 +4906,7 @@
   },
   "609981": {
    "name": "Phoebe Apperson Hearst Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609981",
    "rcdts": "150162990252255",
@@ -4600,6 +4921,7 @@
   },
   "609983": {
    "name": "James Hedges Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609983",
    "rcdts": "150162990252256",
@@ -4614,6 +4936,7 @@
   },
   "609985": {
    "name": "Helen M Hefferan Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609985",
    "rcdts": "150162990252257",
@@ -4628,6 +4951,7 @@
   },
   "609986": {
    "name": "Charles R Henderson Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609986",
    "rcdts": "150162990252258",
@@ -4642,6 +4966,7 @@
   },
   "609987": {
    "name": "Thomas A Hendricks Elementary Community Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609987",
    "rcdts": "150162990252259",
@@ -4656,6 +4981,7 @@
   },
   "609988": {
    "name": "Patrick Henry Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609988",
    "rcdts": "150162990252260",
@@ -4670,6 +4996,7 @@
   },
   "609990": {
    "name": "South Loop Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609990",
    "rcdts": "150162990252855",
@@ -4684,6 +5011,7 @@
   },
   "609991": {
    "name": "Theodore Herzl Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609991",
    "rcdts": "150162990252263",
@@ -4698,6 +5026,7 @@
   },
   "609993": {
    "name": "Agustin Lara Elementary Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609993",
    "rcdts": "150162990252900",
@@ -4712,6 +5041,7 @@
   },
   "609994": {
    "name": "William G Hibbard Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609994",
    "rcdts": "150162990252265",
@@ -4726,6 +5056,7 @@
   },
   "609995": {
    "name": "Rufus M Hitch Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609995",
    "rcdts": "150162990252268",
@@ -4740,6 +5071,7 @@
   },
   "609996": {
    "name": "Charles N Holden Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609996",
    "rcdts": "150162990252269",
@@ -4754,6 +5086,7 @@
   },
   "609997": {
    "name": "Oliver Wendell Holmes Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/609997",
    "rcdts": "150162990252270",
@@ -4768,6 +5101,7 @@
   },
   "610000": {
    "name": "Julia Ward Howe Elementary School of Excellence",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610000",
    "rcdts": "150162990252273",
@@ -4782,6 +5116,7 @@
   },
   "610002": {
    "name": "Thomas Hoyne Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610002",
    "rcdts": "150162990252275",
@@ -4796,6 +5131,7 @@
   },
   "610003": {
    "name": "Paul Cuffe Math-Science Technology Academy ES",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610003",
    "rcdts": "150162990252617",
@@ -4810,6 +5146,7 @@
   },
   "610004": {
    "name": "Countee Cullen Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610004",
    "rcdts": "150162990252637",
@@ -4824,6 +5161,7 @@
   },
   "610005": {
    "name": "Charles Evans Hughes Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610005",
    "rcdts": "150162990252276",
@@ -4838,6 +5176,7 @@
   },
   "610006": {
    "name": "Edward N Hurley Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610006",
    "rcdts": "150162990252280",
@@ -4852,6 +5191,7 @@
   },
   "610009": {
    "name": "Galileo Math & Science Scholastic Academy ES",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610009",
    "rcdts": "150162990252878",
@@ -4866,6 +5206,7 @@
   },
   "610010": {
    "name": "Friedrich L. Jahn Elementary of the Fine Arts",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610010",
    "rcdts": "150162990252284",
@@ -4880,6 +5221,7 @@
   },
   "610011": {
    "name": "Minnie Mars Jamieson Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610011",
    "rcdts": "150162990252285",
@@ -4894,6 +5236,7 @@
   },
   "610013": {
    "name": "Pilsen Elementary Community Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610013",
    "rcdts": "150162990252289",
@@ -4908,6 +5251,7 @@
   },
   "610015": {
    "name": "Joseph Jungman STEM Magnet Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610015",
    "rcdts": "150162990252292",
@@ -4922,6 +5266,7 @@
   },
   "610016": {
    "name": "Kate S Kellogg Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610016",
    "rcdts": "150162990252293",
@@ -4936,6 +5281,7 @@
   },
   "610017": {
    "name": "Maria Saucedo STEAM Magnet Academy",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610017",
    "rcdts": "150162990252829",
@@ -4950,6 +5296,7 @@
   },
   "610019": {
    "name": "Joshua D Kershaw Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610019",
    "rcdts": "150162990252294",
@@ -4964,6 +5311,7 @@
   },
   "610021": {
    "name": "Pablo Casals Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610021",
    "rcdts": "150162990252862",
@@ -4978,6 +5326,7 @@
   },
   "610022": {
    "name": "Joyce Kilmer Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610022",
    "rcdts": "150162990252296",
@@ -4992,6 +5341,7 @@
   },
   "610024": {
    "name": "Lazaro Cardenas Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610024",
    "rcdts": "150162990252783",
@@ -5006,6 +5356,7 @@
   },
   "610026": {
    "name": "John H Kinzie Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610026",
    "rcdts": "150162990252299",
@@ -5020,6 +5371,7 @@
   },
   "610027": {
    "name": "Rudyard Kipling Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610027",
    "rcdts": "150162990252300",
@@ -5034,6 +5386,7 @@
   },
   "610029": {
    "name": "Rodolfo Lozano Bilingual & International Ctr ES",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610029",
    "rcdts": "150162990252303",
@@ -5048,6 +5401,7 @@
   },
   "610030": {
    "name": "Charles Kozminski Elementary Community Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610030",
    "rcdts": "150162990252304",
@@ -5062,6 +5416,7 @@
   },
   "610032": {
    "name": "Wendell E Green Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610032",
    "rcdts": "150162990252048",
@@ -5076,6 +5431,7 @@
   },
   "610033": {
    "name": "LaSalle Elementary Language Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610033",
    "rcdts": "150162990252306",
@@ -5090,6 +5446,7 @@
   },
   "610034": {
    "name": "Lawndale Elementary Community Academy",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610034",
    "rcdts": "150162990252309",
@@ -5104,6 +5461,7 @@
   },
   "610036": {
    "name": "Leslie Lewis Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610036",
    "rcdts": "150162990252311",
@@ -5118,6 +5476,7 @@
   },
   "610037": {
    "name": "Arthur A Libby Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610037",
    "rcdts": "150162990252313",
@@ -5132,6 +5491,7 @@
   },
   "610038": {
    "name": "Abraham Lincoln Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610038",
    "rcdts": "150162990252314",
@@ -5146,6 +5506,7 @@
   },
   "610039": {
    "name": "Carl von Linne Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610039",
    "rcdts": "150162990252315",
@@ -5160,6 +5521,7 @@
   },
   "610040": {
    "name": "Henry D Lloyd Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610040",
    "rcdts": "150162990252316",
@@ -5174,6 +5536,7 @@
   },
   "610041": {
    "name": "Josephine C Locke Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610041",
    "rcdts": "150162990252317",
@@ -5188,6 +5551,7 @@
   },
   "610043": {
    "name": "Joseph Lovett Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610043",
    "rcdts": "150162990252319",
@@ -5202,6 +5566,7 @@
   },
   "610044": {
    "name": "James Russell Lowell Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610044",
    "rcdts": "150162990252321",
@@ -5216,6 +5581,7 @@
   },
   "610046": {
    "name": "Mary Lyon Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610046",
    "rcdts": "150162990252323",
@@ -5230,6 +5596,7 @@
   },
   "610047": {
    "name": "James Madison Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610047",
    "rcdts": "150162990252324",
@@ -5244,6 +5611,7 @@
   },
   "610048": {
    "name": "George Manierre Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610048",
    "rcdts": "150162990252326",
@@ -5258,6 +5626,7 @@
   },
   "610051": {
    "name": "Northwest Middle School",
+   "culture": "Not yet organized",
    "category": "MS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610051",
    "rcdts": "150162990252915",
@@ -5272,6 +5641,7 @@
   },
   "610052": {
    "name": "Horace Mann Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610052",
    "rcdts": "150162990252328",
@@ -5286,6 +5656,7 @@
   },
   "610053": {
    "name": "Marquette Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610053",
    "rcdts": "150162990252330",
@@ -5300,6 +5671,7 @@
   },
   "610054": {
    "name": "John L Marsh Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610054",
    "rcdts": "150162990252331",
@@ -5314,6 +5686,7 @@
   },
   "610055": {
    "name": "Michael Faraday Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610055",
    "rcdts": "150162990252195",
@@ -5328,6 +5701,7 @@
   },
   "610056": {
    "name": "Roswell B Mason Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610056",
    "rcdts": "150162990252334",
@@ -5342,6 +5716,7 @@
   },
   "610057": {
    "name": "Fairfield Elementary Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610057",
    "rcdts": "150162990252913",
@@ -5356,6 +5731,7 @@
   },
   "610059": {
    "name": "Oscar Mayer Magnet School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610059",
    "rcdts": "150162990252337",
@@ -5370,6 +5746,7 @@
   },
   "610060": {
    "name": "Chicago World Language Academy",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610060",
    "rcdts": "150162990252283",
@@ -5384,6 +5761,7 @@
   },
   "610062": {
    "name": "Minnie Miñoso Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610062",
    "rcdts": "150162990252339",
@@ -5398,6 +5776,7 @@
   },
   "610063": {
    "name": "Cyrus H McCormick Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610063",
    "rcdts": "150162990252341",
@@ -5412,6 +5791,7 @@
   },
   "610065": {
    "name": "Emmett Louis Till Math and Science Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610065",
    "rcdts": "150162990252766",
@@ -5426,6 +5806,7 @@
   },
   "610066": {
    "name": "James E McDade Elementary Classical School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610066",
    "rcdts": "150162990252345",
@@ -5440,6 +5821,7 @@
   },
   "610067": {
    "name": "Francis M McKay Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610067",
    "rcdts": "150162990252346",
@@ -5454,6 +5836,7 @@
   },
   "610068": {
    "name": "Hanson Park Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610068",
    "rcdts": "150162990252726",
@@ -5468,6 +5851,7 @@
   },
   "610070": {
    "name": "James B McPherson Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610070",
    "rcdts": "150162990252349",
@@ -5482,6 +5866,7 @@
   },
   "610073": {
    "name": "Ellen Mitchell Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610073",
    "rcdts": "150162990252353",
@@ -5496,6 +5881,7 @@
   },
   "610074": {
    "name": "Logan Square Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610074",
    "rcdts": "150162990252355",
@@ -5510,6 +5896,7 @@
   },
   "610076": {
    "name": "Bernhard Moos Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610076",
    "rcdts": "150162990252356",
@@ -5524,6 +5911,7 @@
   },
   "610077": {
    "name": "Donald Morrill Math & Science Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610077",
    "rcdts": "150162990252357",
@@ -5538,6 +5926,7 @@
   },
   "610078": {
    "name": "Inter-American Elementary Magnet School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610078",
    "rcdts": "150162990252358",
@@ -5552,6 +5941,7 @@
   },
   "610081": {
    "name": "Mark Sheridan Math & Science Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610081",
    "rcdts": "150162990252451",
@@ -5566,6 +5956,7 @@
   },
   "610082": {
    "name": "Mount Greenwood Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610082",
    "rcdts": "150162990252361",
@@ -5580,6 +5971,7 @@
   },
   "610083": {
    "name": "Daniel C Beard Elementary School",
+   "culture": null,
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610083",
    "rcdts": "150162990253760",
@@ -5594,6 +5986,7 @@
   },
   "610084": {
    "name": "Annie Keller Regional Gifted Center",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610084",
    "rcdts": "150162990252739",
@@ -5608,6 +6001,7 @@
   },
   "610086": {
    "name": "Mount Vernon Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610086",
    "rcdts": "150162990252362",
@@ -5622,6 +6016,7 @@
   },
   "610087": {
    "name": "Blair Early Childhood Center",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610087",
    "rcdts": "150162990253761",
@@ -5636,6 +6031,7 @@
   },
   "610088": {
    "name": "Wolfgang A Mozart Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610088",
    "rcdts": "150162990252363",
@@ -5650,6 +6046,7 @@
   },
   "610089": {
    "name": "John B Murphy Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610089",
    "rcdts": "150162990252365",
@@ -5664,6 +6061,7 @@
   },
   "610090": {
    "name": "Phillip Murray Elementary Language Academy",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610090",
    "rcdts": "150162990252366",
@@ -5678,6 +6076,7 @@
   },
   "610091": {
    "name": "Ronald Brown Elementary Community Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610091",
    "rcdts": "150162990252367",
@@ -5692,6 +6091,7 @@
   },
   "610092": {
    "name": "Henry H Nash Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610092",
    "rcdts": "150162990252368",
@@ -5706,6 +6106,7 @@
   },
   "610093": {
    "name": "Jane A Neil Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610093",
    "rcdts": "150162990252369",
@@ -5720,6 +6121,7 @@
   },
   "610094": {
    "name": "Louis Nettelhorst Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610094",
    "rcdts": "150162990252370",
@@ -5734,6 +6136,7 @@
   },
   "610095": {
    "name": "Walter L Newberry Math & Science Academy ES",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610095",
    "rcdts": "150162990252371",
@@ -5748,6 +6151,7 @@
   },
   "610096": {
    "name": "Florence Nightingale Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610096",
    "rcdts": "150162990252373",
@@ -5762,6 +6166,7 @@
   },
   "610097": {
    "name": "William P Nixon Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610097",
    "rcdts": "150162990252374",
@@ -5776,6 +6181,7 @@
   },
   "610098": {
    "name": "Alfred Nobel Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610098",
    "rcdts": "150162990252375",
@@ -5790,6 +6196,7 @@
   },
   "610099": {
    "name": "Norwood Park Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610099",
    "rcdts": "150162990252376",
@@ -5804,6 +6211,7 @@
   },
   "610100": {
    "name": "West Park Elementary Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610100",
    "rcdts": "150162990252908",
@@ -5818,6 +6226,7 @@
   },
   "610101": {
    "name": "William B Ogden Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610101",
    "rcdts": "150162990252380",
@@ -5832,6 +6241,7 @@
   },
   "610102": {
    "name": "Richard J Oglesby Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610102",
    "rcdts": "150162990252381",
@@ -5846,6 +6256,7 @@
   },
   "610103": {
    "name": "Isabelle C O'Keeffe Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610103",
    "rcdts": "150162990252382",
@@ -5860,6 +6271,7 @@
   },
   "610104": {
    "name": "William J Onahan Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610104",
    "rcdts": "150162990252383",
@@ -5874,6 +6286,7 @@
   },
   "610105": {
    "name": "Oriole Park Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610105",
    "rcdts": "150162990252384",
@@ -5888,6 +6301,7 @@
   },
   "610106": {
    "name": "Brian Piccolo Elementary Specialty School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610106",
    "rcdts": "150162990252385",
@@ -5902,6 +6316,7 @@
   },
   "610107": {
    "name": "James Otis Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610107",
    "rcdts": "150162990252386",
@@ -5916,6 +6331,7 @@
   },
   "610108": {
    "name": "Luke O'Toole Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610108",
    "rcdts": "150162990252387",
@@ -5930,6 +6346,7 @@
   },
   "610109": {
    "name": "William Bishop Owen Scholastic Academy ES",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610109",
    "rcdts": "150162990252389",
@@ -5944,6 +6361,7 @@
   },
   "610110": {
    "name": "Ida B Wells Preparatory Elementary Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610110",
    "rcdts": "150162990252902",
@@ -5958,6 +6376,7 @@
   },
   "610111": {
    "name": "John Palmer Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610111",
    "rcdts": "150162990252391",
@@ -5972,6 +6391,7 @@
   },
   "610112": {
    "name": "Francis W Parker Elementary Community Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610112",
    "rcdts": "150162990252392",
@@ -5986,6 +6406,7 @@
   },
   "610115": {
    "name": "Park Manor Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610115",
    "rcdts": "150162990252394",
@@ -6000,6 +6421,7 @@
   },
   "610116": {
    "name": "Parkside Elementary Community Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610116",
    "rcdts": "150162990252395",
@@ -6014,6 +6436,7 @@
   },
   "610117": {
    "name": "Louis Pasteur Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610117",
    "rcdts": "150162990252396",
@@ -6028,6 +6451,7 @@
   },
   "610120": {
    "name": "Ferdinand Peck Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610120",
    "rcdts": "150162990252398",
@@ -6042,6 +6466,7 @@
   },
   "610121": {
    "name": "Washington Irving Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610121",
    "rcdts": "150162990252281",
@@ -6056,6 +6481,7 @@
   },
   "610122": {
    "name": "Helen Peirce International Studies ES",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610122",
    "rcdts": "150162990252399",
@@ -6070,6 +6496,7 @@
   },
   "610123": {
    "name": "William Penn Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610123",
    "rcdts": "150162990252400",
@@ -6084,6 +6511,7 @@
   },
   "610124": {
    "name": "Harold Washington Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610124",
    "rcdts": "150162990252401",
@@ -6098,6 +6526,7 @@
   },
   "610125": {
    "name": "Irma C Ruiz Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610125",
    "rcdts": "150162990252867",
@@ -6112,6 +6541,7 @@
   },
   "610126": {
    "name": "John J Pershing STEAM Magnet Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610126",
    "rcdts": "150162990252402",
@@ -6126,6 +6556,7 @@
   },
   "610127": {
    "name": "Mary Gage Peterson Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610127",
    "rcdts": "150162990252403",
@@ -6140,6 +6571,7 @@
   },
   "610128": {
    "name": "Marcus Moziah Garvey Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610128",
    "rcdts": "150162990252773",
@@ -6154,6 +6586,7 @@
   },
   "610129": {
    "name": "Josiah Pickard Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610129",
    "rcdts": "150162990252404",
@@ -6168,6 +6601,7 @@
   },
   "610130": {
    "name": "John T Pirie Fine Arts & Academic Center ES",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610130",
    "rcdts": "150162990252405",
@@ -6182,6 +6616,7 @@
   },
   "610131": {
    "name": "Ambrose Plamondon Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610131",
    "rcdts": "150162990252406",
@@ -6196,6 +6631,7 @@
   },
   "610132": {
    "name": "Edgar Allan Poe Elementary Classical School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610132",
    "rcdts": "150162990252809",
@@ -6210,6 +6646,7 @@
   },
   "610133": {
    "name": "Laura S Ward Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610133",
    "rcdts": "150162990252767",
@@ -6224,6 +6661,7 @@
   },
   "610135": {
    "name": "Portage Park Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610135",
    "rcdts": "150162990252409",
@@ -6238,6 +6676,7 @@
   },
   "610136": {
    "name": "William H Prescott Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610136",
    "rcdts": "150162990252410",
@@ -6252,6 +6691,7 @@
   },
   "610137": {
    "name": "Ernst Prussing Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610137",
    "rcdts": "150162990252412",
@@ -6266,6 +6706,7 @@
   },
   "610138": {
    "name": "Pulaski International School of Chicago",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610138",
    "rcdts": "150162990252413",
@@ -6280,6 +6721,7 @@
   },
   "610139": {
    "name": "George M Pullman Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610139",
    "rcdts": "150162990252414",
@@ -6294,6 +6736,7 @@
   },
   "610141": {
    "name": "Ravenswood Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610141",
    "rcdts": "150162990252416",
@@ -6308,6 +6751,7 @@
   },
   "610142": {
    "name": "William H Ray Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610142",
    "rcdts": "150162990252417",
@@ -6322,6 +6766,7 @@
   },
   "610143": {
    "name": "William C Reavis Math & Science Specialty ES",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610143",
    "rcdts": "150162990252419",
@@ -6336,6 +6781,7 @@
   },
   "610144": {
    "name": "Frank W Reilly Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610144",
    "rcdts": "150162990252421",
@@ -6350,6 +6796,7 @@
   },
   "610145": {
    "name": "Peter A Reinberg Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610145",
    "rcdts": "150162990252422",
@@ -6364,6 +6811,7 @@
   },
   "610146": {
    "name": "Paul Revere Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610146",
    "rcdts": "150162990252423",
@@ -6378,6 +6826,7 @@
   },
   "610147": {
    "name": "Philip Rogers Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610147",
    "rcdts": "150162990252426",
@@ -6392,6 +6841,7 @@
   },
   "610148": {
    "name": "Cesar E Chavez Multicultural Academic Center ES",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610148",
    "rcdts": "150162990252886",
@@ -6406,6 +6856,7 @@
   },
   "610152": {
    "name": "Martha Ruggles Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610152",
    "rcdts": "150162990252428",
@@ -6420,6 +6871,7 @@
   },
   "610153": {
    "name": "William H Ryder Math & Science Specialty ES",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610153",
    "rcdts": "150162990252429",
@@ -6434,6 +6886,7 @@
   },
   "610155": {
    "name": "Sauganash Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610155",
    "rcdts": "150162990252434",
@@ -6448,6 +6901,7 @@
   },
   "610157": {
    "name": "Sidney Sawyer Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610157",
    "rcdts": "150162990252435",
@@ -6462,6 +6916,7 @@
   },
   "610158": {
    "name": "Harriet E Sayre Elementary Language Academy",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610158",
    "rcdts": "150162990252436",
@@ -6476,6 +6931,7 @@
   },
   "610159": {
    "name": "Jonathan Y Scammon Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610159",
    "rcdts": "150162990252438",
@@ -6490,6 +6946,7 @@
   },
   "610163": {
    "name": "Frederick Stock Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610163",
    "rcdts": "150162990253762",
@@ -6504,6 +6961,7 @@
   },
   "610165": {
    "name": "Franz Peter Schubert Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610165",
    "rcdts": "150162990252444",
@@ -6518,6 +6976,7 @@
   },
   "610167": {
    "name": "William H Seward Communication Arts Academy ES",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610167",
    "rcdts": "150162990252446",
@@ -6532,6 +6991,7 @@
   },
   "610170": {
    "name": "Columbia Explorers Elementary Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610170",
    "rcdts": "150162990252919",
@@ -6546,6 +7006,7 @@
   },
   "610171": {
    "name": "Arnold Mireles Elementary Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610171",
    "rcdts": "150162990252452",
@@ -6560,6 +7021,7 @@
   },
   "610172": {
    "name": "William T Sherman Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610172",
    "rcdts": "150162990252453",
@@ -6574,6 +7036,7 @@
   },
   "610173": {
    "name": "Jesse Sherwood Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610173",
    "rcdts": "150162990252454",
@@ -6588,6 +7051,7 @@
   },
   "610174": {
    "name": "James Shields Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610174",
    "rcdts": "150162990252455",
@@ -6602,6 +7066,7 @@
   },
   "610175": {
    "name": "Beulah Shoesmith Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610175",
    "rcdts": "150162990252456",
@@ -6616,6 +7081,7 @@
   },
   "610176": {
    "name": "John D Shoop Math-Science Technical Academy ES",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610176",
    "rcdts": "150162990252457",
@@ -6630,6 +7096,7 @@
   },
   "610177": {
    "name": "Mark Skinner Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610177",
    "rcdts": "150162990252458",
@@ -6644,6 +7111,7 @@
   },
   "610178": {
    "name": "Theophilus Schmid Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610178",
    "rcdts": "150162990252442",
@@ -6658,6 +7126,7 @@
   },
   "610179": {
    "name": "Washington D Smyser Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610179",
    "rcdts": "150162990252459",
@@ -6672,6 +7141,7 @@
   },
   "610180": {
    "name": "John M Smyth Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610180",
    "rcdts": "150162990252460",
@@ -6686,6 +7156,7 @@
   },
   "610182": {
    "name": "Hannah G Solomon Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610182",
    "rcdts": "150162990252461",
@@ -6700,6 +7171,7 @@
   },
   "610183": {
    "name": "Spencer Technology Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610183",
    "rcdts": "150162990252462",
@@ -6714,6 +7186,7 @@
   },
   "610184": {
    "name": "John Spry Elementary Community School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610184",
    "rcdts": "150162990252469",
@@ -6728,6 +7201,7 @@
   },
   "610185": {
    "name": "Adlai E Stevenson Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610185",
    "rcdts": "150162990252465",
@@ -6742,6 +7216,7 @@
   },
   "610188": {
    "name": "Dunne Technology Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610188",
    "rcdts": "150162990252177",
@@ -6756,6 +7231,7 @@
   },
   "610191": {
    "name": "Stone Elementary Scholastic Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610191",
    "rcdts": "150162990252468",
@@ -6770,6 +7246,7 @@
   },
   "610192": {
    "name": "Harriet Beecher Stowe Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610192",
    "rcdts": "150162990252472",
@@ -6784,6 +7261,7 @@
   },
   "610193": {
    "name": "William K New Sullivan Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610193",
    "rcdts": "150162990252474",
@@ -6798,6 +7276,7 @@
   },
   "610194": {
    "name": "Charles Sumner  Math & Science Community Acad ES",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610194",
    "rcdts": "150162990252475",
@@ -6812,6 +7291,7 @@
   },
   "610195": {
    "name": "Elizabeth H Sutherland Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610195",
    "rcdts": "150162990252476",
@@ -6826,6 +7306,7 @@
   },
   "610196": {
    "name": "George B Swift Elementary Specialty School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610196",
    "rcdts": "150162990252477",
@@ -6840,6 +7321,7 @@
   },
   "610197": {
    "name": "Mancel Talcott Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610197",
    "rcdts": "150162990252478",
@@ -6854,6 +7336,7 @@
   },
   "610198": {
    "name": "Douglas Taylor Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610198",
    "rcdts": "150162990252480",
@@ -6868,6 +7351,7 @@
   },
   "610199": {
    "name": "Johnnie Colemon Elementary Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610199",
    "rcdts": "150162990252918",
@@ -6882,6 +7366,7 @@
   },
   "610200": {
    "name": "James N Thorp Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610200",
    "rcdts": "150162990252484",
@@ -6896,6 +7381,7 @@
   },
   "610201": {
    "name": "Ole A Thorp Elementary Scholastic Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610201",
    "rcdts": "150162990252486",
@@ -6910,6 +7396,7 @@
   },
   "610202": {
    "name": "George W Tilton Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610202",
    "rcdts": "150162990252487",
@@ -6924,6 +7411,7 @@
   },
   "610203": {
    "name": "Monarcas Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610203",
    "rcdts": "150162990252488",
@@ -6938,6 +7426,7 @@
   },
   "610206": {
    "name": "Mark Twain Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610206",
    "rcdts": "150162990252490",
@@ -6952,6 +7441,7 @@
   },
   "610207": {
    "name": "John H Vanderpoel Elementary Magnet School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610207",
    "rcdts": "150162990252491",
@@ -6966,6 +7456,7 @@
   },
   "610208": {
    "name": "Mildred I Lavizzo Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610208",
    "rcdts": "150162990252492",
@@ -6980,6 +7471,7 @@
   },
   "610209": {
    "name": "Alessandro Volta Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610209",
    "rcdts": "150162990252494",
@@ -6994,6 +7486,7 @@
   },
   "610212": {
    "name": "Albany Park Multicultural Academy",
+   "culture": "Well organized",
    "category": "MS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610212",
    "rcdts": "150162990252850",
@@ -7008,6 +7501,7 @@
   },
   "610213": {
    "name": "James Wadsworth Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610213",
    "rcdts": "150162990252498",
@@ -7022,6 +7516,7 @@
   },
   "610215": {
    "name": "Francisco I Madero Middle School",
+   "culture": "Well organized",
    "category": "MS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610215",
    "rcdts": "150162990252838",
@@ -7036,6 +7531,7 @@
   },
   "610216": {
    "name": "John A Walsh Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610216",
    "rcdts": "150162990252500",
@@ -7050,6 +7546,7 @@
   },
   "610217": {
    "name": "James Ward Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610217",
    "rcdts": "150162990252501",
@@ -7064,6 +7561,7 @@
   },
   "610218": {
    "name": "Joseph Warren Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610218",
    "rcdts": "150162990252502",
@@ -7078,6 +7576,7 @@
   },
   "610219": {
    "name": "George Washington Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610219",
    "rcdts": "150162990252503",
@@ -7092,6 +7591,7 @@
   },
   "610220": {
    "name": "Thomas J Waters Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610220",
    "rcdts": "150162990252504",
@@ -7106,6 +7606,7 @@
   },
   "610221": {
    "name": "Daniel Webster Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610221",
    "rcdts": "150162990252505",
@@ -7120,6 +7621,7 @@
   },
   "610223": {
    "name": "Daniel S Wentworth Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610223",
    "rcdts": "150162990252506",
@@ -7134,6 +7636,7 @@
   },
   "610225": {
    "name": "John Whistler Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610225",
    "rcdts": "150162990252512",
@@ -7148,6 +7651,7 @@
   },
   "610226": {
    "name": "Socorro Sandoval Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610226",
    "rcdts": "150162990252914",
@@ -7162,6 +7666,7 @@
   },
   "610227": {
    "name": "Eli Whitney Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610227",
    "rcdts": "150162990252513",
@@ -7176,6 +7681,7 @@
   },
   "610228": {
    "name": "John Greenleaf Whittier Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610228",
    "rcdts": "150162990252514",
@@ -7190,6 +7696,7 @@
   },
   "610229": {
    "name": "A.N. Pritzker School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610229",
    "rcdts": "150162990252510",
@@ -7204,6 +7711,7 @@
   },
   "610230": {
    "name": "Wildwood IB World Magnet School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610230",
    "rcdts": "150162990252516",
@@ -7218,6 +7726,7 @@
   },
   "610231": {
    "name": "National Teachers Elementary Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610231",
    "rcdts": "150162990252924",
@@ -7232,6 +7741,7 @@
   },
   "610234": {
    "name": "Richard Yates Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610234",
    "rcdts": "150162990252542",
@@ -7246,6 +7756,7 @@
   },
   "610235": {
    "name": "Ella Flagg Young Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610235",
    "rcdts": "150162990252525",
@@ -7260,6 +7771,7 @@
   },
   "610237": {
    "name": "Ludwig Van Beethoven Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610237",
    "rcdts": "150162990252079",
@@ -7274,6 +7786,7 @@
   },
   "610238": {
    "name": "Carrie Jacobs Bond Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610238",
    "rcdts": "150162990252088",
@@ -7288,6 +7801,7 @@
   },
   "610239": {
    "name": "Richard J Daley Elementary Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610239",
    "rcdts": "150162990252837",
@@ -7302,6 +7816,7 @@
   },
   "610242": {
    "name": "Joseph Brennemann Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610242",
    "rcdts": "150162990252093",
@@ -7316,6 +7831,7 @@
   },
   "610244": {
    "name": "Michele Clark Academic Prep Magnet High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610244",
    "rcdts": "150162990250827",
@@ -7332,6 +7848,7 @@
   },
   "610245": {
    "name": "Frederick A Douglass Academy High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610245",
    "rcdts": "150162990250831",
@@ -7346,6 +7863,7 @@
   },
   "610246": {
    "name": "Edward Beasley Elementary Magnet Academic Center",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610246",
    "rcdts": "150162990252800",
@@ -7360,6 +7878,7 @@
   },
   "610248": {
    "name": "Chicago Academy Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610248",
    "rcdts": "150162990252920",
@@ -7374,6 +7893,7 @@
   },
   "610249": {
    "name": "Talman Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610249",
    "rcdts": "150162990252926",
@@ -7388,6 +7908,7 @@
   },
   "610250": {
    "name": "Ruben Salazar Elementary Bilingual Center",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610250",
    "rcdts": "150162990252706",
@@ -7402,6 +7923,7 @@
   },
   "610251": {
    "name": "Willa Cather Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610251",
    "rcdts": "150162990252127",
@@ -7416,6 +7938,7 @@
   },
   "610252": {
    "name": "Robert Nathaniel Dett Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610252",
    "rcdts": "150162990252154",
@@ -7430,6 +7953,7 @@
   },
   "610254": {
    "name": "Dvorak Technology Academy",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610254",
    "rcdts": "150162990252179",
@@ -7444,6 +7968,7 @@
   },
   "610256": {
    "name": "Jackie Robinson Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610256",
    "rcdts": "150162990252724",
@@ -7458,6 +7983,7 @@
   },
   "610257": {
    "name": "Morton School of Excellence",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610257",
    "rcdts": "150162990252844",
@@ -7472,6 +7998,7 @@
   },
   "610263": {
    "name": "John Foster Dulles Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610263",
    "rcdts": "150162990252175",
@@ -7486,6 +8013,7 @@
   },
   "610268": {
    "name": "Arthur R Ashe Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610268",
    "rcdts": "150162990252437",
@@ -7500,6 +8028,7 @@
   },
   "610269": {
    "name": "John T McCutcheon Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610269",
    "rcdts": "150162990252344",
@@ -7514,6 +8043,7 @@
   },
   "610271": {
    "name": "Jensen Elementary Scholastic Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610271",
    "rcdts": "150162990252288",
@@ -7528,6 +8058,7 @@
   },
   "610274": {
    "name": "James Weldon Johnson STEAM Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610274",
    "rcdts": "150162990252290",
@@ -7542,6 +8073,7 @@
   },
   "610276": {
    "name": "Irvin C Mollison Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610276",
    "rcdts": "150162990252354",
@@ -7556,6 +8088,7 @@
   },
   "610279": {
    "name": "Henry O Tanner Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610279",
    "rcdts": "150162990252479",
@@ -7570,6 +8103,7 @@
   },
   "610281": {
    "name": "Adam Clayton Powell Paideia Community Academy ES",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610281",
    "rcdts": "150162990252785",
@@ -7584,6 +8118,7 @@
   },
   "610282": {
    "name": "Ronald E McNair Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610282",
    "rcdts": "150162990252634",
@@ -7598,6 +8133,7 @@
   },
   "610284": {
    "name": "New Field Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610284",
    "rcdts": "150162990252930",
@@ -7612,6 +8148,7 @@
   },
   "610287": {
    "name": "Ashburn Community Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610287",
    "rcdts": "150162990252922",
@@ -7626,6 +8163,7 @@
   },
   "610290": {
    "name": "Benjamin E Mays Elementary Academy",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610290",
    "rcdts": "150162990252802",
@@ -7640,6 +8178,7 @@
   },
   "610291": {
    "name": "Richard Henry Lee Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610291",
    "rcdts": "150162990252703",
@@ -7654,6 +8193,7 @@
   },
   "610293": {
    "name": "Genevieve Melody Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610293",
    "rcdts": "150162990252352",
@@ -7668,6 +8208,7 @@
   },
   "610295": {
    "name": "Thomas J Higgins Elementary Community Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610295",
    "rcdts": "150162990252266",
@@ -7682,6 +8223,7 @@
   },
   "610298": {
    "name": "Lenart Elementary Regional Gifted Center",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610298",
    "rcdts": "150162990252856",
@@ -7696,6 +8238,7 @@
   },
   "610299": {
    "name": "Dr. Martin Luther King Jr Academy of Social Justice",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610299",
    "rcdts": "150162990252267",
@@ -7710,6 +8253,7 @@
   },
   "610300": {
    "name": "Oliver S Westcott Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610300",
    "rcdts": "150162990252507",
@@ -7724,6 +8268,7 @@
   },
   "610304": {
    "name": "Phoenix Military Academy High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610304",
    "rcdts": "150162990250803",
@@ -7738,6 +8283,7 @@
   },
   "610305": {
    "name": "George Leland Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610305",
    "rcdts": "150162990252714",
@@ -7752,6 +8298,7 @@
   },
   "610308": {
    "name": "Wilma Rudolph Elementary Learning Center",
+   "culture": null,
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610308",
    "rcdts": "150162990253735",
@@ -7766,6 +8313,7 @@
   },
   "610312": {
    "name": "Mary E McDowell Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610312",
    "rcdts": "150162990252737",
@@ -7780,6 +8328,7 @@
   },
   "610313": {
    "name": "Jose De Diego Elementary Community Academy",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610313",
    "rcdts": "150162990252825",
@@ -7794,6 +8343,7 @@
   },
   "610315": {
    "name": "Edward White Elementary Career Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610315",
    "rcdts": "150162990252729",
@@ -7808,6 +8358,7 @@
   },
   "610316": {
    "name": "Amelia Earhart Options for Knowledge ES",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610316",
    "rcdts": "150162990252743",
@@ -7822,6 +8373,7 @@
   },
   "610317": {
    "name": "Brighton Park Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610317",
    "rcdts": "150162990252870",
@@ -7836,6 +8388,7 @@
   },
   "610319": {
    "name": "Evergreen Academy Middle School",
+   "culture": "Well organized",
    "category": "MS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610319",
    "rcdts": "150162990252873",
@@ -7850,6 +8403,7 @@
   },
   "610323": {
    "name": "Bowen High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610323",
    "rcdts": "150162990250824",
@@ -7866,6 +8420,7 @@
   },
   "610325": {
    "name": "Avondale-Logandale Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610325",
    "rcdts": "150162990252881",
@@ -7880,6 +8435,7 @@
   },
   "610329": {
    "name": "Orozco Fine Arts & Sciences Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610329",
    "rcdts": "150162990252842",
@@ -7894,6 +8450,7 @@
   },
   "610334": {
    "name": "Al Raby High School",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610334",
    "rcdts": "150162990250826",
@@ -7910,6 +8467,7 @@
   },
   "610339": {
    "name": "Amos Alonzo Stagg Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610339",
    "rcdts": "150162990252464",
@@ -7924,6 +8482,7 @@
   },
   "610340": {
    "name": "Chicago Academy High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610340",
    "rcdts": "150162990250820",
@@ -7938,6 +8497,7 @@
   },
   "610342": {
    "name": "Albert R Sabin Elementary Magnet School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610342",
    "rcdts": "150162990252828",
@@ -7952,6 +8512,7 @@
   },
   "610345": {
    "name": "Carter G Woodson South Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610345",
    "rcdts": "150162990252521",
@@ -7966,6 +8527,7 @@
   },
   "610347": {
    "name": "Claremont STEM Magnet Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610347",
    "rcdts": "150162990252936",
@@ -7980,6 +8542,7 @@
   },
   "610350": {
    "name": "Robert A Black Magnet Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610350",
    "rcdts": "150162990252086",
@@ -7994,6 +8557,7 @@
   },
   "610352": {
    "name": "Durkin Park Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610352",
    "rcdts": "150162990252933",
@@ -8008,6 +8572,7 @@
   },
   "610353": {
    "name": "Calmeca Academy of Fine Arts and Dual Language",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610353",
    "rcdts": "150162990252934",
@@ -8022,6 +8587,7 @@
   },
   "610354": {
    "name": "North River Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610354",
    "rcdts": "150162990252935",
@@ -8036,6 +8602,7 @@
   },
   "610355": {
    "name": "Mary E Courtenay Elementary Language Arts Center",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610355",
    "rcdts": "150162990252921",
@@ -8050,6 +8617,7 @@
   },
   "610357": {
    "name": "Spry Community Links High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610357",
    "rcdts": "150162990250818",
@@ -8066,6 +8634,7 @@
   },
   "610362": {
    "name": "Medgar Evers Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610362",
    "rcdts": "150162990252193",
@@ -8080,6 +8649,7 @@
   },
   "610363": {
    "name": "Walt Disney Magnet Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610363",
    "rcdts": "150162990252160",
@@ -8094,6 +8664,7 @@
   },
   "610364": {
    "name": "William E B Dubois Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610364",
    "rcdts": "150162990252173",
@@ -8108,6 +8679,7 @@
   },
   "610366": {
    "name": "Charles H Wacker Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610366",
    "rcdts": "150162990252497",
@@ -8122,6 +8694,7 @@
   },
   "610367": {
    "name": "Oscar DePriest Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610367",
    "rcdts": "150162990252605",
@@ -8136,6 +8709,7 @@
   },
   "610368": {
    "name": "Langston Hughes Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610368",
    "rcdts": "150162990252620",
@@ -8150,6 +8724,7 @@
   },
   "610369": {
    "name": "Mahalia Jackson Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610369",
    "rcdts": "150162990252046",
@@ -8164,6 +8739,7 @@
   },
   "610380": {
    "name": "Daniel Hale Williams Prep School of Medicine",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610380",
    "rcdts": "150162990250856",
@@ -8180,6 +8756,7 @@
   },
   "610381": {
    "name": "Bronzeville Scholastic Academy High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610381",
    "rcdts": "150162990250834",
@@ -8196,6 +8773,7 @@
   },
   "610383": {
    "name": "Greater Lawndale High School For Social Justice",
+   "culture": "Not yet organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610383",
    "rcdts": "150162990250835",
@@ -8211,6 +8789,7 @@
   },
   "610384": {
    "name": "Infinity Math Science and Technology High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610384",
    "rcdts": "150162990250837",
@@ -8225,6 +8804,7 @@
   },
   "610385": {
    "name": "Multicultural Arts High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610385",
    "rcdts": "150162990250836",
@@ -8240,6 +8820,7 @@
   },
   "610389": {
    "name": "Orr Academy High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610389",
    "rcdts": "150162990250847",
@@ -8256,6 +8837,7 @@
   },
   "610390": {
    "name": "Hyman G Rickover Naval Academy High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610390",
    "rcdts": "150162990250828",
@@ -8270,6 +8852,7 @@
   },
   "610391": {
    "name": "Robert Lindblom Math & Science Academy HS",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610391",
    "rcdts": "150162990250833",
@@ -8284,6 +8867,7 @@
   },
   "610392": {
    "name": "World Language Academy High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610392",
    "rcdts": "150162990250830",
@@ -8299,6 +8883,7 @@
   },
   "610394": {
    "name": "Uplift Community High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610394",
    "rcdts": "150162990250829",
@@ -8315,6 +8900,7 @@
   },
   "610396": {
    "name": "Tarkington School of Excellence ES",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610396",
    "rcdts": "150162990252943",
@@ -8329,6 +8915,7 @@
   },
   "610402": {
    "name": "DeVry University Advantage Academy HS",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610402",
    "rcdts": "150162990250832",
@@ -8343,6 +8930,7 @@
   },
   "610405": {
    "name": "Suder Montessori Magnet ES",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610405",
    "rcdts": "150162990252941",
@@ -8357,6 +8945,7 @@
   },
   "610499": {
    "name": "Collins Academy STEAM High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610499",
    "rcdts": "150162990250841",
@@ -8373,6 +8962,7 @@
   },
   "610503": {
    "name": "Frazier Prospective IB Magnet ES",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610503",
    "rcdts": "150162990252945",
@@ -8387,6 +8977,7 @@
   },
   "610504": {
    "name": "Velma F Thomas Early Childhood Center",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610504",
    "rcdts": "150162990253787",
@@ -8401,6 +8992,7 @@
   },
   "610513": {
    "name": "Air Force Academy High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610513",
    "rcdts": "150162990250848",
@@ -8417,6 +9009,7 @@
   },
   "610515": {
    "name": "Disney II Magnet School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610515",
    "rcdts": "150162990252949",
@@ -8431,6 +9024,7 @@
   },
   "610518": {
    "name": "Austin College and Career Academy High School",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610518",
    "rcdts": "150162990250844",
@@ -8447,6 +9041,7 @@
   },
   "610520": {
    "name": "LaSalle II Magnet Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610520",
    "rcdts": "150162990252955",
@@ -8461,6 +9056,7 @@
   },
   "610521": {
    "name": "Sir Miles Davis Magnet Elementary Academy",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610521",
    "rcdts": "150162990252954",
@@ -8475,6 +9071,7 @@
   },
   "610523": {
    "name": "Edison Park Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610523",
    "rcdts": "150162990252953",
@@ -8489,6 +9086,7 @@
   },
   "610524": {
    "name": "Louisa May Alcott College Preparatory HS",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610524",
    "rcdts": "150162990250849",
@@ -8505,6 +9103,7 @@
   },
   "610529": {
    "name": "Ogden International High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610529",
    "rcdts": "150162990250855",
@@ -8519,6 +9118,7 @@
   },
   "610530": {
    "name": "South Shore Fine Arts Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610530",
    "rcdts": "150162990252960",
@@ -8533,6 +9133,7 @@
   },
   "610532": {
    "name": "Irene C. Hernandez Middle School for the Advancement of Science",
+   "culture": "Organized",
    "category": "MS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610532",
    "rcdts": "150162990252597",
@@ -8547,6 +9148,7 @@
   },
   "610533": {
    "name": "Dr Jorge Prieto Math and Science Academy",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610533",
    "rcdts": "150162990252958",
@@ -8561,6 +9163,7 @@
   },
   "610534": {
    "name": "Skinner North",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610534",
    "rcdts": "150162990252959",
@@ -8575,6 +9178,7 @@
   },
   "610539": {
    "name": "Marvin Camras Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610539",
    "rcdts": "150162990252963",
@@ -8589,6 +9193,7 @@
   },
   "610541": {
    "name": "Federico Garcia Lorca Elementary School",
+   "culture": "Partially organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610541",
    "rcdts": "150162990252964",
@@ -8603,6 +9208,7 @@
   },
   "610542": {
    "name": "West Ridge Elementary School",
+   "culture": "Not yet organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610542",
    "rcdts": "150162990252965",
@@ -8617,6 +9223,7 @@
   },
   "610543": {
    "name": "Eric Solorio Academy High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610543",
    "rcdts": "150162990250859",
@@ -8631,6 +9238,7 @@
   },
   "610544": {
    "name": "Mariano Azuela Elementary School",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610544",
    "rcdts": "150162990252966",
@@ -8645,6 +9253,7 @@
   },
   "610547": {
    "name": "South Shore Intl College Prep High School",
+   "culture": null,
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610547",
    "rcdts": "150162990250860",
@@ -8659,6 +9268,7 @@
   },
   "610548": {
    "name": "STEM Magnet Academy",
+   "culture": "Moderately organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610548",
    "rcdts": "150162990252967",
@@ -8673,6 +9283,7 @@
   },
   "610558": {
    "name": "Sarah E. Goode STEM Academy",
+   "culture": "Moderately organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610558",
    "rcdts": "150162990250861",
@@ -8687,6 +9298,7 @@
   },
   "610559": {
    "name": "James Shields Middle School",
+   "culture": "Organized",
    "category": "MS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610559",
    "rcdts": "150162990252968",
@@ -8701,6 +9313,7 @@
   },
   "610561": {
    "name": "Richard T Crane Medical Preparatory HS",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610561",
    "rcdts": "150162990250052",
@@ -8716,6 +9329,7 @@
   },
   "610563": {
    "name": "Back of the Yards IB High School",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610563",
    "rcdts": "150162990250014",
@@ -8730,6 +9344,7 @@
   },
   "610564": {
    "name": "Disney II Magnet High School",
+   "culture": "Well organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610564",
    "rcdts": "150162990250053",
@@ -8744,6 +9359,7 @@
   },
   "610586": {
    "name": "Edward E. Sadlowski Elementary School",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610586",
    "rcdts": "150162990252969",
@@ -8758,6 +9374,7 @@
   },
   "610587": {
    "name": "Walter Henri Dyett High School for the Arts",
+   "culture": "Organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610587",
    "rcdts": "150162990250863",
@@ -8773,6 +9390,7 @@
   },
   "610588": {
    "name": "Robert J. Richardson Middle School",
+   "culture": "Organized",
    "category": "MS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610588",
    "rcdts": "150162990252970",
@@ -8787,6 +9405,7 @@
   },
   "610589": {
    "name": "Sor Juana Ines de la Cruz ES",
+   "culture": "Organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610589",
    "rcdts": "150162990252971",
@@ -8801,6 +9420,7 @@
   },
   "610590": {
    "name": "Bronzeville Classical Elementary School",
+   "culture": "Well organized",
    "category": "ES",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610590",
    "rcdts": "150162990252972",
@@ -8815,6 +9435,7 @@
   },
   "610592": {
    "name": "Englewood STEM High School",
+   "culture": "Partially organized",
    "category": "HS",
    "cps_url": "https://www.cps.edu/schools/schoolprofiles/610592",
    "rcdts": "150162990250867",

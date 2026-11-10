@@ -573,9 +573,6 @@
         "notChecked": "Couldn't check crime today",
         "violent": "Violent crime",
         "property": "Property crime",
-        "down": "down {{pct}}% from a year ago",
-        "up": "up {{pct}}% from a year ago",
-        "flat": "level with a year ago",
         "barLabel": "{{kind}}: {{now}} in the last 90 days, {{prior}} in the same days a year earlier",
         "legendNow": "Last 90 days",
         "legendPrior": "Same days a year earlier ({{period}})",
@@ -704,11 +701,6 @@
         "travel": "Average travel time to work",
         "moved": "Moved in the last year",
         "withheldShort": "Not shown",
-        "cmp": {
-          "same": "about the same as {{area}}",
-          "times": "about {{r}} times {{area}}'s {{value}}",
-          "share": "about {{pct}}% of {{area}}'s {{value}}"
-        },
         "chart": {
           "income": "Household income",
           "occupancy": "Occupied vs vacant",
@@ -774,7 +766,6 @@
           }
         },
         "hoverHint": "Point at a column for its share.",
-        "lowNote": "Some shares on these charts have a margin of error of at least 10% of the share (a small area's survey); read them as rough.",
         "tick": {
           "income": {
             "under_50k": "<$50K",
@@ -792,7 +783,8 @@
           "age": {
             "Under 18": "<18"
           }
-        }
+        },
+        "areaIs": "{{area}}: {{value}}"
       },
       "schools": {
         "title": "Assigned public schools",
@@ -822,7 +814,18 @@
           "elementary": "No CPS elementary attendance boundary covers this lot.",
           "high": "No CPS high school attendance boundary covers this lot; citywide and selective schools have none."
         },
-        "caption": "Assigned by CPS attendance boundary, school year {{boundary}}. Designation and figures: Illinois State Board of Education, {{year}} report card."
+        "caption": "Assigned by CPS attendance boundary, school year {{boundary}}. Designation and figures: Illinois State Board of Education, {{year}} report card.",
+        "stateRating": "Illinois rating, {{year}}",
+        "stateRatingDef": "The Illinois State Board of Education's own rating of each school, from test results, growth, graduation, attendance and English learners' progress. From lowest to highest: Intensive, Comprehensive (the lowest-performing 5% of schools, or a high school graduating two-thirds or fewer), Targeted (one or more student groups performing like the lowest 5%), Commendable, Exemplary (the top 10%, with no group behind).",
+        "culture": "Culture and climate (CPS)",
+        "cultureDef": "Chicago Public Schools' 5Essentials rating, from its yearly survey of students and teachers: leadership, teachers working together, family involvement, a supportive environment and ambitious teaching. From lowest to highest: not yet, partially, moderately, organized, well organized.",
+        "cultureLevel": {
+          "not_yet_organized": "Not yet organized",
+          "partially_organized": "Partially organized",
+          "moderately_organized": "Moderately organized",
+          "organized": "Organized",
+          "well_organized": "Well organized"
+        }
       },
       "trend": {
         "title": "How {{area}} is changing",
@@ -837,12 +840,9 @@
         },
         "salesN_one": "{{count}} sale",
         "salesN_other": "{{count}} sales",
-        "salesUp": "Up {{pct}}% from {{from}} to {{to}}.",
-        "salesDown": "Down {{pct}}% from {{from}} to {{to}}.",
         "rent": "Median rent, then and now",
-        "rentChange": "Up {{pct}}%; {{real}}% after inflation.",
         "notSignificant": "The Census doesn't count this as a clear change (within its margin).",
-        "households": "Renter households: {{from}} → {{to}} ({{pct}}%)",
+        "households": "Renter households: {{from}} → {{to}}",
         "caption": "The whole of {{area}}. Sales: the County's market sales by year; rent: the Census survey, five-year periods."
       },
       "near": {
@@ -866,7 +866,8 @@
         "website": "Website",
         "area": "{{area}}",
         "residents": "{{n}} residents",
-        "renters": "renter households {{sign}}{{pct}}% since {{period}}"
+        "renters": "renter households {{sign}}{{pct}}% since {{period}}",
+        "what": "what is around the lot"
       },
       "permit": {
         "what": "What is being built",
@@ -896,6 +897,13 @@
         "buildingRecordsHow": "Search {{address}} there for the permit, its inspections and any violations.",
         "dataset": "Building permits on the City's data portal",
         "unitsNotStated": "Not stated on the permit"
+      },
+      "badge": {
+        "same": "Same as {{area}}",
+        "times": "{{r}}× {{area}}",
+        "vsYear": "{{pct}}% vs a year ago",
+        "since": "{{pct}}% since {{from}}",
+        "rent": "{{pct}}% · {{real}}% after inflation"
       }
     }
   },
@@ -1005,5 +1013,9 @@
     "ask": "Ask the analyst",
     "askLater": "Ask opens once the Profile has loaded",
     "close": "Close"
+  },
+  "lowConfidence": {
+    "label": "What does Low confidence mean?",
+    "census": "The Census survey asks a sample of households, so each figure has a margin of error. Here the margin is at least 10% of the figure for some of these values (common in an area of a few blocks): read them as rough, not exact."
   }
 }

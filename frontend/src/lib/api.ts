@@ -1088,6 +1088,8 @@ export interface NextUiCrime {
 export interface NextUiSchoolReportCard {
   year: number;
   designation?: "Exemplary" | "Commendable" | "Targeted" | "Comprehensive" | "Intensive";
+  /** CPS's 5Essentials culture-and-climate rating ("Well organized" … "Not yet organized"). */
+  culture?: string;
   enrollment?: number;
   ela_pct?: number;
   math_pct?: number;

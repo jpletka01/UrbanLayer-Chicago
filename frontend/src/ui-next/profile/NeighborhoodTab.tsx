@@ -9,12 +9,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Bike, Building2, Bus, Car, Footprints, Shield, ChevronDown, ChevronRight, Landmark, Mail, MapPin, Phone, SquareArrowOutUpRight, TrainFront, TrainTrack, Users as UsersIcon, Wrench,
+  Bike, Building2, Bus, Car, Footprints, Minus, Shield, TrendingDown, TrendingUp, ChevronDown, ChevronRight, Landmark, Mail, MapPin, Phone, SquareArrowOutUpRight, TrainFront, TrainTrack, Users as UsersIcon, Wrench,
 } from "lucide-react";
 import type { ConstructionProject, NextUiSchool, ScorecardResponse, TractShare } from "../../lib/api";
-import { ConfidenceState } from "../../components/ui/ConfidenceState";
 import { humanizeShoutyCase } from "../../lib/format";
-import { Block, Pill, StatTile } from "../ui/Blocks";
+import { Block, Pill, StatTile, type PillTone } from "../ui/Blocks";
+import { LowConfidence } from "../ui/LowConfidence";
+import { Toggletip } from "../../components/ui/Toggletip";
 import { Term } from "../ui/Term";
 import { ScoreRing } from "../ui/ScoreRing";
 import { ColumnChart } from "../ui/ColumnChart";
@@ -109,8 +110,8 @@ export function NeighborhoodTab({
         key={key} testId={`tile-${key}`} tone={tone}
         icon={<Icon className="h-5 w-5" strokeWidth={STROKE} />}
         label={<Term label={label} definition={def(key)} question={q("scores")} />}
-        note={s?.score != null ? [t("profile.nb.score.of100", { score: s.score }), s.description].filter(Boolean).join(" · ") : t("profile.tiles.walkUnchecked")}
-        visual={s?.score != null ? <ScoreRing value={s.score} label={t("profile.nb.score.ringLabel", { label, score: s.score })} testId={`ring-${key}`} /> : <span className="text-nx-figure">—</span>}
+        note={s?.score != null ? s.description ?? t("profile.nb.score.of100", { score: s.score }) : t("profile.tiles.walkUnchecked")}
+        visual={s?.score != null ? <ScoreRing value={s.score} size={64} label={t("profile.nb.score.ringLabel", { label, score: s.score })} testId={`ring-${key}`} /> : <span className="text-nx-figure">—</span>}
       />
     );
   };
@@ -152,8 +153,9 @@ export function NeighborhoodTab({
             figure={crime?.violentPer1k != null ? nf(crime.violentPer1k, 1) : crime ? nf(crime.violent) : "—"}
             unit={crime?.violentPer1k != null ? t("profile.nb.crime.perThousand") : crime ? t("profile.nb.crime.crimes") : undefined}
             note={crimeSt === "loading" ? t("profile.money.checking", { what: t("profile.nb.crime.what") })
-              : crime ? [t("profile.nb.crime.window", { area }), crime.violentChange != null ? changeWords(crime.violentChange, t) : null].filter(Boolean).join(" · ")
+              : crime ? t("profile.nb.crime.window", { area })
               : t("profile.nb.crime.notChecked")}
+            state={crime?.violentChange != null ? <ChangeBadge pct={crime.violentChange} goodWhen="down" text={t("profile.nb.badge.vsYear", { pct: Math.abs(crime.violentChange) })} testId="nb-violent-badge" /> : undefined}
           />
         </ul>
         </div>
@@ -161,7 +163,9 @@ export function NeighborhoodTab({
 
       <section data-section="nearby" id="nb-nearby" aria-labelledby="nx-nearby" className={`${anchorCls} flex flex-col gap-4`}>
         <h3 id="nx-nearby" className="text-body font-semibold">{t("profile.nb.near.title")}</h3>
-        <NearbyCards data={data} area={area} />
+        <LateSlot state={late.neighborhood} what={t("profile.nb.near.what")} onRetry={() => onRetry("neighborhood")} skeleton={<BarsSkeleton rows={2} />}>
+          <NearbyCards data={data} area={area} />
+        </LateSlot>
       </section>
 
       <section {...anchor("building")}>
@@ -257,9 +261,26 @@ export function NeighborhoodTab({
   );
 }
 
-function changeWords(pct: number, t: (k: string, o?: Record<string, unknown>) => string): string {
-  if (pct === 0) return t("profile.nb.crime.flat");
-  return t(pct < 0 ? "profile.nb.crime.down" : "profile.nb.crime.up", { pct: Math.abs(pct) });
+/** A change as a badge (owner's third review: the insight as a small visual, not a line of tiny text). `goodWhen`:
+    which direction is good (crime: down), green and red then; null = neither, Sapphire-blue. */
+function ChangeBadge({ pct, text, goodWhen = null, testId }: { pct: number; text: string; goodWhen?: "up" | "down" | null; testId?: string }) {
+  const Icon = pct > 0 ? TrendingUp : pct < 0 ? TrendingDown : Minus;
+  const tone: PillTone = goodWhen == null || pct === 0 ? "blue" : (pct < 0) === (goodWhen === "down") ? "green" : "red";
+  return <span data-testid={testId}><Pill tone={tone} icon={Icon}>{text}</Pill></span>;
+}
+
+/** "1.5× West Town": a figure against its community area's. */
+function RatioBadge({ v, ref_, area }: { v: number; ref_: number; area: string }) {
+  const { t, i18n } = useTranslation("next");
+  const r = v / ref_;
+  const same = Math.abs(r - 1) < 0.05;
+  return (
+    <span data-testid="nb-ratio-badge">
+      <Pill tone="purple" icon={same ? Minus : r > 1 ? TrendingUp : TrendingDown}>
+        {same ? t("profile.nb.badge.same", { area }) : t("profile.nb.badge.times", { r: r.toLocaleString(numLocale(i18n.language), { maximumFractionDigits: 1, minimumFractionDigits: 1 }), area })}
+      </Pill>
+    </span>
+  );
 }
 
 /** A permit's kind as the map draws it: the pin's color and icon (owner: the two kinds must read apart). */
@@ -463,7 +484,7 @@ function TrendBody({ trend, area }: { trend: ReturnType<typeof trendModel>; area
             scale={[compactUsd(top, lng), compactUsd(top / 2, lng), compactUsd(0, lng)]}
             columns={years.map((y, i) => ({ key: y.year, tick: `’${y.year.slice(2)}`, label: y.year, value: y.median!, valueText: `${compactUsd(y.median!, lng)} · ${t("profile.nb.trend.salesN", { count: y.n })}`, highlight: i === years.length - 1 }))}
           />
-          {salesChange != null && <p className="text-caption">{t(salesChange >= 0 ? "profile.nb.trend.salesUp" : "profile.nb.trend.salesDown", { pct: Math.abs(salesChange), from: first.year, to: last.year })}</p>}
+          {salesChange != null && <span className="flex"><ChangeBadge testId="nb-sales-badge" pct={salesChange} text={t("profile.nb.badge.since", { pct: Math.abs(salesChange), from: first.year, to: last.year })} /></span>}
         </figure>
       )}
       {r && (
@@ -479,14 +500,15 @@ function TrendBody({ trend, area }: { trend: ReturnType<typeof trendModel>; area
               </li>
             ))}
           </ul>
-          <p className="text-caption">
-            {t("profile.nb.trend.rentChange", { pct: Math.round(r.change), real: Math.round(r.real) })}
-            {r.significant === false ? ` ${t("profile.nb.trend.notSignificant")}` : ""}
-          </p>
+          <span className="flex flex-wrap items-center gap-2">
+            <ChangeBadge testId="nb-rent-badge" pct={r.change} text={t("profile.nb.badge.rent", { pct: Math.abs(Math.round(r.change)), real: Math.round(r.real) })} />
+            {r.significant === false && <span className="text-caption nx-muted">{t("profile.nb.trend.notSignificant")}</span>}
+          </span>
           {r.households && (
             <div className="flex items-center gap-3 rounded-xl bg-nx-page p-3" data-testid="nb-households">
               <UsersIcon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={STROKE} />
-              <span className="text-caption">{t("profile.nb.trend.households", { from: r.households.earlier.toLocaleString(numLocale(lng)), to: r.households.later.toLocaleString(numLocale(lng)), pct: r.households.change })}</span>
+              <span className="flex flex-wrap items-center gap-2 text-caption">{t("profile.nb.trend.households", { from: r.households.earlier.toLocaleString(numLocale(lng)), to: r.households.later.toLocaleString(numLocale(lng)) })}
+                <ChangeBadge pct={r.households.change} text={`${Math.abs(r.households.change)}%`} /></span>
             </div>
           )}
         </figure>
@@ -513,12 +535,12 @@ function SafetyBody({ crime, area }: { crime: CrimeModel; area: string }) {
       <ul className="flex flex-col gap-4" data-testid="nb-crime-bars">
         {rows.map((r) => (
           <li key={r.key} className="flex flex-col gap-1.5 text-caption">
-            <span className="flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="font-semibold">{t(`profile.nb.crime.${r.key}`)}</span>
+            <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <span className="flex items-baseline gap-2"><span className="font-semibold">{t(`profile.nb.crime.${r.key}`)}</span>
               <span className="tabular-nums">
                 {r.rate != null ? `${nf(r.rate, 1)} ${t("profile.nb.crime.perThousand")}` : `${nf(r.now)} ${t("profile.nb.crime.crimes")}`}
-                {r.change != null ? ` · ${changeWords(r.change, t)}` : ""}
-              </span>
+              </span></span>
+              {r.change != null && <ChangeBadge pct={r.change} goodWhen="down" text={t("profile.nb.badge.vsYear", { pct: Math.abs(r.change) })} />}
             </span>
             <span className="relative block h-3 overflow-hidden rounded bg-nx-ink/5" role="img"
               aria-label={t("profile.nb.crime.barLabel", { kind: t(`profile.nb.crime.${r.key}`), now: nf(r.now), prior: r.prior != null ? nf(r.prior) : "—" })}>
@@ -550,11 +572,12 @@ function SafetyBody({ crime, area }: { crime: CrimeModel; area: string }) {
 const DONUT = { a: "#72B0AB", b: "#FE9179", c: "#355E58", d: "#B89D47", e: "#FDC1B4" } as const;
 const DONUT_SERIES = [DONUT.a, DONUT.b, DONUT.c, DONUT.d, DONUT.e, OTHER];
 
-function FigureCard({ value, label, compare, testId }: { value: string; label: string; compare?: string | null; testId?: string }) {
+function FigureCard({ value, label, compare, badge, testId }: { value: string; label: string; compare?: string | null; badge?: ReactNode; testId?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-xl bg-nx-page p-4" data-testid={testId}>
       <span className="text-nx-figure tabular-nums leading-tight">{value}</span>
       <span className="text-caption">{label}</span>
+      {badge && <span className="mt-1 flex">{badge}</span>}
       {compare && <span className="text-caption nx-muted">{compare}</span>}
     </div>
   );
@@ -565,7 +588,7 @@ function ChartCard({ title, low, children, testId }: { title: string; low?: bool
     <figure className="flex min-w-0 flex-col gap-3 rounded-xl bg-nx-page p-4" data-testid={testId}>
       <figcaption className="flex flex-wrap items-center justify-between gap-2 text-caption font-semibold">
         {title}
-        {low && <ConfidenceState kind="estimate" low />}
+        {low && <LowConfidence />}
       </figcaption>
       {children}
     </figure>
@@ -630,24 +653,17 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
     </ChartCard>
   );
   const inc = people.income;
-  const ratio = (v: number | null, ref: number | null) => {
-    if (v == null || ref == null || ref <= 0) return null;
-    const r = v / ref;
-    return Math.abs(r - 1) < 0.05 ? t("profile.nb.people.cmp.same", { area })
-      : r > 1 ? t("profile.nb.people.cmp.times", { r: nf(r, 1), area, value: usd(ref, lng) })
-      : t("profile.nb.people.cmp.share", { pct: Math.round(r * 100), area, value: usd(ref, lng) });
-  };
   const fact = (k: string) => people.facts.find((f) => f.key === k);
   const poverty = fact("poverty_rate"), bach = fact("bachelors_or_higher_pct");
   const pctText = (f?: { value: number | null; withheld: boolean }) => (f?.withheld ? t("profile.nb.people.withheldShort") : f?.value != null ? `${nf(f.value, 1)}%` : "—");
-  const anyLow = [x?.income, x?.structure, x?.tenure, x?.occupancy, x?.moved_in, x?.home_value, x?.household_type, x?.mobility, x?.travel_time].some(low);
 
   return (
     <div className="flex flex-col gap-6">
       <SubSection title={t("profile.nb.people.sec.income")}>
-        <div className="nx-cq"><div className="nx-cards">
+        <div className="nx-cq"><div className="nx-masonry">
           <FigureCard testId="nb-income-headline" value={inc.tract != null ? usd(inc.tract, lng) : inc.tractWithheld ? t("profile.nb.people.withheldShort") : "—"} label={t("profile.nb.people.medianIncome")}
-            compare={areaPending && inc.area == null ? t("profile.money.checking", { what: area }) : ratio(inc.tract, inc.area)} />
+            badge={inc.tract != null && inc.area != null ? <RatioBadge v={inc.tract} ref_={inc.area} area={area} /> : undefined}
+            compare={areaPending && inc.area == null ? t("profile.money.checking", { what: area }) : inc.area != null ? t("profile.nb.people.areaIs", { area, value: usd(inc.area, lng) }) : null} />
           {h?.per_capita_income != null && <FigureCard value={usd(h.per_capita_income, lng)} label={t("profile.nb.people.perCapita")} />}
           {poverty && <FigureCard value={pctText(poverty)} label={t("profile.nb.people.fact.poverty_rate")} />}
           {x?.income && <ChartCard title={t("profile.nb.people.chart.income")} low={low(x.income)} testId="nb-income-cols"><ShareColumns title={t("profile.nb.people.chart.income")} rows={rows("income", x.income)} /></ChartCard>}
@@ -656,7 +672,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
 
       {h && (
         <SubSection title={t("profile.nb.people.sec.housing")}>
-          <div className="nx-cq"><div className="nx-cards">
+          <div className="nx-cq"><div className="nx-masonry">
             {h.housing_units != null && <FigureCard value={nf(h.housing_units)} label={t("profile.nb.people.housingUnits")} />}
             {h.median_home_value != null && <FigureCard value={usd(h.median_home_value, lng)} label={t("profile.nb.people.homeValue")} />}
             {x?.occupancy && donut(t("profile.nb.people.chart.occupancy"), rows("occupancy", x.occupancy), { lead: "occupied", low: low(x.occupancy), testId: "nb-donut-occupancy" })}
@@ -670,7 +686,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
 
       {h && (h.households != null || x?.household_type) && (
         <SubSection title={t("profile.nb.people.sec.households")}>
-          <div className="nx-cq"><div className="nx-cards">
+          <div className="nx-cq"><div className="nx-masonry">
             {h.households != null && <FigureCard value={nf(h.households)} label={t("profile.nb.people.households")} />}
             {h.persons_per_household != null && <FigureCard value={nf(h.persons_per_household, 1)} label={t("profile.nb.people.perHousehold")} />}
             {x?.household_type && donut(t("profile.nb.people.chart.householdType"), rows("household_type", x.household_type), { low: low(x.household_type), testId: "nb-donut-households" })}
@@ -679,7 +695,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
       )}
 
       <SubSection title={t("profile.nb.people.sec.work")}>
-        <div className="nx-cq"><div className="nx-cards">
+        <div className="nx-cq"><div className="nx-masonry">
           {h?.travel_minutes != null && <FigureCard value={t("profile.nb.people.minutes", { n: nf(h.travel_minutes, 1) })} label={t("profile.nb.people.travel")} />}
           {dist("transportation_distribution").length > 0 && <ChartCard title={t("profile.nb.people.dist.transportation_distribution")} testId="nb-commute-cols"><ShareBars rows={dist("transportation_distribution")} /></ChartCard>}
           {x?.travel_time && <ChartCard title={t("profile.nb.people.chart.travelTime")} low={low(x.travel_time)}><ShareColumns title={t("profile.nb.people.chart.travelTime")} rows={rows("travel_time", x.travel_time)} /></ChartCard>}
@@ -687,7 +703,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
       </SubSection>
 
       <SubSection title={t("profile.nb.people.sec.people")}>
-        <div className="nx-cq"><div className="nx-cards">
+        <div className="nx-cq"><div className="nx-masonry">
           {h?.median_age != null && <FigureCard value={nf(h.median_age, 1)} label={t("profile.nb.people.fact.median_age")} />}
           {bach && <FigureCard value={pctText(bach)} label={t("profile.nb.people.fact.bachelors_or_higher_pct")} />}
           {h?.moved_pct != null && <FigureCard value={`${nf(h.moved_pct, 1)}%`} label={t("profile.nb.people.moved")} />}
@@ -697,11 +713,6 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
         </div></div>
       </SubSection>
 
-      {anyLow && (
-        <p className="flex flex-wrap items-center gap-2 text-caption nx-muted" data-testid="nb-low-note">
-          <ConfidenceState kind="estimate" low />{t("profile.nb.people.lowNote")}
-        </p>
-      )}
       <p className="text-caption nx-muted">{t("profile.nb.people.caption", { area })}</p>
     </div>
   );
@@ -724,7 +735,28 @@ function shortPeriod(key: string): string {
   return key;
 }
 
-// ── Schools ──────────────────────────────────────────────────────────────────────────────────────────────
+// ── Schools ─────────────────────────────────────────────────────────────────────────────────────────────
+// The state's rating is the highlight (owner's third review). A+ grades and 1–10 scores are private companies'
+// ratings, which the owner ruled out; ISBE's summative designation is the state's own, lowest to highest here.
+const DESIGNATIONS = ["Intensive", "Comprehensive", "Targeted", "Commendable", "Exemplary"] as const;
+// CPS's 5Essentials culture-and-climate levels, lowest to highest.
+const CULTURE = ["not yet organized", "partially organized", "moderately organized", "organized", "well organized"];
+
+/** A rating as five steps with this school's lit and named (the scale reads lowest to highest, left to right). */
+function RatingScale({ title, definition, steps, at, tone, testId }: { title: string; definition: string; steps: string[]; at: number; tone: PillTone; testId?: string }) {
+  const fill: Record<PillTone, string> = { green: "bg-nx-pill-green", blue: "bg-nx-pill-blue", yellow: "bg-nx-pill-yellow", gray: "bg-nx-ink", red: "bg-nx-pill-red", purple: "bg-nx-pill-purple" };
+  return (
+    <div className="flex flex-col gap-1.5" data-testid={testId}>
+      <span className="flex items-center justify-between gap-2 text-caption">
+        <span className="inline-flex items-center gap-1 nx-muted">{title}<Toggletip kind="info" label={title}>{definition}</Toggletip></span>
+        <span className="font-semibold">{steps[at]}</span>
+      </span>
+      <span role="img" aria-label={`${title}: ${steps[at]} (${at + 1} / ${steps.length})`} className="grid grid-cols-5 gap-1">
+        {steps.map((s, i) => <span key={s} aria-hidden title={s} className={`h-2 rounded-full ${i === at ? fill[tone] : "bg-nx-ink/10"}`} />)}
+      </span>
+    </div>
+  );
+}
 
 function SchoolCard({ school }: { school: NextUiSchool }) {
   const { t, i18n } = useTranslation("next");
@@ -746,8 +778,15 @@ function SchoolCard({ school }: { school: NextUiSchool }) {
             {school.name ?? t("profile.nb.schools.unnamed")}<SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
           </a>
         ) : <span className="font-semibold">{school.name ?? t("profile.nb.schools.unnamed")}</span>}
-        {rc?.designation && <Pill tone={designationTone(rc.designation)}>{t(`profile.nb.schools.designation.${rc.designation}`)}</Pill>}
       </span>
+      {rc?.designation && (
+        <RatingScale testId={`nb-rating-${school.level}`} title={t("profile.nb.schools.stateRating", { year: rc.year })} definition={t("profile.nb.schools.stateRatingDef")}
+          steps={DESIGNATIONS.map((d) => t(`profile.nb.schools.designation.${d}`))} at={DESIGNATIONS.indexOf(rc.designation)} tone={designationTone(rc.designation)} />
+      )}
+      {rc?.culture && CULTURE.includes(rc.culture.toLowerCase()) && (
+        <RatingScale testId={`nb-culture-${school.level}`} title={t("profile.nb.schools.culture")} definition={t("profile.nb.schools.cultureDef")}
+          steps={CULTURE.map((c) => t(`profile.nb.schools.cultureLevel.${c.replace(/ /g, "_")}`))} at={CULTURE.indexOf(rc.culture.toLowerCase())} tone="gray" />
+      )}
       {rc ? (
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-caption">
           {rows.map(([k, v]) => (
@@ -803,15 +842,7 @@ function NearbyCards({ data, area }: { data: ScorecardResponse; area: string }) 
     cards.push({
       key: "traffic", icon: <Car aria-hidden className="h-5 w-5" strokeWidth={STROKE} />, title: t("profile.nb.near.traffic"),
       main: <span className="tabular-nums">{t("profile.nb.near.perDay", { n: nf(tf.daily_vehicles) })}</span>,
-      sub: (
-        <span className="flex flex-col gap-1.5">
-          <span>{t("profile.nb.near.trafficOn", { road: humanizeShoutyCase(tf.road), perMin })}</span>
-          {/* One car per car a minute, up to 30: how busy the street is, at a glance. */}
-          <span aria-hidden className="flex flex-wrap gap-0.5" data-testid="nb-traffic-cars">
-            {Array.from({ length: Math.min(30, Math.max(1, perMin)) }, (_, i) => <Car key={i} className="h-3 w-3" strokeWidth={2} />)}
-          </span>
-        </span>
-      ),
+      sub: t("profile.nb.near.trafficOn", { road: humanizeShoutyCase(tf.road), perMin }),
     });
   }
   const wd = nb?.ward;
@@ -840,7 +871,7 @@ function NearbyCards({ data, area }: { data: ScorecardResponse; area: string }) 
   }
   if (!cards.length) return <p className="nx-muted">{t("profile.nb.near.none")}</p>;
   return (
-    <div className="nx-cq"><ul className="nx-cards" data-testid="nb-nearby">
+    <div className="nx-cq"><ul className="nx-cards nx-cards-even" data-testid="nb-nearby">
       {cards.map((c) => (
         <li key={c.key} className="flex gap-3 rounded-2xl bg-nx-block p-4" data-card={c.key}>
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-nx-page">{c.icon}</span>

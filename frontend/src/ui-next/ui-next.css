@@ -195,7 +195,17 @@
 @container (min-width: 50rem) {
   .ui-next .nx-split { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
 }
-@container (min-width: 56rem) {
+@container (min-width: 60rem) {
   .ui-next .nx-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+}
+@container (min-width: 56rem) {
   .ui-next .nx-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* Cards of different heights packed in columns, top to bottom, so a short card never leaves a hole beside a tall one
+   (owner's third review of Neighborhood, Item 102). Columns by the block's own width, like `.nx-cards`. */
+.ui-next .nx-masonry { column-count: 1; column-gap: 1rem; }
+.ui-next .nx-masonry > * { break-inside: avoid; margin-bottom: 1rem; }
+.ui-next .nx-cards-even { align-items: stretch; }
+@container (min-width: 26rem) { .ui-next .nx-masonry { column-count: 2; } }
+@container (min-width: 56rem) { .ui-next .nx-masonry { column-count: 3; } }

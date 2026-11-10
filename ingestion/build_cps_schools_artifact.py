@@ -10,7 +10,9 @@ card is ISBE's annual public data set, one 40 MB workbook for the whole state; t
 - % of students meeting state standards in ELA and in math, from ``ELAMathScience`` (all tested grades); where
   ISBE suppressed or left that blank for a school serving high-school grades, the ``ACT`` sheet's high school
   assessment rate (``HS Assessment ... Proficiency Rate - Total``), marked ``*_source: "hs_assessment"``,
-- the high school 4-year graduation rate.
+- the high school 4-year graduation rate,
+- and, from CPS's progress report, its 5Essentials culture-and-climate rating (CPS's own attainment and growth
+  ratings are "no data" for most schools in SY2425, so they are left out).
 
 The workbook has no CPS school id, so the join goes through CPS's School Progress Reports on the City's portal
 (``twrw-chuq``, SY2425): each row links its Illinois Report Card page with the school's RCDTS code in the URL
@@ -117,7 +119,7 @@ def fetch_progress_reports() -> list[dict]:
     import httpx
 
     r = httpx.get(PROGRESS_REPORTS, params={
-        "$select": "school_id,long_name,short_name,primary_category,state_school_report_card,cps_school_profile",
+        "$select": "school_id,long_name,short_name,primary_category,state_school_report_card,cps_school_profile,culture_climate_rating",
         "$limit": 5000,
     }, timeout=60)
     r.raise_for_status()
@@ -136,8 +138,11 @@ def build(workbook: Path, year: int, retrieved: str, progress: list[dict] | None
         if rec is None:
             unmatched += 1
             continue
+        culture = (row.get("culture_climate_rating") or "").strip()
         schools[str(row["school_id"])] = {
             "name": row.get("long_name") or rec["isbe_name"],
+            # CPS's 5Essentials culture-and-climate rating (its own survey; "Not Enough Data" is no rating)
+            "culture": culture.capitalize() if culture and culture.lower() != "not enough data" else None,
             "category": row.get("primary_category"),
             "cps_url": (row.get("cps_school_profile") or {}).get("url"),
             "rcdts": m.group(1).upper(),

@@ -46,7 +46,7 @@ def _artifact(path: str = str(ARTIFACT)) -> dict[str, Any]:
     return data
 
 
-_REPORT_FIELDS = ("designation", "enrollment", "ela_pct", "math_pct", "graduation_4yr_pct", "ela_source", "math_source")
+_REPORT_FIELDS = ("designation", "culture", "enrollment", "ela_pct", "math_pct", "graduation_4yr_pct", "ela_source", "math_source")
 
 
 def _school(row: dict[str, Any], level: str) -> dict[str, Any]:

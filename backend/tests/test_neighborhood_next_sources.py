@@ -44,7 +44,7 @@ async def test_a_failed_boundary_query_raises_and_caches_nothing():
 async def test_the_artifact_covers_cps_and_holds_only_state_figures():
     art = schools._artifact()
     assert len(art["schools"]) >= 600
-    allowed = {"name", "category", "cps_url", "rcdts", "isbe_name", "type", "grades", "designation", "enrollment",
+    allowed = {"name", "category", "cps_url", "rcdts", "isbe_name", "type", "grades", "designation", "culture", "enrollment",
                "graduation_4yr_pct", "ela_pct", "math_pct", "ela_source", "math_source"}
     for rec in art["schools"].values():
         assert set(rec) <= allowed  # no demographic breakdowns (Item 102: race and ethnicity left out)
