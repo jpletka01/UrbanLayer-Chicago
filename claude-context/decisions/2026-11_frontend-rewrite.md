@@ -708,7 +708,7 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 ## Item 99: Phase 6, the Money tab, and the pinned search bar (2026-11-09)
 
-**Status: approved by the owner ("Thumbs up", 2026-11-09) after five localhost review rounds (below), built on `feat/ui-next-phase-6-money` (cut from Phase 5's branch, rebased onto `main` once #212 merged); not merged (merge = deploy, the owner's call). No route flips (Item 88).** The owner's answers before the build (2026-11-09): Money first, then Neighborhood, History, then Discovery; Discovery marks its matches as lot outlines only (no dots or pins); the builder test runs later, so no route flips yet (Item 88 stands); #212 merges with the first Phase 6 PR.
+**Status: approved by the owner ("Thumbs up", 2026-11-09) after five localhost review rounds (below), built on `feat/ui-next-phase-6-money` (cut from Phase 5's branch, rebased onto `main` once #212 merged); **merged and live 2026-11-10 with Neighborhood and the parts fix (PR #215, merge `0a07849`, which carried #214 and #213)**. No route flips (Item 88).** The owner's answers before the build (2026-11-09): Money first, then Neighborhood, History, then Discovery; Discovery marks its matches as lot outlines only (no dots or pins); the builder test runs later, so no route flips yet (Item 88 stands); #212 merges with the first Phase 6 PR.
 
 **Decision: the Money tab takes the shape every tab has (brief, "Property Profile").** One sentence, then one wide visual, then three smaller ones, then a collapsed details table.
 - **The sentence:** the tax bill and the Assessor's value ("About $12,478 a year in property tax, on an Assessor's value of $619,000"), plus the nearby sales' median only when the backend shows that median (a withheld median stays out of the sentence). Exempt, nominal and no-bill lots say so in words.
@@ -796,7 +796,7 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 ## Item 102: Phase 6, the Neighborhood tab (2026-11-09)
 
-**Status: approved by the owner (2026-11-10: "once that's in, I think we're good to go", after five localhost review rounds, below) on `feat/ui-next-phase-6-neighborhood` (cut from `feat/ui-next-phase-6-money`, PR #214, with PR #213's branch merged in for the review); not merged (merge = deploy, the owner's call; the three merge together). No route flips (Item 88).**
+**Status: approved by the owner (2026-11-10: "once that's in, I think we're good to go", after five localhost review rounds, below) on `feat/ui-next-phase-6-neighborhood` (cut from `feat/ui-next-phase-6-money`, PR #214, with PR #213's branch merged in for the review); **merged and live 2026-11-10 with Money and the parts fix (PR #215, merge `0a07849`)**: the served Profile chunk has the Neighborhood code, `/api/profile/part/activity` returns `next_ui`, the live-site sweep was clean. No route flips (Item 88).**
 
 **The owner's calls (2026-11-09), from a phone mockup of three layouts and four questions:**
 - **Phone layout: one column plus sticky jump links** (mockup option B). Below `md`, a row of chips sticks under the tab bar (Getting around, Building, Safety, 311, People, Schools); a tap scrolls to that block and the chip of the block in view is lit. Desktop keeps the shared tab shape. *Alternatives shown:* the plain long column of Money (schools at the bottom of a long scroll); an answer list where each row opens a reading page (shortest screen, but charts one tap away and a different shape from every other tab).
