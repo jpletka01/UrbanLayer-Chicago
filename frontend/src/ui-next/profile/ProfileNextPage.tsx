@@ -34,6 +34,8 @@ import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
 import { MoneyTab } from "./MoneyTab";
 import { NeighborhoodTab } from "./NeighborhoodTab";
+import { PermitPanel } from "./PermitPanel";
+import type { ConstructionProject } from "../../lib/api";
 import { sourceState } from "./neighborhoodModel";
 import { ProgramPanel } from "./ProgramPanel";
 import { RulePanel } from "./RulePanel";
@@ -253,7 +255,10 @@ function ProfileScreen({
   // The right panel: the analyst or a program's page, one at a time (Item 99). Closing slides it out first, so the
   // last panel stays mounted (`shownPanel`) for the slide; `seq` remounts it for a new question or program, and
   // `instant` skips the slide when the panel was already open.
-  type Panel = { kind: "ask"; text?: string } | { kind: "program"; program: IncentiveKey } | { kind: "rule"; rule: RuleKey };
+  type Panel = { kind: "ask"; text?: string } | { kind: "program"; program: IncentiveKey } | { kind: "rule"; rule: RuleKey }
+    | { kind: "permit"; permit: ConstructionProject };
+  // "Show on the map" from a permit's page: the map flies to it and opens its card (Item 102).
+  const [mapFocus, setMapFocus] = useState<{ permit: ConstructionProject; seq: number } | null>(null);
   const [panel, setPanel] = useState<Panel | null>(null);
   const [shownPanel, setShownPanel] = useState<{ p: Panel; seq: number; instant: boolean } | null>(null);
   const openPanel = (p: Panel) => {
@@ -374,6 +379,7 @@ function ProfileScreen({
     },
     openProgram: (program) => { track("investigate_click", { card_name: `next_program_${program}` }); openPanel({ kind: "program", program }); },
     openRule: (rule) => { track("investigate_click", { card_name: `next_rule_${rule}` }); openPanel({ kind: "rule", rule }); },
+    openPermit: (permit) => { track("investigate_click", { card_name: "next_permit" }); openPanel({ kind: "permit", permit }); },
   };
 
   const focusAsk = useRef<HTMLElement | null>(null);
@@ -388,6 +394,9 @@ function ProfileScreen({
       drawer={shownPanel && data ? (
         shownPanel.p.kind === "ask" ? (
           ready ? <AskDrawer key={shownPanel.seq} chat={chat} onClose={closePanel} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} initialDraft={shownPanel.p.text} closing={!panel} instant={shownPanel.instant} /> : null
+        ) : shownPanel.p.kind === "permit" ? (
+          <PermitPanel key={shownPanel.seq} permit={shownPanel.p.permit} onClose={closePanel} closing={!panel} instant={shownPanel.instant}
+            onShowOnMap={() => { const pm = (shownPanel.p as { permit: ConstructionProject }).permit; setMapFocus((f) => ({ permit: pm, seq: (f?.seq ?? 0) + 1 })); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
         ) : shownPanel.p.kind === "rule" ? (
           <RulePanel key={shownPanel.seq} data={data} rule={shownPanel.p.rule} {...ruleState(shownPanel.p.rule)} onClose={closePanel} closing={!panel} instant={shownPanel.instant} />
         ) : (
@@ -422,6 +431,7 @@ function ProfileScreen({
                 building={buildingProjects}
                 buildingState={buildingState}
                 onRetryBuilding={() => onRetryParts(["activity"])}
+                focusBuilding={mapFocus}
                 expanded={mapFocused}
                 className="h-full"
               />

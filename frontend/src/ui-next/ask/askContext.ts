@@ -12,6 +12,8 @@ export interface AskHandoff {
   openProgram?: (program: "tif" | "oz" | "ez" | "qct" | "nmtc") => void;
   /** Opens a Build rule's page in the same right panel (Item 99). */
   openRule?: (rule: "landmark" | "historic" | "pd" | "flood" | "lakefront" | "tod" | "adu" | "aro") => void;
+  /** Opens a building permit's page in the same right panel (Neighborhood, Item 102). */
+  openPermit?: (permit: import("../../lib/api").ConstructionProject) => void;
 }
 
 export const AskContext = createContext<AskHandoff | null>(null);

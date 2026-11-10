@@ -232,3 +232,74 @@ export function neighborhoodSentence(data: ScorecardResponse, t: TFunction, read
   const s = parts.join("; ");
   return `${s.charAt(0).toUpperCase()}${s.slice(1)}.`;
 }
+
+// ── Construction: the chart, the list's filter and sort, a permit's stage (owner's review, Item 102) ────────────
+
+export interface Quarter { key: string; label: string; tick: string; newCount: number; renoCount: number }
+
+/** Permits per calendar quarter over the search window, oldest first, empty quarters kept (a gap is information). */
+export function permitQuarters(projects: ConstructionProject[], months: number, today = new Date()): Quarter[] {
+  const qOf = (d: Date) => d.getFullYear() * 4 + Math.floor(d.getMonth() / 3);
+  const end = qOf(today);
+  const n = Math.ceil(months / 3) + 1;
+  const out: Quarter[] = [];
+  for (let q = end - n + 1; q <= end; q++) {
+    const y = Math.floor(q / 4), k = (q % 4) + 1;
+    out.push({ key: `${y}Q${k}`, label: `Q${k} ${y}`, tick: k === 1 || q === end - n + 1 ? `Q${k} ’${String(y).slice(2)}` : `Q${k}`, newCount: 0, renoCount: 0 });
+  }
+  for (const p of projects) {
+    if (!p.issued) continue;
+    const i = qOf(new Date(`${p.issued}T12:00:00`)) - (end - n + 1);
+    if (i < 0 || i >= out.length) continue;
+    if (p.kind === "new") out[i].newCount++; else out[i].renoCount++;
+  }
+  // Drop leading empty quarters the 24-month window only half covers.
+  while (out.length > 1 && out[0].newCount + out[0].renoCount === 0) out.shift();
+  return out;
+}
+
+export type PermitFilter = "all" | "new" | "renovation";
+export type PermitSort = "newest" | "closest" | "largest";
+
+export function permitList(projects: ConstructionProject[], filter: PermitFilter, sort: PermitSort): ConstructionProject[] {
+  const list = projects.filter((p) => filter === "all" || p.kind === filter);
+  const by: Record<PermitSort, (a: ConstructionProject, b: ConstructionProject) => number> = {
+    newest: (a, b) => (b.issued ?? "").localeCompare(a.issued ?? ""),
+    closest: (a, b) => a.distance_mi - b.distance_mi,
+    largest: (a, b) => (b.cost ?? -1) - (a.cost ?? -1),
+  };
+  return [...list].sort(by[sort]);
+}
+
+/** Where a permit stands on the City's path: applied → issued → inspections → complete. `stopped` = suspended or
+    revoked (the City's status), shown instead of a stage. */
+export function permitStage(p: ConstructionProject): { step: 0 | 1 | 2 | 3; stopped: string | null } {
+  const status = (p.status ?? "").toUpperCase();
+  const m = (p.milestone ?? "").toUpperCase();
+  const stopped = /SUSPEND|REVOK|EXPIRE|CANCEL/.test(status) ? status.toLowerCase() : null;
+  if (status === "COMPLETE" || m === "COMPLETE") return { step: 3, stopped };
+  if (m.startsWith("INSPECTION")) return { step: 2, stopped };
+  return { step: 1, stopped }; // every permit here has been issued
+}
+
+export function totalCost(projects: ConstructionProject[]): number {
+  return projects.reduce((s, p) => s + (p.cost ?? 0), 0);
+}
+
+// ── How the area is changing (owner's review: growth infographics) ──────────────────────────────────────────
+
+export function trendModel(data: ScorecardResponse) {
+  const rent = data.context?.neighborhood?.rent;
+  const rt = rent?.trend ?? null;
+  const st = rent?.sales_trend ?? null;
+  const groups = st ? (["two_to_six", "single_family", "condo"] as const).filter((g) => (st.groups[g] ?? []).some((y) => y.median != null)) : [];
+  return {
+    rent: rt ? {
+      earlier: rt.earlier, later: rt.later, change: rt.change_pct, real: rt.real_change_pct, significant: rt.significant ?? null,
+      households: rt.earlier.households != null && rt.later.households != null
+        ? { earlier: rt.earlier.households, later: rt.later.households, change: Math.round(((rt.later.households - rt.earlier.households) / rt.earlier.households) * 100) }
+        : null,
+    } : null,
+    sales: st && groups.length ? { groups, byGroup: st.groups } : null,
+  };
+}

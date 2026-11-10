@@ -88,9 +88,11 @@ export function ShareBar({ share, emphasis = false, hatched = false, label }: {
 
 /** SnowUI's stat card (Item 74): one key figure on a pale fill (alternate `a` / `b`), its label above, a short
     note and at most one warning below. The tile row reflows from four to two to one. */
-export function StatTile({ label, figure, unit, note, warning, state, tone = "a", checking = false, testId }: {
+export function StatTile({ label, figure, unit, note, warning, state, tone = "a", checking = false, testId, visual }: {
   label: ReactNode;
-  figure: ReactNode;
+  figure?: ReactNode;
+  /** A small graphic on the card's right (a score ring); with it, the figure line is left out when `figure` is unset. */
+  visual?: ReactNode;
   unit?: string;
   note?: ReactNode;
   warning?: ReactNode;
@@ -101,6 +103,19 @@ export function StatTile({ label, figure, unit, note, warning, state, tone = "a"
   checking?: boolean;
   testId?: string;
 }) {
+  if (visual) {
+    return (
+      <li className={`flex min-w-0 items-center justify-between gap-4 rounded-2xl p-4 text-nx-card-ink sm:p-6 ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
+        <span className="flex min-w-0 flex-col gap-2">
+          <span className="text-caption font-semibold">{label}</span>
+          {figure != null && <span className="text-nx-figure tabular-nums">{figure}</span>}
+          {note && <span className="text-caption nx-card-muted">{note}</span>}
+          {state && <span className="nx-on-card inline-flex">{state}</span>}
+        </span>
+        {visual}
+      </li>
+    );
+  }
   return (
     <li className={`flex min-w-0 flex-col gap-2 rounded-2xl p-4 text-nx-card-ink sm:p-6 ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
       <span className="text-caption font-semibold">{label}</span>

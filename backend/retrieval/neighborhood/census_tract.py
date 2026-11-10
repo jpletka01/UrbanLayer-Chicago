@@ -14,6 +14,9 @@ log = logging.getLogger(__name__)
 _cache = TTLCache(ttl_seconds=86400, maxsize=256, name="census_tract_demographics")
 
 TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B23025,B25077,B05002,B25064,B25003,B25002,B25031"
+# The new UI's charts (Item 102): median age, units in structure, year moved in, home value, household type and size,
+# moving in the last year, travel time to work. One request still: Census Reporter answers every table at once.
+EXTRA_TABLE_IDS = "B01002,B25024,B25038,B25075,B11001,B25010,B07003,B08303,B08135"
 
 # B25031 columns after the total (001), by the names ``neighborhood.rent.BEDROOM_GROUPS`` uses.
 B25031_COLUMNS = {
@@ -281,6 +284,96 @@ def _parse_transportation(data: dict) -> list[DistributionBucket]:
     return _dist(buckets, total)
 
 
+def _share_buckets(data: dict, table: str, total_col: str, groups: list[tuple[str, list[str]]]) -> list[dict] | None:
+    """Shares of a table's total, in percent, each with ``low`` when its margin of error is at least 10% of the share
+    (Census Reporter's dagger rule). None when the table didn't answer or its total is zero."""
+    total = _est(data, table, total_col)
+    if not total:
+        return None
+    total_moe = _err(data, table, total_col)
+    out = []
+    for key, cols in groups:
+        n = sum(_est(data, table, c) or 0 for c in cols)
+        share = n / total * 100
+        moe = _moe_prop(n, _moe_sum(*(_err(data, table, c) for c in cols)), total, total_moe)
+        out.append({"key": key, "pct": round(share, 1), "low": bool(moe is not None and share > 0 and moe >= 0.1 * share)})
+    return out
+
+
+def _extras(tract: dict, city: dict, tables: dict) -> dict | None:
+    """The new UI's housing, household, moving and commuting figures for the tract, with Chicago's headline figures
+    beside them (the same request returns the city; whether the page shows them is the owner's call, rule 6)."""
+    def cols(t: str, a: int, b: int) -> list[str]:
+        return [f"{t}{i:03d}" for i in range(a, b + 1)]
+
+    def label(t: str, col: str) -> str | None:
+        return ((tables.get(t) or {}).get("columns", {}).get(col) or {}).get("name")
+
+    def headline(d: dict) -> dict:
+        workers = _est(d, "B08303", "B08303001")
+        agg = _est(d, "B08135", "B08135001")
+        mob_total = _est(d, "B07003", "B07003001")
+        same = _est(d, "B07003", "B07003004")
+        occ_total = _est(d, "B25002", "B25002001")
+        vacant = _est(d, "B25002", "B25002003")
+        return {
+            "median_age": _est(d, "B01002", "B01002001"),
+            "housing_units": _safe_int(_est(d, "B25024", "B25024001")),
+            "households": _safe_int(_est(d, "B11001", "B11001001")),
+            "persons_per_household": _est(d, "B25010", "B25010001"),
+            "travel_minutes": round(agg / workers, 1) if agg and workers else None,
+            "moved_pct": round((1 - same / mob_total) * 100, 1) if mob_total and same is not None else None,
+            "occupied_pct": round((1 - vacant / occ_total) * 100, 1) if occ_total and vacant is not None else None,
+            "per_capita_income": _safe_int(_est(d, "B19301", "B19301001")),
+            "median_household_income": _safe_int(_est(d, "B19013", "B19013001")),
+            "median_home_value": _safe_int(_est(d, "B25077", "B25077001")),
+        }
+
+    if not any(t in tract for t in ("B25024", "B11001", "B07003", "B08303")):
+        return None
+    # Year moved in: owners and renters together, by the release's own period names.
+    moved: list[dict] | None = None
+    total_hh = _est(tract, "B25038", "B25038001")
+    if total_hh:
+        moved = []
+        for o, r in zip(range(3, 9), range(10, 16)):
+            n = (_est(tract, "B25038", f"B25038{o:03d}") or 0) + (_est(tract, "B25038", f"B25038{r:03d}") or 0)
+            name = (label("B25038", f"B25038{o:03d}") or "").replace("Moved in ", "")
+            moe = _moe_prop(n, _moe_sum(_err(tract, "B25038", f"B25038{o:03d}"), _err(tract, "B25038", f"B25038{r:03d}")), total_hh, _err(tract, "B25038", "B25038001"))
+            share = n / total_hh * 100
+            moved.append({"key": name or f"col{o}", "pct": round(share, 1), "low": bool(moe is not None and share > 0 and moe >= 0.1 * share)})
+        moved.reverse()  # oldest first
+    return {
+        "tract": headline(tract),
+        "city": headline(city) if city else None,
+        "structure": _share_buckets(tract, "B25024", "B25024001", [
+            ("single_family", ["B25024002", "B25024003"]), ("two", ["B25024004"]), ("three_four", ["B25024005"]),
+            ("five_19", ["B25024006", "B25024007"]), ("twenty_plus", ["B25024008", "B25024009"]), ("other", ["B25024010", "B25024011"]),
+        ]),
+        "tenure": _share_buckets(tract, "B25003", "B25003001", [("owner", ["B25003002"]), ("renter", ["B25003003"])]),
+        "occupancy": _share_buckets(tract, "B25002", "B25002001", [("occupied", ["B25002002"]), ("vacant", ["B25002003"])]),
+        "moved_in": moved,
+        "home_value": _share_buckets(tract, "B25075", "B25075001", [
+            ("under_100k", cols("B25075", 2, 14)), ("100_200k", cols("B25075", 15, 18)), ("200_300k", cols("B25075", 19, 20)),
+            ("300_400k", ["B25075021"]), ("400_500k", ["B25075022"]), ("500k_1m", cols("B25075", 23, 24)), ("over_1m", cols("B25075", 25, 27)),
+        ]),
+        "household_type": _share_buckets(tract, "B11001", "B11001001", [
+            ("married", ["B11001003"]), ("other_family", ["B11001004"]), ("alone", ["B11001008"]), ("roommates", ["B11001009"]),
+        ]),
+        "mobility": _share_buckets(tract, "B07003", "B07003001", [
+            ("same_house", ["B07003004"]), ("same_county", ["B07003007"]), ("other_county", ["B07003010"]),
+            ("other_state", ["B07003013"]), ("abroad", ["B07003016"]),
+        ]),
+        "travel_time": _share_buckets(tract, "B08303", "B08303001", [
+            ("under_15", cols("B08303", 2, 4)), ("15_29", cols("B08303", 5, 7)), ("30_44", cols("B08303", 8, 10)),
+            ("45_59", ["B08303011"]), ("60_plus", cols("B08303", 12, 13)),
+        ]),
+        "income": _share_buckets(tract, "B19001", "B19001001", [
+            ("under_50k", cols("B19001", 2, 10)), ("50_100k", cols("B19001", 11, 13)), ("100_200k", cols("B19001", 14, 16)), ("over_200k", ["B19001017"]),
+        ]),
+    }
+
+
 async def fetch_census_tract(
     tract_fips: str,
     *,
@@ -296,7 +389,7 @@ async def fetch_census_tract(
     geo_id = f"14000US{tract_fips}"
     url = f"{settings.census_reporter_base}/data/show/latest"
     params = {
-        "table_ids": TABLE_IDS,
+        "table_ids": f"{TABLE_IDS},{EXTRA_TABLE_IDS}",
         "geo_ids": f"{geo_id},{CHICAGO_GEO},{COOK_COUNTY_GEO}",
     }
 
@@ -428,6 +521,7 @@ async def fetch_census_tract(
             transportation_distribution=transport_dist,
             county_median_income=county_median,
             city_median_income=city_median,
+            extras=_extras(tract_data, chicago_data, payload.get("tables") or {}),
         )
         _cache.set(key, result)
         return result

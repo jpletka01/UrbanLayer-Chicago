@@ -521,7 +521,9 @@
         "safety": "Seguridad",
         "311": "311",
         "people": "Población",
-        "schools": "Escuelas"
+        "schools": "Escuelas",
+        "changing": "Tendencias",
+        "nearby": "Cerca"
       },
       "sentence": {
         "walk": "puntaje para caminar {{score}} ({{desc}})",
@@ -536,7 +538,8 @@
       "score": {
         "walk": "Puntaje para caminar",
         "transit": "Puntaje de transporte",
-        "bike": "Puntaje para bicicleta"
+        "bike": "Puntaje para bicicleta",
+        "ringLabel": "{{label}}: {{score}} de 100"
       },
       "define": {
         "walk": "Índice de 0 a 100 de Walk Score sobre cuántos mandados diarios se pueden hacer a pie desde esta dirección. Es el índice de una empresa privada, no una cifra de la Ciudad.",
@@ -546,7 +549,8 @@
         "building": "Permisos de construcción de la Ciudad emitidos en los últimos 2 años a menos de media milla de este terreno: todo edificio nuevo, más las remodelaciones con un costo declarado de $250,000 o más. Un permiso significa que la obra se aprobó, no que esté terminada. Los mismos permisos son los marcadores del mapa.",
         "r311": "Solicitudes que los residentes hicieron a la línea 311 de la Ciudad en esta área comunitaria en los últimos 90 días, sin duplicados, por tipo. Se dejan fuera las llamadas de información y las revisiones de multas de estacionamiento. Más solicitudes pueden significar más problemas o más gente que los reporta.",
         "people": "Cifras de la encuesta del Censo (Encuesta sobre la Comunidad Estadounidense, 5 años) para el sector censal de este terreno, unas cuantas cuadras a su alrededor, junto a su área comunitaria cuando la Ciudad publica la misma cifra. Las estimaciones de encuesta tienen márgenes de error; una cifra demasiado incierta no se muestra.",
-        "schools": "La primaria y la preparatoria de las Escuelas Públicas de Chicago cuya zona de asistencia incluye este terreno, con la boleta del Estado de Illinois para cada una: su designación, la proporción de alumnos que cumple los estándares estatales y, para una preparatoria, la tasa de graduación. Las familias también pueden solicitar otras escuelas; estas son las asignadas por domicilio."
+        "schools": "La primaria y la preparatoria de las Escuelas Públicas de Chicago cuya zona de asistencia incluye este terreno, con la boleta del Estado de Illinois para cada una: su designación, la proporción de alumnos que cumple los estándares estatales y, para una preparatoria, la tasa de graduación. Las familias también pueden solicitar otras escuelas; estas son las asignadas por domicilio.",
+        "trend": "Cómo ha cambiado el área comunitaria: el precio mediano de las ventas de mercado cada año (ventas del Condado desde 2020, por tipo de edificio) y la renta mediana en los dos periodos de cinco años más recientes de la encuesta del Censo que no se traslapan, con el cambio descontando la inflación. Son cifras del área comunitaria, no de esta cuadra; cambio pasado, no un pronóstico."
       },
       "ask": {
         "scores": "¿Qué tan fácil es moverse sin auto desde {{address}}?",
@@ -554,7 +558,9 @@
         "building": "¿Qué se está construyendo cerca de {{address}} y qué dice eso de la zona?",
         "r311": "¿Qué dicen las solicitudes al 311 cerca de {{address}} sobre la zona?",
         "people": "¿Quién vive alrededor de {{address}} y cómo se compara el sector censal con su área comunitaria?",
-        "schools": "¿Qué escuelas públicas le corresponden a {{address}} y cómo las califica el estado?"
+        "schools": "¿Qué escuelas públicas le corresponden a {{address}} y cómo las califica el estado?",
+        "trend": "¿Cómo han cambiado los precios y las rentas alrededor de {{address}}, y por qué?",
+        "permit": "¿Qué dice el permiso en {{permit}} sobre el desarrollo cerca de {{address}}?"
       },
       "crime": {
         "tile": "Delitos violentos",
@@ -593,42 +599,177 @@
           "floor": "Remodelaciones de {{floor}} o más"
         },
         "none": "Ningún edificio nuevo ni remodelación mayor con permiso a menos de media milla en los últimos 2 años.",
-        "newCount_one": "{{count}} edificio nuevo",
-        "newCount_other": "{{count}} edificios nuevos",
-        "renoCount_one": "{{count}} remodelación mayor",
-        "renoCount_other": "{{count}} remodelaciones mayores",
-        "units_one": "agrega {{count}} vivienda",
-        "units_other": "agrega {{count}} viviendas",
         "capped": "se muestran los 300 más recientes",
-        "more_one": "{{count}} más en los detalles de abajo",
-        "more_other": "{{count}} más en los detalles de abajo",
         "kind": {
           "new": "Edificio nuevo",
           "renovation": "Remodelación"
         },
         "noAddress": "Dirección no indicada en el permiso",
-        "cost": "Costo declarado {{cost}}",
         "addsUnits_one": "agrega {{count}} vivienda",
         "addsUnits_other": "agrega {{count}} viviendas",
         "removesUnits_one": "quita {{count}} vivienda",
         "removesUnits_other": "quita {{count}} viviendas",
-        "permit": "Permiso {{n}}"
+        "statNew_one": "edificio nuevo",
+        "statNew_other": "edificios nuevos",
+        "statReno_one": "remodelación mayor",
+        "statReno_other": "remodelaciones mayores",
+        "statHomes_one": "vivienda agregada",
+        "statHomes_other": "viviendas agregadas",
+        "statCost": "costo declarado, todos los permisos",
+        "pace": "Permisos por trimestre",
+        "quarterValue": "{{n}} nuevos · {{r}} remodelaciones",
+        "filterLabel": "Mostrar",
+        "filter": {
+          "all_one": "Todos {{count}}",
+          "all_other": "Todos {{count}}",
+          "new_one": "Nuevos {{count}}",
+          "new_other": "Nuevos {{count}}",
+          "renovation_one": "Remodelaciones {{count}}",
+          "renovation_other": "Remodelaciones {{count}}"
+        },
+        "sortLabel": "Ordenar",
+        "sort": {
+          "newest": "Más recientes",
+          "closest": "Más cercanos",
+          "largest": "Mayor costo"
+        },
+        "showAll_one": "Ver los {{count}}",
+        "showAll_other": "Ver los {{count}}",
+        "fewer": "Ver menos"
       },
       "people": {
         "title": "Quién vive aquí",
         "what": "las cifras del Censo",
         "notChecked": "No se pudieron revisar las cifras del Censo hoy.",
-        "income": "Ingreso mediano por hogar",
-        "thisTract": "Sector censal de este terreno",
-        "withheld": "La cifra del sector es demasiado incierta para mostrarla.",
         "fact": {
           "owner_occupied_pct": "Viviendas habitadas por sus dueños",
           "bachelors_or_higher_pct": "Adultos con licenciatura o más",
           "poverty_rate": "Personas bajo la línea de pobreza",
           "median_age": "Edad mediana"
         },
-        "years": "{{n}} años",
-        "caption": "Cifras propias del sector; para {{area}} en conjunto solo se publica el ingreso."
+        "caption": "Cifras de la encuesta del Censo para el sector censal de este terreno, unas cuantas cuadras a su alrededor; solo el ingreso se compara con {{area}}, donde la Ciudad publica la misma cifra. No se muestran raza ni origen étnico.",
+        "dist": {
+          "transportation_distribution": "Cómo llegan al trabajo",
+          "age_distribution": "Edad",
+          "income_distribution": "Ingreso del hogar",
+          "education_distribution": "Escolaridad (adultos de 25+)"
+        },
+        "bucket": {
+          "Under 18": "Menores de 18",
+          "18-24": "18-24",
+          "25-34": "25-34",
+          "35-44": "35-44",
+          "45-54": "45-54",
+          "55-64": "55-64",
+          "65-74": "65-74",
+          "75+": "75+",
+          "Under $25K": "Menos de $25 mil",
+          "$25-50K": "$25-50 mil",
+          "$50-75K": "$50-75 mil",
+          "$75-100K": "$75-100 mil",
+          "$100-150K": "$100-150 mil",
+          "$150-200K": "$150-200 mil",
+          "$200K+": "$200 mil o más",
+          "No degree": "Sin título",
+          "High school": "Preparatoria",
+          "Some college": "Algo de universidad",
+          "Bachelor's": "Licenciatura",
+          "Graduate+": "Posgrado",
+          "Drove alone": "Maneja solo",
+          "Carpooled": "Comparte auto",
+          "Public transit": "Transporte público",
+          "Walked": "A pie",
+          "Bicycle": "Bicicleta",
+          "Work from home": "Trabaja desde casa",
+          "Other": "Otro"
+        },
+        "sec": {
+          "income": "Ingreso",
+          "housing": "Vivienda",
+          "households": "Hogares",
+          "work": "Ir al trabajo",
+          "people": "Edad, escolaridad y mudanzas"
+        },
+        "medianIncome": "Ingreso mediano por hogar",
+        "perCapita": "Ingreso per cápita",
+        "housingUnits": "Viviendas",
+        "homeValue": "Valor mediano de las viviendas habitadas por sus dueños",
+        "households": "Hogares",
+        "perHousehold": "Personas por hogar",
+        "minutes": "{{n}} minutos",
+        "travel": "Tiempo promedio de traslado al trabajo",
+        "moved": "Se mudaron en el último año",
+        "withheldShort": "No se muestra",
+        "dagger": "† El margen de error es de al menos 10% de esta cifra; léala con cuidado.",
+        "cmp": {
+          "same": "más o menos igual que {{area}}",
+          "times": "unas {{r}} veces los {{value}} de {{area}}",
+          "share": "cerca del {{pct}}% de los {{value}} de {{area}}"
+        },
+        "chart": {
+          "income": "Ingreso del hogar",
+          "occupancy": "Ocupadas y vacías",
+          "tenure": "Dueños e inquilinos",
+          "structure": "Viviendas por tamaño de edificio",
+          "movedIn": "Año de llegada",
+          "homeValue": "Valor de las viviendas de sus dueños",
+          "householdType": "Hogares por tipo",
+          "travelTime": "Tiempo de traslado al trabajo",
+          "mobility": "Dónde vivían hace un año"
+        },
+        "k": {
+          "income": {
+            "under_50k": "Menos de $50 mil",
+            "50_100k": "$50–100 mil",
+            "100_200k": "$100–200 mil",
+            "over_200k": "Más de $200 mil"
+          },
+          "occupancy": {
+            "occupied": "Ocupadas",
+            "vacant": "Vacías"
+          },
+          "tenure": {
+            "owner": "Ocupadas por dueños",
+            "renter": "Ocupadas por inquilinos"
+          },
+          "structure": {
+            "single_family": "Unifamiliar",
+            "two": "2 unidades",
+            "three_four": "3–4 unidades",
+            "five_19": "5–19 unidades",
+            "twenty_plus": "20+ unidades",
+            "other": "Otro"
+          },
+          "home_value": {
+            "under_100k": "Menos de $100 mil",
+            "100_200k": "$100–200 mil",
+            "200_300k": "$200–300 mil",
+            "300_400k": "$300–400 mil",
+            "400_500k": "$400–500 mil",
+            "500k_1m": "$500 mil–1 M",
+            "over_1m": "Más de $1 M"
+          },
+          "household_type": {
+            "married": "Parejas casadas",
+            "other_family": "Otras familias",
+            "alone": "Viven solos",
+            "roommates": "Compañeros de vivienda y otros"
+          },
+          "mobility": {
+            "same_house": "La misma vivienda",
+            "same_county": "El mismo condado",
+            "other_county": "Otro condado de Illinois",
+            "other_state": "Otro estado",
+            "abroad": "Otro país"
+          },
+          "travel_time": {
+            "under_15": "Menos de 15 min",
+            "15_29": "15–29 min",
+            "30_44": "30–44 min",
+            "45_59": "45–59 min",
+            "60_plus": "60+ min"
+          }
+        }
       },
       "schools": {
         "title": "Escuelas públicas asignadas",
@@ -660,21 +801,78 @@
         },
         "caption": "Asignadas por zona de asistencia de CPS, ciclo escolar {{boundary}}. Designación y cifras: Junta de Educación del Estado de Illinois, boleta {{year}}."
       },
-      "details": {
-        "title": "Todos los detalles de la zona",
-        "rail": "Estación del tren CTA más cercana",
-        "metra": "Estación de Metra más cercana",
-        "divvy": "Estación de Divvy más cercana",
-        "at": "{{name}}, {{mi}} mi",
+      "trend": {
+        "title": "Cómo está cambiando {{area}}",
+        "what": "las tendencias de la zona",
+        "none": "No hay historial de precios ni rentas para {{area}}.",
+        "sales": "Precio mediano de venta por año",
+        "groupLabel": "Tipo de edificio",
+        "group": {
+          "two_to_six": "2–6 unidades",
+          "single_family": "Unifamiliar",
+          "condo": "Condominios"
+        },
+        "salesN_one": "{{count}} venta",
+        "salesN_other": "{{count}} ventas",
+        "salesUp": "Subió {{pct}}% de {{from}} a {{to}}.",
+        "salesDown": "Bajó {{pct}}% de {{from}} a {{to}}.",
+        "rent": "Renta mediana, antes y ahora",
+        "rentChange": "Subió {{pct}}%; {{real}}% descontando la inflación.",
+        "notSignificant": "El Censo no lo considera un cambio claro (dentro de su margen).",
+        "households": "Hogares que rentan: {{from}} → {{to}} ({{pct}}%)",
+        "caption": "Toda el área de {{area}}. Ventas: ventas de mercado del Condado por año; renta: encuesta del Censo, periodos de cinco años."
+      },
+      "near": {
+        "title": "Alrededor del terreno",
+        "none": "No hay nada registrado alrededor de este terreno.",
+        "walk": "{{min}} min a pie ({{mi}} mi)",
+        "cta": "Tren CTA más cercano",
+        "metra": "Metra más cercano",
+        "divvy": "Divvy más cercano",
+        "docks_one": "{{count}} anclaje",
+        "docks_other": "{{count}} anclajes",
+        "stations_one": "{{count}} estación a menos de ½ mi",
+        "stations_other": "{{count}} estaciones a menos de ½ mi",
         "traffic": "Tránsito en la calle aforada más cercana",
-        "trafficValue": "{{road}}: unos {{n}} vehículos al día",
-        "ward": "Distrito (ward)",
-        "wardValue": "Distrito {{ward}} · {{name}}",
-        "areaPop": "Población del área comunitaria",
-        "property": "Delitos contra la propiedad, últimos 90 días",
-        "tract": "Sector censal",
-        "allProjects_one": "El {{count}} permiso a menos de media milla",
-        "allProjects_other": "Los {{count}} permisos a menos de media milla"
+        "perDay": "{{n}} vehículos al día",
+        "trafficOn": "{{road}}, ambos sentidos · unos {{perMin}} por minuto",
+        "ward": "Distrito {{ward}}",
+        "alder": "Concejal: {{name}}",
+        "noAlder": "Concejal no registrado",
+        "email": "Correo",
+        "website": "Sitio web",
+        "area": "{{area}}",
+        "residents": "{{n}} habitantes",
+        "renters": "hogares que rentan {{sign}}{{pct}}% desde {{period}}"
+      },
+      "permit": {
+        "what": "Qué se está construyendo",
+        "noDescription": "El permiso no tiene descripción.",
+        "where": "En qué etapa está",
+        "step": {
+          "applied": "Solicitado",
+          "issued": "Permiso emitido",
+          "inspections": "Inspecciones",
+          "complete": "Terminado"
+        },
+        "occupancy": "Necesita un certificado de ocupación antes de que alguien se mude.",
+        "facts": "El permiso",
+        "cost": "Costo declarado",
+        "notStated": "No indicado",
+        "homes": "Viviendas",
+        "noUnitChange": "Sin cambio registrado",
+        "distance": "Desde este terreno",
+        "reviewTime": "Revisión de la Ciudad",
+        "days_one": "{{count}} día",
+        "days_other": "{{count}} días",
+        "reviewType": "Tipo de revisión",
+        "number": "Número de permiso",
+        "showOnMap": "Ver en el mapa",
+        "records": "Los registros de la Ciudad",
+        "buildingRecords": "Registros de edificios de la Ciudad de Chicago",
+        "buildingRecordsHow": "Busque ahí {{address}} para ver el permiso, sus inspecciones y cualquier infracción.",
+        "dataset": "Permisos de construcción en el portal de datos de la Ciudad",
+        "unitsNotStated": "No indicado en el permiso"
       }
     }
   },

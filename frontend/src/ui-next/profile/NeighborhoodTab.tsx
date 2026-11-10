@@ -1,32 +1,46 @@
-// Neighborhood tab (brief "Property Profile", Neighborhood: "What's the area like?"; decision Item 102). The tab
-// shape of every Profile tab: the takeaway sentence → a row of stat tiles (walk, transit and bike scores; violent
-// crime per resident) → one wide block (construction nearby; the same permits are the map's pins) → the smaller
-// blocks (safety, 311, who lives here, schools) → a collapsed details table. On a phone a row of jump links sticks
-// under the tab bar (owner's pick from the mockup) and lights the block in view. Race and ethnicity are left out
-// (owner); the tract is compared with its community area, never the city (rule 6). Blocks that read a late part
-// follow Item 89's skeleton rule. Nothing here is advice or a forecast (rule 11).
-import { useEffect, useState } from "react";
+// Neighborhood tab (brief "Property Profile", Neighborhood: "What's the area like?"; decision Item 102). The takeaway
+// sentence → stat tiles (walk, transit and bike scores as rings; violent crime per resident) → construction nearby
+// (its pace by quarter, a filterable list whose every permit opens its own page; the same permits are the map's pins)
+// → how the area is changing (sale prices by year, rent then and now) → who lives here (Census Reporter's style:
+// headline figures, donuts, labeled columns) → safety and 311 beside schools (two columns that pack from the top) → cards for what is around the lot (CTA, Metra, Divvy, traffic, ward, the area).
+// On a phone a row of jump links sticks under the tab bar (owner's pick). Race and ethnicity are left out (owner); the
+// tract is compared with its community area, never the city (rule 6). Late blocks follow Item 89's skeleton rule.
+// Nothing here is advice or a forecast (rule 11).
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, MapPin, SquareArrowOutUpRight } from "lucide-react";
-import type { ScorecardResponse } from "../../lib/api";
-import { ConfidenceState } from "../../components/ui/ConfidenceState";
+import {
+  Bike, Building2, Car, ChevronDown, ChevronRight, Landmark, Mail, MapPin, Phone, SquareArrowOutUpRight, TrainFront, TrainTrack, Users as UsersIcon, Wrench,
+} from "lucide-react";
+import type { ConstructionProject, NextUiSchool, ScorecardResponse, TractShare } from "../../lib/api";
 import { humanizeShoutyCase } from "../../lib/format";
 import { Block, Pill, StatTile } from "../ui/Blocks";
 import { Term } from "../ui/Term";
+import { ScoreRing } from "../ui/ScoreRing";
+import { ColumnChart } from "../ui/ColumnChart";
 import { useAskHandoff } from "../ask/askContext";
 import { ICON, STROKE } from "../icons";
 import { numLocale } from "./profileModel";
-import { usd, type LateBlockState } from "./moneyModel";
+import { niceCeil, usd, type LateBlockState } from "./moneyModel";
 import { BarsSkeleton, LateSlot } from "./LateSlot";
+import { PIN_COLORS } from "../map/pins";
+import { Donut } from "../ui/Donut";
+import { LabeledColumns } from "../ui/LabeledColumns";
 import {
-  areaDemographics, constructionModel, crimeModel, designationTone, neighborhoodSentence, peopleModel, permitWords, schoolsModel, scores,
-  sourceState, three11Model, type ConstructionModel, type CrimeModel, type PeopleModel,
+  areaDemographics, constructionModel, crimeModel, designationTone, neighborhoodSentence, peopleModel, permitList,
+  permitQuarters, permitWords, schoolsModel, scores, sourceState, three11Model, totalCost, trendModel,
+  type ConstructionModel, type CrimeModel, type PeopleModel, type PermitFilter, type PermitSort,
 } from "./neighborhoodModel";
-import type { NextUiSchool } from "../../lib/api";
 
-const SECTIONS = ["around", "building", "safety", "311", "people", "schools"] as const;
+const SECTIONS = ["around", "building", "changing", "people", "safety", "311", "schools", "nearby"] as const;
 type SectionId = (typeof SECTIONS)[number];
-const PROJECTS_SHOWN = 6;
+const PROJECTS_SHOWN = 5;
+// CTA's own line colors (the line dot on the rail card).
+const CTA_LINE: Record<string, string> = {
+  Red: "#C60C30", Blue: "#00A1DE", Brown: "#62361B", Green: "#009B3A", Orange: "#F9461C", Pink: "#E27EA6", Purple: "#522398", Yellow: "#F9E300",
+};
+
+const compactUsd = (n: number, lng: string) =>
+  new Intl.NumberFormat(numLocale(lng), { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(n);
 
 export function NeighborhoodTab({
   data,
@@ -56,8 +70,8 @@ export function NeighborhoodTab({
   const build = buildSt === "ready" ? constructionModel(data) : null;
   const people = peopleModel(data);
   const schools = schoolsSt === "ready" ? schoolsModel(data) : null;
+  const trend = trendModel(data);
   const area = data.community_area_name ? humanizeShoutyCase(data.community_area_name) : t("profile.nb.theArea");
-  const nb = data.context?.neighborhood;
 
   // Jump links (phones): the block in view lights its chip.
   const [inView, setInView] = useState<SectionId>("around");
@@ -78,21 +92,18 @@ export function NeighborhoodTab({
     setInView(id);
     section(id)?.scrollIntoView({ behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   };
-  const anchor = (id: SectionId) => ({
-    "data-section": id,
-    id: `nb-${id}`,
-    className: "scroll-mt-[calc(var(--nx-tabbar-h,3rem)+3.5rem)] md:scroll-mt-[calc(var(--nx-tabbar-h,3rem)+1rem)]",
-  });
+  const anchorCls = "scroll-mt-[calc(var(--nx-tabbar-h,3rem)+3.5rem)] md:scroll-mt-[calc(var(--nx-tabbar-h,3rem)+1rem)]";
+  const anchor = (id: SectionId) => ({ "data-section": id, id: `nb-${id}`, className: anchorCls });
 
   const scoreTile = (key: "walk" | "transit" | "bike", tone: "a" | "b") => {
     const s = sc?.find((x) => x.key === key);
+    const label = t(`profile.nb.score.${key}`);
     return (
       <StatTile
         key={key} testId={`tile-${key}`} tone={tone}
-        label={<Term label={t(`profile.nb.score.${key}`)} definition={def(key)} question={q("scores")} />}
-        figure={s?.score != null ? String(s.score) : "—"}
-        unit={s?.score != null ? t("profile.tiles.of100") : undefined}
+        label={<Term label={label} definition={def(key)} question={q("scores")} />}
         note={s?.score != null ? s.description ?? undefined : t("profile.tiles.walkUnchecked")}
+        visual={s?.score != null ? <ScoreRing value={s.score} label={t("profile.nb.score.ringLabel", { label, score: s.score })} testId={`ring-${key}`} /> : <span className="text-nx-figure">—</span>}
       />
     );
   };
@@ -153,97 +164,84 @@ export function NeighborhoodTab({
         </Block>
       </section>
 
-      <div className="grid items-start gap-7 md:grid-cols-2">
-        <section {...anchor("safety")}>
-          <Block title={<Term label={t("profile.nb.crime.title")} definition={def("crime")} question={q("crime")} />} icon={ICON.safety} labelledBy="nx-safety"
-            aside={crime?.currentLabel ?? undefined}>
-            <LateSlot state={crimeSt} what={t("profile.nb.crime.what")} onRetry={() => onRetry("activity")} skeleton={<BarsSkeleton rows={2} />}>
-              {crime ? <SafetyBody crime={crime} area={area} /> : null}
+      {(trend.sales || trend.rent || late.neighborhood === "loading") && (
+        <section {...anchor("changing")}>
+          <Block title={<Term label={t("profile.nb.trend.title", { area })} definition={def("trend")} question={q("trend")} />} icon={ICON.valueOverTime} labelledBy="nx-changing">
+            <LateSlot state={late.neighborhood} what={t("profile.nb.trend.what")} onRetry={() => onRetry("neighborhood")} skeleton={<BarsSkeleton rows={3} />}>
+              <TrendBody trend={trend} area={area} />
             </LateSlot>
           </Block>
         </section>
+      )}
 
-        <section {...anchor("311")}>
-          <Block title={<Term label={t("profile.nb.r311.title")} definition={def("r311")} question={q("r311")} />} icon={ICON.requests311} labelledBy="nx-311">
-            <LateSlot state={s311} what={t("profile.nb.r311.what")} onRetry={() => onRetry("activity")} skeleton={<BarsSkeleton rows={5} />}>
-              {t311 ? (
-                t311.top.length === 0 ? <p className="nx-muted">{t("profile.nb.r311.none", { area, days: t311.days })}</p> : (
-                  <figure className="flex flex-col gap-3">
-                    <ul className="flex flex-col gap-2.5" data-testid="nb-311-bars">
-                      {t311.top.map((r) => (
-                        <li key={r.type} className="flex flex-col gap-1 text-caption">
-                          <span className="flex items-baseline justify-between gap-2"><span>{r.type}</span><span className="tabular-nums">{nf(r.count)}</span></span>
-                          <span className="relative block h-2.5 overflow-hidden rounded bg-nx-ink/5" aria-hidden>
-                            <span className="absolute inset-y-0 left-0 rounded bg-nx-chart-1" style={{ width: `${(r.count / t311.top[0].count) * 100}%` }} />
-                          </span>
-                        </li>
+      {/* Who lives here, wide (owner's reference: Census Reporter's profiles); then two columns that each pack from
+          the top (owner's review: no gaps beside a short block): safety and 311 in one, schools in the other. */}
+      <section {...anchor("people")}>
+        <Block title={<Term label={t("profile.nb.people.title")} definition={def("people")} question={q("people")} />} icon={ICON.people} labelledBy="nx-people"
+          aside={people?.period ? t("profile.money.rent.census", { period: people.period }) : undefined}>
+          <LateSlot state={late.neighborhood} what={t("profile.nb.people.what")} onRetry={() => onRetry("neighborhood")} skeleton={<BarsSkeleton rows={4} />}>
+            {people ? <PeopleBody data={data} people={people} area={area} areaPending={late.activity === "loading"} /> : <p className="nx-muted">{t("profile.nb.people.notChecked")}</p>}
+          </LateSlot>
+        </Block>
+      </section>
+
+      <div className="grid items-start gap-7 lg:grid-cols-2" data-testid="nb-columns">
+        <div className="flex min-w-0 flex-col gap-7">
+          <section {...anchor("safety")}>
+            <Block title={<Term label={t("profile.nb.crime.title")} definition={def("crime")} question={q("crime")} />} icon={ICON.safety} labelledBy="nx-safety"
+              aside={crime?.currentLabel ?? undefined}>
+              <LateSlot state={crimeSt} what={t("profile.nb.crime.what")} onRetry={() => onRetry("activity")} skeleton={<BarsSkeleton rows={2} />}>
+                {crime ? <SafetyBody crime={crime} area={area} /> : null}
+              </LateSlot>
+            </Block>
+          </section>
+          <section {...anchor("311")}>
+            <Block title={<Term label={t("profile.nb.r311.title")} definition={def("r311")} question={q("r311")} />} icon={ICON.requests311} labelledBy="nx-311">
+              <LateSlot state={s311} what={t("profile.nb.r311.what")} onRetry={() => onRetry("activity")} skeleton={<BarsSkeleton rows={5} />}>
+                {t311 ? (
+                    t311.top.length === 0 ? <p className="nx-muted">{t("profile.nb.r311.none", { area, days: t311.days })}</p> : (
+                      <figure className="flex flex-col gap-3">
+                        <ul className="flex flex-col gap-2.5" data-testid="nb-311-bars">
+                          {t311.top.map((r) => (
+                              <li key={r.type} className="flex flex-col gap-1 text-caption">
+                                <span className="flex items-baseline justify-between gap-2"><span>{r.type}</span><span className="tabular-nums">{nf(r.count)}</span></span>
+                                <span className="relative block h-2.5 overflow-hidden rounded bg-nx-ink/5" aria-hidden>
+                                  <span className="absolute inset-y-0 left-0 rounded bg-nx-chart-1" style={{ width: `${(r.count / t311.top[0].count) * 100}%` }} />
+                                </span>
+                              </li>
+                          ))}
+                        </ul>
+                        <figcaption className="text-caption nx-muted">{t("profile.nb.r311.caption", { total: nf(t311.total), area, days: t311.days })}</figcaption>
+                      </figure>
+                    )
+                ) : null}
+              </LateSlot>
+            </Block>
+          </section>
+        </div>
+        <div className="flex min-w-0 flex-col gap-7">
+          <section {...anchor("schools")}>
+            <Block title={<Term label={t("profile.nb.schools.title")} definition={def("schools")} question={q("schools")} />} icon={ICON.schools} labelledBy="nx-schools">
+              <LateSlot state={schoolsSt} what={t("profile.nb.schools.what")} onRetry={() => onRetry("activity")} skeleton={<BarsSkeleton rows={3} />}>
+                {schools ? (
+                    <div className="flex flex-col gap-4">
+                      {schools.schools.map((s) => <SchoolCard key={s.school_id} school={s} />)}
+                      {schools.noneAssigned.map((lvl) => (
+                        <p key={lvl} className="text-caption nx-muted">{t(`profile.nb.schools.noBoundary.${lvl}`)}</p>
                       ))}
-                    </ul>
-                    <figcaption className="text-caption nx-muted">{t("profile.nb.r311.caption", { total: nf(t311.total), area, days: t311.days })}</figcaption>
-                  </figure>
-                )
-              ) : null}
-            </LateSlot>
-          </Block>
-        </section>
-
-        <section {...anchor("people")}>
-          <Block title={<Term label={t("profile.nb.people.title")} definition={def("people")} question={q("people")} />} icon={ICON.people} labelledBy="nx-people"
-            aside={people?.period ? t("profile.money.rent.census", { period: people.period }) : undefined}>
-            <LateSlot state={late.neighborhood} what={t("profile.nb.people.what")} onRetry={() => onRetry("neighborhood")} skeleton={<BarsSkeleton rows={2} />}>
-              {people ? <PeopleBody people={people} area={area} areaPending={late.activity === "loading"} /> : <p className="nx-muted">{t("profile.nb.people.notChecked")}</p>}
-            </LateSlot>
-          </Block>
-        </section>
-
-        <section {...anchor("schools")}>
-          <Block title={<Term label={t("profile.nb.schools.title")} definition={def("schools")} question={q("schools")} />} icon={ICON.schools} labelledBy="nx-schools">
-            <LateSlot state={schoolsSt} what={t("profile.nb.schools.what")} onRetry={() => onRetry("activity")} skeleton={<BarsSkeleton rows={3} />}>
-              {schools ? (
-                <div className="flex flex-col gap-4">
-                  {schools.schools.map((s) => <SchoolCard key={s.school_id} school={s} />)}
-                  {schools.noneAssigned.map((lvl) => (
-                    <p key={lvl} className="text-caption nx-muted">{t(`profile.nb.schools.noBoundary.${lvl}`)}</p>
-                  ))}
-                  <p className="text-caption nx-muted">{t("profile.nb.schools.caption", { boundary: schools.boundaryYear, year: schools.reportYear ?? "—" })}</p>
-                </div>
-              ) : null}
-            </LateSlot>
-          </Block>
-        </section>
+                      <p className="text-caption nx-muted">{t("profile.nb.schools.caption", { boundary: schools.boundaryYear, year: schools.reportYear ?? "—" })}</p>
+                    </div>
+                ) : null}
+              </LateSlot>
+            </Block>
+          </section>
+        </div>
       </div>
 
-      <details className="group rounded-2xl bg-nx-block p-5 sm:p-6" data-testid="nb-details">
-        <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold">
-          <ChevronDown aria-hidden className="h-4 w-4 transition-transform group-open:rotate-180" strokeWidth={STROKE} />
-          {t("profile.nb.details.title")}
-        </summary>
-        <table className="mt-4 w-full text-caption">
-          <tbody>
-            {([
-              [t("profile.nb.details.rail"), nb?.transit?.nearest_cta_rail ? t("profile.nb.details.at", { name: nb.transit.nearest_cta_rail, mi: nb.transit.cta_rail_distance_mi?.toFixed(2) ?? "—" }) + (nb.transit.cta_lines.length ? ` · ${nb.transit.cta_lines.join(", ")}` : "") : "—"],
-              [t("profile.nb.details.metra"), nb?.transit?.nearest_metra ? t("profile.nb.details.at", { name: nb.transit.nearest_metra, mi: nb.transit.metra_distance_mi?.toFixed(2) ?? "—" }) : "—"],
-              [t("profile.nb.details.divvy"), nb?.divvy?.nearest_station ? t("profile.nb.details.at", { name: nb.divvy.nearest_station, mi: nb.divvy.distance_mi?.toFixed(2) ?? "—" }) : "—"],
-              [t("profile.nb.details.traffic"), nb?.traffic?.road && nb.traffic.daily_vehicles != null ? t("profile.nb.details.trafficValue", { road: humanizeShoutyCase(nb.traffic.road), n: nf(nb.traffic.daily_vehicles) }) : "—"],
-              [t("profile.nb.details.ward"), nb?.ward ? t("profile.nb.details.wardValue", { ward: nb.ward.ward, name: nb.ward.alderman ?? "—" }) : "—"],
-              [t("profile.nb.details.areaPop"), areaDemographics(data)?.population != null ? nf(areaDemographics(data)!.population!) : "—"],
-              [t("profile.nb.details.property"), crime ? `${nf(crime.property)} · ${crime.propertyPer1k != null ? `${nf(crime.propertyPer1k, 1)} ${t("profile.nb.crime.perThousand")}` : "—"}` : "—"],
-              [t("profile.nb.details.tract"), people?.tractName ?? "—"],
-            ] as Array<[string, string]>).map(([k, v]) => (
-              <tr key={k} className="border-b border-nx-ink/5 last:border-0">
-                <th scope="row" className="py-2 pr-4 text-left font-normal nx-muted">{k}</th>
-                <td className="py-2 tabular-nums">{v}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {build && build.projects.length > PROJECTS_SHOWN && (
-          <>
-            <h4 className="mt-6 font-semibold">{t("profile.nb.details.allProjects", { count: build.projects.length })}</h4>
-            <ProjectList projects={build.projects} />
-          </>
-        )}
-      </details>
+      <section data-section="nearby" id="nb-nearby" aria-labelledby="nx-nearby" className={`${anchorCls} flex flex-col gap-4`}>
+        <h3 id="nx-nearby" className="text-body font-semibold">{t("profile.nb.near.title")}</h3>
+        <NearbyCards data={data} area={area} />
+      </section>
     </div>
   );
 }
@@ -253,65 +251,218 @@ function changeWords(pct: number, t: (k: string, o?: Record<string, unknown>) =>
   return t(pct < 0 ? "profile.nb.crime.down" : "profile.nb.crime.up", { pct: Math.abs(pct) });
 }
 
+/** A permit's kind as the map draws it: the pin's color and icon (owner: the two kinds must read apart). */
+function KindBadge({ kind, size = 28 }: { kind: "new" | "renovation"; size?: number }) {
+  const Icon = kind === "new" ? Building2 : Wrench;
+  return (
+    <span aria-hidden className="grid shrink-0 place-items-center rounded-full text-[#1C1C1C]" style={{ width: size, height: size, background: kind === "new" ? PIN_COLORS.build : PIN_COLORS.reno }}>
+      <Icon className="h-[55%] w-[55%]" strokeWidth={1.75} />
+    </span>
+  );
+}
+
 // ── Construction nearby ────────────────────────────────────────────────────────────────────────────────
 
+/** How a builder reads it: how much is being built around the lot and how fast (the counts and the chart), what kind
+    and how big (the filter and sort), and each project in detail (a row opens the permit's own page). */
 function BuildingBody({ build }: { build: ConstructionModel }) {
   const { t, i18n } = useTranslation("next");
   const lng = i18n.language;
+  const ask = useAskHandoff();
+  const [filter, setFilter] = useState<PermitFilter>("all");
+  const [sort, setSort] = useState<PermitSort>("newest");
+  const [all, setAll] = useState(false);
   const chips = [
     t("profile.nb.building.rule.radius", { mi: build.radiusMi.toLocaleString(numLocale(lng)) }),
     t("profile.nb.building.rule.months", { count: build.months }),
     t("profile.nb.building.rule.floor", { floor: usd(build.costFloor, lng) }),
   ];
+  if (build.projects.length === 0) {
+    return (
+      <div className="flex flex-col gap-4">
+        <ul className="flex flex-wrap gap-2" aria-label={t("profile.nb.building.ruleLabel")}>{chips.map((c) => <li key={c}><Pill tone="gray">{c}</Pill></li>)}</ul>
+        <p className="nx-muted">{t("profile.nb.building.none")}</p>
+      </div>
+    );
+  }
+  const quarters = permitQuarters(build.projects, build.months);
+  const top = Math.max(1, niceCeil(Math.max(...quarters.map((x) => x.newCount + x.renoCount))));
+  const list = permitList(build.projects, filter, sort);
+  const shown = all ? list : list.slice(0, PROJECTS_SHOWN);
+  const stat = (figure: string, label: string, kind?: "new" | "renovation") => (
+    <div className="flex items-center gap-3 rounded-xl bg-nx-page p-3">
+      {kind ? <KindBadge kind={kind} size={32} /> : null}
+      <span className="flex flex-col"><span className="text-nx-figure tabular-nums leading-tight">{figure}</span><span className="text-caption nx-muted">{label}</span></span>
+    </div>
+  );
   return (
     <div className="flex flex-col gap-5">
       <ul className="flex flex-wrap gap-2" aria-label={t("profile.nb.building.ruleLabel")} data-testid="nb-building-rule">
         {chips.map((c) => <li key={c}><Pill tone="gray">{c}</Pill></li>)}
+        {build.capped && <li><Pill tone="yellow">{t("profile.nb.building.capped")}</Pill></li>}
       </ul>
-      {build.projects.length === 0 ? (
-        <p className="nx-muted">{t("profile.nb.building.none")}</p>
-      ) : (
-        <>
-          <p className="text-caption" data-testid="nb-building-counts">
-            {[
-              t("profile.nb.building.newCount", { count: build.newCount }),
-              t("profile.nb.building.renoCount", { count: build.renovationCount }),
-              build.unitsAdded > 0 ? t("profile.nb.building.units", { count: build.unitsAdded }) : null,
-            ].filter(Boolean).join(" · ")}
-            {build.capped ? ` · ${t("profile.nb.building.capped")}` : ""}
-          </p>
-          <ProjectList projects={build.projects.slice(0, PROJECTS_SHOWN)} />
-          {build.projects.length > PROJECTS_SHOWN && (
-            <p className="text-caption nx-muted">{t("profile.nb.building.more", { count: build.projects.length - PROJECTS_SHOWN })}</p>
-          )}
-        </>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="nb-building-counts">
+        {stat(String(build.newCount), t("profile.nb.building.statNew", { count: build.newCount }), "new")}
+        {stat(String(build.renovationCount), t("profile.nb.building.statReno", { count: build.renovationCount }), "renovation")}
+        {stat(build.unitsAdded.toLocaleString(numLocale(lng)), t("profile.nb.building.statHomes", { count: build.unitsAdded }))}
+        {stat(compactUsd(totalCost(build.projects), lng), t("profile.nb.building.statCost"))}
+      </div>
+
+      <figure className="flex flex-col gap-2">
+        <figcaption className="flex flex-wrap items-center justify-between gap-2 text-caption">
+          <span className="font-semibold">{t("profile.nb.building.pace")}</span>
+          <span className="flex gap-3 nx-muted">
+            <span className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: PIN_COLORS.build }} />{t("profile.nb.building.kind.new")}</span>
+            <span className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: PIN_COLORS.reno }} />{t("profile.nb.building.kind.renovation")}</span>
+          </span>
+        </figcaption>
+        <ColumnChart
+          testId="nb-permit-quarters"
+          ariaLabel={t("profile.nb.building.pace")}
+          top={top}
+          scale={[String(top), String(top / 2), "0"]}
+          heightClass="h-28"
+          columns={quarters.map((x) => ({
+            key: x.key, tick: x.tick, label: x.label, value: x.newCount + x.renoCount,
+            valueText: t("profile.nb.building.quarterValue", { n: x.newCount, r: x.renoCount }),
+            segments: [{ value: x.newCount, className: "bg-[#FE9179]" }, { value: x.renoCount, className: "bg-[#B89D47]" }],
+          }))}
+        />
+      </figure>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div role="radiogroup" aria-label={t("profile.nb.building.filterLabel")} className="flex overflow-hidden rounded-lg border border-nx-ink/15 text-caption" data-testid="nb-building-filter">
+          {(["all", "new", "renovation"] as const).map((f) => {
+            const n = f === "all" ? build.projects.length : f === "new" ? build.newCount : build.renovationCount;
+            return (
+              <button key={f} type="button" role="radio" aria-checked={filter === f} onClick={() => { setFilter(f); setAll(false); }}
+                className={`px-3 py-1.5 touch-target ${filter === f ? "bg-nx-ink text-nx-on-ink" : "hover:bg-nx-ink/5"}`}>
+                {t(`profile.nb.building.filter.${f}`, { count: n })}
+              </button>
+            );
+          })}
+        </div>
+        <label className="flex items-center gap-2 text-caption">
+          <span className="nx-muted">{t("profile.nb.building.sortLabel")}</span>
+          <select value={sort} onChange={(e) => setSort(e.target.value as PermitSort)} className="appearance-none rounded-lg border border-nx-ink/15 bg-nx-page px-2.5 py-1.5 touch-field" data-testid="nb-building-sort">
+            {(["newest", "closest", "largest"] as const).map((s) => <option key={s} value={s}>{t(`profile.nb.building.sort.${s}`)}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <ul className="flex flex-col gap-2" data-testid="nb-projects">
+        {shown.map((p, i) => <ProjectRow key={`${p.permit ?? i}`} p={p} onOpen={ask?.openPermit ? () => ask.openPermit!(p) : undefined} />)}
+      </ul>
+      {list.length > PROJECTS_SHOWN && (
+        <button type="button" onClick={() => setAll((a) => !a)} aria-expanded={all}
+          className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-nx-page px-3 py-2 text-caption font-semibold hover:bg-nx-ink/5 touch-target" data-testid="nb-projects-more">
+          <ChevronDown aria-hidden className={`h-4 w-4 transition-transform ${all ? "rotate-180" : ""}`} strokeWidth={STROKE} />
+          {all ? t("profile.nb.building.fewer") : t("profile.nb.building.showAll", { count: list.length })}
+        </button>
       )}
     </div>
   );
 }
 
-function ProjectList({ projects }: { projects: ConstructionModel["projects"] }) {
+function ProjectRow({ p, onOpen }: { p: ConstructionProject; onOpen?: () => void }) {
   const { t, i18n } = useTranslation("next");
   const lng = i18n.language;
-  const date = (iso: string | null) => (iso ? new Date(`${iso}T12:00:00`).toLocaleDateString(numLocale(lng), { month: "short", year: "numeric" }) : "—");
+  const date = p.issued ? new Date(`${p.issued}T12:00:00`).toLocaleDateString(numLocale(lng), { month: "short", year: "numeric" }) : null;
+  const words = permitWords(p.description, 110);
+  const body = (
+    <>
+      <KindBadge kind={p.kind} />
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="flex flex-wrap items-baseline gap-x-2">
+          <span className="font-semibold">{p.address ?? t("profile.nb.building.noAddress")}</span>
+          <span className="text-caption nx-muted">{t(`profile.nb.building.kind.${p.kind}`)}</span>
+        </span>
+        {words && <span className="text-caption line-clamp-1">{words}</span>}
+        <span className="flex flex-wrap gap-1.5">
+          {date && <Pill tone="gray">{date}</Pill>}
+          <Pill tone="gray">{t("profile.money.miles", { mi: p.distance_mi.toFixed(2) })}</Pill>
+          {p.cost != null && <Pill tone="gray">{compactUsd(p.cost, lng)}</Pill>}
+          {p.units_added ? <Pill tone={p.units_added > 0 ? "green" : "gray"}>{t(p.units_added > 0 ? "profile.nb.building.addsUnits" : "profile.nb.building.removesUnits", { count: Math.abs(p.units_added) })}</Pill> : null}
+        </span>
+      </span>
+      {onOpen && <ChevronRight aria-hidden className="h-4 w-4 shrink-0 self-center nx-muted transition-transform group-hover:translate-x-0.5" strokeWidth={STROKE} />}
+    </>
+  );
+  const cls = "group flex w-full items-start gap-3 rounded-xl bg-nx-page p-3 text-left";
   return (
-    <ul className="flex flex-col divide-y divide-nx-ink/5" data-testid="nb-projects">
-      {projects.map((p, i) => (
-        <li key={`${p.permit ?? i}`} className="flex flex-col gap-1 py-2.5 first:pt-0">
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Pill tone={p.kind === "new" ? "green" : "gray"}>{t(`profile.nb.building.kind.${p.kind}`)}</Pill>
-            <span className="font-semibold">{p.address ?? t("profile.nb.building.noAddress")}</span>
-            <span className="text-caption nx-muted">{[date(p.issued), t("profile.money.miles", { mi: p.distance_mi.toFixed(2) })].join(" · ")}</span>
-          </span>
-          {permitWords(p.description) && <span className="text-caption">{permitWords(p.description)}</span>}
-          <span className="text-caption nx-muted tabular-nums">
-            {[p.cost != null ? t("profile.nb.building.cost", { cost: usd(p.cost, lng) }) : null,
-              p.units_added ? t(p.units_added > 0 ? "profile.nb.building.addsUnits" : "profile.nb.building.removesUnits", { count: Math.abs(p.units_added) }) : null,
-              p.permit ? t("profile.nb.building.permit", { n: p.permit }) : null].filter(Boolean).join(" · ")}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <li data-kind={p.kind}>
+      {onOpen ? (
+        <button type="button" onClick={onOpen} aria-haspopup="dialog" className={`${cls} hover:bg-nx-ink/5`}>{body}</button>
+      ) : <div className={cls}>{body}</div>}
+    </li>
+  );
+}
+
+// ── How the area is changing ─────────────────────────────────────────────────────────────────────────────
+
+function TrendBody({ trend, area }: { trend: ReturnType<typeof trendModel>; area: string }) {
+  const { t, i18n } = useTranslation("next");
+  const lng = i18n.language;
+  const [group, setGroup] = useState(trend.sales?.groups[0] ?? null);
+  if (!trend.sales && !trend.rent) return <p className="nx-muted">{t("profile.nb.trend.none", { area })}</p>;
+  const years = trend.sales && group ? (trend.sales.byGroup[group] ?? []).filter((y) => y.median != null) : [];
+  const top = years.length ? niceCeil(Math.max(...years.map((y) => y.median!))) : 1;
+  const first = years[0], last = years[years.length - 1];
+  const salesChange = first && last && first !== last ? Math.round(((last.median! - first.median!) / first.median!) * 100) : null;
+  const r = trend.rent;
+  const rentMax = r ? Math.max(r.earlier.median, r.later.median) : 1;
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      {trend.sales && group && (
+        <figure className="flex flex-col gap-3" data-testid="nb-sales-trend">
+          <figcaption className="flex flex-col gap-2">
+            <span className="text-caption font-semibold">{t("profile.nb.trend.sales")}</span>
+            {trend.sales.groups.length > 1 && (
+              <span role="radiogroup" aria-label={t("profile.nb.trend.groupLabel")} className="flex w-fit overflow-hidden rounded-lg border border-nx-ink/15 text-caption">
+                {trend.sales.groups.map((g) => (
+                  <button key={g} type="button" role="radio" aria-checked={group === g} onClick={() => setGroup(g)}
+                    className={`px-2.5 py-1 touch-target ${group === g ? "bg-nx-ink text-nx-on-ink" : "hover:bg-nx-ink/5"}`}>{t(`profile.nb.trend.group.${g}`)}</button>
+                ))}
+              </span>
+            )}
+          </figcaption>
+          <ColumnChart
+            ariaLabel={t("profile.nb.trend.sales")}
+            top={top}
+            scale={[compactUsd(top, lng), compactUsd(top / 2, lng), compactUsd(0, lng)]}
+            columns={years.map((y, i) => ({ key: y.year, tick: `’${y.year.slice(2)}`, label: y.year, value: y.median!, valueText: `${compactUsd(y.median!, lng)} · ${t("profile.nb.trend.salesN", { count: y.n })}`, highlight: i === years.length - 1 }))}
+          />
+          {salesChange != null && <p className="text-caption">{t(salesChange >= 0 ? "profile.nb.trend.salesUp" : "profile.nb.trend.salesDown", { pct: Math.abs(salesChange), from: first.year, to: last.year })}</p>}
+        </figure>
+      )}
+      {r && (
+        <figure className="flex flex-col gap-3" data-testid="nb-rent-trend">
+          <figcaption className="text-caption font-semibold">{t("profile.nb.trend.rent")}</figcaption>
+          <ul className="flex flex-col gap-3">
+            {[r.earlier, r.later].map((p, i) => (
+              <li key={p.period} className="flex flex-col gap-1 text-caption">
+                <span className="flex items-baseline justify-between gap-2"><span>{p.period}</span><span className="font-semibold tabular-nums">{t("profile.money.perMonth", { value: usd(p.median, lng) })}</span></span>
+                <span aria-hidden className="relative block h-3 overflow-hidden rounded bg-nx-ink/5">
+                  <span className={`absolute inset-y-0 left-0 rounded ${i === 1 ? "bg-nx-chart-1" : "bg-nx-ink/30"}`} style={{ width: `${(p.median / rentMax) * 100}%` }} />
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-caption">
+            {t("profile.nb.trend.rentChange", { pct: Math.round(r.change), real: Math.round(r.real) })}
+            {r.significant === false ? ` ${t("profile.nb.trend.notSignificant")}` : ""}
+          </p>
+          {r.households && (
+            <div className="flex items-center gap-3 rounded-xl bg-nx-page p-3" data-testid="nb-households">
+              <UsersIcon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={STROKE} />
+              <span className="text-caption">{t("profile.nb.trend.households", { from: r.households.earlier.toLocaleString(numLocale(lng)), to: r.households.later.toLocaleString(numLocale(lng)), pct: r.households.change })}</span>
+            </div>
+          )}
+        </figure>
+      )}
+      <p className="text-caption nx-muted lg:col-span-2">{t("profile.nb.trend.caption", { area })}</p>
+    </div>
   );
 }
 
@@ -360,49 +511,135 @@ function SafetyBody({ crime, area }: { crime: CrimeModel; area: string }) {
   );
 }
 
-// ── Who lives here ───────────────────────────────────────────────────────────────────────────────────────
+// ── Who lives here (owner's reference: Census Reporter's profiles) ───────────────────────────────────────────
+// Headline figures with a comparison line, shares as donuts, breakdowns as labeled columns. The comparison is the
+// community area where the City publishes the same figure (rule 6); everything else is the tract's own.
 
-function PeopleBody({ people, area, areaPending }: { people: PeopleModel; area: string; areaPending: boolean }) {
+const DONUT = { a: "#72B0AB", b: "#FE9179", c: "#355E58", d: "#B89D47" } as const;
+
+function Headline({ value, label, compare, low, testId }: { value: string; label: string; compare?: string | null; low?: boolean; testId?: string }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1" data-testid={testId}>
+      <span className="text-[2rem] font-semibold leading-none tabular-nums">{value}{low ? <sup className="text-caption">†</sup> : null}</span>
+      <span>{label}</span>
+      {compare && <span className="text-caption nx-muted">{compare}</span>}
+    </div>
+  );
+}
+
+function SubSection({ title, children, dagger }: { title: string; children: ReactNode; dagger?: boolean }) {
+  const { t } = useTranslation("next");
+  return (
+    <section className="flex flex-col gap-4 border-t border-nx-ink/10 pt-5 first:border-0 first:pt-0">
+      <h4 className="font-semibold">{title}</h4>
+      {children}
+      {dagger && <p className="text-caption nx-muted">{t("profile.nb.people.dagger")}</p>}
+    </section>
+  );
+}
+
+function PeopleBody({ data, people, area, areaPending }: { data: ScorecardResponse; people: PeopleModel; area: string; areaPending: boolean }) {
   const { t, i18n } = useTranslation("next");
   const lng = i18n.language;
+  const ct = data.context?.neighborhood?.census_tract;
+  const x = data.next_ui?.tract;
+  const h = x?.tract;
+  const nf = (n: number, d = 0) => n.toLocaleString(numLocale(lng), { maximumFractionDigits: d, minimumFractionDigits: d });
+  const L = (group: string, key: string) => t(`profile.nb.people.k.${group}.${key}`, { defaultValue: periodLabel(key, lng) });
+  const cols = (group: string, list: TractShare[] | null | undefined) => (list ?? []).map((s) => ({ key: s.key, label: L(group, s.key), pct: s.pct, low: s.low }));
+  const anyLow = (...lists: Array<TractShare[] | null | undefined>) => lists.some((l) => (l ?? []).some((s) => s.low));
+  const dist = (key: "age_distribution" | "education_distribution" | "transportation_distribution") =>
+    (ct?.[key] ?? []).map((b) => ({ key: b.label, label: t(`profile.nb.people.bucket.${b.label}`, { defaultValue: b.label }), pct: b.value }));
   const inc = people.income;
-  const max = Math.max(1, inc.tract ?? 0, inc.area ?? 0);
-  const bar = (label: string, v: number | null, tone: string, low = false, pending = false) => (
-    <li className="flex flex-col gap-1 text-caption">
-      <span className="flex items-baseline justify-between gap-2">
-        <span>{label}</span>
-        <span className="flex items-center gap-1.5 tabular-nums">{v != null ? usd(v, lng) : pending ? <span className="nx-muted">{t("profile.money.checking", { what: label })}</span> : "—"}{low && <ConfidenceState kind="estimate" low />}</span>
-      </span>
-      <span className="relative block h-3 overflow-hidden rounded bg-nx-ink/5" aria-hidden>
-        {v != null && <span className={`absolute inset-y-0 left-0 rounded ${tone}`} style={{ width: `${(v / max) * 100}%` }} />}
-      </span>
-    </li>
-  );
-  const fmt = (k: string, v: number | null) => (v == null ? "—" : k === "median_age" ? t("profile.nb.people.years", { n: v.toFixed(0) }) : `${v.toFixed(0)}%`);
+  const ratio = (v: number | null, ref: number | null) => {
+    if (v == null || ref == null || ref <= 0) return null;
+    const r = v / ref;
+    return Math.abs(r - 1) < 0.05 ? t("profile.nb.people.cmp.same", { area })
+      : r > 1 ? t("profile.nb.people.cmp.times", { r: nf(r, 1), area, value: usd(ref, lng) })
+      : t("profile.nb.people.cmp.share", { pct: Math.round(r * 100), area, value: usd(ref, lng) });
+  };
+  const fact = (k: string) => people.facts.find((f) => f.key === k);
+  const poverty = fact("poverty_rate"), bach = fact("bachelors_or_higher_pct");
+  const pctText = (f?: { value: number | null; withheld: boolean }) => (f?.withheld ? t("profile.nb.people.withheldShort") : f?.value != null ? `${nf(f.value, 1)}%` : "—");
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <span className="text-caption font-semibold">{t("profile.nb.people.income")}</span>
-        <ul className="flex flex-col gap-2.5" data-testid="nb-income-bars">
-          {bar(t("profile.nb.people.thisTract"), inc.tract, "bg-nx-chart-1")}
-          {bar(area, inc.area, "bg-nx-ink/30", inc.areaLow, areaPending)}
-        </ul>
-        {inc.tractWithheld && <p className="text-caption nx-muted">{t("profile.nb.people.withheld")}</p>}
-      </div>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-caption" data-testid="nb-people-facts">
-        {people.facts.map((f) => (
-          <div key={f.key} className="flex flex-col gap-0.5">
-            <dt className="nx-muted">{t(`profile.nb.people.fact.${f.key}`)}</dt>
-            <dd className="flex items-center gap-1.5 font-semibold tabular-nums">
-              {f.withheld ? <ConfidenceState kind="withheld" low={false} /> : fmt(f.key, f.value)}
-              {!f.withheld && f.state?.low && <ConfidenceState kind="estimate" low />}
-            </dd>
+    <div className="flex flex-col gap-6">
+      <SubSection title={t("profile.nb.people.sec.income")} dagger={anyLow(x?.income)}>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Headline testId="nb-income-headline" value={inc.tract != null ? usd(inc.tract, lng) : inc.tractWithheld ? t("profile.nb.people.withheldShort") : "—"} label={t("profile.nb.people.medianIncome")}
+            compare={areaPending && inc.area == null ? t("profile.money.checking", { what: area }) : ratio(inc.tract, inc.area)} />
+          <div className="flex flex-col gap-4">
+            {h?.per_capita_income != null && <Headline value={usd(h.per_capita_income, lng)} label={t("profile.nb.people.perCapita")} />}
+            {poverty && <Headline value={pctText(poverty)} label={t("profile.nb.people.fact.poverty_rate")} low={!!poverty.state?.low} />}
           </div>
-        ))}
-      </dl>
+          {x?.income && <LabeledColumns testId="nb-income-cols" title={t("profile.nb.people.chart.income")} columns={cols("income", x.income)} />}
+        </div>
+      </SubSection>
+
+      {h && (
+        <SubSection title={t("profile.nb.people.sec.housing")} dagger={anyLow(x?.structure, x?.tenure, x?.occupancy, x?.moved_in, x?.home_value)}>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="flex flex-col gap-4">
+              {h.housing_units != null && <Headline value={nf(h.housing_units)} label={t("profile.nb.people.housingUnits")} />}
+              {h.median_home_value != null && <Headline value={usd(h.median_home_value, lng)} label={t("profile.nb.people.homeValue")} />}
+            </div>
+            {x?.occupancy && <Donut testId="nb-donut-occupancy" title={t("profile.nb.people.chart.occupancy")} lead="occupied"
+              segments={x.occupancy.map((s, i) => ({ key: s.key, label: L("occupancy", s.key), pct: s.pct, low: s.low, color: i ? DONUT.b : DONUT.a }))} />}
+            {x?.tenure && <Donut testId="nb-donut-tenure" title={t("profile.nb.people.chart.tenure")} lead={x.tenure[1] && x.tenure[1].pct > x.tenure[0].pct ? "renter" : "owner"}
+              segments={x.tenure.map((s, i) => ({ key: s.key, label: L("tenure", s.key), pct: s.pct, low: s.low, color: i ? DONUT.b : DONUT.a }))} />}
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {x?.structure && <LabeledColumns testId="nb-structure-cols" title={t("profile.nb.people.chart.structure")} columns={cols("structure", x.structure)} />}
+            {x?.moved_in && <LabeledColumns title={t("profile.nb.people.chart.movedIn")} columns={cols("moved_in", x.moved_in)} />}
+          </div>
+          {x?.home_value && <LabeledColumns title={t("profile.nb.people.chart.homeValue")} columns={cols("home_value", x.home_value)} />}
+        </SubSection>
+      )}
+
+      {h && (h.households != null || x?.household_type) && (
+        <SubSection title={t("profile.nb.people.sec.households")} dagger={anyLow(x?.household_type)}>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {h.households != null && <Headline value={nf(h.households)} label={t("profile.nb.people.households")} />}
+            {h.persons_per_household != null && <Headline value={nf(h.persons_per_household, 1)} label={t("profile.nb.people.perHousehold")} />}
+            {x?.household_type && <Donut testId="nb-donut-households" title={t("profile.nb.people.chart.householdType")}
+              lead={[...x.household_type].sort((a, b) => b.pct - a.pct)[0].key}
+              segments={x.household_type.map((s, i) => ({ key: s.key, label: L("household_type", s.key), pct: s.pct, low: s.low, color: [DONUT.a, DONUT.c, DONUT.b, DONUT.d][i] }))} />}
+          </div>
+        </SubSection>
+      )}
+
+      <SubSection title={t("profile.nb.people.sec.work")} dagger={anyLow(x?.travel_time)}>
+        <div className="grid gap-6 lg:grid-cols-3">
+          {h?.travel_minutes != null && <Headline value={t("profile.nb.people.minutes", { n: nf(h.travel_minutes, 1) })} label={t("profile.nb.people.travel")} />}
+          <div className="lg:col-span-2">{dist("transportation_distribution").length > 0 && <LabeledColumns testId="nb-commute-cols" title={t("profile.nb.people.dist.transportation_distribution")} columns={dist("transportation_distribution")} />}</div>
+        </div>
+        {x?.travel_time && <LabeledColumns title={t("profile.nb.people.chart.travelTime")} columns={cols("travel_time", x.travel_time)} />}
+      </SubSection>
+
+      <SubSection title={t("profile.nb.people.sec.people")} dagger={anyLow(x?.mobility)}>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="flex flex-col gap-4">
+            {h?.median_age != null && <Headline value={nf(h.median_age, 1)} label={t("profile.nb.people.fact.median_age")} />}
+            {bach && <Headline value={pctText(bach)} label={t("profile.nb.people.fact.bachelors_or_higher_pct")} low={!!bach.state?.low} />}
+          </div>
+          <div className="lg:col-span-2">{dist("age_distribution").length > 0 && <LabeledColumns title={t("profile.nb.people.dist.age_distribution")} columns={dist("age_distribution")} />}</div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          {h?.moved_pct != null && <Headline value={`${nf(h.moved_pct, 1)}%`} label={t("profile.nb.people.moved")} />}
+          <div className="lg:col-span-2">{x?.mobility && <LabeledColumns title={t("profile.nb.people.chart.mobility")} columns={cols("mobility", x.mobility)} />}</div>
+        </div>
+        {dist("education_distribution").length > 0 && <LabeledColumns title={t("profile.nb.people.dist.education_distribution")} columns={dist("education_distribution")} />}
+      </SubSection>
+
       <p className="text-caption nx-muted">{t("profile.nb.people.caption", { area })}</p>
     </div>
   );
+}
+
+/** The Census's own period names ("2020 to 2022", "2023 or later") in the page's language. */
+function periodLabel(key: string, lng: string): string {
+  if (!lng.startsWith("es")) return key;
+  return key.replace(" to ", " a ").replace(" or later", " o después").replace(" or earlier", " o antes");
 }
 
 // ── Schools ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -442,5 +679,96 @@ function SchoolCard({ school }: { school: NextUiSchool }) {
         </a>
       )}
     </article>
+  );
+}
+
+// ── Around the lot: small cards (owner's review: the details table becomes cards) ───────────────────────────
+
+function NearbyCards({ data, area }: { data: ScorecardResponse; area: string }) {
+  const { t, i18n } = useTranslation("next");
+  const lng = i18n.language;
+  const nb = data.context?.neighborhood;
+  const nf = (n: number) => n.toLocaleString(numLocale(lng));
+  // A 20-minute mile, the usual walking pace: a distance reads as a walk.
+  const walk = (mi: number | null | undefined) => (mi == null ? null : t("profile.nb.near.walk", { min: Math.max(1, Math.round(mi * 20)), mi: mi.toFixed(2) }));
+  const cards: Array<{ key: string; icon: ReactNode; title: string; main: ReactNode; sub?: ReactNode }> = [];
+  const tr = nb?.transit;
+  if (tr?.nearest_cta_rail) {
+    cards.push({
+      key: "cta", icon: <TrainFront aria-hidden className="h-5 w-5" strokeWidth={STROKE} />, title: t("profile.nb.near.cta"),
+      main: tr.nearest_cta_rail,
+      sub: (
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          {tr.cta_lines.map((l) => { const c = CTA_LINE[l.replace(/ Line$/, "")]; return <span key={l} className="inline-flex items-center gap-1"><span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: c ?? "currentColor" }} />{l}</span>; })}
+          <span>{walk(tr.cta_rail_distance_mi)}</span>
+        </span>
+      ),
+    });
+  }
+  if (tr?.nearest_metra) {
+    cards.push({ key: "metra", icon: <TrainTrack aria-hidden className="h-5 w-5" strokeWidth={STROKE} />, title: t("profile.nb.near.metra"), main: tr.nearest_metra, sub: [tr.metra_line, walk(tr.metra_distance_mi)].filter(Boolean).join(" · ") });
+  }
+  const dv = nb?.divvy;
+  if (dv?.nearest_station) {
+    cards.push({
+      key: "divvy", icon: <Bike aria-hidden className="h-5 w-5" strokeWidth={STROKE} />, title: t("profile.nb.near.divvy"), main: dv.nearest_station,
+      sub: [walk(dv.distance_mi), dv.docks != null ? t("profile.nb.near.docks", { count: dv.docks }) : null, t("profile.nb.near.stations", { count: dv.stations_within_radius })].filter(Boolean).join(" · "),
+    });
+  }
+  const tf = nb?.traffic;
+  if (tf?.road && tf.daily_vehicles != null) {
+    const perMin = Math.round(tf.daily_vehicles / 1440);
+    cards.push({
+      key: "traffic", icon: <Car aria-hidden className="h-5 w-5" strokeWidth={STROKE} />, title: t("profile.nb.near.traffic"),
+      main: <span className="tabular-nums">{t("profile.nb.near.perDay", { n: nf(tf.daily_vehicles) })}</span>,
+      sub: (
+        <span className="flex flex-col gap-1.5">
+          <span>{t("profile.nb.near.trafficOn", { road: humanizeShoutyCase(tf.road), perMin })}</span>
+          {/* One car per car a minute, up to 30: how busy the street is, at a glance. */}
+          <span aria-hidden className="flex flex-wrap gap-0.5" data-testid="nb-traffic-cars">
+            {Array.from({ length: Math.min(30, Math.max(1, perMin)) }, (_, i) => <Car key={i} className="h-3 w-3" strokeWidth={2} />)}
+          </span>
+        </span>
+      ),
+    });
+  }
+  const wd = nb?.ward;
+  if (wd) {
+    cards.push({
+      key: "ward", icon: <Landmark aria-hidden className="h-5 w-5" strokeWidth={STROKE} />, title: t("profile.nb.near.ward", { ward: wd.ward }),
+      main: wd.alderman ? t("profile.nb.near.alder", { name: wd.alderman.split(", ").reverse().join(" ") }) : t("profile.nb.near.noAlder"),
+      sub: (
+        <span className="flex flex-wrap gap-x-3 gap-y-1">
+          {wd.phone && <a href={`tel:${wd.phone.replace(/[^0-9+]/g, "")}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline underline-offset-2"><Phone aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{wd.phone}</a>}
+          {wd.email && <a href={`mailto:${wd.email}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline underline-offset-2"><Mail aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{t("profile.nb.near.email")}</a>}
+          {wd.website && <a href={wd.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline underline-offset-2">{t("profile.nb.near.website")}<SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} /></a>}
+        </span>
+      ),
+    });
+  }
+  const ad = areaDemographics(data);
+  const hh = data.context?.neighborhood?.rent?.trend;
+  if (ad?.population != null) {
+    const ch = hh?.earlier.households && hh.later.households ? Math.round(((hh.later.households - hh.earlier.households) / hh.earlier.households) * 100) : null;
+    cards.push({
+      key: "area", icon: <UsersIcon aria-hidden className="h-5 w-5" strokeWidth={STROKE} />, title: t("profile.nb.near.area", { area }),
+      main: <span className="tabular-nums">{t("profile.nb.near.residents", { n: nf(ad.population) })}</span>,
+      sub: [ad.acs_period ? t("profile.money.rent.census", { period: ad.acs_period }) : null, ch != null ? t("profile.nb.near.renters", { pct: Math.abs(ch), sign: ch >= 0 ? "+" : "−", period: hh!.earlier.period }) : null].filter(Boolean).join(" · "),
+    });
+  }
+  if (!cards.length) return <p className="nx-muted">{t("profile.nb.near.none")}</p>;
+  return (
+    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="nb-nearby">
+      {cards.map((c) => (
+        <li key={c.key} className="flex gap-3 rounded-2xl bg-nx-block p-4" data-card={c.key}>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-nx-page">{c.icon}</span>
+          <span className="flex min-w-0 flex-col gap-1">
+            <span className="text-caption nx-muted">{c.title}</span>
+            <span className="font-semibold [overflow-wrap:anywhere]">{c.main}</span>
+            {c.sub && <span className="text-caption nx-muted">{c.sub}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

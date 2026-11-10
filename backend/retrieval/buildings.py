@@ -349,6 +349,13 @@ RENOVATION_COST_FLOOR = 250_000  # owner's call (Item 102): new construction plu
 CONSTRUCTION_LIMIT = 300
 
 
+def _int_or_none(v: Any) -> int | None:
+    try:
+        return int(float(v)) if v not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
 def _haversine_mi(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     import math
 
@@ -377,7 +384,8 @@ async def construction_within(lat: float, lon: float, *, client: httpx.AsyncClie
     rows = await socrata_get(settings.dataset_permits, {
         "$where": where,
         "$select": ("permit_,permit_type,work_description,issue_date,reported_cost,residential_unit_change,"
-                    "street_number,street_direction,street_name,latitude,longitude"),
+                    "street_number,street_direction,street_name,latitude,longitude,"
+                    "permit_status,permit_milestone,application_start_date,processing_time,review_type"),
         "$order": "issue_date DESC",
         "$limit": CONSTRUCTION_LIMIT,
     }, client=client)
@@ -407,6 +415,12 @@ async def construction_within(lat: float, lon: float, *, client: httpx.AsyncClie
             "lat": plat,
             "lon": plon,
             "distance_mi": round(_haversine_mi(lat, lon, plat, plon), 2),
+            # The permit's own page (decision Item 102, owner's review): where it stands and how long review took.
+            "status": (r.get("permit_status") or "").strip() or None,
+            "milestone": (r.get("permit_milestone") or "").strip() or None,
+            "applied": (r.get("application_start_date") or "")[:10] or None,
+            "processing_days": _int_or_none(r.get("processing_time")),
+            "review_type": (r.get("review_type") or "").strip() or None,
         })
     result = {
         "radius_mi": 0.5,

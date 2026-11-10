@@ -212,8 +212,10 @@ export interface Tile {
   state: FigureState;
   /** The tab that proves it, when that tab is built; null opens nothing yet. */
   tab: TileTab | null;
-  /** The small visual: a share of the whole (built of allowed units, a score of 100). */
+  /** The small visual: a share of the whole (built of allowed units). */
   share?: number | null;
+  /** A 0–100 score drawn as a ring on the tile's right (the walk score, Item 102). */
+  score?: number | null;
   /** The first screen (Item 82): no figure yet; the note says what the tile waits for. */
   checking?: boolean;
 }
@@ -277,7 +279,7 @@ export function overviewTiles(
     tiles.push({
       key: "walk", tabOf: "neighborhood", label: label("walk"), figure: String(ws.walk_score), unit: t("profile.tiles.of100"),
       note: [ws.walk_description, t("profile.tiles.walkSource")].filter(Boolean).join(" · "),
-      state: null, tab: "neighborhood", share: ws.walk_score / 100,
+      state: null, tab: "neighborhood", share: null, score: ws.walk_score,
     });
   } else {
     tiles.push({ key: "walk", tabOf: "neighborhood", label: label("walk"), figure: "—", note: t("profile.tiles.walkUnchecked"), state: { kind: "not_checked", low: false }, tab: "neighborhood" });

@@ -24,6 +24,7 @@ import {
   GROUPS, buildStyle, lotPinImage, modeOpacity, themePaint, type GroupId, type LayerMode, type MapTiles, type Theme,
 } from "./mapStyle";
 import { MapKey, type GroupState } from "./MapKey";
+import { permitWords } from "../profile/neighborhoodModel";
 
 export interface MapView {
   /** Which tab asked for this view; a new id re-applies its camera and modes. */
@@ -53,6 +54,8 @@ export interface NextMapProps {
   building?: ConstructionProject[] | null;
   buildingState?: LateState;
   onRetryBuilding?: () => void;
+  /** Fly to this permit and open its card (a permit page's "Show on the map"); `seq` repeats the request. */
+  focusBuilding?: { permit: ConstructionProject; seq: number } | null;
   /** The map is the focus of the screen (Expand): the wheel zooms at once, like a full-page map. In the page band
       the wheel scrolls the page until the map is clicked. */
   expanded?: boolean;
@@ -92,7 +95,7 @@ function loadedRoads(map: MLMap): RoadLine[] {
 
 export function NextMap({
   lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales,
-  building = null, buildingState = "absent", onRetryBuilding, expanded = false, className,
+  building = null, buildingState = "absent", onRetryBuilding, focusBuilding = null, expanded = false, className,
 }: NextMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -424,6 +427,24 @@ export function NextMap({
     return () => { map.off("click", onClick); map.off("mousemove", pointer); ctrl.current?.abort(); };
   }, [ready, sales, building]);
 
+  // A permit page's "Show on the map": fly there, then open its card where it lands.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !focusBuilding) return;
+    const p = focusBuilding.permit;
+    const ll: [number, number] = [p.lon, p.lat];
+    const open = () => {
+      const pt = map.project(ll);
+      setPicked({ kind: "building", project: p, at: [pt.x, pt.y], ll, sv: viewpointFor(ll, loadedRoads(map), streetOfAddress(p.address)) });
+    };
+    map.once("moveend", open);
+    if (reducedMotion()) map.jumpTo({ center: ll, zoom: Math.max(map.getZoom(), 16.5) });
+    else map.easeTo({ center: ll, zoom: Math.max(map.getZoom(), 16.5), duration: 600 });
+    return () => { map.off("moveend", open); };
+    // seq is the trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusBuilding?.seq, ready]);
+
   // The lot a visitor opened is marked while its card is open.
   const pickedPin = picked?.kind === "parcel" ? picked.pin10 : null;
   useEffect(() => {
@@ -594,13 +615,14 @@ function PickedCard({ picked, onClose, lang, boxH }: { picked: Picked; onClose: 
     );
   } else if (picked.kind === "building") {
     const p = picked.project;
-    const words = p.description ? p.description.charAt(0) + p.description.slice(1).toLowerCase() : null;
+    const words = permitWords(p.description, 160);
+    const issued = p.issued ? new Date(`${p.issued}T12:00:00`).toLocaleDateString(lang === "es" ? "es-MX" : "en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
     body = (
       <>
         <p className="font-semibold">{p.address ?? t(p.kind === "new" ? "map.card.kindNew" : "map.card.kindReno")}</p>
         <p className="text-caption nx-muted">{[t(p.kind === "new" ? "map.card.kindNew" : "map.card.kindReno"), p.cost != null ? money(p.cost) : null].filter(Boolean).join(" · ")}</p>
         {words && <p className="line-clamp-3 text-caption">{words}</p>}
-        {p.issued && <p className="text-caption nx-muted">{t("map.card.issued", { date: p.issued })}</p>}
+        {issued && <p className="text-caption nx-muted">{t("map.card.issued", { date: issued })}</p>}
       </>
     );
   } else {

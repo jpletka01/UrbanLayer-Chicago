@@ -129,6 +129,7 @@
   "total_project_cost"
  ],
  "chi.permits": [
+  "application_start_date",
   "community_area",
   "contact_1_name",
   "contact_1_type",
@@ -141,9 +142,13 @@
   "location",
   "longitude",
   "permit_",
+  "permit_milestone",
+  "permit_status",
   "permit_type",
+  "processing_time",
   "reported_cost",
   "residential_unit_change",
+  "review_type",
   "street_direction",
   "street_name",
   "street_number",

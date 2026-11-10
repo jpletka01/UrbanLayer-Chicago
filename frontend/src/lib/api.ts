@@ -1126,6 +1126,12 @@ export interface ConstructionProject {
   lat: number;
   lon: number;
   distance_mi: number;
+  /** The City's status (ACTIVE, COMPLETE, SUSPENDED, ...) and stage (PERMIT ISSUED (FEE DUE), INSPECTIONS, ...). */
+  status?: string | null;
+  milestone?: string | null;
+  applied?: string | null;
+  processing_days?: number | null;
+  review_type?: string | null;
 }
 
 export interface NextUiConstruction {
@@ -1142,11 +1148,27 @@ export interface NextUiArea311 {
   top: Array<{ type: string; count: number }>;
 }
 
+export interface TractShare { key: string; pct: number; low: boolean }
+export interface TractHeadline {
+  median_age: number | null; housing_units: number | null; households: number | null; persons_per_household: number | null;
+  travel_minutes: number | null; moved_pct: number | null; occupied_pct: number | null; per_capita_income: number | null;
+  median_household_income: number | null; median_home_value: number | null;
+}
+export interface NextUiTract {
+  tract: TractHeadline;
+  city: TractHeadline | null;
+  structure: TractShare[] | null; tenure: TractShare[] | null; occupancy: TractShare[] | null; moved_in: TractShare[] | null;
+  home_value: TractShare[] | null; household_type: TractShare[] | null; mobility: TractShare[] | null;
+  travel_time: TractShare[] | null; income: TractShare[] | null;
+}
+
 export interface NextUiData {
   crime?: NextUiCrime;
   schools?: NextUiSchools;
   construction_within?: NextUiConstruction;
   area_311?: NextUiArea311;
+  /** The tract's housing, household, moving and commuting figures (Item 102), Chicago's headline figures beside. */
+  tract?: NextUiTract;
   /** The community area's own figures (population, a bracket-estimated median income); null when none. */
   area_demographics?: import("./types").DemographicsSummary | null;
   failed?: Array<"schools" | "construction_within" | "area_311" | "area_demographics">;

@@ -521,7 +521,9 @@
         "safety": "Safety",
         "311": "311",
         "people": "People",
-        "schools": "Schools"
+        "schools": "Schools",
+        "changing": "Trends",
+        "nearby": "Nearby"
       },
       "sentence": {
         "walk": "walk score {{score}} ({{desc}})",
@@ -536,7 +538,8 @@
       "score": {
         "walk": "Walk score",
         "transit": "Transit score",
-        "bike": "Bike score"
+        "bike": "Bike score",
+        "ringLabel": "{{label}}: {{score}} of 100"
       },
       "define": {
         "walk": "Walk Score's 0 to 100 index of how many daily errands can be done on foot from this address. A private company's index, not a City figure.",
@@ -546,7 +549,8 @@
         "building": "City building permits issued in the last 2 years within half a mile of this lot: every new building, plus renovations with a reported cost of $250,000 or more. A permit means work was approved, not that it is finished. The same permits are the pins on the map.",
         "r311": "Requests residents made to the City's 311 line in this community area over the last 90 days, duplicates removed, by type. Information calls and parking-ticket reviews are left out. More requests can mean more problems or more people who report them.",
         "people": "Census survey figures (American Community Survey, 5-year) for this lot's census tract, a few blocks around it, beside its community area where the City publishes the same figure. Survey estimates have margins of error; a figure too uncertain to show is withheld.",
-        "schools": "The Chicago Public Schools elementary and high school whose attendance boundary includes this lot, with the State of Illinois's own report card for each: its designation, the share of students meeting state standards and, for a high school, the graduation rate. Families can also apply to other schools; these are the ones assigned by address."
+        "schools": "The Chicago Public Schools elementary and high school whose attendance boundary includes this lot, with the State of Illinois's own report card for each: its designation, the share of students meeting state standards and, for a high school, the graduation rate. Families can also apply to other schools; these are the ones assigned by address.",
+        "trend": "How the community area has changed: the median price of market sales each year (the County's sales, 2020 on, by building type) and the median rent in the Census survey's two latest non-overlapping five-year periods, with the change after inflation. Community-area figures, not this block's; past change, not a forecast."
       },
       "ask": {
         "scores": "How easy is it to get around without a car from {{address}}?",
@@ -554,7 +558,9 @@
         "building": "What is being built near {{address}}, and what does it say about the area?",
         "r311": "What do the 311 requests near {{address}} say about the area?",
         "people": "Who lives around {{address}}, and how does the tract compare with its community area?",
-        "schools": "Which public schools serve {{address}}, and how does the state rate them?"
+        "schools": "Which public schools serve {{address}}, and how does the state rate them?",
+        "trend": "How has the area around {{address}} changed in prices and rents, and what is driving it?",
+        "permit": "What does the permit at {{permit}} say about development near {{address}}?"
       },
       "crime": {
         "tile": "Violent crime",
@@ -593,42 +599,177 @@
           "floor": "Renovations {{floor}}+"
         },
         "none": "No new buildings or major renovations permitted within half a mile in the last 2 years.",
-        "newCount_one": "{{count}} new building",
-        "newCount_other": "{{count}} new buildings",
-        "renoCount_one": "{{count}} major renovation",
-        "renoCount_other": "{{count}} major renovations",
-        "units_one": "adds {{count}} home",
-        "units_other": "adds {{count}} homes",
         "capped": "the newest 300 shown",
-        "more_one": "{{count}} more in the details below",
-        "more_other": "{{count}} more in the details below",
         "kind": {
           "new": "New building",
           "renovation": "Renovation"
         },
         "noAddress": "Address not on the permit",
-        "cost": "Reported cost {{cost}}",
         "addsUnits_one": "adds {{count}} home",
         "addsUnits_other": "adds {{count}} homes",
         "removesUnits_one": "removes {{count}} home",
         "removesUnits_other": "removes {{count}} homes",
-        "permit": "Permit {{n}}"
+        "statNew_one": "new building",
+        "statNew_other": "new buildings",
+        "statReno_one": "major renovation",
+        "statReno_other": "major renovations",
+        "statHomes_one": "home added",
+        "statHomes_other": "homes added",
+        "statCost": "reported cost, all permits",
+        "pace": "Permits by quarter",
+        "quarterValue": "{{n}} new · {{r}} renovations",
+        "filterLabel": "Show",
+        "filter": {
+          "all_one": "All {{count}}",
+          "all_other": "All {{count}}",
+          "new_one": "New {{count}}",
+          "new_other": "New {{count}}",
+          "renovation_one": "Renovations {{count}}",
+          "renovation_other": "Renovations {{count}}"
+        },
+        "sortLabel": "Sort",
+        "sort": {
+          "newest": "Newest",
+          "closest": "Closest",
+          "largest": "Largest cost"
+        },
+        "showAll_one": "Show all {{count}}",
+        "showAll_other": "Show all {{count}}",
+        "fewer": "Show fewer"
       },
       "people": {
         "title": "Who lives here",
         "what": "census figures",
         "notChecked": "Couldn't check the census figures today.",
-        "income": "Median household income",
-        "thisTract": "This lot's census tract",
-        "withheld": "The tract's figure is too uncertain to show.",
         "fact": {
           "owner_occupied_pct": "Homes lived in by their owners",
           "bachelors_or_higher_pct": "Adults with a bachelor's degree or more",
           "poverty_rate": "People below the poverty line",
           "median_age": "Median age"
         },
-        "years": "{{n}} years",
-        "caption": "The tract's own figures; only income is published for {{area}} as a whole."
+        "caption": "Census survey figures for this lot's tract, a few blocks around it; only income is compared with {{area}}, where the City publishes the same figure. Race and ethnicity aren't shown.",
+        "dist": {
+          "transportation_distribution": "How people get to work",
+          "age_distribution": "Age",
+          "income_distribution": "Household income",
+          "education_distribution": "Education (adults 25+)"
+        },
+        "bucket": {
+          "Under 18": "Under 18",
+          "18-24": "18-24",
+          "25-34": "25-34",
+          "35-44": "35-44",
+          "45-54": "45-54",
+          "55-64": "55-64",
+          "65-74": "65-74",
+          "75+": "75+",
+          "Under $25K": "Under $25K",
+          "$25-50K": "$25-50K",
+          "$50-75K": "$50-75K",
+          "$75-100K": "$75-100K",
+          "$100-150K": "$100-150K",
+          "$150-200K": "$150-200K",
+          "$200K+": "$200K+",
+          "No degree": "No degree",
+          "High school": "High school",
+          "Some college": "Some college",
+          "Bachelor's": "Bachelor's",
+          "Graduate+": "Graduate+",
+          "Drove alone": "Drove alone",
+          "Carpooled": "Carpooled",
+          "Public transit": "Public transit",
+          "Walked": "Walked",
+          "Bicycle": "Bicycle",
+          "Work from home": "Work from home",
+          "Other": "Other"
+        },
+        "sec": {
+          "income": "Income",
+          "housing": "Housing",
+          "households": "Households",
+          "work": "Getting to work",
+          "people": "Age, schooling and moving"
+        },
+        "medianIncome": "Median household income",
+        "perCapita": "Per capita income",
+        "housingUnits": "Housing units",
+        "homeValue": "Median value of owner-occupied homes",
+        "households": "Households",
+        "perHousehold": "People per household",
+        "minutes": "{{n}} minutes",
+        "travel": "Average travel time to work",
+        "moved": "Moved in the last year",
+        "withheldShort": "Not shown",
+        "dagger": "† The margin of error is at least 10% of this figure; read it with care.",
+        "cmp": {
+          "same": "about the same as {{area}}",
+          "times": "about {{r}} times {{area}}'s {{value}}",
+          "share": "about {{pct}}% of {{area}}'s {{value}}"
+        },
+        "chart": {
+          "income": "Household income",
+          "occupancy": "Occupied vs vacant",
+          "tenure": "Owners and renters",
+          "structure": "Homes by building size",
+          "movedIn": "Year moved in",
+          "homeValue": "Value of owner-occupied homes",
+          "householdType": "Households by type",
+          "travelTime": "Travel time to work",
+          "mobility": "Where people lived a year ago"
+        },
+        "k": {
+          "income": {
+            "under_50k": "Under $50K",
+            "50_100k": "$50–100K",
+            "100_200k": "$100–200K",
+            "over_200k": "Over $200K"
+          },
+          "occupancy": {
+            "occupied": "Occupied",
+            "vacant": "Vacant"
+          },
+          "tenure": {
+            "owner": "Owner occupied",
+            "renter": "Renter occupied"
+          },
+          "structure": {
+            "single_family": "Single-family",
+            "two": "2 units",
+            "three_four": "3–4 units",
+            "five_19": "5–19 units",
+            "twenty_plus": "20+ units",
+            "other": "Other"
+          },
+          "home_value": {
+            "under_100k": "Under $100K",
+            "100_200k": "$100–200K",
+            "200_300k": "$200–300K",
+            "300_400k": "$300–400K",
+            "400_500k": "$400–500K",
+            "500k_1m": "$500K–1M",
+            "over_1m": "Over $1M"
+          },
+          "household_type": {
+            "married": "Married couples",
+            "other_family": "Other families",
+            "alone": "Living alone",
+            "roommates": "Roommates and others"
+          },
+          "mobility": {
+            "same_house": "Same home",
+            "same_county": "Same county",
+            "other_county": "Other Illinois county",
+            "other_state": "Other state",
+            "abroad": "Abroad"
+          },
+          "travel_time": {
+            "under_15": "Under 15 min",
+            "15_29": "15–29 min",
+            "30_44": "30–44 min",
+            "45_59": "45–59 min",
+            "60_plus": "60+ min"
+          }
+        }
       },
       "schools": {
         "title": "Assigned public schools",
@@ -660,21 +801,78 @@
         },
         "caption": "Assigned by CPS attendance boundary, school year {{boundary}}. Designation and figures: Illinois State Board of Education, {{year}} report card."
       },
-      "details": {
-        "title": "All neighborhood details",
-        "rail": "Nearest CTA rail station",
-        "metra": "Nearest Metra station",
-        "divvy": "Nearest Divvy station",
-        "at": "{{name}}, {{mi}} mi",
+      "trend": {
+        "title": "How {{area}} is changing",
+        "what": "area trends",
+        "none": "No price or rent history on record for {{area}}.",
+        "sales": "Median sale price by year",
+        "groupLabel": "Building type",
+        "group": {
+          "two_to_six": "2–6 units",
+          "single_family": "Single-family",
+          "condo": "Condos"
+        },
+        "salesN_one": "{{count}} sale",
+        "salesN_other": "{{count}} sales",
+        "salesUp": "Up {{pct}}% from {{from}} to {{to}}.",
+        "salesDown": "Down {{pct}}% from {{from}} to {{to}}.",
+        "rent": "Median rent, then and now",
+        "rentChange": "Up {{pct}}%; {{real}}% after inflation.",
+        "notSignificant": "The Census doesn't count this as a clear change (within its margin).",
+        "households": "Renter households: {{from}} → {{to}} ({{pct}}%)",
+        "caption": "The whole of {{area}}. Sales: the County's market sales by year; rent: the Census survey, five-year periods."
+      },
+      "near": {
+        "title": "Around the lot",
+        "none": "Nothing on record around this lot.",
+        "walk": "{{min}} min walk ({{mi}} mi)",
+        "cta": "Nearest CTA train",
+        "metra": "Nearest Metra",
+        "divvy": "Nearest Divvy",
+        "docks_one": "{{count}} dock",
+        "docks_other": "{{count}} docks",
+        "stations_one": "{{count}} station within ½ mi",
+        "stations_other": "{{count}} stations within ½ mi",
         "traffic": "Traffic on the nearest counted street",
-        "trafficValue": "{{road}}: about {{n}} vehicles a day",
-        "ward": "Ward",
-        "wardValue": "Ward {{ward}} · {{name}}",
-        "areaPop": "Community area population",
-        "property": "Property crimes, last 90 days",
-        "tract": "Census tract",
-        "allProjects_one": "The {{count}} permit within half a mile",
-        "allProjects_other": "All {{count}} permits within half a mile"
+        "perDay": "{{n}} vehicles a day",
+        "trafficOn": "{{road}}, both directions · about {{perMin}} a minute",
+        "ward": "Ward {{ward}}",
+        "alder": "Ald. {{name}}",
+        "noAlder": "Alderman not on record",
+        "email": "Email",
+        "website": "Website",
+        "area": "{{area}}",
+        "residents": "{{n}} residents",
+        "renters": "renter households {{sign}}{{pct}}% since {{period}}"
+      },
+      "permit": {
+        "what": "What is being built",
+        "noDescription": "The permit has no description.",
+        "where": "Where it stands",
+        "step": {
+          "applied": "Applied",
+          "issued": "Permit issued",
+          "inspections": "Inspections",
+          "complete": "Complete"
+        },
+        "occupancy": "Needs a certificate of occupancy before anyone moves in.",
+        "facts": "The permit",
+        "cost": "Reported cost",
+        "notStated": "Not stated",
+        "homes": "Homes",
+        "noUnitChange": "No change recorded",
+        "distance": "From this lot",
+        "reviewTime": "City review",
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days",
+        "reviewType": "Review type",
+        "number": "Permit number",
+        "showOnMap": "Show on the map",
+        "records": "The City's records",
+        "buildingRecords": "City of Chicago building records",
+        "buildingRecordsHow": "Search {{address}} there for the permit, its inspections and any violations.",
+        "dataset": "Building permits on the City's data portal",
+        "unitsNotStated": "Not stated on the permit"
       }
     }
   },

@@ -15,6 +15,9 @@ export interface Column {
   value: number;
   valueText: string;
   highlight?: boolean;
+  /** Stacked parts, bottom first (the Neighborhood tab's permits by quarter: new buildings, renovations); their
+      values sum to `value`. Without them the column is one color. */
+  segments?: Array<{ value: number; className: string }>;
 }
 
 export function ColumnChart({ columns, top, scale, heightClass = "h-36", testId, ariaLabel }: {
@@ -73,9 +76,13 @@ export function ColumnChart({ columns, top, scale, heightClass = "h-36", testId,
                   onFocus={() => setHover(c.key)}
                   onBlur={() => setHover(null)}
                   onClick={() => setPinned((p) => (p === c.key ? null : c.key))}
-                  className={`block w-full max-w-10 cursor-pointer rounded-t-md transition-[filter,box-shadow] ${c.highlight ? "bg-nx-lot" : "bg-nx-chart-1"} ${isActive && !c.highlight ? "brightness-90" : ""} ${pinned === c.key ? "shadow-[0_0_0_2px_rgb(var(--nx-page)),0_0_0_4px_rgb(var(--nx-ink)/0.5)]" : ""}`}
+                  className={`flex w-full max-w-10 cursor-pointer flex-col-reverse overflow-hidden rounded-t-md transition-[filter,box-shadow] ${c.segments ? "" : c.highlight ? "bg-nx-lot" : "bg-nx-chart-1"} ${isActive && !c.highlight ? "brightness-90" : ""} ${pinned === c.key ? "shadow-[0_0_0_2px_rgb(var(--nx-page)),0_0_0_4px_rgb(var(--nx-ink)/0.5)]" : ""}`}
                   style={{ height: `${h}%` }}
-                />
+                >
+                  {c.segments && c.value > 0 && c.segments.map((sg, si) => (
+                    <span key={si} aria-hidden className={`block w-full shrink-0 ${sg.className}`} style={{ height: `${(sg.value / c.value) * 100}%` }} />
+                  ))}
+                </button>
               </div>
             );
           })}

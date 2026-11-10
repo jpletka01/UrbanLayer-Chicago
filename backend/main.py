@@ -2071,6 +2071,11 @@ def _scorecard_data_from(
         crime_next = _crime_next(results)
         if crime_next is not None:
             nu["crime"] = crime_next
+    if next_ui:
+        nb_now = results.get("neighborhood")
+        ct = getattr(nb_now, "census_tract", None) if not isinstance(nb_now, Exception) else None
+        if ct is not None and getattr(ct, "extras", None):
+            nu["tract"] = ct.extras
     for key in NEXT_UI_TASK_KEYS:
         if key not in results:
             continue

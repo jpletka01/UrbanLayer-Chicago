@@ -4,7 +4,7 @@
 // and on short maps (and by choice anywhere); the top-right corner is the key's (Item 79).
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Layers } from "lucide-react";
+import { Building2, ChevronDown, Layers, Wrench } from "lucide-react";
 import { ZONING_COLORS, ZONING_FAMILIES, type GroupId, type LayerMode } from "./mapStyle";
 import { PIN_COLORS } from "./pins";
 import { patternCss } from "./patterns";
@@ -102,9 +102,9 @@ export function MapKey({ groups, families, onMode, onRetry, onShow, defaultOpen,
               </div>
               {g.id === "building" && g.mode !== "off" && (
                 <ul className="flex flex-col gap-0.5 pl-4" data-testid="key-building-kinds">
-                  {([["build", "map.card.kindNew"], ["reno", "map.card.kindReno"]] as const).map(([k, label]) => (
+                  {([["build", "map.card.kindNew", Building2], ["reno", "map.card.kindReno", Wrench]] as const).map(([k, label, Icon]) => (
                     <li key={k} className="flex items-center gap-1.5">
-                      <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full border border-nx-ink/30" style={{ background: PIN_COLORS[k] }} />
+                      <span aria-hidden className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[#1C1C1C]" style={{ background: PIN_COLORS[k] }}><Icon className="h-2.5 w-2.5" strokeWidth={2} /></span>
                       {t(label)}
                     </li>
                   ))}
