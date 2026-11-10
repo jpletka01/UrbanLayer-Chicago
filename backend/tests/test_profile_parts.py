@@ -459,6 +459,7 @@ async def test_the_activity_part_carries_the_new_uis_sources_and_the_full_respon
     assert "next_ui" not in full
     nu = last["profile"]["next_ui"]
     assert nu["schools"] == SCHOOLS and nu["construction_within"] == CONSTRUCTION and nu["area_311"] == AREA_311
+    assert nu["crime"]["current"] == {"violent": 0, "property": 0, "other": 0}  # the stub's crime rows are empty
     assert "failed" not in nu
 
 

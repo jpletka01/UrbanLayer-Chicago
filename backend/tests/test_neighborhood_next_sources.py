@@ -83,3 +83,21 @@ async def test_area_311_drops_non_concerns_and_cleans_names():
         out = await three11.top_311_by_community_area(24)
     assert out["total"] == 90
     assert out["top"] == [{"type": "Graffiti Removal Request", "count": 70}, {"type": "Tree Trim Request", "count": 20}]
+
+
+def test_crime_splits_every_type_into_violent_property_and_other():
+    from backend import main
+
+    yoy = {
+        "current": [{"primary_type": "BATTERY", "count": "40"}, {"primary_type": "THEFT", "count": "90"},
+                    {"primary_type": "NARCOTICS", "count": "5"}, {"primary_type": "ROBBERY", "count": "10"}],
+        "prior": [{"primary_type": "BATTERY", "count": "30"}, {"primary_type": "THEFT", "count": "100"}],
+        "current_label": "Aug–Nov 2026", "prior_label": "Aug–Nov 2025",
+    }
+    out = main._crime_next({"crime": [], "crime_yoy": yoy})
+    assert out["current"] == {"violent": 50, "property": 90, "other": 5}
+    assert out["prior"] == {"violent": 30, "property": 100, "other": 0}
+    # without the comparison, the 90-day rows alone and no change
+    only = main._crime_next({"crime": [{"primary_type": "ARSON", "count": "2"}], "crime_yoy": None})
+    assert only == {"window_days": 90, "current": {"violent": 0, "property": 2, "other": 0}, "prior": None}
+    assert main._crime_next({"crime": None, "crime_yoy": RuntimeError("x")}) is None

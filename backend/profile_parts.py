@@ -329,7 +329,7 @@ async def _profile(rec: Record) -> dict:
     rl = rec.rl
     data = main._scorecard_data_from(
         rec.results, rl.lat, rl.lon, rl.address, ca=rec.ca, ca_name=rec.ca_name,
-        comparables=rec.comparables, block_face=rec.block_face,
+        comparables=rec.comparables, block_face=rec.block_face, next_ui=True,
     )
     ctx = data["context"]
     sales = list(getattr(ctx.property, "sales_history", None) or [])

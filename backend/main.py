@@ -1956,6 +1956,38 @@ _CA_TASK_KEYS = frozenset({"incentives", "neighborhood", "aro_housing", "crime",
 # ride under the payload's own ``next_ui`` key; a failed one is listed in ``next_ui.failed`` (never "none").
 NEXT_UI_TASK_KEYS = ("schools", "construction_within", "area_311")
 
+# Crime as violent vs property for the Neighborhood tab (Item 102), on the Chicago Police Department's own primary
+# types: violent = crimes against a person, property = taking or damaging property. The other types (narcotics,
+# weapons, deceptive practice, ...) count in neither. The Profile's crime summary keeps only the top types, so the
+# split is counted here from every type.
+CRIME_VIOLENT = frozenset({
+    "HOMICIDE", "CRIMINAL SEXUAL ASSAULT", "CRIM SEXUAL ASSAULT", "ROBBERY", "ASSAULT", "BATTERY", "KIDNAPPING",
+    "HUMAN TRAFFICKING",
+})
+CRIME_PROPERTY = frozenset({"BURGLARY", "THEFT", "MOTOR VEHICLE THEFT", "ARSON", "CRIMINAL DAMAGE"})
+
+
+def _crime_split(rows: list[dict[str, Any]] | None) -> dict[str, int]:
+    out = {"violent": 0, "property": 0, "other": 0}
+    for r in rows or []:
+        n = int(r.get("count") or 0)
+        t = (r.get("primary_type") or "").upper()
+        out["violent" if t in CRIME_VIOLENT else "property" if t in CRIME_PROPERTY else "other"] += n
+    return out
+
+
+def _crime_next(results: dict[str, Any]) -> dict[str, Any] | None:
+    """The community area's crimes over 90 days by kind, and the same 90 days a year earlier when the comparison
+    answered; None when the crime lookup failed or wasn't asked."""
+    yoy = results.get("crime_yoy")
+    if isinstance(yoy, dict) and yoy.get("current") is not None:
+        return {"window_days": 90, "current": _crime_split(yoy["current"]), "prior": _crime_split(yoy.get("prior")),
+                "current_label": yoy.get("current_label"), "prior_label": yoy.get("prior_label")}
+    rows = results.get("crime")
+    if isinstance(rows, list):
+        return {"window_days": 90, "current": _crime_split(rows), "prior": None}
+    return None
+
 
 def _scorecard_task(
     key: str, lat: float, lon: float, address: str | None, *, pin: str | None, ca: int | None, ca_name: str | None,
@@ -2006,6 +2038,7 @@ def _scorecard_data_from(
     ca_name: str | None,
     comparables: Any = None,
     block_face: Any = None,
+    next_ui: bool = False,
 ) -> dict:
     """Assemble the Profile's data dict from task results (decision Item 89). ``results`` maps a task key to its
     value or the exception it raised; a key that is absent wasn't asked (a part that hasn't run), which is never
@@ -2023,16 +2056,20 @@ def _scorecard_data_from(
             log.warning("Scorecard retrieval %s failed: %s", key, value)
             results[key] = None
             partial_failures.append(failures.label(key))
-    next_ui: dict[str, Any] = {}
+    nu: dict[str, Any] = {}
+    if next_ui and ("crime" in results or "crime_yoy" in results):
+        crime_next = _crime_next(results)
+        if crime_next is not None:
+            nu["crime"] = crime_next
     for key in NEXT_UI_TASK_KEYS:
         if key not in results:
             continue
         value = results.pop(key)
         if isinstance(value, Exception):
             log.warning("Profile part source %s failed: %s", key, value)
-            next_ui.setdefault("failed", []).append(key)
+            nu.setdefault("failed", []).append(key)
         else:
-            next_ui[key] = value
+            nu[key] = value
     history = results.pop("property_history", None)
     if history is not None and not isinstance(history, Exception):
         results["property"] = with_history(results.get("property"), history)
@@ -2116,8 +2153,8 @@ def _scorecard_data_from(
         "failed_sources": failures.failed_detail(partial_failures),
         "violations_checked": violations_checked,
     }
-    if next_ui:
-        out["next_ui"] = next_ui
+    if nu:
+        out["next_ui"] = nu
     return out
 
 
