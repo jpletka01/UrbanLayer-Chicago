@@ -54,6 +54,7 @@
   --nx-cat-4: 53 94 88;
   --nx-cat-5: 253 193 180;
   --nx-cat-6: 180 180 180;
+  --nx-cat-7: 145 132 196;          /* a muted lavender: a sixth category before "everything else" */
 
   /* Today's role variables, re-pointed for components reused inside the new UI */
   --bg: 255 255 255;

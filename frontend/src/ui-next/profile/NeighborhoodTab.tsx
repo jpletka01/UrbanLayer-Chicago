@@ -572,7 +572,7 @@ function SafetyBody({ crime, area }: { crime: CrimeModel; area: string }) {
 // whose margin of error is at least 10% of it says "Low confidence" once, in its header, explained under the section.
 // The comparison is the community area where the City publishes the same figure (rule 6).
 
-const DONUT_SERIES = [...SERIES, OTHER];
+const DONUT_SERIES = [...SERIES, "rgb(var(--nx-cat-7))"];
 
 function FigureCard({ value, label, compare, badge, testId }: { value: string; label: string; compare?: string | null; badge?: ReactNode; testId?: string }) {
   return (
@@ -652,12 +652,16 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
   const low = (list: TractShare[] | null | undefined) => (list ?? []).some((s) => s.low);
   const dist = (key: "age_distribution" | "education_distribution" | "transportation_distribution") =>
     (ct?.[key] ?? []).map((b) => ({ key: b.label, label: t(`profile.nb.people.bucket.${b.label}`, { defaultValue: b.label }), tick: t(`profile.nb.people.tick.age.${b.label}`, { defaultValue: b.label }), pct: b.value }));
-  const donut = (title: string, list: Array<{ key: string; label: string; pct: number }>, opts: { lead?: string; low?: boolean; testId?: string } = {}) => (
-    <ChartCard title={title} low={opts.low} testId={opts.testId}>
-      <Donut title={title} showTitle={false} size={112} lead={opts.lead ?? [...list].sort((a, b) => b.pct - a.pct)[0]?.key}
-        segments={list.map((s, i) => ({ key: s.key, label: s.label, pct: s.pct, color: DONUT_SERIES[i % DONUT_SERIES.length] }))} />
-    </ChartCard>
-  );
+  // "Other" is always the neutral gray; the rest take the category colors in order.
+  const donut = (title: string, list: Array<{ key: string; label: string; pct: number }>, opts: { lead?: string; low?: boolean; testId?: string } = {}) => {
+    let n = 0;
+    return (
+      <ChartCard title={title} low={opts.low} testId={opts.testId}>
+        <Donut title={title} showTitle={false} size={112} lead={opts.lead ?? [...list].sort((a, b) => b.pct - a.pct)[0]?.key}
+          segments={list.map((s) => ({ key: s.key, label: s.label, pct: s.pct, color: /^other$/i.test(s.key) ? OTHER : DONUT_SERIES[n++ % DONUT_SERIES.length] }))} />
+      </ChartCard>
+    );
+  };
   const inc = people.income;
   const tractNo = (people.tractName ?? "").match(/Census Tract ([\d.]+)/i)?.[1];
   const scope = tractNo ? t("profile.nb.people.scope", { tract: tractNo }) : t("profile.nb.people.scopeNoNumber");
@@ -705,7 +709,7 @@ function PeopleBody({ data, people, area, areaPending }: { data: ScorecardRespon
       <SubSection title={t("profile.nb.people.sec.work")} scope={scope}>
         <div className="nx-cq"><div className="nx-masonry">
           {h?.travel_minutes != null && <FigureCard value={t("profile.nb.people.minutes", { n: nf(h.travel_minutes, 1) })} label={t("profile.nb.people.travel")} />}
-          {dist("transportation_distribution").length > 0 && <ChartCard title={t("profile.nb.people.dist.transportation_distribution")} testId="nb-commute-cols"><ShareBars rows={dist("transportation_distribution")} /></ChartCard>}
+          {dist("transportation_distribution").length > 0 && donut(t("profile.nb.people.dist.transportation_distribution"), dist("transportation_distribution"), { testId: "nb-commute-cols" })}
           {x?.travel_time && <ChartCard title={t("profile.nb.people.chart.travelTime")} low={low(x.travel_time)}><ShareColumns title={t("profile.nb.people.chart.travelTime")} rows={rows("travel_time", x.travel_time)} /></ChartCard>}
         </div></div>
       </SubSection>
@@ -790,13 +794,14 @@ function SchoolCard({ school }: { school: NextUiSchool }) {
       )}
       {rc ? (
         // The rates as rings with icons, like the score tiles (owner: the numbers read tight as a list).
-        <ul className="grid grid-cols-2 gap-3 min-[360px]:grid-cols-4" data-testid={`nb-school-rates-${school.level}`}>
+        // One column per figure, so three or four (or five) always fill the row evenly (owner).
+        <ul className="grid gap-x-3 gap-y-4 py-2" style={{ gridTemplateColumns: `repeat(${school.level === "high" ? 4 : 3}, minmax(0, 1fr))` }} data-testid={`nb-school-rates-${school.level}`}>
           {([
             ["reading", BookOpen, rc.ela_pct, rc.ela_source],
             ["math", Calculator, rc.math_pct, rc.math_source],
             ...(school.level === "high" ? [["graduation", GraduationCap, rc.graduation_4yr_pct, undefined] as const] : []),
           ] as const).map(([key, Icon, v, src]) => (
-            <li key={key} className="flex flex-col items-center gap-1 text-center">
+            <li key={key} className="flex flex-col items-center gap-1.5 text-center">
               {v != null
                 ? <ScoreRing value={Math.round(v)} suffix="%" size={48} inkClass="text-nx-ink" label={`${t(`profile.nb.schools.${key}`)}: ${Math.round(v)}%`} />
                 : <span className="grid h-12 w-12 place-items-center rounded-full border-4 border-nx-ink/10 text-caption nx-muted">—</span>}
@@ -805,7 +810,7 @@ function SchoolCard({ school }: { school: NextUiSchool }) {
               {v == null && <span className="text-[0.6875rem] leading-tight nx-muted">{t("profile.nb.schools.notPublished")}</span>}
             </li>
           ))}
-          <li className="flex flex-col items-center gap-1 text-center">
+          <li className="flex flex-col items-center gap-1.5 text-center">
             <span className="grid h-12 w-12 place-items-center rounded-full bg-nx-block"><UsersIcon aria-hidden className="h-5 w-5" strokeWidth={STROKE} /></span>
             <span className="text-caption font-semibold tabular-nums leading-tight">{rc.enrollment != null ? rc.enrollment.toLocaleString(numLocale(lng)) : "—"}</span>
             <span className="text-caption leading-tight nx-muted">{t("profile.nb.schools.short.students")}</span>

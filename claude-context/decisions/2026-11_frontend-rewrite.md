@@ -796,7 +796,7 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 ## Item 102: Phase 6, the Neighborhood tab (2026-11-09)
 
-**Status: owner's calls made before the build (2026-11-09); being built on `feat/ui-next-phase-6-neighborhood` (cut from `feat/ui-next-phase-6-money`, PR #214, not merged). No route flips (Item 88).**
+**Status: approved by the owner (2026-11-10: "once that's in, I think we're good to go", after five localhost review rounds, below) on `feat/ui-next-phase-6-neighborhood` (cut from `feat/ui-next-phase-6-money`, PR #214, with PR #213's branch merged in for the review); not merged (merge = deploy, the owner's call; the three merge together). No route flips (Item 88).**
 
 **The owner's calls (2026-11-09), from a phone mockup of three layouts and four questions:**
 - **Phone layout: one column plus sticky jump links** (mockup option B). Below `md`, a row of chips sticks under the tab bar (Getting around, Building, Safety, 311, People, Schools); a tap scrolls to that block and the chip of the block in view is lit. Desktop keeps the shared tab shape. *Alternatives shown:* the plain long column of Money (schools at the bottom of a long scroll); an answer list where each row opens a reading page (shortest screen, but charts one tap away and a different shape from every other tab).
@@ -855,3 +855,14 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 - *Education's key looked like it was missing entries:* every entry was there, but a 0% slice ("No degree") had a swatch and no slice, Spruce vanished on a dark card, and the two pinks sat side by side. Donuts now leave out 0% slices and draw from category tokens in an order where neighbors read apart (`--nx-cat-1…6`: Sapphire, Ballet Slipper, Pistachio, Spruce, Bubblegum, gray), with Spruce lightened in dark.
 - *Which area?:* each "Who lives here" section names it beside its title ("Census tract 8310, a few blocks around the lot").
 - How people get to work stays as bars (the owner: every mode readable, however small).
+
+**The owner's fifth review (2026-11-10), the last:** how people get to work is a donut too (it sums to 100%), led by its largest share ("Work from home 41%"), "Other" always the neutral gray and a sixth category color (`--nx-cat-7`, a muted lavender); a school's rate rings take one column each, so three or four always fill the row evenly, with more room above and below. Then the owner's go.
+
+**Gates (local, 2026-11-10):**
+- *Words:* not measured against a budget (the new UI has none yet; Item 99's Money counts are the baseline). The tab is long by design: the owner asked for the Census data and the charts; phones get the jump links.
+- *Timing:* the `activity` part now carries crime, crime's yearly comparison, 311 by type, schools, construction and the community area's figures; on 1601 N Milwaukee cold, every block filled in about 45 s locally (two City-portal lookups dominate), warm about 2 s. 311 over a year missed the 20 s deadline on every cold visit (43 s), so it is 90 days (6.5 s). The tract's extra Census tables ride in its one existing request (no new request). Production per-part timing comes from the `scorecard part timings` lines after deploy.
+- *Failure states:* each late block keeps its outline, named, and says "Couldn't check in time" or "Couldn't load" with Retry in place, per source (vitest); a failed source is listed in `next_ui.failed`, never "none" (pytest); "Around the lot" no longer says "Nothing on record" while loading.
+- *Map:* the Playwright check finds the same canvas after the switch to Neighborhood; `mapNoSatellite.test.tsx` passes.
+- `make test`, `npm run build`, `npm run test` (1,137), `npm run lint` (67 warnings, the cap), `e2e/ui-next.spec.ts` (with the new Neighborhood check: late outlines, same map, jump links, axe light and dark at 360 px) and the mobile matrix: see the PR for the final run.
+
+**Not measured:** how builders read the tab (the builder test, Item 88); production timings. **Open, the owner's call:** whether "Who lives here" also compares with Chicago (rule 6 says the community area; the same Census request already returns Chicago's figures, in `next_ui.tract.city`).
