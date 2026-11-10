@@ -469,3 +469,69 @@ async def test_a_failed_new_ui_source_is_listed_never_none():
         _ov, responses = await _all_parts()
     nu = max(responses, key=lambda r: r["version"])["profile"]["next_ui"]
     assert nu["failed"] == ["area_311"] and "area_311" not in nu
+
+
+async def test_concurrent_parts_never_stamp_older_data_with_a_newer_version():
+    """The page keeps the response with the highest version, so a version must order the DATA a response was
+    assembled from, not the moment its assembly finished. Assembly awaits (upcoming zoning and text impacts run
+    in a thread): a part that snapshotted the record before the incentives part landed used to finish after it
+    and take the higher version, so the page swapped the full incentives for the Overview's membership-only ones
+    (no tract, no TIF reports, QCT/NMTC "No"; 6300 S Cottage Grove, 2026-11-09)."""
+    full = INC_FULL.model_copy(update={"census_tract": "17031420700", "in_qct": True})
+    real_finish = main._finish_scorecard_payload
+    calls = {"n": 0}
+
+    async def slow_then_fast(data, **kw):
+        # each later assembly finishes sooner, so the ones that started first finish last
+        calls["n"] += 1
+        await asyncio.sleep(max(0.0, 0.08 - 0.01 * calls["n"]))
+        return await real_finish(data, **kw)
+
+    with _sources(), patch.object(main, "incentives_domain", new=AsyncMock(return_value=full)), \
+            patch.object(main, "_finish_scorecard_payload", new=slow_then_fast):
+        ov = await profile_parts.overview(ADDRESS, None, None, None)
+        parts = await asyncio.gather(*(profile_parts.part(n, ov["lookup"], None) for n in ov["parts_pending"]))
+
+    by_version = sorted([ov, *parts], key=lambda r: r["version"])
+    assert len({r["version"] for r in by_version}) == len(by_version)
+    landed = next(r for r in by_version if r["part"] == "incentives")["version"]
+    for r in by_version:
+        tract = r["profile"]["context"]["incentives"].get("census_tract")
+        if r["version"] >= landed:
+            assert tract == "17031420700", (r["part"], r["version"])
+            assert "incentives" in r["parts_in"]
+    newest = by_version[-1]
+    assert newest["parts_pending"] == []
+    assert newest["profile"]["context"]["incentives"]["in_qct"] is True
+
+
+@pytest.mark.parametrize("token_from", ["overview", "newest"])
+async def test_a_lost_lookup_asked_by_every_part_at_once_is_rebuilt_once_above_the_pages_version(token_from):
+    """After a restart the page's parts all find the record missing at once. One rebuild serves them (each built
+    its own record before), and its versions start above every answer the page holds: the page drops a response
+    from the same record that isn't newer, so a rebuild counting from 1 was thrown away (decision Item 101).
+    ``overview``: the burst still carries the Overview's token; ``newest``: a retry carries the newest one."""
+    real_rebuild = profile_parts._rebuild
+    rebuilds = {"n": 0}
+
+    async def counting(claims, have):
+        rebuilds["n"] += 1
+        return await real_rebuild(claims, have)
+
+    with _sources(), patch.object(profile_parts, "_rebuild", new=counting):
+        full = await main._scorecard_payload(ADDRESS, None, None, None)
+        ov = await profile_parts.overview(ADDRESS, None, None, None)
+        held = [await profile_parts.part(n, ov["lookup"], None) for n in ("history", "money")]
+        page = max([ov, *held], key=lambda r: r["version"])
+        profile_parts._records._store.clear()  # a restart
+        token = ov["lookup"] if token_from == "overview" else page["lookup"]
+        rest = [n for n in ov["parts_pending"] if n not in ("history", "money")]
+        got = await asyncio.gather(*(profile_parts.part(n, token, "history,money") for n in rest))
+
+    assert rebuilds["n"] == 1
+    assert len({r["record"] for r in got}) == 1 and got[0]["record"] == page["record"]
+    versions = [r["version"] for r in got]
+    assert min(versions) > page["version"] and len(set(versions)) == len(versions)
+    newest = max(got, key=lambda r: r["version"])
+    assert newest["parts_pending"] == []
+    assert _without_arms_length(newest["profile"]) == full
