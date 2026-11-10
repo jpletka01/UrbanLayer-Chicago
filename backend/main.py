@@ -1950,7 +1950,11 @@ SCORECARD_TASK_KEYS = (
     "violations", "address_311",
 )
 # Keys that only exist with a community area.
-_CA_TASK_KEYS = frozenset({"incentives", "neighborhood", "aro_housing", "crime", "crime_yoy"})
+_CA_TASK_KEYS = frozenset({"incentives", "neighborhood", "aro_housing", "crime", "crime_yoy", "area_311"})
+# Sources only the new UI's Profile parts fetch (the Neighborhood tab, decision Item 102): the full
+# /api/scorecard never asks them, so today's Profile, chat grounding and the report are unchanged. Their results
+# ride under the payload's own ``next_ui`` key; a failed one is listed in ``next_ui.failed`` (never "none").
+NEXT_UI_TASK_KEYS = ("schools", "construction_within", "area_311")
 
 
 def _scorecard_task(
@@ -1979,6 +1983,14 @@ def _scorecard_task(
         coro = _address_violations_data(address)
     elif key == "address_311":
         coro = three11.address_311_complaints(lat, lon)
+    elif key == "schools":
+        from backend.retrieval.neighborhood.schools import assigned_schools
+
+        coro = assigned_schools(lat, lon)
+    elif key == "construction_within":
+        coro = buildings.construction_within(lat, lon)
+    elif key == "area_311":
+        coro = three11.top_311_by_community_area(ca)
     else:  # pragma: no cover - a programming error
         raise KeyError(key)
     return _limited(coro, key)
@@ -2011,6 +2023,16 @@ def _scorecard_data_from(
             log.warning("Scorecard retrieval %s failed: %s", key, value)
             results[key] = None
             partial_failures.append(failures.label(key))
+    next_ui: dict[str, Any] = {}
+    for key in NEXT_UI_TASK_KEYS:
+        if key not in results:
+            continue
+        value = results.pop(key)
+        if isinstance(value, Exception):
+            log.warning("Profile part source %s failed: %s", key, value)
+            next_ui.setdefault("failed", []).append(key)
+        else:
+            next_ui[key] = value
     history = results.pop("property_history", None)
     if history is not None and not isinstance(history, Exception):
         results["property"] = with_history(results.get("property"), history)
@@ -2080,7 +2102,7 @@ def _scorecard_data_from(
     _viol_raw = results.get("violations")
     violations_checked = bool(_viol_raw) and bool(_viol_raw.get("checked"))
 
-    return {
+    out = {
         "address": resolved_address,
         "lat": resolved_lat,
         "lon": resolved_lon,
@@ -2094,6 +2116,9 @@ def _scorecard_data_from(
         "failed_sources": failures.failed_detail(partial_failures),
         "violations_checked": violations_checked,
     }
+    if next_ui:
+        out["next_ui"] = next_ui
+    return out
 
 
 async def _scorecard_comparables(ctx, resolved_lat: float, resolved_lon: float):

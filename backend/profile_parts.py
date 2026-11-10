@@ -285,9 +285,9 @@ async def _run_late(rec: Record, part: str, deadline_s: float) -> list[str]:
             lambda: main._scorecard_task(part, rl.lat, rl.lon, rl.address, pin=rl.pin, ca=rec.ca, ca_name=rec.ca_name),
         )
     elif part == "activity":
-        keys = ["violations", "address_311"]
+        keys = ["violations", "address_311", "schools", "construction_within"]
         if rec.ca is not None:
-            keys = ["aro_housing", "crime", "crime_yoy", *keys]
+            keys = ["aro_housing", "crime", "crime_yoy", "area_311", *keys]
         for k in keys:
             sources[k] = (
                 (k, rl.lat, rl.lon, rl.address, rec.ca),

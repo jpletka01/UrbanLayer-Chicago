@@ -141,3 +141,41 @@ async def address_311_complaints(
     }
     _address_cache.set(key, result)
     return result
+
+
+_area_cache = TTLCache(ttl_seconds=86_400, maxsize=128, name="311_area_top")
+AREA_311_DAYS = 365
+# Request types that are not a neighborhood concern (an information call, a parking-ticket review).
+_NOT_CONCERNS = ("311 INFORMATION ONLY CALL", "Finance Parking Code Enforcement Review", "Aircraft Noise Complaint")
+
+
+def _clean_type(sr_type: str) -> str:
+    return sr_type.replace("(NO LONGER BEING ACCEPTED)", "").strip()
+
+
+async def top_311_by_community_area(community_area: int, *, client: httpx.AsyncClient | None = None) -> dict[str, Any]:
+    """The community area's most frequent 311 requests over the last year, duplicates excluded (the new UI's
+    Neighborhood tab, decision Item 102): {days, total, top: [{type, count}] (5)}. ``total`` counts every
+    request type in the window except the non-concerns. Raises on failure, caches successes for a day."""
+    key = f"311_area_top:{community_area}"
+    cached = _area_cache.get(key)
+    if cached is not None:
+        return cached
+    settings = get_settings()
+    rows = await socrata_get(settings.dataset_311, {
+        "$select": "sr_type,count(*) as count",
+        "$where": (f"community_area='{community_area}' AND created_date > '{cutoff_iso(AREA_311_DAYS)}' "
+                   "AND duplicate=false"),
+        "$group": "sr_type",
+        "$order": "count DESC",
+        "$limit": 500,
+    }, client=client)
+    kept = [(_clean_type(r.get("sr_type") or ""), int(r.get("count") or 0)) for r in rows
+            if (r.get("sr_type") or "") not in _NOT_CONCERNS and r.get("sr_type")]
+    result = {
+        "days": AREA_311_DAYS,
+        "total": sum(n for _, n in kept),
+        "top": [{"type": t, "count": n} for t, n in kept[:5]],
+    }
+    _area_cache.set(key, result)
+    return result

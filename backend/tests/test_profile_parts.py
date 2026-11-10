@@ -41,6 +41,9 @@ SALES = [
 WALK = WalkScoreSummary(walk_score=91, walk_description="Walker's Paradise")
 FLAGS = ParcelFlags(scofflaw=True)
 INC_MEMBER = IncentivesSummary(in_tif_district=True, tif_name="Fullerton/Milwaukee")
+SCHOOLS = {"elementary": {"school_id": "610229", "name": "A.N. Pritzker School"}, "high": None}
+CONSTRUCTION = {"radius_mi": 0.5, "months": 24, "projects": [], "capped": False}
+AREA_311 = {"days": 365, "total": 12, "top": [{"type": "Pothole in Street Complaint", "count": 12}]}
 INC_FULL = IncentivesSummary(in_tif_district=True, tif_name="Fullerton/Milwaukee", tif_fund_balance=12_000_000.0)
 
 
@@ -120,6 +123,10 @@ def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL, 
     p(patch.object(main, "_address_violations_data", new=AsyncMock(
         return_value={"checked": True, "status_counts": [], "detail": []})))
     p(patch.object(main.three11, "address_311_complaints", new=AsyncMock(return_value=None)))
+    # the new UI's own sources (Item 102): only the parts ask them
+    p(patch("backend.retrieval.neighborhood.schools.assigned_schools", new=AsyncMock(return_value=SCHOOLS)))
+    p(patch.object(main.buildings, "construction_within", new=AsyncMock(return_value=CONSTRUCTION)))
+    p(patch.object(main.three11, "top_311_by_community_area", new=AsyncMock(return_value=AREA_311)))
     p(patch("backend.retrieval.property.sales.nearby_comparable_sales", new=AsyncMock(return_value={"sales": []})))
     p(patch("backend.retrieval.property.block_face.block_face_test", new=AsyncMock(
         return_value=BlockFaceTest(state="met", lots=8, counted=8, two_plus=6), side_effect=block_face_exc)))
@@ -129,7 +136,10 @@ def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL, 
 
 
 def _without_arms_length(profile: dict) -> dict:
+    """The parts' Profile minus what only the parts carry: the per-sale arm's-length flag and the new UI's own
+    sources (``next_ui``, Item 102), which the full response never asks."""
     out = copy.deepcopy(profile)
+    out.pop("next_ui", None)
     for row in ((out.get("context") or {}).get("property") or {}).get("sales_history") or []:
         row.pop("arms_length", None)
     return out
@@ -439,3 +449,21 @@ async def test_program_membership_in_the_overview_never_asks_the_census_tract():
         summary = await inc_mod.incentives_membership(LAT, LON)
     assert tract.await_count == 0
     assert summary.unchecked == [] and summary.in_tif_district is False
+
+
+async def test_the_activity_part_carries_the_new_uis_sources_and_the_full_response_doesnt():
+    with _sources():
+        full = await main._scorecard_payload(ADDRESS, None, None, None)
+        _ov, responses = await _all_parts()
+    last = max(responses, key=lambda r: r["version"])
+    assert "next_ui" not in full
+    nu = last["profile"]["next_ui"]
+    assert nu["schools"] == SCHOOLS and nu["construction_within"] == CONSTRUCTION and nu["area_311"] == AREA_311
+    assert "failed" not in nu
+
+
+async def test_a_failed_new_ui_source_is_listed_never_none():
+    with _sources(), patch.object(main.three11, "top_311_by_community_area", new=AsyncMock(side_effect=RuntimeError("503"))):
+        _ov, responses = await _all_parts()
+    nu = max(responses, key=lambda r: r["version"])["profile"]["next_ui"]
+    assert nu["failed"] == ["area_311"] and "area_311" not in nu
