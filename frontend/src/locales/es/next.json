@@ -234,6 +234,685 @@
         "property": "registros de edificios de la Ciudad"
       },
       "unitsBuiltChecking": "Revisando los registros de edificios de la Ciudad"
+    },
+    "money": {
+      "checking": "Revisando {{what}}…",
+      "perSqft": "{{value}}/pie²",
+      "perMonth": "{{value}}/mes",
+      "miles": "{{mi}} mi",
+      "sentence": {
+        "billValue": "Alrededor de {{tax}} al año de impuesto predial, sobre un valor del Tasador de {{value}}",
+        "bill": "Alrededor de {{tax}} al año de impuesto predial",
+        "exempt": "Exento de impuestos: no tiene recibo de impuesto predial",
+        "nominal": "Una tasación nominal: no aplica una cifra de impuesto",
+        "none": "No hay recibo de impuesto registrado",
+        "comps_one": "{{count}} venta de mercado cercana en {{median}}",
+        "comps_other": "{{count}} ventas de mercado cercanas, mediana {{median}}"
+      },
+      "sales": {
+        "title": "Ventas de mercado cercanas",
+        "onMap": "Marcadores en el mapa",
+        "none": "No se revisaron ventas cercanas para este terreno",
+        "noneFound": "No se encontraron ventas de mercado con esta regla",
+        "ruleLabel": "Cómo se eligieron las ventas cercanas",
+        "rule": {
+          "class": "Clase {{group}}xx, como este terreno",
+          "radius": "A menos de {{mi}} mi",
+          "years_one": "Último {{count}} año",
+          "years_other": "Últimos {{count}} años",
+          "count_one": "{{count}} venta",
+          "count_other": "{{count}} ventas",
+          "widened": "La búsqueda se amplió para encontrar suficientes"
+        },
+        "median": "Precio mediano",
+        "col": {
+          "date": "Vendida",
+          "price": "Precio",
+          "buildable": "Por pie² edificable",
+          "district": "Zonificación",
+          "distance": "Distancia"
+        },
+        "tileNote_one": "{{count}} venta a menos de {{mi}} mi",
+        "tileNote_other": "{{count}} ventas a menos de {{mi}} mi",
+        "barLabel": "Vendida en {{date}} por {{price}}, a {{distance}} mi",
+        "medianIs": "Mediana {{median}}",
+        "perBuildableIs": "{{value}} por pie² edificable",
+        "moreInDetails_one": "{{count}} más en los detalles",
+        "moreInDetails_other": "{{count}} más en los detalles"
+      },
+      "tax": {
+        "billYear": "Recibo {{year}}",
+        "rateVsTypical": "{{rate}}% del valor al año; lo típico para su clase es {{typical}}%",
+        "valueOverTime": "Valor del Tasador por año",
+        "belowSale": "El valor del Tasador está {{pct}}% por debajo de la venta de {{year}} de este terreno",
+        "exemptShort": "Sin recibo; un terreno gravable de su clase paga alrededor de {{rate}}% del valor al año",
+        "nominalShort": "Tasación nominal: sin cifra de impuesto",
+        "noneShort": "No hay recibo de impuesto registrado",
+        "exemptNoRate": "Sin recibo: propiedad exenta de impuestos"
+      },
+      "rent": {
+        "title": "Renta cercana",
+        "what": "la renta",
+        "census": "Censo {{period}}",
+        "notChecked": "No se pudo revisar la renta hoy",
+        "bed": {
+          "1_bedroom": "1 recámara",
+          "2_bedrooms": "2 recámaras",
+          "3_bedrooms": "3 recámaras"
+        },
+        "barLabel": "{{size}}: renta mediana de {{rent}} al mes",
+        "barNone": "{{size}}: sin mediana utilizable",
+        "thisSize": "En negro: {{size}}, la unidad típica de este edificio",
+        "noSize": "El tamaño de las unidades no está registrado para este edificio",
+        "area": "mediana del área {{rent}}/mes",
+        "puma": "algunas de un área más amplia",
+        "tileSize": "Renta, {{size}}",
+        "aMonth": "al mes",
+        "tileNoteSize": "La unidad típica de este edificio, mediana del Censo cercana",
+        "tileNoteArea": "Mediana del área, todos los tamaños"
+      },
+      "incentives": {
+        "title": "Incentivos",
+        "checking": "Revisando",
+        "program": {
+          "tif": "Distrito TIF",
+          "oz": "Zona de Oportunidad",
+          "ez": "Zona Empresarial",
+          "qct": "Sector censal calificado (QCT)",
+          "nmtc": "Crédito fiscal de Nuevos Mercados"
+        },
+        "standardClass": "Clase de impuesto estándar: no aplica ningún incentivo de clase.",
+        "classIncentive": "La clase de impuesto de este terreno tiene un incentivo (vea los detalles)."
+      },
+      "details": {
+        "title": "Todos los detalles de dinero",
+        "assessed": "Valor tasado",
+        "level": "Nivel de tasación para su clase",
+        "marketValue": "Valor del Tasador (tasado ÷ nivel)",
+        "rate": "Tasa efectiva de impuesto",
+        "typicalRate": "Tasa típica para su clase",
+        "exemptions": "Exenciones en el recibo",
+        "noneOnBill": "Ninguna",
+        "taxCode": "Código de impuesto",
+        "classNote": "Clase de impuesto",
+        "allSales_one": "{{count}} venta cercana",
+        "allSales_other": "Las {{count}} ventas cercanas",
+        "valueYear": "Valor del Tasador, {{year}}",
+        "landBuilding": "{{total}} (terreno {{land}}, edificio {{building}})"
+      },
+      "define": {
+        "tax": "El recibo anual de impuesto predial, como lo calcula el Condado para el año de recibo más reciente. El recibo de un nuevo propietario puede cambiar si se pierden exenciones o si se vuelve a tasar el terreno.",
+        "value": "Lo que el Tasador del Condado de Cook dice que vale la propiedad: su valor tasado dividido entre la proporción que la ley tasa para su clase. Define el recibo de impuestos; no es un precio de venta.",
+        "sales": "Ventas registradas de propiedades similares cerca de este terreno (misma clase de impuesto), contadas solo cuando el Condado las trata como ventas de mercado. Las etiquetas indican qué tan cerca y qué tan recientes.",
+        "rent": "Lo que pagan al mes los inquilinos cercanos, renta más servicios, según la encuesta del Censo para este sector censal (o un área más amplia). No son precios de anuncios ni lo que obtendría un edificio nuevo.",
+        "incentives": "Programas que pueden ayudar a pagar un proyecto en este lugar: fondos de incremento fiscal, créditos fiscales y zonas con reducciones de impuestos. Estar dentro de uno significa que un proyecto puede solicitarlo, no que esté aprobado.",
+        "program": {
+          "tif": "Financiamiento por Incremento Fiscal: un distrito donde el aumento del impuesto predial paga obras públicas y puede apoyar desarrollos privados.",
+          "oz": "Una Zona de Oportunidad federal: los inversionistas pueden diferir o reducir el impuesto sobre ganancias de capital al invertir aquí.",
+          "ez": "Una Zona Empresarial del Estado de Illinois: reducciones de impuesto sobre ventas y otras para construcción y negocios.",
+          "qct": "Un Sector Censal Calificado de HUD: los proyectos de vivienda asequible aquí pueden recibir un crédito fiscal federal mayor.",
+          "nmtc": "Un sector elegible para Créditos Fiscales de Nuevos Mercados, un crédito federal para invertir en zonas de bajos ingresos."
+        }
+      },
+      "ask": {
+        "tax": "¿Cómo se calcula el impuesto predial de {{address}} y qué podría cambiarlo?",
+        "value": "¿Cómo valora el Tasador {{address}} y cómo se compara con lo que podría venderse?",
+        "sales": "¿Qué dicen las ventas de mercado cercanas sobre {{address}}?",
+        "rent": "¿Qué renta podrían obtener las unidades de {{address}} y qué tan confiable es esa cifra?",
+        "incentives": "¿Qué programas de incentivos podrían ayudar a un proyecto en {{address}}?",
+        "program": "¿Qué significaría {{program}} para un proyecto en {{address}}?"
+      },
+      "value": {
+        "label": "Valor del Tasador",
+        "year": "Tasación {{year}}",
+        "none": "No hay tasaciones registradas",
+        "chartLabel": "Valor del Tasador por año: {{list}}",
+        "hint": "Pase el cursor sobre un año para ver su valor; haga clic para mantenerlo visible."
+      }
+    },
+    "program": {
+      "forThisLot": "Qué significa para este terreno",
+      "checking": "Todavía estamos revisando este programa para este terreno.",
+      "notChecked": "Hoy no pudimos revisar este programa para este terreno, así que no podemos decir si aplica.",
+      "tract": "Sector censal {{tract}}",
+      "whoDecides": "Quién decide",
+      "whatItIs": "Qué es",
+      "status": {
+        "in": "Este terreno está dentro",
+        "out": "No está en uno"
+      },
+      "tif": {
+        "named": "Distrito TIF {{name}}",
+        "meansIn": "Este terreno está dentro del distrito TIF {{name}}. Un proyecto aquí puede pedir apoyo TIF a la Ciudad (dinero del fondo del distrito, que a menudo se paga con los nuevos impuestos que genera el proyecto) hasta que el distrito termine. Nada está garantizado: la Ciudad decide proyecto por proyecto.",
+        "meansOut": "Este terreno no está en ningún distrito TIF, así que un proyecto aquí no puede recibir fondos TIF. Otros programas y subvenciones de la Ciudad pueden aplicar.",
+        "who": "El Departamento de Planeación y Desarrollo de la Ciudad negocia el apoyo TIF; el Concejo Municipal aprueba cada acuerdo.",
+        "source": "Fuente: límites e informes anuales de TIF de la Ciudad de Chicago",
+        "runs": "Vigencia",
+        "yearsLeft_one": "Le queda {{count}} año",
+        "yearsLeft_other": "Le quedan {{count}} años",
+        "balance": "Saldo del fondo",
+        "asOfReport": "Informe anual {{year}}",
+        "balanceByYear": "Saldo del fondo por año",
+        "projects": "Proyectos que ha financiado",
+        "publicFunds": "{{value}} TIF",
+        "privateFunds": "{{value}} privados",
+        "allProjects": "Todos los proyectos TIF (datos de la Ciudad)",
+        "reportsChecking": "Todavía estamos revisando los informes anuales del distrito.",
+        "reportsLate": "No se pudieron revisar a tiempo los informes anuales del distrito.",
+        "reportsMissing": "Los informes anuales del distrito no llegaron en esta consulta."
+      },
+      "oz": {
+        "meansIn": "Este terreno está en una Zona de Oportunidad (sector censal {{tract}}). Los inversionistas que inviertan ganancias de capital en un proyecto aquí mediante un Fondo de Oportunidad Calificado pueden diferir o reducir el impuesto federal sobre ellas. No cambia la zonificación ni lo que se puede construir.",
+        "meansOut": "Este terreno no está en una Zona de Oportunidad, así que quienes inviertan en un proyecto aquí no reciben ese beneficio fiscal.",
+        "who": "No requiere aprobación de la Ciudad: los inversionistas reclaman el beneficio en sus impuestos federales mediante un Fondo de Oportunidad Calificado.",
+        "source": "Fuente: Zonas de Oportunidad del Tesoro de EE. UU. y HUD"
+      },
+      "ez": {
+        "meansIn": "Este terreno está en {{name}}. Un proyecto aquí puede reclamar los beneficios de Zona Empresarial de Illinois, como la exención del impuesto sobre ventas en los materiales de construcción comprados para él.",
+        "meansOut": "Este terreno no está en una Zona Empresarial, así que no hay exención del impuesto sobre ventas en materiales de construcción por esa vía.",
+        "who": "Los beneficios se reclaman bajo las reglas del Estado de Illinois a través del administrador de la zona (la Ciudad, en las zonas de Chicago).",
+        "source": "Fuente: límites de Zonas Empresariales de la Ciudad de Chicago"
+      },
+      "qct": {
+        "meansIn": "Este terreno está en un Sector Censal Calificado de HUD (sector {{tract}}). Un proyecto de vivienda asequible con Créditos Fiscales para Vivienda de Bajos Ingresos puede contar hasta 130% de sus costos elegibles, lo que significa un crédito mayor. Otros tipos de proyectos no se ven afectados.",
+        "meansOut": "Este terreno no está en un Sector Censal Calificado, así que un proyecto de vivienda asequible aquí no recibe un aumento automático del crédito por esa vía.",
+        "who": "Los créditos fiscales de vivienda se otorgan en concursos del Departamento de Vivienda de la Ciudad y de la Autoridad de Desarrollo de Vivienda de Illinois.",
+        "source": "Fuente: Sectores Censales Calificados de HUD"
+      },
+      "nmtc": {
+        "meansIn": "Este terreno está en un sector de bajos ingresos elegible para Créditos Fiscales de Nuevos Mercados (sector {{tract}}). Los proyectos comerciales y comunitarios aquí pueden buscar financiamiento NMTC, que a menudo tiene condiciones por debajo del mercado.",
+        "meansOut": "Este terreno no está en un sector elegible, así que el financiamiento de Créditos Fiscales de Nuevos Mercados no está disponible aquí por su ubicación.",
+        "who": "Las Entidades de Desarrollo Comunitario que tienen asignaciones federales eligen qué proyectos financiar.",
+        "source": "Fuente: elegibilidad del Fondo CDFI (Tesoro de EE. UU.)",
+        "poverty": "Tasa de pobreza",
+        "distress": "Dificultad severa",
+        "severe": "Sí",
+        "notSevere": "No"
+      },
+      "grants": {
+        "title": "Subvenciones de la Ciudad en esta área comunitaria",
+        "summary_one": "{{count}} proyecto, {{funding}}",
+        "summary_other": "{{count}} proyectos, {{funding}}",
+        "by": "{{program}} {{count}}",
+        "what": "Las subvenciones del Fondo de Mejoras para Pequeños Negocios se pagan con dinero TIF; las del Fondo de Oportunidad Vecinal provienen de cuotas de densidad del centro.",
+        "name": {
+          "SBIF": "Fondo de Mejoras para Pequeños Negocios",
+          "NOF": "Fondo de Oportunidad Vecinal"
+        }
+      }
+    },
+    "rule": {
+      "status": {
+        "applies": "Aplica a este terreno",
+        "doesNot": "No aplica",
+        "changesBuild": "Cambia lo que se puede construir"
+      },
+      "records_one": "El registro de la Ciudad",
+      "records_other": "Los registros de la Ciudad ({{count}})",
+      "readSource": "Leer la fuente",
+      "ask": "¿Qué significa {{rule}} para un proyecto en {{address}}?",
+      "flood": {
+        "zone": "Zona de inundación de FEMA",
+        "special": "Zona de riesgo especial de inundación",
+        "meansIn": "FEMA ubica este terreno en la zona de inundación {{zone}}. Construir aquí debe cumplir las reglas de la Ciudad para zonas inundables, y una hipoteca con respaldo federal sobre un edificio en una zona de riesgo especial requiere seguro contra inundaciones.",
+        "meansOut": "FEMA ubica este terreno fuera de la llanura de inundación de 100 años, así que las reglas de la Ciudad para zonas inundables no agregan requisitos aquí.",
+        "who": "El Departamento de Edificios de la Ciudad aplica las reglas para zonas inundables en los permisos; FEMA traza los mapas.",
+        "what": "Las zonas de inundación de FEMA: A y AE son la llanura de 100 años (1% de probabilidad de inundación cada año); X está fuera de ella.",
+        "source": "Fuente: Capa Nacional de Riesgo de Inundación de FEMA (copia de Chicago)"
+      },
+      "landmark": {
+        "meansIn": "Este terreno es un Monumento de Chicago o está en un distrito de monumentos. Los permisos para modificar o demoler un edificio, ampliarlo o construir algo nuevo aquí requieren la revisión y aprobación de la Comisión de Monumentos de Chicago.",
+        "meansOut": "Este terreno no es un Monumento de Chicago ni está en un distrito de monumentos, así que sus permisos no pasan por la Comisión de Monumentos.",
+        "who": "La Comisión de Monumentos de Chicago: su personal revisa la mayoría de los permisos y la Comisión atiende los cambios mayores.",
+        "what": "Un edificio o distrito que el Concejo Municipal designó por su historia o diseño; sus cambios requieren la aprobación de la Comisión.",
+        "source": "Fuente: mapas de monumentos de la Ciudad de Chicago"
+      },
+      "historic": {
+        "meansIn": "Este terreno está en un distrito histórico. Estar en el Registro Nacional por sí solo no limita lo que un propietario puede hacer con dinero privado y puede abrir créditos fiscales federales y estatales para una rehabilitación certificada; un distrito de Monumentos de Chicago además requiere la aprobación de la Comisión para obras exteriores.",
+        "meansOut": "Este terreno no está en un distrito histórico en los mapas que revisamos.",
+        "who": "Registro Nacional: el Servicio de Parques Nacionales, con la Oficina Estatal de Preservación Histórica de Illinois. Distritos de Monumentos de Chicago: la Comisión de Monumentos de Chicago.",
+        "what": "Un área reconocida por su historia: en el Registro Nacional (federal, honorífico, con créditos fiscales) o un distrito de Monumentos de Chicago (aplican reglas de la Ciudad).",
+        "source": "Fuente: mapas de distritos históricos y del Registro Nacional de la Ciudad de Chicago"
+      },
+      "pd": {
+        "meansIn": "Este terreno está dentro de un Desarrollo Planificado. Su propia ordenanza, no el distrito base, define los usos, la altura y la densidad, así que cambiar lo permitido implica modificar esa ordenanza.",
+        "meansOut": "Este terreno no está en un Desarrollo Planificado, así que aplican las reglas del distrito base.",
+        "who": "El Concejo Municipal modifica un Desarrollo Planificado tras la revisión de la Comisión de Planeación; el Administrador de Zonificación atiende los cambios menores.",
+        "what": "Un distrito de zonificación específico que el Concejo adopta por ordenanza para un proyecto grande o especial; su número remite a esa ordenanza.",
+        "source": "Fuente: mapa de zonificación de la Ciudad de Chicago"
+      },
+      "lakefront": {
+        "meansIn": "Este terreno está en el Distrito de Protección de la Ribera del Lago. La mayoría de los desarrollos aquí requieren una revisión de Protección de la Ribera y la aprobación de la Comisión de Planeación.",
+        "meansOut": "Este terreno no está en el Distrito de Protección de la Ribera del Lago.",
+        "who": "La Comisión de Planeación de Chicago.",
+        "what": "El área a lo largo del Lago Michigan cubierta por la Ordenanza de Protección del Lago Michigan y la Ribera de Chicago.",
+        "source": "Fuente: mapa del Distrito de Protección de la Ribera de la Ciudad de Chicago"
+      },
+      "tod": {
+        "meansIn": "Este terreno está cerca de una estación de CTA o Metra, en una zona con servicio de transporte: el estacionamiento mínimo se puede reducir y algunos distritos permiten más densidad.",
+        "meansOut": "Este terreno no está en una zona con servicio de transporte, así que aplican los mínimos de estacionamiento habituales.",
+        "who": "El Administrador de Zonificación de la Ciudad aplica las reducciones en los permisos; algunos bonos requieren un ajuste administrativo o una rezonificación.",
+        "what": "Zonas cerca de estaciones de CTA y Metra donde el código de zonificación de Chicago flexibiliza el estacionamiento y puede permitir más viviendas.",
+        "source": "Fuente: mapas de ubicaciones con servicio de transporte de la Ciudad de Chicago"
+      },
+      "adu": {
+        "meansIn": "Aquí se pueden agregar casas de cochera y unidades en sótano o ático a una vivienda, dentro de las reglas de la Ciudad para unidades accesorias.",
+        "meansOut": "En este terreno no se permiten casas de cochera ni unidades de conversión.",
+        "who": "El Departamento de Edificios emite los permisos de unidades accesorias; algunas áreas limitan cuántas se aprueban al año.",
+        "what": "Unidades de vivienda accesorias: una casa de cochera, o una unidad en un sótano o ático, agregada a una vivienda existente.",
+        "source": "Fuente: mapa de áreas de unidades accesorias y código de zonificación de la Ciudad de Chicago"
+      },
+      "aro": {
+        "meansIn": "Este terreno está en un área de la Ordenanza de Requisitos de Vivienda Asequible, que define la proporción asequible de los proyectos cubiertos: en general, 10 o más viviendas que requieren un cambio de zonificación, terreno de la Ciudad o fondos de la Ciudad.",
+        "meansOut": "No hay un área ARO en el mapa que revisamos para este terreno. La ordenanza aún puede cubrir un proyecto aquí que requiera un cambio de zonificación o apoyo de la Ciudad.",
+        "who": "El Departamento de Vivienda de la Ciudad.",
+        "what": "La Ordenanza de Requisitos de Vivienda Asequible de Chicago: los proyectos residenciales cubiertos incluyen viviendas asequibles o, donde se permite, pagan una cuota en su lugar.",
+        "source": "Fuente: mapa de áreas ARO de la Ciudad de Chicago",
+        "nearby_one": "{{count}} proyecto asequible en esta área comunitaria ({{units}} viviendas).",
+        "nearby_other": "{{count}} proyectos asequibles en esta área comunitaria ({{units}} viviendas)."
+      }
+    },
+    "nb": {
+      "theArea": "la zona",
+      "jumpLabel": "Ir a una parte de esta pestaña",
+      "jump": {
+        "around": "Moverse",
+        "building": "Obras",
+        "safety": "Seguridad",
+        "311": "311",
+        "people": "Población",
+        "schools": "Escuelas",
+        "changing": "Tendencias",
+        "nearby": "Cerca"
+      },
+      "sentence": {
+        "walk": "puntaje para caminar {{score}} ({{desc}})",
+        "building_one": "{{count}} permiso para edificios nuevos o remodelaciones mayores a menos de media milla",
+        "building_other": "{{count}} permisos para edificios nuevos o remodelaciones mayores a menos de media milla",
+        "noBuilding": "ningún edificio nuevo ni remodelación mayor con permiso a menos de media milla",
+        "violentDown": "los delitos violentos en la zona bajaron {{pct}}% respecto al año pasado",
+        "violentUp": "los delitos violentos en la zona subieron {{pct}}% respecto al año pasado",
+        "violentFlat": "los delitos violentos en la zona, iguales que hace un año",
+        "none": "Todavía revisando la zona alrededor de este terreno."
+      },
+      "score": {
+        "walk": "Puntaje para caminar",
+        "transit": "Puntaje de transporte",
+        "bike": "Puntaje para bicicleta",
+        "ringLabel": "{{label}}: {{score}} de 100",
+        "of100": "{{score}} de 100"
+      },
+      "define": {
+        "walk": "Índice de 0 a 100 de Walk Score sobre cuántos mandados diarios se pueden hacer a pie desde esta dirección. Es el índice de una empresa privada, no una cifra de la Ciudad.",
+        "transit": "Índice de 0 a 100 de Walk Score sobre qué tan bien sirve el transporte público a esta dirección: qué tan cerca están las paradas, con qué frecuencia pasan y a dónde van. Es el índice de una empresa privada.",
+        "bike": "Índice de 0 a 100 de Walk Score sobre qué tan buena es esta dirección para andar en bicicleta: ciclovías, pendientes, destinos y cuánta gente la usa. Es el índice de una empresa privada.",
+        "crime": "Delitos que el Departamento de Policía de Chicago registró en el área comunitaria de este terreno en los últimos 90 días (se deja fuera la semana más reciente mientras se asientan los reportes), por cada 1,000 habitantes. Violentos son los delitos contra una persona: homicidio, agresión sexual, robo con violencia, asalto y lesiones, secuestro y trata de personas. Contra la propiedad son allanamiento, robo, robo de vehículo, incendio provocado y daños. Los demás tipos (narcóticos, armas, fraude) no cuentan en ninguno. Describe toda el área comunitaria, no esta cuadra.",
+        "building": "Permisos de construcción de la Ciudad emitidos en los últimos 2 años a menos de media milla de este terreno: todo edificio nuevo, más las remodelaciones con un costo declarado de $250,000 o más. Un permiso significa que la obra se aprobó, no que esté terminada. Los mismos permisos son los marcadores del mapa.",
+        "r311": "Solicitudes que los residentes hicieron a la línea 311 de la Ciudad en esta área comunitaria en los últimos 90 días, sin duplicados, por tipo. Se dejan fuera las llamadas de información y las revisiones de multas de estacionamiento. Más solicitudes pueden significar más problemas o más gente que los reporta.",
+        "people": "Cifras de la encuesta del Censo (Encuesta sobre la Comunidad Estadounidense, 5 años) para el sector censal de este terreno, unas cuantas cuadras a su alrededor, junto a su área comunitaria cuando la Ciudad publica la misma cifra. Las estimaciones de encuesta tienen márgenes de error; una cifra demasiado incierta no se muestra.",
+        "schools": "La primaria y la preparatoria de las Escuelas Públicas de Chicago cuya zona de asistencia incluye este terreno, con la boleta del Estado de Illinois para cada una: su designación, la proporción de alumnos que cumple los estándares estatales y, para una preparatoria, la tasa de graduación. Las familias también pueden solicitar otras escuelas; estas son las asignadas por domicilio.",
+        "trend": "Cómo ha cambiado el área comunitaria: el precio mediano de las ventas de mercado cada año (ventas del Condado desde 2020, por tipo de edificio) y la renta mediana en los dos periodos de cinco años más recientes de la encuesta del Censo que no se traslapan, con el cambio descontando la inflación. Son cifras del área comunitaria, no de esta cuadra; cambio pasado, no un pronóstico."
+      },
+      "ask": {
+        "scores": "¿Qué tan fácil es moverse sin auto desde {{address}}?",
+        "crime": "¿Cómo se compara la seguridad alrededor de {{address}} con el resto de su área comunitaria, y cómo está cambiando?",
+        "building": "¿Qué se está construyendo cerca de {{address}} y qué dice eso de la zona?",
+        "r311": "¿Qué dicen las solicitudes al 311 cerca de {{address}} sobre la zona?",
+        "people": "¿Quién vive alrededor de {{address}} y cómo se compara el sector censal con su área comunitaria?",
+        "schools": "¿Qué escuelas públicas le corresponden a {{address}} y cómo las califica el estado?",
+        "trend": "¿Cómo han cambiado los precios y las rentas alrededor de {{address}}, y por qué?",
+        "permit": "¿Qué dice el permiso en {{permit}} sobre el desarrollo cerca de {{address}}?"
+      },
+      "crime": {
+        "tile": "Delitos violentos",
+        "title": "Seguridad",
+        "what": "los delitos",
+        "perThousand": "por 1,000",
+        "crimes": "delitos",
+        "window": "90 días en {{area}}",
+        "notChecked": "No se pudieron revisar los delitos hoy",
+        "violent": "Delitos violentos",
+        "property": "Delitos contra la propiedad",
+        "barLabel": "{{kind}}: {{now}} en los últimos 90 días, {{prior}} en los mismos días un año antes",
+        "legendNow": "Últimos 90 días",
+        "legendPrior": "Mismos días un año antes ({{period}})",
+        "caption": "Por cada 1,000 de los {{pop}} habitantes de {{area}}. Toda el área comunitaria, no esta cuadra.",
+        "captionNoPop": "Delitos en {{area}}. Toda el área comunitaria, no esta cuadra."
+      },
+      "r311": {
+        "title": "Principales solicitudes al 311",
+        "what": "las solicitudes al 311",
+        "none": "No hay solicitudes al 311 registradas en {{area}} en los últimos {{days}} días.",
+        "caption": "{{total}} solicitudes en {{area}} en los últimos {{days}} días, sin duplicados.",
+        "byType": "Por tipo",
+        "requests": "solicitudes",
+        "other": "Todo lo demás"
+      },
+      "building": {
+        "title": "Obras cercanas",
+        "what": "los permisos de construcción",
+        "onMap": "Marcadores en el mapa",
+        "ruleLabel": "Qué permisos cuentan",
+        "rule": {
+          "radius": "A menos de {{mi}} mi",
+          "months_one": "Último {{count}} mes",
+          "months_other": "Últimos {{count}} meses",
+          "floor": "Remodelaciones de {{floor}} o más"
+        },
+        "none": "Ningún edificio nuevo ni remodelación mayor con permiso a menos de media milla en los últimos 2 años.",
+        "capped": "se muestran los 300 más recientes",
+        "kind": {
+          "new": "Edificio nuevo",
+          "renovation": "Remodelación"
+        },
+        "noAddress": "Dirección no indicada en el permiso",
+        "addsUnits_one": "agrega {{count}} vivienda",
+        "addsUnits_other": "agrega {{count}} viviendas",
+        "removesUnits_one": "quita {{count}} vivienda",
+        "removesUnits_other": "quita {{count}} viviendas",
+        "statNew_one": "edificio nuevo",
+        "statNew_other": "edificios nuevos",
+        "statReno_one": "remodelación mayor",
+        "statReno_other": "remodelaciones mayores",
+        "statHomes_one": "vivienda agregada",
+        "statHomes_other": "viviendas agregadas",
+        "statCost": "costo declarado, todos los permisos",
+        "pace": "Permisos por trimestre",
+        "quarterValue": "{{n}} nuevos · {{r}} remodelaciones",
+        "filterLabel": "Mostrar",
+        "filter": {
+          "all_one": "Todos {{count}}",
+          "all_other": "Todos {{count}}",
+          "new_one": "Nuevos {{count}}",
+          "new_other": "Nuevos {{count}}",
+          "renovation_one": "Remodelaciones {{count}}",
+          "renovation_other": "Remodelaciones {{count}}"
+        },
+        "sortLabel": "Ordenar",
+        "sort": {
+          "newest": "Más recientes",
+          "closest": "Más cercanos",
+          "largest": "Mayor costo"
+        },
+        "showAll_one": "Ver los {{count}}",
+        "showAll_other": "Ver los {{count}}",
+        "fewer": "Ver menos"
+      },
+      "people": {
+        "title": "Quién vive aquí",
+        "what": "las cifras del Censo",
+        "notChecked": "No se pudieron revisar las cifras del Censo hoy.",
+        "fact": {
+          "owner_occupied_pct": "Viviendas habitadas por sus dueños",
+          "bachelors_or_higher_pct": "Adultos con licenciatura o más",
+          "poverty_rate": "Personas bajo la línea de pobreza",
+          "median_age": "Edad mediana"
+        },
+        "caption": "Cifras de la encuesta del Censo para el sector censal de este terreno, unas cuantas cuadras a su alrededor; solo el ingreso se compara con {{area}}, donde la Ciudad publica la misma cifra. No se muestran raza ni origen étnico.",
+        "dist": {
+          "transportation_distribution": "Cómo llegan al trabajo",
+          "age_distribution": "Edad",
+          "income_distribution": "Ingreso del hogar",
+          "education_distribution": "Escolaridad (adultos de 25+)"
+        },
+        "bucket": {
+          "Under 18": "Menores de 18",
+          "18-24": "18-24",
+          "25-34": "25-34",
+          "35-44": "35-44",
+          "45-54": "45-54",
+          "55-64": "55-64",
+          "65-74": "65-74",
+          "75+": "75+",
+          "Under $25K": "Menos de $25 mil",
+          "$25-50K": "$25-50 mil",
+          "$50-75K": "$50-75 mil",
+          "$75-100K": "$75-100 mil",
+          "$100-150K": "$100-150 mil",
+          "$150-200K": "$150-200 mil",
+          "$200K+": "$200 mil o más",
+          "No degree": "Sin título",
+          "High school": "Preparatoria",
+          "Some college": "Algo de universidad",
+          "Bachelor's": "Licenciatura",
+          "Graduate+": "Posgrado",
+          "Drove alone": "Maneja solo",
+          "Carpooled": "Comparte auto",
+          "Public transit": "Transporte público",
+          "Walked": "A pie",
+          "Bicycle": "Bicicleta",
+          "Work from home": "Trabaja desde casa",
+          "Other": "Otro"
+        },
+        "sec": {
+          "income": "Ingreso",
+          "housing": "Vivienda",
+          "households": "Hogares",
+          "work": "Ir al trabajo",
+          "people": "Edad, escolaridad y mudanzas"
+        },
+        "medianIncome": "Ingreso mediano por hogar",
+        "perCapita": "Ingreso per cápita",
+        "housingUnits": "Viviendas",
+        "homeValue": "Valor mediano de las viviendas habitadas por sus dueños",
+        "households": "Hogares",
+        "perHousehold": "Personas por hogar",
+        "minutes": "{{n}} minutos",
+        "travel": "Tiempo promedio de traslado al trabajo",
+        "moved": "Se mudaron en el último año",
+        "withheldShort": "No se muestra",
+        "chart": {
+          "income": "Ingreso del hogar",
+          "occupancy": "Ocupadas y vacías",
+          "tenure": "Dueños e inquilinos",
+          "structure": "Viviendas por tamaño de edificio",
+          "movedIn": "Año de llegada",
+          "homeValue": "Valor de las viviendas de sus dueños",
+          "householdType": "Hogares por tipo",
+          "travelTime": "Tiempo de traslado al trabajo",
+          "mobility": "Dónde vivían hace un año"
+        },
+        "k": {
+          "income": {
+            "under_50k": "Menos de $50 mil",
+            "50_100k": "$50–100 mil",
+            "100_200k": "$100–200 mil",
+            "over_200k": "Más de $200 mil"
+          },
+          "occupancy": {
+            "occupied": "Ocupadas",
+            "vacant": "Vacías"
+          },
+          "tenure": {
+            "owner": "Ocupadas por dueños",
+            "renter": "Ocupadas por inquilinos"
+          },
+          "structure": {
+            "single_family": "Unifamiliar",
+            "two": "2 unidades",
+            "three_four": "3–4 unidades",
+            "five_19": "5–19 unidades",
+            "twenty_plus": "20+ unidades",
+            "other": "Otro"
+          },
+          "home_value": {
+            "under_100k": "Menos de $100 mil",
+            "100_200k": "$100–200 mil",
+            "200_300k": "$200–300 mil",
+            "300_400k": "$300–400 mil",
+            "400_500k": "$400–500 mil",
+            "500k_1m": "$500 mil–1 M",
+            "over_1m": "Más de $1 M"
+          },
+          "household_type": {
+            "married": "Parejas casadas",
+            "other_family": "Otras familias",
+            "alone": "Viven solos",
+            "roommates": "Compañeros de vivienda y otros"
+          },
+          "mobility": {
+            "same_house": "La misma vivienda",
+            "same_county": "El mismo condado",
+            "other_county": "Otro condado de Illinois",
+            "other_state": "Otro estado",
+            "abroad": "Otro país"
+          },
+          "travel_time": {
+            "under_15": "Menos de 15 min",
+            "15_29": "15–29 min",
+            "30_44": "30–44 min",
+            "45_59": "45–59 min",
+            "60_plus": "60+ min"
+          }
+        },
+        "hoverHint": "Señale una columna para ver su porcentaje.",
+        "tick": {
+          "income": {
+            "under_50k": "<$50 mil",
+            "50_100k": "$50–100 mil",
+            "100_200k": "$100–200 mil",
+            "over_200k": "$200 mil+"
+          },
+          "travel_time": {
+            "under_15": "<15",
+            "15_29": "15–29",
+            "30_44": "30–44",
+            "45_59": "45–59",
+            "60_plus": "60+"
+          },
+          "age": {
+            "Under 18": "<18"
+          }
+        },
+        "areaIs": "{{area}}: {{value}}",
+        "scope": "Sector censal {{tract}}, unas cuadras alrededor del terreno",
+        "scopeNoNumber": "El sector censal de este terreno, unas cuadras alrededor"
+      },
+      "schools": {
+        "title": "Escuelas públicas asignadas",
+        "what": "las escuelas",
+        "level": {
+          "elementary": "Primaria",
+          "high": "Preparatoria"
+        },
+        "grades": "grados {{grades}}",
+        "unnamed": "Nombre de la escuela no registrado",
+        "designation": {
+          "Exemplary": "Ejemplar",
+          "Commendable": "Encomiable",
+          "Targeted": "Apoyo focalizado",
+          "Comprehensive": "Apoyo integral",
+          "Intensive": "Apoyo intensivo"
+        },
+        "reading": "Cumple el estándar estatal, lectura",
+        "math": "Cumple el estándar estatal, matemáticas",
+        "graduation": "Se gradúa en 4 años",
+        "enrollment": "Alumnos",
+        "notPublished": "No publicado",
+        "hsTest": "(examen de preparatoria)",
+        "noReportCard": "No hay cifras de la boleta estatal para esta escuela.",
+        "reportCard": "Boleta de Illinois {{year}}",
+        "noBoundary": {
+          "elementary": "Ninguna zona de asistencia de primaria de CPS incluye este terreno.",
+          "high": "Ninguna zona de asistencia de preparatoria de CPS incluye este terreno; las escuelas de toda la ciudad y las selectivas no tienen zona."
+        },
+        "caption": "Asignadas por zona de asistencia de CPS, ciclo escolar {{boundary}}. Designación y cifras: Junta de Educación del Estado de Illinois, boleta {{year}}.",
+        "stateRating": "Calificación de Illinois, {{year}}",
+        "stateRatingDef": "La calificación propia de la Junta de Educación del Estado de Illinois para cada escuela, a partir de resultados de exámenes, crecimiento, graduación, asistencia y el avance de quienes aprenden inglés. De menor a mayor: Apoyo intensivo, Apoyo integral (el 5% de escuelas con menor desempeño, o una preparatoria que gradúa a dos tercios o menos), Apoyo focalizado (uno o más grupos de alumnos con desempeño como el 5% más bajo), Encomiable, Ejemplar (el 10% más alto, sin ningún grupo rezagado).",
+        "culture": "Cultura y clima (CPS)",
+        "cultureDef": "La calificación 5Essentials de las Escuelas Públicas de Chicago, de su encuesta anual a alumnos y maestros: liderazgo, colaboración entre maestros, participación de las familias, un ambiente de apoyo y enseñanza exigente. De menor a mayor: aún no organizada, parcialmente, moderadamente, organizada, bien organizada.",
+        "cultureLevel": {
+          "not_yet_organized": "Aún no organizada",
+          "partially_organized": "Parcialmente organizada",
+          "moderately_organized": "Moderadamente organizada",
+          "organized": "Organizada",
+          "well_organized": "Bien organizada"
+        },
+        "short": {
+          "reading": "Lectura",
+          "math": "Matemáticas",
+          "graduation": "Se gradúan",
+          "students": "Alumnos"
+        }
+      },
+      "trend": {
+        "title": "Cómo está cambiando {{area}}",
+        "what": "las tendencias de la zona",
+        "none": "No hay historial de precios ni rentas para {{area}}.",
+        "sales": "Precio mediano de venta por año",
+        "groupLabel": "Tipo de edificio",
+        "group": {
+          "two_to_six": "2–6 unidades",
+          "single_family": "Unifamiliar",
+          "condo": "Condominios"
+        },
+        "salesN_one": "{{count}} venta",
+        "salesN_other": "{{count}} ventas",
+        "rent": "Renta mediana, antes y ahora",
+        "notSignificant": "El Censo no lo considera un cambio claro (dentro de su margen).",
+        "households": "Hogares que rentan: {{from}} → {{to}}",
+        "caption": "Toda el área de {{area}}. Ventas: ventas de mercado del Condado por año; renta: encuesta del Censo, periodos de cinco años."
+      },
+      "near": {
+        "title": "Alrededor del terreno",
+        "none": "No hay nada registrado alrededor de este terreno.",
+        "walk": "{{min}} min a pie ({{mi}} mi)",
+        "cta": "Tren CTA más cercano",
+        "metra": "Metra más cercano",
+        "divvy": "Divvy más cercano",
+        "docks_one": "{{count}} anclaje",
+        "docks_other": "{{count}} anclajes",
+        "stations_one": "{{count}} estación a menos de ½ mi",
+        "stations_other": "{{count}} estaciones a menos de ½ mi",
+        "traffic": "Tránsito en la calle aforada más cercana",
+        "perDay": "{{n}} vehículos al día",
+        "trafficOn": "{{road}}, ambos sentidos · unos {{perMin}} por minuto",
+        "ward": "Distrito {{ward}}",
+        "alder": "Concejal: {{name}}",
+        "noAlder": "Concejal no registrado",
+        "email": "Correo",
+        "website": "Sitio web",
+        "area": "{{area}}",
+        "residents": "{{n}} habitantes",
+        "renters": "hogares que rentan {{sign}}{{pct}}% desde {{period}}",
+        "what": "lo que hay alrededor del terreno"
+      },
+      "permit": {
+        "what": "Qué se está construyendo",
+        "noDescription": "El permiso no tiene descripción.",
+        "where": "En qué etapa está",
+        "step": {
+          "applied": "Solicitado",
+          "issued": "Permiso emitido",
+          "inspections": "Inspecciones",
+          "complete": "Terminado"
+        },
+        "occupancy": "Necesita un certificado de ocupación antes de que alguien se mude.",
+        "facts": "El permiso",
+        "cost": "Costo declarado",
+        "notStated": "No indicado",
+        "homes": "Viviendas",
+        "noUnitChange": "Sin cambio registrado",
+        "distance": "Desde este terreno",
+        "reviewTime": "Revisión de la Ciudad",
+        "days_one": "{{count}} día",
+        "days_other": "{{count}} días",
+        "reviewType": "Tipo de revisión",
+        "number": "Número de permiso",
+        "showOnMap": "Ver en el mapa",
+        "records": "Los registros de la Ciudad",
+        "buildingRecords": "Registros de edificios de la Ciudad de Chicago",
+        "buildingRecordsHow": "Busque ahí {{address}} para ver el permiso, sus inspecciones y cualquier infracción.",
+        "dataset": "Permisos de construcción en el portal de datos de la Ciudad",
+        "unitsNotStated": "No indicado en el permiso"
+      },
+      "badge": {
+        "same": "Igual que {{area}}",
+        "times": "{{r}}× {{area}}",
+        "vsYear": "{{pct}}% vs. hace un año",
+        "since": "{{pct}}% desde {{from}}",
+        "rent": "{{pct}}% · {{real}}% descontando la inflación"
+      }
     }
   },
   "discovery": {
@@ -283,7 +962,8 @@
       "parcels": "Terrenos",
       "sales": "Ventas recientes",
       "transit": "Transporte",
-      "streets": "Calles"
+      "streets": "Calles",
+      "building": "Obras"
     },
     "count": {
       "zoning_one": "{{count}} distrito",
@@ -293,7 +973,9 @@
       "sales_one": "{{count}} venta",
       "sales_other": "{{count}} ventas",
       "transit_one": "{{count}} estación",
-      "transit_other": "{{count}} estaciones"
+      "transit_other": "{{count}} estaciones",
+      "building_one": "{{count}} permiso",
+      "building_other": "{{count}} permisos"
     },
     "card": {
       "label": "Qué hay aquí",
@@ -307,15 +989,17 @@
       "ordinance": "Ordenanza {{num}}, {{date}}",
       "districtSource": "Del mapa de zonificación de la Ciudad",
       "noPrice": "Precio no registrado",
-      "approx": "Aprox."
+      "approx": "Aprox.",
+      "kindNew": "Edificio nuevo",
+      "kindReno": "Remodelación",
+      "issued": "Permiso emitido {{date}}"
     },
     "inSentence": {
-      "sales": "ventas recientes"
+      "sales": "ventas recientes",
+      "building": "las obras"
     },
     "back": "Volver a la propiedad",
     "streetView": {
-      "button": "Street View",
-      "hint": "Haga clic en una calle para abrir Street View · Esc cancela",
       "link": "Street View (Google)"
     },
     "families": {
@@ -331,5 +1015,15 @@
     "familiesInView": "Colores de zonificación a la vista",
     "inView": "{{count}} de {{total}} a la vista",
     "show": "Mostrar"
+  },
+  "term": {
+    "what": "¿Qué es {{term}}?",
+    "ask": "Preguntar al analista",
+    "askLater": "Podrá preguntar cuando el Perfil termine de cargar",
+    "close": "Cerrar"
+  },
+  "lowConfidence": {
+    "label": "¿Qué significa Confianza baja?",
+    "census": "La encuesta del Censo pregunta a una muestra de hogares, así que cada cifra tiene un margen de error. Aquí el margen es de al menos 10% de la cifra en algunos de estos valores (común en una zona de pocas cuadras): tómelos como aproximados, no exactos."
   }
 }

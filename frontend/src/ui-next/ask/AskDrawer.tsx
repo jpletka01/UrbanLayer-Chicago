@@ -3,8 +3,9 @@
 // the page (useParcelChat), so it survives closing the drawer and switching tabs. "Open in full chat" opens a
 // new tab and never replaces the page. Same chat path as today's dock: no new endpoint, no new model call path.
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { RightDrawer } from "../ui/RightDrawer";
 import { useTranslation } from "react-i18next";
-import { ArrowUp, RotateCcw, SquareArrowOutUpRight, X } from "lucide-react";
+import { ArrowUp, RotateCcw, SquareArrowOutUpRight } from "lucide-react";
 import { MessageBubble } from "../../components/MessageBubble";
 import type { useParcelChat } from "../../lib/useParcelChat";
 import { ICON, STROKE } from "../icons";
@@ -16,6 +17,9 @@ export function AskDrawer({
   onClose,
   returnFocusRef,
   tabLabel,
+  initialDraft = "",
+  closing = false,
+  instant = false,
 }: {
   chat: ParcelChat;
   onClose: () => void;
@@ -23,19 +27,24 @@ export function AskDrawer({
   returnFocusRef: RefObject<HTMLElement | null>;
   /** The Profile tab the visitor is on (shown as what the analyst knows). */
   tabLabel: string;
+  /** A question written into the box by "Ask about this" (Item 99); the visitor sends it, never the page. */
+  initialDraft?: string;
+  /** The page is closing the drawer: it slides out, then the page unmounts it. */
+  closing?: boolean;
+  /** Already open (a new question replaced the box): appear without sliding in again. */
+  instant?: boolean;
 }) {
   const { t } = useTranslation(["next", "chat", "common"]);
   const titleId = useId();
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft);
   const boxRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const AskIcon = ICON.ask;
 
   useEffect(() => {
-    boxRef.current?.focus();
-    const back = returnFocusRef.current;
-    return () => back?.focus();
-  }, [returnFocusRef]);
+    const box = boxRef.current;
+    if (box && box.value) box.setSelectionRange(box.value.length, box.value.length);
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -49,31 +58,17 @@ export function AskDrawer({
   };
 
   return (
-    <section
-      role="dialog"
-      aria-modal="false"
-      aria-labelledby={titleId}
-      data-testid="ask-drawer"
-      onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } }}
-      className="fixed inset-0 z-50 flex flex-col gap-4 bg-nx-page p-5 lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:w-[min(33vw,480px)] lg:min-w-[360px] lg:shrink-0 lg:border-l lg:border-nx-ink/10"
+    <RightDrawer
+      testId="ask-drawer"
+      title={<span className="block truncate">{chat.address ? t("next:ask.titleAt", { address: chat.address }) : t("next:ask.title")}</span>}
+      subtitle={t("next:ask.notSaved")}
+      onClose={onClose}
+      closing={closing}
+      instant={instant}
+      returnFocusRef={returnFocusRef}
+      initialFocusRef={boxRef}
+      closeLabel={t("next:ask.close")}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 id={titleId} className="truncate text-body font-semibold">
-            {chat.address ? t("next:ask.titleAt", { address: chat.address }) : t("next:ask.title")}
-          </h2>
-          <p className="text-caption nx-muted">{t("next:ask.notSaved")}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("next:ask.close")}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target"
-        >
-          <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-        </button>
-      </div>
-
       {/* The question box: SnowUI's lavender-to-blue edge, the only place the gradient appears. */}
       <form
         className="nx-ai-edge rounded-2xl focus-within:shadow-[0_0_0_3px_rgb(var(--nx-ai-a)/0.6)]"
@@ -167,6 +162,6 @@ export function AskDrawer({
           <p className="mt-1 text-caption nx-muted" role="status" data-testid="ask-tab-blocked">{t("common:newTabBlocked")}</p>
         )}
       </div>
-    </section>
+    </RightDrawer>
   );
 }

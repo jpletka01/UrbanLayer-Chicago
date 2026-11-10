@@ -325,6 +325,19 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         content=Content("max_date", "issue_date"), warn_days=7, alarm_days=21,
     ),
     _socrata(
+        CITY, "x72b-38qv", "chi.cps_boundaries_es", "CPS Elementary School Attendance Boundaries SY2526",
+        "Chicago Public Schools", "backend/retrieval/neighborhood/schools.py", surfaces=("profile",),
+        fact_keys=(), cadence_days=365, warn_days=400, alarm_days=730,
+        note="Which elementary school a lot is assigned to (the new UI's Neighborhood tab, decision Item 102). CPS "
+             "publishes a new boundary dataset each school year under a new id; update config when SY2627 appears.",
+    ),
+    _socrata(
+        CITY, "xg7c-d8rm", "chi.cps_boundaries_hs", "CPS High School Attendance Boundaries SY2526",
+        "Chicago Public Schools", "backend/retrieval/neighborhood/schools.py", surfaces=("profile",),
+        fact_keys=(), cadence_days=365, warn_days=400, alarm_days=730,
+        note="Which high school a lot is assigned to (decision Item 102). A new dataset id each school year.",
+    ),
+    _socrata(
         CITY, "22u3-xenr", "chi.violations", "Building Violations", "Department of Buildings",
         "backend/retrieval/buildings.py", surfaces=("profile", "chat"), fact_keys=("area.violations", "property.violations"),
         cadence_days=1, content=Content("max_date", "violation_date"), warn_days=7, alarm_days=21,
@@ -613,6 +626,17 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         cadence_days=365, warn_days=400, alarm_days=730,
         note="Median gross rent (B25063) rebuilt from summed tract bracket counts, with the ACS Handbook margin. Build date "
              "from rent_by_area.meta.json; a new ACS 5-year release each December makes a rebuild due.",
+    ),
+    SourceSpec(
+        id="artifact.cps_schools", name="Illinois Report Card figures for CPS schools (committed)",
+        publisher="Illinois State Board of Education",
+        tier="official_record", kind="artifact", locator="ingestion/data/cps_schools.json", probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/neighborhood/schools.py", "ingestion/build_cps_schools_artifact.py"),
+        surfaces=("profile",), fact_keys=(),
+        cadence_days=365, warn_days=400, alarm_days=730,
+        note="ISBE's summative designation, ELA and math proficiency, enrollment and 4-year graduation rate for every "
+             "CPS school, joined to CPS school ids through the School Progress Reports' report-card links (decision "
+             "Item 102). ISBE publishes each year's report card in late October; rebuild from the new workbook then.",
     ),
     SourceSpec(
         id="artifact.hud_safmr", name="HUD Small Area Fair Market Rents by ZIP, Chicago metro (committed)",

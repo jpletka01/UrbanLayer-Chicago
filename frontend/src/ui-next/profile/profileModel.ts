@@ -25,7 +25,9 @@ export interface LimitRow {
   state: FigureState;
 }
 
-export const fmtInt = (n: number, lng: string) => Math.round(n).toLocaleString(lng);
+/** The number locale for a UI language: Spanish is Mexico's (es-MX), never Spain's `es` (Item 82). */
+export const numLocale = (lng: string) => (lng.startsWith("es") ? "es-MX" : "en-US");
+export const fmtInt = (n: number, lng: string) => Math.round(n).toLocaleString(numLocale(lng));
 
 /** Parse the table's height ("45 ft", "65'") to feet; null when it isn't a plain number of feet. */
 export function heightFeet(text: string | null | undefined): number | null {
@@ -194,6 +196,8 @@ export function ruleChips(data: ScorecardResponse, verdict: ScorecardVerdict): R
 // The zoning district lives in the answer sentence and the map band, not in a tile.
 
 export type TabId = "build" | "money" | "neighborhood" | "history";
+/** The tabs built so far, which a tile can open. */
+export type TileTab = "build" | "money" | "neighborhood";
 
 export interface Tile {
   key: "units" | "tax" | "walk" | "lastSale";
@@ -207,9 +211,11 @@ export interface Tile {
   warning?: string;
   state: FigureState;
   /** The tab that proves it, when that tab is built; null opens nothing yet. */
-  tab: "build" | null;
-  /** The small visual: a share of the whole (built of allowed units, a score of 100). */
+  tab: TileTab | null;
+  /** The small visual: a share of the whole (built of allowed units). */
   share?: number | null;
+  /** A 0–100 score drawn as a ring on the tile's right (the walk score, Item 102). */
+  score?: number | null;
   /** The first screen (Item 82): no figure yet; the note says what the tile waits for. */
   checking?: boolean;
 }
@@ -252,19 +258,19 @@ export function overviewTiles(
 
   // Money: property tax
   if (prop?.nominal_assessment) {
-    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: "—", note: t("profile.tiles.nominal"), state: { kind: "na", low: false }, tab: null });
+    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: "—", note: t("profile.tiles.nominal"), state: { kind: "na", low: false }, tab: "money" });
   } else if (prop?.tax_exempt) {
-    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: t("profile.tiles.exempt"), state: null, tab: null });
+    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: t("profile.tiles.exempt"), state: null, tab: "money" });
   } else if (prop?.estimated_annual_tax != null) {
     const year = prov["property.tax_estimate"]?.period ?? (prop.tax_year != null ? String(prop.tax_year) : null);
     const rate = prop.effective_tax_rate;
     tiles.push({
       key: "tax", tabOf: "money", label: label("tax"), figure: money(prop.estimated_annual_tax, lng), unit: t("profile.tiles.perYear"),
       note: [year ? t("profile.tiles.taxYear", { year }) : null, rate != null ? t("profile.tiles.taxRate", { rate: (rate * 100).toFixed(2) }) : null].filter(Boolean).join(" · ") || undefined,
-      state: confidenceStateFor(prov["property.tax_estimate"]), tab: null,
+      state: confidenceStateFor(prov["property.tax_estimate"]), tab: "money",
     });
   } else {
-    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: "—", note: t("profile.tiles.notOnRecord"), state: { kind: "not_checked", low: false }, tab: null });
+    tiles.push({ key: "tax", tabOf: "money", label: label("tax"), figure: "—", note: t("profile.tiles.notOnRecord"), state: { kind: "not_checked", low: false }, tab: "money" });
   }
 
   // Neighborhood: walk score (a private company's index, named as such)
@@ -273,10 +279,10 @@ export function overviewTiles(
     tiles.push({
       key: "walk", tabOf: "neighborhood", label: label("walk"), figure: String(ws.walk_score), unit: t("profile.tiles.of100"),
       note: [ws.walk_description, t("profile.tiles.walkSource")].filter(Boolean).join(" · "),
-      state: null, tab: null, share: ws.walk_score / 100,
+      state: null, tab: "neighborhood", share: null, score: ws.walk_score,
     });
   } else {
-    tiles.push({ key: "walk", tabOf: "neighborhood", label: label("walk"), figure: "—", note: t("profile.tiles.walkUnchecked"), state: { kind: "not_checked", low: false }, tab: null });
+    tiles.push({ key: "walk", tabOf: "neighborhood", label: label("walk"), figure: "—", note: t("profile.tiles.walkUnchecked"), state: { kind: "not_checked", low: false }, tab: "neighborhood" });
   }
 
   // History: last market sale. A $1 transfer, a quit claim or an unknown deed is never shown as the sale price.

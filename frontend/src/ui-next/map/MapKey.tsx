@@ -4,7 +4,7 @@
 // and on short maps (and by choice anywhere); the top-right corner is the key's (Item 79).
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Layers } from "lucide-react";
+import { Building2, ChevronDown, Layers, Wrench } from "lucide-react";
 import { ZONING_COLORS, ZONING_FAMILIES, type GroupId, type LayerMode } from "./mapStyle";
 import { PIN_COLORS } from "./pins";
 import { patternCss } from "./patterns";
@@ -24,7 +24,7 @@ const MODES: LayerMode[] = ["on", "off"];
 
 function swatch(id: GroupId): string {
   return {
-    zoning: "#CDB7F6", parcels: "transparent", sales: PIN_COLORS.sale, transit: PIN_COLORS.transit, streets: "#F6CF9E",
+    zoning: "#CDB7F6", parcels: "transparent", sales: PIN_COLORS.sale, building: PIN_COLORS.build, transit: PIN_COLORS.transit, streets: "#F6CF9E",
   }[id];
 }
 
@@ -37,7 +37,7 @@ export function MapKey({ groups, families, onMode, onRetry, onShow, defaultOpen,
   /** The zoning families on screen. */
   families: string[];
   onMode: (g: GroupId, m: LayerMode) => void;
-  onRetry?: () => void;
+  onRetry?: (g: GroupId) => void;
   /** Fit the map to the lot and this group's points (when some are off screen). */
   onShow?: (g: GroupId) => void;
 }) {
@@ -71,7 +71,7 @@ export function MapKey({ groups, families, onMode, onRetry, onShow, defaultOpen,
                   ) : g.late === "timedOut" || g.late === "failed" ? (
                     <span className="nx-muted">
                       {t("map.notChecked")}
-                      {onRetry && <button type="button" onClick={onRetry} className="ml-1 underline underline-offset-2">{t("map.retry")}</button>}
+                      {onRetry && <button type="button" onClick={() => onRetry(g.id)} className="ml-1 underline underline-offset-2">{t("map.retry")}</button>}
                     </span>
                   ) : g.total != null && g.count != null && g.count < g.total ? (
                     // Some points are off screen (owner's review: the sales sat half a mile away, out of view).
@@ -100,6 +100,16 @@ export function MapKey({ groups, families, onMode, onRetry, onShow, defaultOpen,
                   ))}
                 </span>
               </div>
+              {g.id === "building" && g.mode !== "off" && (
+                <ul className="flex flex-col gap-0.5 pl-4" data-testid="key-building-kinds">
+                  {([["build", "map.card.kindNew", Building2], ["reno", "map.card.kindReno", Wrench]] as const).map(([k, label, Icon]) => (
+                    <li key={k} className="flex items-center gap-1.5">
+                      <span aria-hidden className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[#1C1C1C]" style={{ background: PIN_COLORS[k] }}><Icon className="h-2.5 w-2.5" strokeWidth={2} /></span>
+                      {t(label)}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {g.id === "zoning" && g.mode !== "off" && families.length > 0 && (
                 <div className="flex flex-col gap-1 pl-4">
                   <ul className="flex flex-col gap-0.5" aria-label={t("map.familiesInView")} data-testid="key-families">

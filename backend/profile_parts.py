@@ -138,6 +138,7 @@ def _claims(rec: Record) -> dict:
         "rl": [rl.lat, rl.lon, rl.address, rl.pin, rl.confidence, rl.method],
         "id": [idn.pin, idn.confidence, idn.method, idn.unverified, idn.unverified_reason],
         "ap": rec.ap_pins, "as": rec.assessor_pins, "c": rec.cand_applies,
+        "v": rec.version,
         "exp": int(time.time()) + LOOKUP_TTL_S,
     }
 
@@ -285,9 +286,9 @@ async def _run_late(rec: Record, part: str, deadline_s: float) -> list[str]:
             lambda: main._scorecard_task(part, rl.lat, rl.lon, rl.address, pin=rl.pin, ca=rec.ca, ca_name=rec.ca_name),
         )
     elif part == "activity":
-        keys = ["violations", "address_311"]
+        keys = ["violations", "address_311", "schools", "construction_within"]
         if rec.ca is not None:
-            keys = ["aro_housing", "crime", "crime_yoy", *keys]
+            keys = ["aro_housing", "crime", "crime_yoy", "area_311", "area_demographics", *keys]
         for k in keys:
             sources[k] = (
                 (k, rl.lat, rl.lon, rl.address, rec.ca),
@@ -321,21 +322,27 @@ async def _run_late(rec: Record, part: str, deadline_s: float) -> list[str]:
 
 # ── Assembling a response ──────────────────────────────────────────────────────────────────────────────
 
-async def _profile(rec: Record) -> dict:
-    """The Profile from everything the record holds, by the full response's own functions, plus each sale's
-    arm's-length flag (excluded from the full response's dump)."""
+def _assemble(rec: Record) -> dict:
+    """The Profile's data from everything the record holds right now, by the full response's own assembly.
+    Synchronous on purpose: no other part can write the record while it runs (see ``_respond``)."""
     from backend import main
 
     rl = rec.rl
-    data = main._scorecard_data_from(
+    return main._scorecard_data_from(
         rec.results, rl.lat, rl.lon, rl.address, ca=rec.ca, ca_name=rec.ca_name,
-        comparables=rec.comparables, block_face=rec.block_face,
+        comparables=rec.comparables, block_face=rec.block_face, next_ui=True,
     )
-    ctx = data["context"]
-    sales = list(getattr(ctx.property, "sales_history", None) or [])
+
+
+async def _finish(rec: Record, data: dict, ap_pins: list[str], assessor_pins: list[str]) -> dict:
+    """The payload from assembled data by the full response's own finish, plus each sale's arm's-length flag
+    (excluded from the full response's dump)."""
+    from backend import main
+
+    sales = list(getattr(data["context"].property, "sales_history", None) or [])
     payload = await main._finish_scorecard_payload(
-        data, address=rec.address_in, rl=rl, identity=rec.identity,
-        ap_pins=rec.ap_pins, assessor_pins=rec.assessor_pins,
+        data, address=rec.address_in, rl=rec.rl, identity=rec.identity,
+        ap_pins=ap_pins, assessor_pins=assessor_pins,
     )
     dumped = ((payload.get("context") or {}).get("property") or {}).get("sales_history") or []
     for row, sale in zip(dumped, sales):
@@ -343,7 +350,19 @@ async def _profile(rec: Record) -> dict:
     return payload
 
 
-def _response(rec: Record, part: str, timed_out: list[str], profile: dict) -> dict:
+async def _respond(rec: Record, part: str, timed_out: list[str]) -> dict:
+    """One response. The version is taken in the same synchronous step that snapshots the record, so it orders
+    the data each response holds. The finish awaits (upcoming zoning and text impacts run in a thread), and
+    stamping the version after it let a part that snapshotted the record BEFORE the incentives part landed take
+    a higher version than the incentives response: the page, which keeps the highest version, then swapped the
+    full incentives for the Overview's membership-only ones (decision Item 100)."""
+    data = _assemble(rec)
+    head = _stamp(rec, part, timed_out)
+    profile = await _finish(rec, data, list(rec.ap_pins), list(rec.assessor_pins))
+    return {**head, "profile": profile}
+
+
+def _stamp(rec: Record, part: str, timed_out: list[str]) -> dict:
     rec.version += 1
     pending = [p for p in applicable_parts(rec) if p not in rec.parts_in]
     return {
@@ -356,7 +375,6 @@ def _response(rec: Record, part: str, timed_out: list[str], profile: dict) -> di
         "timed_out": timed_out,
         # every source still past its deadline, by part, so a page that missed a response still knows
         "timed_out_by_part": {k: v for k, v in rec.timed_out.items() if v},
-        "profile": profile,
     }
 
 
@@ -435,7 +453,7 @@ async def _overview(address, lat, lon, pin) -> dict:
     await _take_candidates(rec, 0)  # only if already in: the Overview doesn't wait for the Sources panel
     rec.parts_in.add("overview")
     _records.set(rec.id, rec)
-    return _response(rec, "overview", [], await _profile(rec))
+    return await _respond(rec, "overview", [])
 
 
 async def part(name: str, lookup: str, have: str | None, request: Request | None = None) -> dict:
@@ -452,23 +470,49 @@ async def part(name: str, lookup: str, have: str | None, request: Request | None
             _log(name, ok, timer)
 
 
+def _rebuilt_version(claims: dict) -> int:
+    """Where a rebuilt record's versions start: above any answer the page can hold. The token names the version of
+    the response it came from (the newest the page had when it asked); at most one answer per part can have
+    landed after it, so ``len(PARTS)`` higher clears them (decision Item 101)."""
+    try:
+        return int(claims.get("v") or 0) + len(PARTS)
+    except (TypeError, ValueError):
+        return len(PARTS)
+
+
+async def _rebuild(claims: dict, have: list[str]) -> Record:
+    """A lookup the server lost (a restart or eviction), rebuilt from the token: the Overview's calls and the parts
+    the page already has are cached by now, so this is quick."""
+    rec = _record_from_claims(claims)
+    if rec.cand_applies and not (rec.ap_pins or rec.assessor_pins):
+        from backend import main
+
+        rec.cand_task = await main._address_candidates(rec.address_in, None, None, None)
+    with _timing.span("rebuild"):
+        await _gather_into(rec, _overview_coros(rec))
+        rec.parts_in.add("overview")
+        await _run_have(rec, have)
+    _records.set(rec.id, rec)
+    return rec
+
+
+async def _run_have(rec: Record, have: list[str]) -> None:
+    for p in have:
+        if p not in rec.parts_in:
+            rec.timed_out[p] = await _run_late(rec, p, LATE_DEADLINE_S)
+            rec.parts_in.add(p)
+
+
 async def _part(name: str, claims: dict, have: str | None) -> dict:
     rec = _records.get(claims["i"])
     if rec is None:
-        # The server lost this lookup (a restart or eviction): rebuild it from the token. The Overview's calls and
-        # the parts the page already has are cached by now, so this is quick; then the asked part runs as usual.
-        rec = _record_from_claims(claims)
-        if rec.cand_applies and not (rec.ap_pins or rec.assessor_pins):
-            from backend import main
-
-            rec.cand_task = await main._address_candidates(rec.address_in, None, None, None)
-        with _timing.span("rebuild"):
-            await _gather_into(rec, _overview_coros(rec))
-            rec.parts_in.add("overview")
-            for p in [p for p in (have or "").split(",") if p in LATE_PARTS and p != name]:
-                rec.timed_out[p] = await _run_late(rec, p, LATE_DEADLINE_S)
-                rec.parts_in.add(p)
-        _records.set(rec.id, rec)
+        # The page asks every late part at once, so after a restart they all find the record missing: ONE rebuild,
+        # shared by the record id. Each built its own record before (versions from 1 under the same id), and the
+        # page dropped their answers as older than the ones it held (decision Item 101).
+        wanted = [p for p in (have or "").split(",") if p in LATE_PARTS and p != name]
+        rec = await inflight.shared(("profile_rebuild", claims["i"]), lambda: _rebuild(claims, wanted))
+        rec.version = max(rec.version, _rebuilt_version(claims))
+        await _run_have(rec, [p for p in wanted if p != name])  # what this request's page has that the shared rebuild didn't
     if name not in applicable_parts(rec):
         timed_out: list[str] = []
     else:
@@ -476,7 +520,7 @@ async def _part(name: str, claims: dict, have: str | None) -> dict:
     rec.timed_out[name] = timed_out
     rec.parts_in.add(name)
     await _take_candidates(rec, LATE_DEADLINE_S)  # started with the Overview: normally long since in
-    return _response(rec, name, timed_out, await _profile(rec))
+    return await _respond(rec, name, timed_out)
 
 
 def _reset_for_tests() -> None:

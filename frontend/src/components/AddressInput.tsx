@@ -16,6 +16,10 @@ interface Props {
   defaultValue?: string;
   /** Disables submit while a lookup is in flight. */
   busy?: boolean;
+  /** Open the suggestions above the field (a search bar pinned to the bottom of the screen). */
+  dropUp?: boolean;
+  /** The field's accessible name when the placeholder isn't one (the pinned bar's "Look up another address"). */
+  label?: string;
 }
 
 // Per-variant chrome. Hero keeps the original over-image styling verbatim; page
@@ -61,7 +65,7 @@ const SIZING = {
  * (300ms debounce), suggestion select submits immediately, free-text Enter
  * submits too (backend resolves it server-side).
  */
-export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "md", defaultValue, busy = false }: Props) {
+export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "md", defaultValue, busy = false, dropUp = false, label }: Props) {
   const { t } = useTranslation("common");
   const [value, setValue] = useState(defaultValue ?? "");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -171,6 +175,7 @@ export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "
         </svg>
         <input
           type="text"
+          aria-label={label}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -194,7 +199,7 @@ export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "
       </form>
 
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 rounded-xl bg-dark-surface/95 backdrop-blur-md border border-dark-border shadow-xl overflow-hidden">
+        <div className={`absolute z-50 w-full ${dropUp ? "bottom-full mb-2" : "mt-2"} rounded-xl bg-dark-surface/95 backdrop-blur-md border border-dark-border shadow-xl overflow-hidden`}>
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion.address}

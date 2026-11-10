@@ -6,10 +6,11 @@ import { ArrowRight, TriangleAlert } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict } from "../../lib/scorecardVerdict";
 import { answerSentence } from "../../lib/answerSentence";
+import { ScoreRing } from "../ui/ScoreRing";
 import { ConfidenceState } from "../../components/ui/ConfidenceState";
 import { ICON, STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
-import { overviewTiles, type Tile } from "./profileModel";
+import { overviewTiles, type Tile, type TileTab } from "./profileModel";
 
 const TILE_ICON = { units: ICON.units, tax: ICON.tax, walk: ICON.walk, lastSale: ICON.sale } as const;
 
@@ -28,7 +29,7 @@ export function OverviewTab({
   checkingCityLists?: boolean;
   /** The City's building records (the `building` part) haven't answered. */
   buildingPending?: boolean;
-  onOpenTab: (tab: "build") => void;
+  onOpenTab: (tab: TileTab) => void;
 }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
@@ -49,7 +50,7 @@ export function OverviewTab({
   );
 }
 
-export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTab: (tab: "build") => void }) {
+export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTab: (tab: TileTab) => void }) {
   const { t } = useTranslation("next");
   const Icon = TILE_ICON[tile.key];
   const body = (
@@ -59,7 +60,16 @@ export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; o
         <Icon aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
         {tile.label}
       </span>
-      {tile.checking ? (
+      {tile.score != null ? (
+        // A score as a ring on the right, its words on the left (owner's review, Item 102).
+        <span className="flex items-center justify-between gap-3">
+          <span className="flex min-w-0 flex-col gap-0.5 text-caption">
+            <span className="font-semibold">{tile.figure} {tile.unit}</span>
+            <span className="nx-card-muted">{tile.note}</span>
+          </span>
+          <ScoreRing value={tile.score} label={`${tile.label}: ${tile.figure} ${tile.unit ?? ""}`.trim()} testId={`ring-${tile.key}`} />
+        </span>
+      ) : tile.checking ? (
         // Same height as a figure line, so the tile doesn't grow when the figure arrives.
         <span aria-hidden className="flex items-center text-nx-figure"><span className="block h-[0.8em] w-20 animate-pulse rounded bg-nx-card-ink/10" />&#8203;</span>
       ) : (
@@ -73,7 +83,7 @@ export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; o
           <span className="block h-full rounded bg-nx-card-ink" style={{ width: `${tile.share * 100}%` }} />
         </span>
       )}
-      {tile.note && <span className="text-caption nx-card-muted">{tile.note}</span>}
+      {tile.note && tile.score == null && <span className="text-caption nx-card-muted">{tile.note}</span>}
       {tile.warning && (
         <span className="flex items-center gap-1 text-caption font-medium">
           <TriangleAlert aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />

@@ -624,6 +624,10 @@ class CensusTractDemographics(BaseModel):
 
     county_median_income: int | None = None
     city_median_income: int | None = None
+    # The new UI's "who lives here" charts (decision Item 102, owner's review): housing, households, moving and
+    # commuting tables from the same Census Reporter request. Excluded from every dump (chat, the report, the full
+    # /api/scorecard), so only the Profile parts carry them, under ``next_ui.tract``.
+    extras: dict | None = Field(default=None, exclude=True)
 
 
 class TransitAccess(BaseModel):

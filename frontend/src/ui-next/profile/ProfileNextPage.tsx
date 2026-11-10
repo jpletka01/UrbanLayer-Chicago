@@ -24,26 +24,45 @@ import { humanizeShoutyCase } from "../../lib/format";
 import { AddressInput } from "../../components/AddressInput";
 import { NextMap, type LateState, type MapView } from "../map/NextMap";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
+import { useUiVersion } from "../uiVersionContext";
 import { AskDrawer } from "../ask/AskDrawer";
+import { AskContext, type AskHandoff } from "../ask/askContext";
 import { ICON } from "../icons";
 import { OverviewTab, TileCard } from "./OverviewTab";
 import { checkingTiles, firstSentence } from "./firstModel";
 import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
+import { MoneyTab } from "./MoneyTab";
+import { NeighborhoodTab } from "./NeighborhoodTab";
+import { PermitPanel } from "./PermitPanel";
+import type { ConstructionProject } from "../../lib/api";
+import { sourceState } from "./neighborhoodModel";
+import { ProgramPanel } from "./ProgramPanel";
+import { RulePanel } from "./RulePanel";
+import type { RuleKey } from "./ruleModel";
+import { ruleChips } from "./profileModel";
+import { incentiveChips, type IncentiveKey } from "./moneyModel";
+import type { LateBlockState } from "./moneyModel";
 import { SourcesDialog } from "./SourcesDialog";
 import { PartsStatus } from "./PartsStatus";
 import { useProfileParts, type PartStatus } from "./useProfileParts";
 
-type TabId = "overview" | "build";
+type TabId = "overview" | "build" | "money" | "neighborhood";
 
 /** Each tab's camera and layers on the one map (map track M1): the Overview looks at the lot among its neighbors and
     recent sales; Build pulls back to the districts around it. Zoning is on in both (owner's review: it reads best
     fully on). The visitor's On / Off choices hold until the tab changes. */
 const MAP_VIEWS: Record<TabId, MapView> = {
-  overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", transit: "on", streets: "on" } },
-  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", transit: "on", streets: "on" } },
+  overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", building: "off", transit: "on", streets: "on" } },
+  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "on", streets: "on" } },
+  // Money: the nearby market sales around the lot (brief: "market sales within ¼ mile"); zoning off so the sale pins
+  // read (Item 99). It opens framed on the lot and its sales (`fit`), which a widened search can find half a mile out.
+  money: { id: "money", zoom: 15.2, fit: "sales", modes: { zoning: "off", parcels: "on", sales: "on", building: "off", transit: "off", streets: "on" } },
+  // Neighborhood: new construction within half a mile (the brief's map default for this tab, Item 102), framed on the
+  // permits; zoning off so the pins read, transit on (getting around).
+  neighborhood: { id: "neighborhood", zoom: 14.6, fit: "building", modes: { zoning: "off", parcels: "on", sales: "off", building: "on", transit: "on", streets: "on" } },
 };
-const TABS: TabId[] = ["overview", "build"];
+const TABS: TabId[] = ["overview", "build", "money", "neighborhood"];
 
 function queryFrom(params: URLSearchParams): ParcelQuery | null {
   const pin = params.get("pin");
@@ -230,9 +249,30 @@ function ProfileScreen({
 }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
+  const previewOn = useUiVersion().version === "next";
   const verdict = useMemo(() => (data ? computeVerdict(data, tp) : null), [data, tp]);
   const [tab, setTab] = useState<TabId>("overview");
-  const [askOpen, setAskOpen] = useState(false);
+  // The right panel: the analyst or a program's page, one at a time (Item 99). Closing slides it out first, so the
+  // last panel stays mounted (`shownPanel`) for the slide; `seq` remounts it for a new question or program, and
+  // `instant` skips the slide when the panel was already open.
+  type Panel = { kind: "ask"; text?: string } | { kind: "program"; program: IncentiveKey } | { kind: "rule"; rule: RuleKey }
+    | { kind: "permit"; permit: ConstructionProject };
+  // "Show on the map" from a permit's page: the map flies to it and opens its card (Item 102).
+  const [mapFocus, setMapFocus] = useState<{ permit: ConstructionProject; seq: number } | null>(null);
+  const [panel, setPanel] = useState<Panel | null>(null);
+  const [shownPanel, setShownPanel] = useState<{ p: Panel; seq: number; instant: boolean } | null>(null);
+  const openPanel = (p: Panel) => {
+    setShownPanel((cur) => ({ p, seq: (cur?.seq ?? 0) + 1, instant: !!panel }));
+    setPanel(p);
+  };
+  const closePanel = () => setPanel(null);
+  // After a close, the panel leaves once its slide has run (a reopen within that time cancels this).
+  useEffect(() => {
+    if (panel || !shownPanel) return;
+    const id = window.setTimeout(() => setShownPanel(null), 220);
+    return () => window.clearTimeout(id);
+  }, [panel, shownPanel]);
+  const askOpen = panel?.kind === "ask";
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [mapFocused, setMapFocused] = useState(false);
   const mapButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -271,6 +311,25 @@ function ProfileScreen({
     : (timedOut.money ?? []).includes("comparables") ? "timedOut"
     : (data.comparables?.sales?.length ?? 0) > 0 ? "ready" : "absent";
 
+  // Where each late part stands for the blocks that read it (Item 89's skeleton rule).
+  const lateOf = (p: ProfileLatePart): LateBlockState =>
+    !data || parts[p] === "waiting" ? "loading" : parts[p] === "failed" ? "failed" : (timedOut[p]?.length ?? 0) > 0 ? "timedOut" : "ready";
+  // Construction nearby comes with the late `activity` part (the Neighborhood tab's map pins, Item 102).
+  const buildingBlock = data ? sourceState(data, lateOf("activity"), "construction_within", timedOut.activity ?? []) : "loading";
+  const buildingProjects = data?.next_ui?.construction_within?.projects ?? null;
+  const buildingState: LateState = buildingBlock === "ready" ? (buildingProjects?.length ? "ready" : "absent") : buildingBlock;
+
+  // The tab bar's height, for what sticks under it (the Neighborhood tab's jump links on a phone).
+  const tabBarRef = useRef<HTMLDivElement | null>(null);
+  const [tabBarH, setTabBarH] = useState(48);
+  useEffect(() => {
+    const el = tabBarRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setTabBarH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // The tab bar is sticky; once it is stuck it also shows the short address (the slim header).
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [stuck, setStuck] = useState(false);
@@ -282,6 +341,12 @@ function ProfileScreen({
     return () => io.disconnect();
   }, []);
 
+  // On a phone the tabs scroll sideways (and the slim header's tools take room): keep the open tab in view.
+  const tabListRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    tabListRef.current?.querySelector('[data-state="active"]')?.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+  }, [tab, stuck]);
+
   const exportCsv = () => {
     if (!data || !ctx) return;
     const date = new Date().toISOString().slice(0, 10);
@@ -291,12 +356,31 @@ function ProfileScreen({
   const toolsFor = (where: "top" | "slim") => (
     <>
       <span ref={where === "top" ? askButtonRef : undefined} className="contents">
-        <ToolButton label={ready ? t("tools.ask") : `${t("tools.ask")}: ${t("profile.first.toolsLater")}`} icon={ICON.ask} onClick={() => { track("investigate_click", { card_name: "next_ask_open" }); setAskOpen((o) => !o); }} pressed={askOpen} testId={`tool-ask-${where}`} disabled={!ready} />
+        <ToolButton label={ready ? t("tools.ask") : `${t("tools.ask")}: ${t("profile.first.toolsLater")}`} icon={ICON.ask} onClick={() => { track("investigate_click", { card_name: "next_ask_open" }); if (askOpen) closePanel(); else openPanel({ kind: "ask" }); }} pressed={askOpen} testId={`tool-ask-${where}`} disabled={!ready} />
       </span>
       <ToolButton label={ready ? t("tools.sources") : `${t("tools.sources")}: ${t("profile.first.toolsLater")}`} icon={ICON.sources} onClick={() => setSourcesOpen(true)} testId={`tool-sources-${where}`} disabled={!ready} />
       <ToolButton label={ready ? t("tools.export") : `${t("tools.export")}: ${t("profile.first.toolsLater")}`} icon={ICON.export} onClick={exportCsv} testId={`tool-export-${where}`} disabled={!ready} />
     </>
   );
+
+  const ruleState = (rule: RuleKey) => {
+    const chip = data && verdict ? ruleChips(data, verdict).find((c) => c.key === rule) : undefined;
+    return { answer: chip?.answer ?? ("notChecked" as const), blocks: chip?.blocks ?? false };
+  };
+  const programAnswer = (program: IncentiveKey) =>
+    (data ? incentiveChips(data, lateOf("incentives")).find((c) => c.key === program)?.answer : undefined) ?? "notChecked";
+
+  const askHandoff: AskHandoff = {
+    ready,
+    address,
+    open: (text: string) => {
+      track("investigate_click", { card_name: "next_term_ask" });
+      openPanel({ kind: "ask", text });
+    },
+    openProgram: (program) => { track("investigate_click", { card_name: `next_program_${program}` }); openPanel({ kind: "program", program }); },
+    openRule: (rule) => { track("investigate_click", { card_name: `next_rule_${rule}` }); openPanel({ kind: "rule", rule }); },
+    openPermit: (permit) => { track("investigate_click", { card_name: "next_permit" }); openPanel({ kind: "permit", permit }); },
+  };
 
   const focusAsk = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -307,11 +391,21 @@ function ProfileScreen({
     <AppFrame
       crumbs={[t("profile.crumb"), address]}
       tools={toolsFor("top")}
-      drawer={askOpen && ready ? (
-        <AskDrawer chat={chat} onClose={() => setAskOpen(false)} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} />
+      drawer={shownPanel && data ? (
+        shownPanel.p.kind === "ask" ? (
+          ready ? <AskDrawer key={shownPanel.seq} chat={chat} onClose={closePanel} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} initialDraft={shownPanel.p.text} closing={!panel} instant={shownPanel.instant} /> : null
+        ) : shownPanel.p.kind === "permit" ? (
+          <PermitPanel key={shownPanel.seq} permit={shownPanel.p.permit} onClose={closePanel} closing={!panel} instant={shownPanel.instant}
+            onShowOnMap={() => { const pm = (shownPanel.p as { permit: ConstructionProject }).permit; setMapFocus((f) => ({ permit: pm, seq: (f?.seq ?? 0) + 1 })); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+        ) : shownPanel.p.kind === "rule" ? (
+          <RulePanel key={shownPanel.seq} data={data} rule={shownPanel.p.rule} {...ruleState(shownPanel.p.rule)} onClose={closePanel} closing={!panel} instant={shownPanel.instant} />
+        ) : (
+          <ProgramPanel key={shownPanel.seq} data={data} program={shownPanel.p.program} answer={programAnswer(shownPanel.p.program)} reports={lateOf("incentives")} onRetry={() => onRetryParts(["incentives"])} onClose={closePanel} closing={!panel} instant={shownPanel.instant} />
+        )
       ) : null}
     >
-      <Tabs.Root value={tab} onValueChange={(v) => setTab(v as TabId)} className="flex flex-col">
+      <AskContext.Provider value={askHandoff}>
+      <Tabs.Root value={tab} onValueChange={(v) => setTab(v as TabId)} className="flex flex-col" style={{ ["--nx-tabbar-h" as string]: `${tabBarH}px` }}>
         <div className="px-4 pt-5 sm:px-7 sm:pt-7">
           {/* The page's one map. "Expand map" makes it the focus of the screen; Escape or "Close" returns. */}
           <div
@@ -334,6 +428,10 @@ function ProfileScreen({
                 sales={data?.comparables?.sales ?? null}
                 salesState={salesState}
                 onRetrySales={() => onRetryParts(["money"])}
+                building={buildingProjects}
+                buildingState={buildingState}
+                onRetryBuilding={() => onRetryParts(["activity"])}
+                focusBuilding={mapFocus}
                 expanded={mapFocused}
                 className="h-full"
               />
@@ -360,9 +458,9 @@ function ProfileScreen({
         </div>
 
         <div ref={sentinelRef} aria-hidden className="h-px" />
-        <div className={`sticky top-0 z-30 flex items-center gap-4 bg-nx-page px-4 sm:px-7 ${stuck ? "border-b border-nx-ink/10 py-2" : "pt-5"}`} data-testid="tab-bar" data-stuck={stuck || undefined}>
+        <div ref={tabBarRef} className={`sticky top-0 z-30 flex items-center gap-4 bg-nx-page px-4 sm:px-7 ${stuck ? "border-b border-nx-ink/10 py-2" : "pt-5"}`} data-testid="tab-bar" data-stuck={stuck || undefined}>
           {stuck && <span className="hidden max-w-[16rem] truncate font-semibold md:block">{address}</span>}
-          <Tabs.List aria-label={t("profile.tabsLabel")} className="flex min-w-0 flex-1 gap-5 overflow-x-auto">
+          <Tabs.List ref={tabListRef} aria-label={t("profile.tabsLabel")} className="flex min-w-0 flex-1 gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {TABS.map((id) => (
               <Tabs.Trigger
                 key={id}
@@ -377,7 +475,7 @@ function ProfileScreen({
           {stuck && <div className="flex shrink-0 items-center gap-1">{toolsFor("slim")}</div>}
         </div>
 
-        <div className="px-4 pb-24 pt-6 sm:px-7">
+        <div className="px-4 pb-10 pt-6 sm:px-7">
           <Tabs.Content value="overview" className="focus:outline-none">
             {data && verdict ? (
               <OverviewTab
@@ -398,14 +496,43 @@ function ProfileScreen({
             </Tabs.Content>
           )}
 
+          {data && verdict && (
+            <Tabs.Content value="money" className="focus:outline-none">
+              <MoneyTab
+                data={data}
+                late={{ money: lateOf("money"), incentives: lateOf("incentives"), neighborhood: lateOf("neighborhood") }}
+                onRetry={(p) => onRetryParts([p])}
+              />
+            </Tabs.Content>
+          )}
+
+          {data && verdict && (
+            <Tabs.Content value="neighborhood" className="focus:outline-none">
+              <NeighborhoodTab
+                data={data}
+                late={{ neighborhood: lateOf("neighborhood"), activity: lateOf("activity") }}
+                timedOutActivity={timedOut.activity ?? []}
+                onRetry={(p) => onRetryParts([p])}
+              />
+            </Tabs.Content>
+          )}
+
           {data && <PartsStatus parts={parts} timedOut={timedOut} onRetry={onRetryParts} />}
 
-          <div className="mt-12 max-w-xl border-t border-nx-ink/10 pt-6">
-            <p className="mb-2 text-caption nx-muted">{t("profile.another")}</p>
-            <AddressInput variant="page" size="sm" onSubmit={onSearch} placeholder={t("profile.search.placeholder")} />
+        </div>
+
+        {/* "Look up another address", pinned to the bottom of the screen on every tab (owner, Item 89). It leaves room
+            for the preview badge below it; the expanded map covers it; suggestions open upward. */}
+        <div
+          className={`sticky bottom-0 z-20 border-t border-nx-ink/10 bg-nx-page/95 px-4 pt-3 backdrop-blur sm:px-7 ${previewOn ? "pb-[calc(env(safe-area-inset-bottom)+4.25rem)]" : "pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"}`}
+          data-testid="search-again"
+        >
+          <div className="max-w-xl">
+            <AddressInput variant="page" size="sm" dropUp onSubmit={onSearch} placeholder={t("profile.another")} label={t("profile.another")} />
           </div>
         </div>
       </Tabs.Root>
+      </AskContext.Provider>
       {ready && <SourcesDialog data={data!} open={sourcesOpen} onOpenChange={setSourcesOpen} />}
     </AppFrame>
   );

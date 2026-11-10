@@ -1,4 +1,4 @@
-// The new Profile's Overview and Build tabs, rendered from a typed fixture with no network, with axe checks.
+// The new Profile's Overview, Build and Money tabs, rendered from a typed fixture with no network, with axe checks.
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "../../lib/i18n";
@@ -7,6 +7,8 @@ import { profileFixture } from "../test/fixtures";
 import { axeViolations } from "../test/axe";
 import { OverviewTab } from "./OverviewTab";
 import { BuildTab } from "./BuildTab";
+import { MoneyTab } from "./MoneyTab";
+import { AskContext } from "../ask/askContext";
 
 const tp = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts }) as string;
 
@@ -62,5 +64,88 @@ describe("Build", () => {
     const data = profileFixture({ context: { upcoming_zoning: null } } as never);
     render(<div className="ui-next"><BuildTab data={data} verdict={computeVerdict(data, tp)} /></div>);
     expect(screen.getByText(/couldn't be checked today/)).toBeTruthy();
+  });
+});
+
+describe("Money", () => {
+  const ready = { money: "ready", incentives: "ready", neighborhood: "ready" } as const;
+  const sales = [
+    { pin: "1", sale_date: "2024-03-01T00:00:00.000", sale_price: 900000, zone_class: "B3-2", distance_mi: 0.12, price_per_buildable_sqft: 140, lat: 41.91, lon: -87.68 },
+    { pin: "2", sale_date: "2023-06-01T00:00:00.000", sale_price: 700000, zone_class: "RS-3", distance_mi: 0.2, price_per_buildable_sqft: null, lat: 41.91, lon: -87.68 },
+    { pin: "3", sale_date: "2022-01-01T00:00:00.000", sale_price: 1100000, zone_class: "B3-2", distance_mi: 0.24, price_per_buildable_sqft: 150, lat: 41.91, lon: -87.68 },
+  ];
+  const moneyData = () => profileFixture({
+    comparables: { median_sale_price: 900000, sales_volume: 3, comp_basis: "Class 5xx sales within 0.25 mi, last 3 yr (n=3)", comp_radius_mi: 0.25, comp_window_years: 3, comp_widened: false, sales },
+    context: { property: {
+      tax_breakdown: [{ agency: "BOARD OF EDUCATION", rate: 3.6, amount: 34000 }, { agency: "CITY OF CHICAGO", rate: 1.6, amount: 15000 }, { agency: "COUNTY OF COOK", rate: 0.4, amount: 4000 }],
+      assessment_history: [{ year: 2023, land: 80000, building: 160000, total: 240000 }, { year: 2024, land: 90000, building: 160000, total: 250000 }],
+    } },
+  } as never);
+
+  it("leads with the sentence, then stat tiles, the sales as bars with their rule, value by year, rent and incentives", async () => {
+    const { container } = render(<div className="ui-next"><MoneyTab data={moneyData()} late={ready} onRetry={vi.fn()} /></div>);
+    expect(screen.getByTestId("money-sentence").textContent).toBe("About $64,000 a year in property tax, on an Assessor's value of $1,000,000; 3 nearby market sales, median $900,000.");
+    expect(within(screen.getByTestId("money-tiles")).getAllByRole("listitem").map((li) => li.getAttribute("data-testid")))
+      .toEqual(["tile-tax", "tile-value", "tile-sales", "tile-rent"]);
+    expect(screen.getByTestId("tile-tax").textContent).toContain("$64,000");
+    expect(within(screen.getByTestId("sales-rule")).getByText("Within 0.25 mi")).toBeTruthy();
+    expect(within(screen.getByTestId("sales-bars")).getAllByRole("img")).toHaveLength(3);
+    expect(screen.getByTestId("value-bars")).toBeTruthy();
+    // Where the bill goes is not shown (cut by design 2026-07-07): only what the owner pays.
+    expect(screen.queryByText(/Board of Education/i)).toBeNull();
+    expect(screen.getAllByText("Couldn't check rent today").length).toBeGreaterThan(0); // the fixture has no rent: never "none"
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("defines a title in a popover whose Ask writes a question about this lot, without sending it", () => {
+    const open = vi.fn();
+    render(
+      <div className="ui-next">
+        <AskContext.Provider value={{ ready: true, address: "1601 N Milwaukee Ave", open }}>
+          <MoneyTab data={moneyData()} late={ready} onRetry={vi.fn()} />
+        </AskContext.Provider>
+      </div>,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "What is Rent nearby?" })[0]);
+    fireEvent.click(screen.getByTestId("term-ask"));
+    expect(open).toHaveBeenCalledWith("What rent could units at 1601 N Milwaukee Ave get, and how good is that figure?");
+  });
+
+  it("on a phone, the same definition opens as a bottom sheet with its title, the words and a quiet Ask link", async () => {
+    const open = vi.fn();
+    render(
+      <div className="ui-next">
+        <AskContext.Provider value={{ ready: true, address: "1601 N Milwaukee Ave", open }}>
+          <MoneyTab data={moneyData()} late={ready} onRetry={vi.fn()} />
+        </AskContext.Provider>
+      </div>,
+    );
+    // The second trigger is the phone's (CSS shows one per screen size; jsdom has both).
+    fireEvent.click(screen.getAllByRole("button", { name: "What is Rent nearby?" })[1]);
+    const sheet = await screen.findByTestId("term-sheet");
+    expect(within(sheet).getByRole("heading", { name: "Rent nearby" })).toBeTruthy();
+    expect(sheet.textContent).toContain("What renters nearby pay each month");
+    fireEvent.click(within(sheet).getByTestId("term-ask"));
+    expect(open).toHaveBeenCalledWith("What rent could units at 1601 N Milwaukee Ave get, and how good is that figure?");
+  });
+
+  it("shows each late block's own outline while it waits, and Retry in place when it ran out of time", () => {
+    const onRetry = vi.fn();
+    const { rerender } = render(<div className="ui-next"><MoneyTab data={moneyData()} late={{ ...ready, money: "loading", incentives: "loading" }} onRetry={onRetry} /></div>);
+    expect(screen.getAllByText("Checking nearby sales…").length).toBe(2); // the tile and the block
+    expect(screen.queryByTestId("sales-bars")).toBeNull();
+    expect(document.querySelector('[data-incentive="qct"]')!.getAttribute("data-answer")).toBe("checking");
+    rerender(<div className="ui-next"><MoneyTab data={moneyData()} late={{ ...ready, money: "timedOut" }} onRetry={onRetry} /></div>);
+    fireEvent.click(screen.getByRole("button", { name: /Retry/ }));
+    expect(onRetry).toHaveBeenCalledWith("money");
+  });
+
+  it("renders in Spanish (usted) with no English left in the blocks", async () => {
+    await i18n.changeLanguage("es");
+    render(<div className="ui-next"><MoneyTab data={moneyData()} late={ready} onRetry={vi.fn()} /></div>);
+    const text = screen.getByTestId("money-tab").textContent ?? "";
+    expect(text).toContain("Ventas de mercado cercanas");
+    expect(text).toContain("Valor del Tasador");
+    expect(text).not.toMatch(/Nearby market sales|Rent nearby|Property tax/);
   });
 });

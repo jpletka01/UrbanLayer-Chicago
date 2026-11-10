@@ -234,6 +234,685 @@
         "property": "City building records"
       },
       "unitsBuiltChecking": "Checking City building records"
+    },
+    "money": {
+      "checking": "Checking {{what}}…",
+      "perSqft": "{{value}}/sq ft",
+      "perMonth": "{{value}}/mo",
+      "miles": "{{mi}} mi",
+      "sentence": {
+        "billValue": "About {{tax}} a year in property tax, on an Assessor's value of {{value}}",
+        "bill": "About {{tax}} a year in property tax",
+        "exempt": "Tax-exempt: no property tax bill",
+        "nominal": "A nominal assessment: no tax figure applies",
+        "none": "No tax bill on record",
+        "comps_one": "{{count}} nearby market sale at {{median}}",
+        "comps_other": "{{count}} nearby market sales, median {{median}}"
+      },
+      "sales": {
+        "title": "Nearby market sales",
+        "onMap": "Pins on the map",
+        "none": "Nearby sales weren't checked for this lot",
+        "noneFound": "No market sales found by this rule",
+        "ruleLabel": "How nearby sales were chosen",
+        "rule": {
+          "class": "Class {{group}}xx, like this lot",
+          "radius": "Within {{mi}} mi",
+          "years_one": "Last {{count}} year",
+          "years_other": "Last {{count}} years",
+          "count_one": "{{count}} sale",
+          "count_other": "{{count}} sales",
+          "widened": "Search widened to find enough"
+        },
+        "median": "Median price",
+        "col": {
+          "date": "Sold",
+          "price": "Price",
+          "buildable": "Per buildable sq ft",
+          "district": "Zoning",
+          "distance": "Distance"
+        },
+        "tileNote_one": "{{count}} sale within {{mi}} mi",
+        "tileNote_other": "{{count}} sales within {{mi}} mi",
+        "barLabel": "Sold {{date}} for {{price}}, {{distance}} mi away",
+        "medianIs": "Median {{median}}",
+        "perBuildableIs": "{{value}} per buildable sq ft",
+        "moreInDetails_one": "{{count}} more in the details",
+        "moreInDetails_other": "{{count}} more in the details"
+      },
+      "tax": {
+        "billYear": "{{year}} bill",
+        "rateVsTypical": "{{rate}}% of value a year; typical for its class {{typical}}%",
+        "valueOverTime": "Assessor's value by year",
+        "belowSale": "The Assessor's value is {{pct}}% below this lot's {{year}} sale",
+        "exemptShort": "No bill; a taxable lot of its class pays about {{rate}}% of value a year",
+        "nominalShort": "Nominal assessment: no tax figure",
+        "noneShort": "No tax bill on record",
+        "exemptNoRate": "No bill: tax-exempt ownership"
+      },
+      "rent": {
+        "title": "Rent nearby",
+        "what": "rent",
+        "census": "Census {{period}}",
+        "notChecked": "Couldn't check rent today",
+        "bed": {
+          "1_bedroom": "1 bedroom",
+          "2_bedrooms": "2 bedrooms",
+          "3_bedrooms": "3 bedrooms"
+        },
+        "barLabel": "{{size}}: median rent {{rent}} a month",
+        "barNone": "{{size}}: no usable median",
+        "thisSize": "In black: {{size}}, this building's typical unit",
+        "noSize": "Unit sizes not on record for this building",
+        "area": "area median {{rent}}/mo",
+        "puma": "some from a wider area",
+        "tileSize": "Rent, {{size}}",
+        "aMonth": "a month",
+        "tileNoteSize": "This building's typical unit, Census median nearby",
+        "tileNoteArea": "Area median, all unit sizes"
+      },
+      "incentives": {
+        "title": "Incentives",
+        "checking": "Checking",
+        "program": {
+          "tif": "TIF district",
+          "oz": "Opportunity Zone",
+          "ez": "Enterprise Zone",
+          "qct": "Qualified Census Tract",
+          "nmtc": "New Markets Tax Credit"
+        },
+        "standardClass": "Standard tax class: no class incentive applies.",
+        "classIncentive": "This lot's tax class carries an incentive (see details)."
+      },
+      "details": {
+        "title": "All money details",
+        "assessed": "Assessed value",
+        "level": "Assessment level for its class",
+        "marketValue": "Assessor's value (assessed ÷ level)",
+        "rate": "Effective tax rate",
+        "typicalRate": "Typical rate for its class",
+        "exemptions": "Exemptions on the bill",
+        "noneOnBill": "None",
+        "taxCode": "Tax code",
+        "classNote": "Tax class",
+        "allSales_one": "{{count}} nearby sale",
+        "allSales_other": "All {{count}} nearby sales",
+        "valueYear": "Assessor's value, {{year}}",
+        "landBuilding": "{{total}} (land {{land}}, building {{building}})"
+      },
+      "define": {
+        "tax": "The yearly property tax bill, as the County computes it for the latest bill year. A new owner's bill can differ once exemptions drop or the lot is reassessed.",
+        "value": "What the Cook County Assessor says the property is worth: its assessed value divided by the share the law assesses for its class. It sets the tax bill; it is not a sale price.",
+        "sales": "Recorded sales of similar properties near this lot (same tax class), counted only when the County treats them as market sales. The chips say how near and how recent.",
+        "rent": "What renters nearby pay each month, rent plus utilities, from the Census survey of this tract (or a wider area). Not listing prices, and not what a new building would get.",
+        "incentives": "Programs that can help pay for a project in this place: tax-increment money, tax credits and zones with tax breaks. Being inside one means a project can apply, not that it is approved.",
+        "program": {
+          "tif": "Tax Increment Financing: a district where growth in property tax pays for public projects and can help private development.",
+          "oz": "A federal Opportunity Zone: investors can defer or cut capital-gains tax by investing here.",
+          "ez": "A State of Illinois Enterprise Zone: sales-tax and other breaks for building and businesses.",
+          "qct": "A HUD Qualified Census Tract: affordable-housing projects here can get a larger federal tax credit.",
+          "nmtc": "A tract eligible for New Markets Tax Credits, a federal credit for investment in low-income areas."
+        }
+      },
+      "ask": {
+        "tax": "How is the property tax figured for {{address}}, and what could change it?",
+        "value": "How does the Assessor value {{address}}, and how does that compare with what it could sell for?",
+        "sales": "What do the nearby market sales say about {{address}}?",
+        "rent": "What rent could units at {{address}} get, and how good is that figure?",
+        "incentives": "Which incentive programs could help a project at {{address}}?",
+        "program": "What would {{program}} mean for a project at {{address}}?"
+      },
+      "value": {
+        "label": "Assessor's value",
+        "year": "{{year}} assessment",
+        "none": "No assessments on record",
+        "chartLabel": "Assessor's value by year: {{list}}",
+        "hint": "Hover a year for its value; click to keep it shown."
+      }
+    },
+    "program": {
+      "forThisLot": "What it means for this lot",
+      "checking": "Still checking this program for this lot.",
+      "notChecked": "We couldn't check this program for this lot today, so we can't say whether it applies.",
+      "tract": "Census tract {{tract}}",
+      "whoDecides": "Who decides",
+      "whatItIs": "What it is",
+      "status": {
+        "in": "This lot is inside",
+        "out": "Not in one"
+      },
+      "tif": {
+        "named": "{{name}} TIF district",
+        "meansIn": "This lot is inside the {{name}} TIF district. A project here can ask the City for TIF help (money from the district's fund, often repaid from the new taxes the project creates) until the district ends. Nothing is promised: the City decides project by project.",
+        "meansOut": "This lot is in no TIF district, so a project here can't get TIF money. Other City programs and grants can still apply.",
+        "who": "The City's Department of Planning and Development negotiates TIF help; City Council approves each agreement.",
+        "source": "Source: City of Chicago TIF boundaries and annual reports",
+        "runs": "Runs",
+        "yearsLeft_one": "{{count}} year left",
+        "yearsLeft_other": "{{count}} years left",
+        "balance": "Fund balance",
+        "asOfReport": "{{year}} annual report",
+        "balanceByYear": "Fund balance by year",
+        "projects": "Projects it has paid for",
+        "publicFunds": "{{value}} TIF",
+        "privateFunds": "{{value}} private",
+        "allProjects": "All TIF projects (City data)",
+        "reportsChecking": "Still checking the district's annual reports.",
+        "reportsLate": "Couldn't check the district's annual reports in time.",
+        "reportsMissing": "The district's annual reports didn't come back for this lookup."
+      },
+      "oz": {
+        "meansIn": "This lot is in an Opportunity Zone (Census tract {{tract}}). Investors who put capital gains into a project here through a Qualified Opportunity Fund can defer or reduce federal tax on them. It doesn't change the zoning or what can be built.",
+        "meansOut": "This lot is not in an Opportunity Zone, so investors in a project here get no Opportunity Zone tax benefit.",
+        "who": "No City approval: investors claim the benefit on their federal taxes through a Qualified Opportunity Fund.",
+        "source": "Source: US Treasury and HUD Opportunity Zones"
+      },
+      "ez": {
+        "meansIn": "This lot is in {{name}}. A project here can claim Illinois Enterprise Zone benefits, such as a sales-tax exemption on building materials bought for it.",
+        "meansOut": "This lot is not in an Enterprise Zone, so there's no Enterprise Zone sales-tax exemption on building materials.",
+        "who": "Benefits are claimed under State of Illinois rules through the zone's administrator (the City, for Chicago's zones).",
+        "source": "Source: City of Chicago Enterprise Zone boundaries"
+      },
+      "qct": {
+        "meansIn": "This lot is in a HUD Qualified Census Tract (tract {{tract}}). An affordable-housing project using Low-Income Housing Tax Credits can count up to 130% of its eligible costs, which means a larger credit. Other kinds of projects aren't affected.",
+        "meansOut": "This lot is not in a Qualified Census Tract, so an affordable-housing project here gets no automatic credit boost from it.",
+        "who": "Housing tax credits are awarded in competitions run by the City's Department of Housing and the Illinois Housing Development Authority.",
+        "source": "Source: HUD Qualified Census Tracts"
+      },
+      "nmtc": {
+        "meansIn": "This lot is in a low-income tract eligible for New Markets Tax Credits (tract {{tract}}). Commercial and community projects here can seek NMTC financing, which often comes on below-market terms.",
+        "meansOut": "This lot is not in an eligible tract, so New Markets Tax Credit financing isn't available here by location.",
+        "who": "Community Development Entities that hold federal allocations choose which projects to finance.",
+        "source": "Source: CDFI Fund (US Treasury) eligibility",
+        "poverty": "Poverty rate",
+        "distress": "Severe distress",
+        "severe": "Yes",
+        "notSevere": "No"
+      },
+      "grants": {
+        "title": "City grants in this community area",
+        "summary_one": "{{count}} project, {{funding}}",
+        "summary_other": "{{count}} projects, {{funding}}",
+        "by": "{{program}} {{count}}",
+        "what": "Small Business Improvement Fund grants are paid from TIF money; Neighborhood Opportunity Fund grants come from downtown density fees.",
+        "name": {
+          "SBIF": "Small Business Improvement Fund",
+          "NOF": "Neighborhood Opportunity Fund"
+        }
+      }
+    },
+    "rule": {
+      "status": {
+        "applies": "Applies to this lot",
+        "doesNot": "Doesn't apply",
+        "changesBuild": "Changes what can be built"
+      },
+      "records_one": "The City's record",
+      "records_other": "The City's records ({{count}})",
+      "readSource": "Read the source",
+      "ask": "What does {{rule}} mean for a project at {{address}}?",
+      "flood": {
+        "zone": "FEMA flood zone",
+        "special": "Special flood hazard area",
+        "meansIn": "FEMA maps this lot in flood zone {{zone}}. Building here has to meet the City's floodplain rules, and a federally backed mortgage on a building in a special flood hazard area needs flood insurance.",
+        "meansOut": "FEMA maps this lot outside the 100-year floodplain, so the City's floodplain rules don't add requirements here.",
+        "who": "The City's Department of Buildings applies the floodplain rules on permits; FEMA draws the flood maps.",
+        "what": "FEMA's flood zones: A and AE are the 100-year floodplain (a 1% chance of flooding each year); X is outside it.",
+        "source": "Source: FEMA National Flood Hazard Layer (Chicago copy)"
+      },
+      "landmark": {
+        "meansIn": "This lot is a Chicago Landmark or sits in a landmark district. Permits to alter or demolish a building, add on, or build new here need the Commission on Chicago Landmarks' review and approval.",
+        "meansOut": "This lot is not a Chicago Landmark and not in a landmark district, so permits here don't go to the Landmarks Commission.",
+        "who": "The Commission on Chicago Landmarks: its staff review most permits, and the Commission hears larger changes.",
+        "what": "A building or district the City Council has designated for its history or design; changes to it need the Commission's approval.",
+        "source": "Source: City of Chicago landmark maps"
+      },
+      "historic": {
+        "meansIn": "This lot is in a historic district. A National Register listing on its own doesn't limit what an owner can do with private money, and can open federal and state tax credits for a certified rehabilitation; a Chicago Landmark district also needs the Commission's approval for exterior work.",
+        "meansOut": "This lot is not in a historic district on the maps we check.",
+        "who": "National Register: the National Park Service, with Illinois's State Historic Preservation Office. Chicago Landmark districts: the Commission on Chicago Landmarks.",
+        "what": "An area recognized for its history: on the National Register (federal, honorary with tax credits) or a Chicago Landmark district (City rules apply).",
+        "source": "Source: City of Chicago historic and National Register district maps"
+      },
+      "pd": {
+        "meansIn": "This lot is inside a Planned Development. Its own ordinance, not the base district, sets the uses, height and density here, so changing what's allowed means amending that ordinance.",
+        "meansOut": "This lot is not in a Planned Development, so the base district's rules apply.",
+        "who": "City Council amends a Planned Development after Plan Commission review; the Zoning Administrator handles minor changes.",
+        "what": "A site-specific zoning district Council adopts by ordinance for a large or special project; its number points to that ordinance.",
+        "source": "Source: City of Chicago zoning map"
+      },
+      "lakefront": {
+        "meansIn": "This lot is in the Lakefront Protection District. Most development here needs a Lakefront Protection review and the Plan Commission's approval.",
+        "meansOut": "This lot is not in the Lakefront Protection District.",
+        "who": "The Chicago Plan Commission.",
+        "what": "The area along Lake Michigan covered by the Lake Michigan and Chicago Lakefront Protection Ordinance.",
+        "source": "Source: City of Chicago Lakefront Protection District map"
+      },
+      "tod": {
+        "meansIn": "This lot is near a CTA or Metra station, in a transit-served area: minimum parking can be reduced, and some districts allow more density.",
+        "meansOut": "This lot is not in a transit-served area, so the usual parking minimums apply.",
+        "who": "The City's Zoning Administrator applies the reductions on permits; some bonuses need an administrative adjustment or a rezoning.",
+        "what": "Areas near CTA and Metra stations where Chicago's zoning code relaxes parking and can allow more homes.",
+        "source": "Source: City of Chicago transit-served location maps"
+      },
+      "adu": {
+        "meansIn": "Coach houses and basement or attic units can be added to a home here, within the City's ADU rules.",
+        "meansOut": "Coach houses and conversion units aren't allowed on this lot.",
+        "who": "The Department of Buildings issues ADU permits; some areas cap how many are approved each year.",
+        "what": "Accessory dwelling units: a coach house, or a unit in a basement or attic, added to an existing home.",
+        "source": "Source: City of Chicago ADU area map and zoning code"
+      },
+      "aro": {
+        "meansIn": "This lot is in an Affordable Requirements Ordinance area, which sets the affordable share for covered projects: generally 10 or more homes that need a zoning change, City land or City money.",
+        "meansOut": "There's no ARO area on the map we check for this lot. The ordinance can still cover a project here that needs a zoning change or City help.",
+        "who": "The City's Department of Housing.",
+        "what": "Chicago's Affordable Requirements Ordinance: covered residential projects include affordable homes or, where allowed, pay a fee instead.",
+        "source": "Source: City of Chicago ARO area map",
+        "nearby_one": "{{count}} affordable project in this community area ({{units}} homes).",
+        "nearby_other": "{{count}} affordable projects in this community area ({{units}} homes)."
+      }
+    },
+    "nb": {
+      "theArea": "the area",
+      "jumpLabel": "Jump to a part of this tab",
+      "jump": {
+        "around": "Getting around",
+        "building": "Building",
+        "safety": "Safety",
+        "311": "311",
+        "people": "People",
+        "schools": "Schools",
+        "changing": "Trends",
+        "nearby": "Nearby"
+      },
+      "sentence": {
+        "walk": "walk score {{score}} ({{desc}})",
+        "building_one": "{{count}} permit for new buildings or major renovations within half a mile",
+        "building_other": "{{count}} permits for new buildings or major renovations within half a mile",
+        "noBuilding": "no new buildings or major renovations permitted within half a mile",
+        "violentDown": "violent crime in the area down {{pct}}% from a year ago",
+        "violentUp": "violent crime in the area up {{pct}}% from a year ago",
+        "violentFlat": "violent crime in the area level with a year ago",
+        "none": "Still checking the area around this lot."
+      },
+      "score": {
+        "walk": "Walk score",
+        "transit": "Transit score",
+        "bike": "Bike score",
+        "ringLabel": "{{label}}: {{score}} of 100",
+        "of100": "{{score}} of 100"
+      },
+      "define": {
+        "walk": "Walk Score's 0 to 100 index of how many daily errands can be done on foot from this address. A private company's index, not a City figure.",
+        "transit": "Walk Score's 0 to 100 index of how well public transit serves this address: how close the stops are, how often they run and where they go. A private company's index.",
+        "bike": "Walk Score's 0 to 100 index of how good this address is for biking: bike lanes, hills, destinations and how many people ride. A private company's index.",
+        "crime": "Crimes the Chicago Police Department recorded in this lot's community area over the last 90 days (the newest week is left out while reports settle), per 1,000 residents. Violent means crimes against a person: homicide, sexual assault, robbery, assault and battery, kidnapping, human trafficking. Property means burglary, theft, motor vehicle theft, arson and criminal damage. Other types (narcotics, weapons, fraud) count in neither. It describes the whole community area, not this block.",
+        "building": "City building permits issued in the last 2 years within half a mile of this lot: every new building, plus renovations with a reported cost of $250,000 or more. A permit means work was approved, not that it is finished. The same permits are the pins on the map.",
+        "r311": "Requests residents made to the City's 311 line in this community area over the last 90 days, duplicates removed, by type. Information calls and parking-ticket reviews are left out. More requests can mean more problems or more people who report them.",
+        "people": "Census survey figures (American Community Survey, 5-year) for this lot's census tract, a few blocks around it, beside its community area where the City publishes the same figure. Survey estimates have margins of error; a figure too uncertain to show is withheld.",
+        "schools": "The Chicago Public Schools elementary and high school whose attendance boundary includes this lot, with the State of Illinois's own report card for each: its designation, the share of students meeting state standards and, for a high school, the graduation rate. Families can also apply to other schools; these are the ones assigned by address.",
+        "trend": "How the community area has changed: the median price of market sales each year (the County's sales, 2020 on, by building type) and the median rent in the Census survey's two latest non-overlapping five-year periods, with the change after inflation. Community-area figures, not this block's; past change, not a forecast."
+      },
+      "ask": {
+        "scores": "How easy is it to get around without a car from {{address}}?",
+        "crime": "How does safety around {{address}} compare with the rest of its community area, and how is it changing?",
+        "building": "What is being built near {{address}}, and what does it say about the area?",
+        "r311": "What do the 311 requests near {{address}} say about the area?",
+        "people": "Who lives around {{address}}, and how does the tract compare with its community area?",
+        "schools": "Which public schools serve {{address}}, and how does the state rate them?",
+        "trend": "How has the area around {{address}} changed in prices and rents, and what is driving it?",
+        "permit": "What does the permit at {{permit}} say about development near {{address}}?"
+      },
+      "crime": {
+        "tile": "Violent crime",
+        "title": "Safety",
+        "what": "crime",
+        "perThousand": "per 1,000",
+        "crimes": "crimes",
+        "window": "90 days in {{area}}",
+        "notChecked": "Couldn't check crime today",
+        "violent": "Violent crime",
+        "property": "Property crime",
+        "barLabel": "{{kind}}: {{now}} in the last 90 days, {{prior}} in the same days a year earlier",
+        "legendNow": "Last 90 days",
+        "legendPrior": "Same days a year earlier ({{period}})",
+        "caption": "Per 1,000 of {{area}}'s {{pop}} residents. The whole community area, not this block.",
+        "captionNoPop": "Crimes in {{area}}. The whole community area, not this block."
+      },
+      "r311": {
+        "title": "Top 311 requests",
+        "what": "311 requests",
+        "none": "No 311 requests on record in {{area}} over the last {{days}} days.",
+        "caption": "{{total}} requests in {{area}} over the last {{days}} days, duplicates removed.",
+        "byType": "By type",
+        "requests": "requests",
+        "other": "Everything else"
+      },
+      "building": {
+        "title": "Construction nearby",
+        "what": "building permits",
+        "onMap": "Pins on the map",
+        "ruleLabel": "Which permits count",
+        "rule": {
+          "radius": "Within {{mi}} mi",
+          "months_one": "Last {{count}} month",
+          "months_other": "Last {{count}} months",
+          "floor": "Renovations {{floor}}+"
+        },
+        "none": "No new buildings or major renovations permitted within half a mile in the last 2 years.",
+        "capped": "the newest 300 shown",
+        "kind": {
+          "new": "New building",
+          "renovation": "Renovation"
+        },
+        "noAddress": "Address not on the permit",
+        "addsUnits_one": "adds {{count}} home",
+        "addsUnits_other": "adds {{count}} homes",
+        "removesUnits_one": "removes {{count}} home",
+        "removesUnits_other": "removes {{count}} homes",
+        "statNew_one": "new building",
+        "statNew_other": "new buildings",
+        "statReno_one": "major renovation",
+        "statReno_other": "major renovations",
+        "statHomes_one": "home added",
+        "statHomes_other": "homes added",
+        "statCost": "reported cost, all permits",
+        "pace": "Permits by quarter",
+        "quarterValue": "{{n}} new · {{r}} renovations",
+        "filterLabel": "Show",
+        "filter": {
+          "all_one": "All {{count}}",
+          "all_other": "All {{count}}",
+          "new_one": "New {{count}}",
+          "new_other": "New {{count}}",
+          "renovation_one": "Renovations {{count}}",
+          "renovation_other": "Renovations {{count}}"
+        },
+        "sortLabel": "Sort",
+        "sort": {
+          "newest": "Newest",
+          "closest": "Closest",
+          "largest": "Largest cost"
+        },
+        "showAll_one": "Show all {{count}}",
+        "showAll_other": "Show all {{count}}",
+        "fewer": "Show fewer"
+      },
+      "people": {
+        "title": "Who lives here",
+        "what": "census figures",
+        "notChecked": "Couldn't check the census figures today.",
+        "fact": {
+          "owner_occupied_pct": "Homes lived in by their owners",
+          "bachelors_or_higher_pct": "Adults with a bachelor's degree or more",
+          "poverty_rate": "People below the poverty line",
+          "median_age": "Median age"
+        },
+        "caption": "Census survey figures for this lot's tract, a few blocks around it; only income is compared with {{area}}, where the City publishes the same figure. Race and ethnicity aren't shown.",
+        "dist": {
+          "transportation_distribution": "How people get to work",
+          "age_distribution": "Age",
+          "income_distribution": "Household income",
+          "education_distribution": "Education (adults 25+)"
+        },
+        "bucket": {
+          "Under 18": "Under 18",
+          "18-24": "18-24",
+          "25-34": "25-34",
+          "35-44": "35-44",
+          "45-54": "45-54",
+          "55-64": "55-64",
+          "65-74": "65-74",
+          "75+": "75+",
+          "Under $25K": "Under $25K",
+          "$25-50K": "$25-50K",
+          "$50-75K": "$50-75K",
+          "$75-100K": "$75-100K",
+          "$100-150K": "$100-150K",
+          "$150-200K": "$150-200K",
+          "$200K+": "$200K+",
+          "No degree": "No degree",
+          "High school": "High school",
+          "Some college": "Some college",
+          "Bachelor's": "Bachelor's",
+          "Graduate+": "Graduate+",
+          "Drove alone": "Drove alone",
+          "Carpooled": "Carpooled",
+          "Public transit": "Public transit",
+          "Walked": "Walked",
+          "Bicycle": "Bicycle",
+          "Work from home": "Work from home",
+          "Other": "Other"
+        },
+        "sec": {
+          "income": "Income",
+          "housing": "Housing",
+          "households": "Households",
+          "work": "Getting to work",
+          "people": "Age, schooling and moving"
+        },
+        "medianIncome": "Median household income",
+        "perCapita": "Per capita income",
+        "housingUnits": "Housing units",
+        "homeValue": "Median value of owner-occupied homes",
+        "households": "Households",
+        "perHousehold": "People per household",
+        "minutes": "{{n}} minutes",
+        "travel": "Average travel time to work",
+        "moved": "Moved in the last year",
+        "withheldShort": "Not shown",
+        "chart": {
+          "income": "Household income",
+          "occupancy": "Occupied vs vacant",
+          "tenure": "Owners and renters",
+          "structure": "Homes by building size",
+          "movedIn": "Year moved in",
+          "homeValue": "Value of owner-occupied homes",
+          "householdType": "Households by type",
+          "travelTime": "Travel time to work",
+          "mobility": "Where people lived a year ago"
+        },
+        "k": {
+          "income": {
+            "under_50k": "Under $50K",
+            "50_100k": "$50–100K",
+            "100_200k": "$100–200K",
+            "over_200k": "Over $200K"
+          },
+          "occupancy": {
+            "occupied": "Occupied",
+            "vacant": "Vacant"
+          },
+          "tenure": {
+            "owner": "Owner occupied",
+            "renter": "Renter occupied"
+          },
+          "structure": {
+            "single_family": "Single-family",
+            "two": "2 units",
+            "three_four": "3–4 units",
+            "five_19": "5–19 units",
+            "twenty_plus": "20+ units",
+            "other": "Other"
+          },
+          "home_value": {
+            "under_100k": "Under $100K",
+            "100_200k": "$100–200K",
+            "200_300k": "$200–300K",
+            "300_400k": "$300–400K",
+            "400_500k": "$400–500K",
+            "500k_1m": "$500K–1M",
+            "over_1m": "Over $1M"
+          },
+          "household_type": {
+            "married": "Married couples",
+            "other_family": "Other families",
+            "alone": "Living alone",
+            "roommates": "Roommates and others"
+          },
+          "mobility": {
+            "same_house": "Same home",
+            "same_county": "Same county",
+            "other_county": "Other Illinois county",
+            "other_state": "Other state",
+            "abroad": "Abroad"
+          },
+          "travel_time": {
+            "under_15": "Under 15 min",
+            "15_29": "15–29 min",
+            "30_44": "30–44 min",
+            "45_59": "45–59 min",
+            "60_plus": "60+ min"
+          }
+        },
+        "hoverHint": "Point at a column for its share.",
+        "tick": {
+          "income": {
+            "under_50k": "<$50K",
+            "50_100k": "$50–100K",
+            "100_200k": "$100–200K",
+            "over_200k": "$200K+"
+          },
+          "travel_time": {
+            "under_15": "<15",
+            "15_29": "15–29",
+            "30_44": "30–44",
+            "45_59": "45–59",
+            "60_plus": "60+"
+          },
+          "age": {
+            "Under 18": "<18"
+          }
+        },
+        "areaIs": "{{area}}: {{value}}",
+        "scope": "Census tract {{tract}}, a few blocks around the lot",
+        "scopeNoNumber": "This lot's census tract, a few blocks around it"
+      },
+      "schools": {
+        "title": "Assigned public schools",
+        "what": "schools",
+        "level": {
+          "elementary": "Elementary school",
+          "high": "High school"
+        },
+        "grades": "grades {{grades}}",
+        "unnamed": "School name not on record",
+        "designation": {
+          "Exemplary": "Exemplary",
+          "Commendable": "Commendable",
+          "Targeted": "Targeted",
+          "Comprehensive": "Comprehensive",
+          "Intensive": "Intensive"
+        },
+        "reading": "Meets state standard, reading",
+        "math": "Meets state standard, math",
+        "graduation": "Graduates in 4 years",
+        "enrollment": "Students",
+        "notPublished": "Not published",
+        "hsTest": "(high school test)",
+        "noReportCard": "No state report card figures for this school.",
+        "reportCard": "Illinois Report Card {{year}}",
+        "noBoundary": {
+          "elementary": "No CPS elementary attendance boundary covers this lot.",
+          "high": "No CPS high school attendance boundary covers this lot; citywide and selective schools have none."
+        },
+        "caption": "Assigned by CPS attendance boundary, school year {{boundary}}. Designation and figures: Illinois State Board of Education, {{year}} report card.",
+        "stateRating": "Illinois rating, {{year}}",
+        "stateRatingDef": "The Illinois State Board of Education's own rating of each school, from test results, growth, graduation, attendance and English learners' progress. From lowest to highest: Intensive, Comprehensive (the lowest-performing 5% of schools, or a high school graduating two-thirds or fewer), Targeted (one or more student groups performing like the lowest 5%), Commendable, Exemplary (the top 10%, with no group behind).",
+        "culture": "Culture and climate (CPS)",
+        "cultureDef": "Chicago Public Schools' 5Essentials rating, from its yearly survey of students and teachers: leadership, teachers working together, family involvement, a supportive environment and ambitious teaching. From lowest to highest: not yet, partially, moderately, organized, well organized.",
+        "cultureLevel": {
+          "not_yet_organized": "Not yet organized",
+          "partially_organized": "Partially organized",
+          "moderately_organized": "Moderately organized",
+          "organized": "Organized",
+          "well_organized": "Well organized"
+        },
+        "short": {
+          "reading": "Reading",
+          "math": "Math",
+          "graduation": "Graduates",
+          "students": "Students"
+        }
+      },
+      "trend": {
+        "title": "How {{area}} is changing",
+        "what": "area trends",
+        "none": "No price or rent history on record for {{area}}.",
+        "sales": "Median sale price by year",
+        "groupLabel": "Building type",
+        "group": {
+          "two_to_six": "2–6 units",
+          "single_family": "Single-family",
+          "condo": "Condos"
+        },
+        "salesN_one": "{{count}} sale",
+        "salesN_other": "{{count}} sales",
+        "rent": "Median rent, then and now",
+        "notSignificant": "The Census doesn't count this as a clear change (within its margin).",
+        "households": "Renter households: {{from}} → {{to}}",
+        "caption": "The whole of {{area}}. Sales: the County's market sales by year; rent: the Census survey, five-year periods."
+      },
+      "near": {
+        "title": "Around the lot",
+        "none": "Nothing on record around this lot.",
+        "walk": "{{min}} min walk ({{mi}} mi)",
+        "cta": "Nearest CTA train",
+        "metra": "Nearest Metra",
+        "divvy": "Nearest Divvy",
+        "docks_one": "{{count}} dock",
+        "docks_other": "{{count}} docks",
+        "stations_one": "{{count}} station within ½ mi",
+        "stations_other": "{{count}} stations within ½ mi",
+        "traffic": "Traffic on the nearest counted street",
+        "perDay": "{{n}} vehicles a day",
+        "trafficOn": "{{road}}, both directions · about {{perMin}} a minute",
+        "ward": "Ward {{ward}}",
+        "alder": "Ald. {{name}}",
+        "noAlder": "Alderman not on record",
+        "email": "Email",
+        "website": "Website",
+        "area": "{{area}}",
+        "residents": "{{n}} residents",
+        "renters": "renter households {{sign}}{{pct}}% since {{period}}",
+        "what": "what is around the lot"
+      },
+      "permit": {
+        "what": "What is being built",
+        "noDescription": "The permit has no description.",
+        "where": "Where it stands",
+        "step": {
+          "applied": "Applied",
+          "issued": "Permit issued",
+          "inspections": "Inspections",
+          "complete": "Complete"
+        },
+        "occupancy": "Needs a certificate of occupancy before anyone moves in.",
+        "facts": "The permit",
+        "cost": "Reported cost",
+        "notStated": "Not stated",
+        "homes": "Homes",
+        "noUnitChange": "No change recorded",
+        "distance": "From this lot",
+        "reviewTime": "City review",
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days",
+        "reviewType": "Review type",
+        "number": "Permit number",
+        "showOnMap": "Show on the map",
+        "records": "The City's records",
+        "buildingRecords": "City of Chicago building records",
+        "buildingRecordsHow": "Search {{address}} there for the permit, its inspections and any violations.",
+        "dataset": "Building permits on the City's data portal",
+        "unitsNotStated": "Not stated on the permit"
+      },
+      "badge": {
+        "same": "Same as {{area}}",
+        "times": "{{r}}× {{area}}",
+        "vsYear": "{{pct}}% vs a year ago",
+        "since": "{{pct}}% since {{from}}",
+        "rent": "{{pct}}% · {{real}}% after inflation"
+      }
     }
   },
   "discovery": {
@@ -283,7 +962,8 @@
       "parcels": "Lots",
       "sales": "Recent sales",
       "transit": "Transit",
-      "streets": "Streets"
+      "streets": "Streets",
+      "building": "Construction"
     },
     "count": {
       "zoning_one": "{{count}} district",
@@ -293,7 +973,9 @@
       "sales_one": "{{count}} sale",
       "sales_other": "{{count}} sales",
       "transit_one": "{{count}} station",
-      "transit_other": "{{count}} stations"
+      "transit_other": "{{count}} stations",
+      "building_one": "{{count}} permit",
+      "building_other": "{{count}} permits"
     },
     "card": {
       "label": "What is here",
@@ -307,15 +989,17 @@
       "ordinance": "Ordinance {{num}}, {{date}}",
       "districtSource": "From the City's zoning map",
       "noPrice": "Price not recorded",
-      "approx": "Approx."
+      "approx": "Approx.",
+      "kindNew": "New building",
+      "kindReno": "Renovation",
+      "issued": "Permit issued {{date}}"
     },
     "inSentence": {
-      "sales": "recent sales"
+      "sales": "recent sales",
+      "building": "construction"
     },
     "back": "Back to the property",
     "streetView": {
-      "button": "Street View",
-      "hint": "Click a street to open Street View · Esc cancels",
       "link": "Street View (Google)"
     },
     "families": {
@@ -331,5 +1015,15 @@
     "familiesInView": "Zoning colors in view",
     "inView": "{{count}} of {{total}} in view",
     "show": "Show"
+  },
+  "term": {
+    "what": "What is {{term}}?",
+    "ask": "Ask the analyst",
+    "askLater": "Ask opens once the Profile has loaded",
+    "close": "Close"
+  },
+  "lowConfidence": {
+    "label": "What does Low confidence mean?",
+    "census": "The Census survey asks a sample of households, so each figure has a margin of error. Here the margin is at least 10% of the figure for some of these values (common in an area of a few blocks): read them as rough, not exact."
   }
 }

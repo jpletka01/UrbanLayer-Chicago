@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     dataset_crime: str = "ijzp-q8t2"
     dataset_311: str = "v6vf-nfxy"
     dataset_permits: str = "ydr8-5enu"
+    # CPS attendance boundaries, school year 2025-26 (the new UI's Neighborhood tab, decision Item 102)
+    dataset_cps_boundaries_es: str = "x72b-38qv"
+    dataset_cps_boundaries_hs: str = "xg7c-d8rm"
     dataset_violations: str = "22u3-xenr"
     dataset_business: str = "uupf-x98q"
     dataset_vacant_buildings: str = "kc9i-wq85"

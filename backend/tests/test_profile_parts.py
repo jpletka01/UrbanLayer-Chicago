@@ -41,6 +41,9 @@ SALES = [
 WALK = WalkScoreSummary(walk_score=91, walk_description="Walker's Paradise")
 FLAGS = ParcelFlags(scofflaw=True)
 INC_MEMBER = IncentivesSummary(in_tif_district=True, tif_name="Fullerton/Milwaukee")
+SCHOOLS = {"elementary": {"school_id": "610229", "name": "A.N. Pritzker School"}, "high": None}
+CONSTRUCTION = {"radius_mi": 0.5, "months": 24, "projects": [], "capped": False}
+AREA_311 = {"days": 365, "total": 12, "top": [{"type": "Pothole in Street Complaint", "count": 12}]}
 INC_FULL = IncentivesSummary(in_tif_district=True, tif_name="Fullerton/Milwaukee", tif_fund_balance=12_000_000.0)
 
 
@@ -120,6 +123,11 @@ def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL, 
     p(patch.object(main, "_address_violations_data", new=AsyncMock(
         return_value={"checked": True, "status_counts": [], "detail": []})))
     p(patch.object(main.three11, "address_311_complaints", new=AsyncMock(return_value=None)))
+    # the new UI's own sources (Item 102): only the parts ask them
+    p(patch("backend.retrieval.neighborhood.schools.assigned_schools", new=AsyncMock(return_value=SCHOOLS)))
+    p(patch.object(main.buildings, "construction_within", new=AsyncMock(return_value=CONSTRUCTION)))
+    p(patch.object(main.three11, "top_311_by_community_area", new=AsyncMock(return_value=AREA_311)))
+    p(patch("backend.retrieval.neighborhood.demographics.fetch_demographics", new=AsyncMock(return_value=None)))
     p(patch("backend.retrieval.property.sales.nearby_comparable_sales", new=AsyncMock(return_value={"sales": []})))
     p(patch("backend.retrieval.property.block_face.block_face_test", new=AsyncMock(
         return_value=BlockFaceTest(state="met", lots=8, counted=8, two_plus=6), side_effect=block_face_exc)))
@@ -129,7 +137,10 @@ def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL, 
 
 
 def _without_arms_length(profile: dict) -> dict:
+    """The parts' Profile minus what only the parts carry: the per-sale arm's-length flag and the new UI's own
+    sources (``next_ui``, Item 102), which the full response never asks."""
     out = copy.deepcopy(profile)
+    out.pop("next_ui", None)
     for row in ((out.get("context") or {}).get("property") or {}).get("sales_history") or []:
         row.pop("arms_length", None)
     return out
@@ -439,3 +450,88 @@ async def test_program_membership_in_the_overview_never_asks_the_census_tract():
         summary = await inc_mod.incentives_membership(LAT, LON)
     assert tract.await_count == 0
     assert summary.unchecked == [] and summary.in_tif_district is False
+
+
+async def test_the_activity_part_carries_the_new_uis_sources_and_the_full_response_doesnt():
+    with _sources():
+        full = await main._scorecard_payload(ADDRESS, None, None, None)
+        _ov, responses = await _all_parts()
+    last = max(responses, key=lambda r: r["version"])
+    assert "next_ui" not in full
+    nu = last["profile"]["next_ui"]
+    assert nu["schools"] == SCHOOLS and nu["construction_within"] == CONSTRUCTION and nu["area_311"] == AREA_311
+    assert nu["crime"]["current"] == {"violent": 0, "property": 0, "other": 0}  # the stub's crime rows are empty
+    assert "failed" not in nu
+
+
+async def test_a_failed_new_ui_source_is_listed_never_none():
+    with _sources(), patch.object(main.three11, "top_311_by_community_area", new=AsyncMock(side_effect=RuntimeError("503"))):
+        _ov, responses = await _all_parts()
+    nu = max(responses, key=lambda r: r["version"])["profile"]["next_ui"]
+    assert nu["failed"] == ["area_311"] and "area_311" not in nu
+
+
+async def test_concurrent_parts_never_stamp_older_data_with_a_newer_version():
+    """The page keeps the response with the highest version, so a version must order the DATA a response was
+    assembled from, not the moment its assembly finished. Assembly awaits (upcoming zoning and text impacts run
+    in a thread): a part that snapshotted the record before the incentives part landed used to finish after it
+    and take the higher version, so the page swapped the full incentives for the Overview's membership-only ones
+    (no tract, no TIF reports, QCT/NMTC "No"; 6300 S Cottage Grove, 2026-11-09)."""
+    full = INC_FULL.model_copy(update={"census_tract": "17031420700", "in_qct": True})
+    real_finish = main._finish_scorecard_payload
+    calls = {"n": 0}
+
+    async def slow_then_fast(data, **kw):
+        # each later assembly finishes sooner, so the ones that started first finish last
+        calls["n"] += 1
+        await asyncio.sleep(max(0.0, 0.08 - 0.01 * calls["n"]))
+        return await real_finish(data, **kw)
+
+    with _sources(), patch.object(main, "incentives_domain", new=AsyncMock(return_value=full)), \
+            patch.object(main, "_finish_scorecard_payload", new=slow_then_fast):
+        ov = await profile_parts.overview(ADDRESS, None, None, None)
+        parts = await asyncio.gather(*(profile_parts.part(n, ov["lookup"], None) for n in ov["parts_pending"]))
+
+    by_version = sorted([ov, *parts], key=lambda r: r["version"])
+    assert len({r["version"] for r in by_version}) == len(by_version)
+    landed = next(r for r in by_version if r["part"] == "incentives")["version"]
+    for r in by_version:
+        tract = r["profile"]["context"]["incentives"].get("census_tract")
+        if r["version"] >= landed:
+            assert tract == "17031420700", (r["part"], r["version"])
+            assert "incentives" in r["parts_in"]
+    newest = by_version[-1]
+    assert newest["parts_pending"] == []
+    assert newest["profile"]["context"]["incentives"]["in_qct"] is True
+
+
+@pytest.mark.parametrize("token_from", ["overview", "newest"])
+async def test_a_lost_lookup_asked_by_every_part_at_once_is_rebuilt_once_above_the_pages_version(token_from):
+    """After a restart the page's parts all find the record missing at once. One rebuild serves them (each built
+    its own record before), and its versions start above every answer the page holds: the page drops a response
+    from the same record that isn't newer, so a rebuild counting from 1 was thrown away (decision Item 101).
+    ``overview``: the burst still carries the Overview's token; ``newest``: a retry carries the newest one."""
+    real_rebuild = profile_parts._rebuild
+    rebuilds = {"n": 0}
+
+    async def counting(claims, have):
+        rebuilds["n"] += 1
+        return await real_rebuild(claims, have)
+
+    with _sources(), patch.object(profile_parts, "_rebuild", new=counting):
+        full = await main._scorecard_payload(ADDRESS, None, None, None)
+        ov = await profile_parts.overview(ADDRESS, None, None, None)
+        held = [await profile_parts.part(n, ov["lookup"], None) for n in ("history", "money")]
+        page = max([ov, *held], key=lambda r: r["version"])
+        profile_parts._records._store.clear()  # a restart
+        token = ov["lookup"] if token_from == "overview" else page["lookup"]
+        rest = [n for n in ov["parts_pending"] if n not in ("history", "money")]
+        got = await asyncio.gather(*(profile_parts.part(n, token, "history,money") for n in rest))
+
+    assert rebuilds["n"] == 1
+    assert len({r["record"] for r in got}) == 1 and got[0]["record"] == page["record"]
+    versions = [r["version"] for r in got]
+    assert min(versions) > page["version"] and len(set(versions)) == len(versions)
+    newest = max(got, key=lambda r: r["version"])
+    assert newest["parts_pending"] == []
+    assert _without_arms_length(newest["profile"]) == full

@@ -45,6 +45,16 @@
   --nx-chart-3: 53 94 88;
   --nx-chart-4: 184 157 71;
   --nx-chart-5: 253 193 180;
+  /* Categories in a donut, in an order where neighbors read apart (owner's review, Item 102: two pinks side by side
+     and Spruce on a dark card looked like missing key entries): Sapphire, Ballet Slipper, Pistachio, Spruce,
+     Bubblegum, then a neutral for "everything else". Spruce lightens in dark, where #355E58 vanishes. */
+  --nx-cat-1: 114 176 171;
+  --nx-cat-2: 254 145 121;
+  --nx-cat-3: 184 157 71;
+  --nx-cat-4: 53 94 88;
+  --nx-cat-5: 253 193 180;
+  --nx-cat-6: 180 180 180;
+  --nx-cat-7: 145 132 196;          /* a muted lavender: a sixth category before "everything else" */
 
   /* Today's role variables, re-pointed for components reused inside the new UI */
   --bg: 255 255 255;
@@ -83,6 +93,8 @@
 [data-theme="dark"] .ui-next,
 .ui-next[data-theme="dark"] {
   color-scheme: dark;
+  --nx-cat-4: 98 156 146;          /* Spruce, lightened: the light value disappears on dark cards */
+  --nx-cat-6: 120 120 120;
   --nx-page: 28 28 28;
   --nx-block: 40 40 40;
   --nx-stat-a: 227 245 255;
@@ -172,3 +184,40 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* The map's canvas follows its box while the page's width animates (the Ask drawer, Item 99): MapLibre resizes the
+   canvas a frame or two after the box, which flashed a blank strip; stretching the last frame for those frames
+   reads as smooth. MapLibre reads sizes from the container, so input coordinates are unaffected. */
+.ui-next .maplibregl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Layout by the space a block has, not the screen (owner's review of Neighborhood, Item 102: with the right drawer
+   open, tiles and charts sized for the full width squeezed into each other). `.nx-cq` makes an element a size
+   container; the grids below pick their columns from its width. */
+.ui-next .nx-cq { container-type: inline-size; }
+.ui-next .nx-tiles { display: grid; gap: 0.75rem; grid-template-columns: minmax(0, 1fr); }
+.ui-next .nx-split { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.ui-next .nx-cards { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@container (min-width: 26rem) {
+  .ui-next .nx-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ui-next .nx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (min-width: 50rem) {
+  .ui-next .nx-split { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+}
+@container (min-width: 60rem) {
+  .ui-next .nx-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+}
+@container (min-width: 56rem) {
+  .ui-next .nx-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Cards of different heights packed in columns, top to bottom, so a short card never leaves a hole beside a tall one
+   (owner's third review of Neighborhood, Item 102). Columns by the block's own width, like `.nx-cards`. */
+.ui-next .nx-masonry { column-count: 1; column-gap: 1rem; }
+.ui-next .nx-masonry > * { break-inside: avoid; margin-bottom: 1rem; }
+.ui-next .nx-cards-even { align-items: stretch; }
+@container (min-width: 26rem) { .ui-next .nx-masonry { column-count: 2; } }
+@container (min-width: 56rem) { .ui-next .nx-masonry { column-count: 3; } }

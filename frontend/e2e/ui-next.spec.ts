@@ -134,3 +134,62 @@ test("first screen, then the Overview, then the late parts: axe, no overflow, on
   await page.getByRole("tab", { name: "Build" }).click();
   if (floor) await expect(page.getByText(`${floor} sq ft allowed`, { exact: false }).first()).toBeVisible();
 });
+
+// The Money tab (decision Item 99): its late block waits in its own outline while `money` is held, the map is the
+// same canvas after the switch (one persistent map), and the tab passes axe in both themes with nothing overflowing.
+test("Money tab: late sales outline, same map, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  let releaseMoney: () => void = () => {};
+  const heldMoney = new Promise<void>((r) => { releaseMoney = r; });
+  await page.route(/\/api\/profile\/part\/money\?/, async (route) => { await heldMoney; await route.continue(); });
+  await open(page, ROUTES[1].path, ROUTES[1].ready);
+  await page.evaluate(() => { const c = document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas'); if (c) c.dataset.probe = "overview"; });
+  await page.getByRole("tab", { name: "Money" }).click();
+  await expect(page.getByTestId("money-sentence")).toBeVisible();
+  await expect(page.getByText("Checking nearby sales…").first()).toBeVisible();
+  releaseMoney();
+  await expect(page.getByText("Checking nearby sales…")).toHaveCount(0, { timeout: 90_000 });
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("overview");
+  await expect(page.getByTestId("search-again")).toBeVisible();
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(400);
+    expect(await axe(page), `axe ${scheme}`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "money overflow").toBeLessThanOrEqual(1);
+});
+
+// The Neighborhood tab (decision Item 102): its late blocks wait in their own outline while `activity` is held, the
+// map is the same canvas after the switch, the phone jump links stick under the tab bar and jump to a block, and
+// the tab passes axe in both themes with nothing overflowing.
+test("Neighborhood tab: late outlines, same map, jump links, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  let release: () => void = () => {};
+  const held = new Promise<void>((r) => { release = r; });
+  await page.route(/\/api\/profile\/part\/activity\?/, async (route) => { await held; await route.continue(); });
+  await open(page, ROUTES[1].path, ROUTES[1].ready);
+  await page.evaluate(() => { const c = document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas'); if (c) c.dataset.probe = "overview"; });
+  await page.getByRole("tab", { name: "Neighborhood" }).click();
+  await expect(page.getByTestId("nb-sentence")).toBeVisible();
+  await expect(page.getByText("Checking building permits…").first()).toBeVisible();
+  await expect(page.getByText("Checking schools…").first()).toBeVisible();
+  release();
+  await expect(page.getByText("Checking building permits…")).toHaveCount(0, { timeout: 90_000 });
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("overview");
+  const jump = page.getByTestId("nb-jump");
+  await expect(jump).toBeVisible();
+  await jump.getByRole("button", { name: "Schools" }).click();
+  await expect.poll(async () => page.evaluate(() => {
+    const s = document.getElementById("nb-schools")!.getBoundingClientRect().top;
+    const nav = document.querySelector('[data-testid="nb-jump"]')!.getBoundingClientRect().bottom;
+    return s >= nav - 8 && s < window.innerHeight / 2;
+  }), { timeout: 5000 }).toBe(true);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(400);
+    expect(await axe(page), `axe ${scheme}`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "neighborhood overflow").toBeLessThanOrEqual(1);
+});

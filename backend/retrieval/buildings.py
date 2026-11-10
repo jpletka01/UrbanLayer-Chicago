@@ -340,3 +340,94 @@ async def nearby_new_construction(
         # "nearby construction activity" as not checked instead.
         log.warning("Nearby construction failed for (%s, %s): %s", lat, lon, exc)
         raise
+
+
+_construction_within_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="construction_within")
+CONSTRUCTION_RADIUS_M = 805  # ½ mile
+CONSTRUCTION_MONTHS = 24
+RENOVATION_COST_FLOOR = 250_000  # owner's call (Item 102): new construction plus renovations at least this large
+CONSTRUCTION_LIMIT = 300
+
+
+def _int_or_none(v: Any) -> int | None:
+    try:
+        return int(float(v)) if v not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _haversine_mi(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    import math
+
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2
+    return 3958.8 * 2 * math.asin(math.sqrt(a))
+
+
+async def construction_within(lat: float, lon: float, *, client: httpx.AsyncClient | None = None) -> dict[str, Any]:
+    """New construction and major renovations within ½ mile, last 24 months (the new UI's Neighborhood tab,
+    decision Item 102). One row per permit, newest first, each with its distance and the homes it adds
+    (``residential_unit_change``, the City's own field; negative = units removed). Separate from
+    ``nearby_new_construction`` (the report's box query with demolitions), which is unchanged.
+    Raises on failure and caches nothing (Item 65): an empty list is a checked "none"."""
+    key = f"construction_within:{round(lat, 4)}:{round(lon, 4)}"
+    cached = _construction_within_cache.get(key)
+    if cached is not None:
+        return cached
+    settings = get_settings()
+    where = (
+        f"within_circle(location, {lat}, {lon}, {CONSTRUCTION_RADIUS_M}) "
+        f"AND issue_date > '{cutoff_iso(CONSTRUCTION_MONTHS * 30)}' "
+        f"AND (permit_type='PERMIT - NEW CONSTRUCTION' OR "
+        f"(permit_type='PERMIT - RENOVATION/ALTERATION' AND reported_cost >= {RENOVATION_COST_FLOOR}))"
+    )
+    rows = await socrata_get(settings.dataset_permits, {
+        "$where": where,
+        "$select": ("permit_,permit_type,work_description,issue_date,reported_cost,residential_unit_change,"
+                    "street_number,street_direction,street_name,latitude,longitude,"
+                    "permit_status,permit_milestone,application_start_date,processing_time,review_type"),
+        "$order": "issue_date DESC",
+        "$limit": CONSTRUCTION_LIMIT,
+    }, client=client)
+    projects: list[dict[str, Any]] = []
+    for r in rows:
+        try:
+            plat, plon = float(r["latitude"]), float(r["longitude"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        try:
+            cost = float(r.get("reported_cost")) if r.get("reported_cost") not in (None, "") else None
+        except (TypeError, ValueError):
+            cost = None
+        try:
+            units = int(float(r["residential_unit_change"])) if r.get("residential_unit_change") not in (None, "") else None
+        except (TypeError, ValueError):
+            units = None
+        address = " ".join(x for x in (r.get("street_number"), r.get("street_direction"), r.get("street_name")) if x)
+        projects.append({
+            "permit": r.get("permit_"),
+            "kind": "new" if "NEW CONSTRUCTION" in (r.get("permit_type") or "") else "renovation",
+            "description": (r.get("work_description") or "").strip() or None,
+            "issued": (r.get("issue_date") or "")[:10] or None,
+            "cost": cost,
+            "units_added": units,
+            "address": address.title() or None,
+            "lat": plat,
+            "lon": plon,
+            "distance_mi": round(_haversine_mi(lat, lon, plat, plon), 2),
+            # The permit's own page (decision Item 102, owner's review): where it stands and how long review took.
+            "status": (r.get("permit_status") or "").strip() or None,
+            "milestone": (r.get("permit_milestone") or "").strip() or None,
+            "applied": (r.get("application_start_date") or "")[:10] or None,
+            "processing_days": _int_or_none(r.get("processing_time")),
+            "review_type": (r.get("review_type") or "").strip() or None,
+        })
+    result = {
+        "radius_mi": 0.5,
+        "months": CONSTRUCTION_MONTHS,
+        "renovation_cost_floor": RENOVATION_COST_FLOOR,
+        "projects": projects,
+        "capped": len(rows) >= CONSTRUCTION_LIMIT,
+    }
+    _construction_within_cache.set(key, result)
+    return result

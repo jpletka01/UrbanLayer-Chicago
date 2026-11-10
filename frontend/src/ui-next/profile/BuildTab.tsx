@@ -2,7 +2,8 @@
 // built, the deciding limit in black) → two smaller visuals (pending rezonings as a stage tracker, rules as
 // yes/no chips) → a collapsed details table. Missing data keeps its slot.
 import { useTranslation } from "react-i18next";
-import { ChevronDown, SquareArrowOutUpRight } from "lucide-react";
+import { ChevronDown, ChevronRight, SquareArrowOutUpRight } from "lucide-react";
+import { useAskHandoff } from "../ask/askContext";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict } from "../../lib/scorecardVerdict";
 import { buildClause } from "../../lib/answerSentence";
@@ -11,7 +12,7 @@ import { Toggletip } from "../../components/ui/Toggletip";
 import { formatDay } from "../../lib/format";
 import { Block, Pill, ShareBar, type PillTone } from "../ui/Blocks";
 import { ICON, STROKE } from "../icons";
-import { allowedVsBuilt, pendingRezonings, ruleChips, STAGES, type RuleChip } from "./profileModel";
+import { allowedVsBuilt, numLocale, pendingRezonings, ruleChips, STAGES, type RuleChip } from "./profileModel";
 
 const LIMIT_ICON = { floorArea: ICON.floorArea, units: ICON.units, height: ICON.height } as const;
 
@@ -118,8 +119,8 @@ export function BuildTab({ data, verdict, buildingPending = false }: { data: Sco
               [t("profile.build.row.section"), zdef?.code_section || "—"],
               [t("profile.build.row.far"), zdef?.far != null ? String(zdef.far) : "—"],
               [t("profile.build.row.height"), zdef?.max_height || "—"],
-              [t("profile.build.row.perUnit"), zdef?.min_lot_area_per_unit != null ? t("profile.build.sqft", { value: zdef.min_lot_area_per_unit.toLocaleString(i18n.language) }) : "—"],
-              [t("profile.build.row.lot"), data.context?.property?.land_sqft != null ? t("profile.build.sqft", { value: data.context.property.land_sqft.toLocaleString(i18n.language) }) : "—"],
+              [t("profile.build.row.perUnit"), zdef?.min_lot_area_per_unit != null ? t("profile.build.sqft", { value: zdef.min_lot_area_per_unit.toLocaleString(numLocale(i18n.language)) }) : "—"],
+              [t("profile.build.row.lot"), data.context?.property?.land_sqft != null ? t("profile.build.sqft", { value: data.context.property.land_sqft.toLocaleString(numLocale(i18n.language)) }) : "—"],
               [t("profile.build.row.unitMath"), data.context?.unit_yield?.arithmetic || "—"],
             ].map(([k, v]) => (
               <tr key={k} className="border-b border-nx-ink/5 last:border-0">
@@ -153,11 +154,25 @@ function StageTracker({ stage, status }: { stage: (typeof STAGES)[number] | null
 
 function RuleItem({ rule }: { rule: RuleChip }) {
   const { t } = useTranslation("next");
+  const ask = useAskHandoff();
   const tone: PillTone = rule.answer === "notChecked" ? "gray" : rule.answer === "yes" ? (rule.blocks ? "yellow" : "blue") : "gray";
+  // The whole chip opens the rule's page in the right panel, like Money's incentive chips (owner, Item 99); the TIF
+  // chip opens the TIF's program page.
+  const open = rule.key === "tif" ? (ask?.openProgram ? () => ask.openProgram!("tif") : undefined)
+    : ask?.openRule ? () => ask.openRule!(rule.key as Exclude<RuleChip["key"], "tif">) : undefined;
   return (
-    <li className="flex items-center gap-1.5 rounded-xl bg-nx-page px-2.5 py-1.5" data-rule={rule.key} data-answer={rule.answer}>
-      <span className="text-caption">{t(`profile.build.rule.${rule.key}`)}</span>
-      <Pill tone={tone}>{t(`profile.build.answer.${rule.answer}`)}</Pill>
+    <li data-rule={rule.key} data-answer={rule.answer}>
+      <button
+        type="button"
+        onClick={open}
+        disabled={!open}
+        aria-haspopup="dialog"
+        className="group flex items-center gap-1.5 rounded-xl bg-nx-page py-1.5 pl-2.5 pr-1.5 text-left hover:bg-nx-ink/5 disabled:cursor-default touch-target"
+      >
+        <span className="text-caption">{t(`profile.build.rule.${rule.key}`)}</span>
+        <Pill tone={tone}>{t(`profile.build.answer.${rule.answer}`)}</Pill>
+        <ChevronRight aria-hidden className="h-3.5 w-3.5 nx-muted transition-transform group-hover:translate-x-0.5" strokeWidth={STROKE} />
+      </button>
     </li>
   );
 }
