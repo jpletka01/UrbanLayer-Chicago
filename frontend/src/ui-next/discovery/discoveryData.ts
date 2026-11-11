@@ -18,13 +18,14 @@ export interface ViewMatches {
 
 /** Explore with quick filters on: the server evaluates them for the current view (the whole city below lot zoom,
     where the areas carry the counts), debounced; the latest request wins. Null when no filter is on. */
-export function useViewMatches(registry: Registry | null, panel: PanelState | null, view: ViewBox | null, delayMs = 350) {
+export function useViewMatches(registry: Registry | null, panel: PanelState | null, view: ViewBox | null, delayMs = 350,
+  includeUnusual = false) {
   const [answer, setAnswer] = useState<{ key: string; data: ViewMatches | null; failed: boolean } | null>(null);
   const seq = useRef(0);
   const panelKey = panel ? JSON.stringify(panel) : "";
   const lotZoom = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const viewKey = view && lotZoom ? view.bbox.map((v) => v.toFixed(4)).join(",") : "city";
-  const key = `${panelKey}|${viewKey}`;
+  const key = `${panelKey}|${viewKey}|${includeUnusual}`;
   const asking = !!registry && !!panel && !!view;
   useEffect(() => {
     if (!registry || !panel || !view) return;
@@ -35,7 +36,7 @@ export function useViewMatches(registry: Registry | null, panel: PanelState | nu
       const scope: SpatialScope | null = lotZoom ? { mode: "viewport", bbox: view.bbox } : null;
       try {
         const resp = await runSearch(
-          { panelState: panel, scope, limit: 1, includePins: lotZoom, includeAreaCounts: true },
+          { panelState: panel, scope, limit: 1, includePins: lotZoom, includeAreaCounts: true, includeUnusual },
           registry, controller.signal,
         );
         if (id !== seq.current) return;
@@ -56,7 +57,7 @@ export function useViewMatches(registry: Registry | null, panel: PanelState | nu
     return () => { window.clearTimeout(timer); controller.abort(); };
     // panelKey and viewKey stand for panel and view.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registry, panelKey, viewKey, delayMs]);
+  }, [registry, panelKey, viewKey, delayMs, includeUnusual]);
   if (!asking) return { data: null, loading: false, failed: false };
   // While a new answer is on its way the previous matches stay on the map.
   return { data: answer?.data ?? null, loading: answer?.key !== key, failed: answer?.key === key && answer.failed };

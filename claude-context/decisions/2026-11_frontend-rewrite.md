@@ -1260,3 +1260,11 @@ Item 60's "vacant over an acre with no street address of its own" is gone.
 Tests: `discoveryModel.test.ts` (PIN parsing, the quick filter), `LotCard.test.tsx` (empty from what stands on the lot), registry counts.
 
 *Open for the owner:* lots with only a garage or shed (`structure: accessory`, e.g. 2626 S Troy) are not empty land. Should a filter offer them?
+
+**Owner's localhost review of steps 4-6 (2026-11-11): two map fixes.**
+1. *Filters swapped the map for the list.* Applying filters, a ring, a place or a typed search set the view to the list on desktop. Now the page keeps whichever view the visitor is on. Only "List them" and a recipe pick switch to the list.
+2. *A broad search drew nothing on the map.* Residential zoning plus density 1-2 matches 156,039 lots, but a search returns at most 5,000 map points (`MAX_MAP_POINTS`), the largest room to build first. Most neighborhoods had none of them, while the list paged through everything.
+   - Now, zoomed in to lots after a search, the map asks for the search's own query (its evaluated filters via `panelFromCqs`, its unusual opt-in) scoped to the viewport, the same per-view request Explore's quick filters use. The "N lots in view" count and the "more than the map can outline" notice read that answer.
+   - A search limited to the view it started in keeps its own points.
+   - Checked on the local citywide copy: in Lincoln Park the matching lots outline, with 131 in view.
+   - Test: `DiscoveryNextPage.test.tsx` "filters keep the map in view...".

@@ -149,6 +149,38 @@ describe("Discovery in the new frame", () => {
     expect(applied.sort).toEqual({ key: "room_to_build", dir: "desc" });
   });
 
+  it("filters keep the map in view, and zoomed in the map asks for the search's matches in the view", async () => {
+    // Owner's review 2026-11-11: applying filters swapped the map for the list, and a broad search (zoning + density,
+    // 156,039 lots) drew nothing in most neighborhoods: its own points are capped at 5,000, the largest sites first.
+    const density = { kind: "range", min: 2, max: 5 };
+    mocks.loadRegistry.mockResolvedValue({
+      ...registry,
+      filters: [...registry.filters, {
+        id: "density_band", category: "zoning_dev", kind: "range", field: "density_band", unknownPolicy: "exclude",
+        range: { domain: [0, 16], step: 0.1, boundMode: "both", display: "far" },
+      }],
+      populatedFields: ["land_use", "tif", "density_band"],
+    } as Registry);
+    mocks.runSearch.mockImplementation(async (inputs: { scope?: { mode: string } | null }) => {
+      const r = response();
+      r.cqs = { ...r.cqs, filters: { density_band: { predicate: density, source: "user" } } } as typeof r.cqs;
+      if (inputs.scope?.mode === "viewport") r.pins = { ...r.pins!, points: [{ ...r.pins!.points[0], pin: "17083200230000" }] };
+      return r;
+    });
+    render(<MemoryRouter><DiscoveryNextPage /></MemoryRouter>);
+    await waitFor(() => expect(mapProps.last).not.toBeNull());
+    (mapProps.last!.onView as (v: unknown) => void)({ bbox: [-87.7, 41.9, -87.6, 41.95], zoom: 15, center: [-87.65, 41.92] });
+    fireEvent.click(await screen.findByRole("button", { name: /Zoning/ }));
+    const panel = await screen.findByTestId("group-panel");
+    fireEvent.click(within(panel).getByRole("button", { name: /Apartments/ }));
+    await waitFor(() => expect(within(panel).getByTestId("filters-show").textContent).toMatch(/Show 1 lot/));
+    fireEvent.click(within(panel).getByTestId("filters-show"));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Map", pressed: true })).toBeTruthy());
+    await waitFor(() => expect(mocks.runSearch.mock.calls.some((c) => c[0].scope?.mode === "viewport" && c[0].panelState.density_band)).toBe(true),
+      { timeout: 2000 });
+    await waitFor(() => expect(mapProps.last?.matches).toEqual(["1708320023"]));
+  });
+
   it("says so when Discovery can't load", async () => {
     mocks.loadRegistry.mockResolvedValue(null);
     render(<MemoryRouter><DiscoveryNextPage /></MemoryRouter>);

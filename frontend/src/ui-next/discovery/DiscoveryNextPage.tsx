@@ -17,6 +17,7 @@ import { recipeStatus } from "../../discovery/recipeStatus";
 import { chipLabel } from "../../discovery/chips";
 import { COMMUNITY_AREAS } from "../../discovery/communityAreas";
 import { HIDE_UNUSUAL } from "../../discovery/draftModel";
+import { panelFromCqs } from "../../discovery/topicCompiler";
 import { profileAddress } from "../../discovery/rowFigures";
 import type { FilterDef, PanelState, Predicate, Registry, ResultRow, TopicDef } from "../../discovery/types";
 import { getAutocomplete } from "../../lib/api";
@@ -84,14 +85,25 @@ export default function DiscoveryNextPage() {
     () => (response?.pins?.points ?? search.map.points).map((p) => p.pin.replace(/-/g, "").slice(0, 10)),
     [response, search.map.points],
   );
-  const matches = response ? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
+  // Zoomed in to lots after a search, the map asks for the search's own matches in the view. The search's points are
+  // capped at 5,000 (the largest room to build first), so a broad search would otherwise draw none in most
+  // neighborhoods while the list fills (owner's review 2026-11-11: zoning + density showed nothing on the map).
+  // A search limited to the view it started in keeps its own points.
+  const searchCqsPanel = useMemo(
+    () => (response && response.cqs.scope?.mode !== "viewport" ? panelFromCqs(response.cqs) : null), [response]);
+  const lotZoomNow = !!view && view.zoom >= LOTS_MIN_ZOOM;
+  const searchInView = useViewMatches(registry, lotZoomNow ? searchCqsPanel : null, view, 350,
+    !!response && !response.cqs.filters.hide_unusual);
+  const searchInViewPins = searchCqsPanel && lotZoomNow ? searchInView.data?.pins ?? null : null;
+  const matches = response ? searchInViewPins ?? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
   const areaCounts = response ? response.areaCounts ?? null : explorePanel ? viewMatches.data?.areaCounts ?? null : null;
   const lotZoom = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const inView = useMemo(() => {
     if (!response || !view) return null;
+    if (searchInViewPins && searchInView.data) return searchInView.data.total;
     const [w, s, e, n] = view.bbox;
     return (response.pins?.points ?? search.map.points).filter((p) => p.lat != null && p.lon != null && p.lon >= w && p.lon <= e && p.lat >= s && p.lat <= n).length;
-  }, [response, view, search.map.points]);
+  }, [response, view, search.map.points, searchInViewPins, searchInView.data]);
 
   // The search's quick filters mirror its panel (a goal can turn some on).
   const searchQuick = useMemo(() => quickFromPanel(search.draft.panelState), [search.draft.panelState]);
@@ -111,7 +123,6 @@ export default function DiscoveryNextPage() {
     if (!registry) return;
     const scope = view && lotZoom ? { mode: "viewport" as const, bbox: view.bbox } : null;
     search.startWith({ panelState: quickPanel(quick), text: "", sort: { ...ROOM_SORT }, topicId: null, scope });
-    setFocus(phone ? "map" : "list");
     setSheet("half");
   };
   const listInView = () => {
@@ -139,9 +150,8 @@ export default function DiscoveryNextPage() {
       panelState: { ...base, radius: { kind: "region", regions: [ringRegion(r.lat, r.lon, r.miles)] } as PanelState[string] },
       text: "", sort: { ...ROOM_SORT }, topicId: null, scope: null,
     });
-    setFocus(phone ? "map" : "list");
     setSheet("half");
-  }, [registry, response, search, quick, phone]);
+  }, [registry, response, search, quick]);
   const ringActive = !!response && !!search.draft.panelState.radius;
   const resizeRing = (miles: number) => {
     if (!ring) return;
@@ -165,7 +175,7 @@ export default function DiscoveryNextPage() {
     if (kind.kind === "area" || kind.kind === "hood") { pickPlace(kind); return; }
     search.setText(raw);
     search.setSort({ ...ROOM_SORT });
-    window.setTimeout(() => { search.apply(); setFocus(phone ? "map" : "list"); setSheet("half"); }, 0);
+    window.setTimeout(() => { search.apply(); setSheet("half"); }, 0);
   };
   const pickAddress = (s: AddressSuggestion) => {
     setPlace({ lat: s.lat, lon: s.lon, label: s.address });
@@ -194,7 +204,6 @@ export default function DiscoveryNextPage() {
       panelState: { ...base, neighborhood: { kind: "region", regions: [placeRegion(place)] } as PanelState[string] },
       text: "", sort: response ? search.draft.sort ?? { ...ROOM_SORT } : { ...ROOM_SORT }, topicId: null, scope: null,
     });
-    setFocus(phone ? "map" : "list");
     setSheet("half");
   };
   const pickArea = (id: number) => pickPlace({ kind: "area", id, name: COMMUNITY_AREAS[id] ?? String(id) });
@@ -262,7 +271,6 @@ export default function DiscoveryNextPage() {
   const applyFilters = (panel: PanelState) => {
     if (!registry) return;
     search.startWith({ ...search.draft, panelState: panel, sort: response ? search.draft.sort ?? { ...ROOM_SORT } : { ...ROOM_SORT }, topicId: null, text: response ? search.draft.text : "" });
-    setFocus(phone ? "map" : "list");
     setSheet("half");
   };
   const filterBar = registry ? (
@@ -378,7 +386,7 @@ export default function DiscoveryNextPage() {
               ) : null}
             </div>
           )}
-          {(search.map.truncated || viewMatches.data?.truncated) && lotZoom && (
+          {((searchInViewPins ? searchInView.data?.truncated : search.map.truncated) || viewMatches.data?.truncated) && lotZoom && (
             <p className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full bg-nx-page px-3 py-1 text-caption shadow">{t("discovery.capped")}</p>
           )}
 
