@@ -1,0 +1,57 @@
+{
+ "vacant_class": {
+  "empty": 14,
+  "cant_tell": 1,
+  "precision": 1.0,
+  "ci95": [
+   0.785,
+   1.0
+  ]
+ },
+ "city_owned": {
+  "empty": 10,
+  "precision": 1.0,
+  "ci95": [
+   0.722,
+   1.0
+  ]
+ },
+ "parking": {
+  "empty": 10,
+  "precision": 1.0,
+  "ci95": [
+   0.722,
+   1.0
+  ]
+ },
+ "exempt": {
+  "empty": 9,
+  "cant_tell": 1,
+  "precision": 1.0,
+  "ci95": [
+   0.701,
+   1.0
+  ]
+ },
+ "residential": {
+  "building": 5,
+  "empty": 4,
+  "cant_tell": 1,
+  "precision": 0.444,
+  "ci95": [
+   0.189,
+   0.733
+  ]
+ },
+ "other_commercial": {
+  "building": 2,
+  "empty": 2,
+  "cant_tell": 1,
+  "precision": 0.5,
+  "ci95": [
+   0.15,
+   0.85
+  ]
+ },
+ "weighted_precision": 0.952
+}
