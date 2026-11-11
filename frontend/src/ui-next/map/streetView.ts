@@ -1,7 +1,9 @@
 // Where to stand for Street View (owner's review, Item 94): Google opens the panorama nearest the point we send, and
 // a point inside a lot is often nearer the alley behind it than the street in front. So the viewpoint is moved onto
 // the street: for a lot, the nearest spot on its own address street (its frontage); otherwise the nearest named
-// street. The heading faces the place that was clicked. Pure: the map hands in the road lines it has loaded.
+// street. The heading faces the place that was clicked. Pure, except `loadedRoads`, which reads the road lines a map
+// has loaded (both maps, Profile and Discovery, use it).
+import type { Map as MLMap } from "maplibre-gl";
 
 export type LonLat = [number, number];
 
@@ -73,4 +75,15 @@ export function viewpointFor(target: LonLat, roads: RoadLine[], addressStreet: s
   const hit = nearestOnLines(pool.flatMap((r) => r.lines), target);
   if (!hit || hit.meters > MAX_SNAP_METERS) return { lat: target[1], lon: target[0] };
   return { lat: hit.point[1], lon: hit.point[0], heading: Math.round(bearing(hit.point, target)) };
+}
+
+/** The City street centerlines the map has loaded from its "base" tiles (Street View's viewpoint snaps onto them). */
+export function loadedRoads(map: Pick<MLMap, "getSource" | "querySourceFeatures">): RoadLine[] {
+  if (!map.getSource("base")) return [];
+  return map.querySourceFeatures("base", { sourceLayer: "road" }).map((f) => {
+    const g = f.geometry;
+    const lines = g.type === "LineString" ? [g.coordinates as LonLat[]]
+      : g.type === "MultiLineString" ? (g.coordinates as LonLat[][]) : [];
+    return { name: String(f.properties?.name ?? ""), kind: String(f.properties?.kind ?? ""), lines };
+  });
 }
