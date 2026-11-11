@@ -3,7 +3,7 @@
 // retried); Discovery adds the city's community areas below lot zoom, every lot filled by the chosen measure (the
 // tiles' banded properties), matches as outlines only (owner, Item 99: no dots, no pins), the rest dimmed while a
 // search or quick filter is on, the address ring, and a lot card that opens its Profile.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import * as maplibregl from "maplibre-gl";
@@ -14,6 +14,7 @@ import { ArrowRight, LoaderCircle, MapPinOff, SquareArrowOutUpRight, X } from "l
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { discoveryOutlineRow, fetchTransitStations, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, loadMapInfo, streetViewUrl } from "../map/mapInfo";
+import { loadedRoads, streetOfAddress, viewpointFor, type RoadLine } from "../map/streetView";
 import { addPinImages } from "../map/pins";
 import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
 import { PALETTES, ZONING_COLORS, buildStyle, groupLayerIds, themePaint, type MapTiles, type Theme } from "../map/mapStyle";
@@ -155,7 +156,8 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
 const unknownFilter = (m: MeasureId) => ["!", ["has", MEASURE_PROP[m]]] as never;
 
 /** A lot's card: the list's own row (`/api/discovery/parcel`). */
-interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; lookup: DiscoveryOutlineLookup | null }
+/** `ll` = the click on the ground [lon, lat]; `roads` = the street lines loaded at the click (Street View, Item 94). */
+export interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; roads: RoadLine[]; lookup: DiscoveryOutlineLookup | null }
 
 export function ExploreMap({
   measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
@@ -241,7 +243,7 @@ export function ExploreMap({
         if (!f || f.id == null) { setPicked(null); return; }
         const pin10 = String(f.id).padStart(10, "0");
         const c = m.getContainer();
-        setPicked({ pin10, at: [e.point.x, e.point.y], size: [c.clientWidth, c.clientHeight], ll: [e.lngLat.lng, e.lngLat.lat], lookup: null });
+        setPicked({ pin10, at: [e.point.x, e.point.y], size: [c.clientWidth, c.clientHeight], ll: [e.lngLat.lng, e.lngLat.lat], roads: loadedRoads(m), lookup: null });
       });
       m.on("mouseenter", "lot-measure", () => { m.getCanvas().style.cursor = "pointer"; });
       m.on("mouseleave", "lot-measure", () => { m.getCanvas().style.cursor = ""; });
@@ -468,7 +470,7 @@ export function ExploreMap({
   );
 }
 
-function LotCard({ picked, onClose }: { picked: Picked; onClose: () => void }) {
+export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => void }) {
   const { t, i18n } = useTranslation("next");
   const navigate = useNavigate();
   const n = (v: number) => Math.round(v).toLocaleString(i18n.language.startsWith("es") ? "es-MX" : "en-US");
@@ -478,6 +480,8 @@ function LotCard({ picked, onClose }: { picked: Picked; onClose: () => void }) {
   const style = above ? { left, bottom: h - picked.at[1] + 12 } : { left, top: picked.at[1] + 12 };
   const row = picked.lookup?.status === "found" ? picked.lookup.row : null;
   const card = row ? cardModel(row) : null;
+  // Stand on the lot's own address street (its frontage), facing the lot, not in the alley behind it (Item 94).
+  const sv = useMemo(() => viewpointFor(picked.ll, picked.roads, streetOfAddress(row?.address)), [picked.ll, picked.roads, row?.address]);
   const href = row ? `/scorecard?${new URLSearchParams({ pin: row.pin, ...(row.address && !card?.approx ? { address: card!.title } : {}) })}` : null;
   return (
     <div role="dialog" aria-label={card?.title ?? t("discovery.map.lot")} data-testid="lot-card"
@@ -500,7 +504,7 @@ function LotCard({ picked, onClose }: { picked: Picked; onClose: () => void }) {
               {t("discovery.card.open")}<ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
             </button>
           )}
-          <a href={streetViewUrl(picked.ll[1], picked.ll[0])} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 nx-muted underline underline-offset-2">
+          <a href={streetViewUrl(sv.lat, sv.lon, sv.heading)} target="_blank" rel="noopener noreferrer" data-testid="lot-card-street-view" className="inline-flex items-center gap-1 nx-muted underline underline-offset-2">
             {t("map.streetView")}<SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
           </a>
         </div>
