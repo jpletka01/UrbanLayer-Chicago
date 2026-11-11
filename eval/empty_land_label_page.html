@@ -6,9 +6,9 @@
 <title>Empty land check</title>
 <style>
 :root { --bg:#f7f6f3; --card:#fff; --ink:#1c1c1c; --muted:#666; --line:#ddd; --accent:#1d4ed8; --lot:#111;
-        --nb:#9ca3af; --street:#cbd5e1; --ok:#15803d; }
+        --nb:#9ca3af; --street:#cbd5e1; --ok:#15803d; --bldg:#94a3b8; }
 @media (prefers-color-scheme: dark) { :root { --bg:#141414; --card:#1f1f1f; --ink:#eee; --muted:#aaa; --line:#333;
-        --accent:#93b4ff; --lot:#f5f5f5; --nb:#6b7280; --street:#334155; } }
+        --accent:#93b4ff; --lot:#f5f5f5; --nb:#6b7280; --street:#334155; --bldg:#475569; } }
 * { box-sizing:border-box; }
 body { margin:0; font:14px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
 .app { display:grid; grid-template-columns:220px 1fr; height:100vh; }
@@ -69,11 +69,37 @@ function list() {
 const xy = (lot, lon, lat) => [(lon - lot.lon) * FT_LON, -(lat - lot.lat) * FT_LAT];
 const path = (lot, ring) => ring.map(([lo, la], i) => (i ? "L" : "M") + xy(lot, lo, la).map(v => v.toFixed(1)).join(" ")).join("") + "Z";
 const line = (lot, pts) => pts.map(([lo, la], i) => (i ? "L" : "M") + xy(lot, lo, la).map(v => v.toFixed(1)).join(" ")).join("");
+function centroid(lot, ring) {
+  let x = 0, y = 0; ring.forEach(([lo, la]) => { const q = xy(lot, lo, la); x += q[0]; y += q[1]; });
+  return [x / ring.length, y / ring.length];
+}
 function svg(lot) {
   const p = [];
   lot.street.forEach(s => p.push(`<path d="${line(lot, s)}" stroke="var(--street)" stroke-width="18" fill="none" stroke-linecap="round"/>`));
-  lot.neighbors.forEach(n => p.push(`<path d="${path(lot, n)}" fill="none" stroke="var(--nb)" stroke-width="1"/>`));
-  if (lot.ring) p.push(`<path d="${path(lot, lot.ring)}" fill="var(--lot)" fill-opacity="0.85" stroke="var(--lot)"/>`);
+  (lot.buildings || []).forEach(b => p.push(`<path d="${path(lot, b)}" fill="var(--bldg)" fill-opacity="0.75" stroke="none"/>`));
+  lot.neighbors.forEach(n => p.push(`<path d="${path(lot, n.ring || n)}" fill="none" stroke="var(--nb)" stroke-width="1"/>`));
+  if (lot.ring) p.push(`<path d="${path(lot, lot.ring)}" fill="none" stroke="var(--accent)" stroke-width="3"/>`);
+  lot.neighbors.forEach(n => {
+    if (!n.address) return;
+    const [x, y] = centroid(lot, n.ring);
+    if (Math.abs(x) < HALF - 10 && Math.abs(y) < HALF - 10)
+      p.push(`<text x="${x}" y="${y}" font-size="9" text-anchor="middle" fill="var(--ink)" paint-order="stroke" stroke="var(--card)" stroke-width="2.5">${esc(n.address.split(" ")[0])}</text>`);
+  });
+  // One label per street name, on its longest visible piece.
+  const best = {};
+  lot.street.forEach((s, i) => {
+    const name = (lot.street_names || [])[i]; if (!name) return;
+    const pts = s.map(([lo, la]) => xy(lot, lo, la)).filter(([x, y]) => Math.abs(x) < HALF && Math.abs(y) < HALF);
+    if (pts.length < 2) return;
+    const len = Math.hypot(pts[pts.length - 1][0] - pts[0][0], pts[pts.length - 1][1] - pts[0][1]);
+    if (!best[name] || len > best[name].len) best[name] = { len, a: pts[0], b: pts[pts.length - 1] };
+  });
+  Object.entries(best).forEach(([name, { a, b }]) => {
+    let ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    p.push(`<text x="${mx}" y="${my}" font-size="9.5" font-weight="600" text-anchor="middle" dominant-baseline="middle" fill="var(--ink)" transform="rotate(${ang} ${mx} ${my})">${esc(name)}</text>`);
+  });
   if (lot.viewpoint) {
     const [x, y] = xy(lot, lot.viewpoint.lon, lot.viewpoint.lat), h = lot.viewpoint.heading * Math.PI / 180;
     p.push(`<circle cx="${x}" cy="${y}" r="4" fill="var(--accent)"/><line x1="${x}" y1="${y}" x2="${x + 16 * Math.sin(h)}" y2="${y - 16 * Math.cos(h)}" stroke="var(--accent)" stroke-width="2"/>`);
@@ -88,7 +114,7 @@ function render() {
   const sat = `https://www.google.com/maps/@${lot.lat},${lot.lon},20z/data=!3m1!1e3`;
   document.getElementById("main").innerHTML = `
     <h1>Lot #${lot.id} <span class="muted" style="font-weight:400">${esc(lot.pin)}${lot.lot_sqft ? ` · ${lot.lot_sqft.toLocaleString("en-US")} sq ft` : ""}</span></h1>
-    <p class="muted">What is on this lot today? The lot is the filled shape; gray lines are the neighboring lots; the blue dot is where Street View stands, facing the lot. Judge the filled lot only, not the neighbors.</p>
+    <p class="muted">What is on this lot today? The lot is outlined in blue; gray lines are the neighboring lots, with their own house numbers; gray shapes are the County's 2022 buildings around it (left off the lot itself, which is what you're checking); the blue dot is where Street View stands, facing the lot. Judge the outlined lot only.</p>
     <div class="grid">
       <div class="card">${svg(lot)}
         <p>${sv ? `<a class="btn" href="${sv}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
