@@ -98,3 +98,4 @@ AGENTS.md
 *.pem
 *.key
 .venv
+eval/results/2026-11-11-empty-land/labels.json
