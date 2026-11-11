@@ -71,8 +71,8 @@ async function load() {
   DATA = await (await fetch("/data")).json();
   for (const e of DATA.evidence) EV[e.pin] = e;
   LABELS = DATA.labels || {};
-  // Strata interleaved in a fixed order (by a hash of the PIN), so labeling doesn't run stratum by stratum.
-  LOTS = DATA.panel.lots.slice().sort((a, b) => hash(a.pin) - hash(b.pin));
+  // Newest batch first; within a batch, strata interleaved in a fixed order (by a hash of the PIN).
+  LOTS = DATA.panel.lots.slice().sort((a, b) => (b.batch ?? 1) - (a.batch ?? 1) || hash(a.pin) - hash(b.pin));
   const firstTodo = LOTS.findIndex(l => !LABELS[l.pin]);
   cur = firstTodo < 0 ? 0 : firstTodo;
   renderList(); render();
@@ -80,10 +80,12 @@ async function load() {
 
 function renderList() {
   const only = document.getElementById("onlyTodo").checked;
-  document.getElementById("progress").textContent = `${Object.keys(LABELS).length} of ${LOTS.length} labeled`;
+  const done = b => LOTS.filter(l => (l.batch ?? 1) === b && LABELS[l.pin]).length, size = b => LOTS.filter(l => (l.batch ?? 1) === b).length;
+  document.getElementById("progress").textContent = [...new Set(LOTS.map(l => l.batch ?? 1))].sort().reverse()
+    .map(b => `batch ${b}: ${done(b)} of ${size(b)}`).join(" · ");
   document.getElementById("list").innerHTML = LOTS.map((l, i) => (only && LABELS[l.pin] && i !== cur) ? "" :
     `<div class="row ${i === cur ? "cur" : ""} ${LABELS[l.pin] ? "done" : ""}" data-i="${i}"><span class="dot"></span>
-     <div>${i + 1}. ${l.address || l.pin}<small>${l.stratum.replaceAll("_", " ")}</small></div></div>`).join("");
+     <div>${i + 1}. ${l.address || l.pin}<small>${l.batch ? "batch " + l.batch + " · " : ""}${l.stratum.replaceAll("_", " ")}</small></div></div>`).join("");
   for (const r of document.querySelectorAll("aside .row")) r.onclick = () => { cur = +r.dataset.i; renderList(); render(); };
 }
 
@@ -147,7 +149,8 @@ function render() {
     </div>
     <div>
       <div class="card"><h2>What's built (from Street View)</h2>
-        <p class="muted" style="margin-top:0">Stories are pre-filled from the LiDAR height and run high on pitched roofs. Floor area counts what zoning counts: tick garages and sheds as not floor area.</p>
+        <p style="margin-top:0"><strong>Measure the lot outlined in black only.</strong> A <strong>~</strong> address is approximate: the house Street View faces may be the neighbor's.</p>
+        <p class="muted">Stories are pre-filled from the LiDAR height and run high on pitched roofs. Floor area counts what zoning counts: tick garages and sheds as not floor area.</p>
         <table><tr><th></th><th>On the lot</th><th>Highest point</th><th>Stories</th><th>Garage / shed</th></tr>
         ${(ev.lidar_2022 || []).map((x, i) => `<tr><td>${String.fromCharCode(65 + i)}</td><td>${fmt(x.on_lot_sqft)} sq ft</td><td>${Math.round(x.height_ft)} ft</td>
           <td><input type="number" min="0" step="1" data-b="${i}" data-k="stories" value="${rows[i]?.stories ?? x.stories_est}"></td>
@@ -162,10 +165,12 @@ function render() {
         <div style="margin-top:12px" id="calc"></div>
       </div>
       <div class="card radio" style="margin-top:12px"><h2>Your label</h2>
-        ${[["estimate", "Use my estimate above"], ["empty", "Empty lot (nothing built)"], ["not_buildable", "Not a building lot (park, strip, rail, alley, right-of-way)"], ["cant_tell", "Can't tell"]]
+        ${[["estimate", "Use my estimate above"], ["empty", "Empty lot (nothing built)"], ["side_yard", "Empty, but used with the lot next door (its yard, parking or garden)"], ["not_buildable", "Not a building lot (park, strip, rail, alley, right-of-way)"], ["cant_tell", "Can't tell"]]
           .map(([v, t]) => `<label><input type="radio" name="verdict" value="${v}" ${(saved?.verdict ?? "estimate") === v ? "checked" : ""}> ${t}</label>`).join("")}
-        <h2 style="margin-top:10px">Is this lot actually underused? (your judgment)</h2>
-        ${[["yes", "Yes, room to build is real"], ["no", "No"], ["unsure", "Unsure"]].map(([v, t]) => `<label><input type="radio" name="judgment" value="${v}" ${saved?.judgment === v ? "checked" : ""}> ${t}</label>`).join("")}
+        ${l.batch ? `<h2 style="margin-top:10px">How sure are you of the floor area?</h2>
+        ${[["sure", "Sure (stories clear, outline fits)"], ["rough", "Rough (within about a quarter)"], ["guess", "A guess"]].map(([v, t]) => `<label><input type="radio" name="confidence" value="${v}" ${saved?.confidence === v ? "checked" : ""}> ${t}</label>`).join("")}`
+        : `<h2 style="margin-top:10px">Is this lot actually underused? (your judgment)</h2>
+        ${[["yes", "Yes, room to build is real"], ["no", "No"], ["unsure", "Unsure"]].map(([v, t]) => `<label><input type="radio" name="judgment" value="${v}" ${saved?.judgment === v ? "checked" : ""}> ${t}</label>`).join("")}`}
         <textarea id="note" placeholder="Note (what you saw)">${saved?.note || ""}</textarea>
         <div style="display:flex;gap:8px;margin-top:8px"><button class="primary" id="save">Save and next ⏎</button><button id="prev">← Back</button><span id="status" class="muted"></span></div>
       </div>
@@ -173,7 +178,8 @@ function render() {
         <div style="margin-top:6px">District ${l.zone_class || l.zoning_group || "—"} · FAR ${l.far ?? "—"} · lot ${fmt(l.land_sqft)} sq ft<br>
         Building ${fmt(l.bldg_sqft)} sq ft (${l.bldg_sqft_source || "no source"}) ${l.year_built ? "· built " + l.year_built : ""}<br>
         Built ${pct(l.share)} of allowed · room ${fmt(l.room_sqft)} sq ft ${l.room_scope ? "(" + l.room_scope + ")" : ""}<br>
-        Rule (under 25% and 2,500+ sq ft room): <strong>${l.rule_underused ? "UNDERUSED" : "not underused"}</strong></div>
+        Rule (under 25% and 2,500+ sq ft room): <strong>${l.rule_underused ? "UNDERUSED" : "not underused"}</strong>
+        ${l.v2 ? `<br>Rule v2 (record and LiDAR agree): <strong>${l.v2.toUpperCase()}</strong> · ${l.v2_why}` : ""}</div>
       </details>
     </div>
   </div>`;
@@ -203,13 +209,14 @@ function render() {
     const verdict = document.querySelector("input[name=verdict]:checked").value;
     const label = {
       pin: l.pin, stratum: l.stratum, verdict, judgment: document.querySelector("input[name=judgment]:checked")?.value ?? null,
+      confidence: document.querySelector("input[name=confidence]:checked")?.value ?? null, batch: l.batch ?? 1,
       buildings: (ev.lidar_2022 || []).map((x, i) => ({ oid: x.oid, on_lot_sqft: x.on_lot_sqft,
         stories: parseFloat(document.querySelector(`[data-b="${i}"][data-k="stories"]`).value) || 0,
         accessory: document.querySelector(`[data-b="${i}"][data-k="accessory"]`).checked })),
       extra: { sqft: parseFloat(document.getElementById("exSqft").value) || 0, stories: parseFloat(document.getElementById("exStories").value) || 0 },
       zone: document.getElementById("zone").value, far: parseFloat(document.getElementById("far").value) || null,
-      lot_sqft: lotSqft, built_sqft: verdict === "empty" ? 0 : Math.round(c.built), allowed_sqft: c.allowed ? Math.round(c.allowed) : null,
-      share: verdict === "empty" ? 0 : (c.share != null ? Math.round(c.share * 1000) / 1000 : null),
+      lot_sqft: lotSqft, built_sqft: ["empty", "side_yard"].includes(verdict) ? 0 : Math.round(c.built), allowed_sqft: c.allowed ? Math.round(c.allowed) : null,
+      share: ["empty", "side_yard"].includes(verdict) ? 0 : (c.share != null ? Math.round(c.share * 1000) / 1000 : null),
       note: document.getElementById("note").value.trim(), labeled_at: new Date().toISOString(),
     };
     const r = await fetch("/label", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(label) });

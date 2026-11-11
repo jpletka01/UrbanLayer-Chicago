@@ -192,6 +192,22 @@ def lot_geometries(pin10s: list[str]) -> dict[str, Any]:
     return out
 
 
+def lot_row(pin: str, a: dict[str, Any], lat: float, lon: float, stratum: str) -> dict[str, Any]:
+    share = built_share(a)
+    return {
+        "pin": pin, "stratum": stratum, "address": a.get("address"), "lat": lat, "lon": lon,
+        "hood": a.get("hood"), "class": a.get("class"), "land_use": a.get("land_use_class"),
+        "zoning_group": a.get("zoning_group"), "zone_class": a.get("zone_class"),
+        "far": a.get("density_band"), "land_sqft": a.get("land_sqft"), "bldg_sqft": a.get("bldg_sqft"),
+        "bldg_sqft_source": a.get("bldg_sqft_source"), "year_built": a.get("year_built"),
+        "room_sqft": a.get("room_sqft"), "room_scope": a.get("room_scope"),
+        "complex_lots": a.get("complex_lots"), "is_vacant": a.get("is_vacant"),
+        "narrow_strip": a.get("narrow_strip"), "lot_width_ft": a.get("lot_width_ft"),
+        "share": round(share, 4) if share is not None else None,
+        "rule_underused": rule_underused(a), "rule_underused_alt": rule_underused(a, UNDER_SHARE_ALT),
+    }
+
+
 def draw(permits_path: Path, out: Path, seed: int = SEED) -> list[dict[str, Any]]:
     permits = load_permits(permits_path)
     new_pins = {p for r in permits if r["permit_type"] == "PERMIT - NEW CONSTRUCTION"
@@ -238,20 +254,7 @@ def draw(permits_path: Path, out: Path, seed: int = SEED) -> list[dict[str, Any]
         pick = rng.sample(under, n_under) + rng.sample(other, min(len(other), size - n_under))
         for pin, a, lat, lon in pick:
             taken.add(pin)
-            share = built_share(a)
-            panel.append({
-                "pin": pin, "stratum": stratum, "address": a.get("address"), "lat": lat, "lon": lon,
-                "hood": a.get("hood"), "class": a.get("class"), "land_use": a.get("land_use_class"),
-                "zoning_group": a.get("zoning_group"), "zone_class": a.get("zone_class"),
-                "far": a.get("density_band"), "land_sqft": a.get("land_sqft"), "bldg_sqft": a.get("bldg_sqft"),
-                "bldg_sqft_source": a.get("bldg_sqft_source"), "year_built": a.get("year_built"),
-                "room_sqft": a.get("room_sqft"), "room_scope": a.get("room_scope"),
-                "complex_lots": a.get("complex_lots"), "is_vacant": a.get("is_vacant"),
-                "narrow_strip": a.get("narrow_strip"), "lot_width_ft": a.get("lot_width_ft"),
-                "share": round(share, 4) if share is not None else None,
-                "rule_underused": rule_underused(a), "rule_underused_alt": rule_underused(a, UNDER_SHARE_ALT),
-                "pool": len(pools[stratum]), "pool_underused": len(under),
-            })
+            panel.append(lot_row(pin, a, lat, lon, stratum) | {"pool": len(pools[stratum]), "pool_underused": len(under)})
     out.write_text(json.dumps({"seed": seed, "rule": {"share_under": UNDER_SHARE, "room_at_least": UNDER_ROOM},
                                "strata": dict(STRATA), "lots": panel}, indent=1))
     return panel
@@ -272,6 +275,12 @@ def stories_from_height(h: float) -> int:
 
 
 def evidence(panel_path: Path, permits_path: Path, lidar_path: Path, out: Path) -> list[dict[str, Any]]:
+    rows = evidence_rows(json.loads(panel_path.read_text())["lots"], permits_path, lidar_path)
+    out.write_text(json.dumps(rows, indent=1))
+    return rows
+
+
+def evidence_rows(panel: list[dict[str, Any]], permits_path: Path, lidar_path: Path) -> list[dict[str, Any]]:
     import shapely
     from shapely.strtree import STRtree
 
@@ -279,7 +288,6 @@ def evidence(panel_path: Path, permits_path: Path, lidar_path: Path, out: Path) 
     from backend.discovery.lot_sources import area_sqft
     from backend.retrieval.zoning_definitions import get_zone_definition
 
-    panel = json.loads(panel_path.read_text())["lots"]
     permits = load_permits(permits_path)
     by_pin = permits_by_pin10(permits)
     p_pts = [(shapely.Point(float(r["longitude"]), float(r["latitude"])), r) for r in permits
@@ -354,8 +362,105 @@ def evidence(panel_path: Path, permits_path: Path, lidar_path: Path, out: Path) 
         ev["map_link"] = f"https://www.google.com/maps/search/?api=1&query={rep.y:.6f},{rep.x:.6f}"
         ev["assessor"] = f"https://www.cookcountyassessor.com/pin/{re.sub(r'[^0-9]', '', lot['pin'])}"
         rows.append(ev)
-    out.write_text(json.dumps(rows, indent=1))
     return rows
+
+
+# ── Rule v2 (after the owner's first 64 labels, 2026-11-11) ──────────────────────────────────────────────────────
+# The 64 labels showed the record's building area alone is not enough: six of eight false calls were apartment or
+# commercial buildings recorded at 4-23% of allowed that stand at 33-116%. v2 calls "underused" only when two
+# independent measures agree (the record and the County's 2022 LiDAR volume), and nothing has been built or torn down
+# since the LiDAR flight. A lot with no building in the records and none in the LiDAR is "empty", a separate state:
+# the owner's side-yard cases (a vacant lot used with the house next door) are empty but not an open opportunity.
+LIDAR_FLOWN = "2022-04-01"
+LIDAR_MIN_PART = 150  # sq ft of a LiDAR outline on the lot before it counts as a building there
+CROSSING_SHARE = 0.8  # an outline of 1,000+ sq ft with under 80% of it on the lot crosses the lot line
+BIG_PERMIT = 100_000  # a new-construction permit this size or more (or of unknown cost) is a building
+
+
+def rule_v2(lot: dict[str, Any], ev: dict[str, Any]) -> tuple[str, str]:
+    """("underused" | "empty" | "none", why). Conservative: anything uncertain is "none" (the app says nothing)."""
+    if lot.get("room_scope") == "complex" or lot.get("stratum") == "condo_building":
+        return "none", "part of a complex or condo"
+    if not lot.get("far"):
+        return "none", "no base FAR"
+    if lot.get("narrow_strip"):
+        return "none", "narrow strip"
+    land = lot.get("land_sqft")
+    if not land or "missing" in ev:
+        return "none", "no lot area or outline"
+    allowed = lot["far"] * land
+    after = [q for q in ev.get("permits", []) if q["date"] >= LIDAR_FLOWN]
+    if any(q["type"] == "NEW CONSTRUCTION" and (q["cost"] is None or q["cost"] >= BIG_PERMIT) for q in after):
+        return "none", "new building since the LiDAR"
+    if any(q["type"] == "WRECKING/DEMOLITION" for q in after):
+        return "none", "demolition since the LiDAR"
+    parts = [x for x in ev.get("lidar_2022", []) if x["on_lot_sqft"] >= LIDAR_MIN_PART]
+    if any(x["outline_sqft"] >= 1000 and x["on_lot_sqft"] < CROSSING_SHARE * x["outline_sqft"] for x in parts):
+        return "none", "a building crosses the lot line"
+    rec = lot.get("bldg_sqft") or 0.0
+    if not parts:
+        return ("empty", "no building on record or in the LiDAR") if rec == 0 else ("none", "record building, none in LiDAR")
+    lid = ev.get("lidar_floor_area_est") or 0.0
+    if rec / allowed < UNDER_SHARE and lid / allowed < UNDER_SHARE and allowed - max(rec, lid) >= UNDER_ROOM:
+        return "underused", "record and LiDAR both under 25%"
+    return "none", "built"
+
+
+# Batch 2: lots drawn so that v2's calls can be measured (batch 1 has only 15 of them).
+BATCH2_SEED = 1072
+BATCH2_CANDIDATES = {"house_assessor": 900, "commercial_own_building": 350, "multi_family": 250, "exempt": 200,
+                     "footprint_area": 200, "vacant_class_with_building": 120, "recently_built": 120,
+                     "demolition_permit": 100, "vacant_lot": 120}
+BATCH2_UNDER = {"house_assessor": 35, "commercial_own_building": 25, "multi_family": 10, "exempt": 10,
+                "footprint_area": 10, "vacant_class_with_building": 5, "recently_built": 5, "demolition_permit": 5}
+BATCH2_EMPTY = {"vacant_lot": 25, "exempt": 10, "vacant_class_with_building": 5}
+BATCH2_CONTROLS = 15  # v2 says "none" though the record alone says underused: keeps the batch blind
+
+
+def draw2(permits_path: Path, lidar_path: Path, out: Path, ev_out: Path, exclude: Path) -> list[dict[str, Any]]:
+    permits = load_permits(permits_path)
+    new_pins = {p for r in permits if r["permit_type"] == "PERMIT - NEW CONSTRUCTION"
+                and (r.get("issue_date") or "") >= NEW_SINCE for p in r["pins10"]}
+    wreck_pins = {p for r in permits if r["permit_type"] == "PERMIT - WRECKING/DEMOLITION"
+                  and (r.get("issue_date") or "") >= "2023-01-01" for p in r["pins10"]}
+    taken = {r["pin"] for r in json.loads(exclude.read_text())["lots"]}
+    db = sqlite3.connect(f"file:{INDEX}?mode=ro", uri=True)
+    pools: dict[str, list[tuple[str, dict, float, float]]] = defaultdict(list)
+    for pin, lat, lon, attrs in db.execute("SELECT pin, lat, lon, attrs FROM parcels ORDER BY pin"):
+        if not pin.endswith("-0000") or pin in taken:
+            continue
+        a = json.loads(attrs)
+        s = stratum_of(pin, a, new_pins=new_pins, wreck_pins=wreck_pins)
+        if s not in BATCH2_CANDIDATES:
+            continue
+        if s == "vacant_lot" or rule_underused(a) or (s in BATCH2_EMPTY and a.get("is_vacant") or
+                                                       (s == "exempt" and a.get("bldg_sqft") == 0)):
+            pools[s].append((pin, a, lat, lon))
+    db.close()
+    rng = random.Random(BATCH2_SEED)
+    cands = []
+    for s, n in BATCH2_CANDIDATES.items():
+        for pin, a, lat, lon in rng.sample(pools[s], min(n, len(pools[s]))):
+            cands.append(lot_row(pin, a, lat, lon, s) | {"pool": len(pools[s])})
+    evs = {e["pin"]: e for e in evidence_rows(cands, permits_path, lidar_path)}
+    for c in cands:
+        c["v2"], c["v2_why"] = rule_v2(c, evs[c["pin"]])
+    pick: list[dict[str, Any]] = []
+    for s, n in BATCH2_UNDER.items():
+        pick += [c for c in cands if c["stratum"] == s and c["v2"] == "underused"][:n]
+    for s, n in BATCH2_EMPTY.items():
+        pick += [c for c in cands if c["stratum"] == s and c["v2"] == "empty"][:n]
+    controls = [c for c in cands if c["v2"] == "none" and c["rule_underused"]]
+    pick += rng.sample(controls, min(BATCH2_CONTROLS, len(controls)))
+    for c in pick:
+        c["batch"] = 2
+    tally: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for c in cands:
+        tally[c["stratum"]][c["v2"]] += 1
+    out.write_text(json.dumps({"seed": BATCH2_SEED, "rule": "v2", "candidates": {k: dict(v) for k, v in tally.items()},
+                               "lots": pick}, indent=1))
+    ev_out.write_text(json.dumps([evs[c["pin"]] for c in pick], indent=1))
+    return pick
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -369,7 +474,22 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("--permits", type=Path, required=True)
     e.add_argument("--lidar", type=Path, required=True)
     e.add_argument("--out", type=Path, required=True)
+    d2 = sub.add_parser("draw2")
+    d2.add_argument("--permits", type=Path, required=True)
+    d2.add_argument("--lidar", type=Path, required=True)
+    d2.add_argument("--exclude", type=Path, default=Path("eval/capacity_label_panel.json"))
+    d2.add_argument("--out", type=Path, default=Path("eval/capacity_label_panel_2.json"))
+    d2.add_argument("--evidence-out", type=Path, required=True)
     args = ap.parse_args(argv)
+    if args.cmd == "draw2":
+        pick = draw2(args.permits, args.lidar, args.out, args.evidence_out, args.exclude)
+        by = defaultdict(lambda: defaultdict(int))
+        for r in pick:
+            by[r["stratum"]][r["v2"]] += 1
+        for s, c in by.items():
+            print(f"{s:28} {dict(c)}")
+        print(f"total {len(pick)}")
+        return 0
     if args.cmd == "draw":
         panel = draw(args.permits, args.out)
         by = defaultdict(lambda: [0, 0])

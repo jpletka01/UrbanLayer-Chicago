@@ -1,8 +1,10 @@
 """A local page for labeling the M4 capacity panel (decision Item 107). Standard library only; localhost only.
 
-    PYTHONPATH=. python -m eval.capacity_label_server --evidence <evidence.json> [--port 8031]
+    PYTHONPATH=. python -m eval.capacity_label_server --evidence <evidence.json> \
+        [--panel eval/capacity_label_panel_2.json --evidence <evidence_2.json>] [--port 8031]
 
-Serves ``eval/capacity_label_page.html``, the panel (``eval/capacity_label_panel.json``) with its evidence, and
+Serves ``eval/capacity_label_page.html``, the panels (batch 1 ``eval/capacity_label_panel.json``, then any more, each
+paired with its evidence file in order), and
 saves each label as it is made to ``eval/results/2026-11-11-m4/labels.json`` (written whole, atomically).
 """
 
@@ -17,7 +19,7 @@ from pathlib import Path
 from threading import Lock
 
 PAGE = Path(__file__).with_name("capacity_label_page.html")
-PANEL = Path("eval/capacity_label_panel.json")
+PANEL = Path("eval/capacity_label_panel.json")  # batch 1, always first
 LABELS = Path("eval/results/2026-11-11-m4/labels.json")
 _lock = Lock()
 
@@ -34,7 +36,7 @@ def _write_labels(labels: dict) -> None:
     os.replace(tmp, LABELS)
 
 
-def make_handler(evidence_path: Path):
+def make_handler(panels: list[Path], evidence_paths: list[Path]):
     class Handler(BaseHTTPRequestHandler):
         def _send(self, code: int, body: bytes, ctype: str) -> None:
             self.send_response(code)
@@ -47,8 +49,9 @@ def make_handler(evidence_path: Path):
             if self.path in ("/", "/index.html"):
                 self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
             elif self.path == "/data":
-                body = {"panel": json.loads(PANEL.read_text()), "evidence": json.loads(evidence_path.read_text()),
-                        "labels": _read_labels()}
+                lots = [lot for p in panels for lot in json.loads(p.read_text())["lots"]]
+                ev = [e for p in evidence_paths for e in json.loads(p.read_text())]
+                body = {"panel": {"lots": lots}, "evidence": ev, "labels": _read_labels()}
                 self._send(200, json.dumps(body).encode(), "application/json")
             else:
                 self._send(404, b"not found", "text/plain")
@@ -77,10 +80,14 @@ def make_handler(evidence_path: Path):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--evidence", type=Path, required=True)
+    ap.add_argument("--panel", type=Path, action="append", default=[], help="more panels after batch 1")
+    ap.add_argument("--evidence", type=Path, action="append", required=True, help="one per panel, batch 1 first")
     ap.add_argument("--port", type=int, default=8031)
     args = ap.parse_args()
-    srv = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(args.evidence))
+    panels = [PANEL, *args.panel]
+    if len(panels) != len(args.evidence):
+        ap.error("give one --evidence per panel (batch 1 first)")
+    srv = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(panels, args.evidence))
     print(f"labeling page on http://localhost:{args.port}")
     srv.serve_forever()
 
