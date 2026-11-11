@@ -12,14 +12,19 @@ multifamily lots (the Assessor's characteristics are residential only). This mod
 * **addresses** (decision Item 109): the Assessor's property address of every Chicago base PIN (``3723-97qp``, latest
   year), the Address Points (``78yw-iddh``) and the City's street centerlines with their block-face ranges
   (``pr57-gg9e``), read by ``assessor_address`` to give a lot with no Address Point the Assessor's address when it
-  lands on the lot.
+  lands on the lot;
+* **what stands on each lot** (decision Item 110): every demolition permit since 2006 and every new-construction permit
+  since the County's 2022 LiDAR flight, as points, and ``lidar_on_lot``, the County's 2022 LiDAR buildings measured
+  against each lot's PTAXSIM outline once (one row per PIN10 with a structure on it), so the index build never loads
+  the 1.25 million outlines.
 
 The fetch refuses to write a copy that looks partial (row floors below), so "could not read" never becomes "no
 building" or "no case". The copy is read only by the index build and ``index_backfill``; the live Profile is unchanged.
 
     PYTHONPATH=. python -m backend.discovery.lot_sources [--out backend/data/discovery_lot_sources.db] [--addresses-only]
 
-``--addresses-only`` adds (or replaces) just the address tables in an existing copy.
+``--addresses-only`` adds (or replaces) just the address tables in an existing copy; ``--structures-only`` just the
+Item 110 tables (needs ``map_sources/county_buildings_2022.db`` and PTAXSIM beside the copy, or ``--lidar``/``--ptaxsim``).
 """
 
 from __future__ import annotations
@@ -62,6 +67,15 @@ MIN_ADDRESS_POINTS = 500_000
 MIN_CENTERLINES = 50_000
 VACANT_CASE_YEARS = 3
 DEMOLITION_MONTHS = 24
+# Item 110: the County's LiDAR flight was spring 2022; permits after it describe what changed since.
+LIDAR_FLIGHT = "2022-06-01"
+DEMOLITION_HISTORY_SINCE = "2006-01-01"
+MIN_DEMOLITION_HISTORY = 15_000  # measured 2026-11-11: 21,892
+LIDAR_MIN_HEIGHT_FT = 8.0
+LIDAR_MIN_ON_LOT_SQFT = 150.0
+LIDAR_MIN_SHARE = 0.5  # of the LiDAR outline on the lot, or ...
+LIDAR_MIN_LOT_COVER = 0.3  # ... of the lot under it: one County outline often spans a row of houses or several lots
+MIN_LIDAR_LOTS = 300_000  # lots with a LiDAR structure on them; measured 2026-11-11 citywide: ~475k
 
 # Square feet per square degree at Chicago's latitude (an equirectangular scale; error well under 1% across the city).
 _LAT0 = 41.84
@@ -81,7 +95,11 @@ def _pages(client: httpx.Client, dataset: str, params: dict, portal: str = PORTA
     rows: list[dict] = []
     offset = 0
     while True:
-        r = client.get(f"{portal}/{dataset}.json", params={**params, "$limit": PAGE, "$offset": offset})
+        for attempt in range(5):  # the portals answer 503 now and then
+            r = client.get(f"{portal}/{dataset}.json", params={**params, "$limit": PAGE, "$offset": offset})
+            if r.status_code < 500:
+                break
+            time.sleep(5 * (attempt + 1))
         r.raise_for_status()
         batch = r.json()
         rows.extend(batch)
@@ -200,7 +218,135 @@ def fetch_addresses(out: Path = DEFAULT_PATH, *, token: str = "") -> dict:
     return summary
 
 
-def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | None = None) -> dict:
+def _read_permit_history(client: httpx.Client) -> list[tuple]:
+    """Every demolition permit since 2006 and new-construction permit since the LiDAR flight, as point rows."""
+    demo = _pages(client, PERMITS, {
+        "$select": "permit_,issue_date,latitude,longitude",
+        "$where": f"permit_type = 'PERMIT - WRECKING/DEMOLITION' AND issue_date >= '{DEMOLITION_HISTORY_SINCE}'",
+        "$order": "issue_date"})
+    new = _pages(client, PERMITS, {
+        "$select": "permit_,issue_date,latitude,longitude",
+        "$where": f"permit_type = 'PERMIT - NEW CONSTRUCTION' AND issue_date >= '{LIDAR_FLIGHT}'",
+        "$order": "issue_date"})
+    if len(demo) < MIN_DEMOLITION_HISTORY:
+        raise RuntimeError(f"{PERMITS} returned {len(demo)} demolition permits since 2006: refusing to write")
+    pts = []
+    for kind, rows in (("demolition_history", demo), ("new_construction", new)):
+        for row in rows:
+            pt = _point(row)
+            if pt:
+                pts.append((kind, row.get("permit_"), (row.get("issue_date") or "")[:10], pt[0], pt[1]))
+    return pts
+
+
+def lidar_on_lots(lidar: Path, ptaxsim: Path) -> list[tuple[str, float, float]]:
+    """(pin10, the largest structure's area on the lot, all structures' area on it) for every lot inside Chicago's box
+    with a County 2022 LiDAR building on it: one at least ``LIDAR_MIN_HEIGHT_FT`` tall with ``LIDAR_MIN_ON_LOT_SQFT`` on
+    the lot that is half of the building or ``LIDAR_MIN_LOT_COVER`` of the lot (Item 110's measured rule)."""
+    import numpy as np
+    from shapely import wkt as shapely_wkt
+    from shapely.strtree import STRtree
+
+    w, s_, e, n = (-87.95, 41.63, -87.50, 42.03)
+    ld = sqlite3.connect(f"file:{lidar}?mode=ro", uri=True)
+    try:
+        geoms = shapely.from_wkb([r[0] for r in ld.execute(
+            "SELECT wkb FROM buildings WHERE height_ft >= ?", (LIDAR_MIN_HEIGHT_FT,))])
+    finally:
+        ld.close()
+    geoms = np.array([g if g.is_valid else shapely.make_valid(g) for g in geoms], dtype=object)
+    own_area = np.array([area_sqft(g) for g in geoms])
+    tree = STRtree(geoms)
+    geo = sqlite3.connect(f"file:{ptaxsim}?mode=ro", uri=True)
+    try:
+        latest: dict[str, str] = {}
+        for pin10, text in geo.execute(
+                "SELECT pin10, geometry FROM pin_geometry_raw WHERE longitude BETWEEN ? AND ? AND latitude BETWEEN ? AND ? "
+                "AND geometry IS NOT NULL ORDER BY end_year ASC", (w, e, s_, n)):
+            latest[pin10] = text
+    finally:
+        geo.close()
+    out = []
+    for pin10, text in latest.items():
+        try:
+            lot = shapely_wkt.loads(text)
+            if not lot.is_valid:
+                lot = shapely.make_valid(lot)
+        except (shapely.errors.GEOSException, ValueError):
+            continue
+        lot_sqft = area_sqft(lot)
+        sizes = []
+        for i in tree.query(lot, predicate="intersects"):
+            try:
+                inter = area_sqft(geoms[i].intersection(lot))
+            except shapely.errors.GEOSException:
+                continue
+            if inter >= LIDAR_MIN_ON_LOT_SQFT and own_area[i] > 0 and (
+                    inter / own_area[i] >= LIDAR_MIN_SHARE or (lot_sqft > 0 and inter / lot_sqft >= LIDAR_MIN_LOT_COVER)):
+                sizes.append(inter)
+        if sizes:
+            out.append((pin10, round(max(sizes), 1), round(sum(sizes), 1)))
+    if len(out) < MIN_LIDAR_LOTS:
+        raise RuntimeError(f"LiDAR put a structure on only {len(out)} lots: refusing to write")
+    return out
+
+
+STRUCTURE_TABLES = """
+    DROP TABLE IF EXISTS lidar_on_lot;
+    CREATE TABLE lidar_on_lot (pin10 TEXT PRIMARY KEY, max_sqft REAL NOT NULL, sum_sqft REAL NOT NULL);
+"""
+
+
+def _write_structures(db: sqlite3.Connection, permits: list[tuple], lidar_rows: list[tuple], lidar_fetched: str) -> dict:
+    db.execute("DELETE FROM points WHERE kind IN ('demolition_history', 'new_construction')")
+    db.executemany("INSERT INTO points VALUES (?, ?, ?, ?, ?)", permits)
+    db.executescript(STRUCTURE_TABLES)
+    db.executemany("INSERT INTO lidar_on_lot VALUES (?, ?, ?)", lidar_rows)
+    return {"demolition_history": sum(1 for p in permits if p[0] == "demolition_history"),
+            "new_construction_since_flight": sum(1 for p in permits if p[0] == "new_construction"),
+            "lidar_lots_with_structure": len(lidar_rows), "lidar_fetched": lidar_fetched}
+
+
+def _lidar_fetched(lidar: Path) -> str:
+    db = sqlite3.connect(f"file:{lidar}?mode=ro", uri=True)
+    try:
+        row = db.execute("SELECT value FROM meta WHERE name = 'fetched'").fetchone()
+    except sqlite3.Error:
+        row = None
+    finally:
+        db.close()
+    return row[0] if row else ""
+
+
+def fetch_structures(out: Path = DEFAULT_PATH, *, token: str = "", lidar: Path | None = None,
+                     ptaxsim: Path | None = None) -> dict:
+    """Add (or replace) only the Item 110 tables in an existing copy, in one transaction."""
+    if not out.exists():
+        raise FileNotFoundError(f"{out} missing: run without --structures-only first")
+    lidar = lidar or out.parent / "map_sources" / "county_buildings_2022.db"
+    ptaxsim = ptaxsim or out.parent / "ptaxsim.db"
+    for need in (lidar, ptaxsim):
+        if not need.exists() or need.stat().st_size == 0:
+            raise FileNotFoundError(f"{need} missing")
+    t0 = time.monotonic()
+    headers = {"X-App-Token": token} if token else {}
+    with httpx.Client(timeout=300, headers=headers) as client:
+        permits = _read_permit_history(client)
+    rows = lidar_on_lots(lidar, ptaxsim)
+    db = sqlite3.connect(out)
+    try:
+        with db:
+            summary = _write_structures(db, permits, rows, _lidar_fetched(lidar))
+            summary["structures_fetched"] = datetime.date.today().isoformat()
+            db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
+    finally:
+        db.close()
+    summary["seconds"] = round(time.monotonic() - t0, 1)
+    return summary
+
+
+def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | None = None,
+          lidar: Path | None = None, ptaxsim: Path | None = None) -> dict:
     """Read every source and write ``out`` atomically (beside it, then renamed over it)."""
     t0 = time.monotonic()
     today = today or datetime.date.today()
@@ -221,6 +367,7 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
         landmarks = _arcgis_polygons(client, 5, "1=1")
         districts = _arcgis_polygons(client, 6, "LANDMARK = 'Y'")
         addresses = _read_addresses(client)
+        permit_history = _read_permit_history(client)
     if len(fp_rows) < MIN_FOOTPRINTS:
         raise RuntimeError(f"{FOOTPRINTS} returned {len(fp_rows)} active footprints: refusing to write")
     if len(landmarks) < MIN_LANDMARKS:
@@ -266,6 +413,12 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
                    [("landmark", n, shapely.to_wkb(g)) for n, g in landmarks]
                    + [("landmark_district", n, shapely.to_wkb(g)) for n, g in districts])
     address_summary = _write_addresses(db, *addresses)
+    lidar = lidar or out.parent / "map_sources" / "county_buildings_2022.db"
+    ptaxsim = ptaxsim or out.parent / "ptaxsim.db"
+    if lidar.exists() and lidar.stat().st_size and ptaxsim.exists():
+        address_summary.update(_write_structures(db, permit_history, lidar_on_lots(lidar, ptaxsim), _lidar_fetched(lidar)))
+    else:  # the build then marks no lot empty (Item 110), with a warning
+        log.warning("lot sources: %s or %s missing; the Item 110 structure tables are not written", lidar, ptaxsim)
     summary = {
         "fetched": today.isoformat(), "footprints": len(fps), "footprints_with_stories": sum(1 for f in fps if f[1]),
         "footprints_skipped": bad, "vacant_cases": sum(1 for p in pts if p[0] == "vacant_case"),
@@ -284,11 +437,18 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--out", type=Path, default=DEFAULT_PATH)
     ap.add_argument("--addresses-only", action="store_true", help="add or replace only the address tables (Item 109)")
+    ap.add_argument("--structures-only", action="store_true", help="add or replace only the Item 110 tables")
+    ap.add_argument("--lidar", type=Path, default=None, help="default: map_sources/county_buildings_2022.db beside --out")
+    ap.add_argument("--ptaxsim", type=Path, default=None, help="default: ptaxsim.db beside --out")
     args = ap.parse_args()
     from backend.config import get_settings
     token = get_settings().socrata_app_token or ""
-    run = fetch_addresses if args.addresses_only else fetch
-    print(json.dumps(run(args.out, token=token), indent=1))
+    if args.addresses_only:
+        print(json.dumps(fetch_addresses(args.out, token=token), indent=1))
+    elif args.structures_only:
+        print(json.dumps(fetch_structures(args.out, token=token, lidar=args.lidar, ptaxsim=args.ptaxsim), indent=1))
+    else:
+        print(json.dumps(fetch(args.out, token=token, lidar=args.lidar, ptaxsim=args.ptaxsim), indent=1))
 
 
 if __name__ == "__main__":

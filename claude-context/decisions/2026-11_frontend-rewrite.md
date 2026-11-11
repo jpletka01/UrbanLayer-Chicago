@@ -1189,3 +1189,37 @@ States:
 - **Satellite or Street View imagery classification:** a model call per lot, no.
 
 *Revisit if:* a Street View sample of "empty" lots finds precision under 90%; the City refreshes its footprints (the demolition override may become unnecessary); or the County publishes newer LiDAR.
+
+**Built: step 2, the index fields (2026-11-11).**
+
+*New per-lot fields* (`lot_facts.mark_empty_land`, run by `index_backfill.enrich` on base lots, so both the full build and the in-place backfill apply it):
+- `land_kind`: vacant, city_owned, parking, side_yard, exempt, railroad, commercial, residential or other.
+- `structure`: empty, accessory, built, disagree, demolished_since_2022 or new_construction.
+- `empty_land: true`: only on the four kinds, when the lot is empty or demolished since 2022. The two demolition overrides apply only to those kinds.
+- On an empty vacant-class lot, the Assessor's building area from a demolished building is set aside as `bldg_sqft_assessor_old`, with `bldg_sqft` 0 and source `empty_lot`, so room to build reads the empty lot. A rerun restores it before deciding again.
+
+*Data path:* the build never loads the 1.25 million LiDAR outlines (about 1.4 GB). `lot_sources --structures-only` measures them against every lot outline once (72 s) and writes three things into `discovery_lot_sources.db`:
+- `lidar_on_lot`: one row per PIN10 with a structure, giving the largest and the total area on the lot;
+- every demolition permit since 2006;
+- every new-construction permit since the flight.
+
+A copy without the table marks no lot empty. `lot_sources` reads the County copy at `map_sources/county_buildings_2022.db` (Item 106) and PTAXSIM beside it.
+
+*Verified against the measurement:* a report-only backfill of the local citywide index gives the same empty counts per kind as above. Adding the 765 lots demolished since 2022, **74,093 lots get `empty_land`**:
+
+| Kind | Lots |
+|---|---|
+| Vacant | 27,962 |
+| Exempt | 23,661 |
+| Parking | 12,014 |
+| City-owned | 10,456 |
+
+6,268 old Assessor areas are set aside. Lots taxed as residential or commercial get a `structure` but never `empty_land`. The backfill prints `empty_land`, `structure_by_kind` and `assessor_area_set_aside`. Tests: `test_discovery_empty_land.py`.
+
+*Not yet:* hiding by land kind instead of by address (step 3), the "Empty land" filter and labels (steps 4-6). Nothing on the page reads these fields yet.
+
+**Production steps** (server, after merge; with Item 109's):
+1. The County LiDAR copy must exist at `backend/data/map_sources/county_buildings_2022.db` (Item 106's `building_tiles` fetch).
+2. `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --structures-only` (a few minutes; or the full `lot_sources` writes it).
+3. `... python -m backend.discovery.index_backfill`; check `empty_land` totals about 74k.
+4. Restart the backend.

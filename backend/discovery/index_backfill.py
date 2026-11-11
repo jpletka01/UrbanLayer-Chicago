@@ -29,7 +29,7 @@ from backend.discovery.assessor_address import AddressSources, verified_address
 from backend.discovery.assessor_address import apply as apply_assessor_address
 from backend.discovery.assessor_address import needs_tier as needs_assessor_tier
 from backend.discovery.lot_facts import (
-    NARROW_STRIP_FT, LotSources, derive_capacity, fill_building_area, lot_warnings, lot_width_ft, pending_rezoning_pin10s,
+    NARROW_STRIP_FT, LotSources, derive_capacity, mark_empty_land, fill_building_area, lot_warnings, lot_width_ft, pending_rezoning_pin10s,
 )
 from backend.discovery.lot_sources import DEFAULT_PATH as SOURCES_PATH
 
@@ -89,6 +89,8 @@ def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set
             attrs["lot_width_ft"] = width
             if width < NARROW_STRIP_FT:
                 attrs["narrow_strip"] = True
+    if lot is not None:
+        mark_empty_land(attrs, lot, pin10, src)  # Item 110: before the building area, which it may set aside
     from backend.discovery.index_build import unusual_rule
     attrs["unusual"] = unusual_rule(attrs)
     if attrs.get("bldg_sqft_source") in ("footprint", "city_land_inventory"):  # a rerun recomputes these
@@ -148,6 +150,14 @@ def apply_assessor_addresses(rows: list[tuple], lots: dict[str, Any], sources: P
         apply_assessor_address(attrs, address)
         out[reason] += 1
     log.info("discovery index: Assessor address tier %s", dict(out))
+    return out
+
+
+def _structure_by_kind(rows: list[tuple]) -> dict[str, collections.Counter]:
+    out: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
+    for r in rows:
+        if r[3].get("land_kind"):
+            out[r[3]["land_kind"]][r[3].get("structure") or "unknown"] += 1
     return out
 
 
@@ -240,6 +250,9 @@ def main() -> None:
     warn = collections.Counter(k for r in rows for k in r[3] if k.startswith("warn_"))
     print(json.dumps({"before": before, "after": after, "warnings": warn,
                       "approximate_addresses": {"before": approx_before, "after": approximate()},
+                      "empty_land": dict(collections.Counter(r[3]["land_kind"] for r in rows if r[3].get("empty_land"))),
+                      "structure_by_kind": {k: dict(v) for k, v in _structure_by_kind(rows).items()},
+                      "assessor_area_set_aside": sum(1 for r in rows if r[3].get("bldg_sqft_source") == "empty_lot"),
                       "seconds": round(time.monotonic() - t0, 1)}, indent=1))
     if args.report_only:
         return
