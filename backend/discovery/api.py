@@ -102,6 +102,7 @@ class ResultRow(BaseModel):
     # What the land is and whether it is physically empty (Item 110): vacant, city_owned, parking, exempt, ...
     land_kind: str | None = None
     empty_land: bool | None = None
+    structure: str | None = None  # what stands on it: empty, accessory (garage or shed only), built, ...
     community_area: int | None = None
     land_use: str | None = None
     parcel_class: str | None = Field(default=None, alias="class")
@@ -290,6 +291,7 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         address_source=g("address_source"),
         land_kind=g("land_kind"),
         empty_land=g("empty_land"),
+        structure=g("structure"),
         community_area=g("community_area") or _community_area_of(parcel),
         land_use=g("land_use_class"),
         # Display reads the REAL assessed value (exempt/$0 included); only the sort key

@@ -1181,6 +1181,7 @@
       "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
       "now": {
         "empty": "Terreno baldío",
+        "shed": "solo con cochera o cobertizo",
         "emptyKind": {
           "vacant": "Terreno baldío",
           "city_owned": "Terreno baldío de la Ciudad",
@@ -1365,7 +1366,7 @@
     "f": {
       "empty_land": {
         "name": "Terreno vacío",
-        "hint": "Hoy no hay nada construido: terrenos baldíos, de la Ciudad, estacionamientos y terrenos exentos.",
+        "hint": "Hoy no hay nada construido, salvo a lo más una cochera o un cobertizo: terrenos baldíos, de la Ciudad, estacionamientos y terrenos exentos.",
         "on": "Solo terreno vacío",
         "tech": "Sin edificio en las huellas de la Ciudad ni en el LiDAR 2022 del Condado, tras los permisos de demolición y de obra nueva"
       },

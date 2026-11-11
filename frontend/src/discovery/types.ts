@@ -208,6 +208,8 @@ export interface ResultRow {
   land_kind?: string | null;
   /** Physically empty (no building in the City's footprints or the County's 2022 LiDAR), on the four kinds only. */
   empty_land?: boolean | null;
+  /** What stands on it (Item 110): "accessory" = a garage or shed only. */
+  structure?: string | null;
   community_area: number | null;
   land_use: string | null;
   class: string | null;

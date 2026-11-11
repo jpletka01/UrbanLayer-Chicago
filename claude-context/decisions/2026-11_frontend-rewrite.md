@@ -1270,3 +1270,19 @@ Tests: `discoveryModel.test.ts` (PIN parsing, the quick filter), `LotCard.test.t
    - Test: `DiscoveryNextPage.test.tsx` "filters keep the map in view...".
 
 **Owner approved on localhost (2026-11-11):** the Empty land filter, the labels, PIN search and both map fixes. Still open, for him: should lots with only a garage or shed (`structure: accessory`) count as empty land?
+
+**A garage or shed alone counts as empty land (owner, 2026-11-11).** Asked whether a lot with only a garage or shed is different in practice, the code answers it is easier to clear. Table 14A-12-1204.2 lists "Wrecking detached private garage or carport" as a stand-alone permit with no drawings and no zoning fee, at $125 (our code text, March 2026 vintage). A building's demolition is a full wrecking permit.
+
+`empty_land` now includes `structure: accessory` (every structure under 700 sq ft) on the four kinds. The card says "Empty lot, garage or shed only", rows carry `structure`, and the filter's help says "at most a garage or shed".
+
+| Kind | Garage-or-shed lots added |
+|---|---|
+| Vacant | 1,367 |
+| Exempt | 656 |
+| Parking | 541 |
+| City-owned | 170 |
+| **Total** | **2,734** |
+
+On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3,345 strips under 16 ft stay hidden). The stale-area fix now covers 6,524 lots, up from 6,268, because empty vacant lots with a garage get it too. 2626 S Troy (16-25-300-030) is now empty land.
+
+*Not measured:* the owner's blind check sampled only "empty" lots. The 2,734 garage-or-shed lots carry the accessory rule's own error: in his M4 labels, 4 of the 35 empty lots read as accessory because of a neighbor's garage. 12,416 lots taxed as residential have only a garage or shed and stay out, under the four-kind rule. *Revisit if* a check of the accessory lots finds real buildings.

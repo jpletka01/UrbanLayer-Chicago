@@ -24,6 +24,12 @@ describe("LotCard: empty land", () => {
     expect(screen.getByText(/1924/)).toBeTruthy();
   });
 
+  it("says when the empty lot has a garage or shed", () => {
+    render(<LotCard row={{ ...base, land_use: "vacant", empty_land: true, land_kind: "vacant", structure: "accessory" } as ResultRow}
+      hoodName={null} onOpen={() => {}} />);
+    expect(screen.getByText(/Empty lot, garage or shed only/)).toBeTruthy();
+  });
+
   it("falls back to the tax class on an index built before the measurement", () => {
     render(<LotCard row={{ ...base, land_use: "vacant" } as ResultRow} hoodName={null} onOpen={() => {}} />);
     expect(screen.getByText(/Empty lot/)).toBeTruthy();

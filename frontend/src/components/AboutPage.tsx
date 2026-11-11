@@ -2976,6 +2976,26 @@ Consumers → Property Profile (renders pin + confidence badge)
             repaired or counted, never fatal (Item 68).
           </P>
 
+          <Sub>Finding empty land when the tax roll and the address both mislead</Sub>
+          <P>
+            A builder looking for an empty lot had no good way to find one. Discovery called a lot vacant from the
+            Assessor's tax class, and gave a lot with no address of its own the nearest address on record, marked
+            approximate. That address was always a neighbor's: labeling lots, the owner was led to the house next door.
+            The Assessor keeps its own address for every PIN, but it includes placeholders, so it is shown only where it
+            lands on the lot: the City's street centerlines must put the number on that side of that block, within six
+            numbers of where the lot sits. On 2,000 lots with known addresses the check kept 96.4% of the real ones and
+            let through 0.25% of addresses five lots away. It cannot tell next-door lots apart, so the Profile is
+            opened by PIN and never searches records by that address. For &ldquo;empty&rdquo;, two independent building
+            sources are checked against every lot outline: the City's footprints and the County's 2022 LiDAR. They agree
+            on 92.4% of lots. Where they disagree, demolition permits settle most cases: 74.5% of vacant-class lots
+            whose City footprint survives with nothing in the LiDAR have a demolition permit, against 7.6% of houses.
+            The tax class alone missed about 10,000 City-owned and 12,000 parking lots, and 15% of vacant-class lots
+            weren't empty. A blind check by the owner, in Street View, found 43 of 43 empty on vacant, City-owned,
+            parking and exempt land, but only 6 of 13 on lots taxed as houses or shops, so only those four kinds are
+            offered. The LiDAR is measured against every lot once into a small table, so the monthly build never loads
+            1.25 million outlines (Items 109–110).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}

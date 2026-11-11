@@ -1181,6 +1181,7 @@
       "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone",
       "now": {
         "empty": "Empty lot",
+        "shed": "garage or shed only",
         "emptyKind": {
           "vacant": "Empty lot",
           "city_owned": "Empty lot, City-owned",
@@ -1365,7 +1366,7 @@
     "f": {
       "empty_land": {
         "name": "Empty land",
-        "hint": "Nothing stands on it today: vacant, City-owned, parking and tax-exempt land.",
+        "hint": "Nothing stands on it today but at most a garage or shed: vacant, City-owned, parking and tax-exempt land.",
         "on": "Only empty land",
         "tech": "No building in the City's footprints or the County's 2022 LiDAR, after demolition and new-construction permits"
       },
