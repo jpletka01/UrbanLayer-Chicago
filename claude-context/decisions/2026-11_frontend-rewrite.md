@@ -903,7 +903,7 @@ Notes from the owner's first walkthrough of the Phase 1 prototype. **Outcome: th
 
 ## Item 104: Phase 6, Discovery on the one map (2026-11-10)
 
-**Status: built on `feat/ui-next-phase-6-discovery` (cut from History's branch, PR #216, unmerged: owner's call), checked locally; waiting for the owner's localhost review. No route flips (Item 88).**
+**Status: approved by the owner ("Thumbs up", 2026-11-10) after five localhost review rounds (below), on `feat/ui-next-phase-6-discovery` (cut from History's branch, PR #216, unmerged: merge = deploy, the owner's call; the two merge together). No route flips (Item 88). Phase 6 is complete with this route.**
 
 **The owner's calls before the build (2026-11-10), from a mockup of the Explore map, the list cards and two phone layouts:**
 - **Quick filters:** Vacant · Near the L (½ mi) · Lot 5,000+ sq ft · Sold in 2 years · In a TIF (all 68-100% known).
