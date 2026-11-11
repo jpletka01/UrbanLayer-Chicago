@@ -313,7 +313,10 @@ def mark_empty_land(attrs: dict[str, Any], lot, pin10: str, src: LotSources) -> 
     if state is None:
         return
     attrs["structure"] = state
-    if kind in EMPTY_LAND_KINDS and state in ("empty", "demolished_since_2022"):
+    # A garage or shed alone counts (owner, 2026-11-11): wrecking a detached private garage or carport is a stand-alone
+    # $125 permit with no drawings and no zoning fee (Table 14A-12-1204.2), not a building's demolition. ``structure``
+    # keeps the difference for the card.
+    if kind in EMPTY_LAND_KINDS and state in ("empty", "demolished_since_2022", "accessory"):
         attrs["empty_land"] = True
         if kind == "vacant" and attrs.get("bldg_sqft") and attrs.get("bldg_sqft_source") == "assessor":
             attrs["bldg_sqft_assessor_old"] = attrs["bldg_sqft"]

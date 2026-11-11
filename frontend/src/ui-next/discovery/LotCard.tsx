@@ -68,7 +68,8 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0 }: {
   // What's there now, in a few words: the use, the year, the size. "Empty" is what stands on the lot (Item 110: the
   // City's footprints and the County's 2022 LiDAR), not the tax class; an index built before it falls back to the class.
   const empty = row.empty_land != null ? row.empty_land === true : row.land_use === "vacant";
-  const use = empty ? t(`discovery.card.now.emptyKind.${row.land_kind ?? "vacant"}`, { defaultValue: t("discovery.card.now.empty") })
+  const emptyWords = empty ? t(`discovery.card.now.emptyKind.${row.land_kind ?? "vacant"}`, { defaultValue: t("discovery.card.now.empty") }) : null;
+  const use = empty ? (row.structure === "accessory" ? `${emptyWords}, ${t("discovery.card.now.shed")}` : emptyWords)
     : row.land_use && row.land_use !== "vacant" ? t(`discovery.card.now.${row.land_use}`, { defaultValue: row.land_use.replace(/_/g, " ") })
     : null;
   // An empty lot's year built is a demolished building's record: left out.
