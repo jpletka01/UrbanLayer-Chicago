@@ -1687,7 +1687,19 @@
     "familiesNote": "Darker = more intensive (taller, denser)",
     "familiesInView": "Zoning colors in view",
     "inView": "{{count}} of {{total}} in view",
-    "show": "Show"
+    "show": "Show",
+    "view3d": {
+      "on": "3D",
+      "off": "2D",
+      "show3d": "Show buildings in 3D",
+      "show2d": "Back to the flat map",
+      "controls": "Turn and tilt the map",
+      "turnLeft": "Turn left",
+      "turnRight": "Turn right",
+      "tiltMore": "Tilt more",
+      "tiltLess": "Tilt less",
+      "reset": "Reset the angle"
+    }
   },
   "term": {
     "what": "What is {{term}}?",

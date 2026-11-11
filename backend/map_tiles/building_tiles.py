@@ -99,8 +99,120 @@ def city_outline():
     return shapely.union_all([shape(f["geometry"]) for f in feats])
 
 
-def build_features(src: Path) -> tuple[list[Feature], dict[str, int]]:
-    """One extrusion feature per County building inside the city, height in whole feet (``h``)."""
+# A County outline is drawn from LiDAR building points clustered into polygons, so touching buildings can merge into
+# one outline with one height: its highest point. Where a tall outline (SPLIT_MIN_FT and up) covers two or more of the
+# City's footprints and at least one has stories, it is split along them (owner's review, 616 W Diversey: a one-story
+# building beside a 16-story tower was drawn 173 ft tall). The footprint with the most stories keeps the measured
+# height; one with stories gets a height from them (`stories_ft`, capped at the measured one); one without is drawn
+# low and marked not measured. What is left of the outline outside the footprints keeps the measured height when it
+# is a real piece (REMAINDER_MIN_SQFT after a 1.5 m opening) touching the tallest footprint, is drawn low and not
+# measured when it is a real piece elsewhere, and is dropped as slivers otherwise.
+SPLIT_MIN_FT = 60.0
+UNMEASURED_FT = 12
+REMAINDER_MIN_SQFT = 2_000
+_SQFT_PER_DEG2 = 364_000 * 271_000  # Chicago: feet per degree of latitude x of longitude
+_OPEN_DEG = 1.4e-5  # about 1.5 m
+
+
+def stories_ft(stories: int) -> float:
+    """A height in feet from a story count: the inverse of Item 105's fit (3 ft + 14.75 ft a story up to 2 stories,
+    14 ft a story above)."""
+    return 3 + 14.75 * stories if stories <= 2 else 14.0 * stories
+
+
+def _polys(g):
+    if g is None or g.is_empty:
+        return None
+    if not g.is_valid:
+        g = shapely.make_valid(g)
+    parts = [p for p in getattr(g, "geoms", [g]) if p.geom_type in ("Polygon", "MultiPolygon")]
+    if not parts:
+        return None
+    g = shapely.union_all(parts)
+    return None if g.is_empty else g
+
+
+def _load_city(path: Path | None):
+    """The City's footprints (``lot_sources`` copy): their outlines, stories and a tree of their interior points."""
+    if path is None or not path.exists():
+        return None
+    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        rows = db.execute("SELECT stories, wkb FROM footprints").fetchall()
+    finally:
+        db.close()
+    geoms = shapely.from_wkb([r[1] for r in rows])
+    reps = shapely.point_on_surface(geoms)
+    return geoms, [r[0] for r in rows], shapely.STRtree(reps)
+
+
+def split_outline(outline, height: float, members: list[tuple[object, int | None]]) -> list[tuple[object, float, str]]:
+    """``outline`` (a County polygon) split along the City ``members`` (outline, stories) inside it:
+    [(piece, height_ft, kind)], kind "l" measured, "s" from stories, "u" not measured. Unsplit when it doesn't apply."""
+    known = [s for _, s in members if s]
+    if height < SPLIT_MIN_FT or len(members) < 2 or not known:
+        return [(outline, height, "l")]
+    anchor = max(range(len(members)), key=lambda i: ((members[i][1] or 0), shapely.area(members[i][0])))
+    out: list[tuple[object, float, str]] = []
+    taken = []
+    anchor_piece = None
+    for i, (g, st) in enumerate(members):
+        piece = _polys(shapely.intersection(_polys(g), outline))
+        if piece is None:
+            continue
+        taken.append(piece)
+        if i == anchor:
+            anchor_piece = piece
+            out.append((piece, height, "l"))
+        elif st:
+            out.append((piece, min(height, stories_ft(st)), "s"))
+        else:
+            out.append((piece, float(UNMEASURED_FT), "u"))
+    rest = _polys(shapely.difference(outline, shapely.union_all(taken))) if taken else outline
+    if rest is not None:
+        rest = _polys(rest.buffer(-_OPEN_DEG).buffer(_OPEN_DEG))
+        for p in (getattr(rest, "geoms", [rest]) if rest is not None else []):
+            if shapely.area(p) * _SQFT_PER_DEG2 < REMAINDER_MIN_SQFT:
+                continue
+            # Touching the tallest footprint: part of it (a newer wing, an outline drawn wider). Elsewhere it is one
+            # of the low buildings the City didn't map: not measured.
+            near = anchor_piece is not None and shapely.distance(p, anchor_piece) <= _OPEN_DEG
+            out.append((p, height, "l") if near else (p, float(UNMEASURED_FT), "u"))
+    return out or [(outline, height, "l")]
+
+
+def _zoning_lookup(zoning: list[dict] | None):
+    """A function: points -> (family, level) per point, from the City's zoning districts (layer 1)."""
+    if not zoning:
+        return None
+    from backend.map_tiles.zoning_tiles import family, level
+
+    geoms, props = [], []
+    for f in zoning:
+        g = _polys(shape(f["geometry"])) if f.get("geometry") else None
+        if g is None:
+            continue
+        zc = ((f.get("properties") or {}).get("ZONE_CLASS") or "").strip()
+        geoms.append(g)
+        props.append((family(zc), level(zc)))
+    tree = shapely.STRtree(geoms)
+
+    def look(points) -> list[tuple[str, str] | None]:
+        res: list[tuple[str, str] | None] = [None] * len(points)
+        pi, gi = tree.query(points, predicate="within")
+        for a, b in zip(pi, gi):
+            if res[a] is None:
+                res[a] = props[b]
+        return res
+
+    return look
+
+
+def build_features(src: Path, *, city: Path | None = None,
+                   zoning: list[dict] | None = None) -> tuple[list[Feature], dict[str, int]]:
+    """One extrusion feature per County building inside the city (split along the City's footprints where a tall
+    outline merged several), with ``h`` = height in whole feet, ``m`` = how it is known (l measured, s from stories,
+    u not measured) and the zoning ``f`` family / ``l`` level under it (the style tints by family)."""
     db = sqlite3.connect(f"file:{src}?mode=ro", uri=True)
     try:
         rows = db.execute("SELECT height_ft, wkb FROM buildings").fetchall()
@@ -109,20 +221,41 @@ def build_features(src: Path) -> tuple[list[Feature], dict[str, int]]:
     geoms = shapely.from_wkb([r[1] for r in rows])
     heights = np.array([r[0] for r in rows], dtype=float)
     inside = shapely.contains_xy(city_outline(), *shapely.get_coordinates(shapely.point_on_surface(geoms)).T)
-    counts = {"in_box": len(rows), "in_city": int(inside.sum()), "invalid_fixed": 0, "dropped_empty": 0}
+    counts = {"in_box": len(rows), "in_city": int(inside.sum()), "invalid_fixed": 0, "dropped_empty": 0,
+              "split_outlines": 0, "pieces_measured": 0, "pieces_from_stories": 0, "pieces_not_measured": 0,
+              "zoning_unmatched": 0}
     if counts["in_city"] < MIN_IN_CITY:
         raise RuntimeError(f"County buildings: {counts['in_city']} inside the city, expected {MIN_IN_CITY}+")
-    feats: list[Feature] = []
+    cityfp = _load_city(city)
+    pieces: list[tuple[object, float, str]] = []
     for g, h in zip(geoms[inside], heights[inside]):
         if not g.is_valid:
-            g = shapely.make_valid(g)
             counts["invalid_fixed"] += 1
-            polys = [p for p in getattr(g, "geoms", [g]) if p.geom_type in ("Polygon", "MultiPolygon")]
-            g = shapely.union_all(polys) if polys else None
-        if g is None or g.is_empty:
+        g = _polys(g)
+        if g is None:
             counts["dropped_empty"] += 1
             continue
-        feats.append(Feature(LAYER, to_mercator(g), {"h": str(int(round(h)))}, MIN_ZOOM))
+        parts = [(g, h, "l")]
+        if cityfp is not None and h >= SPLIT_MIN_FT:
+            cg, cst, tree = cityfp
+            idx = tree.query(g, predicate="contains")
+            if len(idx) >= 2:
+                parts = split_outline(g, h, [(cg[i], cst[i]) for i in idx])
+                if len(parts) > 1:
+                    counts["split_outlines"] += 1
+        pieces.extend(parts)
+    look = _zoning_lookup(zoning)
+    zones = look(shapely.point_on_surface([p[0] for p in pieces])) if look else [None] * len(pieces)
+    kind_key = {"l": "pieces_measured", "s": "pieces_from_stories", "u": "pieces_not_measured"}
+    feats: list[Feature] = []
+    for (g, h, kind), z in zip(pieces, zones):
+        counts[kind_key[kind]] += 1
+        props = {"h": str(int(round(h))), "m": kind}
+        if z:
+            props["f"], props["l"] = z
+        else:
+            counts["zoning_unmatched"] += 1
+        feats.append(Feature(LAYER, to_mercator(g), props, MIN_ZOOM))
     return feats, counts
 
 
@@ -132,10 +265,19 @@ def build_file(out: Path, *, offline: bool = False, minzoom: int = MIN_ZOOM, max
     if not offline or not src.exists():
         src.parent.mkdir(parents=True, exist_ok=True)
         log.info("County buildings: fetched %d", fetch(src))
-    feats, counts = build_features(src)
+    city = out.parent / "discovery_lot_sources.db"
+    if not city.exists():
+        log.warning("County buildings: %s missing; tall outlines are not split along the City's footprints", city)
+    zoning = None
+    zpath = out.parent / "map_sources" / "zoning_layer1.geojson"
+    if zpath.exists():
+        zoning = json.loads(zpath.read_text())["features"]
+    else:
+        log.warning("County buildings: %s missing; buildings are not tinted by zoning", zpath)
+    feats, counts = build_features(src, city=city, zoning=zoning)
     stats = write_mbtiles(
         out, feats, name="map_buildings", minzoom=minzoom, maxzoom=maxzoom, layer_order=[LAYER],
-        fields={LAYER: {"h": "Number"}},
+        fields={LAYER: {"h": "Number", "m": "String", "f": "String", "l": "String"}},
         extra_meta={"built_at": date.today().isoformat(), "counts": json.dumps(counts),
                     "source": SERVICE.rsplit("/query", 1)[0], "vintage": "2022"},
         log=log,

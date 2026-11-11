@@ -9,7 +9,7 @@ import type { GeoJSONSource, Map as MLMap, MapGeoJSONFeature } from "maplibre-gl
 // MapLibre finds its worker beside its own file, which Vite's bundling moves: point it at the worker explicitly.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { LoaderCircle, LocateFixed, MapPinOff, PersonStanding, RotateCw, SquareArrowOutUpRight, X } from "lucide-react";
+import { Box, ChevronDown, ChevronUp, Compass, LoaderCircle, LocateFixed, MapPinOff, PersonStanding, RotateCcw, RotateCw, Square, SquareArrowOutUpRight, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, fetchLotOutline, loadMapInfo, streetViewUrl } from "./mapInfo";
@@ -24,7 +24,8 @@ import {
   GROUPS, buildStyle, lotPinImage, modeOpacity, themePaint, type GroupId, type LayerMode, type MapTiles, type Theme,
 } from "./mapStyle";
 import { MapKey, type GroupState } from "./MapKey";
-import { enable3d, repaint3d, wants3d } from "./buildings3d";
+import { BEARING_STEP, VIEW_3D, can3d, ensure3dLayers, nextPitch, repaint3d, set3d } from "./buildings3d";
+import { useIsPhone } from "../../lib/useIsPhone";
 import { permitWords } from "../profile/neighborhoodModel";
 
 export interface MapView {
@@ -32,6 +33,8 @@ export interface MapView {
   id: string;
   zoom: number;
   modes: Record<GroupId, LayerMode>;
+  /** Open in 3D (Build, owner 2026-11-11); the 2D/3D button changes it for this tab. */
+  threeD?: boolean;
   /** Frame the lot and this group's points when the view opens (and when they arrive late), instead of the
       fixed zoom; the zoom stays the fallback when the group has no points (Money: the nearby sales, Item 99). */
   fit?: GroupId;
@@ -110,6 +113,9 @@ export function NextMap({
   // The active tab's modes, until the visitor changes one (held for that tab only).
   const [override, setOverride] = useState<{ viewId: string; modes: Record<GroupId, LayerMode> } | null>(null);
   const modes = override && override.viewId === view.id ? override.modes : view.modes;
+  // 3D (M6, Item 106): the tab's default until the visitor presses 2D/3D; on a phone only the expanded map.
+  const phone = useIsPhone();
+  const [override3d, setOverride3d] = useState<{ viewId: string; on: boolean } | null>(null);
   const [bigMap, setBigMap] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<GroupId, number>>>({});
   const [families, setFamilies] = useState<string[]>([]);
@@ -185,12 +191,9 @@ export function NextMap({
         if (cancelled) return;
         const el = m.getContainer();
         setBigMap(el.clientHeight >= 440 && el.clientWidth >= 640);
+        if (info.buildings) ensure3dLayers(m, themeRef.current, apiOrigin(), info.buildings);
+        if (import.meta.env.DEV) (window as unknown as { __nextMap?: MLMap }).__nextMap = m;
         setReady(true);
-        // M6 spike (Item 106): development-only 3D buildings, `?map3d=1`.
-        if (wants3d() && info.buildings) {
-          enable3d(m, themeRef.current, apiOrigin(), info.buildings);
-          (window as unknown as { __nextMap?: MLMap }).__nextMap = m;
-        }
       });
       mapRef.current = m;
     });
@@ -247,11 +250,41 @@ export function NextMap({
     map.on("moveend", check);
     return () => { map.off("moveend", check); };
   }, [ready, lat, lon, view.zoom]);
+  const allow3d = can3d(!!tiles?.buildings, phone, expanded);
+  const want3d = override3d && override3d.viewId === view.id ? override3d.on : !!view.threeD;
+  const on3d = allow3d && want3d;
+  const was3d = useRef(false);
+  const on3dRef = useRef(on3d);
+  on3dRef.current = on3d;
+  /** The camera angle a view move keeps: the 3D angle while 3D is on, else flat and north-up. */
+  const angle = () => (on3dRef.current ? VIEW_3D : { pitch: 0, bearing: 0 });
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !tiles?.buildings) return;
+    if (on3d === was3d.current) return;
+    was3d.current = on3d;
+    set3d(map, on3d, !reducedMotion());
+  }, [on3d, ready, tiles]);
+  // Presses in quick succession build on each other: each starts from where the last one is heading (a new easeTo
+  // cancels the one in flight), then the target is forgotten once the camera stops.
+  const camTarget = useRef<{ bearing: number; pitch: number } | null>(null);
+  const aim = (next: (from: { bearing: number; pitch: number }) => { bearing: number; pitch: number }, ms: number) => {
+    const m = mapRef.current;
+    if (!m) return;
+    const to = next(camTarget.current ?? { bearing: m.getBearing(), pitch: m.getPitch() });
+    camTarget.current = to;
+    m.once("moveend", () => { if (camTarget.current === to) camTarget.current = null; });
+    m.easeTo({ ...to, duration: reducedMotion() ? 0 : ms });
+  };
+  const turn = (deg: number) => aim((c) => ({ ...c, bearing: c.bearing + deg }), 400);
+  const tilt = (dir: 1 | -1) => aim((c) => ({ ...c, pitch: nextPitch(c.pitch, dir) }), 300);
+  const reset3d = () => aim(() => ({ ...VIEW_3D }), 600);
+
   const backToProperty = () => {
     const map = mapRef.current;
     if (!map) return;
     if (view.fit && fitGroup(view.fit)) return;
-    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom };
+    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom, ...angle() };
     if (reducedMotion()) map.jumpTo(opts); else map.easeTo({ ...opts, duration: 600 });
   };
 
@@ -284,7 +317,7 @@ export function NextMap({
     // A framing view frames once here; the effect below frames it instead if its points arrive later.
     if (view.fit && fitGroup(view.fit)) { fittedFor.current = view.id; return; }
     fitHome.current = null;
-    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom };
+    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom, ...angle() };
     if (reducedMotion()) map.jumpTo(opts); else map.easeTo({ ...opts, duration: 600 });
     // view.id is the trigger; the modes object changes identity with it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -484,7 +517,7 @@ export function NextMap({
     const width = map.getContainer().clientWidth;
     const right = Math.min(300, Math.round(width / 3));
     fitHome.current = "pending";
-    map.fitBounds([[w, so], [e, n]], { padding: { top: 56, bottom: 44, left: 48, right }, maxZoom: 17, duration: reducedMotion() ? 0 : 600 });
+    map.fitBounds([[w, so], [e, n]], { padding: { top: 56, bottom: 44, left: 48, right }, maxZoom: 17, ...angle(), duration: reducedMotion() ? 0 : 600 });
     return true;
   }
   const showGroup = (g: GroupId) => { fitGroup(g); };
@@ -569,6 +602,40 @@ export function NextMap({
           <LocateFixed aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t("map.back")}
         </button>
+      )}
+      {ready && allow3d && (
+        // The expanded map stacks the controls above its corner button; the short page band lines them up in a row
+        // beside it, so they never reach the key.
+        <div className={`absolute z-10 flex gap-1.5 ${expanded ? "bottom-14 right-2 flex-col items-end" : "bottom-2 right-12 flex-row items-end"}`} data-testid="map-3d-controls">
+          {on3d && (
+            <div className={`flex overflow-hidden rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] ${expanded ? "flex-col" : "flex-row"}`} role="group" aria-label={t("map.view3d.controls")}>
+              {([
+                ["turnLeft", RotateCcw, () => turn(-BEARING_STEP)],
+                ["turnRight", RotateCw, () => turn(BEARING_STEP)],
+                ["tiltMore", ChevronUp, () => tilt(1)],
+                ["tiltLess", ChevronDown, () => tilt(-1)],
+                ["reset", Compass, reset3d],
+              ] as const).map(([key, Icon, onClick]) => (
+                <button key={key} type="button" onClick={onClick} aria-label={t(`map.view3d.${key}`)} title={t(`map.view3d.${key}`)}
+                  className="grid h-8 w-8 place-items-center hover:bg-nx-block touch-target" data-testid={`map-3d-${key}`}>
+                  <Icon aria-hidden className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setOverride3d({ viewId: view.id, on: !on3d })}
+            aria-pressed={on3d}
+            aria-label={on3d ? t("map.view3d.show2d") : t("map.view3d.show3d")}
+            title={on3d ? t("map.view3d.show2d") : t("map.view3d.show3d")}
+            className="flex h-8 items-center gap-1 rounded-lg bg-nx-page px-2 text-caption font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
+            data-testid="map-3d-toggle"
+          >
+            {on3d ? <Square aria-hidden className="h-4 w-4" strokeWidth={1.5} /> : <Box aria-hidden className="h-4 w-4" strokeWidth={1.5} />}
+            {on3d ? t("map.view3d.off") : t("map.view3d.on")}
+          </button>
+        </div>
       )}
       {picked && <PickedCard picked={picked} onClose={() => setPicked(null)} lang={i18n.language} boxH={boxH} />}
     </div>

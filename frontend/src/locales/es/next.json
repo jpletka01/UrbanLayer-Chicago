@@ -1687,7 +1687,19 @@
     "familiesNote": "Más oscuro = más intensivo (más alto, más denso)",
     "familiesInView": "Colores de zonificación a la vista",
     "inView": "{{count}} de {{total}} a la vista",
-    "show": "Mostrar"
+    "show": "Mostrar",
+    "view3d": {
+      "on": "3D",
+      "off": "2D",
+      "show3d": "Ver los edificios en 3D",
+      "show2d": "Volver al mapa plano",
+      "controls": "Girar e inclinar el mapa",
+      "turnLeft": "Girar a la izquierda",
+      "turnRight": "Girar a la derecha",
+      "tiltMore": "Inclinar más",
+      "tiltLess": "Inclinar menos",
+      "reset": "Restablecer el ángulo"
+    }
   },
   "term": {
     "what": "¿Qué es {{term}}?",

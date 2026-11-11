@@ -57,7 +57,7 @@ type TabId = "overview" | "build" | "money" | "neighborhood" | "history";
     fully on). The visitor's On / Off choices hold until the tab changes. */
 const MAP_VIEWS: Record<TabId, MapView> = {
   overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", building: "off", transit: "on", streets: "on" } },
-  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "on", streets: "on" } },
+  build: { id: "build", zoom: 15.6, threeD: true, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "on", streets: "on" } },
   // Money: the nearby market sales around the lot (brief: "market sales within ¼ mile"); zoning off so the sale pins
   // read (Item 99). It opens framed on the lot and its sales (`fit`), which a widened search can find half a mile out.
   money: { id: "money", zoom: 15.2, fit: "sales", modes: { zoning: "off", parcels: "on", sales: "on", building: "off", transit: "off", streets: "on" } },

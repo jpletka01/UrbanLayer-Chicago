@@ -38,6 +38,7 @@ def test_keeps_city_buildings_rounds_height_and_repairs_outlines(tmp_path, monke
     assert counts["in_box"] == 3 and counts["in_city"] == 2
     assert counts["invalid_fixed"] == 1 and counts["dropped_empty"] == 0
     assert sorted(f.props["h"] for f in feats) == ["12", "29"]
+    assert all(f.props["m"] == "l" and "f" not in f.props for f in feats)  # no zoning given: untinted
     assert all(f.layer == "building" and f.minzoom == building_tiles.MIN_ZOOM for f in feats)
 
 
@@ -73,3 +74,51 @@ def test_fetch_refuses_a_short_read(tmp_path):
         with pytest.raises(RuntimeError, match="expected"):
             building_tiles.fetch(tmp_path / "x.db", client=c)
     assert not (tmp_path / "x.db").exists()
+
+
+# ---------------------------------------------------------------- merged outlines (owner's review, 616 W Diversey)
+
+def _row(x0, x1, y0=LAT, y1=LAT + 0.0003):
+    return box(LON + x0, y0, LON + x1, y1)
+
+
+def test_a_tall_outline_is_split_along_the_city_footprints():
+    tower, low_known, low_unknown = _row(0, 0.0004), _row(0.0004, 0.0006), _row(0.0006, 0.0008)
+    outline = _row(0, 0.0008)
+    parts = building_tiles.split_outline(outline, 173.0, [(tower, 16), (low_known, 1), (low_unknown, None)])
+    by_kind = sorted((k, round(h)) for _, h, k in parts)
+    assert by_kind == [("l", 173), ("s", 18), ("u", building_tiles.UNMEASURED_FT)]
+
+
+def test_no_split_when_short_single_or_no_stories():
+    a, b = _row(0, 0.0004), _row(0.0004, 0.0008)
+    outline = _row(0, 0.0008)
+    assert len(building_tiles.split_outline(outline, 40.0, [(a, 3), (b, 1)])) == 1  # under SPLIT_MIN_FT
+    assert len(building_tiles.split_outline(outline, 173.0, [(a, 16)])) == 1  # one footprint
+    assert len(building_tiles.split_outline(outline, 173.0, [(a, None), (b, None)])) == 1  # nothing to anchor on
+
+
+def test_leftover_outline_keeps_the_height_only_beside_the_tower():
+    tower, low = _row(0, 0.0003), _row(0.0005, 0.0006)
+    # The outline covers both plus a wide gap between them (touching the tower) and a far piece past the low one.
+    outline = _row(0, 0.0009)
+    parts = building_tiles.split_outline(outline, 150.0, [(tower, 12), (low, 1)])
+    leftovers = [(round(h), k) for g, h, k in parts if not g.equals(shapely.intersection(tower, outline))
+                 and not g.equals(shapely.intersection(low, outline))]
+    assert (150, "l") in leftovers  # the gap touching the tower
+    assert (building_tiles.UNMEASURED_FT, "u") in leftovers  # the far piece
+
+
+def test_story_heights_follow_item_105s_fit():
+    assert building_tiles.stories_ft(1) == pytest.approx(17.75)
+    assert building_tiles.stories_ft(10) == 140
+
+
+def test_buildings_carry_the_zoning_family_under_them(tmp_path, monkeypatch):
+    monkeypatch.setattr(building_tiles, "MIN_IN_CITY", 1)
+    src = tmp_path / "src.db"
+    _source(src, [(30.0, _square(LON, LAT))])
+    zoning = [{"type": "Feature", "properties": {"ZONE_CLASS": "B3-2"}, "geometry": shapely.geometry.mapping(_square(LON, LAT, 0.001))}]
+    feats, counts = building_tiles.build_features(src, zoning=zoning)
+    assert feats[0].props["f"] == "business" and feats[0].props["m"] == "l"
+    assert counts["zoning_unmatched"] == 0
