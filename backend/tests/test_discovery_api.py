@@ -37,7 +37,7 @@ def test_registry_endpoint(client):
     assert r.status_code == 200
     body = r.json()
     assert body["version"]
-    assert len(body["filters"]) == 34
+    assert len(body["filters"]) == 35
     assert body["defaultSort"] == {"key": "assessed_value", "dir": "asc"}
     # PR4 critical default: the api fixture loads a snapshot with NO meta, so coverage is
     # "none" and populatedFields is empty — the page reads fully dormant, never "all".

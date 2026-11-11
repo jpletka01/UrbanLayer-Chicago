@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowRight, ChevronDown, Circle, House, List, LoaderCircle, Map as MapIcon, MapPin, Maximize2, Palette,
+  ArrowRight, ChevronDown, Circle, Hash, House, List, LoaderCircle, Map as MapIcon, MapPin, Maximize2, Palette,
   Receipt, Search, Shovel, Sprout, Store, Target, TrendingDown, TriangleAlert, X, type LucideIcon,
 } from "lucide-react";
 import { loadRegistry } from "../../discovery/registryClient";
@@ -28,16 +28,18 @@ import { STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
 import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
+import { fetchParcelRow } from "../../discovery/searchClient";
 import { LotCard } from "./LotCard";
 import { useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
 import {
-  DEFAULT_MEASURE, LOTS_MIN_ZOOM, foldComplexes, MEASURES, QUICK_FILTERS, RING_MILES, classifyQuery, placeRegion, placeSuggestions,
+  DEFAULT_MEASURE, LOTS_MIN_ZOOM, cardModel, foldComplexes, MEASURES, QUICK_FILTERS, RING_MILES, classifyQuery, parsePin, placeRegion,
+  placeSuggestions,
   type Place as AreaPlace,
   ROOM_SORT, measureSteps, quickFromPanel, quickPanel, ringMiles, ringRegion, type MeasureId, type QuickId,
 } from "./discoveryModel";
 
 type Focus = "map" | "list";
-interface Place { lat: number; lon: number; label: string }
+interface Place { lat: number; lon: number; label: string; /** Set when the place is a lot found by PIN. */ pin?: string }
 
 const numLocale = (lang: string) => (lang.startsWith("es") ? "es-MX" : "en-US");
 
@@ -155,6 +157,7 @@ export default function DiscoveryNextPage() {
   const [text, setText] = useState("");
   const submit = (raw = text) => {
     const kind = classifyQuery(raw, COMMUNITY_AREAS, hoods);
+    if (kind.kind === "pin") { pickPin(kind.pin); return; }
     if (kind.kind === "address") {
       getAutocomplete(raw).then((s) => { if (s[0]) pickAddress(s[0]); });
       return;
@@ -169,6 +172,19 @@ export default function DiscoveryNextPage() {
     setRing(null);
     moveTo({ center: [s.lon, s.lat], zoom: 16.4 });
     setFocus("map");
+  };
+  // A PIN goes straight to its lot (Item 110: a lot with no street address of its own is found by its PIN).
+  const [pinMissing, setPinMissing] = useState<string | null>(null);
+  const pickPin = (pin: string) => {
+    setPinMissing(null);
+    fetchParcelRow(pin, ROOM_SORT.key).then((row) => {
+      if (!row || row.lat == null || row.lon == null) { setPinMissing(pin); return; }
+      const label = row.address && !row.address.startsWith("~") ? cardModel(row).title : pin;
+      setPlace({ lat: row.lat, lon: row.lon, label, pin: row.pin });
+      setRing(null);
+      moveTo({ center: [row.lon, row.lat], zoom: 17.5 });
+      setFocus("map");
+    }).catch(() => setPinMissing(pin));
   };
   // A neighborhood or community area narrows the search on screen (its filters stay), never replaces it.
   const pickPlace = (place: AreaPlace) => {
@@ -255,7 +271,10 @@ export default function DiscoveryNextPage() {
       onPending={setBarPending} compact={phone} />
   ) : null;
   const searchBox = (
-    <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onPlace={pickPlace} hoods={hoods} busy={search.loading} disabled={!registry} />
+    <div className="relative min-w-0 flex-1">
+      <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onPlace={pickPlace} hoods={hoods} busy={search.loading} disabled={!registry} />
+      {pinMissing && <p role="status" className="mt-1 text-caption nx-muted">{t("discovery.pinMissing", { pin: pinMissing })}</p>}
+    </div>
   );
   const focusToggle = response && !phone ? (
     <div role="group" aria-label={t("discovery.focus.label")} className="flex shrink-0 rounded-xl bg-nx-ink/5 p-1">
@@ -473,7 +492,8 @@ function SearchBox({ text, setText, onSubmit, onAddress, onPlace, hoods, busy, d
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [found, setFound] = useState<{ q: string; list: AddressSuggestion[] }>({ q: "", list: [] });
-  const isAddress = /^\d+\s+\S/.test(text.trim());
+  const pin = parsePin(text);
+  const isAddress = !pin && /^\d+\s+\S/.test(text.trim());
   useEffect(() => {
     if (!isAddress) return;
     const q = text.trim();
@@ -484,6 +504,7 @@ function SearchBox({ text, setText, onSubmit, onAddress, onPlace, hoods, busy, d
   const places = placeSuggestions(text, COMMUNITY_AREAS, hoods);
   type Opt = { key: string; icon: LucideIcon; label: string; hint: string; run: () => void };
   const opts: Opt[] = [
+    ...(pin ? [{ key: `p${pin}`, icon: Hash, label: pin, hint: t("discovery.box.pin"), run: () => { setText(pin); onSubmit(pin); } }] : []),
     ...addresses.map((a) => ({ key: `a${a.address}`, icon: MapPin, label: a.address, hint: t("discovery.box.address"), run: () => { setText(a.address); onAddress(a); } })),
     ...places.map((p) => ({ key: p.kind === "hood" ? `h${p.slug}` : `n${p.id}`, icon: MapIcon, label: p.name,
       hint: t(p.kind === "hood" ? "discovery.box.hood" : "discovery.box.area"), run: () => { setText(p.name); onPlace(p); } })),
@@ -614,7 +635,7 @@ function PlaceCard({ place, ring, onRing, onSearchRing, ringActive, onClose }: {
       </button>
       <p className="flex items-center gap-2 pr-6 text-body font-semibold"><MapPin aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{place.label}</p>
       <div className="mt-3 flex flex-col gap-2">
-        <button type="button" onClick={() => navigate(`/scorecard?${new URLSearchParams({ address: place.label })}`)}
+        <button type="button" onClick={() => navigate(`/scorecard?${new URLSearchParams(place.pin ? { pin: place.pin } : { address: place.label })}`)}
           className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-nx-primary font-medium text-nx-primary-fg">
           {t("discovery.place.profile")}<ArrowRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
         </button>

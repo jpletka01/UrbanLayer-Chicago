@@ -1181,6 +1181,12 @@
       "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone",
       "now": {
         "empty": "Empty lot",
+        "emptyKind": {
+          "vacant": "Empty lot",
+          "city_owned": "Empty lot, City-owned",
+          "parking": "Empty lot or parking",
+          "exempt": "Empty lot, tax-exempt"
+        },
         "residential": "House or 2–6 flat",
         "multi_family": "Apartment building",
         "commercial": "Commercial",
@@ -1239,7 +1245,7 @@
     "quick": {
       "label": "Quick filters",
       "checking": "Checking the lots in view",
-      "vacant": "Vacant",
+      "empty": "Empty land",
       "nearL": "Near the L",
       "lot5k": "Lot 5,000+ sq ft",
       "sold2y": "Sold in 2 years",
@@ -1249,8 +1255,10 @@
       "address": "Address",
       "area": "Community area",
       "describe": "Describe",
-      "hood": "Neighborhood"
+      "hood": "Neighborhood",
+      "pin": "PIN"
     },
+    "pinMissing": "No lot with PIN {{pin}} in Chicago's data.",
     "measure": {
       "colorBy": "Color lots by",
       "unknown": "Not known (dotted)",
@@ -1355,11 +1363,11 @@
       "incentivesTitle": "Incentives"
     },
     "f": {
-      "vacancy": {
-        "name": "Empty lot",
-        "hint": "No building on record.",
-        "on": "Only empty lots",
-        "tech": "Assessor's vacant classes (1xx)"
+      "empty_land": {
+        "name": "Empty land",
+        "hint": "Nothing stands on it today: vacant, City-owned, parking and tax-exempt land.",
+        "on": "Only empty land",
+        "tech": "No building in the City's footprints or the County's 2022 LiDAR, after demolition and new-construction permits"
       },
       "room_to_build": {
         "name": "Room to build",

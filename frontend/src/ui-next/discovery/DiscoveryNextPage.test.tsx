@@ -118,10 +118,10 @@ describe("Discovery in the new frame", () => {
     await waitFor(() => expect(mapProps.last).not.toBeNull());
     expect(mapProps.last?.matches).toBeNull();
     (mapProps.last!.onView as (v: unknown) => void)({ bbox: [-87.7, 41.9, -87.6, 41.95], zoom: 15, center: [-87.65, 41.92] });
-    fireEvent.click(await screen.findByRole("button", { name: "Vacant" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Empty land" }));
     await waitFor(() => expect(mocks.runSearch).toHaveBeenCalled(), { timeout: 2000 });
     expect(mocks.runSearch.mock.calls[0][0]).toMatchObject({
-      panelState: { vacancy: { kind: "flag", value: true } }, scope: { mode: "viewport", bbox: [-87.7, 41.9, -87.6, 41.95] }, limit: 1,
+      panelState: { empty_land: { kind: "flag", value: true } }, scope: { mode: "viewport", bbox: [-87.7, 41.9, -87.6, 41.95] }, limit: 1,
     });
     await waitFor(() => expect(mapProps.last?.matches).toEqual(["1431325001"]));
     expect(screen.getByTestId("search-view").textContent).toContain("Search 1 lot in view");

@@ -1244,3 +1244,19 @@ Item 60's "vacant over an acre with no street address of its own" is gone.
 - **Hide side yards (2-41):** they are ordinary residential parcels and never `empty_land`, so the empty-land filter already leaves them out.
 
 *Revisit if* the owner sees utility corridors among the large sites now shown.
+
+**Steps 4-6: on the page (2026-11-11, awaiting the owner's localhost review).**
+- **Filter `empty_land`** (registry, flag on the index field, `unknownPolicy: exclude`). The new UI's first quick filter is now "Empty land" instead of the tax-class "Vacant", and so is the Lot group's toggle. The live UI keeps `vacancy` unchanged, so it reads the same before and after the production backfill.
+  - Local citywide copy: **71,102 lots**, the 74,093 empty-land lots minus 2,991 strips hidden by default. The page shows the count by community area.
+- **Labels:**
+  - The new UI's card already said "Near {address}" for an approximate address.
+  - Its "what's there now" now reads empty from `empty_land`, by kind ("Empty lot, City-owned", "Empty lot or parking", "Empty lot, tax-exempt"), not from the tax class. A vacant-class lot with a building shows that building. An index built before Item 110 falls back to the class.
+  - The live UI's "Approx." badge now says "Nearest address", with a tooltip saying the lot has no street address of its own.
+  - Rows carry `land_kind` and `empty_land` (`ResultRow`).
+- **Search by PIN:** the box takes a PIN typed any common way (14 or 10 digits, dashes or spaces) and offers it as a "PIN" choice. It opens the lot's own row and goes to it at zoom 17.5. A PIN not in the data says so.
+  - The place card's "Open its Profile" sends the PIN, never the Assessor address, because the Profile searches records by address (Item 109).
+  - Searching by block already works through an address on that block.
+
+Tests: `discoveryModel.test.ts` (PIN parsing, the quick filter), `LotCard.test.tsx` (empty from what stands on the lot), registry counts.
+
+*Open for the owner:* lots with only a garage or shed (`structure: accessory`, e.g. 2626 S Troy) are not empty land. Should a filter offer them?

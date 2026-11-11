@@ -1181,6 +1181,12 @@
       "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
       "now": {
         "empty": "Terreno baldío",
+        "emptyKind": {
+          "vacant": "Terreno baldío",
+          "city_owned": "Terreno baldío de la Ciudad",
+          "parking": "Terreno baldío o estacionamiento",
+          "exempt": "Terreno baldío exento de impuestos"
+        },
         "residential": "Casa o edificio de 2 a 6",
         "multi_family": "Edificio de departamentos",
         "commercial": "Comercial",
@@ -1239,7 +1245,7 @@
     "quick": {
       "label": "Filtros rápidos",
       "checking": "Revisando los terrenos a la vista",
-      "vacant": "Baldío",
+      "empty": "Terreno vacío",
       "nearL": "Cerca del L",
       "lot5k": "Terreno de 5,000+ pies²",
       "sold2y": "Vendido en 2 años",
@@ -1249,8 +1255,10 @@
       "address": "Dirección",
       "area": "Área comunitaria",
       "describe": "Describir",
-      "hood": "Colonia"
+      "hood": "Colonia",
+      "pin": "PIN"
     },
+    "pinMissing": "No hay ningún terreno con el PIN {{pin}} en los datos de Chicago.",
     "measure": {
       "colorBy": "Colorear terrenos por",
       "unknown": "Sin dato (punteado)",
@@ -1355,11 +1363,11 @@
       "incentivesTitle": "Incentivos"
     },
     "f": {
-      "vacancy": {
-        "name": "Terreno baldío",
-        "hint": "Sin edificio registrado.",
-        "on": "Solo terrenos baldíos",
-        "tech": "Clases baldías del Asesor (1xx)"
+      "empty_land": {
+        "name": "Terreno vacío",
+        "hint": "Hoy no hay nada construido: terrenos baldíos, de la Ciudad, estacionamientos y terrenos exentos.",
+        "on": "Solo terreno vacío",
+        "tech": "Sin edificio en las huellas de la Ciudad ni en el LiDAR 2022 del Condado, tras los permisos de demolición y de obra nueva"
       },
       "room_to_build": {
         "name": "Espacio para construir",
