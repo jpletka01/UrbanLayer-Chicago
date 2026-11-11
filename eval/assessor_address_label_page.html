@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Address labels</title>
+<style>
+:root { --bg:#f7f6f3; --card:#fff; --ink:#1c1c1c; --muted:#666; --line:#ddd; --accent:#1d4ed8; --lot:#111;
+        --nb:#9ca3af; --ap:#b45309; --street:#cbd5e1; --ok:#15803d; }
+@media (prefers-color-scheme: dark) { :root { --bg:#141414; --card:#1f1f1f; --ink:#eee; --muted:#aaa; --line:#333;
+        --accent:#93b4ff; --lot:#f5f5f5; --nb:#6b7280; --ap:#f59e0b; --street:#334155; } }
+* { box-sizing:border-box; }
+body { margin:0; font:14px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+.app { display:grid; grid-template-columns:240px 1fr; height:100vh; }
+aside { border-right:1px solid var(--line); overflow:auto; background:var(--card); }
+aside header { position:sticky; top:0; background:var(--card); padding:10px 12px; border-bottom:1px solid var(--line); }
+aside .row { padding:6px 12px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; gap:8px; align-items:center; }
+aside .row.cur { background:color-mix(in srgb, var(--accent) 14%, transparent); }
+aside .row .dot { width:9px; height:9px; border-radius:50%; border:1.5px solid var(--muted); flex:none; }
+aside .row.done .dot { background:var(--ok); border-color:var(--ok); }
+main { overflow:auto; padding:16px 20px 60px; }
+.grid { display:grid; grid-template-columns:minmax(360px, 1.2fr) minmax(300px, 1fr); gap:16px; align-items:start; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+h1 { font-size:18px; margin:0 0 4px; } h2 { font-size:14px; margin:0 0 8px; }
+.muted { color:var(--muted); }
+a.btn, button { font:inherit; padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; text-decoration:none; display:inline-block; }
+button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+@media (prefers-color-scheme: dark) { button.primary { color:#111; } }
+svg { width:100%; height:440px; background:color-mix(in srgb, var(--bg) 60%, var(--card)); border-radius:8px; }
+.choice { display:block; padding:8px 10px; border:1px solid var(--line); border-radius:8px; margin:6px 0; cursor:pointer; }
+.choice:has(input:checked) { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent); }
+.choice .addr { font-size:17px; font-weight:600; }
+input[type=text], textarea { font:inherit; background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:4px 6px; }
+textarea { width:100%; min-height:44px; }
+.legend span { margin-right:12px; font-size:12px; }
+kbd { border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <header><strong>Address sample</strong> <span id="progress" class="muted"></span><br>
+      <label class="muted"><input type="checkbox" id="onlyTodo"> Only unlabeled</label></header>
+    <div id="list"></div>
+  </aside>
+  <main id="main">Loading…</main>
+</div>
+<script>
+let LOTS = [], LABELS = {}, cur = 0;
+const FT_LAT = 364000, FT_LON = FT_LAT * 0.7447, HALF = 170;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const num = a => (a || "").split(" ")[0];
+
+async function load() {
+  const d = await (await fetch("/data")).json();
+  LOTS = d.panel.lots; LABELS = d.labels || {};
+  const first = LOTS.findIndex(l => !LABELS[l.pin]?.answer);
+  cur = first < 0 ? 0 : first;
+  render();
+}
+
+function list() {
+  const only = document.getElementById("onlyTodo").checked;
+  document.getElementById("progress").textContent = `${LOTS.filter(l => LABELS[l.pin]?.answer).length} / ${LOTS.length}`;
+  document.getElementById("list").innerHTML = LOTS.map((l, i) => {
+    const done = !!LABELS[l.pin]?.answer;
+    if (only && done && i !== cur) return "";
+    return `<div class="row ${done ? "done" : ""} ${i === cur ? "cur" : ""}" data-i="${i}"><span class="dot"></span>
+      <span>#${l.id} <span class="muted">${esc(l.pin)}</span></span></div>`;
+  }).join("");
+  document.querySelectorAll("#list .row").forEach(r => r.onclick = () => { cur = +r.dataset.i; render(); });
+}
+
+function xy(lot, lon, lat) {
+  return [(lon - lot.lon) * FT_LON, -(lat - lot.lat) * FT_LAT];
+}
+function path(lot, ring) { return ring.map(([lo, la], i) => (i ? "L" : "M") + xy(lot, lo, la).map(v => v.toFixed(1)).join(" ")).join("") + "Z"; }
+function line(lot, pts) { return pts.map(([lo, la], i) => (i ? "L" : "M") + xy(lot, lo, la).map(v => v.toFixed(1)).join(" ")).join(""); }
+function centroid(lot, ring) {
+  let x = 0, y = 0; ring.forEach(([lo, la]) => { const p = xy(lot, lo, la); x += p[0]; y += p[1]; });
+  return [x / ring.length, y / ring.length];
+}
+
+function svg(lot) {
+  const parts = [];
+  lot.street.forEach(s => parts.push(`<path d="${line(lot, s)}" stroke="var(--street)" stroke-width="18" fill="none" stroke-linecap="round"/>`));
+  lot.neighbors.forEach(n => {
+    parts.push(`<path d="${path(lot, n.ring)}" fill="none" stroke="var(--nb)" stroke-width="1"/>`);
+  });
+  if (lot.ring) parts.push(`<path d="${path(lot, lot.ring)}" fill="var(--lot)" fill-opacity="0.85" stroke="var(--lot)"/>`);
+  lot.neighbors.forEach(n => {
+    if (!n.address) return;
+    const [x, y] = centroid(lot, n.ring);
+    parts.push(`<text x="${x}" y="${y}" font-size="9" text-anchor="middle" fill="var(--muted)">${esc(num(n.address))}</text>`);
+  });
+  lot.address_points.forEach(p => {
+    const [x, y] = xy(lot, p.lon, p.lat);
+    parts.push(`<circle cx="${x}" cy="${y}" r="2.6" fill="var(--ap)"/><text x="${x + 4}" y="${y - 3}" font-size="9.5" fill="var(--ap)">${esc(num(p.address))}</text>`);
+  });
+  if (lot.viewpoint) {
+    const [x, y] = xy(lot, lot.viewpoint.lon, lot.viewpoint.lat);
+    const h = lot.viewpoint.heading * Math.PI / 180;
+    parts.push(`<circle cx="${x}" cy="${y}" r="4" fill="var(--accent)"/><line x1="${x}" y1="${y}" x2="${x + 16 * Math.sin(h)}" y2="${y - 16 * Math.cos(h)}" stroke="var(--accent)" stroke-width="2"/>`);
+  }
+  parts.push(`<text x="${-HALF + 6}" y="${-HALF + 14}" font-size="10" fill="var(--muted)">N ↑ · ${2 * HALF} ft across</text>`);
+  return `<svg viewBox="${-HALF} ${-HALF} ${2 * HALF} ${2 * HALF}">${parts.join("")}</svg>`;
+}
+
+function render() {
+  list();
+  const lot = LOTS[cur], lab = LABELS[lot.pin] || {};
+  const vp = lot.viewpoint;
+  const sv = vp ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${vp.lat},${vp.lon}&heading=${vp.heading}` : null;
+  const gm = `https://www.google.com/maps/search/?api=1&query=${lot.lat},${lot.lon}`;
+  document.getElementById("main").innerHTML = `
+    <h1>Lot #${lot.id} <span class="muted" style="font-weight:400">${esc(lot.pin)} · class ${esc(lot.class)}${lot.vacant ? " · vacant class" : ""}</span></h1>
+    <p class="muted">Which street address is this lot's own? The lot is the filled shape; orange numbers are the City's Address Points, gray numbers the neighbors' own addresses; the blue dot is where Street View stands, facing the lot.</p>
+    <div class="grid">
+      <div class="card">${svg(lot)}
+        <div class="legend muted"><span>■ this lot</span><span style="color:var(--ap)">● Address Point</span><span>□ neighbors</span><span style="color:var(--accent)">● Street View</span></div>
+        <p>${sv ? `<a class="btn" href="${sv}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
+          <a class="btn" href="${gm}" target="_blank" rel="noopener">Google Maps at the lot ↗</a></p>
+      </div>
+      <div class="card">
+        <h2>This lot's address is</h2>
+        ${lot.candidates.map(c => `<label class="choice"><input type="radio" name="ans" value="${c.key}" ${lab.answer === c.key ? "checked" : ""}>
+          <kbd>${c.key.toLowerCase()}</kbd> <span class="addr">${esc(c.address)}</span></label>`).join("")}
+        <label class="choice"><input type="radio" name="ans" value="neither" ${lab.answer === "neither" ? "checked" : ""}>
+          <kbd>n</kbd> Neither: the number is <input type="text" id="number" size="7" value="${esc(lab.number || "")}"></label>
+        <label class="choice"><input type="radio" name="ans" value="cant_tell" ${lab.answer === "cant_tell" ? "checked" : ""}>
+          <kbd>c</kbd> Can't tell</label>
+        <p class="muted" style="margin:10px 0 4px">Note (optional)</p>
+        <textarea id="note">${esc(lab.note || "")}</textarea>
+        <p><button class="primary" id="save">Save and next <kbd>Enter</kbd></button> <button id="prev">Back</button></p>
+        <p class="muted" id="status"></p>
+      </div>
+    </div>`;
+  document.getElementById("number").onfocus = () => { document.querySelector('input[value="neither"]').checked = true; };
+  document.getElementById("save").onclick = save;
+  document.getElementById("prev").onclick = () => { cur = Math.max(0, cur - 1); render(); };
+}
+
+async function save() {
+  const lot = LOTS[cur];
+  const ans = document.querySelector('input[name="ans"]:checked')?.value;
+  if (!ans) { document.getElementById("status").textContent = "Pick an answer first."; return; }
+  const label = { pin: lot.pin, id: lot.id, answer: ans, number: ans === "neither" ? document.getElementById("number").value.trim() : null,
+                  note: document.getElementById("note").value.trim() || null, at: new Date().toISOString() };
+  const r = await fetch("/label", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(label) });
+  if (!r.ok) { document.getElementById("status").textContent = "Couldn't save: " + r.status; return; }
+  LABELS[lot.pin] = label;
+  const next = LOTS.findIndex((l, i) => i > cur && !LABELS[l.pin]?.answer);
+  cur = next < 0 ? Math.min(LOTS.length - 1, cur + 1) : next;
+  render();
+}
+
+document.addEventListener("keydown", e => {
+  if (["INPUT", "TEXTAREA"].includes(e.target.tagName) && e.target.type !== "radio") { if (e.key === "Enter" && e.target.tagName === "INPUT") save(); return; }
+  const k = e.key.toLowerCase();
+  const pick = v => { const el = document.querySelector(`input[name="ans"][value="${v}"]`); if (el) el.checked = true; };
+  if (k === "a") pick("A"); else if (k === "b") pick("B");
+  else if (k === "n") { pick("neither"); document.getElementById("number").focus(); e.preventDefault(); }
+  else if (k === "c") pick("cant_tell");
+  else if (k === "enter") save();
+});
+document.getElementById("onlyTodo").onchange = list;
+load();
+</script>
+</body>
+</html>
