@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowRight, ChevronDown, Circle, House, List, LoaderCircle, Map as MapIcon, MapPin, Maximize2, Palette,
+  ArrowRight, ChevronDown, Circle, Hash, House, List, LoaderCircle, Map as MapIcon, MapPin, Maximize2, Palette,
   Receipt, Search, Shovel, Sprout, Store, Target, TrendingDown, TriangleAlert, X, type LucideIcon,
 } from "lucide-react";
 import { loadRegistry } from "../../discovery/registryClient";
@@ -17,6 +17,8 @@ import { recipeStatus } from "../../discovery/recipeStatus";
 import { chipLabel } from "../../discovery/chips";
 import { COMMUNITY_AREAS } from "../../discovery/communityAreas";
 import { HIDE_UNUSUAL } from "../../discovery/draftModel";
+import { panelFromCqs } from "../../discovery/topicCompiler";
+import { profileAddress } from "../../discovery/rowFigures";
 import type { FilterDef, PanelState, Predicate, Registry, ResultRow, TopicDef } from "../../discovery/types";
 import { getAutocomplete } from "../../lib/api";
 import type { AddressSuggestion } from "../../lib/types";
@@ -27,16 +29,18 @@ import { STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
 import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
+import { fetchParcelRow } from "../../discovery/searchClient";
 import { LotCard } from "./LotCard";
 import { useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
 import {
-  DEFAULT_MEASURE, LOTS_MIN_ZOOM, foldComplexes, MEASURES, QUICK_FILTERS, RING_MILES, cardModel, classifyQuery, placeRegion, placeSuggestions,
+  DEFAULT_MEASURE, LOTS_MIN_ZOOM, cardModel, foldComplexes, MEASURES, QUICK_FILTERS, RING_MILES, classifyQuery, parsePin, placeRegion,
+  placeSuggestions,
   type Place as AreaPlace,
   ROOM_SORT, measureSteps, quickFromPanel, quickPanel, ringMiles, ringRegion, type MeasureId, type QuickId,
 } from "./discoveryModel";
 
 type Focus = "map" | "list";
-interface Place { lat: number; lon: number; label: string }
+interface Place { lat: number; lon: number; label: string; /** Set when the place is a lot found by PIN. */ pin?: string }
 
 const numLocale = (lang: string) => (lang.startsWith("es") ? "es-MX" : "en-US");
 
@@ -81,14 +85,25 @@ export default function DiscoveryNextPage() {
     () => (response?.pins?.points ?? search.map.points).map((p) => p.pin.replace(/-/g, "").slice(0, 10)),
     [response, search.map.points],
   );
-  const matches = response ? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
+  // Zoomed in to lots after a search, the map asks for the search's own matches in the view. The search's points are
+  // capped at 5,000 (the largest room to build first), so a broad search would otherwise draw none in most
+  // neighborhoods while the list fills (owner's review 2026-11-11: zoning + density showed nothing on the map).
+  // A search limited to the view it started in keeps its own points.
+  const searchCqsPanel = useMemo(
+    () => (response && response.cqs.scope?.mode !== "viewport" ? panelFromCqs(response.cqs) : null), [response]);
+  const lotZoomNow = !!view && view.zoom >= LOTS_MIN_ZOOM;
+  const searchInView = useViewMatches(registry, lotZoomNow ? searchCqsPanel : null, view, 350,
+    !!response && !response.cqs.filters.hide_unusual);
+  const searchInViewPins = searchCqsPanel && lotZoomNow ? searchInView.data?.pins ?? null : null;
+  const matches = response ? searchInViewPins ?? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
   const areaCounts = response ? response.areaCounts ?? null : explorePanel ? viewMatches.data?.areaCounts ?? null : null;
   const lotZoom = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const inView = useMemo(() => {
     if (!response || !view) return null;
+    if (searchInViewPins && searchInView.data) return searchInView.data.total;
     const [w, s, e, n] = view.bbox;
     return (response.pins?.points ?? search.map.points).filter((p) => p.lat != null && p.lon != null && p.lon >= w && p.lon <= e && p.lat >= s && p.lat <= n).length;
-  }, [response, view, search.map.points]);
+  }, [response, view, search.map.points, searchInViewPins, searchInView.data]);
 
   // The search's quick filters mirror its panel (a goal can turn some on).
   const searchQuick = useMemo(() => quickFromPanel(search.draft.panelState), [search.draft.panelState]);
@@ -108,7 +123,6 @@ export default function DiscoveryNextPage() {
     if (!registry) return;
     const scope = view && lotZoom ? { mode: "viewport" as const, bbox: view.bbox } : null;
     search.startWith({ panelState: quickPanel(quick), text: "", sort: { ...ROOM_SORT }, topicId: null, scope });
-    setFocus(phone ? "map" : "list");
     setSheet("half");
   };
   const listInView = () => {
@@ -136,9 +150,8 @@ export default function DiscoveryNextPage() {
       panelState: { ...base, radius: { kind: "region", regions: [ringRegion(r.lat, r.lon, r.miles)] } as PanelState[string] },
       text: "", sort: { ...ROOM_SORT }, topicId: null, scope: null,
     });
-    setFocus(phone ? "map" : "list");
     setSheet("half");
-  }, [registry, response, search, quick, phone]);
+  }, [registry, response, search, quick]);
   const ringActive = !!response && !!search.draft.panelState.radius;
   const resizeRing = (miles: number) => {
     if (!ring) return;
@@ -154,6 +167,7 @@ export default function DiscoveryNextPage() {
   const [text, setText] = useState("");
   const submit = (raw = text) => {
     const kind = classifyQuery(raw, COMMUNITY_AREAS, hoods);
+    if (kind.kind === "pin") { pickPin(kind.pin); return; }
     if (kind.kind === "address") {
       getAutocomplete(raw).then((s) => { if (s[0]) pickAddress(s[0]); });
       return;
@@ -161,13 +175,26 @@ export default function DiscoveryNextPage() {
     if (kind.kind === "area" || kind.kind === "hood") { pickPlace(kind); return; }
     search.setText(raw);
     search.setSort({ ...ROOM_SORT });
-    window.setTimeout(() => { search.apply(); setFocus(phone ? "map" : "list"); setSheet("half"); }, 0);
+    window.setTimeout(() => { search.apply(); setSheet("half"); }, 0);
   };
   const pickAddress = (s: AddressSuggestion) => {
     setPlace({ lat: s.lat, lon: s.lon, label: s.address });
     setRing(null);
     moveTo({ center: [s.lon, s.lat], zoom: 16.4 });
     setFocus("map");
+  };
+  // A PIN goes straight to its lot (Item 110: a lot with no street address of its own is found by its PIN).
+  const [pinMissing, setPinMissing] = useState<string | null>(null);
+  const pickPin = (pin: string) => {
+    setPinMissing(null);
+    fetchParcelRow(pin, ROOM_SORT.key).then((row) => {
+      if (!row || row.lat == null || row.lon == null) { setPinMissing(pin); return; }
+      const label = row.address && !row.address.startsWith("~") ? cardModel(row).title : pin;
+      setPlace({ lat: row.lat, lon: row.lon, label, pin: row.pin });
+      setRing(null);
+      moveTo({ center: [row.lon, row.lat], zoom: 17.5 });
+      setFocus("map");
+    }).catch(() => setPinMissing(pin));
   };
   // A neighborhood or community area narrows the search on screen (its filters stay), never replaces it.
   const pickPlace = (place: AreaPlace) => {
@@ -177,7 +204,6 @@ export default function DiscoveryNextPage() {
       panelState: { ...base, neighborhood: { kind: "region", regions: [placeRegion(place)] } as PanelState[string] },
       text: "", sort: response ? search.draft.sort ?? { ...ROOM_SORT } : { ...ROOM_SORT }, topicId: null, scope: null,
     });
-    setFocus(phone ? "map" : "list");
     setSheet("half");
   };
   const pickArea = (id: number) => pickPlace({ kind: "area", id, name: COMMUNITY_AREAS[id] ?? String(id) });
@@ -245,7 +271,6 @@ export default function DiscoveryNextPage() {
   const applyFilters = (panel: PanelState) => {
     if (!registry) return;
     search.startWith({ ...search.draft, panelState: panel, sort: response ? search.draft.sort ?? { ...ROOM_SORT } : { ...ROOM_SORT }, topicId: null, text: response ? search.draft.text : "" });
-    setFocus(phone ? "map" : "list");
     setSheet("half");
   };
   const filterBar = registry ? (
@@ -254,7 +279,10 @@ export default function DiscoveryNextPage() {
       onPending={setBarPending} compact={phone} />
   ) : null;
   const searchBox = (
-    <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onPlace={pickPlace} hoods={hoods} busy={search.loading} disabled={!registry} />
+    <div className="relative min-w-0 flex-1">
+      <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onPlace={pickPlace} hoods={hoods} busy={search.loading} disabled={!registry} />
+      {pinMissing && <p role="status" className="mt-1 text-caption nx-muted">{t("discovery.pinMissing", { pin: pinMissing })}</p>}
+    </div>
   );
   const focusToggle = response && !phone ? (
     <div role="group" aria-label={t("discovery.focus.label")} className="flex shrink-0 rounded-xl bg-nx-ink/5 p-1">
@@ -358,7 +386,7 @@ export default function DiscoveryNextPage() {
               ) : null}
             </div>
           )}
-          {(search.map.truncated || viewMatches.data?.truncated) && lotZoom && (
+          {((searchInViewPins ? searchInView.data?.truncated : search.map.truncated) || viewMatches.data?.truncated) && lotZoom && (
             <p className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full bg-nx-page px-3 py-1 text-caption shadow">{t("discovery.capped")}</p>
           )}
 
@@ -456,9 +484,9 @@ function exploreLabel(
 }
 
 function openProfile(navigate: ReturnType<typeof useNavigate>, row: ResultRow) {
-  const c = cardModel(row);
   const q = new URLSearchParams({ pin: row.pin });
-  if (row.address && !c.approx) q.set("address", c.title);
+  const address = profileAddress(row);
+  if (address) q.set("address", address);
   navigate(`/scorecard?${q}`);
 }
 
@@ -472,7 +500,8 @@ function SearchBox({ text, setText, onSubmit, onAddress, onPlace, hoods, busy, d
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [found, setFound] = useState<{ q: string; list: AddressSuggestion[] }>({ q: "", list: [] });
-  const isAddress = /^\d+\s+\S/.test(text.trim());
+  const pin = parsePin(text);
+  const isAddress = !pin && /^\d+\s+\S/.test(text.trim());
   useEffect(() => {
     if (!isAddress) return;
     const q = text.trim();
@@ -483,6 +512,7 @@ function SearchBox({ text, setText, onSubmit, onAddress, onPlace, hoods, busy, d
   const places = placeSuggestions(text, COMMUNITY_AREAS, hoods);
   type Opt = { key: string; icon: LucideIcon; label: string; hint: string; run: () => void };
   const opts: Opt[] = [
+    ...(pin ? [{ key: `p${pin}`, icon: Hash, label: pin, hint: t("discovery.box.pin"), run: () => { setText(pin); onSubmit(pin); } }] : []),
     ...addresses.map((a) => ({ key: `a${a.address}`, icon: MapPin, label: a.address, hint: t("discovery.box.address"), run: () => { setText(a.address); onAddress(a); } })),
     ...places.map((p) => ({ key: p.kind === "hood" ? `h${p.slug}` : `n${p.id}`, icon: MapIcon, label: p.name,
       hint: t(p.kind === "hood" ? "discovery.box.hood" : "discovery.box.area"), run: () => { setText(p.name); onPlace(p); } })),
@@ -613,7 +643,7 @@ function PlaceCard({ place, ring, onRing, onSearchRing, ringActive, onClose }: {
       </button>
       <p className="flex items-center gap-2 pr-6 text-body font-semibold"><MapPin aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{place.label}</p>
       <div className="mt-3 flex flex-col gap-2">
-        <button type="button" onClick={() => navigate(`/scorecard?${new URLSearchParams({ address: place.label })}`)}
+        <button type="button" onClick={() => navigate(`/scorecard?${new URLSearchParams(place.pin ? { pin: place.pin } : { address: place.label })}`)}
           className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-nx-primary font-medium text-nx-primary-fg">
           {t("discovery.place.profile")}<ArrowRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
         </button>

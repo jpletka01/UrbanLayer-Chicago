@@ -97,6 +97,11 @@ class ResultRow(BaseModel):
     lat: float | None = None
     lon: float | None = None
     address: str | None = None
+    # "assessor" when the address is the Assessor's own, checked against the City's streets (Item 109), else absent.
+    address_source: str | None = None
+    # What the land is and whether it is physically empty (Item 110): vacant, city_owned, parking, exempt, ...
+    land_kind: str | None = None
+    empty_land: bool | None = None
     community_area: int | None = None
     land_use: str | None = None
     parcel_class: str | None = Field(default=None, alias="class")
@@ -282,6 +287,9 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         lat=parcel.lat,
         lon=parcel.lon,
         address=g("address"),
+        address_source=g("address_source"),
+        land_kind=g("land_kind"),
+        empty_land=g("empty_land"),
         community_area=g("community_area") or _community_area_of(parcel),
         land_use=g("land_use_class"),
         # Display reads the REAL assessed value (exempt/$0 included); only the sort key

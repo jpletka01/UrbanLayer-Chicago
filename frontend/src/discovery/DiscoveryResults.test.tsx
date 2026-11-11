@@ -111,8 +111,8 @@ describe("DiscoveryResults row-cards", () => {
     render(<DiscoveryResults {...baseProps} registry={reg()} rows={[approxRow]} response={{ ...response, cqs: { ...response.cqs, sort: { key: "lot_size", dir: "desc" } } }} onRelax={noop} />);
     const row = screen.getByTestId("discovery-result-row");
     expect(row.textContent).toContain("9171 S Harvard Ave");
-    expect(row.textContent).toContain("Approx.");
-    expect(row.textContent).not.toMatch(/near/i);
+    expect(row.textContent).toContain("Nearest address");
+    expect(row.textContent).not.toMatch(/near 9171/i);  // a label beside the address, not a prefix on it
     expect(row.textContent!.match(/Lot 3,125/g)).toHaveLength(1);
   });
 

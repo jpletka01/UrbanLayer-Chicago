@@ -55,6 +55,9 @@ class LotSources:
     area_tree: tuple[STRtree, list[str]] | None  # landmarks + landmark districts
     meta: dict[str, Any]
     city_land: frozenset[str] = frozenset()  # PIN10s the City owns (its land inventory)
+    # PIN10 -> (largest, total) area of the County's 2022 LiDAR structures on the lot (Item 110); None when the copy
+    # predates the table, so no lot is called empty.
+    lidar_on_lot: dict[str, tuple[float, float]] | None = None
 
     @classmethod
     def load(cls, path: Path) -> "LotSources":
@@ -73,6 +76,10 @@ class LotSources:
                 city_land = frozenset(r[0] for r in db.execute("SELECT pin10 FROM city_land"))
             except sqlite3.OperationalError:  # a copy made before the inventory was added
                 city_land = frozenset()
+            try:
+                lidar = {r[0]: (r[1], r[2]) for r in db.execute("SELECT pin10, max_sqft, sum_sqft FROM lidar_on_lot")}
+            except sqlite3.OperationalError:  # a copy made before Item 110
+                lidar = None
         finally:
             db.close()
         reps = shapely.point_on_surface(geoms)
@@ -82,7 +89,7 @@ class LotSources:
             fp_stories=[r[0] for r in fps], fp_area=[r[1] for r in fps],
             pt_tree={k: (STRtree(g), d) for k, (g, d) in pts.items()},
             area_tree=(STRtree(area_geoms), [a[1] or "" for a in areas]) if areas else None,
-            meta=meta, city_land=city_land,
+            meta=meta, city_land=city_land, lidar_on_lot=lidar,
         )
 
 
@@ -216,8 +223,106 @@ def fill_building_area(attrs: dict[str, Any], *, commercial=None, lot=None, src:
             attrs["bldg_sqft_unknown"] = why
 
 
+# --- what stands on a lot (decision Item 110) ----------------------------------------------------------------------
+# Physically empty is read from two building sources (the City's footprints, the County's 2022 LiDAR) and the City's
+# permits, never the tax class alone. The owner's blind check (60 lots) found 43/43 empty on these kinds of land and
+# 6/13 on lots taxed as residential or other commercial, so only these are offered as empty land, and the
+# demolition overrides apply only to them.
+EMPTY_LAND_KINDS = frozenset({"vacant", "city_owned", "parking", "exempt"})
+PARKING_CLASSES = ("5-90", "5-80")  # commercial minor improvement: mostly paved parking
+ACCESSORY_MAX_SQFT = 700.0  # every structure smaller than this: a garage or shed
+LIDAR_FLIGHT = "2022-06-01"
+
+
+def land_kind(class_code: str | None, city_owned: bool) -> str:
+    """The kind of land a lot is, from the Assessor's class and the City's land inventory."""
+    c = (class_code or "").strip().upper()
+    if city_owned:
+        return "city_owned"
+    if c.startswith("1"):
+        return "vacant"
+    if c in PARKING_CLASSES:
+        return "parking"
+    if c == "2-41":
+        return "side_yard"  # vacant land held with the house next door
+    if c == "EX":
+        return "exempt"
+    if c == "RR":
+        return "railroad"
+    if c.startswith(("5", "6", "7", "8")):
+        return "commercial"
+    if c.startswith(("2", "3", "9")):
+        return "residential"
+    return "other"
+
+
+def _structure_state(sizes_max: float | None) -> str:
+    if not sizes_max:
+        return "empty"
+    return "accessory" if sizes_max < ACCESSORY_MAX_SQFT else "built"
+
+
+def structure_on_lot(lot, pin10: str, kind: str, src: LotSources) -> str | None:
+    """What stands on the lot: ``empty``, ``accessory`` (garage or shed only), ``built``, ``disagree`` (one source has
+    a building, the other doesn't), ``demolished_since_2022`` or ``new_construction``; None when the LiDAR table is
+    missing."""
+    if src.lidar_on_lot is None:
+        return None
+    idx = src.fp_tree.query(lot, predicate="contains")
+    fp = _structure_state(max((src.fp_area[i] for i in idx), default=None))
+    lid = _structure_state((src.lidar_on_lot.get(pin10) or (None, None))[0])
+    near = lot.buffer(POINT_BUFFER_DEG)
+
+    def dates(kind_: str) -> list[str]:
+        tree = src.pt_tree.get(kind_)
+        return [tree[1][i] for i in tree[0].query(near, predicate="contains")] if tree else []
+
+    demos = dates("demolition_history")
+    both = {fp, lid}
+    state = ("empty" if both == {"empty"} else "built" if both == {"built"} else
+             "accessory" if "built" not in both else "disagree")
+    if kind in EMPTY_LAND_KINDS:
+        # The City's footprints keep demolished buildings: a demolition permit and nothing in the 2022 LiDAR means the
+        # footprint is out of date (74.5% of such vacant-class lots have one, vs 7.6% of built houses).
+        if state == "disagree" and fp != "empty" and lid == "empty" and demos:
+            state = "empty"
+        if state in ("built", "disagree", "accessory") and any(d >= LIDAR_FLIGHT for d in demos):
+            state = "demolished_since_2022"
+    if state in ("empty", "accessory", "demolished_since_2022") and dates("new_construction"):
+        state = "new_construction"
+    return state
+
+
+def mark_empty_land(attrs: dict[str, Any], lot, pin10: str, src: LotSources) -> None:
+    """``land_kind``, ``structure`` and ``empty_land`` on one base lot, in place; and on a vacant-class lot that is empty,
+    the building area the Assessor kept from a demolished building is set aside (``bldg_sqft_assessor_old``), so room
+    to build reads the empty lot. Reruns restore it first."""
+    if attrs.get("bldg_sqft_source") == "empty_lot":
+        old = attrs.pop("bldg_sqft_assessor_old", None)
+        if old is None:
+            attrs.pop("bldg_sqft", None)
+            attrs.pop("bldg_sqft_source", None)
+        else:
+            attrs["bldg_sqft"] = old
+            attrs["bldg_sqft_source"] = "assessor"
+    for k in ("land_kind", "structure", "empty_land"):
+        attrs.pop(k, None)
+    kind = land_kind(attrs.get("class"), pin10 in src.city_land)
+    attrs["land_kind"] = kind
+    state = structure_on_lot(lot, pin10, kind, src) if lot is not None else None
+    if state is None:
+        return
+    attrs["structure"] = state
+    if kind in EMPTY_LAND_KINDS and state in ("empty", "demolished_since_2022"):
+        attrs["empty_land"] = True
+        if kind == "vacant" and attrs.get("bldg_sqft") and attrs.get("bldg_sqft_source") == "assessor":
+            attrs["bldg_sqft_assessor_old"] = attrs["bldg_sqft"]
+            attrs["bldg_sqft"] = 0.0
+            attrs["bldg_sqft_source"] = "empty_lot"
+
+
 __all__ = [
-    "LotSources", "footprint_area", "lot_warnings", "pending_rezoning_pin10s", "derive_capacity",
+    "LotSources", "EMPTY_LAND_KINDS", "land_kind", "structure_on_lot", "mark_empty_land", "footprint_area", "lot_warnings", "pending_rezoning_pin10s", "derive_capacity",
     "fill_building_area", "WARNING_ORDER", "area_sqft",
 ]
 

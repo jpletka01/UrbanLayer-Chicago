@@ -937,8 +937,8 @@
     "zeroTooTight": "Sin coincidencias. Intente quitar:",
     "loadingMore": "Cargando más…",
     "scrollMore": "Desplácese para ver más",
-    "approx": "Aprox.",
-    "approxTip": "La dirección registrada más cercana, no una coincidencia exacta",
+    "approx": "Dirección más cercana",
+    "approxTip": "Este lote no tiene dirección propia; esta es la dirección registrada más cercana",
     "pinTitle": "PIN {{pin}}",
     "unitsCount_one": "{{count}} unidad",
     "unitsCount_other": "{{count}} unidades",
@@ -992,6 +992,7 @@
       "transit_proximity": "Cerca del transporte",
       "land_use": "Uso de la propiedad",
       "vacancy": "Vacante",
+      "empty_land": "Terreno vacío",
       "lot_size": "Tamaño del lote",
       "building_size": "Tamaño del edificio",
       "year_built": "Año de construcción",
@@ -1145,7 +1146,7 @@
       "including": "Incluye parcelas inusuales",
       "show": "Mostrar",
       "hide": "Ocultarlas",
-      "explain": "Terrenos baldíos de más de un acre sin dirección propia y áreas comunes baldías dentro del contorno compartido de un desarrollo. La mayoría son vías férreas, servicios públicos o áreas comunes, no un lote edificable. Muéstrelos solo si sabe lo que busca."
+      "explain": "Terrenos de ferrocarril, áreas comunes baldías dentro del contorno compartido de un desarrollo y lotes de menos de 16 pies de ancho. Ninguno es por sí solo un lote edificable. Muéstrelos solo si sabe lo que busca."
     },
     "mapMatchingLot": "Lote que coincide"
   },

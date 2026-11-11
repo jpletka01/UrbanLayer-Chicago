@@ -1,8 +1,8 @@
 // Discovery's lot card opens Street View on the lot's own address street, facing the lot, not in the alley behind it
 // (Item 94 on the Profile map; Item 108 here). jsdom has no WebGL, so the card is rendered on its own.
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import type { DiscoveryOutlineLookup } from "../../lib/api";
 import type { RoadLine } from "../map/streetView";
 import { LotCard, type Picked } from "./ExploreMap";
@@ -18,9 +18,10 @@ const roads: RoadLine[] = [
   { name: "N Damen Ave", kind: "minor", lines: [[[-87.67660, 41.90900], [-87.67660, 41.91100]]] },
 ];
 
-const found = (address: string | null): DiscoveryOutlineLookup => ({
+const found = (address: string | null, address_source?: "assessor"): DiscoveryOutlineLookup => ({
   status: "found",
-  row: { pin: "14313250010000", lat: 41.91, lon: -87.677, address, zone_class: "B3-2", lot_sqft: 3125, room_sqft: 2000 } as never,
+  row: { pin: "14313250010000", lat: 41.91, lon: -87.677, address, address_source, zone_class: "B3-2", lot_sqft: 3125,
+    room_sqft: 2000 } as never,
 });
 
 function card(lookup: DiscoveryOutlineLookup | null) {
@@ -45,5 +46,31 @@ describe("Discovery lot card: Street View", () => {
     const [, lon] = url.searchParams.get("viewpoint")!.split(",").map(Number);
     expect(lon).toBeCloseTo(-87.67660, 5);
     expect(url.searchParams.get("heading")).toBe("270");
+  });
+});
+
+describe("Discovery lot card: the Profile link (Item 109)", () => {
+  function profileLink(lookup: DiscoveryOutlineLookup) {
+    let search = "";
+    function Probe() {
+      search = useLocation().search;
+      return null;
+    }
+    const picked: Picked = { pin10: "1431325001", at: [100, 100], size: [600, 400], ll: CLICK, roads, lookup };
+    render(<MemoryRouter><LotCard picked={picked} onClose={() => {}} /><Probe /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /open profile/i }));
+    return new URLSearchParams(search);
+  }
+
+  it("carries an Address Point address beside the PIN", () => {
+    const q = profileLink(found("1601 N MILWAUKEE AVE"));
+    expect(q.get("pin")).toBe("14313250010000");
+    expect(q.get("address")).toBe("1601 N Milwaukee Ave");
+  });
+
+  it("sends only the PIN for the Assessor's address, which the Profile would search permits by", () => {
+    const q = profileLink(found("2626 S TROY ST", "assessor"));
+    expect(q.get("pin")).toBe("14313250010000");
+    expect(q.has("address")).toBe(false);
   });
 });

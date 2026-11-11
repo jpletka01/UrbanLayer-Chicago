@@ -202,6 +202,12 @@ export interface ResultRow {
   lat: number | null;
   lon: number | null;
   address: string | null;
+  /** "assessor": the Assessor's own address, checked against the City's streets but not an Address Point (Item 109). */
+  address_source?: "assessor" | null;
+  /** What the land is (Item 110): vacant, city_owned, parking, exempt, side_yard, railroad, residential, commercial. */
+  land_kind?: string | null;
+  /** Physically empty (no building in the City's footprints or the County's 2022 LiDAR), on the four kinds only. */
+  empty_land?: boolean | null;
   community_area: number | null;
   land_use: string | null;
   class: string | null;

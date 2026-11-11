@@ -65,16 +65,19 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0 }: {
   const family = row.zoning_group ? FAMILY_FROM_GROUP[row.zoning_group] ?? null : null;
   const zoneTag = row.zone_class ?? (row.zoning_group ? tp(`discovery.enum.zoning_group.${row.zoning_group}`, { defaultValue: row.zoning_group }) : null);
 
-  // What's there now, in a few words: the use, the year, the size.
-  const use = row.land_use === "vacant" ? t("discovery.card.now.empty")
-    : row.land_use ? t(`discovery.card.now.${row.land_use}`, { defaultValue: row.land_use.replace(/_/g, " ") }) : null;
+  // What's there now, in a few words: the use, the year, the size. "Empty" is what stands on the lot (Item 110: the
+  // City's footprints and the County's 2022 LiDAR), not the tax class; an index built before it falls back to the class.
+  const empty = row.empty_land != null ? row.empty_land === true : row.land_use === "vacant";
+  const use = empty ? t(`discovery.card.now.emptyKind.${row.land_kind ?? "vacant"}`, { defaultValue: t("discovery.card.now.empty") })
+    : row.land_use && row.land_use !== "vacant" ? t(`discovery.card.now.${row.land_use}`, { defaultValue: row.land_use.replace(/_/g, " ") })
+    : null;
   // An empty lot's year built is a demolished building's record: left out.
-  const now = [use, row.year_built && row.land_use !== "vacant" ? t("discovery.card.now.built", { year: row.year_built }) : null,
-    row.bldg_sqft && row.land_use !== "vacant" ? t("profile.build.sqft", { value: n(row.bldg_sqft) }) : null].filter(Boolean).join(", ");
+  const now = [use, row.year_built && !empty ? t("discovery.card.now.built", { year: row.year_built }) : null,
+    row.bldg_sqft && !empty ? t("profile.build.sqft", { value: n(row.bldg_sqft) }) : null].filter(Boolean).join(", ");
 
   // Built vs allowed: the bar behind the headline.
   const allowed = row.allowed_far != null && row.lot_sqft != null ? row.allowed_far * row.lot_sqft : null;
-  const built = row.land_use === "vacant" ? 0 : row.bldg_sqft ?? null;
+  const built = empty ? 0 : row.bldg_sqft ?? null;
   const used = allowed && built != null && allowed > 0 ? Math.min(1, built / allowed) : null;
   const roomBand = c.roomSqft == null ? null : c.roomSqft <= 0 ? "0" : c.roomSqft < 2500 ? "1" : c.roomSqft < 5000 ? "2" : c.roomSqft < 10000 ? "3" : "4";
 

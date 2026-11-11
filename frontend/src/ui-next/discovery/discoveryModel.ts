@@ -6,9 +6,11 @@ import { rowTitle } from "../../discovery/rowFigures";
 
 // ---------------------------------------------------------------- quick filters (the owner's five, 2026-11-10)
 
-export type QuickId = "vacant" | "nearL" | "lot5k" | "sold2y" | "tif";
+export type QuickId = "empty" | "nearL" | "lot5k" | "sold2y" | "tif";
 export const QUICK_FILTERS: Array<{ id: QuickId; filter: string; predicate: Predicate }> = [
-  { id: "vacant", filter: "vacancy", predicate: { kind: "flag", value: true } },
+  // Physically empty land (Item 110), not the Assessor's vacant class: 15% of vacant-class lots have a building, and
+  // City-owned and parking lots aren't in the class at all.
+  { id: "empty", filter: "empty_land", predicate: { kind: "flag", value: true } },
   { id: "nearL", filter: "transit_proximity", predicate: { kind: "range", max: 0.5 } },
   { id: "lot5k", filter: "lot_size", predicate: { kind: "range", min: 5000 } },
   { id: "sold2y", filter: "sale_recency", predicate: { kind: "range", max: 730 } },
@@ -160,16 +162,30 @@ export function foldComplexes(rows: ResultRow[]): Array<{ row: ResultRow; more: 
 // ---------------------------------------------------------------- the search box
 
 export type SearchKind =
-  | { kind: "address" } | { kind: "area"; id: number; name: string } | { kind: "hood"; slug: string; name: string } | { kind: "describe" };
+  | { kind: "address" } | { kind: "pin"; pin: string } | { kind: "area"; id: number; name: string }
+  | { kind: "hood"; slug: string; name: string } | { kind: "describe" };
+
+/** A Cook County PIN typed in any common way (14 or 10 digits, dashes or spaces), as the index's dashed 14-digit PIN;
+    a 10-digit PIN is the lot's base PIN (suffix 0000). Null when the text isn't a PIN. */
+export function parsePin(text: string): string | null {
+  const t = text.trim();
+  if (!/^[\d\s-]+$/.test(t)) return null;
+  const d = t.replace(/\D/g, "");
+  if (d.length !== 10 && d.length !== 14) return null;
+  const p = d.length === 10 ? d + "0000" : d;
+  return `${p.slice(0, 2)}-${p.slice(2, 4)}-${p.slice(4, 7)}-${p.slice(7, 10)}-${p.slice(10)}`;
+}
 
 /** A place to search within: one of the City's 98 neighborhoods, else one of the 77 community areas (Item 104). */
 export type Place = { kind: "hood"; slug: string; name: string } | { kind: "area"; id: number; name: string };
 export const placeRegion = (p: Place) => (p.kind === "hood" ? `hood:${p.slug}` : `neighborhood:${p.id}`);
 
-/** What the one search box was given: an address (starts with a house number), a community area by name, or a
-    description for the rule-based compiler. */
+/** What the one search box was given: a PIN, an address (starts with a house number), a community area by name, or
+    a description for the rule-based compiler. */
 export function classifyQuery(text: string, areas: Record<number, string>, hoods: Array<{ slug: string; name: string }> = []): SearchKind {
   const t = text.trim();
+  const pin = parsePin(t);
+  if (pin) return { kind: "pin", pin };
   if (/^\d+\s+\S/.test(t)) return { kind: "address" };
   const lower = t.toLowerCase();
   for (const h of hoods) if (h.name.toLowerCase() === lower) return { kind: "hood", slug: h.slug, name: h.name };

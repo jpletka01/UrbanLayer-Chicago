@@ -1091,3 +1091,182 @@ The City's stories run high against the Assessor too (median 1.19; the Assessor'
 *Alternatives:* compute the viewpoint on the server from the lot's frontage (needs a frontage dataset we don't have and an extra request for a link); geocode the address to Google's own point (sends the address to Google before the click and still lands mid-lot); copy `loadedRoads` into `ExploreMap` (two copies of one rule drift).
 
 *Evidence:* `discovery/ExploreMap.test.tsx` renders the card for a lot whose middle is ~10 m from an alley and ~50 m from its address street: the link stands on the address street, heading 90 (facing the lot); without an address it takes the nearest named street, not the alley. *Revisit if* the base tiles start naming alleys, or a lot's address street isn't in the loaded tiles (the card then falls back to the nearest named street).
+
+## Item 109: Discovery shows the Assessor's own address where it lands on the lot, else keeps "~" (2026-11-11)
+
+**Problem (owner, 2026-11-11, labeling lots for M4).** Discovery's index gives 116,999 of 590,174 base lots an approximate address: the nearest Address Point, marked `~` (`index_build._address_for`). That point is, by construction, another parcel's. "~2624 S Troy" (16-25-300-030) is the house next door; the Assessor calls this empty lot 2626 S Troy. The address and Street View led him to the wrong building. The Cook County Assessor's Parcel Addresses (`3723-97qp`, `prop_address_full`) had an address for all 168 approximate lots on the M4 panel, and only 16 matched the number shown.
+
+**Measured (no model calls; `eval/assessor_address_check.py`, read-only, offline over the local index and source copy).** The Assessor's address was never taken on trust. It is checked against sources that don't come from the Assessor: the City's street centerlines (`pr57-gg9e`: block-face ranges, odd/even side), the lot's own outline (PTAXSIM) and the County's Address Points (`78yw-iddh`).
+- *Prototype, 400 random approximate lots (seed 20261111).* 396 had a 2026 Assessor address. 391 of those parse as number + direction + street; the rest are placeholders: "W TILDEN AVE", "S CALIFORNIA AVE", "1538 RAILROAD", "UNKNOWN". 17 carry a unit tail ("2 FL", "B", "REAR", "HSE", "1400"). 64 share their address with other PINs, from 2 up to 275 ("55 W WACKER DR"). Only 40 (10%) equal the `~` address. The Assessor address was an Address Point for 73 of them: 30 on the lot, 25 within 60 ft, 18 farther away (another building's address).
+- *A block-face range check alone is not enough.* Chicago numbers a block 00-98, so 2624 and 2626 both pass it. The finer test interpolates the number the lot's position implies along its block face. **Calibration on 2,000 random lots with their own Address Point:** the full check accepts 96.4% of their real addresses (1,907/1,979 parseable; misses are 49 position, 13 unmatched street names, 9 block face, 1 far). The same street's address 20 numbers on (five lots down) is wrongly accepted 0.25% of the time, 8 on 24%, and 4 on (the next lot) 80%. **The check catches gross errors; it cannot tell next-door lots apart.**
+- *Whose number is right next door.* Among lots that pass where the Assessor and `~` give the same street but different numbers, the Assessor's number is nearer the lot's position in 42,069 cases and the `~` number in 16,062 (7 ties). Position error is about 2 numbers (median 1.8), so this is evidence, not proof. It agrees with how the `~` address is made: it always belongs to another parcel.
+- *Citywide, the production rule:* **80,319 of 116,999 approximate lots (68.6%) get a checked address**; 115,726 have an Assessor address at all. Reasons the rest keep `~`: off the block face (wrong side, parity or range) 12,455; off position 11,473; street over 250 ft away 8,125; the address is an Address Point more than 60 ft from the lot 1,777; no Assessor address 1,273; placeholder 1,150; street not found 427. Of the passes, 9,418 equal the `~` address (the `~` simply goes), 3,454 had a unit tail (dropped), and 5,224 share their address with other PINs (one building across lots; the check put the address on this lot's frontage).
+
+**Decision (the rule, `backend/discovery/assessor_address.py`).** Show the Assessor's address (unit tail dropped, the street spelled as the City's centerlines spell it) when all of these hold. 1) It parses with a number and direction. 2) The nearest block face of that street lies within 250 ft of the lot outline. 3) The side facing the lot has the number's parity and holds it in its range. 4) The number is within 6 of the number implied by the lot's position (calibration p95 4.8). 5) If that address is an Address Point anywhere, one of its points is within 60 ft of the lot. Every other lot keeps its `~` nearest address, so `~` still means "approximate". The street-name normalization covers SAINT→ST, LASALLE→LA SALLE, the King Drive variants and South Park → Dr Martin Luther King Jr, plus a street type the City doesn't use when the name has only one. It is measured: unmatched streets in calibration fell from 32 to 13, and passes went from 79,157 to 80,319. `own_address` stays the Address Points' answer, so Discovery's hidden-by-default set (Item 60) is unchanged; 43 of the 464 vacant lots over an acre would pass. Each row keeps `address_source: assessor` and `address_nearest` (the replaced `~` address), so a rerun whose check fails restores it.
+
+**Built.** `lot_sources` adds three tables to the local copy: `assessor_address` (590,779 Chicago base PINs, latest year, the address field only, never a name: `mail_address_name` names people), `address_points` (581,882) and `centerlines` (56,002). It refuses a short read below 500k / 500k / 50k rows. `--addresses-only` adds them to an existing copy in one transaction (135 s on the Mac). `index_backfill.apply_assessor_addresses` runs inside `enrich_rows`, so a full `index_build` and the in-place `index_backfill` both apply it; no network call per lot. A copy without the tables warns and changes nothing. It is not inside `_address_for` itself, because it needs the lot outline and the centerlines, which that per-point step doesn't have; `_address_for`'s docstring points to it. The backfill prints `approximate_addresses` before and after. A report-only backfill of the local citywide index (136 s) went from 117,172 base lots with a `~` or no address to 36,758; it also gave 95 lots with no address at all an Assessor address. Room-to-build coverage was unchanged (87.3%).
+
+**Profile links send only the PIN for these lots (owner, 2026-11-11).** Discovery's "Open profile" (lot card and list) passed an address beside the PIN whenever it wasn't `~`. The Profile opens by PIN either way, but it searches the City's permits and violations, and passed rezonings, by that address. Since the check can't tell next-door lots apart, an Assessor address could put the neighbor's permits on this lot's History tab. Rows now carry `address_source` (`assessor` or absent; `ResultRow.address_source`), and `rowFigures.profileAddress` passes an address only when it is an Address Point. The owner chose this over sending it labeled as the Assessor's (which would need History to caveat it). Tests: `rowFigures.test.ts`, `ExploreMap.test.tsx`. *Revisit if* a labeled sample shows the Assessor address is right next door often enough to search records by.
+
+*Alternatives rejected:* **take the Assessor address unchecked.** About 31% fail an independent check: placeholders, addresses on another block face, institutions' main addresses on outlying lots, and one building's address on 275 PINs. **Block-face range only.** It cannot place a lot within its block, and lets 2690 stand for a lot at 2626. **Require an Address Point for the Assessor address.** Only 18% of these lots' Assessor addresses are Address Points; that is why they had none. **Snap `~` to the nearest point on the lot's own street** keeps another parcel's number. **Geocode with Census or Google** sends a request per lot, is a second guess at the same thing, and Census interpolates from the same ranges. **Show the address on any lot that passes with `own_address` true** would unhide 43 large vacant lots without the owner's say (Item 60). Left for him.
+
+*Revisit if* the owner wants checked Assessor addresses to count as own addresses for the hidden-by-default rule; the Assessor's `prop_address_full` format changes (watch `placeholder` and `no_street` in the eval); the centerlines' ranges are replaced; or labeling finds a passing address on the wrong lot (tighten `TOLERANCE_NUMBERS`, which costs real addresses: calibration accepts 86% at 4).
+
+**Production steps** (server, after merge): if Item 104's steps have not run yet, its full `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources` now writes the address tables too; otherwise `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --addresses-only` adds them to `backend/data/discovery_lot_sources.db` (about 2 min). Then `docker compose run --rm --no-deps backend python -m backend.discovery.index_backfill` (rewrites the index's attrs in place and finalizes a new `data_version`; check `approximate_addresses.after` ≈ 37k), then restart the backend so it loads the new index. The parcel tiles carry no address and need no rebuild. Verify on the live API: `GET /api/discovery/parcel?pin=16-25-300-030-0000` gives `2626 S TROY ST`. The monthly `--refresh` keeps it through `enrich_rows`, but the address tables are refreshed only when `lot_sources` is rerun.
+
+## Item 110: which lots are physically empty, measured from what stands on them, not the tax class (2026-11-11)
+
+**Problem (owner, 2026-11-11):** "there's no way for someone to discover if there is a plot of land that doesn't have any buildings on it that is in a desirable area." Discovery decides "vacant" from the Assessor's class alone (`is_vacant` = class 1-xx) and hides land over an acre with no address of its own (Item 60), so empty land taxed some other way is missed, and empty land with no street number is hidden or mislabeled (Item 109).
+
+**Measured** (`eval/empty_land.py`; read-only, offline, no model calls; summary in `eval/results/2026-11-11-empty-land/summary.json`). For every base lot (590,174) the evidence is checked against its PTAXSIM outline:
+- the City's active footprints (`syp8-uezg`), counted when the footprint's interior point is inside the outline;
+- the County's 2022 LiDAR outlines (Item 105), counted when at least 8 ft tall and at least 150 sq ft of the outline is on the lot, and that is half the outline or 30% of the lot (one County outline often spans a row of houses or a building on several lots);
+- the City's demolition permits since 2006 (21,892) and new-construction permits since June 2022 (6,318), as points on the lot.
+
+The 30% lot-cover term came from the first run, where a half-the-outline rule alone called row houses empty.
+
+States:
+- **empty:** no structure in either source, or nothing in LiDAR plus a demolition permit showing the City's footprint is out of date;
+- **demolished since 2022:** a demolition permit after the flight;
+- **new construction:** a new building permitted since the flight;
+- **accessory only:** everything under 700 sq ft, a garage or shed;
+- **built**, or **disagree.**
+
+- *The two building sources agree on 92.4% of lots:* 84,827 both empty and 460,216 both with a structure. 30,097 have a LiDAR building but no City footprint, mostly commercial lots where the City's footprints have gaps. 14,569 have a City footprint but nothing in LiDAR.
+- *The City's footprints keep demolished buildings.* Of the 6,340 vacant-class lots with a footprint and no LiDAR building, 74.5% have a demolition permit on the lot, against 7.6% of 20,000 built houses and 3.8% of vacant lots both sources call empty. So a demolition permit plus an empty LiDAR overrides the footprint (6,282 lots).
+- *Against the owner's M4 labels (counts only; the labels file stays out of the repo):*
+  - **Precision of "empty":** of the 36 labeled lots this calls empty, the owner judged 27 empty and 9 built. 5 of those 9 carry his note that the address pointed at the house next door (Item 109's problem, not this one), so 27 of 31 (87%) excluding them.
+  - **Recall:** of his 35 empty lots, 27 are empty here (77%); 4 are accessory only (a neighbor's garage or shed), 3 disagree, 1 demolished since 2022.
+  - The sample is small; a Street View check of a fresh random sample of "empty" lots is the next measure.
+- *Citywide: 89,785 lots are empty, 1,796 demolished since 2022, 3,126 under new construction.* By kind of land:
+
+| Land | Lots | Empty | Note |
+|---|---|---|---|
+| Vacant class (1-xx), what the Vacancy filter shows today | 32,121 | 27,394 (85%) | 568 demolished since 2022, 455 new construction, 1,367 accessory, 345 built, 1,946 disagree |
+| City-owned (the City's land inventory) | 11,718 | 10,453 | all missed by the Vacancy filter (exempt class) |
+| Commercial 5-90 / 5-80 (minor improvement: mostly parking) | 13,597 | 11,988 | missed |
+| Residential classes | 452,902 | 5,409 | missed |
+| Exempt (not City-owned) | 36,831 | 23,493 | missed; includes school grounds, church lots, institutional land: buildable only case by case |
+| Side yard (2-41, held with the house next door) | 8,318 | 6,561 | missed; usually not a separate site |
+| Other commercial | 31,010 | 1,767 | missed |
+| Railroad | 2,771 | 2,472 | not a building site |
+
+- *The old building areas on empty lots.* Of the 8,011 vacant-class lots carrying an Assessor building area, 5,793 are empty and 475 demolished since 2022 (78%). 138 are built, 142 under new construction, 256 accessory, and 1,166 disagree. Those areas come from the last characteristics row of a demolished building (the Profile already drops it, `_chars_describe_prior_structure`), so the index understates room to build on them.
+- *Hidden and unaddressed.* 5,405 empty lots are hidden by default as unusual: 1,976 vacant class, 1,071 side yards, 927 exempt. 82,543 of the 89,785 (92%) have no City address of their own, which is why Item 109 and the "lot next to …" label matter.
+
+**Decision: go for a measured "physically empty" flag, built from the two building sources plus demolition and new-construction permits, never the tax class alone.**
+- Discovery needs it beside a `land_kind` (vacant class, City-owned, parking/minor improvement, side yard, exempt, railroad, other) so a search can ask for buildable empty land and leave out rail, side yards and institutional grounds.
+- On a vacant-class lot that is empty or demolished, the old Assessor building area is dropped (6,268 lots).
+- Next, in order (the plan the owner approved 2026-11-11):
+  - step 2: index fields + the area fix;
+  - step 3: hide by land kind (railroad, utility, narrow strip, common area), not by address;
+  - steps 4-6: the "Empty land" quick filter, true labels, search by PIN or block.
+  - Each is measured and needs the owner's review on localhost.
+
+**Precision, measured by the owner (2026-11-11, counts in `eval/results/2026-11-11-empty-land/precision.json`; the labels stay out of the repo).** 60 random "empty" lots, by kind of land and none from his M4 panel, labeled blind in Street View and satellite (`eval/empty_land_label.py`). The page drew the County's buildings around the lot for orientation, cut out of the lot itself.
+
+| Kind of land | Empty | Building | Can't tell | Precision (95% range) |
+|---|---|---|---|---|
+| Vacant class | 14 | 0 | 1 | 100% (78.5-100) |
+| City-owned | 10 | 0 | 0 | 100% (72.2-100) |
+| Parking / minor improvement | 10 | 0 | 0 | 100% (72.2-100) |
+| Exempt | 9 | 0 | 1 | 100% (70.1-100) |
+| Residential classes | 4 | 5 | 1 | 44% (18.9-73.3) |
+| Other commercial | 2 | 2 | 1 | 50% (15.0-85.0) |
+
+- The four kinds together: **43 of 43 empty (95% range 91.8-100%)**. Weighted by each kind's share of the empty pool, overall precision is 95.2%.
+- The misses are all on lots whose tax class says a building exists. Two were rebuilt after a demolition, where the demolition override wrongly beat the improved class. The rest have a building neither source shows: newer than 2022 with no permit point on the lot, or a small row or townhouse PIN.
+
+**So the "Empty land" offer is scoped:**
+- It covers vacant class, City-owned, parking and minor improvement (5-90, 5-80) and exempt land: 73,293 lots, measured at 43/43.
+- On lots taxed as residential or other commercial, "no building in either source" is not enough. Those stay out of the offer (shown at most as "no building on record, unconfirmed"), and the demolition override applies only to the four kinds.
+- Step 2 goes ahead on this scope.
+
+*Alternatives rejected:*
+- **The tax class alone** (today): misses 10,453 City-owned and 11,988 parking or minor-improvement lots, and 15% of vacant-class lots aren't empty.
+- **City footprints alone:** they keep demolished buildings (the 74.5% above).
+- **LiDAR alone:** it is 2022, so it misses 1,796 later demolitions and 3,126 new buildings, and it can't see a garage under 8 ft.
+- **Satellite or Street View imagery classification:** a model call per lot, no.
+
+*Revisit if:* a Street View sample of "empty" lots finds precision under 90%; the City refreshes its footprints (the demolition override may become unnecessary); or the County publishes newer LiDAR.
+
+**Built: step 2, the index fields (2026-11-11).**
+
+*New per-lot fields* (`lot_facts.mark_empty_land`, run by `index_backfill.enrich` on base lots, so both the full build and the in-place backfill apply it):
+- `land_kind`: vacant, city_owned, parking, side_yard, exempt, railroad, commercial, residential or other.
+- `structure`: empty, accessory, built, disagree, demolished_since_2022 or new_construction.
+- `empty_land: true`: only on the four kinds, when the lot is empty or demolished since 2022. The two demolition overrides apply only to those kinds.
+- On an empty vacant-class lot, the Assessor's building area from a demolished building is set aside as `bldg_sqft_assessor_old`, with `bldg_sqft` 0 and source `empty_lot`, so room to build reads the empty lot. A rerun restores it before deciding again.
+
+*Data path:* the build never loads the 1.25 million LiDAR outlines (about 1.4 GB). `lot_sources --structures-only` measures them against every lot outline once (72 s) and writes three things into `discovery_lot_sources.db`:
+- `lidar_on_lot`: one row per PIN10 with a structure, giving the largest and the total area on the lot;
+- every demolition permit since 2006;
+- every new-construction permit since the flight.
+
+A copy without the table marks no lot empty. `lot_sources` reads the County copy at `map_sources/county_buildings_2022.db` (Item 106) and PTAXSIM beside it.
+
+*Verified against the measurement:* a report-only backfill of the local citywide index gives the same empty counts per kind as above. Adding the 765 lots demolished since 2022, **74,093 lots get `empty_land`**:
+
+| Kind | Lots |
+|---|---|
+| Vacant | 27,962 |
+| Exempt | 23,661 |
+| Parking | 12,014 |
+| City-owned | 10,456 |
+
+6,268 old Assessor areas are set aside. Lots taxed as residential or commercial get a `structure` but never `empty_land`. The backfill prints `empty_land`, `structure_by_kind` and `assessor_area_set_aside`. Tests: `test_discovery_empty_land.py`.
+
+*Not yet:* hiding by land kind instead of by address (step 3), the "Empty land" filter and labels (steps 4-6). Nothing on the page reads these fields yet.
+
+**Production steps** (server, after merge; with Item 109's):
+1. The County LiDAR copy must exist at `backend/data/map_sources/county_buildings_2022.db` (Item 106's `building_tiles` fetch).
+2. `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --structures-only` (a few minutes; or the full `lot_sources` writes it).
+3. `... python -m backend.discovery.index_backfill`; check `empty_land` totals about 74k.
+4. Restart the backend.
+
+**Step 3: hidden by default by what the land is, not by whether it has an address (2026-11-11).** `index_build.unusual_rule` now hides three things:
+- railroad land (class RR);
+- vacant land on a development's shared outline (a common area);
+- any lot narrower than 16 ft.
+
+Item 60's "vacant over an acre with no street address of its own" is gone.
+
+*Measured on the local citywide index* (report-only backfill, `unusual` before/after):
+- **Today's 8,516 hidden lots:** 7,985 are strips under 16 ft and 531 are large vacant lots hidden only for lacking an address. Those 531 are not rail or utility strips: median 188 ft wide (10th percentile 102 ft), median about 2 acres, mostly zoned manufacturing (291) or planned development (163), and 373 of them are physically empty. They are the large sites a developer looks for, and now show.
+- **Railroad parcels:** 2,771, of which only 148 were hidden (as strips). They are now hidden, because a railroad parcel is not a building site.
+- **After:** 10,629 hidden. 2,991 empty-land lots stay hidden because they are strips under 16 ft (Item 104's rule, unchanged).
+
+*Utility land is not detected.* The Assessor has no utility class we can read without owner names, so the page now says "railroad or common land, or strips under 16 ft wide" and no longer claims utility (en + es-MX).
+
+*Alternatives rejected:*
+- **Keep the address rule:** it hid the 373 empty large sites.
+- **A width or length "corridor" rule for utility land:** the 531 lots are wide, and there was no measured corridor to target.
+- **Hide side yards (2-41):** they are ordinary residential parcels and never `empty_land`, so the empty-land filter already leaves them out.
+
+*Revisit if* the owner sees utility corridors among the large sites now shown.
+
+**Steps 4-6: on the page (2026-11-11, awaiting the owner's localhost review).**
+- **Filter `empty_land`** (registry, flag on the index field, `unknownPolicy: exclude`). The new UI's first quick filter is now "Empty land" instead of the tax-class "Vacant", and so is the Lot group's toggle. The live UI keeps `vacancy` unchanged, so it reads the same before and after the production backfill.
+  - Local citywide copy: **71,102 lots**, the 74,093 empty-land lots minus 2,991 strips hidden by default. The page shows the count by community area.
+- **Labels:**
+  - The new UI's card already said "Near {address}" for an approximate address.
+  - Its "what's there now" now reads empty from `empty_land`, by kind ("Empty lot, City-owned", "Empty lot or parking", "Empty lot, tax-exempt"), not from the tax class. A vacant-class lot with a building shows that building. An index built before Item 110 falls back to the class.
+  - The live UI's "Approx." badge now says "Nearest address", with a tooltip saying the lot has no street address of its own.
+  - Rows carry `land_kind` and `empty_land` (`ResultRow`).
+- **Search by PIN:** the box takes a PIN typed any common way (14 or 10 digits, dashes or spaces) and offers it as a "PIN" choice. It opens the lot's own row and goes to it at zoom 17.5. A PIN not in the data says so.
+  - The place card's "Open its Profile" sends the PIN, never the Assessor address, because the Profile searches records by address (Item 109).
+  - Searching by block already works through an address on that block.
+
+Tests: `discoveryModel.test.ts` (PIN parsing, the quick filter), `LotCard.test.tsx` (empty from what stands on the lot), registry counts.
+
+*Open for the owner:* lots with only a garage or shed (`structure: accessory`, e.g. 2626 S Troy) are not empty land. Should a filter offer them?
+
+**Owner's localhost review of steps 4-6 (2026-11-11): two map fixes.**
+1. *Filters swapped the map for the list.* Applying filters, a ring, a place or a typed search set the view to the list on desktop. Now the page keeps whichever view the visitor is on. Only "List them" and a recipe pick switch to the list.
+2. *A broad search drew nothing on the map.* Residential zoning plus density 1-2 matches 156,039 lots, but a search returns at most 5,000 map points (`MAX_MAP_POINTS`), the largest room to build first. Most neighborhoods had none of them, while the list paged through everything.
+   - Now, zoomed in to lots after a search, the map asks for the search's own query (its evaluated filters via `panelFromCqs`, its unusual opt-in) scoped to the viewport, the same per-view request Explore's quick filters use. The "N lots in view" count and the "more than the map can outline" notice read that answer.
+   - A search limited to the view it started in keeps its own points.
+   - Checked on the local citywide copy: in Lincoln Park the matching lots outline, with 131 in view.
+   - Test: `DiscoveryNextPage.test.tsx` "filters keep the map in view...".
+
+**Owner approved on localhost (2026-11-11):** the Empty land filter, the labels, PIN search and both map fixes. Still open, for him: should lots with only a garage or shed (`structure: accessory`) count as empty land?

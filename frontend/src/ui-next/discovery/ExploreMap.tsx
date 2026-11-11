@@ -12,6 +12,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ArrowRight, LoaderCircle, MapPinOff, SquareArrowOutUpRight, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
+import { profileAddress } from "../../discovery/rowFigures";
 import { discoveryOutlineRow, fetchTransitStations, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, loadMapInfo, streetViewUrl } from "../map/mapInfo";
 import { loadedRoads, streetOfAddress, viewpointFor, type RoadLine } from "../map/streetView";
@@ -482,7 +483,8 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
   const card = row ? cardModel(row) : null;
   // Stand on the lot's own address street (its frontage), facing the lot, not in the alley behind it (Item 94).
   const sv = useMemo(() => viewpointFor(picked.ll, picked.roads, streetOfAddress(row?.address)), [picked.ll, picked.roads, row?.address]);
-  const href = row ? `/scorecard?${new URLSearchParams({ pin: row.pin, ...(row.address && !card?.approx ? { address: card!.title } : {}) })}` : null;
+  const profileAddr = row ? profileAddress(row) : null;
+  const href = row ? `/scorecard?${new URLSearchParams({ pin: row.pin, ...(profileAddr ? { address: profileAddr } : {}) })}` : null;
   return (
     <div role="dialog" aria-label={card?.title ?? t("discovery.map.lot")} data-testid="lot-card"
       className="absolute z-10 w-[17.5rem] rounded-2xl bg-nx-page p-4 text-caption shadow-[0_8px_32px_rgb(0_0_0/0.18)]" style={style}>

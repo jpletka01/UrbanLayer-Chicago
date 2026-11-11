@@ -937,8 +937,8 @@
     "zeroTooTight": "No matches. Try removing:",
     "loadingMore": "Loading more…",
     "scrollMore": "Scroll for more",
-    "approx": "Approx.",
-    "approxTip": "Nearest address on record, not an exact match",
+    "approx": "Nearest address",
+    "approxTip": "This lot has no street address of its own; this is the nearest one on record",
     "pinTitle": "PIN {{pin}}",
     "unitsCount_one": "{{count}} unit",
     "unitsCount_other": "{{count}} units",
@@ -992,6 +992,7 @@
       "transit_proximity": "Near transit",
       "land_use": "Property use",
       "vacancy": "Vacant",
+      "empty_land": "Empty land",
       "lot_size": "Lot size",
       "building_size": "Building size",
       "year_built": "Year built",
@@ -1145,7 +1146,7 @@
       "including": "Including unusual parcels",
       "show": "Show",
       "hide": "Hide them",
-      "explain": "Vacant land over an acre with no street address of its own, and vacant common land on a development's shared outline. Most is rail, utility or common land, not a buildable lot. Show it only if you know what you're looking for."
+      "explain": "Railroad land, vacant common land on a development's shared outline, and lots narrower than 16 ft. None is a buildable lot on its own. Show them only if you know what you're looking for."
     },
     "mapMatchingLot": "Matching lot"
   },

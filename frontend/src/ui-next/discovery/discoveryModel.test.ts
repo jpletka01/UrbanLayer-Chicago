@@ -10,13 +10,14 @@ const AREAS = { 22: "Logan Square", 24: "West Town", 7: "Lincoln Park" };
 
 describe("quick filters compile to a panel the server evaluates", () => {
   it("adds and removes only their own predicates", () => {
-    const panel = quickPanel(new Set(["vacant", "lot5k"]), { tif: { kind: "flag", value: true }, ward: { kind: "region", regions: ["ward:1"] } });
-    expect(panel.vacancy).toEqual({ kind: "flag", value: true });
+    const panel = quickPanel(new Set(["empty", "lot5k"]), { tif: { kind: "flag", value: true }, ward: { kind: "region", regions: ["ward:1"] } });
+    expect(panel.empty_land).toEqual({ kind: "flag", value: true });  // physically empty land, not the tax class (Item 110)
+    expect(panel.vacancy).toBeUndefined();
     expect(panel.lot_size).toEqual({ kind: "range", min: 5000 });
     expect(panel.ward).toBeDefined();
     // "In a TIF" was in the panel exactly; turning it off (not in the set) removes it.
     expect(panel.tif).toBeUndefined();
-    expect([...quickFromPanel(panel)].sort()).toEqual(["lot5k", "vacant"]);
+    expect([...quickFromPanel(panel)].sort()).toEqual(["empty", "lot5k"]);
   });
   it("leaves a different predicate on the same filter alone", () => {
     const panel = quickPanel(new Set(), { lot_size: { kind: "range", min: 9000 } });
@@ -60,6 +61,14 @@ describe("the search box", () => {
     expect(classifyQuery("1601 N Milwaukee Ave", AREAS)).toEqual({ kind: "address" });
     expect(classifyQuery("logan square", AREAS)).toEqual({ kind: "area", id: 22, name: "Logan Square" });
     expect(classifyQuery("vacant lots near the L", AREAS)).toEqual({ kind: "describe" });
+  });
+  it("finds a lot by PIN, typed any common way (Item 110)", () => {
+    expect(classifyQuery("16-25-300-030-0000", AREAS)).toEqual({ kind: "pin", pin: "16-25-300-030-0000" });
+    expect(classifyQuery("16253000300000", AREAS)).toEqual({ kind: "pin", pin: "16-25-300-030-0000" });
+    expect(classifyQuery("16-25-300-030", AREAS)).toEqual({ kind: "pin", pin: "16-25-300-030-0000" });
+    expect(classifyQuery("1625300030", AREAS)).toEqual({ kind: "pin", pin: "16-25-300-030-0000" });
+    expect(classifyQuery("2626 S Troy St", AREAS)).toEqual({ kind: "address" });
+    expect(classifyQuery("123456", AREAS)).toEqual({ kind: "describe" });
   });
   it("suggests areas by a word's start", () => {
     expect(areaSuggestions("squ", AREAS).map((a) => a.name)).toEqual(["Logan Square"]);
