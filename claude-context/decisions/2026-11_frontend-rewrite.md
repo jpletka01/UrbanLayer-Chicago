@@ -1268,3 +1268,5 @@ Tests: `discoveryModel.test.ts` (PIN parsing, the quick filter), `LotCard.test.t
    - A search limited to the view it started in keeps its own points.
    - Checked on the local citywide copy: in Lincoln Park the matching lots outline, with 131 in view.
    - Test: `DiscoveryNextPage.test.tsx` "filters keep the map in view...".
+
+**Owner approved on localhost (2026-11-11):** the Empty land filter, the labels, PIN search and both map fixes. Still open, for him: should lots with only a garage or shed (`structure: accessory`) count as empty land?
