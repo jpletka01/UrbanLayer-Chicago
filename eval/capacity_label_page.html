@@ -93,15 +93,19 @@ function drawSvg(ev) {
   const rings = [...(ev.outline || [])];
   const all = rings.flat().concat((ev.lidar_2022 || []).flatMap(x => x.rings.flat()), (ev.city_footprints_2015 || []).flatMap(x => x.rings.flat()));
   if (!all.length) return "<p class='muted'>No outline.</p>";
-  const k = Math.cos(41.84 * Math.PI / 180);
-  const xs = all.map(p => p[0] * k), ys = all.map(p => p[1]);
-  const minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
-  const w = maxx - minx || 1e-5, h = maxy - miny || 1e-5, pad = Math.max(w, h) * 0.08;
-  const vb = `${minx - pad} ${-(maxy + pad)} ${w + 2 * pad} ${h + 2 * pad}`;
+  // Draw in feet from the drawing's own corner: raw degrees (about -65 and 41 with a lot 0.0003 wide) exceed the
+  // precision browsers rasterize SVG with, which blurred and wobbled every edge.
+  const FX = 364_000 * Math.cos(41.84 * Math.PI / 180), FY = 364_000;
+  const lon0 = Math.min(...all.map(p => p[0])), lat1 = Math.max(...all.map(p => p[1]));
+  const px = p => (p[0] - lon0) * FX, py = p => (lat1 - p[1]) * FY;
+  const xs = all.map(px), ys = all.map(py);
+  const minx = 0, maxx = Math.max(...xs), miny = 0, maxy = Math.max(...ys);
+  const w = maxx - minx || 1, h = maxy - miny || 1, pad = Math.max(w, h) * 0.08;
+  const vb = `${-pad} ${-pad} ${w + 2 * pad} ${h + 2 * pad}`;
   const sw = Math.max(w, h) / 220;
-  const path = r => "M" + r.map(p => `${p[0] * k},${-p[1]}`).join("L") + "Z";
+  const path = r => "M" + r.map(p => `${px(p).toFixed(2)},${py(p).toFixed(2)}`).join("L") + "Z";
   const lid = (ev.lidar_2022 || []).map((x, i) => x.rings.map(r => `<path d="${path(r)}" fill="var(--lid)" fill-opacity=".55" stroke="var(--lid)" stroke-width="${sw}"/>`).join("") +
-    (x.rings[0] ? (() => { const r = x.rings[0]; const cx = r.reduce((s, p) => s + p[0] * k, 0) / r.length, cy = r.reduce((s, p) => s - p[1], 0) / r.length;
+    (x.rings[0] ? (() => { const r = x.rings[0]; const cx = r.reduce((s, p) => s + px(p), 0) / r.length, cy = r.reduce((s, p) => s + py(p), 0) / r.length;
       return `<text x="${cx}" y="${cy}" font-size="${Math.max(w, h) / 18}" text-anchor="middle" fill="var(--ink)">${String.fromCharCode(65 + i)} · ${Math.round(x.height_ft)} ft</text>`; })() : "")).join("");
   const fps = (ev.city_footprints_2015 || []).map(x => x.rings.map(r => `<path d="${path(r)}" fill="none" stroke="var(--fp)" stroke-dasharray="${sw * 4} ${sw * 3}" stroke-width="${sw * 1.4}"/>`).join("")).join("");
   const lot = rings.map(r => `<path d="${path(r)}" fill="none" stroke="var(--lot)" stroke-width="${sw * 2.2}"/>`).join("");
