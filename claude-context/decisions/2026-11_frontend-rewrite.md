@@ -1038,3 +1038,26 @@ The City's stories run high against the Assessor too (median 1.19; the Assessor'
 - **Stories shown to people** (History's building records, Item 103) stay the City's and the Assessor's; a LiDAR height could be one more source there later, labeled as a measured height.
 
 *Alternatives considered:* the 2017 point cloud with our own median (blocked, above); a learned model (the inputs are one height and an outline; gains would be small against 2015-vs-2022 change); OSM `building:levels` (same City import, Item 104).
+
+## Item 106: Phase 7 M6 spike, 3D buildings: coverage, payload and frame rate (2026-11-11)
+
+**Status: spike built on `claude/phase-7-lidar`, development only (`?map3d=1` on a ui-next map in `npm run dev`; never on in a production build). No route change, nothing for visitors yet. How a visitor enters 3D and what a phone shows are the owner's calls (below).** M6's acceptance (Item 75) starts with this spike: footprint coverage, measured vs story-derived heights, geometry failures, payload, frame rate on a phone.
+
+**Built:** `backend/map_tiles/building_tiles.py` cuts the County's 2022 LiDAR footprints (Item 105) into vector tiles (`map_buildings.mbtiles`, layer `building`, one property `h` = height in whole feet, zooms 14-16), served by the existing `GET /api/map/tiles/buildings/...` and listed in `/api/map/info`. It keeps a local copy of the source (`map_sources/county_buildings_2022.db`, `--offline` rebuilds from it) and refuses a short read (under 1.1 M polygons in Chicago's box, or 700k inside the city). `frontend/src/ui-next/map/buildings3d.ts` adds one `fill-extrusion` layer under the labels and pins, neutral grays that lighten with height (no hue: the lot and zoning keep the map's meaning, Item 74), a soft viewport light, and tilts the camera (pitch 55°). Theme switches repaint it in place like every other layer.
+
+**Coverage:** 779,930 County buildings inside the city; 94.3% of the City's 820,456 footprints sit inside one (80.4% match cleanly). The plan in the brief, neighbors raised by the City's 2015 stories, would cover **52%** (427,924 footprints with stories) and is approximate: against the measured heights, stories × 14 ft is within 10 ft for 82.8% of low buildings but off by a median 30.7 ft at 7+ stories. **Decision: measured heights, not story-derived.**
+
+**Geometry:** 804 invalid County outlines repaired (`make_valid`), none dropped, none unclipped.
+
+**Payload:** 68 MB file, built in 3 min. Per zoom (gzipped): z14 233 tiles, 16.1 MB, mean 69 KB, max 189 KB (the Loop); z15 825 tiles, 20.1 MB, max 64.5 KB; z16 2,946 tiles, 29.3 MB, max 27.7 KB. Measured per view: the Profile's map band on desktop loaded 8-26 building tiles (20-504 KB); on a 390-px phone 8-10 tiles (20-192 KB).
+
+**Frame rate:** a 6-second camera rotation held 60 fps (median and 10th percentile, worst frame 17 ms) at three places (Wicker Park, the Loop, a bungalow block on Fullerton), on desktop and a 390×844 phone viewport with the CPU slowed 4×, light and dark. **This is not a phone measurement:** the GPU was the Mac's (Apple M4 Pro), which CPU throttling doesn't slow. A real phone is still to be checked, the same open item as Phase 5's map.
+
+**What the look gets wrong (shown in the review screenshots):**
+- **A building is one prism to its highest point.** The County gives one height per outline: the Willis Tower is one 120,366 sq ft block raised to 1,727 ft (its antennas), and the Hancock to 1,422 ft. Stepped towers, rooftop equipment and towers on podiums read too bulky. A roof line needs the point cloud (Item 105); until then the key should say "highest point measured in 2022".
+- **The lot itself** isn't yet treated in 3D: its black outline sits on the ground under its own building. M6's next step draws today's building on the lot in the lot's color and the illustrative zoning mass around it.
+- Buildings since 2022 are missing; demolished ones remain.
+
+**Production steps (only when 3D ships):** `docker compose run --rm --no-deps backend python -m backend.map_tiles.building_tiles` (about 3 min fetch + 3 min cut), then verify `/api/map/info` lists `buildings`. A data-health source and a refresh cadence come with that PR (the County flew in 2017 and 2022).
+
+*Alternatives:* the City's footprints raised by stories (52% coverage, approximate, 2015); OpenStreetMap heights (the same City import, Item 104); deck.gl's 3D layers (MapLibre's own extrusion is enough and keeps one map).

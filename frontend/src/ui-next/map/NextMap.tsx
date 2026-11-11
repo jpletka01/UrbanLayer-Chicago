@@ -24,6 +24,7 @@ import {
   GROUPS, buildStyle, lotPinImage, modeOpacity, themePaint, type GroupId, type LayerMode, type MapTiles, type Theme,
 } from "./mapStyle";
 import { MapKey, type GroupState } from "./MapKey";
+import { enable3d, repaint3d, wants3d } from "./buildings3d";
 import { permitWords } from "../profile/neighborhoodModel";
 
 export interface MapView {
@@ -185,6 +186,11 @@ export function NextMap({
         const el = m.getContainer();
         setBigMap(el.clientHeight >= 440 && el.clientWidth >= 640);
         setReady(true);
+        // M6 spike (Item 106): development-only 3D buildings, `?map3d=1`.
+        if (wants3d() && info.buildings) {
+          enable3d(m, themeRef.current, apiOrigin(), info.buildings);
+          (window as unknown as { __nextMap?: MLMap }).__nextMap = m;
+        }
       });
       mapRef.current = m;
     });
@@ -261,6 +267,7 @@ export function NextMap({
     themeRef.current = theme;
     const map = mapRef.current;
     if (!map || !ready) return;
+    repaint3d(map, theme);
     for (const { id, paint } of themePaint(theme)) {
       if (!map.getLayer(id)) continue;
       for (const [k, v] of Object.entries(paint)) map.setPaintProperty(id, k as never, v as never);

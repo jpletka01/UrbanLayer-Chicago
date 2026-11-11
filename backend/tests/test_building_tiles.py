@@ -1,0 +1,75 @@
+"""The 3D mode's building heights (Phase 7 M6 spike, Items 105-106): County 2022 LiDAR footprints inside Chicago,
+height in whole feet, invalid outlines repaired, a short source refused."""
+from __future__ import annotations
+
+import sqlite3
+
+import pytest
+import shapely
+from shapely.geometry import Polygon, box
+
+from backend.map_tiles import building_tiles
+from backend.map_tiles.mvt_decode import decode_tile
+from backend.map_tiles.tiler import read_tile
+
+LON, LAT = -87.6773, 41.9097  # Wicker Park, inside the city
+OUTSIDE = (-87.80, 42.02)  # in Chicago's box, outside the city (Niles side)
+
+
+def _source(path, rows):
+    db = sqlite3.connect(path)
+    db.execute("CREATE TABLE buildings (oid INTEGER PRIMARY KEY, ground_ft REAL, max_ft REAL, height_ft REAL, wkb BLOB)")
+    db.executemany("INSERT INTO buildings VALUES (?,?,?,?,?)",
+                   [(i, 600.0, 600.0 + h, h, shapely.to_wkb(g)) for i, (h, g) in enumerate(rows)])
+    db.commit()
+    db.close()
+
+
+def _square(lon, lat, d=0.00008):
+    return box(lon - d, lat - d, lon + d, lat + d)
+
+
+def test_keeps_city_buildings_rounds_height_and_repairs_outlines(tmp_path, monkeypatch):
+    monkeypatch.setattr(building_tiles, "MIN_IN_CITY", 1)
+    bowtie = Polygon([(LON + 0.001, LAT), (LON + 0.0012, LAT + 0.0002), (LON + 0.0012, LAT), (LON + 0.001, LAT + 0.0002)])
+    src = tmp_path / "src.db"
+    _source(src, [(28.56, _square(LON, LAT)), (40.0, _square(*OUTSIDE)), (12.0, bowtie)])
+    feats, counts = building_tiles.build_features(src)
+    assert counts["in_box"] == 3 and counts["in_city"] == 2
+    assert counts["invalid_fixed"] == 1 and counts["dropped_empty"] == 0
+    assert sorted(f.props["h"] for f in feats) == ["12", "29"]
+    assert all(f.layer == "building" and f.minzoom == building_tiles.MIN_ZOOM for f in feats)
+
+
+def test_refuses_a_short_city(tmp_path):
+    src = tmp_path / "src.db"
+    _source(src, [(20.0, _square(LON, LAT))])
+    with pytest.raises(RuntimeError, match="inside the city"):
+        building_tiles.build_features(src)
+
+
+def test_offline_build_writes_tiles_with_heights(tmp_path, monkeypatch):
+    monkeypatch.setattr(building_tiles, "MIN_IN_CITY", 1)
+    (tmp_path / "map_sources").mkdir()
+    _source(tmp_path / "map_sources" / building_tiles.SOURCE_DB, [(35.2, _square(LON, LAT))])
+    out = tmp_path / "map_buildings.mbtiles"
+    summary = building_tiles.build_file(out, offline=True, minzoom=16, maxzoom=16)
+    assert summary["counts"]["in_city"] == 1 and summary["pieces_unclipped"] == 0
+    import math
+    n = 1 << 16
+    x = int((LON + 180) / 360 * n)
+    y = int((1 - math.log(math.tan(math.radians(LAT)) + 1 / math.cos(math.radians(LAT))) / math.pi) / 2 * n)
+    tile = decode_tile(read_tile(out, 16, x, y), 16, x, y)
+    assert tile["building"][0]["props"]["h"] in ("35", 35)
+
+
+def test_fetch_refuses_a_short_read(tmp_path):
+    import httpx
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"objectIds": [1, 2, 3]})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        with pytest.raises(RuntimeError, match="expected"):
+            building_tiles.fetch(tmp_path / "x.db", client=c)
+    assert not (tmp_path / "x.db").exists()
