@@ -20,7 +20,7 @@ export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "building", "tra
 /** Street names appear from this zoom (brief: names only when zoomed in). */
 export const STREET_LABEL_MIN_ZOOM = 15;
 
-export interface TileSet { minZoom: number; maxZoom: number }
+export interface TileSet { minZoom: number; maxZoom: number; version?: string }
 export interface MapTiles { base: TileSet | null; parcels: TileSet | null; zoning: TileSet | null; grid?: TileSet | null; buildings?: TileSet | null }
 
 // ---------------------------------------------------------------- colors

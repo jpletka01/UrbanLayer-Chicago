@@ -122,3 +122,21 @@ def test_buildings_carry_the_zoning_family_under_them(tmp_path, monkeypatch):
     feats, counts = building_tiles.build_features(src, zoning=zoning)
     assert feats[0].props["f"] == "business" and feats[0].props["m"] == "l"
     assert counts["zoning_unmatched"] == 0
+
+
+# ---------------------------------------------------------------- the Assessor's one-story lots (616 W Diversey)
+
+def test_a_one_story_lot_is_cut_out_of_a_tall_piece():
+    piece = _row(0, 0.0008)
+    shop = _row(0.0006, 0.0008, LAT - 0.0001, LAT + 0.0004)  # the lot reaches past the building
+    lots = (shapely.STRtree([shop]), [shop])
+    parts = building_tiles.cut_one_story(piece, 173.0, lots)
+    kinds = sorted((k, round(h)) for _, h, k in parts)
+    assert kinds == [("a", building_tiles.ONE_STORY_FT), ("l", 173)]
+
+
+def test_a_one_story_cut_leaves_the_tall_building_when_it_would_take_most_of_it():
+    piece = _row(0, 0.0008)
+    big = _row(-0.0001, 0.0009, LAT - 0.0001, LAT + 0.0004)  # the "one-story" lot holds the whole tall building
+    assert building_tiles.cut_one_story(piece, 173.0, (shapely.STRtree([big]), [big])) == [(piece, 173.0, "l")]
+    assert building_tiles.cut_one_story(piece, 40.0, (shapely.STRtree([big]), [big])) == [(piece, 40.0, "l")]

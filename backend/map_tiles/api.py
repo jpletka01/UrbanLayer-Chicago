@@ -81,6 +81,12 @@ def map_info() -> dict:
             "minZoom": int(m.get("minzoom", 0)), "maxZoom": int(m.get("maxzoom", 16)),
             "builtAt": m.get("built_at"),
         }
+    # Tiles are cached for a day: the building heights' URL carries the file's version so a rebuild shows at once.
+    if out.get("buildings"):
+        try:
+            out["buildings"]["version"] = str(int(_path("buildings").stat().st_mtime))
+        except OSError:
+            pass
     return out
 
 

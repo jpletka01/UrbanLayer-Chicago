@@ -41,7 +41,9 @@ export function tintedColors(theme: Theme): Record<string, { low: string; high: 
 }
 
 export function buildingsSource(apiOrigin: string, tiles: TileSet): VectorSourceSpecification {
-  return { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/buildings/{z}/{x}/{y}.mvt`], minzoom: tiles.minZoom, maxzoom: tiles.maxZoom };
+  // The version changes with every rebuild, so a day-cached tile never outlives a correction.
+  const v = tiles.version ? `?v=${encodeURIComponent(tiles.version)}` : "";
+  return { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/buildings/{z}/{x}/{y}.mvt${v}`], minzoom: tiles.minZoom, maxzoom: tiles.maxZoom };
 }
 
 const METERS = ["*", ["to-number", ["get", "h"], 0], FEET_TO_METERS];

@@ -8,6 +8,7 @@ describe("buildings3d", () => {
     const s = buildingsSource("https://example.test", { minZoom: 14, maxZoom: 16 });
     expect(s.tiles).toEqual(["https://example.test/api/map/tiles/buildings/{z}/{x}/{y}.mvt"]);
     expect(s.minzoom).toBe(14);
+    expect(buildingsSource("https://example.test", { minZoom: 14, maxZoom: 16, version: "1762850000" }).tiles?.[0]).toMatch(/\.mvt\?v=1762850000$/);
   });
 
   it("extrudes the height in feet converted to metres, from the ground", () => {

@@ -108,6 +108,15 @@ def city_outline():
 # is a real piece (REMAINDER_MIN_SQFT after a 1.5 m opening) touching the tallest footprint, is drawn low and not
 # measured when it is a real piece elsewhere, and is dropped as slivers otherwise.
 SPLIT_MIN_FT = 60.0
+# The City's footprints can merge too (616 W Diversey: the 1926 tower's 2015 footprint covers the one-story shop next
+# door). So a tall piece is also cut along the lots the Assessor classes as one-story buildings (2-02/2-03/2-04 houses,
+# 5-17 one-story commercial); the cut is drawn at ONE_STORY_FT (the measured median of the City's one-story
+# buildings, Item 105). Measured 2026-11-11: on one-story-class lots 80% of the City's recorded stories are 1 and 85%
+# of the LiDAR heights are 25 ft or less; only 127 of 317,508 measured buildings there reach 60 ft (0.04%).
+ONE_STORY_CLASSES = frozenset({"2-02", "2-03", "2-04", "5-17"})
+ONE_STORY_FT = 22
+ONE_STORY_MIN_SQFT = 400
+ONE_STORY_MAX_SHARE = 0.8  # a cut covering more than this of the tall piece is the tall building itself: left alone
 UNMEASURED_FT = 12
 REMAINDER_MIN_SQFT = 2_000
 _SQFT_PER_DEG2 = 364_000 * 271_000  # Chicago: feet per degree of latitude x of longitude
@@ -181,6 +190,52 @@ def split_outline(outline, height: float, members: list[tuple[object, int | None
     return out or [(outline, height, "l")]
 
 
+def one_story_lots(index_db: Path | None, ptaxsim: Path | None):
+    """The outlines of the lots the Assessor classes as one-story buildings, as an STRtree and its geometries."""
+    if index_db is None or ptaxsim is None or not index_db.exists() or not ptaxsim.exists():
+        return None
+    from backend.discovery.index_backfill import lot_outlines
+
+    db = sqlite3.connect(f"file:{index_db}?mode=ro", uri=True)
+    try:
+        pins = set()
+        for pin, attrs in db.execute("SELECT pin, attrs FROM parcels WHERE attrs LIKE '%\"class\"%'"):
+            p = pin.replace("-", "")
+            if p[10:] == "0000" and json.loads(attrs).get("class") in ONE_STORY_CLASSES:
+                pins.add(p[:10])
+    finally:
+        db.close()
+    geoms = [g for g in (_polys(g) for g in lot_outlines(ptaxsim, pins).values()) if g is not None]
+    return (shapely.STRtree(geoms), geoms) if geoms else None
+
+
+def cut_one_story(piece, height: float, lots) -> list[tuple[object, float, str]]:
+    """``piece`` (a measured tall piece) cut along the one-story lots under it: [(piece, height_ft, kind)], kind "a"
+    for a cut drawn at ONE_STORY_FT. Unchanged when nothing applies."""
+    if lots is None or height < SPLIT_MIN_FT:
+        return [(piece, height, "l")]
+    tree, geoms = lots
+    total = shapely.area(piece)
+    cuts = []
+    for i in tree.query(piece, predicate="intersects"):
+        c = _polys(shapely.intersection(piece, geoms[i]))
+        if c is not None and shapely.area(c) * _SQFT_PER_DEG2 >= ONE_STORY_MIN_SQFT:
+            cuts.append(c)
+    if not cuts:
+        return [(piece, height, "l")]
+    cut = shapely.union_all(cuts)
+    if shapely.area(cut) > ONE_STORY_MAX_SHARE * total:
+        return [(piece, height, "l")]
+    out: list[tuple[object, float, str]] = [(c, float(ONE_STORY_FT), "a") for c in getattr(cut, "geoms", [cut])]
+    rest = _polys(shapely.difference(piece, cut))
+    if rest is not None:
+        rest = _polys(rest.buffer(-_OPEN_DEG).buffer(_OPEN_DEG))
+        for p in (getattr(rest, "geoms", [rest]) if rest is not None else []):
+            if shapely.area(p) * _SQFT_PER_DEG2 >= REMAINDER_MIN_SQFT:
+                out.append((p, height, "l"))
+    return out
+
+
 def _zoning_lookup(zoning: list[dict] | None):
     """A function: points -> (family, level) per point, from the City's zoning districts (layer 1)."""
     if not zoning:
@@ -208,11 +263,11 @@ def _zoning_lookup(zoning: list[dict] | None):
     return look
 
 
-def build_features(src: Path, *, city: Path | None = None,
-                   zoning: list[dict] | None = None) -> tuple[list[Feature], dict[str, int]]:
+def build_features(src: Path, *, city: Path | None = None, zoning: list[dict] | None = None,
+                   one_story=None) -> tuple[list[Feature], dict[str, int]]:
     """One extrusion feature per County building inside the city (split along the City's footprints where a tall
-    outline merged several), with ``h`` = height in whole feet, ``m`` = how it is known (l measured, s from stories,
-    u not measured) and the zoning ``f`` family / ``l`` level under it (the style tints by family)."""
+    outline merged several, and along the Assessor's one-story lots), with ``h`` = height in whole feet, ``m`` = how it
+    is known (l measured, s from stories, a the Assessor's one-story class, u not measured) and the zoning ``f`` family / ``l`` level under it (the style tints by family)."""
     db = sqlite3.connect(f"file:{src}?mode=ro", uri=True)
     try:
         rows = db.execute("SELECT height_ft, wkb FROM buildings").fetchall()
@@ -223,6 +278,7 @@ def build_features(src: Path, *, city: Path | None = None,
     inside = shapely.contains_xy(city_outline(), *shapely.get_coordinates(shapely.point_on_surface(geoms)).T)
     counts = {"in_box": len(rows), "in_city": int(inside.sum()), "invalid_fixed": 0, "dropped_empty": 0,
               "split_outlines": 0, "pieces_measured": 0, "pieces_from_stories": 0, "pieces_not_measured": 0,
+              "one_story_cut_outlines": 0, "pieces_one_story_class": 0,
               "zoning_unmatched": 0}
     if counts["in_city"] < MIN_IN_CITY:
         raise RuntimeError(f"County buildings: {counts['in_city']} inside the city, expected {MIN_IN_CITY}+")
@@ -243,10 +299,17 @@ def build_features(src: Path, *, city: Path | None = None,
                 parts = split_outline(g, h, [(cg[i], cst[i]) for i in idx])
                 if len(parts) > 1:
                     counts["split_outlines"] += 1
+        if one_story is not None and h >= SPLIT_MIN_FT:
+            cut_parts: list[tuple[object, float, str]] = []
+            for part in parts:
+                cut_parts.extend(cut_one_story(part[0], part[1], one_story) if part[2] == "l" else [part])
+            if len(cut_parts) != len(parts):
+                counts["one_story_cut_outlines"] += 1
+            parts = cut_parts
         pieces.extend(parts)
     look = _zoning_lookup(zoning)
     zones = look(shapely.point_on_surface([p[0] for p in pieces])) if look else [None] * len(pieces)
-    kind_key = {"l": "pieces_measured", "s": "pieces_from_stories", "u": "pieces_not_measured"}
+    kind_key = {"l": "pieces_measured", "s": "pieces_from_stories", "u": "pieces_not_measured", "a": "pieces_one_story_class"}
     feats: list[Feature] = []
     for (g, h, kind), z in zip(pieces, zones):
         counts[kind_key[kind]] += 1
@@ -274,7 +337,10 @@ def build_file(out: Path, *, offline: bool = False, minzoom: int = MIN_ZOOM, max
         zoning = json.loads(zpath.read_text())["features"]
     else:
         log.warning("County buildings: %s missing; buildings are not tinted by zoning", zpath)
-    feats, counts = build_features(src, city=city, zoning=zoning)
+    one_story = one_story_lots(out.parent / "discovery_index.db", out.parent / "ptaxsim.db")
+    if one_story is None:
+        log.warning("County buildings: the Discovery index or ptaxsim is missing; one-story lots are not cut out")
+    feats, counts = build_features(src, city=city, zoning=zoning, one_story=one_story)
     stats = write_mbtiles(
         out, feats, name="map_buildings", minzoom=minzoom, maxzoom=maxzoom, layer_order=[LAYER],
         fields={LAYER: {"h": "Number", "m": "String", "f": "String", "l": "String"}},
