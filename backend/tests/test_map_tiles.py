@@ -251,3 +251,28 @@ def test_lot_endpoint_prefers_the_matching_county_outline(tmp_path, monkeypatch)
     assert client.get("/api/map/lot?pin10=1431332018").json()["source"] == "ptaxsim"
     assert client.get("/api/map/lot?pin10=0000000000").status_code == 404
     assert client.get("/api/map/lot?pin10=12").status_code == 400
+
+
+def test_county_outlines_answer_many_threads_at_once(tmp_path):
+    """One connection per thread: a connection shared across FastAPI's thread pool segfaulted the server when
+    Discovery's cards asked for several lot outlines at once (Item 104)."""
+    import sqlite3
+    from concurrent.futures import ThreadPoolExecutor
+
+    import shapely
+    from shapely.geometry import box
+
+    from backend.map_tiles.county_outlines import Outlines
+
+    path = tmp_path / "outlines.db"
+    db = sqlite3.connect(path)
+    db.execute("CREATE TABLE outlines (pin10 TEXT PRIMARY KEY, wkb BLOB NOT NULL)")
+    db.executemany("INSERT INTO outlines VALUES (?, ?)",
+                   [(f"{i:010d}", shapely.to_wkb(box(i, 0, i + 1, 1))) for i in range(200)])
+    db.commit()
+    db.close()
+    store = Outlines(path)
+    with ThreadPoolExecutor(16) as pool:
+        got = list(pool.map(lambda i: store.get(f"{i % 200:010d}"), range(2000)))
+    assert all(g is not None for g in got)
+    assert store.many(["0000000003", "0000000999"]).keys() == {"0000000003"}
