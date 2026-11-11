@@ -18,6 +18,8 @@ export function AppFrame({
   crumbs,
   tools,
   drawer,
+  bar,
+  fill = false,
   children,
 }: {
   /** The breadcrumb, first to last; the last one is the current page. */
@@ -26,6 +28,11 @@ export function AppFrame({
   tools?: ReactNode;
   /** The right-hand drawer (the analyst), rendered beside the content when open. */
   drawer?: ReactNode;
+  /** The page's own controls in place of the breadcrumb (Discovery's search and filters, Item 104); the breadcrumb
+      stays for screen readers. */
+  bar?: ReactNode;
+  /** The page fills the screen below the top bar (Discovery's map): the bar may grow to a second row. */
+  fill?: boolean;
   children: ReactNode;
 }) {
   const { t } = useTranslation("next");
@@ -40,7 +47,7 @@ export function AppFrame({
 
   return (
     <div
-      className="ui-next flex min-h-dvh bg-nx-page font-sans text-body text-nx-ink"
+      className={`ui-next flex bg-nx-page font-sans text-body text-nx-ink ${fill ? "h-dvh overflow-hidden" : "min-h-dvh"}`}
       data-ui-version="next"
     >
       <aside className="sticky top-0 hidden h-dvh shrink-0 border-r border-nx-ink/10 lg:block">
@@ -48,8 +55,8 @@ export function AppFrame({
       </aside>
 
       <div className="flex min-w-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-[68px] items-center gap-2 border-b border-nx-ink/10 px-4 sm:px-7">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <header className={`flex items-center gap-2 border-b border-nx-ink/10 px-4 sm:px-7 ${bar ? "min-h-[68px] py-2" : "h-[68px]"}`}>
             <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
               <Dialog.Trigger
                 className="-ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 lg:hidden touch-target"
@@ -75,7 +82,8 @@ export function AppFrame({
               </Dialog.Portal>
             </Dialog.Root>
 
-            <nav aria-label={t("frame.breadcrumb")} className="min-w-0 flex-1">
+            {bar && <div className="min-w-0 flex-1">{bar}</div>}
+            <nav aria-label={t("frame.breadcrumb")} className={bar ? "sr-only" : "min-w-0 flex-1"}>
               <ol className="flex min-w-0 items-center gap-2">
                 {crumbs.map((c, i) => {
                   const last = i === crumbs.length - 1;
@@ -91,7 +99,7 @@ export function AppFrame({
             {tools && <div className="flex shrink-0 items-center gap-1">{tools}</div>}
           </header>
 
-          <main className="min-w-0 flex-1">{children}</main>
+          <main className={fill ? "flex min-h-0 min-w-0 flex-1 flex-col" : "min-w-0 flex-1"}>{children}</main>
         </div>
         {drawer}
       </div>

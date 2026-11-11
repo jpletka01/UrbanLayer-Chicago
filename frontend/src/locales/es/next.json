@@ -1140,19 +1140,16 @@
   },
   "discovery": {
     "crumb": "Descubrir",
-    "title": "Encuentre terrenos",
-    "lead": "Describa lo que busca o empiece con un objetivo.",
-    "label": "Describa los terrenos",
-    "placeholder": "Vacant lots near the L in Logan Square",
+    "title": "Buscar terrenos",
+    "label": "Busque una dirección, una colonia o describa los terrenos",
+    "placeholder": "Dirección, colonia o descríbalo",
     "search": "Buscar",
-    "try": "Pruebe:",
     "unavailable": "Descubrir no está disponible en este momento.",
     "searchFailed": "La búsqueda no se completó. Intente de nuevo.",
     "notUnderstood": "No se entendió",
     "none": "Ningún terreno coincide.",
     "count_one": "{{total}} terreno",
     "count_other": "{{total}} terrenos",
-    "countTop": "Los primeros {{shown}} de {{total}} terrenos",
     "more": "Mostrar más",
     "card": {
       "near": "Cerca de {{address}}",
@@ -1162,8 +1159,461 @@
       "sale": "Última venta",
       "saleValue": "{{price}} en {{year}}",
       "nominal": "Avalúo nominal",
-      "open": "Abrir ficha"
-    }
+      "open": "Abrir ficha",
+      "transfer": "Traspaso en {{year}}, sin precio de mercado",
+      "noSale": "Ninguna registrada",
+      "unknown": "Sin dato",
+      "lotValue": "Terreno de {{value}} pies²",
+      "roomValue": "Espacio para construir: {{value}} pies²",
+      "roomUnknown": "Espacio para construir: sin dato",
+      "complex_one": "Espacio de todo el conjunto de {{count}} terreno",
+      "complex_other": "Espacio de todo el conjunto de {{count}} terrenos",
+      "basis": {
+        "commercial_valuation": "Superficie construida de los registros comerciales del Asesor",
+        "footprint": "Superficie construida de las huellas de edificios de la Ciudad × pisos",
+        "city_land_inventory": "Sin edificio: terreno baldío de la Ciudad (inventario de terrenos de la Ciudad)"
+      },
+      "named": {
+        "own_rules": "Lo fija su propia ordenanza",
+        "open_space": "Espacio abierto",
+        "transport": "Terreno ferroviario o de transporte"
+      },
+      "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
+      "now": {
+        "empty": "Terreno baldío",
+        "residential": "Casa o edificio de 2 a 6",
+        "multi_family": "Edificio de departamentos",
+        "commercial": "Comercial",
+        "industrial": "Industrial",
+        "exempt": "Exento (público o sin fines de lucro)",
+        "mixed_use": "Uso mixto",
+        "institutional": "Institucional",
+        "built": "construido en {{year}}"
+      },
+      "walk": "A {{minutes}} min a pie del L",
+      "tif": "En un TIF",
+      "ez": "Zona Empresarial",
+      "teardown": "Edificio viejo en terreno valioso",
+      "roomShort": "espacio para construir",
+      "barLabel": "Construidos {{built}} pies² de {{allowed}} pies² permitidos ({{pct}}% usado)",
+      "built": "Construido {{value}}",
+      "allowed": "Permitido {{value}} · {{pct}}% usado",
+      "moreInComplex_one": "1 terreno más del conjunto en esta lista",
+      "moreInComplex_other": "{{count}} terrenos más del conjunto en esta lista",
+      "sold": "Vendido en {{price}} en {{year}}"
+    },
+    "goalSoon": "faltan datos",
+    "goal": {
+      "vacant_mf_transit": "Terrenos baldíos cerca del L",
+      "teardown": "Edificios viejos en terrenos valiosos",
+      "room_to_build": "Terrenos con espacio para construir",
+      "underused_commercial_tif": "Comercios subutilizados en un TIF",
+      "fresh_comps": "Ventas recientes",
+      "undervalued_mf": "Edificios chicos por debajo de su colonia",
+      "adu_2flats": "Espacio para una casa de cochera"
+    },
+    "noneHint": "Ningún terreno coincide. Quite un filtro o amplíe el área.",
+    "topOf": "Los primeros {{shown}} de {{total}} terrenos. La lista completa y el CSV vienen con Pro.",
+    "resultsTitle": "Terrenos que coinciden",
+    "removeFilter": "Quitar {{label}}",
+    "inThisView": "En esta vista del mapa",
+    "newSearch": "Nueva búsqueda",
+    "searchTheseLots": "Buscar estos terrenos",
+    "searchAllLots": "Buscar todos los terrenos",
+    "searchNInView_one": "Buscar {{n}} terreno a la vista",
+    "searchNInView_other": "Buscar {{n}} terrenos a la vista",
+    "searchNCity_one": "Buscar {{n}} terreno en la ciudad",
+    "searchNCity_other": "Buscar {{n}} terrenos en la ciudad",
+    "inView_one": "{{n}} terreno a la vista",
+    "inView_other": "{{n}} terrenos a la vista",
+    "listThem": "Ver la lista",
+    "capped": "Hay más coincidencias de las que el mapa puede marcar a la vez: acérquese",
+    "hiddenUnusual_one": "{{n}} terreno inusual oculto (vía férrea, servicios, área común o franja de menos de 16 pies).",
+    "hiddenUnusual_other": "{{n}} terrenos inusuales ocultos (vía férrea, servicios, áreas comunes o franjas de menos de 16 pies).",
+    "show": "Mostrar",
+    "focus": {
+      "label": "Mostrar como",
+      "list": "Lista",
+      "map": "Mapa"
+    },
+    "quick": {
+      "label": "Filtros rápidos",
+      "checking": "Revisando los terrenos a la vista",
+      "vacant": "Baldío",
+      "nearL": "Cerca del L",
+      "lot5k": "Terreno de 5,000+ pies²",
+      "sold2y": "Vendido en 2 años",
+      "tif": "En un TIF"
+    },
+    "box": {
+      "address": "Dirección",
+      "area": "Área comunitaria",
+      "describe": "Describir",
+      "hood": "Colonia"
+    },
+    "measure": {
+      "colorBy": "Colorear terrenos por",
+      "unknown": "Sin dato (punteado)",
+      "match": "Coincide con la búsqueda",
+      "showZoning": "Mostrar distritos de zonificación",
+      "zoomHint": "Los terrenos aparecen al acercarse; la vista de la ciudad muestra las comunidades.",
+      "room": {
+        "name": "Espacio para construir",
+        "note": "Superficie permitida menos lo construido, según el FAR del distrito base.",
+        "0": "Sin espacio",
+        "1": "Menos de 2,500 pies²",
+        "2": "2,500–5,000 pies²",
+        "3": "5,000–10,000 pies²",
+        "4": "10,000 pies² o más",
+        "own": "Lo fija su propia ordenanza (PD)",
+        "park": "Parque o espacio abierto",
+        "transport": "Terreno ferroviario o de transporte"
+      },
+      "lot": {
+        "name": "Tamaño del terreno",
+        "0": "Menos de 2,500 pies²",
+        "1": "2,500–5,000 pies²",
+        "2": "5,000–10,000 pies²",
+        "3": "10,000 pies² a un acre",
+        "4": "Un acre o más"
+      },
+      "sale": {
+        "name": "Última venta",
+        "0": "Hace menos de un año",
+        "1": "Hace 1–3 años",
+        "2": "Hace 3–5 años",
+        "3": "Hace 5–10 años",
+        "4": "Hace 10 años o más"
+      },
+      "use": {
+        "name": "Uso del suelo",
+        "0": "Baldío",
+        "1": "Residencial",
+        "2": "Multifamiliar",
+        "3": "Comercial",
+        "4": "Industrial",
+        "5": "Exento"
+      },
+      "zoning": {
+        "name": "Familia de zonificación",
+        "note": "Con los colores del mapa de zonificación"
+      }
+    },
+    "map": {
+      "label": "Mapa de los terrenos de Chicago",
+      "noWebgl": "El mapa no se puede dibujar en este navegador. La búsqueda y la lista siguen funcionando.",
+      "lot": "Terreno",
+      "close": "Cerrar",
+      "loading": "Cargando el terreno…",
+      "missing": "Este terreno no está en el índice de Discovery.",
+      "failed": "No se pudo cargar este terreno. Inténtelo de nuevo."
+    },
+    "place": {
+      "profile": "Abrir su Ficha",
+      "around": "Buscar alrededor",
+      "size": "Tamaño del círculo",
+      "miles": "{{mi}} mi",
+      "drag": "Arrastre el control del círculo para cambiar su tamaño.",
+      "searchRing": "Buscar dentro de {{mi}} mi"
+    },
+    "sheet": {
+      "label": "Terrenos",
+      "more": "Ver más de la lista",
+      "less": "Ver menos de la lista"
+    },
+    "warning": {
+      "demolition": "Permiso de demolición {{date}}",
+      "vacant_case": "Caso de edificio desocupado {{date}}",
+      "pending_rezoning": "Rezonificación presentada",
+      "landmark": "Monumento: {{name}}",
+      "nominal": "Avalúo nominal"
+    },
+    "filters": {
+      "clear": "Borrar",
+      "close": "Cerrar",
+      "show_one": "Mostrar {{n}} terreno",
+      "show_other": "Mostrar {{n}} terrenos",
+      "showUnknown": "Mostrar terrenos",
+      "coverage": "Dato conocido en {{share}}% de los terrenos",
+      "includeUnknown": "Incluir también terrenos sin dato ({{n}})",
+      "histogram": "{{label}} en los terrenos de Chicago; {{unknown}} sin dato"
+    },
+    "ringChip": "A {{mi}} mi o menos de la dirección",
+    "groups": {
+      "label": "Filtros",
+      "lot": "Terreno",
+      "zoning": "Zonificación",
+      "building": "Edificio",
+      "transit": "Transporte",
+      "money": "Precio y ventas",
+      "incentives": "Incentivos",
+      "lotTitle": "El terreno",
+      "zoningTitle": "Lo que permite la zonificación",
+      "buildingTitle": "Lo que hay ahora",
+      "transitTitle": "Cómo moverse",
+      "moneyTitle": "Precio y ventas",
+      "incentivesTitle": "Incentivos"
+    },
+    "f": {
+      "vacancy": {
+        "name": "Terreno baldío",
+        "hint": "Sin edificio registrado.",
+        "on": "Solo terrenos baldíos",
+        "tech": "Clases baldías del Asesor (1xx)"
+      },
+      "room_to_build": {
+        "name": "Espacio para construir",
+        "hint": "Cuánta superficie más permite la zonificación que la construida.",
+        "tech": "Superficie permitida (FAR × terreno) menos el edificio"
+      },
+      "lot_size": {
+        "name": "Tamaño del terreno",
+        "hint": "Un terreno típico de Chicago mide 25 × 125 pies, unos 3,125 pies².",
+        "tech": "Superficie del terreno, pies²"
+      },
+      "zoning_group": {
+        "name": "Zonificado para",
+        "hint": "Para qué es el terreno según el mapa de zonificación de la Ciudad.",
+        "tech": "Familia del distrito (RS, RT, RM, B, C, M, D, PD)"
+      },
+      "density_band": {
+        "name": "Qué tan grande puede ser",
+        "hint": "Cuánta superficie permite la zonificación, en pisos equivalentes sobre todo el terreno.",
+        "tech": "Coeficiente de superficie (FAR) del distrito base"
+      },
+      "land_use": {
+        "name": "Lo que hay ahora",
+        "hint": "Cómo clasifica el Asesor la propiedad hoy.",
+        "tech": "Clase de propiedad del Asesor"
+      },
+      "is_teardown_candidate": {
+        "name": "Edificio viejo en terreno valioso",
+        "hint": "El edificio vale una cuarta parte o menos del valor de la propiedad.",
+        "on": "Solo estos",
+        "tech": "Edificio ≤ 25% del valor del avalúo"
+      },
+      "year_built": {
+        "name": "Año de construcción",
+        "hint": "Según los registros del Asesor.",
+        "tech": "Año de construcción del Asesor"
+      },
+      "building_size": {
+        "name": "Tamaño del edificio",
+        "hint": "Superficie construida.",
+        "tech": "Pies² construidos"
+      },
+      "transit_proximity": {
+        "name": "A pie al L",
+        "hint": "Tiempo caminando a la estación del L más cercana.",
+        "on": "Solo terrenos cerca del L",
+        "tech": "Distancia en línea recta a una estación del CTA"
+      },
+      "sale_recency": {
+        "name": "Última venta",
+        "hint": "Cuándo cambió de dueño por última vez.",
+        "tech": "Ventas registradas del Condado"
+      },
+      "last_sale_price": {
+        "name": "Precio de la última venta",
+        "hint": "Las ventas de menos de $10,000 son traspasos, no precios, y se dejan fuera.",
+        "tech": "Ventas registradas del Condado"
+      },
+      "tif": {
+        "name": "En un distrito TIF",
+        "hint": "Aquí el impuesto predial puede financiar proyectos a través del distrito.",
+        "on": "Solo en un TIF",
+        "tech": "Distrito de Financiamiento por Incremento de Impuestos"
+      },
+      "enterprise_zone": {
+        "name": "En una Zona Empresarial",
+        "hint": "Incentivos fiscales estatales para materiales de construcción y algunas inversiones.",
+        "on": "Solo en una Zona Empresarial",
+        "tech": "Zona Empresarial de Illinois"
+      },
+      "opportunity_zone": {
+        "name": "En una Zona de Oportunidad",
+        "hint": "Beneficios fiscales federales para inversión a largo plazo.",
+        "on": "Solo en una Zona de Oportunidad",
+        "tech": "Zona de Oportunidad Calificada"
+      }
+    },
+    "choice": {
+      "room_to_build": {
+        "some": {
+          "name": "Algo de espacio",
+          "hint": "2,500+ pies² más"
+        },
+        "more": {
+          "name": "Espacio para un edificio",
+          "hint": "5,000+ pies² más"
+        },
+        "lots": {
+          "name": "Mucho espacio",
+          "hint": "10,000+ pies² más"
+        }
+      },
+      "lot_size": {
+        "small": {
+          "name": "Chico",
+          "hint": "Menos de 2,500 pies²"
+        },
+        "standard": {
+          "name": "Un terreno típico",
+          "hint": "2,500–5,000 pies²"
+        },
+        "double": {
+          "name": "Un terreno doble",
+          "hint": "5,000–10,000 pies²"
+        },
+        "large": {
+          "name": "Grande",
+          "hint": "10,000 pies² o más"
+        }
+      },
+      "zoning_group": {
+        "residential": {
+          "name": "Vivienda",
+          "hint": "RS, RT, RM"
+        },
+        "business": {
+          "name": "Comercios y oficinas",
+          "hint": "B"
+        },
+        "commercial": {
+          "name": "Comercial",
+          "hint": "C"
+        },
+        "manufacturing": {
+          "name": "Industria",
+          "hint": "M"
+        },
+        "downtown": {
+          "name": "Centro",
+          "hint": "D"
+        },
+        "planned_development": {
+          "name": "Desarrollo planificado",
+          "hint": "PD, con sus propias reglas"
+        }
+      },
+      "density_band": {
+        "houses": {
+          "name": "Casas",
+          "hint": "Cerca de 1 piso"
+        },
+        "flats": {
+          "name": "Edificios chicos",
+          "hint": "1–2 pisos"
+        },
+        "apartments": {
+          "name": "Departamentos",
+          "hint": "2–5 pisos"
+        },
+        "towers": {
+          "name": "Torres",
+          "hint": "5 o más"
+        }
+      },
+      "land_use": {
+        "residential": {
+          "name": "Casas y edificios de 2 a 6",
+          "hint": "Residencial"
+        },
+        "multi_family": {
+          "name": "Edificios de departamentos",
+          "hint": "7 unidades o más"
+        },
+        "commercial": {
+          "name": "Comercios y oficinas",
+          "hint": "Comercial"
+        },
+        "industrial": {
+          "name": "Industria",
+          "hint": "Industrial"
+        },
+        "vacant": {
+          "name": "Baldío",
+          "hint": "Baldío"
+        }
+      },
+      "year_built": {
+        "pre1920": {
+          "name": "Antes de 1920",
+          "hint": "A menudo de madera"
+        },
+        "1920to1979": {
+          "name": "{{from}}–{{to}}",
+          "hint": ""
+        },
+        "since1980": {
+          "name": "1980 o después",
+          "hint": ""
+        }
+      },
+      "building_size": {
+        "small": {
+          "name": "Chico",
+          "hint": "Menos de 2,500 pies²"
+        },
+        "medium": {
+          "name": "Mediano",
+          "hint": "2,500–10,000 pies²"
+        },
+        "large": {
+          "name": "Grande",
+          "hint": "10,000 pies² o más"
+        }
+      },
+      "sale_recency": {
+        "6mo": {
+          "name": "6 meses",
+          "hint": "Vendido en los últimos 6 meses"
+        },
+        "1y": {
+          "name": "Un año",
+          "hint": "Vendido en el último año"
+        },
+        "2y": {
+          "name": "2 años",
+          "hint": "Vendido en los últimos 2 años"
+        },
+        "5y": {
+          "name": "5 años",
+          "hint": "Vendido en los últimos 5 años"
+        }
+      },
+      "last_sale_price": {
+        "under250k": {
+          "name": "Menos de $250,000",
+          "hint": ""
+        },
+        "under500k": {
+          "name": "Menos de $500,000",
+          "hint": ""
+        },
+        "under1m": {
+          "name": "Menos de $1 millón",
+          "hint": ""
+        }
+      }
+    },
+    "walk": {
+      "value": "A {{minutes}} minutos a pie o menos (unas {{mi}} mi)",
+      "note": "Se dibuja alrededor de cada estación del L en el mapa. A 20 minutos por milla, en línea recta. Metra, autobús y Divvy aún no están en el índice."
+    },
+    "goals": {
+      "title": "Empezar por un objetivo"
+    },
+    "goalHint": {
+      "vacant_mf_transit": "Baldíos, zonificados para vivienda, a ½ mi o menos de una estación del L",
+      "teardown": "El edificio es una parte pequeña del valor",
+      "room_to_build": "5,000+ pies² más permitidos que construidos",
+      "underused_commercial_tif": "Terrenos comerciales muy por debajo de lo permitido",
+      "fresh_comps": "Departamentos y comercios vendidos en 6 meses",
+      "undervalued_mf": "Edificios de 2 a 6 en la cuarta parte más barata por pie²",
+      "adu_2flats": "Faltan las áreas de casa de cochera en el índice"
+    },
+    "or": " o "
   },
   "map": {
     "key": "Leyenda del mapa",

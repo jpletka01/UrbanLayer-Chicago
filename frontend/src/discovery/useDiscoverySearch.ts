@@ -57,16 +57,19 @@ function afterPaint(fn: () => void) {
 }
 
 function toInputs(draft: DiscoveryDraft, topicId: string | null = draft.topicId): SearchInputs {
-  return { panelState: draft.panelState, text: draft.text, sort: draft.sort, topicId, includeUnusual: !!draft.includeUnusual };
+  return { panelState: draft.panelState, text: draft.text, sort: draft.sort, topicId, includeUnusual: !!draft.includeUnusual, scope: draft.scope ?? null };
 }
 
 export interface DiscoverySearchOptions {
   /** Called when a response is committed (the user is now looking at it), with the inputs that produced it. */
   onCommit?: (inputs: SearchInputs, response: SearchResponse) => void;
+  /** Ask for matches per community area with every search (the new UI's city view, Item 104). */
+  includeAreaCounts?: boolean;
 }
 
 export function useDiscoverySearch(registry: Registry | null, options: DiscoverySearchOptions = {}) {
   const onCommitRef = useRef(options.onCommit);
+  const areaCountsRef = useRef(!!options.includeAreaCounts);
   useEffect(() => {
     onCommitRef.current = options.onCommit;
   });
@@ -158,7 +161,7 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
         // they cannot disagree. A backend that predates `includePins` ignores it and sends
         // no points: then fall back to the separate pins request, so deploy order can never
         // break the map.
-        const resp = await runSearch({ ...inputs, includePins: true }, registry, controller.signal);
+        const resp = await runSearch({ ...inputs, includePins: true, includeAreaCounts: areaCountsRef.current }, registry, controller.signal);
         if (requestId !== requestIdRef.current) return;
         let pins = resp?.pins ?? null;
         if (resp && !pins) {
@@ -497,6 +500,8 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
     apply,
     pickRecipe,
     pickNeighborhood,
+    /** Replace the draft and search it at once (the new UI's quick filters, ring and "Search these lots"). */
+    startWith,
     startAll,
     resume,
     editPanel,

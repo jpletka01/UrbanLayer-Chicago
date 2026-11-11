@@ -13,10 +13,11 @@ import io
 import logging
 import re
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Iterator
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.auth import get_current_user, require_tier
@@ -38,6 +39,7 @@ from backend.discovery.evaluator import EvalResult
 from backend.discovery.result_cache import cached_evaluate
 from backend.discovery.registry import Coverage, ParcelTiles, Registry
 from backend.discovery.registry import load as load_registry
+from backend.discovery.lot_facts import WARNING_ORDER
 from backend.retrieval.property.assessment_level import is_nominal_assessment
 
 log = logging.getLogger(__name__)
@@ -76,6 +78,9 @@ class SearchRequest(BaseModel):
     includePins: bool = False
     # Opt in to the parcels the default `hide_unusual` filter keeps out (decision Item 60).
     includeUnusual: bool = False
+    # Also return how many matches fall in each community area, from the same evaluation (the new map's city view
+    # labels each area with its count: matches are drawn as lot outlines only, Item 104).
+    includeAreaCounts: bool = False
 
 
 class ResultRow(BaseModel):
@@ -114,6 +119,25 @@ class ResultRow(BaseModel):
     allowed_far: float | None = None
     # A nominal assessment ($1 common area; decision Item 46): the row says "Nominal", never "$1".
     nominal_assessment: bool = False
+    # Room to build (allowed floor area minus the building's) and where the building area came from: assessor,
+    # commercial_valuation or footprint (Item 104). None = unknown, never 0.
+    room_sqft: float | None = None
+    bldg_sqft_source: str | None = None
+    # "complex" = the room of the multi-parcel site this lot belongs to (complex_lots lots), not of the lot alone.
+    room_scope: str | None = None
+    complex_lots: int | None = None
+    # How wide the lot really is (the widest circle inside it), and whether that makes it a strip (< 16 ft, Item 104).
+    lot_width_ft: float | None = None
+    narrow_strip: bool = False
+    # What a card shows beyond the figures (owner's review, Item 104): the City's neighborhood (slug), the walk to the
+    # nearest L station in miles, and the incentive areas the lot is in.
+    hood: str | None = None
+    transit_mi: float | None = None
+    in_tif: bool | None = None
+    in_enterprise_zone: bool | None = None
+    # At most one serious warning for the card (Item 104): {"kind": demolition | vacant_case | pending_rezoning |
+    # landmark | nominal, "detail": a date or a name, when there is one}.
+    warning: dict[str, str | None] | None = None
     # The value of the ACTIVE sort key for this row — so the list can always surface
     # "what you sorted by" even when that field is not one of the displayed columns.
     sortValue: float | str | None = None
@@ -154,6 +178,8 @@ class SearchResponse(BaseModel):
     # same request, computed from the SAME evaluation as `result` (one dataVersion, one
     # total, one ordering), so list and map cannot disagree. Not tier-capped, like /pins.
     pins: PinsResponse | None = None
+    # Only with `includeAreaCounts`: community area number (as a string) -> matches in it.
+    areaCounts: dict[str, int] | None = None
 
 
 ALL_COMMUNITY_AREAS = 77  # Chicago has 77 community areas → coverage "all"
@@ -239,14 +265,24 @@ def _nominal(av: float | None, cls: str | None, land_use: str | None) -> bool:
     return bool(av) and av > 0 and land_use != "exempt" and is_nominal_assessment(av, cls)
 
 
+def _warning(g, nominal: bool) -> dict[str, str | None] | None:
+    """The one serious warning a card shows, in the owner's order (Item 104)."""
+    for key in WARNING_ORDER:
+        v = g(key)
+        if v:
+            return {"kind": key.removeprefix("warn_"), "detail": v if isinstance(v, str) else None}
+    return {"kind": "nominal", "detail": None} if nominal else None
+
+
 def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
     g = parcel.get
+    nominal = _nominal(g("total_assessed_value"), g("class"), g("land_use_class"))
     return ResultRow(
         pin=parcel.pin,
         lat=parcel.lat,
         lon=parcel.lon,
         address=g("address"),
-        community_area=g("community_area"),
+        community_area=g("community_area") or _community_area_of(parcel),
         land_use=g("land_use_class"),
         # Display reads the REAL assessed value (exempt/$0 included); only the sort key
         # is nulled for exempt/$0, via parcel_index.derive_sort_fields.
@@ -266,7 +302,18 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         zoning_group=g("zoning_group"),
         zone_class=g("zone_class"),
         allowed_far=g("density_band"),
-        nominal_assessment=_nominal(g("total_assessed_value"), g("class"), g("land_use_class")),
+        nominal_assessment=nominal,
+        room_sqft=g("room_sqft"),
+        bldg_sqft_source=g("bldg_sqft_source"),
+        room_scope=g("room_scope"),
+        complex_lots=g("complex_lots"),
+        lot_width_ft=g("lot_width_ft"),
+        narrow_strip=bool(g("narrow_strip")),
+        hood=g("hood"),
+        transit_mi=g("cta_rail_distance_mi"),
+        in_tif=g("in_tif_district"),
+        in_enterprise_zone=g("in_enterprise_zone"),
+        warning=_warning(g, nominal),
         sortValue=_display_sort_value(parcel, sort_field),
     )
 
@@ -340,7 +387,187 @@ def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) ->
         result=SearchResult(rows=rows, total=result.total, nextOffset=next_offset, gated=gated),
         diagnostics=diagnostics,
         pins=_pins_payload(result, data_version) if req.includePins else None,
+        areaCounts=_area_counts(result, data_version) if req.includeAreaCounts else None,
     )
+
+
+def _community_area_of(parcel) -> int | None:
+    """The community area from the parcel's own region handle (the index keeps it there, not in attrs)."""
+    for region in getattr(parcel, "_regions", ()):
+        if region.startswith("neighborhood:"):
+            try:
+                return int(region.split(":", 1)[1])
+            except ValueError:
+                return None
+    return None
+
+
+def _area_counts(result, data_version: str) -> dict[str, int]:
+    """Matches per community area, read from each matched parcel's own region handles."""
+    lookup = _pin_lookup(data_version)
+    counts: dict[str, int] = {}
+    for pin in result.pins:
+        parcel = lookup.get(pin)
+        ca = _community_area_of(parcel) if parcel is not None else None
+        if ca is not None:
+            counts[str(ca)] = counts.get(str(ca), 0) + 1
+    return counts
+
+
+@router.get("/distribution")
+def distribution(filter: str = Query(..., alias="filter")) -> dict:
+    """A filter's values across the whole index, and how many lots have no value (Item 104): the filters sheet's
+    coverage line and histogram, with the unknowns as their own hatched bar. A range filter is binned over its
+    registry domain; an enum or flag is counted by value. Display only: never a search."""
+    try:
+        fdef = load_registry().filter_def(filter)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="unknown filter")
+    if fdef.kind == "region":
+        raise HTTPException(status_code=422, detail="a region filter has no distribution")
+    return _distribution(parcel_source.current_version(), filter)
+
+
+@lru_cache(maxsize=64)
+def _distribution(version: str, filter_id: str) -> dict:
+    fdef = load_registry().filter_def(filter_id)
+    ranged = fdef.kind == "range" and fdef.range is not None
+    lo, hi = fdef.range.domain if ranged else (0.0, 1.0)
+    n_bins = 16
+    width = (hi - lo) / n_bins or 1
+    counts = [0] * n_bins
+    values: dict[str, int] = {}
+    unknown = total = 0
+    for parcel in parcel_source.pin_lookup(version).values():
+        total += 1
+        v = parcel.get(fdef.field)
+        if v is None:
+            unknown += 1
+        elif ranged:
+            i = int((float(v) - lo) // width)
+            counts[min(max(i, 0), n_bins - 1)] += 1
+        else:
+            key = str(v).lower() if isinstance(v, bool) else str(v)
+            values[key] = values.get(key, 0) + 1
+    out: dict = {"filter": filter_id, "dataVersion": version, "total": total, "unknown": unknown}
+    if ranged:
+        out["bins"] = [{"min": lo + i * width, "max": lo + (i + 1) * width, "n": c} for i, c in enumerate(counts)]
+    else:
+        out["values"] = values
+    return out
+
+
+@router.get("/lot-context")
+def lot_context(pin10: str = Query(..., min_length=10, max_length=10)) -> dict:
+    """A lot and its neighbors for a card's picture (owner's review, Item 104): outlines within about 50 m of the lot,
+    each with its room-to-build band (the lot tiles' `r`), so a card draws a slice of the block colored like the map.
+    Display only."""
+    digits = "".join(ch for ch in pin10 if ch.isdigit())
+    if len(digits) != 10:
+        raise HTTPException(status_code=400, detail="pin10 must be 10 digits")
+    return _lot_context(parcel_source.current_version(), digits)
+
+
+_CTX_CELL = 0.0006  # degrees; neighbors come from this cell and the eight around it (~50-65 m)
+
+
+@lru_cache(maxsize=2)
+def _pin10_grid(version: str) -> tuple[dict[tuple[int, int], list[str]], dict[str, tuple[float, float, dict]]]:
+    grid: dict[tuple[int, int], list[str]] = {}
+    lots: dict[str, tuple[float, float, dict]] = {}
+    for parcel in parcel_source.pin_lookup(version).values():
+        if parcel.lat is None or parcel.lon is None:
+            continue
+        p10 = parcel.pin.replace("-", "")[:10]
+        if p10 in lots and not parcel.pin.replace("-", "").endswith("0000"):
+            continue  # the base parcel speaks for the lot
+        lots[p10] = (parcel.lat, parcel.lon, parcel._attrs)
+    for p10, (lat, lon, _a) in lots.items():
+        grid.setdefault((int(lat // _CTX_CELL), int(lon // _CTX_CELL)), []).append(p10)
+    return grid, lots
+
+
+@lru_cache(maxsize=512)
+def _lot_context(version: str, pin10: str) -> dict:
+    import sqlite3
+
+    import shapely
+    from shapely import wkt as shapely_wkt
+    from shapely.geometry import mapping
+
+    from backend.config import get_settings
+    from backend.discovery.lot_facts import measure_bands
+
+    grid, lots = _pin10_grid(version)
+    me = lots.get(pin10)
+    if me is None:
+        raise HTTPException(status_code=404, detail="lot not in the index")
+    cy, cx = int(me[0] // _CTX_CELL), int(me[1] // _CTX_CELL)
+    near = [p for dy in (-1, 0, 1) for dx in (-1, 0, 1) for p in grid.get((cy + dy, cx + dx), [])]
+    path = get_settings().ptaxsim_db_path
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="no outlines")
+    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        marks = ",".join("?" * len(near))
+        latest: dict[str, str] = {}
+        for p, text in db.execute(
+            f"SELECT pin10, geometry FROM pin_geometry_raw WHERE pin10 IN ({marks}) AND geometry IS NOT NULL ORDER BY end_year ASC",
+            near,
+        ):
+            latest[p] = text
+    finally:
+        db.close()
+    feats = []
+    for p, text in latest.items():
+        try:
+            g = shapely_wkt.loads(text).simplify(0.000003, preserve_topology=True)
+        except (shapely.errors.GEOSException, ValueError):
+            continue
+        band = measure_bands(lots[p][2]).get("r")
+        feats.append({"type": "Feature", "geometry": mapping(g),
+                      "properties": {"pin10": p, "r": band, "me": p == pin10}})
+    return {"type": "FeatureCollection", "features": feats}
+
+
+@router.get("/neighborhoods")
+def neighborhood_outlines() -> Response:
+    """The City's 98 named neighborhoods (Item 104): names, slugs (the `hood:<slug>` region) and outlines."""
+    from backend.discovery.neighborhoods import geojson_bytes
+
+    return Response(content=geojson_bytes(), media_type="application/geo+json",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.get("/areas")
+def community_area_outlines() -> Response:
+    """The 77 community areas, simplified to about 15 m, with a label point each: the new map's city view."""
+    return Response(content=_areas_geojson(), media_type="application/geo+json",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@lru_cache(maxsize=1)
+def _areas_geojson() -> bytes:
+    import json as _json
+
+    import shapely
+    from shapely.geometry import mapping, shape
+
+    from backend.config import get_settings
+
+    raw = _json.loads((get_settings().data_dir / "community_areas.geojson").read_text())
+    feats = []
+    for f in raw.get("features", []):
+        props = f.get("properties") or {}
+        num = props.get("community_area")
+        if num is None or not f.get("geometry"):
+            continue
+        g = shape(f["geometry"]).simplify(0.00015, preserve_topology=True)
+        label = shapely.point_on_surface(g)
+        feats.append({"type": "Feature", "id": int(num), "geometry": mapping(g),
+                      "properties": {"ca": int(num), "name": str(props.get("name") or ""),
+                                     "lx": round(label.x, 5), "ly": round(label.y, 5)}})
+    return _json.dumps({"type": "FeatureCollection", "features": feats}, separators=(",", ":")).encode()
 
 
 @router.get("/parcel", response_model=ResultRow)

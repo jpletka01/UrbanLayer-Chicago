@@ -12,7 +12,8 @@
     { "key": "sale_recency", "field": "sale_recency_days" },
     { "key": "price_per_sf", "field": "price_per_sf" },
     { "key": "value_percentile", "field": "value_percentile" },
-    { "key": "upside_score", "field": "upside_score" }
+    { "key": "upside_score", "field": "upside_score" },
+    { "key": "room_to_build", "field": "room_sqft" }
   ],
   "topics": [
     { "id": "vacant_mf_transit", "label": "Vacant land in residential zoning near transit",
@@ -50,6 +51,10 @@
       },
       "defaultSort": { "key": "upside_score", "dir": "desc" } },
 
+    { "id": "room_to_build", "label": "Lots with room to build",
+      "description": "Lots where the zoning allows at least 5,000 sq ft more floor area than is built.",
+      "presets": { "room_to_build": { "kind": "range", "min": 5000 } },
+      "defaultSort": { "key": "room_to_build", "dir": "desc" } },
     { "id": "fresh_comps", "label": "Fresh comps (sold < 6 mo)",
       "description": "Recent multifamily & commercial sales for underwriting.",
       "presets": {
@@ -115,6 +120,10 @@
       "label": "Redevelopment upside", "help": "0–100 blend of unused zoning capacity (FAR headroom) and land-vs-building value. Higher = more room to add density or rebuild.",
       "range": { "domain": [0, 100], "step": 5, "boundMode": "min", "display": "score",
         "presets": [ { "label": "Med 40+", "min": 40 }, { "label": "High 70+", "min": 70 } ] } },
+    { "id": "room_to_build", "category": "zoning_dev", "tier": "more", "kind": "range", "field": "room_sqft", "unknownPolicy": "exclude",
+      "label": "Room to build", "help": "Floor area the base zoning allows on the lot minus the building's floor area (the whole site's for a multi-parcel complex).",
+      "range": { "domain": [0, 50000], "step": 500, "boundMode": "min", "display": "number",
+        "presets": [ { "label": "2,500+ sq ft", "min": 2500 }, { "label": "5,000+ sq ft", "min": 5000 }, { "label": "10,000+ sq ft", "min": 10000 } ] } },
     { "id": "is_teardown_candidate", "category": "zoning_dev", "tier": "more", "kind": "flag", "field": "is_teardown_candidate", "unknownPolicy": "exclude",
       "label": "Teardown candidate", "help": "Improvement worth ≤25% of total value — the building is a fraction of the land's worth." },
 

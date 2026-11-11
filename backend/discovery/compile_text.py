@@ -22,6 +22,7 @@ from backend.discovery.cqs import (
     FlagPredicate,
     QueryMeta,
     RangePredicate,
+    RegionPredicate,
 )
 
 
@@ -91,6 +92,9 @@ _FLAG_PHRASES: dict[str, str] = {
     "vacant site": "vacancy",
     "vacant": "vacancy",
     "vacancy": "vacancy",
+    "teardown candidates": "is_teardown_candidate",
+    "teardowns": "is_teardown_candidate",
+    "teardown": "is_teardown_candidate",
 }
 
 _ENUM_PHRASES: dict[str, tuple[str, str]] = {
@@ -114,14 +118,28 @@ _ENUM_PHRASES: dict[str, tuple[str, str]] = {
     "downtown zoning": ("zoning_group", "downtown"),
 }
 
+def _place_phrases() -> dict[str, str]:
+    """A place's name -> its region handle: the City's 98 named neighborhoods ("wicker park" -> hood:wicker_park),
+    then the 77 community areas not already named that way ("west town" -> neighborhood:24) (Item 104)."""
+    from backend.discovery.neighborhoods import PREFIX, names
+    from backend.retrieval.geo import COMMUNITY_AREAS
+
+    out = {name.lower(): f"{PREFIX}{slug}" for slug, name in names().items()}
+    for ca, name in COMMUNITY_AREAS.items():
+        out.setdefault(name.lower(), f"neighborhood:{ca}")
+    return {k.replace("&", "and"): v for k, v in out.items() if len(k) >= 4}
+
+
+_PLACE_PHRASES: dict[str, str] = _place_phrases()
+
 # All phrases longest-first so "vacant lot" wins over "vacant", etc.
 _PHRASES_BY_LEN: list[str] = sorted(
-    set(_FLAG_PHRASES) | set(_ENUM_PHRASES), key=len, reverse=True
+    set(_FLAG_PHRASES) | set(_ENUM_PHRASES) | set(_PLACE_PHRASES), key=len, reverse=True
 )
 
 _STOPWORDS = {
     "in", "with", "and", "or", "the", "a", "an", "of", "for", "me", "find", "show",
-    "get", "list", "parcels", "parcel", "properties", "property", "that", "are", "is",
+    "get", "list", "parcels", "parcel", "properties", "property", "that", "are", "is", "lots", "lot",
     "near", "to", "my", "all", "any", "give",
 }
 _WORD = re.compile(r"[a-z0-9]+")
@@ -154,6 +172,7 @@ def parse(text: str) -> CqsFragment:
     range_acc: dict[str, RangePredicate] = {}
     enum_acc: dict[str, list[str]] = {}
     flags: dict[str, FilterAssignment] = {}
+    places: list[str] = []
 
     # 1) structured range grammar (ordered; spans consumed greedily)
     for rx, builder in _RANGE_RULES:
@@ -169,7 +188,10 @@ def parse(text: str) -> CqsFragment:
         for m in re.finditer(rf"\b{re.escape(phrase)}\b", s):
             if not is_free(m.start(), m.end()):
                 continue
-            if phrase in _FLAG_PHRASES:
+            if phrase in _PLACE_PHRASES:
+                if _PLACE_PHRASES[phrase] not in places:
+                    places.append(_PLACE_PHRASES[phrase])
+            elif phrase in _FLAG_PHRASES:
                 fid = _FLAG_PHRASES[phrase]
                 flags.setdefault(
                     fid, FilterAssignment(predicate=FlagPredicate(value=True), source="text")
@@ -187,6 +209,8 @@ def parse(text: str) -> CqsFragment:
     for fid, values in enum_acc.items():
         filters[fid] = FilterAssignment(predicate=EnumPredicate(values=sorted(values)), source="text")
     filters.update(flags)
+    if places:  # places OR together: "in wicker park or bucktown"
+        filters["neighborhood"] = FilterAssignment(predicate=RegionPredicate(regions=places), source="text")
 
     residual = [
         m.group(0)

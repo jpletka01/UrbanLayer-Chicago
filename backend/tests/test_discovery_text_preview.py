@@ -41,9 +41,10 @@ def test_a_phrase_the_compiler_understands_returns_its_filters_and_no_residual(c
 
 def test_a_phrase_it_does_not_understand_returns_no_filters_and_the_words(client):
     # The case that, sent as a search, used to return every parcel.
-    body = _preview(client, "teardown in logan square")
+    # ("teardown in logan square" was this example until Item 104 taught the compiler teardowns and neighborhoods.)
+    body = _preview(client, "brick bungalow with a garden")
     assert body["understood"] == []
-    assert body["residual"] == ["teardown", "logan", "square"]
+    assert body["residual"] == ["brick", "bungalow", "garden"]
 
 
 def test_partly_understood_names_both_halves(client):

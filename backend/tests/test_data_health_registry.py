@@ -81,7 +81,7 @@ def test_ids_are_unique_slugs():
     ids = [s.id for s in SOURCES]
     assert len(ids) == len(set(ids))
     assert all(_SLUG.match(i) for i in ids), [i for i in ids if not _SLUG.match(i)]
-    assert 70 <= len(SOURCES) <= 95  # the plan's inventory is about 75
+    assert 70 <= len(SOURCES) <= 96  # the plan's inventory is about 75; +1 the City's neighborhoods (Item 104)
 
 
 def test_enumerated_fields_are_valid():

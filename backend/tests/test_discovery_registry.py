@@ -16,7 +16,7 @@ EXPECTED_BY_CATEGORY = {
     "property_use": {"land_use", "vacancy", "hide_unusual", "lot_size", "building_size", "year_built", "units"},
     "zoning_dev": {
         "zoning_group", "density_band", "overlay", "adu_eligible", "aro_zone",
-        "upside_score", "is_teardown_candidate"
+        "upside_score", "is_teardown_candidate", "room_to_build"
     },
     "incentives": {"tif", "opportunity_zone", "enterprise_zone", "sbif_nof"},
     "financial": {
@@ -39,6 +39,7 @@ EXPECTED_KINDS = {
     "improvement_ratio": "range", "open_violations": "range", "f311_redflags": "range",
     "floodplain": "flag", "brownfield": "flag", "crime_index": "range",
     "upside_score": "range", "is_teardown_candidate": "flag", "value_percentile": "range",
+    "room_to_build": "range",  # Item 104: room to build, the new Discovery map's measure
 }
 
 
@@ -53,7 +54,7 @@ def test_shipped_registry_loads_and_validates():
     r = reg.load()
     assert r.version
     # 4 location + 6 property_use + 7 zoning_dev + 4 incentives + 6 financial + 5 condition_risk
-    assert len(r.filters) == 33
+    assert len(r.filters) == 34
 
 
 def test_all_expected_filters_present_with_correct_category_and_kind():
@@ -198,7 +199,7 @@ def test_enum_labels_cover_their_values():
 
 def test_topics_present_and_reference_known_filters_and_sortkeys():
     r = reg.load()
-    assert len(r.topics) == 6
+    assert len(r.topics) == 7
     ids = {f.id for f in r.filters}
     keys = r.sortable_keys()
     for t in r.topics:

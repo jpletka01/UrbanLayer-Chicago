@@ -59,6 +59,8 @@ class DictParcel:
         return self._attrs.get(field)
 
     def in_region(self, region_ref: str) -> bool:
+        if region_ref.startswith("hood:"):
+            return self._attrs.get("hood") == region_ref[len("hood:"):]
         return region_ref in self._regions
 
 

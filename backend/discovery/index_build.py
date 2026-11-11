@@ -318,6 +318,8 @@ def assemble_parcel(
     if chars:
         attrs["land_sqft"] = _num(chars.get("char_land_sf"))
         attrs["bldg_sqft"] = _num(chars.get("char_bldg_sf"))
+        if attrs["bldg_sqft"] is not None:
+            attrs["bldg_sqft_source"] = "assessor"
         attrs["year_built"] = _int(chars.get("char_yrblt"))
         attrs["units"] = _units_from_chars(chars)
     if shared_outline:
@@ -333,6 +335,7 @@ def assemble_parcel(
         attrs["multi_pin_member"] = True
     elif isinstance(commercial, UnitArea) and commercial.bldg_sqft > 0 and attrs.get("bldg_sqft") is None:
         attrs["bldg_sqft"] = float(round(commercial.bldg_sqft))
+        attrs["bldg_sqft_source"] = "commercial_valuation"
 
     if assess:
         attrs["total_assessed_value"] = _num(
@@ -351,6 +354,8 @@ def assemble_parcel(
         price = _num(sale.get("sale_price"))
         attrs["last_sale_price"] = price
         attrs["sale_recency_days"] = _recency_days(sale.get("sale_date"), as_of)
+        if sale.get("sale_date"):
+            attrs["last_sale_date"] = str(sale["sale_date"])[:10]  # display only (the card's year)
         bsf = attrs.get("bldg_sqft")
         if price and bsf:
             attrs["price_per_sf"] = round(price / bsf, 2)
@@ -369,6 +374,34 @@ def assemble_parcel(
     rail_mi = _nearest_rail_mi(rail_stations, lat, lon)
     if rail_mi is not None:
         attrs["cta_rail_distance_mi"] = rail_mi
+
+    derive_from_building(attrs, imp_share)
+
+    # "Unusual" parcels are hidden from Discovery by default (Jack, 2026-11-03; decision Item 60): VACANT land
+    # that is either over an acre with no street address of its own (rail, utility and common land: 86% of the
+    # 100,000 sq ft vacant lots had none) or on a development's shared outline (a common area, like the $1 parcel).
+    # Never a building: condo units and townhomes share outlines too (11,254 condo units in six areas) and are
+    # ordinary homes; with no geometry land area they just fall out of lot-size filters.
+    attrs["unusual"] = unusual_rule(attrs)
+
+    regions = [f"neighborhood:{neighborhood_ca}"] if neighborhood_ca is not None else []
+    return spine["pin"], lat, lon, attrs, regions
+
+
+def unusual_rule(attrs: dict[str, Any]) -> bool:
+    """Hidden from Discovery by default (Items 60, 104): VACANT land over an acre with no street address of its own,
+    or on a development's shared outline; or ANY lot narrower than 16 ft (``narrow_strip``, set by ``lot_facts``)."""
+    vacant = bool(attrs.get("is_vacant"))
+    return bool(attrs.get("narrow_strip")) or (vacant and (
+        bool(attrs.get("shared_outline"))
+        or (not attrs.get("own_address") and (attrs.get("land_sqft") or 0) > UNUSUAL_VACANT_MIN_SQFT)
+    ))
+
+
+def derive_from_building(attrs: dict[str, Any], imp_share: float | None) -> None:
+    """The fields that read the building area, from ``attrs`` in place: teardown, upside, $/sq ft and room to
+    build. Shared by ``assemble_parcel`` and ``index_backfill`` (which fills building areas afterwards)."""
+    from backend.discovery.lot_facts import derive_capacity
 
     land_share = (1.0 - imp_share) if imp_share is not None else None
     bsf = attrs.get("bldg_sqft")
@@ -391,19 +424,11 @@ def assemble_parcel(
             100 * (_UPSIDE_FAR_WEIGHT * far_headroom + _UPSIDE_LAND_WEIGHT * land_share)
         )
 
-    # "Unusual" parcels are hidden from Discovery by default (Jack, 2026-11-03; decision Item 60): VACANT land
-    # that is either over an acre with no street address of its own (rail, utility and common land: 86% of the
-    # 100,000 sq ft vacant lots had none) or on a development's shared outline (a common area, like the $1 parcel).
-    # Never a building: condo units and townhomes share outlines too (11,254 condo units in six areas) and are
-    # ordinary homes; with no geometry land area they just fall out of lot-size filters.
-    vacant = bool(attrs.get("is_vacant"))
-    attrs["unusual"] = vacant and (
-        bool(attrs.get("shared_outline"))
-        or (not attrs["own_address"] and (attrs.get("land_sqft") or 0) > UNUSUAL_VACANT_MIN_SQFT)
-    )
-
-    regions = [f"neighborhood:{neighborhood_ca}"] if neighborhood_ca is not None else []
-    return spine["pin"], lat, lon, attrs, regions
+    price = attrs.get("last_sale_price")
+    attrs.pop("price_per_sf", None)
+    if price and bsf:
+        attrs["price_per_sf"] = round(price / bsf, 2)
+    derive_capacity(attrs)
 
 
 # --- async orchestration -----------------------------------------------------
@@ -864,6 +889,12 @@ async def _assemble_ca(
             zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
             rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
         ))
+    if settings.ptaxsim_enabled and settings.ptaxsim_db_path.exists():
+        # Building areas from footprints, room to build and the card warnings (Item 104); skipped with a
+        # warning when the local source copy is missing.
+        from backend.discovery.index_backfill import enrich_rows
+        enrich_rows(rows, ptaxsim=settings.ptaxsim_db_path,
+                    pending_db=default_index_path().parent / "pending_legislation.db")
     log.info("discovery index: CA %s — assembled %s parcels", ca, len(rows))
     return rows, outside
 

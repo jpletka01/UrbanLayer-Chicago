@@ -16,6 +16,7 @@ import argparse
 import json
 import logging
 import sqlite3
+import threading
 import time
 from functools import lru_cache
 from pathlib import Path
@@ -80,11 +81,25 @@ def fetch(out: Path, *, token: str = "") -> dict:
 
 
 class Outlines:
-    """Read-only lookups in the local copy (``None`` for every pin10 when the file is missing)."""
+    """Read-only lookups in the local copy (``None`` for every pin10 when the file is missing).
+
+    One SQLite connection per thread: ``GET /api/map/lot`` runs in FastAPI's thread pool and this object is cached
+    process-wide, and one connection shared across threads (``check_same_thread=False``) crashed the server with a
+    segfault inside SQLite as soon as two lots were asked for at once (Discovery's card pictures, Item 104)."""
 
     def __init__(self, path: Path):
         self.path = path
-        self.db = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False) if path.exists() else None
+        self._exists = path.exists()
+        self._local = threading.local()
+
+    @property
+    def db(self) -> sqlite3.Connection | None:
+        if not self._exists:
+            return None
+        conn = getattr(self._local, "conn", None)
+        if conn is None:
+            conn = self._local.conn = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
+        return conn
 
     def get(self, pin10: str):
         if self.db is None:

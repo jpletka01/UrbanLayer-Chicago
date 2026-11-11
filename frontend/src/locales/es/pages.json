@@ -1097,7 +1097,8 @@
       "sale_recency": "venta más reciente",
       "price_per_sf": "precio por pie²",
       "value_percentile": "percentil de valor",
-      "upside_score": "potencial"
+      "upside_score": "potencial",
+      "room_to_build": "Espacio para construir"
     },
     "unit": {
       "mi": "mi",

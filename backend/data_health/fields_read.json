@@ -110,6 +110,10 @@
   "risk",
   "violations"
  ],
+ "chi.neighborhoods": [
+  "pri_neigh",
+  "the_geom"
+ ],
  "chi.nof_large": [
   "community_area",
   "completion_date",

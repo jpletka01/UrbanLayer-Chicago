@@ -79,6 +79,9 @@ class IndexedParcel:
     def in_region(self, region_ref: str) -> bool:
         if region_ref in self._regions:
             return True
+        if region_ref.startswith("hood:"):
+            # One of the City's 98 named neighborhoods (Item 104), tagged on the lot by the index build.
+            return self._attrs.get("hood") == region_ref[len("hood:"):]
         if region_ref.startswith("radius:"):
             if self.lat is None or self.lon is None:
                 return False
