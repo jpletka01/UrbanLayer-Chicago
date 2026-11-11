@@ -28,9 +28,19 @@ export function FilterBar({
   /** A phone: the panel opens as a bottom sheet. */
   compact: boolean;
 }) {
-  const { t } = useTranslation("next");
+  const { t, i18n } = useTranslation("next");
+  const fmt = fmtFor(i18n.language);
   const groups = useMemo(() => liveGroups(registry), [registry]);
   const [open, setOpen] = useState<GroupSpec | null>(null);
+  // Choices build up across groups until they are shown (owner's review): one draft for the whole bar, started
+  // from the search on screen and dropped when a new search lands (its panel changes).
+  const base = JSON.stringify(panel);
+  const [pending, setPending] = useState<{ base: string; draft: PanelState } | null>(null);
+  const draft = pending && pending.base === base ? pending.draft : panel;
+  const dirty = JSON.stringify(draft) !== base;
+  const setDraft = (fn: (d: PanelState) => PanelState) => setPending({ base, draft: fn(draft) });
+  const count = useLiveCount(registry, draft, scope);
+  const apply = () => { onApply(draft); setPending(null); };
   const buttons = useRef<Record<string, HTMLButtonElement | null>>({});
   const close = () => {
     const id = open?.id;
@@ -39,10 +49,10 @@ export function FilterBar({
     if (id) buttons.current[id]?.focus({ preventScroll: true });
   };
   return (
-    <div className="relative flex min-w-0 items-center gap-2" data-testid="filter-bar">
-      <div className="-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none]" role="group" aria-label={t("discovery.groups.label")}>
+    <div className="relative flex min-w-0 flex-wrap items-center gap-2" data-testid="filter-bar">
+      <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label={t("discovery.groups.label")}>
         {groups.map((g) => {
-          const n = groupFilters(g).filter((f) => panel[f]).length;
+          const n = groupFilters(g).filter((f) => draft[f]).length;
           const Icon = g.icon;
           const isOpen = open?.id === g.id;
           return (
@@ -58,29 +68,25 @@ export function FilterBar({
             </button>
           );
         })}
+        {dirty && !open && (
+          <button type="button" onClick={apply} data-testid="bar-show"
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-nx-primary px-3 text-caption font-medium text-nx-primary-fg touch-target">
+            {count.loading && <LoaderCircle aria-hidden className="h-3.5 w-3.5 animate-spin" strokeWidth={STROKE} />}
+            {count.n == null ? t("discovery.filters.showUnknown") : t("discovery.filters.show", { count: count.n, n: fmt.format(count.n) })}
+          </button>
+        )}
       </div>
       {open && (
-        <GroupPanel key={open.id} group={open} registry={registry} panel={panel} scope={scope} compact={compact}
+        <GroupPanel key={open.id} group={open} draft={draft} setDraft={setDraft} count={count} compact={compact}
           onClose={close} onWalkPreview={onWalkPreview}
-          onApply={(p) => { onApply(p); close(); }} />
+          onApply={() => { apply(); close(); }} />
       )}
     </div>
   );
 }
 
-function GroupPanel({ group, registry, panel, scope, compact, onClose, onApply, onWalkPreview }: {
-  group: GroupSpec; registry: Registry; panel: PanelState; scope: SpatialScope | null; compact: boolean;
-  onClose: () => void; onApply: (p: PanelState) => void; onWalkPreview?: (miles: number | null) => void;
-}) {
-  const { t, i18n } = useTranslation("next");
-  const fmt = fmtFor(i18n.language);
-  const [draft, setDraft] = useState<PanelState>(panel);
-  const set = (id: string, p: Predicate | null) => setDraft((d) => {
-    const next = { ...d };
-    if (p) next[id] = p as PanelState[string]; else delete next[id];
-    return next;
-  });
-  // The live count: a server search of the draft (one row), debounced.
+/** The live "Show N lots" count: a server search of the draft (one row), debounced. */
+function useLiveCount(registry: Registry, draft: PanelState, scope: SpatialScope | null) {
   const key = JSON.stringify(draft);
   const [answer, setAnswer] = useState<{ key: string; n: number | null } | null>(null);
   useEffect(() => {
@@ -94,7 +100,23 @@ function GroupPanel({ group, registry, panel, scope, compact, onClose, onApply, 
     // key stands for draft.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, registry, scope]);
-  const loading = answer?.key !== key;
+  return { n: answer?.n ?? null, loading: answer?.key !== key };
+}
+
+function GroupPanel({ group, draft, setDraft, count, compact, onClose, onApply, onWalkPreview }: {
+  group: GroupSpec; draft: PanelState; setDraft: (fn: (d: PanelState) => PanelState) => void;
+  count: { n: number | null; loading: boolean }; compact: boolean;
+  onClose: () => void; onApply: () => void; onWalkPreview?: (miles: number | null) => void;
+}) {
+  const { t, i18n } = useTranslation("next");
+  const fmt = fmtFor(i18n.language);
+  const set = (id: string, p: Predicate | null) => setDraft((d) => {
+    const next = { ...d };
+    if (p) next[id] = p as PanelState[string]; else delete next[id];
+    return next;
+  });
+  const answer = count;
+  const loading = count.loading;
   const mine = groupFilters(group);
   const chosen = mine.some((f) => draft[f]);
   const Icon = group.icon;
@@ -121,10 +143,10 @@ function GroupPanel({ group, registry, panel, scope, compact, onClose, onApply, 
         ))}
       </div>
       <div className="border-t border-nx-ink/10 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-        <button type="button" onClick={() => onApply(draft)} data-testid="filters-show"
+        <button type="button" onClick={onApply} data-testid="filters-show"
           className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-nx-primary font-medium text-nx-primary-fg">
           {loading && <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={STROKE} />}
-          {answer?.n == null ? t("discovery.filters.showUnknown") : t("discovery.filters.show", { count: answer.n, n: fmt.format(answer.n) })}
+          {answer.n == null ? t("discovery.filters.showUnknown") : t("discovery.filters.show", { count: answer.n, n: fmt.format(answer.n) })}
         </button>
       </div>
     </>

@@ -249,17 +249,18 @@ export default function DiscoveryNextPage() {
 
   return (
     <AppFrame
+      fill
       crumbs={[t("discovery.crumb")]}
       bar={phone ? searchBox : (
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="w-[20rem] shrink-0 xl:w-[24rem]">{searchBox}</div>
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="w-[18rem] shrink-0 xl:w-[22rem]">{searchBox}</div>
           <div className="min-w-0 flex-1">{filterBar}</div>
           {focusToggle}
         </div>
       )}
     >
       <h1 className="sr-only">{t("discovery.title")}</h1>
-      <div className="flex h-[calc(100dvh-68px)] flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         {/* Below the bar only what a search needs: a phone's filter groups, what the search was, what it couldn't read. */}
         {(phone || response || search.textNotice || registryFailed || search.unavailable) && (
           <div className="z-20 flex flex-col gap-2 border-b border-nx-ink/10 bg-nx-page px-4 py-2 sm:px-7">
