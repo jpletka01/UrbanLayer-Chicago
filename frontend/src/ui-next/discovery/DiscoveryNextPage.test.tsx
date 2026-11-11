@@ -25,6 +25,7 @@ vi.mock("../../lib/useIsPhone", () => ({ useIsPhone: () => false }));
 vi.mock("./discoveryData", async (orig) => ({
   ...(await orig<typeof import("./discoveryData")>()),
   fetchLotShape: () => Promise.resolve(null),
+  fetchLotContext: () => Promise.resolve(null),
   useDistribution: () => null,
 }));
 vi.mock("../frame/AppFrame", () => ({ AppFrame: ({ children, bar }: { children: React.ReactNode; bar?: React.ReactNode }) => <div className="ui-next">{bar}{children}</div> }));
@@ -81,7 +82,8 @@ describe("Discovery in the new frame", () => {
     const card = within(list).getByRole("button");
     expect(card.textContent).toContain("1601 N Milwaukee Ave");
     expect(card.textContent).toContain("B3-2");
-    expect(card.textContent).toContain("Room to build");
+    expect(card.textContent).toMatch(/room to build/i);
+    expect(card.textContent).toContain("Built 14,700");
     expect(card.textContent).toContain("10,050 sq ft");
     expect(card.textContent).toContain("Rezoning filed");
     expect(card.textContent).toContain("Assessor's commercial records");

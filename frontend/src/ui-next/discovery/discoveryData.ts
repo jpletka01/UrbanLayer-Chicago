@@ -93,6 +93,7 @@ export function useDistribution(filterId: string | null): Distribution | null | 
 }
 
 const shapeCache = new Map<string, Promise<GeoJSON.Geometry | null>>();
+const contextCache = new Map<string, Promise<GeoJSON.FeatureCollection | null>>();
 // A list of 50 cards would ask for 50 outlines at once; four at a time keeps the server's thread pool free.
 const SHAPE_CONCURRENCY = 4;
 let shapeActive = 0;
@@ -118,6 +119,45 @@ export function fetchLotShape(pin10: string): Promise<GeoJSON.Geometry | null> {
     shapeCache.set(pin10, p);
   }
   return p;
+}
+
+/** A lot and its neighbors (`/api/discovery/lot-context`), each with its room band, for a card's picture. */
+export function fetchLotContext(pin10: string): Promise<GeoJSON.FeatureCollection | null> {
+  let p = contextCache.get(pin10);
+  if (!p) {
+    p = new Promise<GeoJSON.FeatureCollection | null>((resolve) => {
+      shapeQueue.push(() => {
+        fetch(`${API_BASE}/api/discovery/lot-context?pin10=${encodeURIComponent(pin10)}`)
+          .then((r) => (r.ok ? r.json() : null)).then((j) => resolve(j))
+          .catch(() => { contextCache.delete(pin10); resolve(null); })
+          .finally(() => { shapeActive -= 1; nextShape(); });
+      });
+      nextShape();
+    });
+    contextCache.set(pin10, p);
+  }
+  return p;
+}
+
+/** Project a lot and its neighbors into a w x h box, the lot centered and about a third of the width: SVG paths. */
+export function contextPaths(fc: GeoJSON.FeatureCollection, w: number, h: number): Array<{ d: string; r: string | null; me: boolean }> {
+  const ringsOf = (g: GeoJSON.Geometry) => (g.type === "Polygon" ? [g.coordinates[0]] : g.type === "MultiPolygon" ? g.coordinates.map((p) => p[0]) : []);
+  const me = fc.features.find((f) => f.properties?.me);
+  if (!me?.geometry) return [];
+  const mine = ringsOf(me.geometry).flat();
+  const lat0 = mine[0]?.[1] ?? 41.85;
+  const k = Math.cos((lat0 * Math.PI) / 180);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of mine) { minX = Math.min(minX, x * k); maxX = Math.max(maxX, x * k); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  // The lot takes about a third of the box's width (or 80% of its height), whichever is tighter.
+  const s = Math.min((w * 0.34) / (maxX - minX || 1e-9), (h * 0.8) / (maxY - minY || 1e-9));
+  const P = ([x, y]: number[]) => `${(w / 2 + (x * k - cx) * s).toFixed(1)},${(h / 2 - (y - cy) * s).toFixed(1)}`;
+  return fc.features.filter((f) => f.geometry).map((f) => ({
+    d: ringsOf(f.geometry!).map((r) => r.map((pt, i) => `${i ? "L" : "M"}${P(pt)}`).join("") + "Z").join(""),
+    r: (f.properties?.r as string | null) ?? null,
+    me: !!f.properties?.me,
+  })).sort((a, b) => Number(a.me) - Number(b.me));
 }
 
 /** A polygon's outer rings as an SVG path in a w x h box, kept to scale (north up). */

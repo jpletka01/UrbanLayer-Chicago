@@ -1178,7 +1178,28 @@
         "open_space": "Espacio abierto",
         "transport": "Terreno ferroviario o de transporte"
       },
-      "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola"
+      "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
+      "now": {
+        "empty": "Terreno baldío",
+        "residential": "Casa o edificio de 2 a 6",
+        "multi_family": "Edificio de departamentos",
+        "commercial": "Comercial",
+        "industrial": "Industrial",
+        "exempt": "Exento (público o sin fines de lucro)",
+        "mixed_use": "Uso mixto",
+        "institutional": "Institucional",
+        "built": "construido en {{year}}"
+      },
+      "walk": "A {{minutes}} min a pie del L",
+      "tif": "En un TIF",
+      "ez": "Zona Empresarial",
+      "teardown": "Edificio viejo en terreno valioso",
+      "roomShort": "espacio para construir",
+      "barLabel": "Construidos {{built}} pies² de {{allowed}} pies² permitidos ({{pct}}% usado)",
+      "built": "Construido {{value}}",
+      "allowed": "Permitido {{value}} · {{pct}}% usado",
+      "moreInComplex_one": "1 terreno más del conjunto en esta lista",
+      "moreInComplex_other": "{{count}} terrenos más del conjunto en esta lista"
     },
     "goalSoon": "faltan datos",
     "goal": {

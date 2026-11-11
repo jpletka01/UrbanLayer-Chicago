@@ -232,6 +232,11 @@ export interface ResultRow {
   room_scope?: string | null;
   complex_lots?: number | null;
   lot_width_ft?: number | null;
+  /** The City's neighborhood (slug), the walk to the nearest L in miles, incentive areas (Item 104 cards). */
+  hood?: string | null;
+  transit_mi?: number | null;
+  in_tif?: boolean | null;
+  in_enterprise_zone?: boolean | null;
   narrow_strip?: boolean;
   /** The card's one serious warning (Item 104). */
   warning?: { kind: "demolition" | "vacant_case" | "pending_rezoning" | "landmark" | "nominal"; detail?: string | null } | null;

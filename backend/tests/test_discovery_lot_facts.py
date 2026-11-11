@@ -265,3 +265,32 @@ def test_neighborhoods_are_places_the_reader_understands_and_a_region_the_index_
     assert parse("teardowns in austin").filters["is_teardown_candidate"]
     assert DictParcel("1", {"hood": "wicker_park"}).in_region("hood:wicker_park")
     assert not DictParcel("2", {"hood": "bucktown"}).in_region("hood:wicker_park")
+
+
+def test_lot_context_gives_the_lot_and_its_neighbors_with_their_room_bands(monkeypatch, tmp_path):
+    import sqlite3
+
+    from backend.discovery.parcel import DictParcel
+
+    lat, lon = 41.9100, -87.6800
+    parcels = {
+        "11111111110000": DictParcel("11111111110000", {"room_sqft": 6000.0}, lat=lat, lon=lon),
+        "22222222220000": DictParcel("22222222220000", {"room_sqft": 0.0}, lat=lat, lon=lon + 0.0001),
+        "33333333330000": DictParcel("33333333330000", {"room_sqft": 900.0}, lat=lat + 0.01, lon=lon),  # far away
+    }
+    monkeypatch.setattr(discovery_api.parcel_source, "pin_lookup", lambda v: parcels)
+    db_path = tmp_path / "ptaxsim.db"
+    db = sqlite3.connect(db_path)
+    db.execute("CREATE TABLE pin_geometry_raw (pin10 TEXT, end_year INT, geometry TEXT)")
+    for p, (la, lo) in {"1111111111": (lat, lon), "2222222222": (lat, lon + 0.0001), "3333333333": (lat + 0.01, lon)}.items():
+        db.execute("INSERT INTO pin_geometry_raw VALUES (?, 2024, ?)", (p, box(lo, la, lo + 0.00008, la + 0.0003).wkt))
+    db.commit()
+    db.close()
+    monkeypatch.setattr("backend.config.get_settings", lambda: type("S", (), {"ptaxsim_db_path": db_path})())
+    discovery_api._pin10_grid.cache_clear()
+    discovery_api._lot_context.cache_clear()
+    fc = discovery_api._lot_context("v-ctx", "1111111111")
+    by = {f["properties"]["pin10"]: f["properties"] for f in fc["features"]}
+    assert set(by) == {"1111111111", "2222222222"}
+    assert by["1111111111"] == {"pin10": "1111111111", "r": "3", "me": True}
+    assert by["2222222222"]["r"] == "0" and by["2222222222"]["me"] is False

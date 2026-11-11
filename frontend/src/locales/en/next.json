@@ -1178,7 +1178,28 @@
         "open_space": "Open space",
         "transport": "Railroad or transit land"
       },
-      "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone"
+      "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone",
+      "now": {
+        "empty": "Empty lot",
+        "residential": "House or 2–6 flat",
+        "multi_family": "Apartment building",
+        "commercial": "Commercial",
+        "industrial": "Industrial",
+        "exempt": "Exempt (public or nonprofit)",
+        "mixed_use": "Mixed use",
+        "institutional": "Institutional",
+        "built": "built {{year}}"
+      },
+      "walk": "{{minutes}}-min walk to the L",
+      "tif": "In a TIF",
+      "ez": "Enterprise Zone",
+      "teardown": "Old building on valuable land",
+      "roomShort": "room to build",
+      "barLabel": "Built {{built}} sq ft of {{allowed}} sq ft allowed ({{pct}}% used)",
+      "built": "Built {{value}}",
+      "allowed": "Allowed {{value}} · {{pct}}% used",
+      "moreInComplex_one": "1 more of its lots in this list",
+      "moreInComplex_other": "{{count}} more of its lots in this list"
     },
     "goalSoon": "needs data",
     "goal": {

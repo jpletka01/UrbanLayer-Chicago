@@ -129,6 +129,12 @@ class ResultRow(BaseModel):
     # How wide the lot really is (the widest circle inside it), and whether that makes it a strip (< 16 ft, Item 104).
     lot_width_ft: float | None = None
     narrow_strip: bool = False
+    # What a card shows beyond the figures (owner's review, Item 104): the City's neighborhood (slug), the walk to the
+    # nearest L station in miles, and the incentive areas the lot is in.
+    hood: str | None = None
+    transit_mi: float | None = None
+    in_tif: bool | None = None
+    in_enterprise_zone: bool | None = None
     # At most one serious warning for the card (Item 104): {"kind": demolition | vacant_case | pending_rezoning |
     # landmark | nominal, "detail": a date or a name, when there is one}.
     warning: dict[str, str | None] | None = None
@@ -303,6 +309,10 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         complex_lots=g("complex_lots"),
         lot_width_ft=g("lot_width_ft"),
         narrow_strip=bool(g("narrow_strip")),
+        hood=g("hood"),
+        transit_mi=g("cta_rail_distance_mi"),
+        in_tif=g("in_tif_district"),
+        in_enterprise_zone=g("in_enterprise_zone"),
         warning=_warning(g, nominal),
         sortValue=_display_sort_value(parcel, sort_field),
     )
@@ -445,6 +455,79 @@ def _distribution(version: str, filter_id: str) -> dict:
     else:
         out["values"] = values
     return out
+
+
+@router.get("/lot-context")
+def lot_context(pin10: str = Query(..., min_length=10, max_length=10)) -> dict:
+    """A lot and its neighbors for a card's picture (owner's review, Item 104): outlines within about 50 m of the lot,
+    each with its room-to-build band (the lot tiles' `r`), so a card draws a slice of the block colored like the map.
+    Display only."""
+    digits = "".join(ch for ch in pin10 if ch.isdigit())
+    if len(digits) != 10:
+        raise HTTPException(status_code=400, detail="pin10 must be 10 digits")
+    return _lot_context(parcel_source.current_version(), digits)
+
+
+_CTX_CELL = 0.0006  # degrees; neighbors come from this cell and the eight around it (~50-65 m)
+
+
+@lru_cache(maxsize=2)
+def _pin10_grid(version: str) -> tuple[dict[tuple[int, int], list[str]], dict[str, tuple[float, float, dict]]]:
+    grid: dict[tuple[int, int], list[str]] = {}
+    lots: dict[str, tuple[float, float, dict]] = {}
+    for parcel in parcel_source.pin_lookup(version).values():
+        if parcel.lat is None or parcel.lon is None:
+            continue
+        p10 = parcel.pin.replace("-", "")[:10]
+        if p10 in lots and not parcel.pin.replace("-", "").endswith("0000"):
+            continue  # the base parcel speaks for the lot
+        lots[p10] = (parcel.lat, parcel.lon, parcel._attrs)
+    for p10, (lat, lon, _a) in lots.items():
+        grid.setdefault((int(lat // _CTX_CELL), int(lon // _CTX_CELL)), []).append(p10)
+    return grid, lots
+
+
+@lru_cache(maxsize=512)
+def _lot_context(version: str, pin10: str) -> dict:
+    import sqlite3
+
+    import shapely
+    from shapely import wkt as shapely_wkt
+    from shapely.geometry import mapping
+
+    from backend.config import get_settings
+    from backend.discovery.lot_facts import measure_bands
+
+    grid, lots = _pin10_grid(version)
+    me = lots.get(pin10)
+    if me is None:
+        raise HTTPException(status_code=404, detail="lot not in the index")
+    cy, cx = int(me[0] // _CTX_CELL), int(me[1] // _CTX_CELL)
+    near = [p for dy in (-1, 0, 1) for dx in (-1, 0, 1) for p in grid.get((cy + dy, cx + dx), [])]
+    path = get_settings().ptaxsim_db_path
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="no outlines")
+    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        marks = ",".join("?" * len(near))
+        latest: dict[str, str] = {}
+        for p, text in db.execute(
+            f"SELECT pin10, geometry FROM pin_geometry_raw WHERE pin10 IN ({marks}) AND geometry IS NOT NULL ORDER BY end_year ASC",
+            near,
+        ):
+            latest[p] = text
+    finally:
+        db.close()
+    feats = []
+    for p, text in latest.items():
+        try:
+            g = shapely_wkt.loads(text).simplify(0.000003, preserve_topology=True)
+        except (shapely.errors.GEOSException, ValueError):
+            continue
+        band = measure_bands(lots[p][2]).get("r")
+        feats.append({"type": "Feature", "geometry": mapping(g),
+                      "properties": {"pin10": p, "r": band, "me": p == pin10}})
+    return {"type": "FeatureCollection", "features": feats}
 
 
 @router.get("/neighborhoods")

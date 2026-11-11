@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ResultRow } from "../../discovery/types";
 import { shapePath } from "./discoveryData";
 import {
-  areaSuggestions, cardModel, clampMiles, classifyQuery, measureColorExpr, measureSteps, milesBetween, placeRegion, placeSuggestions, quickFromPanel,
+  areaSuggestions, cardModel, foldComplexes, clampMiles, classifyQuery, measureColorExpr, measureSteps, milesBetween, placeRegion, placeSuggestions, quickFromPanel,
   quickPanel, ringMiles, ringPolygon, ringRegion,
 } from "./discoveryModel";
 
@@ -99,5 +99,18 @@ describe("places: the City's neighborhoods and its community areas", () => {
     expect(classifyQuery("wicker park", AREAS, HOODS)).toEqual({ kind: "hood", slug: "wicker_park", name: "Wicker Park" });
     expect(placeRegion({ kind: "hood", slug: "wicker_park", name: "Wicker Park" })).toBe("hood:wicker_park");
     expect(placeRegion({ kind: "area", id: 24, name: "West Town" })).toBe("neighborhood:24");
+  });
+});
+
+describe("one card per complex", () => {
+  it("folds the lots of one complex into the first, and leaves other lots alone", () => {
+    const r = (pin: string, over: Partial<ResultRow>) => ({ pin, lat: 41.9, lon: -87.7, ...over } as ResultRow);
+    const rows = [
+      r("1", { room_scope: "complex", room_sqft: 9000, complex_lots: 3 }),
+      r("2", { room_scope: "complex", room_sqft: 9000, complex_lots: 3, lat: 41.9005 }),
+      r("3", { room_sqft: 9000 }),
+      r("4", { room_scope: "complex", room_sqft: 9000, complex_lots: 3, lat: 41.95 }),  // another complex, far away
+    ];
+    expect(foldComplexes(rows).map((x) => [x.row.pin, x.more])).toEqual([["1", 1], ["3", 0], ["4", 0]]);
   });
 });

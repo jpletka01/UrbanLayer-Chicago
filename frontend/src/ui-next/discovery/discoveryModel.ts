@@ -142,6 +142,21 @@ export function cardModel(row: ResultRow): CardModel {
   };
 }
 
+/** Fold the lots of one multi-parcel complex into one card (they share one room-to-build figure, the site's): the
+    first keeps a count of the others in this list. Presentation only; the count above the list stays the server's. */
+export function foldComplexes(rows: ResultRow[]): Array<{ row: ResultRow; more: number }> {
+  const out: Array<{ row: ResultRow; more: number }> = [];
+  const near = (a: ResultRow, b: ResultRow) => a.lat != null && b.lat != null && a.lon != null && b.lon != null
+    && Math.abs(a.lat - b.lat) < 0.003 && Math.abs(a.lon - b.lon) < 0.004;
+  for (const row of rows) {
+    const twin = row.room_scope === "complex" ? out.find((o) => o.row.room_scope === "complex"
+      && o.row.room_sqft === row.room_sqft && o.row.complex_lots === row.complex_lots && near(o.row, row)) : undefined;
+    if (twin) twin.more += 1;
+    else out.push({ row, more: 0 });
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- the search box
 
 export type SearchKind =

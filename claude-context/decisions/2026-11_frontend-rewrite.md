@@ -976,3 +976,12 @@ How (`backend/discovery/lot_facts.py`, `index_backfill.py`; the monthly build ru
 - **The rule-based reader understands places:** a neighborhood's name, else a community area's ("in Wicker Park or Bucktown" → both, OR); and "teardown(s)" (it was the example of a phrase it couldn't read).
 - **The search box suggests neighborhoods first, then community areas;** `GET /api/discovery/neighborhoods` gives names and outlines.
 - **A picked place narrows the search on screen, never replaces it:** its filters stay, and choices still waiting in the filter bar go along. The chosen place is outlined on the map and framed (read from the evaluated query, so a typed "in Wicker Park" outlines it too); the chip says its name. Vacant + Wicker Park: 55 lots.
+
+**The owner's fourth review: the list cards (2026-11-10).** "Nothing about any of those lots would stick out": an address, a bare outline, room to build, and a last sale that half the cards answered "None on record". **Owner's picks from a mockup, all built** (`ui-next/discovery/LotCard.tsx`):
+- **A slice of the block, colored like the map:** the lot and its neighbors within about 50 m (`GET /api/discovery/lot-context?pin10=`, outlines with each lot's room band, cached), this lot in its room-to-build color with an ink outline, the neighbors faded in theirs; the zoning as a tag in its family color.
+- **Room to build as the headline with built vs allowed as a bar** ("Built 2,400 · Allowed 6,150 · 39% used"; the bar's free part in the lot's room color), and its basis when it isn't the Assessor's record.
+- **The neighborhood and what's there now:** "Bucktown · Commercial, built 1890, 924 sq ft" (an empty lot shows no year: that is a demolished building's record).
+- **Colored chips for only what applies:** a walk to the L in minutes (20 minutes a mile, shown up to 20), In a TIF, Enterprise Zone, Old building on valuable land, a narrow strip, the one serious warning.
+- **The sale only when there is one** (no "None on record" line). Price per buildable sq ft was offered and not chosen.
+- **One card per multi-parcel complex:** its lots share one figure, the site's, and sorted by room they filled the top of the list card after card; the first card says "N more of its lots in this list" (`foldComplexes`, presentation only; the count above the list stays the server's).
+- New row fields: `hood`, `transit_mi`, `in_tif`, `in_enterprise_zone`.

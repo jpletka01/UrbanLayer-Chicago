@@ -8,8 +8,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowRight, ChevronDown, Circle, Hammer, House, Landmark, List, LoaderCircle, Map as MapIcon, MapPin, Maximize2, Palette,
-  Receipt, Ruler, Search, Shovel, Sprout, Store, Target, TrendingDown, TriangleAlert, X, type LucideIcon,
+  ArrowRight, ChevronDown, Circle, House, List, LoaderCircle, Map as MapIcon, MapPin, Maximize2, Palette,
+  Receipt, Search, Shovel, Sprout, Store, Target, TrendingDown, TriangleAlert, X, type LucideIcon,
 } from "lucide-react";
 import { loadRegistry } from "../../discovery/registryClient";
 import { useDiscoverySearch } from "../../discovery/useDiscoverySearch";
@@ -23,15 +23,16 @@ import type { AddressSuggestion } from "../../lib/types";
 import { track } from "../../lib/tracking";
 import { useIsPhone } from "../../lib/useIsPhone";
 import { AppFrame } from "../frame/AppFrame";
-import { ICON, STROKE } from "../icons";
+import { STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
 import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
-import { fetchLotShape, shapePath, useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
+import { LotCard } from "./LotCard";
+import { useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
 import {
-  DEFAULT_MEASURE, LOTS_MIN_ZOOM, MEASURES, QUICK_FILTERS, RING_MILES, cardModel, classifyQuery, placeRegion, placeSuggestions,
+  DEFAULT_MEASURE, LOTS_MIN_ZOOM, foldComplexes, MEASURES, QUICK_FILTERS, RING_MILES, cardModel, classifyQuery, placeRegion, placeSuggestions,
   type Place as AreaPlace,
-  ROOM_SORT, measureSteps, quickFromPanel, quickPanel, ringMiles, ringRegion, type CardWarning, type MeasureId, type QuickId,
+  ROOM_SORT, measureSteps, quickFromPanel, quickPanel, ringMiles, ringRegion, type MeasureId, type QuickId,
 } from "./discoveryModel";
 
 type Focus = "map" | "list";
@@ -196,6 +197,7 @@ export default function DiscoveryNextPage() {
     ? Object.entries(response.cqs.filters).filter(([id, a]) => id !== HIDE_UNUSUAL && a.source !== "default")
     : [];
   const defOf = (id: string): FilterDef | undefined => registry?.filters.find((f) => f.id === id);
+  const hoodNameOf = (slug: string | null | undefined) => (slug ? hoods.find((h) => h.slug === slug)?.name ?? null : null);
   const hoodName = (ref: string) => hoods.find((h) => `hood:${h.slug}` === ref)?.name ?? ref.slice(5).replace(/_/g, " ");
   const label = (id: string, p: Predicate) => {
     if (id === "neighborhood" && p.kind === "region" && p.regions.some((r) => r.startsWith("hood:"))) {
@@ -364,7 +366,7 @@ export default function DiscoveryNextPage() {
             <div className="absolute inset-0 z-20 overflow-y-auto bg-nx-page" data-testid="list-focus">
               <Results response={response} rows={search.rows} fmt={fmt} onMore={search.nextOffset != null && !response.result.gated ? () => void search.loadMore() : null}
                 loadingMore={search.loadingMore} refreshing={search.refreshing} hiddenUnusual={response.diagnostics.hiddenUnusual ?? 0}
-                onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} />
+                onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} hoodName={hoodNameOf} />
             </div>
           )}
 
@@ -378,7 +380,7 @@ export default function DiscoveryNextPage() {
               {response ? (
                 <Results response={response} rows={search.rows} fmt={fmt} onMore={search.nextOffset != null && !response.result.gated ? () => void search.loadMore() : null}
                   loadingMore={search.loadingMore} refreshing={search.refreshing} hiddenUnusual={response.diagnostics.hiddenUnusual ?? 0}
-                  onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} />
+                  onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} hoodName={hoodNameOf} />
               ) : registry ? (
                 <div className="px-4 pb-4">
                   <GoalList topics={topics} counts={registry.recipeCounts ?? {}} fmt={fmt}
@@ -678,10 +680,10 @@ function PhoneSheet({ state, setState, head, children }: {
 
 // ---------------------------------------------------------------- the list
 
-function Results({ response, rows, fmt, onMore, loadingMore, refreshing, hiddenUnusual, onShowUnusual, onOpen }: {
+function Results({ response, rows, fmt, onMore, loadingMore, refreshing, hiddenUnusual, onShowUnusual, onOpen, hoodName }: {
   response: NonNullable<ReturnType<typeof useDiscoverySearch>["applied"]>; rows: ResultRow[]; fmt: Intl.NumberFormat;
   onMore: (() => void) | null; loadingMore: boolean; refreshing: boolean; hiddenUnusual: number; onShowUnusual: () => void;
-  onOpen: (row: ResultRow) => void;
+  onOpen: (row: ResultRow) => void; hoodName: (slug: string | null | undefined) => string | null;
 }) {
   const { t } = useTranslation("next");
   return (
@@ -692,7 +694,9 @@ function Results({ response, rows, fmt, onMore, loadingMore, refreshing, hiddenU
       )}
       {response.result.total === 0 && <p className="nx-muted">{t("discovery.noneHint")}</p>}
       <ul className="nx-cards grid gap-4" data-testid="next-results">
-        {rows.map((row) => <ResultCard key={row.pin} row={row} onOpen={() => onOpen(row)} />)}
+        {foldComplexes(rows).map(({ row, more }) => (
+          <LotCard key={row.pin} row={row} moreInComplex={more} hoodName={hoodName(row.hood)} onOpen={() => onOpen(row)} />
+        ))}
       </ul>
       {hiddenUnusual > 0 && (
         <p className="mt-4 text-caption nx-muted">
@@ -710,70 +714,3 @@ function Results({ response, rows, fmt, onMore, loadingMore, refreshing, hiddenU
   );
 }
 
-const WARNING_ICON: Record<CardWarning["kind"], LucideIcon> = {
-  demolition: Hammer, vacant_case: House, pending_rezoning: ICON.pending, landmark: Landmark, nominal: TriangleAlert,
-};
-
-function LotPicture({ pin10 }: { pin10: string }) {
-  const [path, setPath] = useState<string | null | undefined>(undefined);
-  useEffect(() => {
-    let live = true;
-    fetchLotShape(pin10).then((g) => { if (live) setPath(g ? shapePath(g, 160, 72) : null); });
-    return () => { live = false; };
-  }, [pin10]);
-  return (
-    <svg viewBox="0 0 160 72" className="h-[4.5rem] w-full rounded-t-2xl bg-nx-block" aria-hidden>
-      {path && <path d={path} fill="rgb(var(--nx-lot) / 0.12)" stroke="rgb(var(--nx-lot))" strokeWidth={1.8} strokeLinejoin="round" />}
-    </svg>
-  );
-}
-
-function ResultCard({ row, onOpen }: { row: ResultRow; onOpen: () => void }) {
-  const { t, i18n } = useTranslation("next");
-  const n = (v: number) => Math.round(v).toLocaleString(numLocale(i18n.language));
-  const c = cardModel(row);
-  const facts: Array<[keyof typeof ICON, string, string]> = [];
-  if (c.zone) facts.push(["zoning", t("discovery.card.zoning"), c.zone]);
-  if (c.lotSqft != null) facts.push(["lot", t("discovery.card.lot"), t("profile.build.sqft", { value: n(c.lotSqft) })]);
-  facts.push(["floorArea", t("discovery.card.room"), c.roomSqft != null ? t("profile.build.sqft", { value: n(c.roomSqft) })
-    : c.roomNamed ? t(`discovery.card.named.${c.roomNamed}`) : t("discovery.card.unknown")]);
-  facts.push(["sale", t("discovery.card.sale"), c.sale
-    ? c.sale.transfer ? t("discovery.card.transfer", { year: c.sale.year }) : t("discovery.card.saleValue", { price: `$${n(c.sale.price)}`, year: c.sale.year })
-    : t("discovery.card.noSale")]);
-  const W = c.warning ? WARNING_ICON[c.warning.kind] : null;
-  return (
-    <li className="flex min-w-0">
-      <button type="button" onClick={onOpen} className="flex w-full flex-col overflow-hidden rounded-2xl bg-nx-block text-left hover:bg-nx-ink/5" data-pin={row.pin}>
-        <LotPicture pin10={row.pin.replace(/-/g, "").slice(0, 10)} />
-        <span className="flex flex-1 flex-col gap-3 p-4">
-          <span className="font-semibold [overflow-wrap:anywhere]">{c.approx ? t("discovery.card.near", { address: c.title }) : c.title}</span>
-          <dl className="grid grid-cols-1 gap-1.5 text-caption">
-            {facts.map(([icon, label, value]) => {
-              const Icon = ICON[icon];
-              return (
-                <div key={label} className="flex items-center gap-2">
-                  <Icon aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={STROKE} />
-                  <dt className="nx-muted">{label}</dt>
-                  <dd className="ml-auto text-right tabular-nums">{value}</dd>
-                </div>
-              );
-            })}
-          </dl>
-          {c.narrowFt != null && <span className="self-start"><Pill tone="gray" icon={Ruler}>{t("discovery.card.narrow", { ft: c.narrowFt })}</Pill></span>}
-          {c.complexLots != null && <span className="text-caption nx-muted">{t("discovery.card.complex", { count: c.complexLots })}</span>}
-          {c.roomBasis && c.complexLots == null && <span className="text-caption nx-muted">{t(`discovery.card.basis.${c.roomBasis}`)}</span>}
-          {c.warning && W && (
-            <span className="self-start">
-              <Pill tone={c.warning.kind === "nominal" ? "gray" : "yellow"} icon={W}>
-                {t(`discovery.warning.${c.warning.kind}`, { date: c.warning.detail ?? "", name: c.warning.detail ?? "" })}
-              </Pill>
-            </span>
-          )}
-          <span className="mt-auto inline-flex items-center gap-1 text-caption underline underline-offset-2">
-            {t("discovery.card.open")}<ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
-          </span>
-        </span>
-      </button>
-    </li>
-  );
-}
