@@ -272,6 +272,8 @@ test("3D: phone band flat, expanded map 3D with turn, tilt and reset, axe light 
   test.skip((await toggle.count()) === 0, "no building tiles on this server");
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   for (const key of ["turnLeft", "turnRight", "tiltMore", "tiltLess", "reset"]) await expect(page.getByTestId(`map-3d-${key}`)).toBeVisible();
+  // Build raises the illustrative zoning mass and labels it (1601 N Milwaukee: B3-2, FAR 2.2).
+  await expect(page.getByTestId("map-mass-label")).toBeVisible();
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await page.waitForTimeout(400);
@@ -280,4 +282,5 @@ test("3D: phone band flat, expanded map 3D with turn, tilt and reset, axe light 
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByTestId("map-3d-reset")).toHaveCount(0);
+  await expect(page.getByTestId("map-mass-label")).toHaveCount(0);
 });

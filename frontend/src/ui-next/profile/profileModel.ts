@@ -36,6 +36,51 @@ export function heightFeet(text: string | null | undefined): number | null {
   return m ? parseFloat(m[1]) : null;
 }
 
+/** The illustrative zoning mass drawn in 3D on Build (M6, decision Items 75, 106): the district's floor-area ratio
+    times the lot area, spread evenly over the whole lot at FLOOR_FT a floor, cut at the district's height limit
+    (a range's lower end). Never "the largest allowed": setbacks, coverage, density, parking, bonuses and overlays
+    are not applied. Null without a FAR or a lot area (a planned development sets its own size), or when the lot's
+    identity or outline is approximate. */
+export const FLOOR_FT = 12;
+export interface ZoningMass {
+  /** The district (the mass takes its zoning color). */
+  zoneClass: string | null;
+  far: number;
+  lotSqft: number;
+  floorAreaSqft: number;
+  heightFt: number;
+  /** The height limit applied, in feet; null when the district states none we can read. */
+  capFt: number | null;
+  /** The limit is the lower end of a range ("45–50 ft, varies by frontage"). */
+  capFromRange: boolean;
+  /** The floor area doesn't fit under the height limit when spread over the lot. */
+  limitedByHeight: boolean;
+}
+
+/** A height range's lower end in feet ("45–50 ft (varies …)" → 45); null when there's no range. */
+export function heightRangeLow(text: string | null | undefined): number | null {
+  const m = /(\d+(?:\.\d+)?)\s*(?:ft\s*)?[–-]\s*\d+(?:\.\d+)?\s*(?:ft|feet)/i.exec(text ?? "");
+  return m ? parseFloat(m[1]) : null;
+}
+
+export function zoningMass(data: ScorecardResponse, verdict: ScorecardVerdict, approximate: boolean): ZoningMass | null {
+  const far = verdict.signals.allowedFar;
+  const lot = data.context?.property?.land_sqft ?? null;
+  if (approximate || far == null || !(far > 0) || lot == null || !(lot > 0)) return null;
+  const text = data.zone_definition?.max_height ?? null;
+  const exact = heightFeet(text);
+  const low = exact == null ? heightRangeLow(text) : null;
+  const capFt = exact ?? low;
+  const spread = far * FLOOR_FT;
+  const limitedByHeight = capFt != null && spread > capFt;
+  return {
+    zoneClass: data.zone_definition?.zone_class ?? null,
+    far, lotSqft: lot, floorAreaSqft: far * lot,
+    heightFt: limitedByHeight ? capFt! : spread,
+    capFt, capFromRange: low != null, limitedByHeight,
+  };
+}
+
 /** `buildingPending`: the City's building records (the Profile's late `building` part, Item 89) haven't answered,
     so a built figure that isn't on record yet reads "checking", not "not on record". */
 export function allowedVsBuilt(

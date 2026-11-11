@@ -1699,6 +1699,16 @@
       "tiltMore": "Inclinar más",
       "tiltLess": "Inclinar menos",
       "reset": "Restablecer el ángulo"
+    },
+    "mass": {
+      "label": "Volumen de zonificación (ilustrativo)",
+      "explainLabel": "Qué muestra el volumen de zonificación",
+      "included": "Coeficiente de edificabilidad {{far}} × este terreno = {{area}} pies² de área construida, repartidos en todo el terreno a {{floorFt}} pies por piso: unos {{height}} pies de alto.",
+      "cap": "Cortado en el límite de altura del distrito, {{cap}} pies.",
+      "capRange": "Cortado en el extremo inferior del límite de altura del distrito, {{cap}} pies (varía según el frente y el uso).",
+      "limited": "No toda esa área construida cabe bajo el límite de altura repartida así.",
+      "notChecked": "No se revisan: retiros, ocupación del terreno, viviendas por superficie, estacionamiento, bonos, ni reglas de monumentos y superposiciones.",
+      "notLargest": "Una ilustración de las cifras del distrito, no el edificio más grande permitido."
     }
   },
   "term": {

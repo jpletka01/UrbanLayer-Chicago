@@ -24,7 +24,9 @@ import {
   GROUPS, buildStyle, lotPinImage, modeOpacity, themePaint, type GroupId, type LayerMode, type MapTiles, type Theme,
 } from "./mapStyle";
 import { MapKey, type GroupState } from "./MapKey";
-import { BEARING_STEP, VIEW_3D, can3d, ensure3dLayers, nextPitch, repaint3d, set3d } from "./buildings3d";
+import { BEARING_STEP, LOT_BUILDING_LAYER, MASS_LAYER, MASS_SOURCE, VIEW_3D, can3d, ensure3dLayers, markLotBuildings, massData, nextPitch, repaint3d, set3d } from "./buildings3d";
+import type { ZoningMass } from "../profile/profileModel";
+import { Toggletip } from "../../components/ui/Toggletip";
 import { useIsPhone } from "../../lib/useIsPhone";
 import { permitWords } from "../profile/neighborhoodModel";
 
@@ -63,6 +65,8 @@ export interface NextMapProps {
   /** The map is the focus of the screen (Expand): the wheel zooms at once, like a full-page map. In the page band
       the wheel scrolls the page until the map is clicked. */
   expanded?: boolean;
+  /** The illustrative zoning mass to raise over the lot in 3D (Build only, M6); never drawn when `approximate`. */
+  mass?: ZoningMass | null;
   className?: string;
 }
 
@@ -99,7 +103,7 @@ function loadedRoads(map: MLMap): RoadLine[] {
 
 export function NextMap({
   lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales,
-  building = null, buildingState = "absent", onRetryBuilding, focusBuilding = null, expanded = false, className,
+  building = null, buildingState = "absent", onRetryBuilding, focusBuilding = null, expanded = false, mass = null, className,
 }: NextMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -276,6 +280,25 @@ export function NextMap({
     m.once("moveend", () => { if (camTarget.current === to) camTarget.current = null; });
     m.easeTo({ ...to, duration: reducedMotion() ? 0 : ms });
   };
+  // The lot in 3D: today's building on it in the lot's color, and on Build the illustrative zoning mass over it.
+  const showMass = on3d && !!mass && !approximate && !!lotGeometry;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !map.getSource(MASS_SOURCE)) return;
+    (map.getSource(MASS_SOURCE) as GeoJSONSource).setData(massData(showMass ? lotGeometry : null, showMass ? mass!.heightFt : null, mass?.zoneClass ?? null));
+    for (const id of [MASS_LAYER, LOT_BUILDING_LAYER]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", showMass ? "visible" : "none");
+  }, [showMass, lotGeometry, mass, ready]);
+  const lotIds = useRef<Set<string | number>>(new Set());
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !tiles?.buildings) return;
+    const mark = () => { lotIds.current = markLotBuildings(map, on3d && !approximate ? lotGeometry : null, lotIds.current, showMass); };
+    mark();
+    if (!on3d) return;
+    map.on("idle", mark);
+    return () => { map.off("idle", mark); };
+  }, [on3d, showMass, lotGeometry, approximate, ready, tiles]);
+
   const turn = (deg: number) => aim((c) => ({ ...c, bearing: c.bearing + deg }), 400);
   const tilt = (dir: 1 | -1) => aim((c) => ({ ...c, pitch: nextPitch(c.pitch, dir) }), 300);
   const reset3d = () => aim(() => ({ ...VIEW_3D }), 600);
@@ -635,6 +658,24 @@ export function NextMap({
             {on3d ? <Square aria-hidden className="h-4 w-4" strokeWidth={1.5} /> : <Box aria-hidden className="h-4 w-4" strokeWidth={1.5} />}
             {on3d ? t("map.view3d.off") : t("map.view3d.on")}
           </button>
+        </div>
+      )}
+      {ready && showMass && mass && (
+        <div className={`absolute left-3 z-10 flex items-center gap-1 rounded-lg bg-nx-page px-2 py-1 text-caption shadow-[0_1px_2px_rgb(0_0_0/0.12)] ${expanded ? "top-14" : "top-12"}`} data-testid="map-mass-label">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm border border-nx-ink/60 bg-nx-ink/20" aria-hidden />
+          <span>{t("map.mass.label")}</span>
+          <Toggletip label={t("map.mass.explainLabel")}>
+            <span className="block max-w-xs space-y-1 text-caption">
+              <span className="block">{t("map.mass.included", {
+                far: mass.far, area: Math.round(mass.floorAreaSqft).toLocaleString(i18n.language === "es" ? "es-MX" : "en-US"),
+                height: Math.round(mass.heightFt), floorFt: 12,
+              })}</span>
+              {mass.capFt != null && <span className="block">{t(mass.capFromRange ? "map.mass.capRange" : "map.mass.cap", { cap: mass.capFt })}</span>}
+              {mass.limitedByHeight && <span className="block">{t("map.mass.limited")}</span>}
+              <span className="block">{t("map.mass.notChecked")}</span>
+              <span className="block font-semibold">{t("map.mass.notLargest")}</span>
+            </span>
+          </Toggletip>
         </div>
       )}
       {picked && <PickedCard picked={picked} onClose={() => setPicked(null)} lang={i18n.language} boxH={boxH} />}

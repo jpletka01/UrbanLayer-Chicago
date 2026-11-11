@@ -1,7 +1,7 @@
 // The 3D mode (M6, Items 105-106): measured heights in feet drawn in metres, tinted by zoning family, unmeasured
 // pieces apart, the 2D/3D rules for phones, and the tilt steps.
 import { describe, expect, it } from "vitest";
-import { buildingsLayer, buildingsSource, can3d, mix, nextPitch, PITCH_MAX, tintedColors, unmeasuredLayer } from "./buildings3d";
+import { buildingsLayer, buildingsSource, can3d, massData, measuredFilter, mix, nextPitch, PITCH_MAX, pointInLot, ringMiddle, tintedColors, unmeasuredLayer, zoningFamily } from "./buildings3d";
 
 describe("buildings3d", () => {
   it("reads our own building tiles from an absolute URL", () => {
@@ -20,6 +20,7 @@ describe("buildings3d", () => {
 
   it("draws measured and not-measured pieces in separate layers", () => {
     expect(buildingsLayer("dark", 14).filter).toEqual(["!=", ["get", "m"], "u"]);
+    expect(measuredFilter([7, 9])).toEqual(["all", ["!=", ["get", "m"], "u"], ["!", ["in", ["id"], ["literal", [7, 9]]]]]);
     expect(unmeasuredLayer("dark", 14).filter).toEqual(["==", ["get", "m"], "u"]);
     expect(unmeasuredLayer("dark", 14).paint?.["fill-extrusion-opacity"]).toBeLessThan(buildingsLayer("dark", 14).paint?.["fill-extrusion-opacity"] as number);
   });
@@ -50,5 +51,29 @@ describe("buildings3d", () => {
     expect(nextPitch(PITCH_MAX, 1)).toBe(PITCH_MAX);
     expect(nextPitch(5, -1)).toBe(0);
     expect(nextPitch(0, -1)).toBe(0);
+  });
+
+  it("names a district's color family like the zoning tiles", () => {
+    expect(zoningFamily("B3-2")).toBe("business");
+    expect(zoningFamily("RS-3")).toBe("residential");
+    expect(zoningFamily("DX-12")).toBe("downtown");
+    expect(zoningFamily("PMD 4")).toBe("manufacturing");
+    expect(zoningFamily("PD 306")).toBe("planned");
+  });
+
+  it("raises the lot to the mass height in metres in its district's darkest color, or nothing", () => {
+    const lot: GeoJSON.Polygon = { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]] };
+    const d = massData(lot, 26.4, "B3-2");
+    expect(d.features[0].properties).toEqual({ m: 26.4 * 0.3048, c: "#B8464C" });
+    expect(massData(null, 26.4).features).toEqual([]);
+    expect(massData(lot, 0).features).toEqual([]);
+  });
+
+  it("finds the buildings standing on the lot by their middle, holes respected", () => {
+    const lot: GeoJSON.Polygon = { type: "Polygon", coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]], [[4, 4], [6, 4], [6, 6], [4, 6], [4, 4]]] };
+    expect(pointInLot(2, 2, lot)).toBe(true);
+    expect(pointInLot(5, 5, lot)).toBe(false);
+    expect(pointInLot(12, 2, lot)).toBe(false);
+    expect(ringMiddle({ type: "Polygon", coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]] })).toEqual([1, 1]);
   });
 });

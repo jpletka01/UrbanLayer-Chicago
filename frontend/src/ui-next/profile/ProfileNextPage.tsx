@@ -43,7 +43,7 @@ import { sourceState } from "./neighborhoodModel";
 import { ProgramPanel } from "./ProgramPanel";
 import { RulePanel } from "./RulePanel";
 import type { RuleKey } from "./ruleModel";
-import { ruleChips } from "./profileModel";
+import { ruleChips, zoningMass } from "./profileModel";
 import { incentiveChips, type IncentiveKey } from "./moneyModel";
 import type { LateBlockState } from "./moneyModel";
 import { SourcesDialog } from "./SourcesDialog";
@@ -256,6 +256,8 @@ function ProfileScreen({
   const { t: tp } = useTranslation("pages");
   const previewOn = useUiVersion().version === "next";
   const verdict = useMemo(() => (data ? computeVerdict(data, tp) : null), [data, tp]);
+  // The illustrative zoning mass Build raises in 3D (M6); the map withholds it when the lot is approximate.
+  const mass = useMemo(() => (data && verdict ? zoningMass(data, verdict, false) : null), [data, verdict]);
   const [tab, setTab] = useState<TabId>("overview");
   // The right panel: the analyst or a program's page, one at a time (Item 99). Closing slides it out first, so the
   // last panel stays mounted (`shownPanel`) for the slide; `seq` remounts it for a new question or program, and
@@ -441,6 +443,7 @@ function ProfileScreen({
                 onRetryBuilding={() => onRetryParts(["activity"])}
                 focusBuilding={mapFocus}
                 expanded={mapFocused}
+                mass={tab === "build" ? mass : null}
                 className="h-full"
               />
               <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
