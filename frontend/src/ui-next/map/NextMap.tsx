@@ -188,6 +188,10 @@ export function NextMap({
           if (src?.tiles && src.setTiles) src.setTiles(src.tiles);
         }, 1500);
       });
+      // The pin and pattern images go in before the first tile is cut: a tile cut while a fill pattern is missing was
+      // drawn without its zoning until the next zoom reloaded it (owner saw a quarter-mile square missing at
+      // 1601 N Milwaukee, 2026-11-11). The handlers below stay as a safety net.
+      try { addPinImages(m); addPatternImages(m); } catch { /* the style isn't ready: the handlers add them */ }
       // The pins are drawn once on a canvas; added before any point arrives, and again if a style ever asks.
       m.on("styleimagemissing", () => { addPinImages(m); addPatternImages(m); });
       m.once("load", () => { addPinImages(m); addPatternImages(m); });
