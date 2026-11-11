@@ -1286,3 +1286,21 @@ Tests: `discoveryModel.test.ts` (PIN parsing, the quick filter), `LotCard.test.t
 On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3,345 strips under 16 ft stay hidden). The stale-area fix now covers 6,524 lots, up from 6,268, because empty vacant lots with a garage get it too. 2626 S Troy (16-25-300-030) is now empty land.
 
 *Not measured:* the owner's blind check sampled only "empty" lots. The 2,734 garage-or-shed lots carry the accessory rule's own error: in his M4 labels, 4 of the 35 empty lots read as accessory because of a neighbor's garage. 12,416 lots taxed as residential have only a garage or shed and stay out, under the four-kind rule. *Revisit if* a check of the accessory lots finds real buildings.
+
+## Item 111: the builder test moves to the end of the rewrite (2026-11-11)
+
+**Decision (owner, 2026-11-11):** "postpone the builder's test until the very end of the development process", because there are still no builders lined up to take it. This replaces Item 88's gate. The builder test is no longer what a route waits on to become the new UI's default. It runs once, at the end of the rewrite, in Phase 10 before the stabilization window ends and before the old UI is deleted. Until then, a route switches to the new UI on the owner's approval after his localhost review, as in Phases 4-7.
+
+**What doesn't change:**
+- Item 75's pass criteria and the kit (`research/16-builder-test-kit/`, local);
+- the $2 model budget for its follow-up task (Item 83);
+- the rule that a failing test sends pages back for revision before the old UI is deleted.
+
+**What it costs:** Item 88's warning grows. Every page built and switched before the test is a page the test may send back, and by the end that is every page. The old UI stays deployable until the test passes, so a failed criterion can be fixed without anyone being stranded on a broken new page.
+
+*Alternatives:*
+- **Keep the gate on route switches:** the new UI stays preview-only until builders are found, with no date.
+- **Test with non-builders:** the brief's audience is small developers.
+- **An unmoderated link:** it can't score the criteria.
+
+*Revisit if* the owner lines up builders earlier: the test can run at any phase boundary, and earlier is cheaper.

@@ -324,7 +324,8 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
    `/api/scorecard`, the parcel map in the new look, the Ask drawer on the existing chat path, one Discovery
    flow. **Approved by the owner 2026-11-07** (Item 79; the map's look waits for the map tracks, Item 80).
 5. **Phase 2 done (Items 81–83):** a first screen in about 2.5 s on production (Item 87). **The builder test is deferred**
-   (no builders lined up, Item 88): it now runs before any route flips. Next: the Profile response split (Phase 4).
+   (no builders lined up, Items 88 and 111): it now runs at the end of the rewrite, before the old UI is deleted, not
+   before each route switches. Next: the Profile response split (Phase 4).
 6. **Phases 4–6 done** (the Profile in parts, the one map in the Cities: Skylines look, every Profile tab and
    Discovery; Items 89–104). **Phase 7 (data tracks) in progress:** LiDAR heights measured (Item 105), M6 3D done
    (Item 106); next M4 capacity, then M5 land in use. The runbook keeps the live status.
