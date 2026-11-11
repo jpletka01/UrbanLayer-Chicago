@@ -985,3 +985,56 @@ How (`backend/discovery/lot_facts.py`, `index_backfill.py`; the monthly build ru
 - **The sale only when there is one** (no "None on record" line). Price per buildable sq ft was offered and not chosen.
 - **One card per multi-parcel complex:** its lots share one figure, the site's, and sorted by room they filled the top of the list card after card; the first card says "N more of its lots in this list" (`foldComplexes`, presentation only; the count above the list stays the server's).
 - New row fields: `hood`, `transit_mi`, `in_tif`, `in_enterprise_zone`.
+
+## Item 105: Phase 7 step 1, building heights from LiDAR, measured before use (2026-11-10)
+
+**Status: measured; nothing changed in the app or on the live site. The fills below wait for the owner's call.** Asked by the Phase 7 brief: can LiDAR fill the stories that 8,192 City footprints lack (Item 104), and give M6 (3D) its neighbors' heights?
+
+**The sources found (newest first):**
+- **Cook County's 2022 building footprints** (`gis.cookcountyil.gov/traditional/rest/services/buildingFootprint_2022/MapServer/0`, item `7c4f47a3b32944e58c5f18652880fc05`): 1,960,186 polygons countywide, **779,930 inside Chicago**. Made from the County's spring-2022 LiDAR (20 points/m²) and 2022 orthophotos; each polygon has `Ground_Z`, `Max_Point` and `Height` = the **highest LiDAR return inside it** minus ground, in feet (minimum 7 ft: smaller structures aren't in it). Public ArcGIS service, the County's "as is" open-data terms. Read with the `httpx` and `shapely` we already have: about 3 minutes for Chicago's bounding box (1,254,045 polygons, 490 MB in SQLite), 25 s to match. **No new dependency.**
+- The 2022 point cloud itself isn't published (only a bare-earth DEM, `imagery/rest/services/DEM2022/ImageServer`, and contours).
+- **USGS 3DEP `IL_4_County_QL1_LiDAR_2016_B16`** (the County's spring-2017 flight, QL1, public domain): LAZ tiles of 2,500 ft, about 140 MB each, about 1,000 tiles for the city (about 140 GB). Not in 3DEP's cloud-optimized copy (no EPT), so reading it means downloading every tile and decoding LAZ (`laspy` + `lazrs`, not in our dependencies). **Not run:** USGS's download host answered scripted requests with a bot check, and we don't get around one. That makes the brief's "median of roof returns" untested (see below).
+- OpenStreetMap heights add nothing (Item 104).
+
+**Method** (scripts kept outside the repo, in the session notes folder `lidar_item105/`, since nothing ships): each City footprint (`syp8-uezg`, the local copy: 820,456 active) is matched to the County polygon containing its interior point; a match is "clean" when the two outlines' intersection over union is at least 0.6. Stories from height were fitted on half the footprints that have stories and tested on the other half (split by a hash of `bldg_id`): `stories = round((H − 3 ft) / 14.75 ft)` under 40 ft, `round(H / 14 ft)` above (a lookup table by 1-ft height did no better). The footprints' year built, units and garage flag come from the same City dataset.
+
+**Coverage:** 773,579 City footprints (94.3%) sit inside a County polygon; 659,717 (80.4%) match cleanly, 80,781 partly (IoU 0.3-0.6), 33,081 poorly. Of the 392,532 footprints without stories, 276,108 match cleanly.
+
+**Accuracy against the City's own stories** (191,872 held-out clean matches; note the City's footprints were last edited in 2015 and the LiDAR is 2022, so part of any disagreement is change, not error):
+
+| | n | Exact | Within ±1 |
+|---|---|---|---|
+| All | 191,872 | **79.9%** | 99.2% |
+| *Baseline: guess 2 stories for every building* | | 45.7% | 99.2% |
+| 1 story | 89,023 | 79.8% | 99.3% |
+| 2 stories | 87,639 | 83.1% | 99.9% |
+| 3 stories | 13,645 | 68.5% | 99.5% |
+| 4-6 stories | 962 | 47.7% | 84.5% |
+| 7-15 stories | 332 | 14.8% | 47.9% |
+| 16+ stories | 271 | 4.4% | 14.0% |
+| 1 unit / 2-4 units / 5+ units | 124,457 / 54,410 / 6,324 | 78.7 / 86.9 / 68.9% | 99.9 / 99.9 / 95.6% |
+| No units recorded (mostly non-residential) | 6,680 | 56.0% | 85.8% |
+| Built before 1920 / 1920-45 / 1946-79 / 1980-2015 | | 78.8 / 81.4 / 81.1 / 72.1% | 99.5 / 99.5 / 99.4 / 94.9% |
+| Partial match (IoU 0.3-0.6) / poor (<0.3) | 12,754 / 4,579 | 66.5 / 49.6% | 95.9 / 87.2% |
+
+**Within ±1 story is not a useful test for Chicago:** most buildings have one to three stories, so guessing 2 for all of them scores the same 99.2%. Exact is the number that matters, because floor area is footprint × stories and one story off on a two-story building is a 50% error.
+
+**Floor area against an independent source**, the Assessor's building area (lots whose area comes from the Assessor or its Commercial Valuation, not in a multi-parcel complex), share of lots within ±25%:
+
+| | Lots computable both ways | Footprint × City stories (in use today) | Footprint × LiDAR stories |
+|---|---|---|---|
+| All | 92,508 | **53.2%** (median ratio 1.19) | **48.8%** (1.21) |
+| Residential | 83,955 | 51.0% | 48.3% |
+| Multi-family | 2,962 | 81.9% | 62.8% |
+| Commercial | 4,669 | 74.1% | 50.2% |
+
+The City's stories run high against the Assessor too (median 1.19; the Assessor's area leaves out basements and garages), but LiDAR is worse. The gap is widest for apartments and commercial buildings, where heights include rooftop equipment, parapets and towers on podiums.
+
+**The 8,192 lots:** 8,188 found again. LiDAR would fill all the missing stories on **4,433** of them (54%); the rest have a footprint the County doesn't have (2,689 footprints, mostly under 400 sq ft or under the County's 7-ft minimum) or a different outline (2,245). These lots aren't like the validation set: their story-less footprints are small sheds and garages (median 768 sq ft, 10th percentile 276) or large buildings (90th percentile 11,495 sq ft), and 645 of the matched ones come out at 4+ stories, where accuracy is 15-48%. 3,734 of the 8,188 are blocked only by footprints under 600 sq ft; there's no independent check for those either, because the City records no stories for garages (one storied garage in the validation set) and its small storied footprints are mostly 2-3 story rear additions (4.7% one-story).
+
+**Recommendation:**
+- **Discovery's missing stories: no-go as measured.** The fill would be worse than the method already in use, on the building types the gap lots skew to. Item 104's rule (justifiable and measured accurate) isn't met. *Revisit if* a median-of-roof height can be measured (needs the 2017 point cloud downloaded by hand, about 140 GB, or the County's 2022 point cloud on request) and beats footprint × City stories against the Assessor's area. Or if the owner wants a narrower rule for small accessory structures (under 600 sq ft, highest point under 20 ft = one story, or left out of floor area), which this data can't check.
+- **M6 neighbor heights: go, in feet, without stories.** 3D draws height, not stories, and the County's measured height is the best source for that: 2022, 94.3% of City footprints, 779,930 buildings in Chicago (median 20 ft, 99th percentile 58 ft). Caveats for M6's spike: the height is a roof's highest point (chimneys, rooftop equipment, a tower over a podium: a block shows each building's tallest point, not its roof line); buildings demolished or built since 2022 are wrong; the raw outlines are 262 MB (15.7 M vertices) in WKB, so they need tiles and a payload and frame-rate check on a phone. Whether to draw County outlines (2022) or City footprints (2015) is part of the spike.
+- **Stories shown to people** (History's building records, Item 103) stay the City's and the Assessor's; a LiDAR height could be one more source there later, labeled as a measured height.
+
+*Alternatives considered:* the 2017 point cloud with our own median (blocked, above); a learned model (the inputs are one height and an outline; gains would be small against 2015-vs-2022 change); OSM `building:levels` (same City import, Item 104).
