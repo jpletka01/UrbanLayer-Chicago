@@ -1170,8 +1170,15 @@
       "complex_other": "Espacio de todo el conjunto de {{count}} terrenos",
       "basis": {
         "commercial_valuation": "Superficie construida de los registros comerciales del Asesor",
-        "footprint": "Superficie construida de las huellas de edificios de la Ciudad × pisos"
-      }
+        "footprint": "Superficie construida de las huellas de edificios de la Ciudad × pisos",
+        "city_land_inventory": "Sin edificio: terreno baldío de la Ciudad (inventario de terrenos de la Ciudad)"
+      },
+      "named": {
+        "own_rules": "Lo fija su propia ordenanza",
+        "open_space": "Espacio abierto",
+        "transport": "Terreno ferroviario o de transporte"
+      },
+      "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola"
     },
     "goalSoon": "faltan datos",
     "goal": {
@@ -1199,8 +1206,8 @@
     "inView_other": "{{n}} terrenos a la vista",
     "listThem": "Ver la lista",
     "capped": "Hay más coincidencias de las que el mapa puede marcar a la vez: acérquese",
-    "hiddenUnusual_one": "{{n}} terreno inusual oculto (vía férrea, servicios o área común).",
-    "hiddenUnusual_other": "{{n}} terrenos inusuales ocultos (vía férrea, servicios o área común).",
+    "hiddenUnusual_one": "{{n}} terreno inusual oculto (vía férrea, servicios, área común o franja de menos de 16 pies).",
+    "hiddenUnusual_other": "{{n}} terrenos inusuales ocultos (vía férrea, servicios, áreas comunes o franjas de menos de 16 pies).",
     "show": "Mostrar",
     "focus": {
       "label": "Mostrar como",
@@ -1234,7 +1241,10 @@
         "1": "Menos de 2,500 pies²",
         "2": "2,500–5,000 pies²",
         "3": "5,000–10,000 pies²",
-        "4": "10,000 pies² o más"
+        "4": "10,000 pies² o más",
+        "own": "Lo fija su propia ordenanza (PD)",
+        "park": "Parque o espacio abierto",
+        "transport": "Terreno ferroviario o de transporte"
       },
       "lot": {
         "name": "Tamaño del terreno",

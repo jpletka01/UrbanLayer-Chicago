@@ -25,14 +25,14 @@ import shapely
 from shapely import wkt as shapely_wkt
 
 from backend.discovery.lot_facts import (
-    LotSources, derive_capacity, fill_building_area, lot_warnings, pending_rezoning_pin10s,
+    NARROW_STRIP_FT, LotSources, derive_capacity, fill_building_area, lot_warnings, lot_width_ft, pending_rezoning_pin10s,
 )
 from backend.discovery.lot_sources import DEFAULT_PATH as SOURCES_PATH
 
 log = logging.getLogger(__name__)
 
 # Keys this pass owns: cleared before each fill so a rerun never keeps a stale answer.
-OWNED = ("bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
+OWNED = ("lot_width_ft", "narrow_strip", "bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
          "warn_landmark")
 
 
@@ -79,14 +79,22 @@ def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set
         attrs["warn_pending_rezoning"] = True
     if pin14[10:] != "0000":
         return
-    if attrs.get("bldg_sqft_source") == "footprint":  # a rerun recomputes the footprint answer
+    if lot is not None:
+        width = lot_width_ft(lot)
+        if width is not None:
+            attrs["lot_width_ft"] = width
+            if width < NARROW_STRIP_FT:
+                attrs["narrow_strip"] = True
+    from backend.discovery.index_build import unusual_rule
+    attrs["unusual"] = unusual_rule(attrs)
+    if attrs.get("bldg_sqft_source") in ("footprint", "city_land_inventory"):  # a rerun recomputes these
         attrs.pop("bldg_sqft", None)
         attrs.pop("bldg_sqft_source", None)
     if attrs.get("multi_pin_member"):
         commercial = None
     else:
         commercial = _commercial_area(pin14)
-    fill_building_area(attrs, commercial=commercial, lot=lot, src=src)
+    fill_building_area(attrs, commercial=commercial, lot=lot, src=src, pin10=pin10)
     r = attrs.get("improvement_ratio")
     imp_share = r / (1 + r) if isinstance(r, (int, float)) and r >= 0 else None
     derive_from_building(attrs, imp_share)

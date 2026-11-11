@@ -52,6 +52,8 @@ export const MEASURE_PROP: Record<MeasureId, string> = { room: "r", lot: "s", sa
 const SEQ = ["#DCEDEB", "#A9D2CE", "#72B0AB", "#4A867E", "#2C4F4A"];
 // Last sale: recent is darkest (where the market is moving).
 const SALE = [SEQ[4], SEQ[3], SEQ[2], SEQ[1], SEQ[0]];
+// The named "room" states: planned development gray (the zoning map's PD gray), park green, transportation peach.
+const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4" };
 // Land use: Coastal's five and a gray, each named in the key (never color alone).
 export const USE_COLORS = ["#B89D47", "#DCEDEB", "#72B0AB", "#FE9179", "#355E58", "#B4B4B4"];
 
@@ -60,7 +62,13 @@ export interface MeasureStep { value: string; color: string; key: string }
 /** Each measure's steps in the key's order: the tile value, its color and its words (i18n key under `discovery.measure`). */
 export function measureSteps(m: MeasureId): MeasureStep[] {
   switch (m) {
-    case "room": return SEQ.map((color, i) => ({ value: String(i), color, key: `room.${i}` }));
+    case "room": return [
+      ...SEQ.map((color, i) => ({ value: String(i), color, key: `room.${i}` })),
+      // No base FAR is named, not unknown (owner's review): its own ordinance, open space, a transportation zone.
+      { value: "x", color: NAMED.own, key: "room.own" },
+      { value: "p", color: NAMED.park, key: "room.park" },
+      { value: "t", color: NAMED.transport, key: "room.transport" },
+    ];
     case "lot": return SEQ.map((color, i) => ({ value: String(i), color, key: `lot.${i}` }));
     case "sale": return SALE.map((color, i) => ({ value: String(i), color, key: `sale.${i}` }));
     case "use": return USE_COLORS.map((color, i) => ({ value: String(i), color, key: `use.${i}` }));
@@ -97,7 +105,11 @@ export interface CardModel {
   lotSqft: number | null;
   roomSqft: number | null;
   /** Where the building area behind "room to build" came from, when it isn't the Assessor's own record. */
-  roomBasis: "commercial_valuation" | "footprint" | null;
+  roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | null;
+  /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation. */
+  roomNamed: "own_rules" | "open_space" | "transport" | null;
+  /** A strip under 16 ft wide (hidden by default), with its width in feet. */
+  narrowFt: number | null;
   /** The room is the multi-parcel site's (this many lots), not the lot's alone. */
   complexLots: number | null;
   sale: { price: number; year: string; transfer: boolean } | null;
@@ -109,7 +121,9 @@ export const TRANSFER_BELOW = 10_000;
 
 export function cardModel(row: ResultRow): CardModel {
   const { title, approx } = rowTitle(row);
-  const basis = row.bldg_sqft_source === "commercial_valuation" || row.bldg_sqft_source === "footprint" ? row.bldg_sqft_source : null;
+  const src = row.bldg_sqft_source;
+  const basis = src === "commercial_valuation" || src === "footprint" || src === "city_land_inventory" ? src : null;
+  const named = row.room_scope === "own_rules" || row.room_scope === "open_space" || row.room_scope === "transport" ? row.room_scope : null;
   const room = row.room_sqft ?? null;
   return {
     title,
@@ -118,6 +132,8 @@ export function cardModel(row: ResultRow): CardModel {
     lotSqft: row.lot_sqft ?? null,
     roomSqft: room,
     roomBasis: room != null ? basis : null,
+    roomNamed: room == null ? named : null,
+    narrowFt: row.narrow_strip && row.lot_width_ft != null ? Math.round(row.lot_width_ft) : null,
     complexLots: room != null && row.room_scope === "complex" ? row.complex_lots ?? null : null,
     sale: row.last_sale_price != null && row.last_sale_date
       ? { price: row.last_sale_price, year: row.last_sale_date.slice(0, 4), transfer: row.last_sale_price < TRANSFER_BELOW }

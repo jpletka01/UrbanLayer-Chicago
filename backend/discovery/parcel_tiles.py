@@ -453,9 +453,13 @@ def grid_cells(rows) -> list[Parcel]:
             continue
         props: dict[str, str] = {"n": str(len(lots))}
         for key in ("r", "s", "y"):
-            vals = sorted(int(b[key]) for b in lots if key in b)
-            if len(vals) >= GRID_MIN_KNOWN * len(lots):
-                props[key] = str(vals[len(vals) // 2])
+            vals = [b[key] for b in lots if key in b]
+            nums = sorted(int(v) for v in vals if v.isdigit())
+            named = [v for v in vals if not v.isdigit()]  # room's "own rules", "open space", "transport"
+            if len(nums) >= GRID_MIN_KNOWN * len(lots):
+                props[key] = str(nums[len(nums) // 2])
+            elif named and len(vals) >= GRID_MIN_KNOWN * len(lots) and len(named) >= len(nums):
+                props[key] = Counter(named).most_common(1)[0][0]
         for key in ("u", "g"):
             vals = [b[key] for b in lots if key in b]
             if len(vals) >= GRID_MIN_KNOWN * len(lots):

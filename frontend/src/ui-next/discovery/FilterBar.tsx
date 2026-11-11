@@ -39,7 +39,7 @@ export function FilterBar({
   const draft = pending && pending.base === base ? pending.draft : panel;
   const dirty = JSON.stringify(draft) !== base;
   const setDraft = (fn: (d: PanelState) => PanelState) => setPending({ base, draft: fn(draft) });
-  const count = useLiveCount(registry, draft, scope);
+  const count = useLiveCount(registry, draft, scope, dirty || open !== null);
   const apply = () => { onApply(draft); setPending(null); };
   const buttons = useRef<Record<string, HTMLButtonElement | null>>({});
   const close = () => {
@@ -86,10 +86,11 @@ export function FilterBar({
 }
 
 /** The live "Show N lots" count: a server search of the draft (one row), debounced. */
-function useLiveCount(registry: Registry, draft: PanelState, scope: SpatialScope | null) {
+function useLiveCount(registry: Registry, draft: PanelState, scope: SpatialScope | null, enabled: boolean) {
   const key = JSON.stringify(draft);
   const [answer, setAnswer] = useState<{ key: string; n: number | null } | null>(null);
   useEffect(() => {
+    if (!enabled) return;  // only while a panel is open or choices wait to be shown
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       runSearch({ panelState: draft, scope, limit: 1 }, registry, controller.signal)
@@ -99,7 +100,7 @@ function useLiveCount(registry: Registry, draft: PanelState, scope: SpatialScope
     return () => { window.clearTimeout(timer); controller.abort(); };
     // key stands for draft.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, registry, scope]);
+  }, [key, registry, scope, enabled]);
   return { n: answer?.n ?? null, loading: answer?.key !== key };
 }
 

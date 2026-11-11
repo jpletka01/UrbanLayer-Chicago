@@ -126,6 +126,9 @@ class ResultRow(BaseModel):
     # "complex" = the room of the multi-parcel site this lot belongs to (complex_lots lots), not of the lot alone.
     room_scope: str | None = None
     complex_lots: int | None = None
+    # How wide the lot really is (the widest circle inside it), and whether that makes it a strip (< 16 ft, Item 104).
+    lot_width_ft: float | None = None
+    narrow_strip: bool = False
     # At most one serious warning for the card (Item 104): {"kind": demolition | vacant_case | pending_rezoning |
     # landmark | nominal, "detail": a date or a name, when there is one}.
     warning: dict[str, str | None] | None = None
@@ -298,6 +301,8 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         bldg_sqft_source=g("bldg_sqft_source"),
         room_scope=g("room_scope"),
         complex_lots=g("complex_lots"),
+        lot_width_ft=g("lot_width_ft"),
+        narrow_strip=bool(g("narrow_strip")),
         warning=_warning(g, nominal),
         sortValue=_display_sort_value(parcel, sort_field),
     )

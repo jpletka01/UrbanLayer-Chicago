@@ -37,6 +37,7 @@ PORTAL = "https://data.cityofchicago.org/resource"
 FOOTPRINTS = "syp8-uezg"
 VACANT_CASES = "kc9i-wq85"
 PERMITS = "ydr8-5enu"
+CITY_LAND = "aksk-kvfp"  # the City-Owned Land Inventory: lots the City owns, almost all vacant land for sale
 ZONING_MAPSERVER = "https://gisapps.chicago.gov/arcgis/rest/services/ExternalApps/Zoning/MapServer"
 PAGE = 50_000
 
@@ -116,6 +117,7 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
             "$select": "permit_,issue_date,latitude,longitude",
             "$where": f"permit_type = 'PERMIT - WRECKING/DEMOLITION' AND issue_date >= '{since_demo}'",
             "$order": "issue_date"})
+        city_land = _pages(client, CITY_LAND, {"$select": "pin", "$where": "property_status = 'Owned by City'", "$order": "pin"})
         landmarks = _arcgis_polygons(client, 5, "1=1")
         districts = _arcgis_polygons(client, 6, "LANDMARK = 'Y'")
     if len(fp_rows) < MIN_FOOTPRINTS:
@@ -130,6 +132,7 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
         CREATE TABLE footprints (bldg_id TEXT, stories INTEGER, area_sqft REAL, wkb BLOB NOT NULL);
         CREATE TABLE points (kind TEXT NOT NULL, ref TEXT, date TEXT, lat REAL NOT NULL, lon REAL NOT NULL);
         CREATE TABLE areas (kind TEXT NOT NULL, name TEXT, wkb BLOB NOT NULL);
+        CREATE TABLE city_land (pin10 TEXT PRIMARY KEY);
         CREATE TABLE meta (name TEXT PRIMARY KEY, value TEXT);
     """)
     bad = 0
@@ -156,6 +159,8 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
             if p:
                 pts.append((kind, row.get(ref), (row.get(date) or "")[:10], p[0], p[1]))
     db.executemany("INSERT INTO points VALUES (?, ?, ?, ?, ?)", pts)
+    db.executemany("INSERT OR IGNORE INTO city_land VALUES (?)",
+                   [(str(r["pin"]).replace("-", "")[:10],) for r in city_land if r.get("pin")])
     db.executemany("INSERT INTO areas VALUES (?, ?, ?)",
                    [("landmark", n, shapely.to_wkb(g)) for n, g in landmarks]
                    + [("landmark_district", n, shapely.to_wkb(g)) for n, g in districts])
@@ -163,7 +168,7 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
         "fetched": today.isoformat(), "footprints": len(fps), "footprints_with_stories": sum(1 for f in fps if f[1]),
         "footprints_skipped": bad, "vacant_cases": sum(1 for p in pts if p[0] == "vacant_case"),
         "demolition_permits": sum(1 for p in pts if p[0] == "demolition"), "landmarks": len(landmarks),
-        "landmark_districts": len(districts), "seconds": round(time.monotonic() - t0, 1),
+        "landmark_districts": len(districts), "city_owned_lots": len(city_land), "seconds": round(time.monotonic() - t0, 1),
     }
     db.executemany("INSERT INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
     db.commit()

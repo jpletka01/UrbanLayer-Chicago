@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowRight, ChevronDown, Circle, Hammer, House, Landmark, List, LoaderCircle, Map as MapIcon, MapPin, Maximize2, Palette,
-  Receipt, Search, Shovel, Sprout, Store, Target, TrendingDown, TriangleAlert, X, type LucideIcon,
+  Receipt, Ruler, Search, Shovel, Sprout, Store, Target, TrendingDown, TriangleAlert, X, type LucideIcon,
 } from "lucide-react";
 import { loadRegistry } from "../../discovery/registryClient";
 import { useDiscoverySearch } from "../../discovery/useDiscoverySearch";
@@ -712,7 +712,8 @@ function ResultCard({ row, onOpen }: { row: ResultRow; onOpen: () => void }) {
   const facts: Array<[keyof typeof ICON, string, string]> = [];
   if (c.zone) facts.push(["zoning", t("discovery.card.zoning"), c.zone]);
   if (c.lotSqft != null) facts.push(["lot", t("discovery.card.lot"), t("profile.build.sqft", { value: n(c.lotSqft) })]);
-  facts.push(["floorArea", t("discovery.card.room"), c.roomSqft != null ? t("profile.build.sqft", { value: n(c.roomSqft) }) : t("discovery.card.unknown")]);
+  facts.push(["floorArea", t("discovery.card.room"), c.roomSqft != null ? t("profile.build.sqft", { value: n(c.roomSqft) })
+    : c.roomNamed ? t(`discovery.card.named.${c.roomNamed}`) : t("discovery.card.unknown")]);
   facts.push(["sale", t("discovery.card.sale"), c.sale
     ? c.sale.transfer ? t("discovery.card.transfer", { year: c.sale.year }) : t("discovery.card.saleValue", { price: `$${n(c.sale.price)}`, year: c.sale.year })
     : t("discovery.card.noSale")]);
@@ -735,6 +736,7 @@ function ResultCard({ row, onOpen }: { row: ResultRow; onOpen: () => void }) {
               );
             })}
           </dl>
+          {c.narrowFt != null && <span className="self-start"><Pill tone="gray" icon={Ruler}>{t("discovery.card.narrow", { ft: c.narrowFt })}</Pill></span>}
           {c.complexLots != null && <span className="text-caption nx-muted">{t("discovery.card.complex", { count: c.complexLots })}</span>}
           {c.roomBasis && c.complexLots == null && <span className="text-caption nx-muted">{t(`discovery.card.basis.${c.roomBasis}`)}</span>}
           {c.warning && W && (

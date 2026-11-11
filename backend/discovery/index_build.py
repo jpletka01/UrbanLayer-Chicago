@@ -382,14 +382,20 @@ def assemble_parcel(
     # 100,000 sq ft vacant lots had none) or on a development's shared outline (a common area, like the $1 parcel).
     # Never a building: condo units and townhomes share outlines too (11,254 condo units in six areas) and are
     # ordinary homes; with no geometry land area they just fall out of lot-size filters.
-    vacant = bool(attrs.get("is_vacant"))
-    attrs["unusual"] = vacant and (
-        bool(attrs.get("shared_outline"))
-        or (not attrs["own_address"] and (attrs.get("land_sqft") or 0) > UNUSUAL_VACANT_MIN_SQFT)
-    )
+    attrs["unusual"] = unusual_rule(attrs)
 
     regions = [f"neighborhood:{neighborhood_ca}"] if neighborhood_ca is not None else []
     return spine["pin"], lat, lon, attrs, regions
+
+
+def unusual_rule(attrs: dict[str, Any]) -> bool:
+    """Hidden from Discovery by default (Items 60, 104): VACANT land over an acre with no street address of its own,
+    or on a development's shared outline; or ANY lot narrower than 16 ft (``narrow_strip``, set by ``lot_facts``)."""
+    vacant = bool(attrs.get("is_vacant"))
+    return bool(attrs.get("narrow_strip")) or (vacant and (
+        bool(attrs.get("shared_outline"))
+        or (not attrs.get("own_address") and (attrs.get("land_sqft") or 0) > UNUSUAL_VACANT_MIN_SQFT)
+    ))
 
 
 def derive_from_building(attrs: dict[str, Any], imp_share: float | None) -> None:

@@ -211,3 +211,42 @@ def test_the_grid_gives_a_block_its_lots_median_and_leaves_thin_measures_off():
     assert grid_cells(rows[:2]) == []  # fewer than 3 lots: no cell
     thin = [(f"{i:010d}0000", base[0], base[1], {"land_sqft": 3125} if i else {"room_sqft": 0, "land_sqft": 3125}) for i in range(4)]
     assert "r" not in grid_cells(thin)[0].props  # 1 of 4 known: left off, drawn dotted
+
+
+def test_a_strip_under_16_ft_is_unusual_and_a_city_lot_is_not():
+    from backend.discovery.lot_facts import lot_width_ft
+
+    assert 24 < lot_width_ft(LOT) < 26  # a 25 x 125 ft lot
+    strip = box(-87.70, 41.84, -87.70 + 8 * FT_LON, 41.84 + 125 * FT_LAT)
+    assert 7 < lot_width_ft(strip) < 9
+    a = {"land_sqft": 1000.0, "density_band": 1.2}
+    enrich(a, "12345678900000", strip, _sources([]), set())
+    assert a["narrow_strip"] is True and a["unusual"] is True
+    b = {"land_sqft": 3125.0, "density_band": 1.2, "own_address": True}
+    enrich(b, "12345678910000", LOT, _sources([]), set())
+    assert "narrow_strip" not in b and b["unusual"] is False
+
+
+def test_no_base_far_is_named_not_unknown():
+    a = {"land_sqft": 9000.0, "bldg_sqft": 2000.0, "zoning_group": "planned_development"}
+    derive_capacity(a)
+    assert "room_sqft" not in a and a["room_scope"] == "own_rules"
+    assert measure_bands(a)["r"] == "x"
+    b = {"land_sqft": 9000.0, "zone_class": "POS-1"}
+    derive_capacity(b)
+    assert b["room_scope"] == "open_space" and measure_bands(b)["r"] == "p"
+    c = {"land_sqft": 9000.0}
+    derive_capacity(c)
+    assert "room_scope" not in c and "r" not in measure_bands(c)
+
+
+def test_a_city_owned_lot_with_no_footprint_has_no_building():
+    import dataclasses
+
+    src = dataclasses.replace(_sources([]), city_land=frozenset({"1234567890"}))
+    a = {"land_sqft": 3125.0, "density_band": 1.2}
+    enrich(a, "12345678900000", LOT, src, set())
+    assert a["bldg_sqft"] == 0.0 and a["bldg_sqft_source"] == "city_land_inventory" and a["room_sqft"] == 3750.0
+    b = {"land_sqft": 3125.0, "density_band": 1.2}
+    enrich(b, "99999999990000", LOT, src, set())
+    assert "bldg_sqft" not in b and b["bldg_sqft_unknown"] == "no_footprint"

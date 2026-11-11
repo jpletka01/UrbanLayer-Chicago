@@ -25,11 +25,17 @@ from typing import Any
 
 import numpy as np
 import shapely
+import shapely.affinity
 from shapely.strtree import STRtree
 
 from backend.discovery.lot_sources import area_sqft
 
-FOOTPRINT_SPAN_SLACK = 1.1  # the Profile's _FOOTPRINT_SPAN_SLACK (retrieval/property/__init__.py)
+FOOTPRINT_SPAN_SLACK = 1.1
+# A lot narrower than this (the widest circle that fits inside it) is a strip, not a building lot: a side yard, a
+# vacated alley, a sliver between buildings. Chicago's standard lot is 25 ft wide. Hidden by default (Item 104).
+NARROW_STRIP_FT = 16.0
+_FT_PER_DEG_LAT = 364_000.0
+_LON_SCALE = 0.7447  # cos(41.84°): degrees of longitude to degrees of latitude at Chicago  # the Profile's _FOOTPRINT_SPAN_SLACK (retrieval/property/__init__.py)
 POINT_BUFFER_DEG = 0.00003  # ~3 m: an address point on the lot line still counts as this lot's
 
 # One warning per card: the order in which the serious ones win.
@@ -48,6 +54,7 @@ class LotSources:
     pt_tree: dict[str, tuple[STRtree, list[str]]]  # kind -> (tree of points, their dates)
     area_tree: tuple[STRtree, list[str]] | None  # landmarks + landmark districts
     meta: dict[str, Any]
+    city_land: frozenset[str] = frozenset()  # PIN10s the City owns (its land inventory)
 
     @classmethod
     def load(cls, path: Path) -> "LotSources":
@@ -62,6 +69,10 @@ class LotSources:
                 d.append(date or "")
             areas = db.execute("SELECT kind, name, wkb FROM areas").fetchall()
             meta = {k: json.loads(v) for k, v in db.execute("SELECT name, value FROM meta")}
+            try:
+                city_land = frozenset(r[0] for r in db.execute("SELECT pin10 FROM city_land"))
+            except sqlite3.OperationalError:  # a copy made before the inventory was added
+                city_land = frozenset()
         finally:
             db.close()
         reps = shapely.point_on_surface(geoms)
@@ -71,7 +82,7 @@ class LotSources:
             fp_stories=[r[0] for r in fps], fp_area=[r[1] for r in fps],
             pt_tree={k: (STRtree(g), d) for k, (g, d) in pts.items()},
             area_tree=(STRtree(area_geoms), [a[1] or "" for a in areas]) if areas else None,
-            meta=meta,
+            meta=meta, city_land=city_land,
         )
 
 
@@ -112,6 +123,17 @@ def lot_warnings(lot, src: LotSources, pending_pin10: set[str], pin10: str) -> d
     return out
 
 
+def lot_width_ft(lot) -> float | None:
+    """How wide a lot really is: the diameter of the largest circle that fits inside it, in feet (local scale)."""
+    try:
+        g = shapely.affinity.scale(lot, xfact=_LON_SCALE, yfact=1, origin=(0, 0))
+        radius = shapely.maximum_inscribed_circle(g, 0.000005).length
+    except Exception:  # noqa: BLE001: a degenerate outline has no width
+        return None
+    w = 2 * radius * _FT_PER_DEG_LAT
+    return round(w, 1) if w > 0 else None
+
+
 def pending_rezoning_pin10s(db_path: Path) -> set[str]:
     """PIN10s a current (pending, not superseded) zoning reclassification filing lists by address range."""
     if not db_path.exists():
@@ -137,11 +159,37 @@ def derive_capacity(attrs: dict[str, Any]) -> None:
     if attrs.get("is_vacant") and bsf is None:
         bsf = 0.0
     attrs.pop("room_sqft", None)
+    if attrs.get("room_scope") in NO_BASE_FAR:
+        attrs.pop("room_scope")
     if far and lsf and lsf > 0 and bsf is not None:
         attrs["room_sqft"] = float(max(0.0, round(far * lsf - bsf)))
+    elif not far:
+        # No base FAR is not "unknown": a planned development or planned manufacturing district sets its own size by
+        # ordinance; parks and transportation zones aren't built on by right (owner's review, Item 104).
+        scope = no_far_scope(attrs)
+        if scope:
+            attrs["room_scope"] = scope
 
 
-def fill_building_area(attrs: dict[str, Any], *, commercial=None, lot=None, src: LotSources | None = None) -> None:
+NO_BASE_FAR = ("own_rules", "open_space", "transport")
+
+
+def no_far_scope(attrs: dict[str, Any]) -> str | None:
+    """Why a lot has no base FAR, when the zoning says: its own ordinance, open space, or a transportation zone."""
+    zone = str(attrs.get("zone_class") or "").upper()
+    if attrs.get("zoning_group") == "planned_development" or zone.startswith(("PD", "PMD")):
+        return "own_rules"
+    if attrs.get("zoning_group") == "manufacturing" and not attrs.get("density_band"):
+        return "own_rules"  # a PMD read as manufacturing by an index built before the exact district
+    if zone.startswith("POS"):
+        return "open_space"
+    if zone.startswith("T"):
+        return "transport"
+    return None
+
+
+def fill_building_area(attrs: dict[str, Any], *, commercial=None, lot=None, src: LotSources | None = None,
+                       pin10: str | None = None) -> None:
     """Fill ``bldg_sqft`` (and name its source) where the Assessor's characteristics left it empty."""
     from backend.retrieval.property.commercial_artifact import UnitArea
 
@@ -159,6 +207,11 @@ def fill_building_area(attrs: dict[str, Any], *, commercial=None, lot=None, src:
         if sqft is not None:
             attrs["bldg_sqft"] = sqft
             attrs["bldg_sqft_source"] = "footprint"
+        elif why == "no_footprint" and pin10 and pin10 in src.city_land:
+            # No footprint, and the City's own land inventory lists the lot as City-owned: vacant land (measured,
+            # Item 104: 9,905 exempt lots; a footprint sits on only 8.4% of inventory lots, mostly since demolished).
+            attrs["bldg_sqft"] = 0.0
+            attrs["bldg_sqft_source"] = "city_land_inventory"
         else:
             attrs["bldg_sqft_unknown"] = why
 
@@ -183,6 +236,8 @@ def measure_bands(attrs: dict[str, Any]) -> dict[str, str]:
     room = attrs.get("room_sqft")
     if room is not None:
         out["r"] = str(0 if room <= 0 else 1 + sum(room >= e for e in ROOM_BANDS[1:]))
+    elif attrs.get("room_scope") in NO_BASE_FAR:
+        out["r"] = {"own_rules": "x", "open_space": "p", "transport": "t"}[attrs["room_scope"]]
     lot = attrs.get("land_sqft")
     if lot:
         out["s"] = str(sum(lot >= e for e in LOT_BANDS))

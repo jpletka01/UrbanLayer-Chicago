@@ -1170,8 +1170,15 @@
       "complex_other": "Room for the whole {{count}}-lot complex",
       "basis": {
         "commercial_valuation": "Building area from the Assessor's commercial records",
-        "footprint": "Building area from City footprints × stories"
-      }
+        "footprint": "Building area from City footprints × stories",
+        "city_land_inventory": "No building: City-owned vacant land (the City's land inventory)"
+      },
+      "named": {
+        "own_rules": "Set by its own ordinance",
+        "open_space": "Open space",
+        "transport": "Railroad or transit land"
+      },
+      "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone"
     },
     "goalSoon": "needs data",
     "goal": {
@@ -1199,8 +1206,8 @@
     "inView_other": "{{n}} lots in view",
     "listThem": "List them",
     "capped": "More matches than the map can outline at once: zoom in",
-    "hiddenUnusual_one": "{{n}} unusual lot hidden (rail, utility or common land).",
-    "hiddenUnusual_other": "{{n}} unusual lots hidden (rail, utility or common land).",
+    "hiddenUnusual_one": "{{n}} unusual lot hidden (rail, utility or common land, or a strip under 16 ft wide).",
+    "hiddenUnusual_other": "{{n}} unusual lots hidden (rail, utility or common land, or strips under 16 ft wide).",
     "show": "Show",
     "focus": {
       "label": "Show as",
@@ -1234,7 +1241,10 @@
         "1": "Under 2,500 sq ft",
         "2": "2,500–5,000 sq ft",
         "3": "5,000–10,000 sq ft",
-        "4": "10,000 sq ft or more"
+        "4": "10,000 sq ft or more",
+        "own": "Set by its own ordinance (PD)",
+        "park": "Park or open space",
+        "transport": "Railroad or transit land"
       },
       "lot": {
         "name": "Lot size",

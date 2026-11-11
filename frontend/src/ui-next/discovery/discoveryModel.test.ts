@@ -27,7 +27,7 @@ describe("quick filters compile to a panel the server evaluates", () => {
 
 describe("the map's measure", () => {
   it("has a key step per tile band and colors unknown as transparent (the hatch layer draws it)", () => {
-    expect(measureSteps("room").map((s) => s.value)).toEqual(["0", "1", "2", "3", "4"]);
+    expect(measureSteps("room").map((s) => s.value)).toEqual(["0", "1", "2", "3", "4", "x", "p", "t"]);
     const expr = measureColorExpr("room") as unknown[];
     expect(expr.slice(0, 2)).toEqual(["match", ["get", "r"]]);
     expect(expr[expr.length - 1]).toBe("rgba(0,0,0,0)");

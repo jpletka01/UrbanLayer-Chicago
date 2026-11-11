@@ -231,6 +231,8 @@ export interface ResultRow {
   /** "complex" = the room of the multi-parcel site the lot belongs to (`complex_lots` lots). */
   room_scope?: string | null;
   complex_lots?: number | null;
+  lot_width_ft?: number | null;
+  narrow_strip?: boolean;
   /** The card's one serious warning (Item 104). */
   warning?: { kind: "demolition" | "vacant_case" | "pending_rezoning" | "landmark" | "nominal"; detail?: string | null } | null;
   sortValue: number | string | null; // value of the active sort key, for row display
