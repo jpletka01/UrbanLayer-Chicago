@@ -13,7 +13,7 @@ import { Box, ChevronDown, ChevronUp, Compass, LoaderCircle, LocateFixed, MapPin
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, fetchLotOutline, loadMapInfo, streetViewUrl } from "./mapInfo";
-import { streetOfAddress, viewpointFor, type RoadLine, type Viewpoint } from "./streetView";
+import { loadedRoads, streetOfAddress, viewpointFor, type Viewpoint } from "./streetView";
 import { addPinImages } from "./pins";
 import { addPatternImages } from "./patterns";
 import type { ComparableSale, TransitStation } from "../../lib/types";
@@ -89,17 +89,6 @@ type Picked =
   | { kind: "district"; props: Record<string, string>; at: [number, number]; ll: [number, number]; sv: Viewpoint }
   | { kind: "sale"; sale: ComparableSale; at: [number, number]; ll: [number, number]; sv: Viewpoint }
   | { kind: "building"; project: ConstructionProject; at: [number, number]; ll: [number, number]; sv: Viewpoint };
-
-/** The City street centerlines the map has loaded (Street View's viewpoint snaps onto them). */
-function loadedRoads(map: MLMap): RoadLine[] {
-  if (!map.getSource("base")) return [];
-  return map.querySourceFeatures("base", { sourceLayer: "road" }).map((f) => {
-    const g = f.geometry;
-    const lines = g.type === "LineString" ? [g.coordinates as [number, number][]]
-      : g.type === "MultiLineString" ? (g.coordinates as [number, number][][]) : [];
-    return { name: String(f.properties?.name ?? ""), kind: String(f.properties?.kind ?? ""), lines };
-  });
-}
 
 export function NextMap({
   lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales,
