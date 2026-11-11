@@ -20,14 +20,15 @@ log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/map", tags=["map"])
 
-_TILESETS = ("base", "zoning")
+_TILESETS = ("base", "zoning", "buildings")
 
 
 def _path(name: str) -> Path:
     from backend.config import get_settings
 
     s = get_settings()
-    return {"base": s.map_base_tiles_path, "zoning": s.map_zoning_tiles_path}[name]
+    return {"base": s.map_base_tiles_path, "zoning": s.map_zoning_tiles_path,
+            "buildings": s.map_buildings_tiles_path}[name]
 
 
 _meta_cache: dict[tuple[str, float], dict | None] = {}
@@ -80,6 +81,12 @@ def map_info() -> dict:
             "minZoom": int(m.get("minzoom", 0)), "maxZoom": int(m.get("maxzoom", 16)),
             "builtAt": m.get("built_at"),
         }
+    # Tiles are cached for a day: the building heights' URL carries the file's version so a rebuild shows at once.
+    if out.get("buildings"):
+        try:
+            out["buildings"]["version"] = str(int(_path("buildings").stat().st_mtime))
+        except OSError:
+            pass
     return out
 
 

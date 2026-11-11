@@ -43,7 +43,7 @@ import { sourceState } from "./neighborhoodModel";
 import { ProgramPanel } from "./ProgramPanel";
 import { RulePanel } from "./RulePanel";
 import type { RuleKey } from "./ruleModel";
-import { ruleChips } from "./profileModel";
+import { ruleChips, zoningMass } from "./profileModel";
 import { incentiveChips, type IncentiveKey } from "./moneyModel";
 import type { LateBlockState } from "./moneyModel";
 import { SourcesDialog } from "./SourcesDialog";
@@ -57,7 +57,7 @@ type TabId = "overview" | "build" | "money" | "neighborhood" | "history";
     fully on). The visitor's On / Off choices hold until the tab changes. */
 const MAP_VIEWS: Record<TabId, MapView> = {
   overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", building: "off", transit: "on", streets: "on" } },
-  build: { id: "build", zoom: 15.6, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "on", streets: "on" } },
+  build: { id: "build", zoom: 15.6, threeD: true, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "on", streets: "on" } },
   // Money: the nearby market sales around the lot (brief: "market sales within ¼ mile"); zoning off so the sale pins
   // read (Item 99). It opens framed on the lot and its sales (`fit`), which a widened search can find half a mile out.
   money: { id: "money", zoom: 15.2, fit: "sales", modes: { zoning: "off", parcels: "on", sales: "on", building: "off", transit: "off", streets: "on" } },
@@ -256,6 +256,8 @@ function ProfileScreen({
   const { t: tp } = useTranslation("pages");
   const previewOn = useUiVersion().version === "next";
   const verdict = useMemo(() => (data ? computeVerdict(data, tp) : null), [data, tp]);
+  // The illustrative zoning mass Build raises in 3D (M6); the map withholds it when the lot is approximate.
+  const mass = useMemo(() => (data && verdict ? zoningMass(data, verdict, false) : null), [data, verdict]);
   const [tab, setTab] = useState<TabId>("overview");
   // The right panel: the analyst or a program's page, one at a time (Item 99). Closing slides it out first, so the
   // last panel stays mounted (`shownPanel`) for the slide; `seq` remounts it for a new question or program, and
@@ -441,6 +443,7 @@ function ProfileScreen({
                 onRetryBuilding={() => onRetryParts(["activity"])}
                 focusBuilding={mapFocus}
                 expanded={mapFocused}
+                mass={tab === "build" ? mass : null}
                 className="h-full"
               />
               <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">

@@ -1687,7 +1687,29 @@
     "familiesNote": "Darker = more intensive (taller, denser)",
     "familiesInView": "Zoning colors in view",
     "inView": "{{count}} of {{total}} in view",
-    "show": "Show"
+    "show": "Show",
+    "view3d": {
+      "on": "3D",
+      "off": "2D",
+      "show3d": "Show buildings in 3D",
+      "show2d": "Back to the flat map",
+      "controls": "Turn and tilt the map",
+      "turnLeft": "Turn left",
+      "turnRight": "Turn right",
+      "tiltMore": "Tilt more",
+      "tiltLess": "Tilt less",
+      "reset": "Reset the angle"
+    },
+    "mass": {
+      "label": "Zoning mass (illustrative)",
+      "explainLabel": "What the zoning mass shows",
+      "included": "Floor-area ratio {{far}} × this lot = {{area}} sq ft of floor area, spread evenly over the whole lot at {{floorFt}} ft a floor: about {{height}} ft tall.",
+      "cap": "Cut at the district's height limit, {{cap}} ft.",
+      "capRange": "Cut at the lower end of the district's height limit, {{cap}} ft (it varies by frontage and use).",
+      "limited": "Not all of that floor area fits under the height limit spread this way.",
+      "notChecked": "Not checked: setbacks, lot coverage, units by lot area, parking, bonuses, landmark and overlay rules.",
+      "notLargest": "An illustration of the district's numbers, not the largest building allowed."
+    }
   },
   "term": {
     "what": "What is {{term}}?",

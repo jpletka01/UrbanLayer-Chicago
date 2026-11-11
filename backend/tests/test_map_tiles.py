@@ -176,6 +176,7 @@ def client(tmp_path, monkeypatch):
     s = get_settings()
     monkeypatch.setattr(s, "map_base_tiles_path", tmp_path / "base.mbtiles")
     monkeypatch.setattr(s, "map_zoning_tiles_path", tmp_path / "zoning.mbtiles")
+    monkeypatch.setattr(s, "map_buildings_tiles_path", tmp_path / "buildings.mbtiles")
     monkeypatch.setattr(s, "discovery_tiles_path", tmp_path / "parcels.mbtiles")
     return TestClient(app)
 
@@ -183,7 +184,8 @@ def client(tmp_path, monkeypatch):
 def test_tiles_404_when_not_installed_then_serve(client, tmp_path):
     assert client.get("/api/map/tiles/base/16/16808/24344.mvt").status_code == 404
     assert client.get("/api/map/tiles/nope/16/1/1.mvt").status_code == 404
-    assert client.get("/api/map/info").json() == {"parcels": None, "grid": None, "base": None, "zoning": None}
+    assert client.get("/api/map/info").json() == {"parcels": None, "grid": None, "base": None, "zoning": None,
+                                                    "buildings": None}
 
     line = LineString([(LON - 0.001, LAT), (LON + 0.001, LAT)])
     write_mbtiles(tmp_path / "base.mbtiles", [Feature("road", to_mercator(line), {"kind": "major", "name": "x"})],

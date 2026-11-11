@@ -9,7 +9,7 @@ import type { GeoJSONSource, Map as MLMap, MapGeoJSONFeature } from "maplibre-gl
 // MapLibre finds its worker beside its own file, which Vite's bundling moves: point it at the worker explicitly.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { LoaderCircle, LocateFixed, MapPinOff, PersonStanding, RotateCw, SquareArrowOutUpRight, X } from "lucide-react";
+import { Box, ChevronDown, ChevronUp, Compass, LoaderCircle, LocateFixed, MapPinOff, PersonStanding, RotateCcw, RotateCw, Square, SquareArrowOutUpRight, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { fetchTransitStations, discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, fetchLotOutline, loadMapInfo, streetViewUrl } from "./mapInfo";
@@ -24,6 +24,10 @@ import {
   GROUPS, buildStyle, lotPinImage, modeOpacity, themePaint, type GroupId, type LayerMode, type MapTiles, type Theme,
 } from "./mapStyle";
 import { MapKey, type GroupState } from "./MapKey";
+import { BEARING_STEP, LOT_BUILDING_LAYER, MASS_LAYER, MASS_SOURCE, VIEW_3D, can3d, ensure3dLayers, markLotBuildings, massData, nextPitch, repaint3d, set3d } from "./buildings3d";
+import type { ZoningMass } from "../profile/profileModel";
+import { Toggletip } from "../../components/ui/Toggletip";
+import { useIsPhone } from "../../lib/useIsPhone";
 import { permitWords } from "../profile/neighborhoodModel";
 
 export interface MapView {
@@ -31,6 +35,8 @@ export interface MapView {
   id: string;
   zoom: number;
   modes: Record<GroupId, LayerMode>;
+  /** Open in 3D (Build, owner 2026-11-11); the 2D/3D button changes it for this tab. */
+  threeD?: boolean;
   /** Frame the lot and this group's points when the view opens (and when they arrive late), instead of the
       fixed zoom; the zoom stays the fallback when the group has no points (Money: the nearby sales, Item 99). */
   fit?: GroupId;
@@ -59,6 +65,8 @@ export interface NextMapProps {
   /** The map is the focus of the screen (Expand): the wheel zooms at once, like a full-page map. In the page band
       the wheel scrolls the page until the map is clicked. */
   expanded?: boolean;
+  /** The illustrative zoning mass to raise over the lot in 3D (Build only, M6); never drawn when `approximate`. */
+  mass?: ZoningMass | null;
   className?: string;
 }
 
@@ -95,7 +103,7 @@ function loadedRoads(map: MLMap): RoadLine[] {
 
 export function NextMap({
   lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales,
-  building = null, buildingState = "absent", onRetryBuilding, focusBuilding = null, expanded = false, className,
+  building = null, buildingState = "absent", onRetryBuilding, focusBuilding = null, expanded = false, mass = null, className,
 }: NextMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -109,6 +117,9 @@ export function NextMap({
   // The active tab's modes, until the visitor changes one (held for that tab only).
   const [override, setOverride] = useState<{ viewId: string; modes: Record<GroupId, LayerMode> } | null>(null);
   const modes = override && override.viewId === view.id ? override.modes : view.modes;
+  // 3D (M6, Item 106): the tab's default until the visitor presses 2D/3D; on a phone only the expanded map.
+  const phone = useIsPhone();
+  const [override3d, setOverride3d] = useState<{ viewId: string; on: boolean } | null>(null);
   const [bigMap, setBigMap] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<GroupId, number>>>({});
   const [families, setFamilies] = useState<string[]>([]);
@@ -177,6 +188,10 @@ export function NextMap({
           if (src?.tiles && src.setTiles) src.setTiles(src.tiles);
         }, 1500);
       });
+      // The pin and pattern images go in before the first tile is cut: a tile cut while a fill pattern is missing was
+      // drawn without its zoning until the next zoom reloaded it (owner saw a quarter-mile square missing at
+      // 1601 N Milwaukee, 2026-11-11). The handlers below stay as a safety net.
+      try { addPinImages(m); addPatternImages(m); } catch { /* the style isn't ready: the handlers add them */ }
       // The pins are drawn once on a canvas; added before any point arrives, and again if a style ever asks.
       m.on("styleimagemissing", () => { addPinImages(m); addPatternImages(m); });
       m.once("load", () => { addPinImages(m); addPatternImages(m); });
@@ -184,6 +199,8 @@ export function NextMap({
         if (cancelled) return;
         const el = m.getContainer();
         setBigMap(el.clientHeight >= 440 && el.clientWidth >= 640);
+        if (info.buildings) ensure3dLayers(m, themeRef.current, apiOrigin(), info.buildings);
+        if (import.meta.env.DEV) (window as unknown as { __nextMap?: MLMap }).__nextMap = m;
         setReady(true);
       });
       mapRef.current = m;
@@ -241,11 +258,60 @@ export function NextMap({
     map.on("moveend", check);
     return () => { map.off("moveend", check); };
   }, [ready, lat, lon, view.zoom]);
+  const allow3d = can3d(!!tiles?.buildings, phone, expanded);
+  const want3d = override3d && override3d.viewId === view.id ? override3d.on : !!view.threeD;
+  const on3d = allow3d && want3d;
+  const was3d = useRef(false);
+  const on3dRef = useRef(on3d);
+  on3dRef.current = on3d;
+  /** The camera angle a view move keeps: the 3D angle while 3D is on, else flat and north-up. */
+  const angle = () => (on3dRef.current ? VIEW_3D : { pitch: 0, bearing: 0 });
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !tiles?.buildings) return;
+    if (on3d === was3d.current) return;
+    was3d.current = on3d;
+    set3d(map, on3d, !reducedMotion());
+  }, [on3d, ready, tiles]);
+  // Presses in quick succession build on each other: each starts from where the last one is heading (a new easeTo
+  // cancels the one in flight), then the target is forgotten once the camera stops.
+  const camTarget = useRef<{ bearing: number; pitch: number } | null>(null);
+  const aim = (next: (from: { bearing: number; pitch: number }) => { bearing: number; pitch: number }, ms: number) => {
+    const m = mapRef.current;
+    if (!m) return;
+    const to = next(camTarget.current ?? { bearing: m.getBearing(), pitch: m.getPitch() });
+    camTarget.current = to;
+    m.once("moveend", () => { if (camTarget.current === to) camTarget.current = null; });
+    m.easeTo({ ...to, duration: reducedMotion() ? 0 : ms });
+  };
+  // The lot in 3D: today's building on it in the lot's color, and on Build the illustrative zoning mass over it.
+  const showMass = on3d && !!mass && !approximate && !!lotGeometry;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !map.getSource(MASS_SOURCE)) return;
+    (map.getSource(MASS_SOURCE) as GeoJSONSource).setData(massData(showMass ? lotGeometry : null, showMass ? mass!.heightFt : null, mass?.zoneClass ?? null));
+    for (const id of [MASS_LAYER, LOT_BUILDING_LAYER]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", showMass ? "visible" : "none");
+  }, [showMass, lotGeometry, mass, ready]);
+  const lotIds = useRef<Set<string | number>>(new Set());
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !tiles?.buildings) return;
+    const mark = () => { lotIds.current = markLotBuildings(map, on3d && !approximate ? lotGeometry : null, lotIds.current, showMass); };
+    mark();
+    if (!on3d) return;
+    map.on("idle", mark);
+    return () => { map.off("idle", mark); };
+  }, [on3d, showMass, lotGeometry, approximate, ready, tiles]);
+
+  const turn = (deg: number) => aim((c) => ({ ...c, bearing: c.bearing + deg }), 400);
+  const tilt = (dir: 1 | -1) => aim((c) => ({ ...c, pitch: nextPitch(c.pitch, dir) }), 300);
+  const reset3d = () => aim(() => ({ ...VIEW_3D }), 600);
+
   const backToProperty = () => {
     const map = mapRef.current;
     if (!map) return;
     if (view.fit && fitGroup(view.fit)) return;
-    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom };
+    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom, ...angle() };
     if (reducedMotion()) map.jumpTo(opts); else map.easeTo({ ...opts, duration: 600 });
   };
 
@@ -261,6 +327,7 @@ export function NextMap({
     themeRef.current = theme;
     const map = mapRef.current;
     if (!map || !ready) return;
+    repaint3d(map, theme);
     for (const { id, paint } of themePaint(theme)) {
       if (!map.getLayer(id)) continue;
       for (const [k, v] of Object.entries(paint)) map.setPaintProperty(id, k as never, v as never);
@@ -277,7 +344,7 @@ export function NextMap({
     // A framing view frames once here; the effect below frames it instead if its points arrive later.
     if (view.fit && fitGroup(view.fit)) { fittedFor.current = view.id; return; }
     fitHome.current = null;
-    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom };
+    const opts = { center: [lon, lat] as [number, number], zoom: view.zoom, ...angle() };
     if (reducedMotion()) map.jumpTo(opts); else map.easeTo({ ...opts, duration: 600 });
     // view.id is the trigger; the modes object changes identity with it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -477,7 +544,7 @@ export function NextMap({
     const width = map.getContainer().clientWidth;
     const right = Math.min(300, Math.round(width / 3));
     fitHome.current = "pending";
-    map.fitBounds([[w, so], [e, n]], { padding: { top: 56, bottom: 44, left: 48, right }, maxZoom: 17, duration: reducedMotion() ? 0 : 600 });
+    map.fitBounds([[w, so], [e, n]], { padding: { top: 56, bottom: 44, left: 48, right }, maxZoom: 17, ...angle(), duration: reducedMotion() ? 0 : 600 });
     return true;
   }
   const showGroup = (g: GroupId) => { fitGroup(g); };
@@ -562,6 +629,58 @@ export function NextMap({
           <LocateFixed aria-hidden className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t("map.back")}
         </button>
+      )}
+      {ready && allow3d && (
+        // The expanded map stacks the controls above its corner button; the short page band lines them up in a row
+        // beside it, so they never reach the key.
+        <div className={`absolute z-10 flex gap-1.5 ${expanded ? "bottom-14 right-2 flex-col items-end" : "bottom-2 right-12 flex-row items-end"}`} data-testid="map-3d-controls">
+          {on3d && (
+            <div className={`flex overflow-hidden rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] ${expanded ? "flex-col" : "flex-row"}`} role="group" aria-label={t("map.view3d.controls")}>
+              {([
+                ["turnLeft", RotateCcw, () => turn(-BEARING_STEP)],
+                ["turnRight", RotateCw, () => turn(BEARING_STEP)],
+                ["tiltMore", ChevronUp, () => tilt(1)],
+                ["tiltLess", ChevronDown, () => tilt(-1)],
+                ["reset", Compass, reset3d],
+              ] as const).map(([key, Icon, onClick]) => (
+                <button key={key} type="button" onClick={onClick} aria-label={t(`map.view3d.${key}`)} title={t(`map.view3d.${key}`)}
+                  className="grid h-8 w-8 place-items-center hover:bg-nx-block touch-target" data-testid={`map-3d-${key}`}>
+                  <Icon aria-hidden className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setOverride3d({ viewId: view.id, on: !on3d })}
+            aria-pressed={on3d}
+            aria-label={on3d ? t("map.view3d.show2d") : t("map.view3d.show3d")}
+            title={on3d ? t("map.view3d.show2d") : t("map.view3d.show3d")}
+            className="flex h-8 items-center gap-1 rounded-lg bg-nx-page px-2 text-caption font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
+            data-testid="map-3d-toggle"
+          >
+            {on3d ? <Square aria-hidden className="h-4 w-4" strokeWidth={1.5} /> : <Box aria-hidden className="h-4 w-4" strokeWidth={1.5} />}
+            {on3d ? t("map.view3d.off") : t("map.view3d.on")}
+          </button>
+        </div>
+      )}
+      {ready && showMass && mass && (
+        <div className={`absolute left-3 z-10 flex items-center gap-1 rounded-lg bg-nx-page px-2 py-1 text-caption shadow-[0_1px_2px_rgb(0_0_0/0.12)] ${expanded ? "top-14" : "top-12"}`} data-testid="map-mass-label">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm border border-nx-ink/60 bg-nx-ink/20" aria-hidden />
+          <span>{t("map.mass.label")}</span>
+          <Toggletip label={t("map.mass.explainLabel")}>
+            <span className="block max-w-xs space-y-1 text-caption">
+              <span className="block">{t("map.mass.included", {
+                far: mass.far, area: Math.round(mass.floorAreaSqft).toLocaleString(i18n.language === "es" ? "es-MX" : "en-US"),
+                height: Math.round(mass.heightFt), floorFt: 12,
+              })}</span>
+              {mass.capFt != null && <span className="block">{t(mass.capFromRange ? "map.mass.capRange" : "map.mass.cap", { cap: mass.capFt })}</span>}
+              {mass.limitedByHeight && <span className="block">{t("map.mass.limited")}</span>}
+              <span className="block">{t("map.mass.notChecked")}</span>
+              <span className="block font-semibold">{t("map.mass.notLargest")}</span>
+            </span>
+          </Toggletip>
+        </div>
       )}
       {picked && <PickedCard picked={picked} onClose={() => setPicked(null)} lang={i18n.language} boxH={boxH} />}
     </div>

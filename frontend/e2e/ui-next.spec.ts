@@ -259,3 +259,28 @@ test("Discovery: a search, matches on the map as outlines, the list, axe light a
     expect(await axe(page), `axe ${scheme}, zoning panel`).toEqual([]);
   }
 });
+
+// 3D (M6, decision Item 106): the phone's map band has no 3D button; the expanded map does, and its controls are
+// labeled and pass axe in both themes. Build opens in 3D. Skipped when the server has no building tiles.
+test("3D: phone band flat, expanded map 3D with turn, tilt and reset, axe light and dark", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, ROUTES[1].path, ROUTES[1].ready);
+  await page.getByRole("tab", { name: "Build" }).click();
+  await expect(page.getByTestId("map-3d-toggle")).toHaveCount(0);
+  await page.getByTestId("map-focus").click();
+  const toggle = page.getByTestId("map-3d-toggle");
+  test.skip((await toggle.count()) === 0, "no building tiles on this server");
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  for (const key of ["turnLeft", "turnRight", "tiltMore", "tiltLess", "reset"]) await expect(page.getByTestId(`map-3d-${key}`)).toBeVisible();
+  // Build raises the illustrative zoning mass and labels it (1601 N Milwaukee: B3-2, FAR 2.2).
+  await expect(page.getByTestId("map-mass-label")).toBeVisible();
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(400);
+    expect(await axe(page), `axe ${scheme}`).toEqual([]);
+  }
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId("map-3d-reset")).toHaveCount(0);
+  await expect(page.getByTestId("map-mass-label")).toHaveCount(0);
+});

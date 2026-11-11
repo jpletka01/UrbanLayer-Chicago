@@ -214,8 +214,10 @@ until its map meets this look. How it was made: `research/15-ui-data-inspiration
   it folds to one button. On phones, Key and Layers are two buttons that open half-height sheets.
 - **Zoning colors by rule:** one hue per zoning family, darker as density rises; planned developments as
   an outline only. Exact colors come with the site palette, checked for color-blind safety in both themes.
-- **3D is a mode of the same map** (Mapbox extrusions): the County lot outline, today's building, the
-  largest allowed, and neighbors raised by stories from the City's 2015 footprint survey (approximate).
+- **3D is a mode of the same map** (a 2D/3D button on every map, Build opens in 3D, phones only in the expanded
+  map; turn, tilt and reset): today's building on the lot in the lot's color, an illustrative zoning mass on Build
+  (never "the largest allowed"), and neighbors at their measured height from the County's 2022 LiDAR, tinted by
+  their zoning (Items 105-106; built, approved 2026-11-11).
 - **One map instance per page,** reused across tabs and layers, which also ends the "WebGL context was
   lost" error.
 - **Defaults:** Overview quiet street base + this lot; Build zoning, pending rezonings, 3D; Money market sales
@@ -323,5 +325,8 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
    flow. **Approved by the owner 2026-11-07** (Item 79; the map's look waits for the map tracks, Item 80).
 5. **Phase 2 done (Items 81–83):** a first screen in about 2.5 s on production (Item 87). **The builder test is deferred**
    (no builders lined up, Item 88): it now runs before any route flips. Next: the Profile response split (Phase 4).
+6. **Phases 4–6 done** (the Profile in parts, the one map in the Cities: Skylines look, every Profile tab and
+   Discovery; Items 89–104). **Phase 7 (data tracks) in progress:** LiDAR heights measured (Item 105), M6 3D done
+   (Item 106); next M4 capacity, then M5 land in use. The runbook keeps the live status.
 
 Update this brief when a decision changes; the design pages hold the detail.

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import i18n from "../../lib/i18n";
 import { computeVerdict } from "../../lib/scorecardVerdict";
 import { profileFixture } from "../test/fixtures";
-import { allowedVsBuilt, heightFeet, isMarketSale, overviewTiles, pendingRezonings, ruleChips, stageOf } from "./profileModel";
+import { allowedVsBuilt, FLOOR_FT, heightFeet, heightRangeLow, isMarketSale, overviewTiles, pendingRezonings, ruleChips, stageOf, zoningMass } from "./profileModel";
 
 const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "next", ...opts }) as string;
 const tp = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts }) as string;
@@ -113,5 +113,41 @@ describe("overview tiles: one per tab", () => {
     const walk = overviewTiles(noWalk, computeVerdict(noWalk, tp), t)[2];
     expect(walk.figure).toBe("—");
     expect(walk.state?.kind).toBe("not_checked");
+  });
+});
+
+// The illustrative zoning mass (M6, Item 106): FAR x lot spread over the lot at 12 ft a floor, cut at the height
+// limit (a range's lower end), never for an approximate lot or a district without a FAR.
+describe("zoningMass", () => {
+  const t = i18n.getFixedT("en", "common");
+  const withZone = (far: number | null, height: string | null, land = 10_000) => {
+    const d = profileFixture();
+    d.context!.property!.land_sqft = land;
+    d.zone_definition = { ...(d.zone_definition ?? {}), zone_class: "B3-2", far, max_height: height } as typeof d.zone_definition;
+    return d;
+  };
+  it("reads a height range's lower end", () => {
+    expect(heightRangeLow("45–50 ft (varies by lot frontage & ground-floor commercial)")).toBe(45);
+    expect(heightRangeLow("45 ft")).toBeNull();
+    expect(heightRangeLow(null)).toBeNull();
+  });
+  it("spreads the floor area over the lot and cuts at the height limit", () => {
+    const d = withZone(2.2, "45–50 ft (varies by lot frontage & ground-floor commercial)");
+    const base = computeVerdict(d, t);
+    const at = (far: number) => ({ ...base, signals: { ...base.signals, allowedFar: far } });
+    const low = zoningMass(d, at(2.2), false)!;
+    expect(low.floorAreaSqft).toBeCloseTo(22_000);
+    expect(low.heightFt).toBeCloseTo(2.2 * FLOOR_FT);
+    expect(low.limitedByHeight).toBe(false);
+    expect(low.capFt).toBe(45);
+    expect(low.capFromRange).toBe(true);
+    const high = zoningMass(d, at(5), false)!;
+    expect(high.heightFt).toBe(45);
+    expect(high.limitedByHeight).toBe(true);
+    expect(zoningMass(d, at(0), false)).toBeNull();
+  });
+  it("is withheld for an approximate lot", () => {
+    const d = withZone(2.2, "45 ft");
+    expect(zoningMass(d, computeVerdict(d, t), true)).toBeNull();
   });
 });

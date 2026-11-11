@@ -1687,7 +1687,29 @@
     "familiesNote": "Más oscuro = más intensivo (más alto, más denso)",
     "familiesInView": "Colores de zonificación a la vista",
     "inView": "{{count}} de {{total}} a la vista",
-    "show": "Mostrar"
+    "show": "Mostrar",
+    "view3d": {
+      "on": "3D",
+      "off": "2D",
+      "show3d": "Ver los edificios en 3D",
+      "show2d": "Volver al mapa plano",
+      "controls": "Girar e inclinar el mapa",
+      "turnLeft": "Girar a la izquierda",
+      "turnRight": "Girar a la derecha",
+      "tiltMore": "Inclinar más",
+      "tiltLess": "Inclinar menos",
+      "reset": "Restablecer el ángulo"
+    },
+    "mass": {
+      "label": "Volumen de zonificación (ilustrativo)",
+      "explainLabel": "Qué muestra el volumen de zonificación",
+      "included": "Coeficiente de edificabilidad {{far}} × este terreno = {{area}} pies² de área construida, repartidos en todo el terreno a {{floorFt}} pies por piso: unos {{height}} pies de alto.",
+      "cap": "Cortado en el límite de altura del distrito, {{cap}} pies.",
+      "capRange": "Cortado en el extremo inferior del límite de altura del distrito, {{cap}} pies (varía según el frente y el uso).",
+      "limited": "No toda esa área construida cabe bajo el límite de altura repartida así.",
+      "notChecked": "No se revisan: retiros, ocupación del terreno, viviendas por superficie, estacionamiento, bonos, ni reglas de monumentos y superposiciones.",
+      "notLargest": "Una ilustración de las cifras del distrito, no el edificio más grande permitido."
+    }
   },
   "term": {
     "what": "¿Qué es {{term}}?",
