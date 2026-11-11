@@ -127,3 +127,13 @@ def test_a_copy_without_the_address_tables_changes_nothing(tmp_path):
     rows = [("16-25-300-030-0000", LAT0, LON0, {"address": "~2624 S TROY ST"}, [])]
     assert apply_assessor_addresses(rows, {}, path) == {}
     assert rows[0][3] == {"address": "~2624 S TROY ST"}
+
+
+def test_a_result_row_names_an_assessor_address():
+    from backend.discovery import api
+    from backend.discovery.parcel import DictParcel
+
+    row = api._row_from_parcel(DictParcel("16-25-300-030-0000", {"address": "2626 S TROY ST", "address_source": "assessor"}),
+                               "lot_size")
+    assert (row.address, row.address_source) == ("2626 S TROY ST", "assessor")
+    assert api._row_from_parcel(DictParcel("p", {"address": "2628 S TROY ST"}), "lot_size").address_source is None

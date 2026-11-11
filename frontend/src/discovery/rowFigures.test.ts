@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import i18n from "i18next";
-import { rowFigures } from "./rowFigures";
+import { profileAddress, rowFigures } from "./rowFigures";
 import type { ResultRow } from "./types";
 
 const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts });
@@ -25,6 +25,15 @@ describe("Discovery row figures (decision Items 46, 57)", () => {
     const missing = rowFigures(row({ assessed_value: null }), "assessed_value", t);
     expect(missing.primary).toBeNull();
     expect(missing.secondary).toBeNull();
+  });
+});
+
+describe("the address a Profile link carries (Item 109)", () => {
+  it("only an Address Point address; never an approximate or an Assessor one, which can be next door's", () => {
+    expect(profileAddress(row({ address: "2626 S TROY ST" }))).toBe("2626 S Troy St");
+    expect(profileAddress(row({ address: "2626 S TROY ST", address_source: "assessor" }))).toBeNull();
+    expect(profileAddress(row({ address: "~2624 S TROY ST" }))).toBeNull();
+    expect(profileAddress(row({ address: null }))).toBeNull();
   });
 });
 

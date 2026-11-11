@@ -17,6 +17,7 @@ import { recipeStatus } from "../../discovery/recipeStatus";
 import { chipLabel } from "../../discovery/chips";
 import { COMMUNITY_AREAS } from "../../discovery/communityAreas";
 import { HIDE_UNUSUAL } from "../../discovery/draftModel";
+import { profileAddress } from "../../discovery/rowFigures";
 import type { FilterDef, PanelState, Predicate, Registry, ResultRow, TopicDef } from "../../discovery/types";
 import { getAutocomplete } from "../../lib/api";
 import type { AddressSuggestion } from "../../lib/types";
@@ -30,7 +31,7 @@ import { FilterBar } from "./FilterBar";
 import { LotCard } from "./LotCard";
 import { useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
 import {
-  DEFAULT_MEASURE, LOTS_MIN_ZOOM, foldComplexes, MEASURES, QUICK_FILTERS, RING_MILES, cardModel, classifyQuery, placeRegion, placeSuggestions,
+  DEFAULT_MEASURE, LOTS_MIN_ZOOM, foldComplexes, MEASURES, QUICK_FILTERS, RING_MILES, classifyQuery, placeRegion, placeSuggestions,
   type Place as AreaPlace,
   ROOM_SORT, measureSteps, quickFromPanel, quickPanel, ringMiles, ringRegion, type MeasureId, type QuickId,
 } from "./discoveryModel";
@@ -456,9 +457,9 @@ function exploreLabel(
 }
 
 function openProfile(navigate: ReturnType<typeof useNavigate>, row: ResultRow) {
-  const c = cardModel(row);
   const q = new URLSearchParams({ pin: row.pin });
-  if (row.address && !c.approx) q.set("address", c.title);
+  const address = profileAddress(row);
+  if (address) q.set("address", address);
   navigate(`/scorecard?${q}`);
 }
 

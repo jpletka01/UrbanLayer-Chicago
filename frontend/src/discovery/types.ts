@@ -202,6 +202,8 @@ export interface ResultRow {
   lat: number | null;
   lon: number | null;
   address: string | null;
+  /** "assessor": the Assessor's own address, checked against the City's streets but not an Address Point (Item 109). */
+  address_source?: "assessor" | null;
   community_area: number | null;
   land_use: string | null;
   class: string | null;
