@@ -18,6 +18,7 @@ export function AppFrame({
   crumbs,
   tools,
   drawer,
+  bar,
   children,
 }: {
   /** The breadcrumb, first to last; the last one is the current page. */
@@ -26,6 +27,9 @@ export function AppFrame({
   tools?: ReactNode;
   /** The right-hand drawer (the analyst), rendered beside the content when open. */
   drawer?: ReactNode;
+  /** The page's own controls in place of the breadcrumb (Discovery's search and filters, Item 104); the breadcrumb
+      stays for screen readers. */
+  bar?: ReactNode;
   children: ReactNode;
 }) {
   const { t } = useTranslation("next");
@@ -75,7 +79,8 @@ export function AppFrame({
               </Dialog.Portal>
             </Dialog.Root>
 
-            <nav aria-label={t("frame.breadcrumb")} className="min-w-0 flex-1">
+            {bar && <div className="min-w-0 flex-1">{bar}</div>}
+            <nav aria-label={t("frame.breadcrumb")} className={bar ? "sr-only" : "min-w-0 flex-1"}>
               <ol className="flex min-w-0 items-center gap-2">
                 {crumbs.map((c, i) => {
                   const last = i === crumbs.length - 1;

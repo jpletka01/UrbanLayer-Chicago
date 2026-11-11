@@ -7,8 +7,8 @@ let infoPromise: Promise<MapTiles> | null = null;
 export function loadMapInfo(): Promise<MapTiles> {
   infoPromise ??= fetch(`${API_BASE}/api/map/info`)
     .then((r) => (r.ok ? r.json() : null))
-    .then((j) => ({ base: j?.base ?? null, parcels: j?.parcels ?? null, zoning: j?.zoning ?? null }))
-    .catch(() => ({ base: null, parcels: null, zoning: null }));
+    .then((j) => ({ base: j?.base ?? null, parcels: j?.parcels ?? null, zoning: j?.zoning ?? null, grid: j?.grid ?? null }))
+    .catch(() => ({ base: null, parcels: null, zoning: null, grid: null }));
   return infoPromise;
 }
 

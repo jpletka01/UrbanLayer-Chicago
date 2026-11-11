@@ -27,7 +27,7 @@ vi.mock("./discoveryData", async (orig) => ({
   fetchLotShape: () => Promise.resolve(null),
   useDistribution: () => null,
 }));
-vi.mock("../frame/AppFrame", () => ({ AppFrame: ({ children }: { children: React.ReactNode }) => <div className="ui-next">{children}</div> }));
+vi.mock("../frame/AppFrame", () => ({ AppFrame: ({ children, bar }: { children: React.ReactNode; bar?: React.ReactNode }) => <div className="ui-next">{bar}{children}</div> }));
 
 const diagnostics: Diagnostics = {
   resultCount: 1, broad: false, appliedFilters: 1, conflicts: [], droppedInvalid: [], excludedUnknown: {}, mostRestrictive: [],
@@ -75,7 +75,7 @@ describe("Discovery in the new frame", () => {
         </Routes>
       </MemoryRouter>,
     );
-    const goals = await screen.findByRole("group", { name: "Try:" });
+    const goals = await screen.findByTestId("goals");
     fireEvent.click(within(goals).getAllByRole("button")[0]);
     const list = await screen.findByTestId("next-results");
     const card = within(list).getByRole("button");
@@ -123,6 +123,28 @@ describe("Discovery in the new frame", () => {
     });
     await waitFor(() => expect(mapProps.last?.matches).toEqual(["1431325001"]));
     expect(screen.getByTestId("search-view").textContent).toContain("Search 1 lot in view");
+  });
+
+  it("a filter group opens a panel of plain choices; Show applies them as one search", async () => {
+    mocks.loadRegistry.mockResolvedValue({
+      ...registry,
+      filters: [...registry.filters, {
+        id: "density_band", category: "zoning_dev", kind: "range", field: "density_band", unknownPolicy: "exclude",
+        range: { domain: [0, 16], step: 0.1, boundMode: "both", display: "far" },
+      }],
+      populatedFields: ["land_use", "tif", "density_band"],
+    } as Registry);
+    mocks.runSearch.mockResolvedValue(response());
+    render(<MemoryRouter><DiscoveryNextPage /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole("button", { name: /Zoning/ }));
+    const panel = await screen.findByTestId("group-panel");
+    fireEvent.click(within(panel).getByRole("button", { name: /Apartments/ }));
+    await waitFor(() => expect(within(panel).getByTestId("filters-show").textContent).toMatch(/Show 1 lot/));
+    fireEvent.click(within(panel).getByTestId("filters-show"));
+    await waitFor(() => expect(mocks.runSearch.mock.calls.some((c) => c[0].includePins && c[0].panelState.density_band)).toBe(true));
+    const applied = mocks.runSearch.mock.calls.find((c) => c[0].includePins)![0];
+    expect(applied.panelState.density_band).toEqual({ kind: "range", min: 2, max: 5 });
+    expect(applied.sort).toEqual({ key: "room_to_build", dir: "desc" });
   });
 
   it("says so when Discovery can't load", async () => {

@@ -67,6 +67,13 @@ def map_info() -> dict:
     out["parcels"] = None if p is None else {
         "minZoom": int(p.get("minzoom", 14)), "maxZoom": int(p.get("maxzoom", 16)), "builtAt": p.get("built_at"),
     }
+    # The zoomed-out grid beside the lot tiles (Discovery's city view, Item 104).
+    from backend.discovery.parcel_tiles import grid_path
+
+    g = tiles_info(grid_path(get_settings().discovery_tiles_path))
+    out["grid"] = None if g is None else {
+        "minZoom": int(g.get("minzoom", 10)), "maxZoom": int(g.get("maxzoom", 13)), "builtAt": g.get("built_at"),
+    }
     for name in _TILESETS:
         m = tileset_meta(name)
         out[name] = None if m is None else {

@@ -210,7 +210,7 @@ def _clip(geom, rect):
             return None
 
 
-def tiles_for_zoom(parcels: list[Parcel], z: int) -> tuple[dict[tuple[int, int], bytes], int]:
+def tiles_for_zoom(parcels: list[Parcel], z: int, layer: str = LAYER) -> tuple[dict[tuple[int, int], bytes], int]:
     """Gzipped tiles at zoom z, and how many (parcel, tile) pieces could not be clipped and were left out."""
     n = 1 << z
     scale = n * EXTENT
@@ -246,7 +246,7 @@ def tiles_for_zoom(parcels: list[Parcel], z: int) -> tuple[dict[tuple[int, int],
             if geometry:
                 feats.append((int(parcels[i].pin10), geometry, parcels[i].props))
         if feats:
-            out[(tx, ty)] = gzip.compress(encode_layer(feats), compresslevel=9)
+            out[(tx, ty)] = gzip.compress(encode_layer(feats, layer), compresslevel=9)
     return out, skipped
 
 
@@ -400,7 +400,14 @@ def build_file(
         "county_outlines": str(extra.get("county_outlines", 0)),
     })
     tmp.replace(out)
+    grid: dict | str
+    try:  # the zoomed-out grid (Item 104); a failure here never costs the lot tiles
+        grid = build_grid_file(index_path, grid_path(out))
+    except Exception as exc:  # noqa: BLE001
+        log.warning("grid tiles not built: %s", exc)
+        grid = f"failed: {exc}"
     summary = {
+        "grid": grid,
         "parcels_with_outline": count, "pin10_without_outline": missing, "outlines_repaired": repaired,
         "county_outlines": extra.get("county_outlines", 0),
         "pieces_unclipped": stats.unclipped, "tiles": stats.tiles,
@@ -410,6 +417,98 @@ def build_file(
     }
     log.info("parcel tiles: %s", json.dumps(summary))
     return summary
+
+
+# ---------------------------------------------------------------- the zoomed-out grid (Item 104)
+
+GRID_LAYER = "grid"
+GRID_MIN_ZOOM = 10
+GRID_MAX_ZOOM = 13
+GRID_DLAT = 0.0018  # about 200 m: roughly a Chicago block (a 1/8 mile)
+GRID_DLON = 0.0024
+GRID_MIN_LOTS = 3
+GRID_MIN_KNOWN = 0.5  # a cell's measure is drawn only when at least half its lots have it
+
+
+def grid_cells(rows) -> list[Parcel]:
+    """The city as squares of about a block, each carrying its lots' measure bands (the lot tiles' r/s/y/u/g):
+    the median band for room, lot size and last sale, the most common for land use and zoning family. A cell
+    with fewer than 3 lots is left out; a measure known for under half a cell's lots is left off it (drawn dotted),
+    so a few known lots never speak for the block. Display only, like the lot bands (Item 104)."""
+    from collections import Counter
+
+    from backend.discovery.lot_facts import measure_bands
+
+    cells: dict[tuple[int, int], list[dict[str, str]]] = defaultdict(list)
+    for pin, lat, lon, attrs in rows:
+        if lat is None or lon is None or not pin.replace("-", "").endswith("0000"):
+            continue
+        bands = measure_bands(attrs)
+        if attrs.get("zoning_group"):
+            bands["g"] = str(attrs["zoning_group"])
+        cells[(math.floor(lat / GRID_DLAT), math.floor(lon / GRID_DLON))].append(bands)
+    out: list[Parcel] = []
+    for (iy, ix), lots in cells.items():
+        if len(lots) < GRID_MIN_LOTS:
+            continue
+        props: dict[str, str] = {"n": str(len(lots))}
+        for key in ("r", "s", "y"):
+            vals = sorted(int(b[key]) for b in lots if key in b)
+            if len(vals) >= GRID_MIN_KNOWN * len(lots):
+                props[key] = str(vals[len(vals) // 2])
+        for key in ("u", "g"):
+            vals = [b[key] for b in lots if key in b]
+            if len(vals) >= GRID_MIN_KNOWN * len(lots):
+                props[key] = Counter(vals).most_common(1)[0][0]
+        x0, y0 = ix * GRID_DLON, iy * GRID_DLAT
+        g = shapely.transform(shapely.box(x0, y0, x0 + GRID_DLON, y0 + GRID_DLAT), _to_unit_mercator)
+        out.append(Parcel(str((iy + 100_000) * 1_000_000 + (ix + 500_000)), g, props))
+    return out
+
+
+def build_grid_file(index_path: Path, out: Path) -> dict:
+    """Write the grid tiles (zooms 10-13) beside ``out`` and swap them in atomically."""
+    from datetime import date
+
+    from backend.discovery.parcel_index import iter_parcel_rows, read_meta
+
+    t0 = time.monotonic()
+    cells = grid_cells((pin, lat, lon, attrs) for pin, lat, lon, attrs, _ in iter_parcel_rows(index_path))
+    if not cells:
+        raise RuntimeError(f"no grid cells from {index_path}: refusing to write an empty grid")
+    tmp = out.with_name(out.name + ".tmp")
+    tmp.unlink(missing_ok=True)
+    db = sqlite3.connect(tmp)
+    db.executescript(
+        "CREATE TABLE metadata (name TEXT, value TEXT);"
+        "CREATE TABLE tiles (zoom_level INTEGER, tile_column INTEGER, tile_row INTEGER, tile_data BLOB);"
+    )
+    sizes: dict[int, list[int]] = {}
+    for z in range(GRID_MIN_ZOOM, GRID_MAX_ZOOM + 1):
+        tiles, _ = tiles_for_zoom(cells, z, GRID_LAYER)
+        flip = (1 << z) - 1
+        db.executemany("INSERT INTO tiles VALUES (?,?,?,?)", [(z, x, flip - y, d) for (x, y), d in tiles.items()])
+        sizes[z] = [len(d) for d in tiles.values()]
+    meta = read_meta(index_path)
+    db.executemany("INSERT INTO metadata VALUES (?,?)", list({
+        "name": "grid", "format": "pbf", "minzoom": str(GRID_MIN_ZOOM), "maxzoom": str(GRID_MAX_ZOOM),
+        "json": json.dumps({"vector_layers": [{"id": GRID_LAYER, "fields": {k: "String" for k in "nrsyug"}}]}),
+        "built_at": date.today().isoformat(), "index_version": meta.data_version if meta else "", "cells": str(len(cells)),
+    }.items()))
+    db.execute("CREATE UNIQUE INDEX tile_index ON tiles (zoom_level, tile_column, tile_row)")
+    db.commit()
+    db.close()
+    tmp.replace(out)
+    summary = {"cells": len(cells), "seconds": round(time.monotonic() - t0, 1),
+               "kb_gz": {z: round(sum(v) / 1e3) for z, v in sizes.items()},
+               "max_tile_kb_gz": {z: round(max(v, default=0) / 1e3, 1) for z, v in sizes.items()}}
+    log.info("grid tiles: %s", json.dumps(summary))
+    return summary
+
+
+def grid_path(tiles_path: Path) -> Path:
+    """The grid file lives beside the lot tiles."""
+    return tiles_path.with_name("parcel_grid.mbtiles")
 
 
 _info_cache: dict[tuple[str, float], dict | None] = {}
@@ -450,9 +549,20 @@ def parcel_tile(z: int, x: int, y: int) -> Response:
     with no parcels. The file changes only when it is rebuilt, so a day of caching is safe."""
     from backend.config import get_settings
 
-    path = get_settings().discovery_tiles_path
+    return _serve_tile(get_settings().discovery_tiles_path, z, x, y, "parcel tiles not installed")
+
+
+@router.get("/grid/{z}/{x}/{y}.mvt")
+def grid_tile(z: int, x: int, y: int) -> Response:
+    """One tile of the zoomed-out grid (zooms 10-13, Item 104); 404 when the grid file isn't installed."""
+    from backend.config import get_settings
+
+    return _serve_tile(grid_path(get_settings().discovery_tiles_path), z, x, y, "grid tiles not installed")
+
+
+def _serve_tile(path: Path, z: int, x: int, y: int, missing: str) -> Response:
     if not path.exists():
-        raise HTTPException(status_code=404, detail="parcel tiles not installed")
+        raise HTTPException(status_code=404, detail=missing)
     if not (0 <= z <= 22 and 0 <= x < (1 << z) and 0 <= y < (1 << z)):
         raise HTTPException(status_code=400, detail="tile out of range")
     db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
@@ -479,10 +589,15 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=None, help="default: settings.discovery_tiles_path")
     ap.add_argument("--minzoom", type=int, default=MIN_ZOOM)
     ap.add_argument("--maxzoom", type=int, default=MAX_ZOOM)
+    ap.add_argument("--grid-only", action="store_true", help="rebuild only the zoomed-out grid (Item 104)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     settings = get_settings()
     cas = [int(c) for c in args.community_areas.split(",") if c.strip()] or None
+    if args.grid_only:
+        out = args.out or settings.discovery_tiles_path
+        print(json.dumps(build_grid_file(args.index or settings.discovery_index_path, grid_path(out)), indent=1))
+        return
     summary = build_file(
         args.index or settings.discovery_index_path, settings.ptaxsim_db_path, args.out or settings.discovery_tiles_path,
         community_areas=cas, minzoom=args.minzoom, maxzoom=args.maxzoom,

@@ -194,3 +194,20 @@ def test_a_complex_is_read_as_one_site(monkeypatch):
     rows = [("11111111110000", 0, 0, {"land_sqft": 5_000.0, "density_band": 2.2}, []), ("22222222220000", 0, 0, c, [])]
     index_backfill.complex_room(rows)
     assert "room_sqft" not in rows[0][3]
+
+
+def test_the_grid_gives_a_block_its_lots_median_and_leaves_thin_measures_off():
+    from backend.discovery.parcel_tiles import grid_cells
+
+    base = 41.9001, -87.7001
+    rows = [(f"{i:010d}0000", base[0], base[1], {"room_sqft": r, "land_sqft": 3125, "land_use_class": "residential"})
+            for i, r in enumerate([0, 1000, 3000])]
+    rows.append(("99999999990000", base[0], base[1], {"land_sqft": 3125, "land_use_class": "vacant"}))
+    rows.append(("99999999991001", base[0], base[1], {"room_sqft": 90000}))  # a condo unit PIN never counts
+    (cell,) = grid_cells(rows)
+    assert cell.props["n"] == "4"
+    assert cell.props["r"] == "1"  # median of bands 0, 1, 2 (3 of 4 known)
+    assert cell.props["u"] == "1"  # most lots residential
+    assert grid_cells(rows[:2]) == []  # fewer than 3 lots: no cell
+    thin = [(f"{i:010d}0000", base[0], base[1], {"land_sqft": 3125} if i else {"room_sqft": 0, "land_sqft": 3125}) for i in range(4)]
+    assert "r" not in grid_cells(thin)[0].props  # 1 of 4 known: left off, drawn dotted

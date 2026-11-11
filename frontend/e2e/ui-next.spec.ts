@@ -236,7 +236,9 @@ test("Discovery: a search, matches on the map as outlines, the list, axe light a
   await page.getByTestId("quick-filters").getByRole("button", { name: "Vacant" }).click();
   // A goal: the list in the sheet over the map, the same canvas, matches handed to the map as outlines.
   const goal = page.waitForResponse((r) => r.url().includes("/api/discovery/search") && r.request().postDataJSON()?.includeAreaCounts === true);
-  await page.getByRole("group", { name: "Try:" }).getByRole("button").first().click();
+  // On a phone the goals are in the sheet over the map: open it, pick the first goal.
+  await page.getByTestId("phone-sheet").getByRole("button", { name: "Show more of the list" }).click();
+  await page.getByTestId("goals").getByRole("button").first().click();
   const body = await (await goal).json();
   expect(body.areaCounts).toBeTruthy();
   await expect(page.getByTestId("next-results").getByRole("button").first()).toBeVisible({ timeout: 30_000 });
@@ -248,4 +250,12 @@ test("Discovery: a search, matches on the map as outlines, the list, axe light a
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow, "discovery overflow").toBeLessThanOrEqual(1);
+  // A filter group opens as a sheet of plain choices with a live count.
+  await page.getByTestId("filter-bar").getByRole("button", { name: /Zoning/ }).click();
+  await expect(page.getByTestId("group-panel").getByText("How big it can be")).toBeVisible();
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(300);
+    expect(await axe(page), `axe ${scheme}, zoning panel`).toEqual([]);
+  }
 });

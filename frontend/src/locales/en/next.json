@@ -1142,9 +1142,8 @@
     "crumb": "Discovery",
     "title": "Find lots",
     "label": "Search an address, a neighborhood or describe the lots",
-    "placeholder": "Address, neighborhood, or \"vacant lots near the L\"",
+    "placeholder": "Address, neighborhood, or describe it",
     "search": "Search",
-    "try": "Try:",
     "unavailable": "Discovery isn't available right now.",
     "searchFailed": "The search didn't go through. Try again.",
     "notUnderstood": "Not understood",
@@ -1175,14 +1174,14 @@
       }
     },
     "goalSoon": "needs data",
-    "goalNeedsData": "The index doesn't hold the data this goal needs yet",
     "goal": {
-      "vacant_mf_transit": "Vacant land near transit",
-      "teardown": "Teardown candidates",
-      "undervalued_mf": "Undervalued 2–6 flats",
-      "underused_commercial_tif": "Underused commercial in a TIF",
-      "adu_2flats": "Coach house candidates",
-      "fresh_comps": "Recent sales"
+      "vacant_mf_transit": "Empty land near the L",
+      "teardown": "Old buildings on valuable land",
+      "room_to_build": "Lots with room to build",
+      "underused_commercial_tif": "Underused shops in a TIF",
+      "fresh_comps": "Recent sales",
+      "undervalued_mf": "Flats priced below the neighborhood",
+      "adu_2flats": "Room for a coach house"
     },
     "noneHint": "No lots match. Remove a filter or widen the area.",
     "topOf": "The top {{shown}} of {{total}} lots. The full list and the CSV come with Pro.",
@@ -1200,7 +1199,6 @@
     "inView_other": "{{n}} lots in view",
     "listThem": "List them",
     "capped": "More matches than the map can outline at once: zoom in",
-    "exploreHint": "Zoom in to see every lot. Turn on a quick filter to dim the lots that don't match.",
     "hiddenUnusual_one": "{{n}} unusual lot hidden (rail, utility or common land).",
     "hiddenUnusual_other": "{{n}} unusual lots hidden (rail, utility or common land).",
     "show": "Show",
@@ -1298,57 +1296,290 @@
       "nominal": "Nominal assessment"
     },
     "filters": {
-      "open": "Filters",
-      "title": "Filters",
-      "hint": "Only filters with data are listed.",
       "clear": "Clear",
       "close": "Close",
       "show_one": "Show {{n}} lot",
       "show_other": "Show {{n}} lots",
       "showUnknown": "Show lots",
       "coverage": "Known for {{share}}% of lots",
-      "any": "Any",
-      "yes": "Yes",
-      "no": "No",
-      "min": "From",
-      "max": "To",
-      "minOf": "{{label}}, from",
-      "maxOf": "{{label}}, to",
-      "presets": "{{label}} presets",
       "includeUnknown": "Also include lots with no data ({{n}})",
-      "histogram": "{{label}} across Chicago's lots; {{unknown}} not known",
-      "walk": "{{minutes}}-minute walk",
-      "transitNote": "To the nearest L stop, at 20 minutes a mile. Metra, bus and Divvy aren't in the index yet.",
-      "soon": "More filters appear as the index gains their data (units, violations, flood zones, overlays).",
-      "unit": {
-        "sqft": "sq ft",
-        "usd": "$",
-        "days": "days",
-        "mi": "mi",
-        "year": "",
-        "percent": "%",
-        "far": "FAR",
-        "count": "",
-        "percentile": "percentile",
-        "index": "",
-        "ratio": "",
-        "units": "units"
-      },
-      "group": {
-        "location": "Location",
-        "property_use": "The property",
-        "financial": "Money",
-        "incentives": "Incentives",
-        "zoning": "Zoning",
-        "risk": "Risk",
-        "other": "Other",
-        "zoning_dev": "Zoning and building",
-        "condition_risk": "Condition and risk"
-      },
-      "openCount_one": "Filters, {{count}} on",
-      "openCount_other": "Filters, {{count}} on"
+      "histogram": "{{label}} across Chicago's lots; {{unknown}} not known"
     },
-    "ringChip": "Within {{mi}} mi of the address"
+    "ringChip": "Within {{mi}} mi of the address",
+    "groups": {
+      "label": "Filters",
+      "lot": "Lot",
+      "zoning": "Zoning",
+      "building": "Building",
+      "transit": "Transit",
+      "money": "Price and sales",
+      "incentives": "Incentives",
+      "lotTitle": "The lot",
+      "zoningTitle": "What the zoning allows",
+      "buildingTitle": "What's on it",
+      "transitTitle": "Getting around",
+      "moneyTitle": "Price and sales",
+      "incentivesTitle": "Incentives"
+    },
+    "f": {
+      "vacancy": {
+        "name": "Empty lot",
+        "hint": "No building on record.",
+        "on": "Only empty lots",
+        "tech": "Assessor's vacant classes (1xx)"
+      },
+      "room_to_build": {
+        "name": "Room to build",
+        "hint": "How much more floor area the zoning allows than is built.",
+        "tech": "Allowed floor area (FAR × lot) minus the building"
+      },
+      "lot_size": {
+        "name": "Lot size",
+        "hint": "A typical Chicago lot is 25 × 125 ft, about 3,125 sq ft.",
+        "tech": "Land area, square feet"
+      },
+      "zoning_group": {
+        "name": "Zoned for",
+        "hint": "What the City's zoning map says the lot is for.",
+        "tech": "Zoning district family (RS, RT, RM, B, C, M, D, PD)"
+      },
+      "density_band": {
+        "name": "How big it can be",
+        "hint": "How much floor area the zoning allows, in stories' worth over the whole lot.",
+        "tech": "Floor area ratio (FAR) of the base district"
+      },
+      "land_use": {
+        "name": "What's there now",
+        "hint": "How the Assessor classes the property today.",
+        "tech": "Assessor's property class"
+      },
+      "is_teardown_candidate": {
+        "name": "Old building on valuable land",
+        "hint": "The building is worth a quarter or less of the property's value.",
+        "on": "Only these",
+        "tech": "Building ≤ 25% of the assessed value"
+      },
+      "year_built": {
+        "name": "Year built",
+        "hint": "From the Assessor's records.",
+        "tech": "Assessor's year built"
+      },
+      "building_size": {
+        "name": "Building size",
+        "hint": "Floor area of the building.",
+        "tech": "Building square feet"
+      },
+      "transit_proximity": {
+        "name": "Walk to the L",
+        "hint": "Walking time to the nearest L station.",
+        "on": "Only lots near the L",
+        "tech": "Straight-line distance to a CTA rail station"
+      },
+      "sale_recency": {
+        "name": "Last sold",
+        "hint": "When the property last changed hands.",
+        "tech": "County recorded sales"
+      },
+      "last_sale_price": {
+        "name": "Last sale price",
+        "hint": "Sales under $10,000 are transfers, not prices, and are left out.",
+        "tech": "County recorded sales"
+      },
+      "tif": {
+        "name": "In a TIF district",
+        "hint": "Property taxes here can fund projects through the district.",
+        "on": "Only in a TIF",
+        "tech": "Tax Increment Financing district"
+      },
+      "enterprise_zone": {
+        "name": "In an Enterprise Zone",
+        "hint": "State tax incentives for building materials and some investments.",
+        "on": "Only in an Enterprise Zone",
+        "tech": "Illinois Enterprise Zone"
+      },
+      "opportunity_zone": {
+        "name": "In an Opportunity Zone",
+        "hint": "Federal tax benefits for long-term investment.",
+        "on": "Only in an Opportunity Zone",
+        "tech": "Qualified Opportunity Zone"
+      }
+    },
+    "choice": {
+      "room_to_build": {
+        "some": {
+          "name": "Some room",
+          "hint": "2,500+ sq ft more"
+        },
+        "more": {
+          "name": "Room for a building",
+          "hint": "5,000+ sq ft more"
+        },
+        "lots": {
+          "name": "Lots of room",
+          "hint": "10,000+ sq ft more"
+        }
+      },
+      "lot_size": {
+        "small": {
+          "name": "Small",
+          "hint": "Under 2,500 sq ft"
+        },
+        "standard": {
+          "name": "A city lot",
+          "hint": "2,500–5,000 sq ft"
+        },
+        "double": {
+          "name": "A double lot",
+          "hint": "5,000–10,000 sq ft"
+        },
+        "large": {
+          "name": "Large",
+          "hint": "10,000 sq ft or more"
+        }
+      },
+      "zoning_group": {
+        "residential": {
+          "name": "Homes",
+          "hint": "RS, RT, RM"
+        },
+        "business": {
+          "name": "Shops and offices",
+          "hint": "B"
+        },
+        "commercial": {
+          "name": "Commercial",
+          "hint": "C"
+        },
+        "manufacturing": {
+          "name": "Industry",
+          "hint": "M"
+        },
+        "downtown": {
+          "name": "Downtown",
+          "hint": "D"
+        },
+        "planned_development": {
+          "name": "Planned development",
+          "hint": "PD, its own rules"
+        }
+      },
+      "density_band": {
+        "houses": {
+          "name": "Houses",
+          "hint": "About 1 story's worth"
+        },
+        "flats": {
+          "name": "Flats",
+          "hint": "1–2 stories' worth"
+        },
+        "apartments": {
+          "name": "Apartments",
+          "hint": "2–5 stories' worth"
+        },
+        "towers": {
+          "name": "Towers",
+          "hint": "5 or more"
+        }
+      },
+      "land_use": {
+        "residential": {
+          "name": "Houses and 2–6 flats",
+          "hint": "Residential"
+        },
+        "multi_family": {
+          "name": "Apartment buildings",
+          "hint": "7 or more units"
+        },
+        "commercial": {
+          "name": "Shops and offices",
+          "hint": "Commercial"
+        },
+        "industrial": {
+          "name": "Industry",
+          "hint": "Industrial"
+        },
+        "vacant": {
+          "name": "Empty",
+          "hint": "Vacant"
+        }
+      },
+      "year_built": {
+        "pre1920": {
+          "name": "Before 1920",
+          "hint": "Often wood frame"
+        },
+        "1920to1979": {
+          "name": "{{from}}–{{to}}",
+          "hint": ""
+        },
+        "since1980": {
+          "name": "1980 or later",
+          "hint": ""
+        }
+      },
+      "building_size": {
+        "small": {
+          "name": "Small",
+          "hint": "Under 2,500 sq ft"
+        },
+        "medium": {
+          "name": "Medium",
+          "hint": "2,500–10,000 sq ft"
+        },
+        "large": {
+          "name": "Large",
+          "hint": "10,000 sq ft or more"
+        }
+      },
+      "sale_recency": {
+        "6mo": {
+          "name": "6 months",
+          "hint": "Sold in the last 6 months"
+        },
+        "1y": {
+          "name": "A year",
+          "hint": "Sold in the last year"
+        },
+        "2y": {
+          "name": "2 years",
+          "hint": "Sold in the last 2 years"
+        },
+        "5y": {
+          "name": "5 years",
+          "hint": "Sold in the last 5 years"
+        }
+      },
+      "last_sale_price": {
+        "under250k": {
+          "name": "Under $250,000",
+          "hint": ""
+        },
+        "under500k": {
+          "name": "Under $500,000",
+          "hint": ""
+        },
+        "under1m": {
+          "name": "Under $1 million",
+          "hint": ""
+        }
+      }
+    },
+    "walk": {
+      "value": "Within a {{minutes}}-minute walk (about {{mi}} mi)",
+      "note": "Drawn around every L station on the map. At 20 minutes a mile, as the crow flies. Metra, bus and Divvy aren't in the index yet."
+    },
+    "goals": {
+      "title": "Start from a goal"
+    },
+    "goalHint": {
+      "vacant_mf_transit": "Vacant, zoned for homes, within ½ mi of an L stop",
+      "teardown": "The building is a small part of the value",
+      "room_to_build": "5,000+ sq ft more allowed than built",
+      "underused_commercial_tif": "Commercial lots far below what the zoning allows",
+      "fresh_comps": "Apartments and commercial sold in 6 months",
+      "undervalued_mf": "2–6 flats in the cheapest quarter per sq ft",
+      "adu_2flats": "Needs coach-house areas in the index"
+    }
   },
   "map": {
     "key": "Map key",

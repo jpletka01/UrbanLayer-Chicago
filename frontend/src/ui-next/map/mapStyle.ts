@@ -21,7 +21,7 @@ export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "building", "tra
 export const STREET_LABEL_MIN_ZOOM = 15;
 
 export interface TileSet { minZoom: number; maxZoom: number }
-export interface MapTiles { base: TileSet | null; parcels: TileSet | null; zoning: TileSet | null }
+export interface MapTiles { base: TileSet | null; parcels: TileSet | null; zoning: TileSet | null; grid?: TileSet | null }
 
 // ---------------------------------------------------------------- colors
 

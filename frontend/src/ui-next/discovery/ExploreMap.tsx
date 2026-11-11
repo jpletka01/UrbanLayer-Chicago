@@ -12,7 +12,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ArrowRight, LoaderCircle, MapPinOff, SquareArrowOutUpRight, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
-import { discoveryOutlineRow, type DiscoveryOutlineLookup } from "../../lib/api";
+import { discoveryOutlineRow, fetchTransitStations, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, loadMapInfo, streetViewUrl } from "../map/mapInfo";
 import { addPinImages } from "../map/pins";
 import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
@@ -46,6 +46,8 @@ export interface ExploreMapProps {
   /** Frame a new search's matches once (`key` changes per search). */
   fit?: { bbox: [number, number, number, number]; key: unknown } | null;
   showZoning: boolean;
+  /** The Transit panel's walk, in miles: a ring of that size around every L stop (null = none). */
+  walkMiles?: number | null;
   onView: (v: ViewBox) => void;
   onPickArea?: (ca: number) => void;
   /** The sort key for a lot card's row (the card shows the same row as the list). */
@@ -90,6 +92,9 @@ function ownPaint(theme: Theme, measure: MeasureId, dim: boolean) {
       "fill-opacity": ["case", [">", ["coalesce", ["get", "n"], 0], 0], ["interpolate", ["linear"], ["get", "share"], 0, 0.06, 1, 0.34], 0] as unknown,
     },
     "area-label": { "text-color": p.label, "text-halo-color": p.halo, "text-halo-width": 1.6 },
+    "grid-measure": { "fill-color": measureColorExpr(measure, ZONING_FAMILY_FILL), "fill-opacity": theme === "dark" ? 0.62 : 0.78 },
+    "walk-fill": { "fill-color": p.lot, "fill-opacity": 0.07 },
+    "walk-line": { "line-color": p.lot, "line-width": 1.2, "line-opacity": 0.55 },
     "ring-fill": { "fill-color": p.lot, "fill-opacity": 0.06 },
     "ring-line": { "line-color": p.lot, "line-width": 2, "line-dasharray": [2, 1.5] },
     "ring-handle": { "circle-color": p.lotEdge, "circle-stroke-color": p.lot, "circle-stroke-width": 2.5, "circle-radius": 8 },
@@ -97,8 +102,9 @@ function ownPaint(theme: Theme, measure: MeasureId, dim: boolean) {
   } as Record<string, Record<string, unknown>>;
 }
 
-function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean, hasParcels: boolean) {
+function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean, hasParcels: boolean, grid: MapTiles["grid"]) {
   const paint = ownPaint(theme, measure, dim);
+  map.addSource("walk", { type: "geojson", data: EMPTY });
   map.addSource("areas", { type: "geojson", data: EMPTY });
   map.addSource("area-labels", { type: "geojson", data: EMPTY });
   map.addSource("ring", { type: "geojson", data: EMPTY });
@@ -111,7 +117,17 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
       filter: unknownFilter(measure), paint: { "fill-pattern": PATTERN_IMAGE("dots", theme), "fill-opacity": dim ? 0.35 : 1 } }, map.getLayer("parcel-line") ? "parcel-line" : before);
     map.addLayer({ id: "lot-measure", type: "fill", source: "parcels", "source-layer": "parcels", paint: paint["lot-measure"] as never }, map.getLayer("parcel-line") ? "parcel-line" : before);
   }
+  // Zoomed out, the city is a grid of about a block each in the same measure (Item 104), so the map is never empty.
+  if (grid) {
+    map.addSource("grid", { type: "vector", tiles: [`${apiOrigin()}/api/discovery/grid/{z}/{x}/{y}.mvt`], minzoom: grid.minZoom, maxzoom: grid.maxZoom });
+    map.addLayer({ id: "grid-unknown", type: "fill", source: "grid", "source-layer": "grid", maxzoom: LOTS_MIN_ZOOM,
+      filter: unknownFilter(measure), paint: { "fill-pattern": PATTERN_IMAGE("dots", theme), "fill-opacity": 0.7 } }, before);
+    map.addLayer({ id: "grid-measure", type: "fill", source: "grid", "source-layer": "grid", maxzoom: LOTS_MIN_ZOOM,
+      paint: paint["grid-measure"] as never }, before);
+  }
   map.addLayer({ id: "area-fill", type: "fill", source: "areas", maxzoom: LOTS_MIN_ZOOM, paint: paint["area-fill"] as never }, before);
+  map.addLayer({ id: "walk-fill", type: "fill", source: "walk", paint: paint["walk-fill"] as never }, before);
+  map.addLayer({ id: "walk-line", type: "line", source: "walk", paint: paint["walk-line"] as never }, before);
   map.addLayer({ id: "area-line", type: "line", source: "areas", maxzoom: LOTS_MIN_ZOOM + 0.5, paint: paint["area-line"] as never }, before);
   map.addLayer({ id: "ring-fill", type: "fill", source: "ring", paint: paint["ring-fill"] as never }, before);
   if (hasParcels) {
@@ -135,7 +151,7 @@ const unknownFilter = (m: MeasureId) => ["!", ["has", MEASURE_PROP[m]]] as never
 interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; lookup: DiscoveryOutlineLookup | null }
 
 export function ExploreMap({
-  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, onView, onPickArea, sortKey, className,
+  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, walkMiles = null, onView, onPickArea, sortKey, className,
 }: ExploreMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -193,7 +209,7 @@ export function ExploreMap({
         addPatternImages(m);
         // Discovery draws matches as outlines only: the parcel layer's match fill stays off.
         if (m.getLayer("parcel-fill")) m.setLayoutProperty("parcel-fill", "visibility", "none");
-        addOwnLayers(m, live.current.theme, live.current.measure, live.current.dim, !!info.parcels);
+        addOwnLayers(m, live.current.theme, live.current.measure, live.current.dim, !!info.parcels, info.grid ?? null);
         setReady(true);
         report(m);
       });
@@ -259,6 +275,10 @@ export function ExploreMap({
     for (const { id, paint } of themePaint(theme)) {
       if (!map.getLayer(id)) continue;
       for (const [k, v] of Object.entries(paint)) map.setPaintProperty(id, k as never, v as never);
+    }
+    if (map.getLayer("grid-unknown")) {
+      map.setFilter("grid-unknown", unknownFilter(measure));
+      map.setPaintProperty("grid-unknown", "fill-pattern", PATTERN_IMAGE("dots", theme));
     }
     if (map.getLayer("lot-unknown")) {
       map.setFilter("lot-unknown", unknownFilter(measure));
@@ -336,6 +356,23 @@ export function ExploreMap({
       ? { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Point", coordinates: [place.lon, place.lat] }, properties: {} }] }
       : EMPTY);
   }, [ring, place, ready]);
+
+  // Walking distance around the L stops while the Transit panel is open.
+  const [stops, setStops] = useState<Array<[number, number]>>([]);
+  useEffect(() => {
+    if (walkMiles == null || stops.length) return;
+    let live2 = true;
+    fetchTransitStations().then((all) => { if (live2) setStops(all.filter((s) => s.type === "cta_rail").map((s) => [s.lat, s.lon])); });
+    return () => { live2 = false; };
+  }, [walkMiles, stops.length]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    (map.getSource("walk") as GeoJSONSource | undefined)?.setData(walkMiles == null ? EMPTY : {
+      type: "FeatureCollection",
+      features: stops.map(([lat, lon]) => ({ type: "Feature", geometry: ringPolygon(lat, lon, walkMiles, 40), properties: {} })),
+    });
+  }, [walkMiles, stops, ready]);
 
   // Camera requests.
   useEffect(() => {

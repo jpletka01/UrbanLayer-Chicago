@@ -8,8 +8,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowRight, Circle, Hammer, House, Landmark, List, LoaderCircle, Map as MapIcon, MapPin, Palette, Search, SlidersHorizontal,
-  TriangleAlert, X, type LucideIcon,
+  ArrowRight, ChevronDown, Circle, Hammer, House, Landmark, List, LoaderCircle, Map as MapIcon, MapPin, Maximize2, Palette,
+  Receipt, Search, Shovel, Sprout, Store, Target, TrendingDown, TriangleAlert, X, type LucideIcon,
 } from "lucide-react";
 import { loadRegistry } from "../../discovery/registryClient";
 import { useDiscoverySearch } from "../../discovery/useDiscoverySearch";
@@ -17,7 +17,7 @@ import { recipeStatus } from "../../discovery/recipeStatus";
 import { chipLabel } from "../../discovery/chips";
 import { COMMUNITY_AREAS } from "../../discovery/communityAreas";
 import { HIDE_UNUSUAL } from "../../discovery/draftModel";
-import type { FilterDef, PanelState, Predicate, Registry, ResultRow } from "../../discovery/types";
+import type { FilterDef, PanelState, Predicate, Registry, ResultRow, TopicDef } from "../../discovery/types";
 import { getAutocomplete } from "../../lib/api";
 import type { AddressSuggestion } from "../../lib/types";
 import { track } from "../../lib/tracking";
@@ -26,7 +26,7 @@ import { AppFrame } from "../frame/AppFrame";
 import { ICON, STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
 import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
-import { FiltersSheet } from "./FiltersSheet";
+import { FilterBar } from "./FilterBar";
 import { fetchLotShape, shapePath, useViewMatches } from "./discoveryData";
 import {
   DEFAULT_MEASURE, LOTS_MIN_ZOOM, MEASURES, QUICK_FILTERS, RING_MILES, areaSuggestions, cardModel, classifyQuery,
@@ -61,7 +61,8 @@ export default function DiscoveryNextPage() {
   const [view, setView] = useState<ViewBox | null>(null);
   const [camera, setCamera] = useState<{ bbox?: [number, number, number, number]; center?: [number, number]; zoom?: number; seq: number } | null>(null);
   const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [goalsFolded, setGoalsFolded] = useState(false);
+  const [walkPreview, setWalkPreview] = useState<number | null>(null);
   const [place, setPlace] = useState<Place | null>(null);
   const [ring, setRing] = useState<Ring | null>(null);
   const [sheet, setSheet] = useState<"peek" | "half" | "full">("peek");
@@ -184,7 +185,6 @@ export default function DiscoveryNextPage() {
   }, [response]);
 
   const topics = (registry?.topics ?? []).map((topic) => ({ topic, status: recipeStatus(registry!, topic, tp) }));
-  const filterCount = Object.keys(search.draft.panelState).filter((k) => k !== HIDE_UNUSUAL).length;
   const chips = response
     ? Object.entries(response.cqs.filters).filter(([id, a]) => id !== HIDE_UNUSUAL && a.source !== "default")
     : [];
@@ -205,6 +205,7 @@ export default function DiscoveryNextPage() {
       focus={camera}
       fit={fit}
       showZoning={showZoning}
+      walkMiles={walkPreview}
       onView={setView}
       onPickArea={pickArea}
       sortKey={response?.cqs.sort.key ?? registry?.defaultSort.key ?? "lot_size"}
@@ -218,94 +219,98 @@ export default function DiscoveryNextPage() {
       : t("discovery.count", { count: response.result.total, total: fmt.format(response.result.total) })
     : null;
 
+  const applyFilters = (panel: PanelState) => {
+    if (!registry) return;
+    search.startWith({ ...search.draft, panelState: panel, sort: response ? search.draft.sort ?? { ...ROOM_SORT } : { ...ROOM_SORT }, topicId: null, text: response ? search.draft.text : "" });
+    setFocus(phone ? "map" : "list");
+    setSheet("half");
+  };
+  const filterBar = registry ? (
+    <FilterBar registry={registry} panel={response ? search.draft.panelState : quickPanel(quick)}
+      scope={response ? search.draft.scope ?? null : null} onApply={applyFilters} onWalkPreview={setWalkPreview} compact={phone} />
+  ) : null;
+  const searchBox = (
+    <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onArea={pickArea} busy={search.loading} disabled={!registry} />
+  );
+  const focusToggle = response && !phone ? (
+    <div role="group" aria-label={t("discovery.focus.label")} className="flex shrink-0 rounded-xl bg-nx-ink/5 p-1">
+      {(["list", "map"] as const).map((f) => {
+        const Icon = f === "list" ? List : MapIcon;
+        return (
+          <button key={f} type="button" aria-pressed={focus === f} onClick={() => setFocus(f)}
+            className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 ${focus === f ? "bg-nx-page shadow-sm" : "hover:bg-nx-ink/5"}`}>
+            <Icon aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t(`discovery.focus.${f}`)}
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
+  const goalsOpen = !response && !goalsFolded;
+
   return (
-    <AppFrame crumbs={[t("discovery.crumb")]}>
+    <AppFrame
+      crumbs={[t("discovery.crumb")]}
+      bar={phone ? searchBox : (
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="w-[20rem] shrink-0 xl:w-[24rem]">{searchBox}</div>
+          <div className="min-w-0 flex-1">{filterBar}</div>
+          {focusToggle}
+        </div>
+      )}
+    >
       <h1 className="sr-only">{t("discovery.title")}</h1>
       <div className="flex h-[calc(100dvh-68px)] flex-col">
-        {/* The search bar: one box, Filters, and (after a search) List | Map. */}
-        <div className="z-20 flex flex-col gap-2 border-b border-nx-ink/10 bg-nx-page px-4 py-3 sm:px-7">
-          <div className="flex items-center gap-2">
-            <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onArea={pickArea} busy={search.loading} disabled={!registry} />
-            <button type="button" onClick={() => setFiltersOpen(true)} disabled={!registry}
-              className="relative inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-nx-ink/5 px-3 hover:bg-nx-ink/10 disabled:opacity-50 touch-target"
-              aria-label={filterCount > 0 ? t("discovery.filters.openCount", { count: filterCount }) : t("discovery.filters.open")}
-              data-testid="filters-open">
-              <SlidersHorizontal aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-              <span className="hidden sm:inline">{t("discovery.filters.open")}</span>
-              {filterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-nx-ink px-1 text-[11px] text-nx-on-ink">{filterCount}</span>}
-            </button>
-            {response && !phone && (
-              <div role="group" aria-label={t("discovery.focus.label")} className="hidden shrink-0 rounded-xl bg-nx-ink/5 p-1 md:flex">
-                {(["list", "map"] as const).map((f) => {
-                  const Icon = f === "list" ? List : MapIcon;
-                  return (
-                    <button key={f} type="button" aria-pressed={focus === f} onClick={() => setFocus(f)}
-                      className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 ${focus === f ? "bg-nx-page shadow-sm" : "hover:bg-nx-ink/5"}`}>
-                      <Icon aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t(`discovery.focus.${f}`)}
+        {/* Below the bar only what a search needs: a phone's filter groups, what the search was, what it couldn't read. */}
+        {(phone || response || search.textNotice || registryFailed || search.unavailable) && (
+          <div className="z-20 flex flex-col gap-2 border-b border-nx-ink/10 bg-nx-page px-4 py-2 sm:px-7">
+            {phone && filterBar}
+            {search.textNotice && (
+              <p role="status" className="flex flex-wrap items-center gap-2 text-caption">
+                <Pill tone="yellow" icon={TriangleAlert}>{t("discovery.notUnderstood")}</Pill>
+                <span className="nx-muted">{search.textNotice.words.join(", ")}</span>
+              </p>
+            )}
+            {response && search.appliedText && (response.cqs.meta?.textResidual?.length ?? 0) > 0 && (
+              <p role="status" className="flex flex-wrap items-center gap-2 text-caption">
+                <Pill tone="yellow" icon={TriangleAlert}>{t("discovery.notUnderstood")}</Pill>
+                <span className="nx-muted">{response.cqs.meta!.textResidual!.join(", ")}</span>
+              </p>
+            )}
+            {response && (
+              <div className="flex flex-wrap items-center gap-2 text-caption" data-testid="search-summary">
+                <span className="font-semibold" role="status">{countLine}</span>
+                {chips.map(([id, a]) => (
+                  <span key={id} className="inline-flex items-center gap-1 rounded-full bg-nx-ink/5 py-1 pl-3 pr-1">
+                    {label(id, a.predicate as Predicate)}
+                    <button type="button" aria-label={t("discovery.removeFilter", { label: label(id, a.predicate as Predicate) })}
+                      onClick={() => { const panel = { ...search.draft.panelState }; delete panel[id]; search.startWith({ ...search.draft, panelState: panel, text: "", topicId: null }); }}
+                      className="grid h-6 w-6 place-items-center rounded-full hover:bg-nx-ink/10 touch-hit">
+                      <X aria-hidden className="h-3 w-3" strokeWidth={STROKE} />
                     </button>
-                  );
-                })}
+                  </span>
+                ))}
+                {response.cqs.scope?.mode === "viewport" && <Pill tone="gray" icon={MapIcon}>{t("discovery.inThisView")}</Pill>}
+                <button type="button" onClick={startOver} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 underline underline-offset-2 hover:bg-nx-ink/5">
+                  {t("discovery.newSearch")}
+                </button>
               </div>
             )}
+            {registryFailed && <p role="alert" className="text-caption nx-muted">{t("discovery.unavailable")}</p>}
+            {search.unavailable && <p role="alert" className="text-caption nx-muted">{t("discovery.searchFailed")}</p>}
           </div>
-          {search.textNotice && (
-            <p role="status" className="flex flex-wrap items-center gap-2 text-caption">
-              <Pill tone="yellow" icon={TriangleAlert}>{t("discovery.notUnderstood")}</Pill>
-              <span className="nx-muted">{search.textNotice.words.join(", ")}</span>
-            </p>
-          )}
-          {response && search.appliedText && (response.cqs.meta?.textResidual?.length ?? 0) > 0 && (
-            <p role="status" className="flex flex-wrap items-center gap-2 text-caption">
-              <Pill tone="yellow" icon={TriangleAlert}>{t("discovery.notUnderstood")}</Pill>
-              <span className="nx-muted">{response.cqs.meta!.textResidual!.join(", ")}</span>
-            </p>
-          )}
-          {!response ? (
-            topics.length > 0 && (
-              <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]" role="group" aria-label={t("discovery.try")}>
-                <span className="shrink-0 text-caption nx-muted">{t("discovery.try")}</span>
-                {topics.map(({ topic, status }) => (
-                  <button key={topic.id} type="button" disabled={!status.live}
-                    onClick={() => { search.pickRecipe(topic); setFocus(phone ? "map" : "list"); setSheet("half"); }}
-                    title={status.live ? undefined : t("discovery.goalNeedsData")}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-nx-block px-3 py-1.5 text-caption hover:bg-nx-ink/10 disabled:cursor-not-allowed disabled:opacity-50 touch-target">
-                    {t(`discovery.goal.${topic.id}`, { defaultValue: tp(`discovery.topic.${topic.id}.label`, { defaultValue: topic.label ?? topic.id }) })}
-                    {status.live && registry?.recipeCounts?.[topic.id] != null && (
-                      <span className="nx-muted tabular-nums">{fmt.format(registry.recipeCounts[topic.id])}</span>
-                    )}
-                    {!status.live && <span className="nx-muted">{t("discovery.goalSoon")}</span>}
-                  </button>
-                ))}
-              </div>
-            )
-          ) : (
-            <div className="flex flex-wrap items-center gap-2 text-caption" data-testid="search-summary">
-              <span className="font-semibold" role="status">{countLine}</span>
-              {chips.map(([id, a]) => (
-                <span key={id} className="inline-flex items-center gap-1 rounded-full bg-nx-ink/5 py-1 pl-3 pr-1">
-                  {label(id, a.predicate as Predicate)}
-                  <button type="button" aria-label={t("discovery.removeFilter", { label: label(id, a.predicate as Predicate) })}
-                    onClick={() => { const panel = { ...search.draft.panelState }; delete panel[id]; search.startWith({ ...search.draft, panelState: panel, text: "", topicId: null }); }}
-                    className="grid h-6 w-6 place-items-center rounded-full hover:bg-nx-ink/10 touch-hit">
-                    <X aria-hidden className="h-3 w-3" strokeWidth={STROKE} />
-                  </button>
-                </span>
-              ))}
-              {response.cqs.scope?.mode === "viewport" && <Pill tone="gray" icon={MapIcon}>{t("discovery.inThisView")}</Pill>}
-              <button type="button" onClick={startOver} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 underline underline-offset-2 hover:bg-nx-ink/5">
-                {t("discovery.newSearch")}
-              </button>
-            </div>
-          )}
-          {registryFailed && <p role="alert" className="text-caption nx-muted">{t("discovery.unavailable")}</p>}
-          {search.unavailable && <p role="alert" className="text-caption nx-muted">{t("discovery.searchFailed")}</p>}
-        </div>
+        )}
 
         {/* The map, always mounted; List covers it on a desktop, a sheet sits over it on a phone. */}
         <div className="relative min-h-0 flex-1">
           {map}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3">
-            <QuickFilters on={quickOn} onToggle={toggleQuick} loading={!response && viewMatches.loading} />
+            <div className="flex min-w-0 flex-col items-start gap-2">
+              <QuickFilters on={quickOn} onToggle={toggleQuick} loading={!response && viewMatches.loading} />
+              {!phone && !response && registry && (
+                <GoalCard open={goalsOpen} onToggle={() => setGoalsFolded((f) => !f)} topics={topics} counts={registry.recipeCounts ?? {}} fmt={fmt}
+                  onPick={(topic) => { search.pickRecipe(topic); setFocus("list"); }} />
+              )}
+            </div>
             <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} showZoning={showZoning} onZoning={setShowZoning} compact={phone} />
           </div>
           {place && <PlaceCard place={place} ring={ring} onRing={(miles) => { const r = { lat: place.lat, lon: place.lon, miles }; setRing(r); }}
@@ -351,25 +356,70 @@ export default function DiscoveryNextPage() {
                 <Results response={response} rows={search.rows} fmt={fmt} onMore={search.nextOffset != null && !response.result.gated ? () => void search.loadMore() : null}
                   loadingMore={search.loadingMore} refreshing={search.refreshing} hiddenUnusual={response.diagnostics.hiddenUnusual ?? 0}
                   onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} />
-              ) : (
-                <p className="px-4 pb-4 text-caption nx-muted">{t("discovery.exploreHint")}</p>
-              )}
+              ) : registry ? (
+                <div className="px-4 pb-4">
+                  <GoalList topics={topics} counts={registry.recipeCounts ?? {}} fmt={fmt}
+                    onPick={(topic) => { search.pickRecipe(topic); setSheet("half"); }} />
+                </div>
+              ) : null}
             </PhoneSheet>
           )}
         </div>
       </div>
-      {registry && (
-        <FiltersSheet key={filtersOpen ? "open" : "closed"} open={filtersOpen} onOpenChange={setFiltersOpen} registry={registry}
-          panel={response ? search.draft.panelState : quickPanel(quick)} scope={response ? search.draft.scope ?? null : null}
-          onApply={(panel) => {
-            search.startWith({ ...search.draft, panelState: panel, sort: response ? search.draft.sort ?? { ...ROOM_SORT } : { ...ROOM_SORT }, topicId: null, text: response ? search.draft.text : "" });
-            setFocus(phone ? "map" : "list");
-            setSheet("half");
-          }} />
-      )}
     </AppFrame>
   );
 }
+
+// ---------------------------------------------------------------- goals
+
+/** Each goal's plain name and icon (the registry's recipes; presentation only). */
+const GOAL_ICON: Record<string, LucideIcon> = {
+  vacant_mf_transit: Sprout, teardown: Shovel, room_to_build: Maximize2, underused_commercial_tif: Store,
+  fresh_comps: Receipt, undervalued_mf: TrendingDown, adu_2flats: House,
+};
+type TopicRow = { topic: TopicDef; status: ReturnType<typeof recipeStatus> };
+
+function GoalList({ topics, counts, fmt, onPick }: { topics: TopicRow[]; counts: Record<string, number>; fmt: Intl.NumberFormat; onPick: (t: TopicDef) => void }) {
+  const { t } = useTranslation("next");
+  const { t: tp } = useTranslation("pages");
+  return (
+    <ul className="flex flex-col gap-1" aria-label={t("discovery.goals.title")} data-testid="goals">
+      {topics.map(({ topic, status }) => {
+        const Icon = GOAL_ICON[topic.id] ?? Search;
+        return (
+          <li key={topic.id}>
+            <button type="button" disabled={!status.live} onClick={() => onPick(topic)}
+              className="flex w-full items-start gap-3 rounded-xl px-2 py-2 text-left hover:bg-nx-ink/5 disabled:cursor-not-allowed disabled:opacity-50 touch-target">
+              <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={STROKE} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-caption font-medium">{t(`discovery.goal.${topic.id}`, { defaultValue: tp(`discovery.topic.${topic.id}.label`, { defaultValue: topic.label ?? topic.id }) })}</span>
+                <span className="block text-[11px] nx-muted">{t(`discovery.goalHint.${topic.id}`, { defaultValue: "" })}</span>
+              </span>
+              <span className="shrink-0 text-caption tabular-nums nx-muted">
+                {status.live && counts[topic.id] != null ? fmt.format(counts[topic.id]) : t("discovery.goalSoon")}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function GoalCard({ open, onToggle, ...rest }: { open: boolean; onToggle: () => void; topics: TopicRow[]; counts: Record<string, number>; fmt: Intl.NumberFormat; onPick: (t: TopicDef) => void }) {
+  const { t } = useTranslation("next");
+  return (
+    <div className="pointer-events-auto w-[19rem] rounded-2xl bg-nx-page p-2 shadow-[0_4px_16px_rgb(0_0_0/0.14)]">
+      <button type="button" aria-expanded={open} onClick={onToggle} className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-caption font-semibold hover:bg-nx-ink/5">
+        <Target aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+        <span className="flex-1 text-left">{t("discovery.goals.title")}</span>
+        <ChevronDown aria-hidden className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={STROKE} />
+      </button>
+      {open && <GoalList {...rest} />}
+    </div>
+  );
+}
+
 
 function exploreLabel(
   t: (k: string, o?: Record<string, unknown>) => string, fmt: Intl.NumberFormat, panel: PanelState | null,
