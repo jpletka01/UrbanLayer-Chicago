@@ -291,8 +291,8 @@ def permit_stories(description: str) -> int | None:
 
 # LiDAR parts that aren't this lot's building (owner, 2026-11-11, and his batch-1 labels: the parts he set to 0
 # stories were mostly under 10% of their outline on the lot). A tiny part is a tree, an AC unit or a misdraw.
-TREE_MAX_SQFT = 150
-NEIGHBOR_EDGE_SHARE = 0.10
+TREE_MAX_SQFT = 200  # batch 2: a 158 sq ft, 31-ft piece was the neighbor's building on an empty lot
+NEIGHBOR_EDGE_SHARE = 0.25  # batch 2: the owner's named neighbor pieces had 15-16% of their outline on the lot
 NEIGHBOR_EDGE_MAX_SQFT = 400
 
 
@@ -493,7 +493,34 @@ CROSSING_SHARE = 0.8  # an outline of 1,000+ sq ft with under 80% of it on the l
 BIG_PERMIT = 100_000  # a new-construction permit this size or more (or of unknown cost) is a building
 
 
-def rule_v2(lot: dict[str, Any], ev: dict[str, Any]) -> tuple[str, str]:
+LOT_AREA_TOLERANCE = 0.15  # the index's lot area against the drawn outline (batch 2: 10,872 vs 3,264 sq ft)
+
+
+def rule_v3(lot: dict[str, Any], ev: dict[str, Any]) -> tuple[str, str]:
+    """v2 plus three guards from the owner's batch-2 labels (2026-11-11): the index's lot area must match the outline;
+    the LiDAR check counts the most stories the height could hold at 12 ft a floor (five false calls were buildings of
+    18-28 ft with a raised garden unit or a usable attic, which Title 17 counts as floor area, 17-17-0305-A1/A4, and
+    which the Assessor's living area and Item 105's fit leave out); a part with under 25% of its outline on the lot (and
+    under 400 sq ft) is a neighbor's. At 12 ft every story count the owner gave (117 buildings) is within the bound."""
+    state, why = rule_v2(lot, ev, ignore_fn=ignore_reason, story_fn=stories_upper)
+    if state == "none":
+        return state, why
+    outline = ev.get("lot_sqft_outline")
+    if outline and abs(lot["land_sqft"] - outline) / outline > LOT_AREA_TOLERANCE:
+        return "none", "lot area disagrees with the outline"
+    return state, why
+
+
+UPPER_FLOOR_FT = 12.0
+
+
+def stories_upper(x: dict[str, Any]) -> int:
+    """The most stories a LiDAR part's height could hold (a permit's stated stories win)."""
+    import math
+    return x.get("stories_permit") or max(x["stories_est"], math.ceil((x["height_ft"] - 3) / UPPER_FLOOR_FT))
+
+
+def rule_v2(lot: dict[str, Any], ev: dict[str, Any], ignore_fn=None, story_fn=None) -> tuple[str, str]:
     """("underused" | "empty" | "none", why). Conservative: anything uncertain is "none" (the app says nothing)."""
     if lot.get("room_scope") == "complex" or lot.get("stratum") == "condo_building":
         return "none", "part of a complex or condo"
@@ -510,13 +537,19 @@ def rule_v2(lot: dict[str, Any], ev: dict[str, Any]) -> tuple[str, str]:
         return "none", "new building since the LiDAR"
     if any(q["type"] == "WRECKING/DEMOLITION" for q in after):
         return "none", "demolition since the LiDAR"
-    parts = [x for x in ev.get("lidar_2022", []) if not x.get("ignore") and x["on_lot_sqft"] >= LIDAR_MIN_PART]
+    def ignored(x: dict[str, Any]) -> bool:
+        return bool(ignore_fn(x["on_lot_sqft"], x["outline_sqft"]) if ignore_fn else x.get("ignore"))
+
+    parts = [x for x in ev.get("lidar_2022", []) if not ignored(x) and x["on_lot_sqft"] >= LIDAR_MIN_PART]
     if any(x["outline_sqft"] >= 1000 and x["on_lot_sqft"] < CROSSING_SHARE * x["outline_sqft"] for x in parts):
         return "none", "a building crosses the lot line"
     rec = lot.get("bldg_sqft") or 0.0
     if not parts:
         return ("empty", "no building on record or in the LiDAR") if rec == 0 else ("none", "record building, none in LiDAR")
-    lid = ev.get("lidar_floor_area_est") or 0.0
+    if story_fn:
+        lid = sum(x["on_lot_sqft"] * story_fn(x) for x in parts)
+    else:
+        lid = ev.get("lidar_floor_area_est") or 0.0
     if rec / allowed < UNDER_SHARE and lid / allowed < UNDER_SHARE and allowed - max(rec, lid) >= UNDER_ROOM:
         return "underused", "record and LiDAR both under 25%"
     return "none", "built"
@@ -579,6 +612,53 @@ def draw2(permits_path: Path, lidar_path: Path, out: Path, ev_out: Path, exclude
     return pick
 
 
+# Batch 3: a held-out test of rule v3, frozen before the draw (2026-11-11). Unlike batches 1-2 it is not stratified:
+# candidates are a uniform sample of the lots the first rule calls underused citywide, so v3's calls here are the calls
+# the app would make, in their real mix. Plus empty lots from a uniform sample of vacant-class lots, and controls.
+BATCH3_SEED = 1073
+BATCH3_CANDIDATES = 4_000
+BATCH3_VACANT_CANDIDATES = 120
+BATCH3_UNDER = 100
+BATCH3_EMPTY = 20
+BATCH3_CONTROLS = 15
+
+
+def draw3(permits_path: Path, lidar_path: Path, out: Path, ev_out: Path, excludes: list[Path]) -> list[dict[str, Any]]:
+    taken = {r["pin"] for x in excludes for r in json.loads(x.read_text())["lots"]}
+    db = sqlite3.connect(f"file:{INDEX}?mode=ro", uri=True)
+    under, vacant = [], []
+    for pin, lat, lon, attrs in db.execute("SELECT pin, lat, lon, attrs FROM parcels ORDER BY pin"):
+        if not pin.endswith("-0000") or pin in taken:
+            continue
+        a = json.loads(attrs)
+        if rule_underused(a):
+            under.append((pin, a, lat, lon))
+        elif a.get("is_vacant") and not a.get("bldg_sqft") and a.get("density_band") and not a.get("narrow_strip"):
+            vacant.append((pin, a, lat, lon))
+    db.close()
+    rng = random.Random(BATCH3_SEED)
+    cands = [lot_row(*r[:4], "citywide_underused") | {"pool": len(under)} for r in rng.sample(under, BATCH3_CANDIDATES)]
+    cands += [lot_row(*r[:4], "citywide_vacant") | {"pool": len(vacant)}
+              for r in rng.sample(vacant, BATCH3_VACANT_CANDIDATES)]
+    evs = {e["pin"]: e for e in evidence_rows(cands, permits_path, lidar_path)}
+    for c in cands:
+        c["v3"], c["v3_why"] = rule_v3(c, evs[c["pin"]])
+        c["v2"], c["v2_why"] = c["v3"], c["v3_why"]  # the page shows "v2" as "the rule"; here it is v3
+    under_calls = [c for c in cands if c["stratum"] == "citywide_underused" and c["v3"] == "underused"]
+    empties = [c for c in cands if c["stratum"] == "citywide_vacant" and c["v3"] == "empty"]
+    controls = [c for c in cands if c["stratum"] == "citywide_underused" and c["v3"] == "none"]
+    pick = under_calls[:BATCH3_UNDER] + empties[:BATCH3_EMPTY] + rng.sample(controls, BATCH3_CONTROLS)
+    for c in pick:
+        c["batch"] = 3
+    tally: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for c in cands:
+        tally[c["stratum"]][c["v3_why"]] += 1
+    out.write_text(json.dumps({"seed": BATCH3_SEED, "rule": "v3", "candidates": {k: dict(v) for k, v in tally.items()},
+                               "lots": pick}, indent=1))
+    ev_out.write_text(json.dumps([evs[c["pin"]] for c in pick], indent=1))
+    return pick
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -596,7 +676,19 @@ def main(argv: list[str] | None = None) -> int:
     d2.add_argument("--exclude", type=Path, default=Path("eval/capacity_label_panel.json"))
     d2.add_argument("--out", type=Path, default=Path("eval/capacity_label_panel_2.json"))
     d2.add_argument("--evidence-out", type=Path, required=True)
+    d3 = sub.add_parser("draw3")
+    d3.add_argument("--permits", type=Path, required=True)
+    d3.add_argument("--lidar", type=Path, required=True)
+    d3.add_argument("--exclude", type=Path, action="append",
+                    default=[Path("eval/capacity_label_panel.json"), Path("eval/capacity_label_panel_2.json")])
+    d3.add_argument("--out", type=Path, default=Path("eval/capacity_label_panel_3.json"))
+    d3.add_argument("--evidence-out", type=Path, required=True)
     args = ap.parse_args(argv)
+    if args.cmd == "draw3":
+        pick = draw3(args.permits, args.lidar, args.out, args.evidence_out, args.exclude)
+        print(json.dumps(json.loads(args.out.read_text())["candidates"], indent=1))
+        print(f"total {len(pick)}: " + str(dict(__import__("collections").Counter(r["v3"] for r in pick))))
+        return 0
     if args.cmd == "draw2":
         pick = draw2(args.permits, args.lidar, args.out, args.evidence_out, args.exclude)
         by = defaultdict(lambda: defaultdict(int))
