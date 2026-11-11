@@ -1199,7 +1199,8 @@
       "built": "Construido {{value}}",
       "allowed": "Permitido {{value}} · {{pct}}% usado",
       "moreInComplex_one": "1 terreno más del conjunto en esta lista",
-      "moreInComplex_other": "{{count}} terrenos más del conjunto en esta lista"
+      "moreInComplex_other": "{{count}} terrenos más del conjunto en esta lista",
+      "sold": "Vendido en {{price}} en {{year}}"
     },
     "goalSoon": "faltan datos",
     "goal": {

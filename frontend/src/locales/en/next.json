@@ -1199,7 +1199,8 @@
       "built": "Built {{value}}",
       "allowed": "Allowed {{value}} · {{pct}}% used",
       "moreInComplex_one": "1 more of its lots in this list",
-      "moreInComplex_other": "{{count}} more of its lots in this list"
+      "moreInComplex_other": "{{count}} more of its lots in this list",
+      "sold": "Sold {{price}} in {{year}}"
     },
     "goalSoon": "needs data",
     "goal": {

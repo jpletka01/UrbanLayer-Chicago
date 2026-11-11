@@ -3,10 +3,10 @@
 // what's there now, room to build as the headline with built vs allowed as a bar, then chips for only what applies.
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, FileClock, Gift, Hammer, House, Landmark, Ruler, Shovel, TrainFront, TriangleAlert, type LucideIcon } from "lucide-react";
+import { ArrowRight, FileClock, Gift, Hammer, House, Landmark, Receipt, Ruler, Shovel, TrainFront, TriangleAlert, type LucideIcon } from "lucide-react";
 import type { ResultRow } from "../../discovery/types";
 import { ZONING_COLORS } from "../map/mapStyle";
-import { ICON, STROKE } from "../icons";
+import { STROKE } from "../icons";
 import { Pill, type PillTone } from "../ui/Blocks";
 import { contextPaths, fetchLotContext } from "./discoveryData";
 import { cardModel, measureSteps, type CardWarning } from "./discoveryModel";
@@ -85,6 +85,10 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0 }: {
   if (row.in_enterprise_zone) chips.push({ tone: "green", icon: Gift, text: t("discovery.card.ez") });
   if (row.is_teardown_candidate) chips.push({ tone: "purple", icon: Shovel, text: t("discovery.card.teardown") });
   if (c.narrowFt != null) chips.push({ tone: "gray", icon: Ruler, text: t("discovery.card.narrow", { ft: c.narrowFt }) });
+  // The last sale is a chip like everything else on the card (owner's review); a transfer under $10,000 says so.
+  if (c.sale) chips.push({ tone: "gray", icon: Receipt, text: c.sale.transfer
+    ? t("discovery.card.transfer", { year: c.sale.year })
+    : t("discovery.card.sold", { price: `$${n(c.sale.price)}`, year: c.sale.year }) });
   if (c.warning) chips.push({ tone: c.warning.kind === "nominal" ? "gray" : "yellow", icon: WARNING_ICON[c.warning.kind],
     text: t(`discovery.warning.${c.warning.kind}`, { date: c.warning.detail ?? "", name: c.warning.detail ?? "" }) });
 
@@ -133,16 +137,6 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0 }: {
           {chips.length > 0 && (
             <span className="flex flex-wrap gap-1.5">
               {chips.map((ch) => <Pill key={ch.text} tone={ch.tone} icon={ch.icon}>{ch.text}</Pill>)}
-            </span>
-          )}
-
-          {c.sale && (
-            <span className="flex items-center gap-2 text-caption">
-              <ICON.sale aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={STROKE} />
-              <span className="nx-muted">{t("discovery.card.sale")}</span>
-              <span className="ml-auto tabular-nums">
-                {c.sale.transfer ? t("discovery.card.transfer", { year: c.sale.year }) : t("discovery.card.saleValue", { price: `$${n(c.sale.price)}`, year: c.sale.year })}
-              </span>
             </span>
           )}
 
