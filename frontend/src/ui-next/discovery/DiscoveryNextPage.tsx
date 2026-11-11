@@ -27,9 +27,10 @@ import { ICON, STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
 import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
-import { fetchLotShape, shapePath, useViewMatches } from "./discoveryData";
+import { fetchLotShape, shapePath, useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
 import {
-  DEFAULT_MEASURE, LOTS_MIN_ZOOM, MEASURES, QUICK_FILTERS, RING_MILES, areaSuggestions, cardModel, classifyQuery,
+  DEFAULT_MEASURE, LOTS_MIN_ZOOM, MEASURES, QUICK_FILTERS, RING_MILES, cardModel, classifyQuery, placeRegion, placeSuggestions,
+  type Place as AreaPlace,
   ROOM_SORT, measureSteps, quickFromPanel, quickPanel, ringMiles, ringRegion, type CardWarning, type MeasureId, type QuickId,
 } from "./discoveryModel";
 
@@ -55,6 +56,7 @@ export default function DiscoveryNextPage() {
   }, []);
 
   const response = search.applied;
+  const hoods = useNeighborhoods();
   const [focus, setFocus] = useState<Focus>("map");
   const [measure, setMeasure] = useState<MeasureId>(DEFAULT_MEASURE);
   const [showZoning, setShowZoning] = useState(false);
@@ -63,6 +65,7 @@ export default function DiscoveryNextPage() {
   const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
   const [goalsFolded, setGoalsFolded] = useState(false);
   const [walkPreview, setWalkPreview] = useState<number | null>(null);
+  const [barPending, setBarPending] = useState<PanelState | null>(null);
   const [place, setPlace] = useState<Place | null>(null);
   const [ring, setRing] = useState<Ring | null>(null);
   const [sheet, setSheet] = useState<"peek" | "half" | "full">("peek");
@@ -149,12 +152,12 @@ export default function DiscoveryNextPage() {
   // The one search box.
   const [text, setText] = useState("");
   const submit = (raw = text) => {
-    const kind = classifyQuery(raw, COMMUNITY_AREAS);
+    const kind = classifyQuery(raw, COMMUNITY_AREAS, hoods);
     if (kind.kind === "address") {
       getAutocomplete(raw).then((s) => { if (s[0]) pickAddress(s[0]); });
       return;
     }
-    if (kind.kind === "area") { pickArea(kind.id); return; }
+    if (kind.kind === "area" || kind.kind === "hood") { pickPlace(kind); return; }
     search.setText(raw);
     search.setSort({ ...ROOM_SORT });
     window.setTimeout(() => { search.apply(); setFocus(phone ? "map" : "list"); setSheet("half"); }, 0);
@@ -165,18 +168,22 @@ export default function DiscoveryNextPage() {
     moveTo({ center: [s.lon, s.lat], zoom: 16.4 });
     setFocus("map");
   };
-  const pickArea = (id: number) => {
+  // A neighborhood or community area narrows the search on screen (its filters stay), never replaces it.
+  const pickPlace = (place: AreaPlace) => {
     if (!registry) return;
+    const base = { ...(barPending ?? (response ? search.draft.panelState : quickPanel(quick))) };
     search.startWith({
-      panelState: { neighborhood: { kind: "region", regions: [`neighborhood:${id}`] } as PanelState[string] },
-      text: "", sort: { ...ROOM_SORT }, topicId: null, scope: null,
+      panelState: { ...base, neighborhood: { kind: "region", regions: [placeRegion(place)] } as PanelState[string] },
+      text: "", sort: response ? search.draft.sort ?? { ...ROOM_SORT } : { ...ROOM_SORT }, topicId: null, scope: null,
     });
     setFocus(phone ? "map" : "list");
     setSheet("half");
   };
+  const pickArea = (id: number) => pickPlace({ kind: "area", id, name: COMMUNITY_AREAS[id] ?? String(id) });
+
   // A new search frames its matches once (the visitor's own moves win after that); a view search keeps its view.
   const fit = useMemo(() => {
-    if (!response || response.cqs.scope?.mode === "viewport") return null;
+    if (!response || response.cqs.scope?.mode === "viewport" || response.cqs.filters.neighborhood) return null;  // a place frames itself
     const pts = (response.pins?.points ?? []).filter((p) => p.lat != null && p.lon != null);
     if (!pts.length) return null;
     let w = 180, s = 90, e = -180, n = -90;
@@ -189,10 +196,23 @@ export default function DiscoveryNextPage() {
     ? Object.entries(response.cqs.filters).filter(([id, a]) => id !== HIDE_UNUSUAL && a.source !== "default")
     : [];
   const defOf = (id: string): FilterDef | undefined => registry?.filters.find((f) => f.id === id);
+  const hoodName = (ref: string) => hoods.find((h) => `hood:${h.slug}` === ref)?.name ?? ref.slice(5).replace(/_/g, " ");
   const label = (id: string, p: Predicate) => {
+    if (id === "neighborhood" && p.kind === "region" && p.regions.some((r) => r.startsWith("hood:"))) {
+      return p.regions.map((r) => (r.startsWith("hood:") ? hoodName(r) : COMMUNITY_AREAS[Number(r.split(":")[1])] ?? r)).join(t("discovery.or"));
+    }
     const mi = id === "radius" && p.kind === "region" ? ringMiles(p.regions[0]) : null;
     return mi != null ? t("discovery.ringChip", { mi: new Intl.NumberFormat(numLocale(i18n.language), { maximumFractionDigits: 2 }).format(mi) }) : chipLabel(id, p, defOf(id));
   };
+
+  // The place the search is limited to, from the evaluated query (a pick, or "in Wicker Park" in a description).
+  const highlight = useMemo(() => {
+    const f = response?.cqs.filters.neighborhood?.predicate;
+    if (!f || f.kind !== "region") return null;
+    return f.regions.map((r) => r.startsWith("hood:")
+      ? { kind: "hood" as const, geometry: hoods.find((h) => `hood:${h.slug}` === r)?.geometry ?? null }
+      : { kind: "area" as const, id: Number(r.split(":")[1]) });
+  }, [response, hoods]);
 
   const map = (
     <ExploreMap
@@ -206,6 +226,7 @@ export default function DiscoveryNextPage() {
       fit={fit}
       showZoning={showZoning}
       walkMiles={walkPreview}
+      highlight={highlight}
       onView={setView}
       onPickArea={pickArea}
       sortKey={response?.cqs.sort.key ?? registry?.defaultSort.key ?? "lot_size"}
@@ -227,10 +248,11 @@ export default function DiscoveryNextPage() {
   };
   const filterBar = registry ? (
     <FilterBar registry={registry} panel={response ? search.draft.panelState : quickPanel(quick)}
-      scope={response ? search.draft.scope ?? null : null} onApply={applyFilters} onWalkPreview={setWalkPreview} compact={phone} />
+      scope={response ? search.draft.scope ?? null : null} onApply={applyFilters} onWalkPreview={setWalkPreview}
+      onPending={setBarPending} compact={phone} />
   ) : null;
   const searchBox = (
-    <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onArea={pickArea} busy={search.loading} disabled={!registry} />
+    <SearchBox text={text} setText={setText} onSubmit={submit} onAddress={pickAddress} onPlace={pickPlace} hoods={hoods} busy={search.loading} disabled={!registry} />
   );
   const focusToggle = response && !phone ? (
     <div role="group" aria-label={t("discovery.focus.label")} className="flex shrink-0 rounded-xl bg-nx-ink/5 p-1">
@@ -440,9 +462,9 @@ function openProfile(navigate: ReturnType<typeof useNavigate>, row: ResultRow) {
 
 // ---------------------------------------------------------------- the search box
 
-function SearchBox({ text, setText, onSubmit, onAddress, onArea, busy, disabled }: {
+function SearchBox({ text, setText, onSubmit, onAddress, onPlace, hoods, busy, disabled }: {
   text: string; setText: (s: string) => void; onSubmit: (s?: string) => void; onAddress: (s: AddressSuggestion) => void;
-  onArea: (id: number) => void; busy: boolean; disabled: boolean;
+  onPlace: (p: AreaPlace) => void; hoods: Hood[]; busy: boolean; disabled: boolean;
 }) {
   const { t } = useTranslation("next");
   const [open, setOpen] = useState(false);
@@ -456,11 +478,12 @@ function SearchBox({ text, setText, onSubmit, onAddress, onArea, busy, disabled 
     return () => window.clearTimeout(timer);
   }, [text, isAddress]);
   const addresses = isAddress ? found.list : [];
-  const areas = areaSuggestions(text, COMMUNITY_AREAS);
+  const places = placeSuggestions(text, COMMUNITY_AREAS, hoods);
   type Opt = { key: string; icon: LucideIcon; label: string; hint: string; run: () => void };
   const opts: Opt[] = [
     ...addresses.map((a) => ({ key: `a${a.address}`, icon: MapPin, label: a.address, hint: t("discovery.box.address"), run: () => { setText(a.address); onAddress(a); } })),
-    ...areas.map((a) => ({ key: `n${a.id}`, icon: MapIcon, label: a.name, hint: t("discovery.box.area"), run: () => { setText(a.name); onArea(a.id); } })),
+    ...places.map((p) => ({ key: p.kind === "hood" ? `h${p.slug}` : `n${p.id}`, icon: MapIcon, label: p.name,
+      hint: t(p.kind === "hood" ? "discovery.box.hood" : "discovery.box.area"), run: () => { setText(p.name); onPlace(p); } })),
     ...(text.trim() && !/^\d/.test(text.trim()) ? [{ key: "d", icon: Search, label: text.trim(), hint: t("discovery.box.describe"), run: () => onSubmit(text) }] : []),
   ];
   const show = open && opts.length > 0;

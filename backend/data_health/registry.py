@@ -405,6 +405,11 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         frozen=Frozen("2015-08-15", "footprints from 2015"),
     ),
     _socrata(
+        CITY, "y6yq-dbs2", "chi.neighborhoods", "Boundaries - Neighborhoods", "City of Chicago",
+        "backend/discovery/neighborhoods.py", surfaces=("discovery",), fact_keys=(),
+        frozen=Frozen("2012-12-18", "the City's 98 named neighborhoods; committed copy backend/discovery/neighborhoods.geojson"),
+    ),
+    _socrata(
         CITY, "igwz-8jzy", "chi.community_areas", "Boundaries - Community Areas", "City of Chicago",
         "backend/config.py", surfaces=("profile", "chat"), fact_keys=("geo.community_area",),
         frozen=Frozen("2025-04-22", "community area boundaries"),
@@ -772,7 +777,7 @@ _VALUE_CONTRACTS: dict[str, tuple[ValueSpec, ...]] = {
 # Datasets whose row count is fixed by law or by the map: the wards (50), community areas (77), ward offices,
 # Chicago's six Enterprise Zones.
 _COUNT_BANDS: dict[str, tuple[int, int]] = {
-    "chi.wards": (50, 50), "chi.community_areas": (77, 77), "chi.ward_offices": (45, 55),
+    "chi.wards": (50, 50), "chi.community_areas": (77, 77), "chi.neighborhoods": (98, 98), "chi.ward_offices": (45, 55),
     "chi.enterprise_zones": (6, 6),
 }
 

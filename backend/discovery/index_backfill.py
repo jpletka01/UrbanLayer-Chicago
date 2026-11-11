@@ -32,7 +32,7 @@ from backend.discovery.lot_sources import DEFAULT_PATH as SOURCES_PATH
 log = logging.getLogger(__name__)
 
 # Keys this pass owns: cleared before each fill so a rerun never keeps a stale answer.
-OWNED = ("lot_width_ft", "narrow_strip", "bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
+OWNED = ("hood", "lot_width_ft", "narrow_strip", "bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
          "warn_landmark")
 
 
@@ -110,9 +110,14 @@ def enrich_rows(rows: list[tuple], *, ptaxsim: Path, sources: Path = SOURCES_PAT
     src = LotSources.load(sources)
     pending = pending_rezoning_pin10s(pending_db) if pending_db else set()
     lots = lot_outlines(ptaxsim, {r[0].replace("-", "")[:10] for r in rows})
-    for pin, _lat, _lon, attrs, _regions in rows:
+    from backend.discovery.neighborhoods import neighborhood_of
+
+    for pin, lat, lon, attrs, _regions in rows:
         p = pin.replace("-", "")
         enrich(attrs, p, lots.get(p[:10]), src, pending)
+        hood = neighborhood_of(lat, lon)  # the City's named neighborhood (Item 104)
+        if hood:
+            attrs["hood"] = hood
     complex_room(rows)
 
 

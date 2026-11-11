@@ -1225,8 +1225,9 @@
     },
     "box": {
       "address": "Dirección",
-      "area": "Comunidad",
-      "describe": "Describir"
+      "area": "Área comunitaria",
+      "describe": "Describir",
+      "hood": "Colonia"
     },
     "measure": {
       "colorBy": "Colorear terrenos por",
@@ -1589,7 +1590,8 @@
       "fresh_comps": "Departamentos y comercios vendidos en 6 meses",
       "undervalued_mf": "Edificios de 2 a 6 en la cuarta parte más barata por pie²",
       "adu_2flats": "Faltan las áreas de casa de cochera en el índice"
-    }
+    },
+    "or": " o "
   },
   "map": {
     "key": "Leyenda del mapa",

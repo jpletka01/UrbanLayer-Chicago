@@ -447,6 +447,15 @@ def _distribution(version: str, filter_id: str) -> dict:
     return out
 
 
+@router.get("/neighborhoods")
+def neighborhood_outlines() -> Response:
+    """The City's 98 named neighborhoods (Item 104): names, slugs (the `hood:<slug>` region) and outlines."""
+    from backend.discovery.neighborhoods import geojson_bytes
+
+    return Response(content=geojson_bytes(), media_type="application/geo+json",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
 @router.get("/areas")
 def community_area_outlines() -> Response:
     """The 77 community areas, simplified to about 15 m, with a label point each: the new map's city view."""

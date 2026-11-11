@@ -250,3 +250,18 @@ def test_a_city_owned_lot_with_no_footprint_has_no_building():
     b = {"land_sqft": 3125.0, "density_band": 1.2}
     enrich(b, "99999999990000", LOT, src, set())
     assert "bldg_sqft" not in b and b["bldg_sqft_unknown"] == "no_footprint"
+
+
+def test_neighborhoods_are_places_the_reader_understands_and_a_region_the_index_matches():
+    from backend.discovery.compile_text import parse
+    from backend.discovery.neighborhoods import names, neighborhood_of
+    from backend.discovery.parcel import DictParcel
+
+    assert len(names()) == 98 and names()["wicker_park"] == "Wicker Park"
+    assert neighborhood_of(41.9097, -87.6773) == "wicker_park"  # 1601 N Milwaukee Ave
+    f = parse("vacant lots in Wicker Park or Bucktown")
+    assert f.filters["neighborhood"].predicate.regions == ["hood:wicker_park", "hood:bucktown"]
+    assert f.filters["vacancy"] and f.meta.textResidual == []
+    assert parse("teardowns in austin").filters["is_teardown_candidate"]
+    assert DictParcel("1", {"hood": "wicker_park"}).in_region("hood:wicker_park")
+    assert not DictParcel("2", {"hood": "bucktown"}).in_region("hood:wicker_park")

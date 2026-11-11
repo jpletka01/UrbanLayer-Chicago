@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ResultRow } from "../../discovery/types";
 import { shapePath } from "./discoveryData";
 import {
-  areaSuggestions, cardModel, clampMiles, classifyQuery, measureColorExpr, measureSteps, milesBetween, quickFromPanel,
+  areaSuggestions, cardModel, clampMiles, classifyQuery, measureColorExpr, measureSteps, milesBetween, placeRegion, placeSuggestions, quickFromPanel,
   quickPanel, ringMiles, ringPolygon, ringRegion,
 } from "./discoveryModel";
 
@@ -85,5 +85,19 @@ describe("a lot's picture", () => {
     const d = shapePath({ type: "Polygon", coordinates: [[[-87.7, 41.9], [-87.6999, 41.9], [-87.6999, 41.9003], [-87.7, 41.9003], [-87.7, 41.9]]] }, 160, 72);
     expect(d).toMatch(/^M[\d.]+,[\d.]+L/);
     for (const n of d!.match(/[\d.]+/g)!.map(Number)) expect(n).toBeLessThanOrEqual(160);
+  });
+});
+
+describe("places: the City's neighborhoods and its community areas", () => {
+  const HOODS = [{ slug: "wicker_park", name: "Wicker Park" }, { slug: "logan_square", name: "Logan Square" }];
+  it("suggests neighborhoods first, then community areas not already named that way", () => {
+    expect(placeSuggestions("lo", AREAS, HOODS)).toEqual([{ kind: "hood", slug: "logan_square", name: "Logan Square" }]);
+    expect(placeSuggestions("wic", AREAS, HOODS)).toEqual([{ kind: "hood", slug: "wicker_park", name: "Wicker Park" }]);
+    expect(placeSuggestions("west", AREAS, HOODS)).toEqual([{ kind: "area", id: 24, name: "West Town" }]);
+  });
+  it("reads a typed neighborhood as a place, and gives each place its region handle", () => {
+    expect(classifyQuery("wicker park", AREAS, HOODS)).toEqual({ kind: "hood", slug: "wicker_park", name: "Wicker Park" });
+    expect(placeRegion({ kind: "hood", slug: "wicker_park", name: "Wicker Park" })).toBe("hood:wicker_park");
+    expect(placeRegion({ kind: "area", id: 24, name: "West Town" })).toBe("neighborhood:24");
   });
 });

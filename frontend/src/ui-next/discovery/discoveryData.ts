@@ -136,3 +136,22 @@ export function shapePath(g: GeoJSON.Geometry, w: number, h: number, pad = 6): s
   const oy = (h - (maxY - minY) * s) / 2;
   return rings.map((r) => r.map(([x, y], i) => `${i ? "L" : "M"}${(ox + (x * k - minX) * s).toFixed(1)},${(oy + (maxY - y) * s).toFixed(1)}`).join("") + "Z").join("");
 }
+
+export interface Hood { slug: string; name: string; geometry: GeoJSON.Geometry }
+let hoodsPromise: Promise<Hood[]> | null = null;
+/** The City's 98 named neighborhoods (Item 104): names for the search box and chips, outlines for the map. */
+export function fetchNeighborhoods(): Promise<Hood[]> {
+  hoodsPromise ??= fetch(`${API_BASE}/api/discovery/neighborhoods`)
+    .then((r) => (r.ok ? r.json() : { features: [] }))
+    .then((fc: GeoJSON.FeatureCollection) => fc.features.map((f) => ({
+      slug: String(f.properties?.slug), name: String(f.properties?.name), geometry: f.geometry,
+    })))
+    .catch(() => { hoodsPromise = null; return []; });
+  return hoodsPromise;
+}
+
+export function useNeighborhoods(): Hood[] {
+  const [hoods, setHoods] = useState<Hood[]>([]);
+  useEffect(() => { let live = true; fetchNeighborhoods().then((h) => { if (live) setHoods(h); }); return () => { live = false; }; }, []);
+  return hoods;
+}

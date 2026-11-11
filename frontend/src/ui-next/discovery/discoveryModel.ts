@@ -144,14 +144,20 @@ export function cardModel(row: ResultRow): CardModel {
 
 // ---------------------------------------------------------------- the search box
 
-export type SearchKind = { kind: "address" } | { kind: "area"; id: number; name: string } | { kind: "describe" };
+export type SearchKind =
+  | { kind: "address" } | { kind: "area"; id: number; name: string } | { kind: "hood"; slug: string; name: string } | { kind: "describe" };
+
+/** A place to search within: one of the City's 98 neighborhoods, else one of the 77 community areas (Item 104). */
+export type Place = { kind: "hood"; slug: string; name: string } | { kind: "area"; id: number; name: string };
+export const placeRegion = (p: Place) => (p.kind === "hood" ? `hood:${p.slug}` : `neighborhood:${p.id}`);
 
 /** What the one search box was given: an address (starts with a house number), a community area by name, or a
     description for the rule-based compiler. */
-export function classifyQuery(text: string, areas: Record<number, string>): SearchKind {
+export function classifyQuery(text: string, areas: Record<number, string>, hoods: Array<{ slug: string; name: string }> = []): SearchKind {
   const t = text.trim();
   if (/^\d+\s+\S/.test(t)) return { kind: "address" };
   const lower = t.toLowerCase();
+  for (const h of hoods) if (h.name.toLowerCase() === lower) return { kind: "hood", slug: h.slug, name: h.name };
   for (const [id, name] of Object.entries(areas)) {
     if (name.toLowerCase() === lower) return { kind: "area", id: Number(id), name };
   }
@@ -163,9 +169,21 @@ export function areaSuggestions(text: string, areas: Record<number, string>, lim
   const t = text.trim().toLowerCase();
   if (t.length < 2 || /^\d/.test(t)) return [];
   return Object.entries(areas)
-    .filter(([, name]) => name.toLowerCase().split(/[\s-]+/).some((w) => w.startsWith(t)) || name.toLowerCase().startsWith(t))
+    .filter(([, name]) => matchesStart(name, t))
     .slice(0, limit)
     .map(([id, name]) => ({ id: Number(id), name }));
+}
+
+const matchesStart = (name: string, t: string) => name.toLowerCase().startsWith(t) || name.toLowerCase().split(/[\s-]+/).some((w) => w.startsWith(t));
+
+/** Places matching the typed text: neighborhoods first, then community areas not already named that way. */
+export function placeSuggestions(text: string, areas: Record<number, string>, hoods: Array<{ slug: string; name: string }>, limit = 5): Place[] {
+  const t = text.trim().toLowerCase();
+  if (t.length < 2 || /^\d/.test(t)) return [];
+  const out: Place[] = hoods.filter((h) => matchesStart(h.name, t)).map((h) => ({ kind: "hood", slug: h.slug, name: h.name }));
+  const named = new Set(out.map((p) => p.name.toLowerCase()));
+  for (const a of areaSuggestions(text, areas, limit)) if (!named.has(a.name.toLowerCase())) out.push({ kind: "area", id: a.id, name: a.name });
+  return out.slice(0, limit);
 }
 
 /** The new page's default order: most room to build first (lots with no figure last; the server sorts). */

@@ -17,7 +17,7 @@ import {
 const fmtFor = (lang: string) => new Intl.NumberFormat(lang.startsWith("es") ? "es-MX" : "en-US", { maximumFractionDigits: 2 });
 
 export function FilterBar({
-  registry, panel, scope, onApply, onWalkPreview, compact,
+  registry, panel, scope, onApply, onWalkPreview, onPending, compact,
 }: {
   registry: Registry;
   panel: PanelState;
@@ -25,6 +25,8 @@ export function FilterBar({
   onApply: (panel: PanelState) => void;
   /** The transit panel's walk, in miles, while it is open (the map draws it around the L stops); null = none. */
   onWalkPreview?: (miles: number | null) => void;
+  /** The choices waiting to be shown (null = none): a place picked meanwhile takes them along. */
+  onPending?: (draft: PanelState | null) => void;
   /** A phone: the panel opens as a bottom sheet. */
   compact: boolean;
 }) {
@@ -41,6 +43,10 @@ export function FilterBar({
   const setDraft = (fn: (d: PanelState) => PanelState) => setPending({ base, draft: fn(draft) });
   const count = useLiveCount(registry, draft, scope, dirty || open !== null);
   const apply = () => { onApply(draft); setPending(null); };
+  const draftKey = JSON.stringify(draft);
+  const pendingRef = useRef(onPending);
+  useEffect(() => { pendingRef.current = onPending; });
+  useEffect(() => { pendingRef.current?.(dirty ? draft : null); }, [draftKey, dirty]); // eslint-disable-line react-hooks/exhaustive-deps
   const buttons = useRef<Record<string, HTMLButtonElement | null>>({});
   const close = () => {
     const id = open?.id;

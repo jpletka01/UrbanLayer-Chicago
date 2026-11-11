@@ -1225,8 +1225,9 @@
     },
     "box": {
       "address": "Address",
-      "area": "Neighborhood",
-      "describe": "Describe"
+      "area": "Community area",
+      "describe": "Describe",
+      "hood": "Neighborhood"
     },
     "measure": {
       "colorBy": "Color lots by",
@@ -1589,7 +1590,8 @@
       "fresh_comps": "Apartments and commercial sold in 6 months",
       "undervalued_mf": "2–6 flats in the cheapest quarter per sq ft",
       "adu_2flats": "Needs coach-house areas in the index"
-    }
+    },
+    "or": " or "
   },
   "map": {
     "key": "Map key",

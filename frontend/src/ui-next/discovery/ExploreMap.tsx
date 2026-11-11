@@ -46,6 +46,8 @@ export interface ExploreMapProps {
   /** Frame a new search's matches once (`key` changes per search). */
   fit?: { bbox: [number, number, number, number]; key: unknown } | null;
   showZoning: boolean;
+  /** The places the search is limited to, outlined (a neighborhood's outline, or a community area by number). */
+  highlight?: Array<{ kind: "hood"; geometry: GeoJSON.Geometry | null } | { kind: "area"; id: number }> | null;
   /** The Transit panel's walk, in miles: a ring of that size around every L stop (null = none). */
   walkMiles?: number | null;
   onView: (v: ViewBox) => void;
@@ -97,6 +99,8 @@ function ownPaint(theme: Theme, measure: MeasureId, dim: boolean) {
     "walk-line": { "line-color": p.lot, "line-width": 1.2, "line-opacity": 0.55 },
     "ring-fill": { "fill-color": p.lot, "fill-opacity": 0.06 },
     "ring-line": { "line-color": p.lot, "line-width": 2, "line-dasharray": [2, 1.5] },
+    "highlight-edge": { "line-color": p.lotEdge, "line-width": 6, "line-opacity": 0.9 },
+    "highlight-line": { "line-color": p.lot, "line-width": 2.5 },
     "ring-handle": { "circle-color": p.lotEdge, "circle-stroke-color": p.lot, "circle-stroke-width": 2.5, "circle-radius": 8 },
     "place-dot": { "circle-color": p.lot, "circle-stroke-color": p.lotEdge, "circle-stroke-width": 3, "circle-radius": 7 },
   } as Record<string, Record<string, unknown>>;
@@ -105,6 +109,7 @@ function ownPaint(theme: Theme, measure: MeasureId, dim: boolean) {
 function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean, hasParcels: boolean, grid: MapTiles["grid"]) {
   const paint = ownPaint(theme, measure, dim);
   map.addSource("walk", { type: "geojson", data: EMPTY });
+  map.addSource("highlight", { type: "geojson", data: EMPTY });
   map.addSource("areas", { type: "geojson", data: EMPTY });
   map.addSource("area-labels", { type: "geojson", data: EMPTY });
   map.addSource("ring", { type: "geojson", data: EMPTY });
@@ -135,6 +140,8 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
     map.addLayer({ id: "lot-match", type: "line", source: "parcels", "source-layer": "parcels", paint: paint["lot-match"] as never });
   }
   map.addLayer({ id: "ring-line", type: "line", source: "ring", paint: paint["ring-line"] as never });
+  map.addLayer({ id: "highlight-edge", type: "line", source: "highlight", paint: paint["highlight-edge"] as never });
+  map.addLayer({ id: "highlight-line", type: "line", source: "highlight", paint: paint["highlight-line"] as never });
   map.addLayer({
     id: "area-label", type: "symbol", source: "area-labels", maxzoom: LOTS_MIN_ZOOM,
     layout: { "text-field": ["get", "text"], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-padding": 4,
@@ -151,7 +158,7 @@ const unknownFilter = (m: MeasureId) => ["!", ["has", MEASURE_PROP[m]]] as never
 interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; lookup: DiscoveryOutlineLookup | null }
 
 export function ExploreMap({
-  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, walkMiles = null, onView, onPickArea, sortKey, className,
+  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
 }: ExploreMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -356,6 +363,34 @@ export function ExploreMap({
       ? { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Point", coordinates: [place.lon, place.lat] }, properties: {} }] }
       : EMPTY);
   }, [ring, place, ready]);
+
+  // The places the search is limited to: outlined, and framed once per new outline.
+  const highlightKey = JSON.stringify((highlight ?? []).map((h) => (h.kind === "area" ? h.id : !!h.geometry)));
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const geoms: GeoJSON.Geometry[] = [];
+    for (const h of highlight ?? []) {
+      if (h.kind === "hood" && h.geometry) geoms.push(h.geometry);
+      if (h.kind === "area") {
+        const f = areas?.features.find((x) => Number(x.properties?.ca) === h.id);
+        if (f?.geometry) geoms.push(f.geometry);
+      }
+    }
+    (map.getSource("highlight") as GeoJSONSource | undefined)?.setData({
+      type: "FeatureCollection", features: geoms.map((g) => ({ type: "Feature", geometry: g, properties: {} })),
+    });
+    if (!geoms.length) return;
+    let w = 180, s = 90, e = -180, n = -90;
+    const visit = (c: unknown): void => {
+      if (Array.isArray(c) && typeof c[0] === "number") { const [x, y] = c as number[]; w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y); }
+      else if (Array.isArray(c)) c.forEach(visit);
+    };
+    geoms.forEach((g) => visit((g as GeoJSON.Polygon).coordinates));
+    map.fitBounds([[w, s], [e, n]], { padding: 60, duration: reducedMotion() ? 0 : 700, maxZoom: 16 });
+    // highlightKey stands for highlight.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightKey, ready, areas]);
 
   // Walking distance around the L stops while the Transit panel is open.
   const [stops, setStops] = useState<Array<[number, number]>>([]);
