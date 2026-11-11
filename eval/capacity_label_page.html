@@ -110,7 +110,7 @@ function drawSvg(ev) {
 }
 
 function defaults(ev) {
-  return (ev.lidar_2022 || []).map(x => ({ stories: x.stories_est,
+  return (ev.lidar_2022 || []).map(x => ({ stories: x.ignore ? 0 : (x.stories_permit ?? x.stories_est),
     accessory: x.height_ft < 15 && x.on_lot_sqft < 800 }));
 }
 
@@ -129,7 +129,8 @@ function render() {
       <div class="muted">${(l.hood || "").replaceAll("-", " ")} · PIN ${l.pin} · class ${l.class || "—"} · ${cur + 1} of ${LOTS.length}</div>
       <div style="margin-top:4px"><span class="chip">${l.stratum.replaceAll("_", " ")}</span>${l.complex_lots ? `<span class="chip">complex of ${l.complex_lots} lots</span>` : ""}${l.narrow_strip ? `<span class="chip">${l.lot_width_ft} ft wide</span>` : ""}</div></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-      ${sv ? `<a class="btn primary" href="${sv}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
+      ${sv ? `<a class="btn primary" href="${sv}" target="_blank" rel="noopener" title="${ev.street_view_snapped ? "From the address's street, facing the lot" : "From the lot (no street within 60 m)"}">Street View ↗</a>` : ""}
+      ${l.address ? `<a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(l.address.replace(/^~/, "") + ", Chicago, IL")}" target="_blank" rel="noopener">Address in Maps ↗</a>` : ""}
       <a class="btn" href="${ev.assessor}" target="_blank" rel="noopener">Assessor ↗</a>
       <a class="btn" href="${ev.map_link}" target="_blank" rel="noopener">Map ↗</a>
     </div>
@@ -141,7 +142,7 @@ function render() {
         ${dists.map(d => `<div>${d.zone} · ${pct(d.share)} of the lot · FAR ${d.far ?? "none"}</div>`).join("") || "<span class='muted'>No district found.</span>"}
       </div>
       <div class="card" style="margin-top:12px"><h2>Permits on this lot since 2015 (${(ev.permits || []).length})</h2>
-        ${(ev.permits || []).map(p => `<div class="permit"><strong>${p.type}</strong> · ${p.date} · ${p.cost ? "$" + fmt(p.cost) : ""}<br><span class="muted">${p.address}</span><br>${p.description}</div>`).join("") || "<span class='muted'>None of the large ones (new, demolition, renovation $250k+).</span>"}
+        ${(ev.permits || []).map(p => `<div class="permit"><strong>${p.type}</strong>${p.stories ? ` · <strong>${p.stories} stories</strong>` : ""} · ${p.date} · ${p.cost ? "$" + fmt(p.cost) : ""}<br><span class="muted">${p.address}</span><br>${p.description}</div>`).join("") || "<span class='muted'>None of the large ones (new, demolition, renovation $250k+).</span>"}
       </div>
       <div class="card" style="margin-top:12px"><h2>City footprints 2015</h2>
         ${(ev.city_footprints_2015 || []).map(f => `<div>${fmt(f.area_sqft)} sq ft · ${f.stories ?? "no"} stories</div>`).join("") || "<span class='muted'>None inside the lot.</span>"}
@@ -153,7 +154,8 @@ function render() {
         <p class="muted">Stories are pre-filled from the LiDAR height and run high on pitched roofs. Floor area counts what zoning counts: tick garages and sheds as not floor area.</p>
         <table><tr><th></th><th>On the lot</th><th>Highest point</th><th>Stories</th><th>Garage / shed</th></tr>
         ${(ev.lidar_2022 || []).map((x, i) => `<tr><td>${String.fromCharCode(65 + i)}</td><td>${fmt(x.on_lot_sqft)} sq ft</td><td>${Math.round(x.height_ft)} ft</td>
-          <td><input type="number" min="0" step="1" data-b="${i}" data-k="stories" value="${rows[i]?.stories ?? x.stories_est}"></td>
+          <td><input type="number" min="0" step="1" data-b="${i}" data-k="stories" value="${rows[i]?.stories ?? x.stories_est}">
+            ${x.stories_permit ? `<small class="muted">permit says ${x.stories_permit}</small>` : ""}${x.ignore === "neighbor_edge" ? `<small class="muted">edge of a neighbor's building (${pct(x.on_lot_sqft / x.outline_sqft)} on this lot)</small>` : ""}${x.ignore === "too_small" ? `<small class="muted">too small for a building (tree?)</small>` : ""}</td>
           <td><input type="checkbox" data-b="${i}" data-k="accessory" ${rows[i]?.accessory ? "checked" : ""}></td></tr>`).join("")}
         <tr><td>+</td><td><input type="number" min="0" id="exSqft" value="${extra.sqft}"> sq ft</td><td class="muted">not outlined</td><td><input type="number" min="0" id="exStories" value="${extra.stories}"></td><td></td></tr>
         </table>

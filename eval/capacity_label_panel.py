@@ -274,13 +274,111 @@ def stories_from_height(h: float) -> int:
     return max(1, int(s))
 
 
+# Stories a permit states ("ERECT 4 STORY 6 D.U. BUILDING"). The owner trusts a permit's stories over LiDAR's
+# estimate from height (2026-11-11): a 4-story permit read 5 from LiDAR.
+_WORD_N = {"ONE": 1, "TWO": 2, "THREE": 3, "FOUR": 4, "FIVE": 5, "SIX": 6, "SEVEN": 7, "EIGHT": 8, "NINE": 9, "TEN": 10}
+_STORIES_RE = re.compile(r"\b(\d{1,2}|" + "|".join(_WORD_N) + r")[\s-]*(?:STORY|STORIES|STOREY|STY)\b", re.I)
+
+
+def permit_stories(description: str) -> int | None:
+    m = _STORIES_RE.search(description or "")
+    if not m:
+        return None
+    v = m.group(1).upper()
+    n = _WORD_N.get(v) or int(v)
+    return n if 1 <= n <= 60 else None
+
+
+# LiDAR parts that aren't this lot's building (owner, 2026-11-11, and his batch-1 labels: the parts he set to 0
+# stories were mostly under 10% of their outline on the lot). A tiny part is a tree, an AC unit or a misdraw.
+TREE_MAX_SQFT = 150
+NEIGHBOR_EDGE_SHARE = 0.10
+NEIGHBOR_EDGE_MAX_SQFT = 400
+
+
+def ignore_reason(on_lot: float, outline: float) -> str | None:
+    if on_lot < TREE_MAX_SQFT:
+        return "too_small"
+    if outline > 0 and on_lot / outline < NEIGHBOR_EDGE_SHARE and on_lot < NEIGHBOR_EDGE_MAX_SQFT:
+        return "neighbor_edge"
+    return None
+
+
+# Street View: Google opens the panorama nearest the point it's sent, and a lot's middle is often nearer the alley.
+# Stand on the address's own street (else the nearest named street) and face the lot: the app's rule
+# (frontend/src/ui-next/map/streetView.ts, Item 94), here in Python for the labeling page.
+ROADS_DATASET = "pr57-gg9e"
+SNAP_MAX_M = 60.0
+_KX = 111_320 * 0.7450  # metres per degree of longitude at 41.84° N
+_KY = 110_540
+
+
+def _metric(g):
+    import shapely
+    return shapely.transform(g, lambda xy: xy * [_KX, _KY])
+
+
+def load_roads(cache: Path) -> list[tuple[str, Any]]:
+    """[(lower-case sign-style name, line in metres)]; fetched once from the City (no app token needed) and cached."""
+    import shapely
+    from shapely.geometry import shape
+
+    from backend.map_tiles.base_tiles import ROAD_CLASSES, _fetch, street_name
+
+    if cache.exists():
+        rows = json.loads(cache.read_text())
+    else:
+        rows = _fetch(ROADS_DATASET, "the_geom,class,status,pre_dir,street_nam,street_typ")
+        cache.write_text(json.dumps(rows))
+    out = []
+    for r in rows:
+        kind = ROAD_CLASSES.get(str(r.get("class", "")).strip(), (None, 0))[0]
+        if kind in (None, "ramp", "highway") or not r.get("the_geom"):
+            continue
+        name = street_name(r.get("pre_dir"), r.get("street_nam"), r.get("street_typ")).lower()
+        if name:
+            out.append((name, _metric(shapely.make_valid(shape(r["the_geom"])))))
+    return out
+
+
+def street_of_address(address: str | None) -> str | None:
+    if not address:
+        return None
+    s = re.sub(r"^~", "", address).strip()
+    s = re.sub(r"\b(unit|apt|#|ste|suite)\b.*$", "", s, flags=re.I)
+    s = re.sub(r"^\d+[A-Z]?(-\d+[A-Z]?)?\s+", "", s, flags=re.I)
+    s = re.sub(r"\s+", " ", s).strip().lower()
+    return s or None
+
+
+def street_viewpoint(lot, address: str | None, roads: list[tuple[str, Any]], tree) -> tuple[float, float, int | None]:
+    """(lat, lon, heading): the nearest spot on the address's street within 60 m, else on the nearest named street;
+    the heading faces the lot. The lot's own interior point (no heading) when no street is near."""
+    import math
+
+    from shapely.ops import nearest_points
+
+    rep = lot.representative_point()
+    target = _metric(rep)
+    want = street_of_address(address)
+    near = [roads[i] for i in tree.query(target.buffer(SNAP_MAX_M))]
+    pool = [g for n, g in near if n == want] or [g for _, g in near]
+    best = min(((g.distance(target), g) for g in pool), default=None, key=lambda t: t[0])
+    if best is None or best[0] > SNAP_MAX_M:
+        return rep.y, rep.x, None
+    pt = nearest_points(best[1], target)[0]
+    heading = round((math.degrees(math.atan2(target.x - pt.x, target.y - pt.y)) + 360) % 360)
+    return pt.y / _KY, pt.x / _KX, heading
+
+
 def evidence(panel_path: Path, permits_path: Path, lidar_path: Path, out: Path) -> list[dict[str, Any]]:
     rows = evidence_rows(json.loads(panel_path.read_text())["lots"], permits_path, lidar_path)
     out.write_text(json.dumps(rows, indent=1))
     return rows
 
 
-def evidence_rows(panel: list[dict[str, Any]], permits_path: Path, lidar_path: Path) -> list[dict[str, Any]]:
+def evidence_rows(panel: list[dict[str, Any]], permits_path: Path, lidar_path: Path,
+                  roads_cache: Path | None = None) -> list[dict[str, Any]]:
     import shapely
     from shapely.strtree import STRtree
 
@@ -308,6 +406,8 @@ def evidence_rows(panel: list[dict[str, Any]], permits_path: Path, lidar_path: P
             l_h.append((oid, h))
     ld.close()
     l_tree = STRtree(l_geoms)
+    roads = load_roads(roads_cache or lidar_path.with_name("roads_pr57-gg9e.json"))
+    r_tree = STRtree([g for _, g in roads])
 
     rows = []
     for lot in panel:
@@ -337,11 +437,12 @@ def evidence_rows(panel: list[dict[str, Any]], permits_path: Path, lidar_path: P
             if on_sqft < 50:
                 continue
             oid, h = l_h[i]
-            lid.append({"oid": oid, "on_lot_sqft": round(on_sqft), "outline_sqft": round(area_sqft(l_geoms[i])),
-                        "height_ft": round(h, 1), "stories_est": stories_from_height(h), "rings": _rings(on)})
+            outline_sqft = area_sqft(l_geoms[i])
+            lid.append({"oid": oid, "on_lot_sqft": round(on_sqft), "outline_sqft": round(outline_sqft),
+                        "height_ft": round(h, 1), "stories_est": stories_from_height(h),
+                        "ignore": ignore_reason(on_sqft, outline_sqft), "rings": _rings(on)})
+        lid.sort(key=lambda x: -x["on_lot_sqft"])
         ev["lidar_2022"] = lid
-        ev["lidar_floor_area_est"] = round(sum(x["on_lot_sqft"] * x["stories_est"] for x in lid))
-        ev["lidar_coverage"] = round(sum(x["on_lot_sqft"] for x in lid) / max(1, ev["lot_sqft_outline"]), 3)
         # Permits on the lot: by PIN, else by point inside the lot (3 m slack).
         seen, plist = set(), []
         cands = list(by_pin.get(p10, []))
@@ -356,9 +457,24 @@ def evidence_rows(panel: list[dict[str, Any]], permits_path: Path, lidar_path: P
                 "address": " ".join(x for x in (r.get("street_number"), r.get("street_direction"), r.get("street_name")) if x),
                 "description": (r.get("work_description") or "")[:240],
             })
+        for q in plist:
+            q["stories"] = permit_stories(q["description"]) if q["type"] == "NEW CONSTRUCTION" else None
         ev["permits"] = sorted(plist, key=lambda x: x["date"], reverse=True)
-        ev["street_view"] = (f"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint="
-                             f"{rep.y:.6f},{rep.x:.6f}")
+        # The newest new-construction permit that states stories, issued before the LiDAR flight (a later building
+        # isn't in the LiDAR at all): its stories replace LiDAR's estimate on the lot's largest building.
+        stated = [q for q in ev["permits"] if q["stories"] and q["date"] < LIDAR_FLOWN]
+        ev["permit_stories"] = {"stories": stated[0]["stories"], "date": stated[0]["date"]} if stated else None
+        main = next((x for x in lid if not x["ignore"]), None)
+        if main and stated:
+            main["stories_permit"] = stated[0]["stories"]
+        kept = [x for x in lid if not x["ignore"]]
+        ev["lidar_floor_area_est"] = round(sum(x["on_lot_sqft"] * x.get("stories_permit", x["stories_est"]) for x in kept))
+        ev["lidar_floor_area_raw"] = round(sum(x["on_lot_sqft"] * x["stories_est"] for x in lid))
+        ev["lidar_coverage"] = round(sum(x["on_lot_sqft"] for x in kept) / max(1, ev["lot_sqft_outline"]), 3)
+        lat, lon, heading = street_viewpoint(g, lot.get("address"), roads, r_tree)
+        ev["street_view"] = (f"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint={lat:.6f},{lon:.6f}"
+                             + (f"&heading={heading}" if heading is not None else ""))
+        ev["street_view_snapped"] = heading is not None
         ev["map_link"] = f"https://www.google.com/maps/search/?api=1&query={rep.y:.6f},{rep.x:.6f}"
         ev["assessor"] = f"https://www.cookcountyassessor.com/pin/{re.sub(r'[^0-9]', '', lot['pin'])}"
         rows.append(ev)
@@ -394,7 +510,7 @@ def rule_v2(lot: dict[str, Any], ev: dict[str, Any]) -> tuple[str, str]:
         return "none", "new building since the LiDAR"
     if any(q["type"] == "WRECKING/DEMOLITION" for q in after):
         return "none", "demolition since the LiDAR"
-    parts = [x for x in ev.get("lidar_2022", []) if x["on_lot_sqft"] >= LIDAR_MIN_PART]
+    parts = [x for x in ev.get("lidar_2022", []) if not x.get("ignore") and x["on_lot_sqft"] >= LIDAR_MIN_PART]
     if any(x["outline_sqft"] >= 1000 and x["on_lot_sqft"] < CROSSING_SHARE * x["outline_sqft"] for x in parts):
         return "none", "a building crosses the lot line"
     rec = lot.get("bldg_sqft") or 0.0
