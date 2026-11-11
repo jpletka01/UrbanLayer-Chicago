@@ -1113,3 +1113,60 @@ The City's stories run high against the Assessor too (median 1.19; the Assessor'
 *Revisit if* the owner wants checked Assessor addresses to count as own addresses for the hidden-by-default rule; the Assessor's `prop_address_full` format changes (watch `placeholder` and `no_street` in the eval); the centerlines' ranges are replaced; or labeling finds a passing address on the wrong lot (tighten `TOLERANCE_NUMBERS`, which costs real addresses: calibration accepts 86% at 4).
 
 **Production steps** (server, after merge): if Item 104's steps have not run yet, its full `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources` now writes the address tables too; otherwise `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --addresses-only` adds them to `backend/data/discovery_lot_sources.db` (about 2 min). Then `docker compose run --rm --no-deps backend python -m backend.discovery.index_backfill` (rewrites the index's attrs in place and finalizes a new `data_version`; check `approximate_addresses.after` ≈ 37k), then restart the backend so it loads the new index. The parcel tiles carry no address and need no rebuild. Verify on the live API: `GET /api/discovery/parcel?pin=16-25-300-030-0000` gives `2626 S TROY ST`. The monthly `--refresh` keeps it through `enrich_rows`, but the address tables are refreshed only when `lot_sources` is rerun.
+
+## Item 110: which lots are physically empty, measured from what stands on them, not the tax class (2026-11-11)
+
+**Problem (owner, 2026-11-11):** "there's no way for someone to discover if there is a plot of land that doesn't have any buildings on it that is in a desirable area." Discovery decides "vacant" from the Assessor's class alone (`is_vacant` = class 1-xx) and hides land over an acre with no address of its own (Item 60), so empty land taxed some other way is missed, and empty land with no street number is hidden or mislabeled (Item 109).
+
+**Measured** (`eval/empty_land.py`; read-only, offline, no model calls; summary in `eval/results/2026-11-11-empty-land/summary.json`). For every base lot (590,174) the evidence is checked against its PTAXSIM outline:
+- the City's active footprints (`syp8-uezg`), counted when the footprint's interior point is inside the outline;
+- the County's 2022 LiDAR outlines (Item 105), counted when at least 8 ft tall and at least 150 sq ft of the outline is on the lot, and that is half the outline or 30% of the lot (one County outline often spans a row of houses or a building on several lots);
+- the City's demolition permits since 2006 (21,892) and new-construction permits since June 2022 (6,318), as points on the lot.
+
+The 30% lot-cover term came from the first run, where a half-the-outline rule alone called row houses empty.
+
+States:
+- **empty:** no structure in either source, or nothing in LiDAR plus a demolition permit showing the City's footprint is out of date;
+- **demolished since 2022:** a demolition permit after the flight;
+- **new construction:** a new building permitted since the flight;
+- **accessory only:** everything under 700 sq ft, a garage or shed;
+- **built**, or **disagree.**
+
+- *The two building sources agree on 92.4% of lots:* 84,827 both empty and 460,216 both with a structure. 30,097 have a LiDAR building but no City footprint, mostly commercial lots where the City's footprints have gaps. 14,569 have a City footprint but nothing in LiDAR.
+- *The City's footprints keep demolished buildings.* Of the 6,340 vacant-class lots with a footprint and no LiDAR building, 74.5% have a demolition permit on the lot, against 7.6% of 20,000 built houses and 3.8% of vacant lots both sources call empty. So a demolition permit plus an empty LiDAR overrides the footprint (6,282 lots).
+- *Against the owner's M4 labels (counts only; the labels file stays out of the repo):*
+  - **Precision of "empty":** of the 36 labeled lots this calls empty, the owner judged 27 empty and 9 built. 5 of those 9 carry his note that the address pointed at the house next door (Item 109's problem, not this one), so 27 of 31 (87%) excluding them.
+  - **Recall:** of his 35 empty lots, 27 are empty here (77%); 4 are accessory only (a neighbor's garage or shed), 3 disagree, 1 demolished since 2022.
+  - The sample is small; a Street View check of a fresh random sample of "empty" lots is the next measure.
+- *Citywide: 89,785 lots are empty, 1,796 demolished since 2022, 3,126 under new construction.* By kind of land:
+
+| Land | Lots | Empty | Note |
+|---|---|---|---|
+| Vacant class (1-xx), what the Vacancy filter shows today | 32,121 | 27,394 (85%) | 568 demolished since 2022, 455 new construction, 1,367 accessory, 345 built, 1,946 disagree |
+| City-owned (the City's land inventory) | 11,718 | 10,453 | all missed by the Vacancy filter (exempt class) |
+| Commercial 5-90 / 5-80 (minor improvement: mostly parking) | 13,597 | 11,988 | missed |
+| Residential classes | 452,902 | 5,409 | missed |
+| Exempt (not City-owned) | 36,831 | 23,493 | missed; includes school grounds, church lots, institutional land: buildable only case by case |
+| Side yard (2-41, held with the house next door) | 8,318 | 6,561 | missed; usually not a separate site |
+| Other commercial | 31,010 | 1,767 | missed |
+| Railroad | 2,771 | 2,472 | not a building site |
+
+- *The old building areas on empty lots.* Of the 8,011 vacant-class lots carrying an Assessor building area, 5,793 are empty and 475 demolished since 2022 (78%). 138 are built, 142 under new construction, 256 accessory, and 1,166 disagree. Those areas come from the last characteristics row of a demolished building (the Profile already drops it, `_chars_describe_prior_structure`), so the index understates room to build on them.
+- *Hidden and unaddressed.* 5,405 empty lots are hidden by default as unusual: 1,976 vacant class, 1,071 side yards, 927 exempt. 82,543 of the 89,785 (92%) have no City address of their own, which is why Item 109 and the "lot next to …" label matter.
+
+**Decision: go for a measured "physically empty" flag, built from the two building sources plus demolition and new-construction permits, never the tax class alone.**
+- Discovery needs it beside a `land_kind` (vacant class, City-owned, parking/minor improvement, side yard, exempt, railroad, other) so a search can ask for buildable empty land and leave out rail, side yards and institutional grounds.
+- On a vacant-class lot that is empty or demolished, the old Assessor building area is dropped (6,268 lots).
+- Next, in order (the plan the owner approved 2026-11-11):
+  - step 2: index fields + the area fix;
+  - step 3: hide by land kind (railroad, utility, narrow strip, common area), not by address;
+  - steps 4-6: the "Empty land" quick filter, true labels, search by PIN or block.
+  - Each is measured and needs the owner's review on localhost.
+
+*Alternatives rejected:*
+- **The tax class alone** (today): misses 10,453 City-owned and 11,988 parking or minor-improvement lots, and 15% of vacant-class lots aren't empty.
+- **City footprints alone:** they keep demolished buildings (the 74.5% above).
+- **LiDAR alone:** it is 2022, so it misses 1,796 later demolitions and 3,126 new buildings, and it can't see a garage under 8 ft.
+- **Satellite or Street View imagery classification:** a model call per lot, no.
+
+*Revisit if:* a Street View sample of "empty" lots finds precision under 90%; the City refreshes its footprints (the demolition override may become unnecessary); or the County publishes newer LiDAR.
