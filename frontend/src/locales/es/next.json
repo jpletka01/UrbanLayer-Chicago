@@ -1228,8 +1228,8 @@
     "inView_other": "{{n}} terrenos a la vista",
     "listThem": "Ver la lista",
     "capped": "Hay más coincidencias de las que el mapa puede marcar a la vez: acérquese",
-    "hiddenUnusual_one": "{{n}} terreno inusual oculto (vía férrea, servicios, área común o franja de menos de 16 pies).",
-    "hiddenUnusual_other": "{{n}} terrenos inusuales ocultos (vía férrea, servicios, áreas comunes o franjas de menos de 16 pies).",
+    "hiddenUnusual_one": "{{n}} terreno inusual oculto (vía férrea, área común o franja de menos de 16 pies).",
+    "hiddenUnusual_other": "{{n}} terrenos inusuales ocultos (vías férreas, áreas comunes o franjas de menos de 16 pies).",
     "show": "Mostrar",
     "focus": {
       "label": "Mostrar como",

@@ -244,6 +244,7 @@ def main() -> None:
 
     before = coverage((r[0], r[3]) for r in rows)
     approx_before = approximate()
+    unusual_before = sum(1 for r in rows if r[3].get("unusual"))
     enrich_rows(rows, ptaxsim=settings.ptaxsim_db_path, sources=args.sources,
                 pending_db=settings.discovery_index_path.parent / "pending_legislation.db")
     after = coverage((r[0], r[3]) for r in rows)
@@ -253,6 +254,8 @@ def main() -> None:
                       "empty_land": dict(collections.Counter(r[3]["land_kind"] for r in rows if r[3].get("empty_land"))),
                       "structure_by_kind": {k: dict(v) for k, v in _structure_by_kind(rows).items()},
                       "assessor_area_set_aside": sum(1 for r in rows if r[3].get("bldg_sqft_source") == "empty_lot"),
+                      "unusual": {"before": unusual_before, "after": sum(1 for r in rows if r[3].get("unusual")),
+                                  "empty_land_hidden": sum(1 for r in rows if r[3].get("unusual") and r[3].get("empty_land"))},
                       "seconds": round(time.monotonic() - t0, 1)}, indent=1))
     if args.report_only:
         return

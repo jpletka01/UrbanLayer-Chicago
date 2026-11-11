@@ -1223,3 +1223,24 @@ A copy without the table marks no lot empty. `lot_sources` reads the County copy
 2. `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --structures-only` (a few minutes; or the full `lot_sources` writes it).
 3. `... python -m backend.discovery.index_backfill`; check `empty_land` totals about 74k.
 4. Restart the backend.
+
+**Step 3: hidden by default by what the land is, not by whether it has an address (2026-11-11).** `index_build.unusual_rule` now hides three things:
+- railroad land (class RR);
+- vacant land on a development's shared outline (a common area);
+- any lot narrower than 16 ft.
+
+Item 60's "vacant over an acre with no street address of its own" is gone.
+
+*Measured on the local citywide index* (report-only backfill, `unusual` before/after):
+- **Today's 8,516 hidden lots:** 7,985 are strips under 16 ft and 531 are large vacant lots hidden only for lacking an address. Those 531 are not rail or utility strips: median 188 ft wide (10th percentile 102 ft), median about 2 acres, mostly zoned manufacturing (291) or planned development (163), and 373 of them are physically empty. They are the large sites a developer looks for, and now show.
+- **Railroad parcels:** 2,771, of which only 148 were hidden (as strips). They are now hidden, because a railroad parcel is not a building site.
+- **After:** 10,629 hidden. 2,991 empty-land lots stay hidden because they are strips under 16 ft (Item 104's rule, unchanged).
+
+*Utility land is not detected.* The Assessor has no utility class we can read without owner names, so the page now says "railroad or common land, or strips under 16 ft wide" and no longer claims utility (en + es-MX).
+
+*Alternatives rejected:*
+- **Keep the address rule:** it hid the 373 empty large sites.
+- **A width or length "corridor" rule for utility land:** the 531 lots are wide, and there was no measured corridor to target.
+- **Hide side yards (2-41):** they are ordinary residential parcels and never `empty_land`, so the empty-land filter already leaves them out.
+
+*Revisit if* the owner sees utility corridors among the large sites now shown.

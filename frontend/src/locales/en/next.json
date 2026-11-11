@@ -1228,8 +1228,8 @@
     "inView_other": "{{n}} lots in view",
     "listThem": "List them",
     "capped": "More matches than the map can outline at once: zoom in",
-    "hiddenUnusual_one": "{{n}} unusual lot hidden (rail, utility or common land, or a strip under 16 ft wide).",
-    "hiddenUnusual_other": "{{n}} unusual lots hidden (rail, utility or common land, or strips under 16 ft wide).",
+    "hiddenUnusual_one": "{{n}} unusual lot hidden (railroad or common land, or a strip under 16 ft wide).",
+    "hiddenUnusual_other": "{{n}} unusual lots hidden (railroad or common land, or strips under 16 ft wide).",
     "show": "Show",
     "focus": {
       "label": "Show as",

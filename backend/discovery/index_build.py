@@ -56,7 +56,6 @@ from backend.retrieval.zoning_definitions import get_zone_definition
 log = logging.getLogger(__name__)
 
 _BATCH = 100  # PINs per chunked `pin in (...)` join query
-UNUSUAL_VACANT_MIN_SQFT = 43_560  # one acre: the size above which a no-address vacant lot is "unusual" (Item 60)
 
 _LAND_USE_BY_PREFIX = {
     "0": "exempt", "1": "vacant", "2": "residential",
@@ -377,11 +376,11 @@ def assemble_parcel(
 
     derive_from_building(attrs, imp_share)
 
-    # "Unusual" parcels are hidden from Discovery by default (Jack, 2026-11-03; decision Item 60): VACANT land
-    # that is either over an acre with no street address of its own (rail, utility and common land: 86% of the
-    # 100,000 sq ft vacant lots had none) or on a development's shared outline (a common area, like the $1 parcel).
-    # Never a building: condo units and townhomes share outlines too (11,254 condo units in six areas) and are
-    # ordinary homes; with no geometry land area they just fall out of lot-size filters.
+    # "Unusual" parcels are hidden from Discovery by default (Jack, 2026-11-03; decision Items 60, 110): railroad
+    # land, VACANT land on a development's shared outline (a common area, like the $1 parcel), and strips under 16 ft
+    # (set in ``index_backfill``). Never a building on a shared outline: condo units and townhomes share outlines
+    # too (11,254 condo units in six areas) and are ordinary homes; with no geometry land area they just fall out of
+    # lot-size filters.
     attrs["unusual"] = unusual_rule(attrs)
 
     regions = [f"neighborhood:{neighborhood_ca}"] if neighborhood_ca is not None else []
@@ -389,13 +388,16 @@ def assemble_parcel(
 
 
 def unusual_rule(attrs: dict[str, Any]) -> bool:
-    """Hidden from Discovery by default (Items 60, 104): VACANT land over an acre with no street address of its own,
-    or on a development's shared outline; or ANY lot narrower than 16 ft (``narrow_strip``, set by ``lot_facts``)."""
-    vacant = bool(attrs.get("is_vacant"))
-    return bool(attrs.get("narrow_strip")) or (vacant and (
-        bool(attrs.get("shared_outline"))
-        or (not attrs.get("own_address") and (attrs.get("land_sqft") or 0) > UNUSUAL_VACANT_MIN_SQFT)
-    ))
+    """Hidden from Discovery by default, by what the land is, never by whether it has an address (Items 60, 104, 110):
+    railroad land (class RR); VACANT land on a development's shared outline (a common area); ANY lot narrower than
+    16 ft (``narrow_strip``, set by ``lot_facts``).
+
+    Item 110 dropped "vacant over an acre with no address of its own": those 531 lots were not rail or utility strips
+    (median 188 ft wide, about 2 acres, mostly manufacturing or planned-development zoning; 373 physically empty), so the
+    rule hid the large sites a developer looks for. Railroad parcels were visible before (2,623 of 2,771)."""
+    railroad = (str(attrs.get("class") or "").strip().upper() == "RR") or attrs.get("land_kind") == "railroad"
+    return bool(attrs.get("narrow_strip")) or railroad or (
+        bool(attrs.get("is_vacant")) and bool(attrs.get("shared_outline")))
 
 
 def derive_from_building(attrs: dict[str, Any], imp_share: float | None) -> None:

@@ -816,13 +816,14 @@ def test_shared_outline_pin10s_groups_identical_newest_boundaries(tmp_path):
     assert _shared_outline_pin10s(db, {"1428319102", "1428319103", "1428319104"}) == {"1428319102", "1428319103"}
 
 
-def test_unusual_is_vacant_land_only():
-    """Item 60: a vacant no-address lot over an acre, or vacant land on a shared outline; never a building."""
+def test_unusual_is_what_the_land_is_never_whether_it_has_an_address():
+    """Items 60, 110: railroad land, or vacant land on a shared outline; never a building; and no longer a large vacant
+    lot just because it has no street address of its own (those are the large sites a developer looks for)."""
     big = {"char_land_sf": "186214"}
     _, _, _, attrs, _ = _assemble(_SPINE59, chars=big, address="~9171 S HARVARD AVE")
-    assert attrs["unusual"] is True
-    _, _, _, attrs, _ = _assemble(_SPINE59, chars=big, address="9171 S HARVARD AVE")
-    assert attrs["unusual"] is False  # its own address
+    assert attrs["unusual"] is False
+    _, _, _, attrs, _ = _assemble({**_SPINE59, "class": "RR"}, chars=None, address="~9171 S HARVARD AVE")
+    assert attrs["unusual"] is True  # railroad land
     _, _, _, attrs, _ = _assemble(_SPINE59, chars=None, shared_outline=True, address="~2520 N LAKEVIEW AVE")
     assert attrs["unusual"] is True   # a development's common land
     condo = {"pin": "14211010541670", "class": "299", "lat": 41.94, "lon": -87.64}
