@@ -129,12 +129,13 @@ function render() {
   const sv = ev.street_view;
   document.getElementById("main").innerHTML = `
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
-    <div><h1>${l.address || "(no address)"}</h1>
+    <div><h1>${ev.assessor_address || l.address || "(no address)"}</h1>
+      ${ev.assessor_address && l.address && l.address.startsWith("~") ? `<div class="muted">The Assessor's address for this lot. The app shows <strong>${l.address}</strong>, the nearest address it had, which may be the house next door.</div>` : ""}
       <div class="muted">${(l.hood || "").replaceAll("-", " ")} · PIN ${l.pin} · class ${l.class || "—"} · ${cur + 1} of ${LOTS.length}</div>
       <div style="margin-top:4px"><span class="chip">${l.stratum.replaceAll("_", " ")}</span>${l.complex_lots ? `<span class="chip">complex of ${l.complex_lots} lots</span>` : ""}${l.narrow_strip ? `<span class="chip">${l.lot_width_ft} ft wide</span>` : ""}</div></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
       ${sv ? `<a class="btn primary" href="${sv}" target="_blank" rel="noopener" title="${ev.street_view_snapped ? "From the address's street, facing the lot" : "From the lot (no street within 60 m)"}">Street View ↗</a>` : ""}
-      ${l.address ? `<a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(l.address.replace(/^~/, "") + ", Chicago, IL")}" target="_blank" rel="noopener">Address in Maps ↗</a>` : ""}
+      ${(ev.assessor_address || l.address) ? `<a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((ev.assessor_address || l.address).replace(/^~/, "") + ", Chicago, IL")}" target="_blank" rel="noopener">Address in Maps ↗</a>` : ""}
       <a class="btn" href="${ev.assessor}" target="_blank" rel="noopener">Assessor ↗</a>
       <a class="btn" href="${ev.map_link}" target="_blank" rel="noopener">Map ↗</a>
     </div>
