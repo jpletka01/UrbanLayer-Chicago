@@ -185,7 +185,7 @@ function render() {
         Building ${fmt(l.bldg_sqft)} sq ft (${l.bldg_sqft_source || "no source"}) ${l.year_built ? "· built " + l.year_built : ""}<br>
         Built ${pct(l.share)} of allowed · room ${fmt(l.room_sqft)} sq ft ${l.room_scope ? "(" + l.room_scope + ")" : ""}<br>
         Rule (under 25% and 2,500+ sq ft room): <strong>${l.rule_underused ? "UNDERUSED" : "not underused"}</strong>
-        ${l.v2 ? `<br>Rule v2 (record and LiDAR agree): <strong>${l.v2.toUpperCase()}</strong> · ${l.v2_why}` : ""}</div>
+        ${l.v2 ? `<br>Rule ${l.v3 ? "v3" : "v2"} (record and LiDAR agree): <strong>${l.v2.toUpperCase()}</strong> · ${l.v2_why}` : ""}</div>
       </details>
     </div>
   </div>`;
