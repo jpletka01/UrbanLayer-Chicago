@@ -1,5 +1,5 @@
 // Discovery's lot card opens Street View on the lot's own address street, facing the lot, not in the alley behind it
-// (Item 94 on the Profile map; Item 107 here). jsdom has no WebGL, so the card is rendered on its own.
+// (Item 94 on the Profile map; Item 108 here). jsdom has no WebGL, so the card is rendered on its own.
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";

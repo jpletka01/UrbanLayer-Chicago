@@ -1082,7 +1082,7 @@ The City's stories run high against the Assessor too (median 1.19; the Assessor'
 
 **A square of the map missing at 1601 N Milwaukee (owner, 2026-11-11; not from M6).** About a quarter mile square (one z16 tile there is about 0.28 mi) didn't draw until a zoom. Every tile request answered 200; what every load logged was "Image pattern-dots-light could not be loaded": the planned-development dot pattern (PD 1235 and PD 1258 sit beside the lot) was added only on the map's `load` or a `styleimagemissing` event, after the first tiles were cut, and a tile cut while its fill pattern is missing can draw without it until a zoom reloads it. **Fix:** `NextMap` and `ExploreMap` add the pin and pattern images right after the map is created, before any tile (the handlers stay as a safety net). The warning is gone at 1280, 1512 and 1728 px wide, light and dark. The hole never appeared in the headless runs; **the owner confirmed it gone after the fix ("It's gone", 2026-11-11).**
 
-## Item 107: Discovery's lot card stands on the address street for Street View (2026-11-11)
+## Item 108: Discovery's lot card stands on the address street for Street View (2026-11-11)
 
 **Problem (owner, 2026-11-11): "Street View still opens in the alley sometimes."** Item 94 fixed the Profile map's cards, but Discovery's lot card (`ExploreMap` `LotCard`) still sent the raw click point with no heading. Google opens the panorama nearest the point sent, and a click in a Chicago lot's middle is usually nearer the alley behind it than the street in front.
 
