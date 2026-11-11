@@ -1163,6 +1163,25 @@ States:
   - steps 4-6: the "Empty land" quick filter, true labels, search by PIN or block.
   - Each is measured and needs the owner's review on localhost.
 
+**Precision, measured by the owner (2026-11-11, counts in `eval/results/2026-11-11-empty-land/precision.json`; the labels stay out of the repo).** 60 random "empty" lots, by kind of land and none from his M4 panel, labeled blind in Street View and satellite (`eval/empty_land_label.py`). The page drew the County's buildings around the lot for orientation, cut out of the lot itself.
+
+| Kind of land | Empty | Building | Can't tell | Precision (95% range) |
+|---|---|---|---|---|
+| Vacant class | 14 | 0 | 1 | 100% (78.5-100) |
+| City-owned | 10 | 0 | 0 | 100% (72.2-100) |
+| Parking / minor improvement | 10 | 0 | 0 | 100% (72.2-100) |
+| Exempt | 9 | 0 | 1 | 100% (70.1-100) |
+| Residential classes | 4 | 5 | 1 | 44% (18.9-73.3) |
+| Other commercial | 2 | 2 | 1 | 50% (15.0-85.0) |
+
+- The four kinds together: **43 of 43 empty (95% range 91.8-100%)**. Weighted by each kind's share of the empty pool, overall precision is 95.2%.
+- The misses are all on lots whose tax class says a building exists. Two were rebuilt after a demolition, where the demolition override wrongly beat the improved class. The rest have a building neither source shows: newer than 2022 with no permit point on the lot, or a small row or townhouse PIN.
+
+**So the "Empty land" offer is scoped:**
+- It covers vacant class, City-owned, parking and minor improvement (5-90, 5-80) and exempt land: 73,293 lots, measured at 43/43.
+- On lots taxed as residential or other commercial, "no building in either source" is not enough. Those stay out of the offer (shown at most as "no building on record, unconfirmed"), and the demolition override applies only to the four kinds.
+- Step 2 goes ahead on this scope.
+
 *Alternatives rejected:*
 - **The tax class alone** (today): misses 10,453 City-owned and 11,988 parking or minor-improvement lots, and 15% of vacant-class lots aren't empty.
 - **City footprints alone:** they keep demolished buildings (the 74.5% above).
