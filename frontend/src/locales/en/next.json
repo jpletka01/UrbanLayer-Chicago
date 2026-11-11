@@ -213,7 +213,7 @@
       "cityLists": "Still checking the City's lists (City-owned land, scofflaw, short-term rentals), which can add a caveat.",
       "part": {
         "building": "City building records (energy benchmarking, footprints)",
-        "history": "City lists, appeals and Assessor permits",
+        "history": "City permits and violations, building records, City lists and appeals",
         "money": "nearby sales",
         "incentives": "TIF reports and grants",
         "neighborhood": "neighborhood (Census tract, transit, traffic, rent)",
@@ -912,6 +912,229 @@
         "vsYear": "{{pct}}% vs a year ago",
         "since": "{{pct}}% since {{from}}",
         "rent": "{{pct}}% · {{real}}% after inflation"
+      }
+    },
+    "history": {
+      "and": " and ",
+      "yes": "Yes",
+      "no": "No",
+      "sqft": "sq ft",
+      "deed": "{{deed}} deed",
+      "notMarket": "Not a market sale",
+      "assessorRecord": "Assessor's record",
+      "openCount_one": "{{count}} open",
+      "openCount_other": "{{count}} open",
+      "allResolved": "All resolved",
+      "ordinance": "Ordinance {{num}}",
+      "notOnMapYet": "Not on the City's map yet",
+      "cut": "Cut {{pct}}%",
+      "noChange": "No change",
+      "assessorStandIn": "The City's permit records didn't answer, so these are the Assessor's copies of them (fewer details, no permit pages).",
+      "noAddressSearch": "This address can't be searched in the City's permit and violation records, so neither is listed.",
+      "kind": {
+        "sale": "Market sales",
+        "transfer": "Other transfers",
+        "permit": "Permits",
+        "violation": "Violations",
+        "zoning": "Zoning",
+        "appeal": "Tax appeals"
+      },
+      "kindCount": {
+        "sale_one": "market sale",
+        "sale_other": "market sales",
+        "transfer_one": "transfer",
+        "transfer_other": "transfers",
+        "permit_one": "permit",
+        "permit_other": "permits",
+        "violation_one": "inspection with violations",
+        "violation_other": "inspections with violations",
+        "zoning_one": "zoning record",
+        "zoning_other": "zoning records",
+        "appeal_one": "tax appeal",
+        "appeal_other": "tax appeals"
+      },
+      "permitKind": {
+        "new": "New construction",
+        "renovation": "Renovation",
+        "demolition": "Demolition"
+      },
+      "ev": {
+        "sale": "Sold for {{price}}",
+        "transfer": "Ownership transferred",
+        "transferPrice": "Transferred, recorded at {{price}}",
+        "permit": "Building permit",
+        "violations_one": "Inspection: {{count}} violation",
+        "violations_other": "Inspection: {{count}} violations",
+        "zoned": "Zoned {{zone}}",
+        "filing": "Rezoning filed listing this address",
+        "passed": "Rezoning passed listing this address",
+        "passedTo": "Rezoning to {{zone}} passed listing this address",
+        "landmark": {
+          "building": "Landmark designation passed: {{name}}",
+          "district": "Landmark district passed: {{name}}"
+        },
+        "appeal": {
+          "assessor": "Appeal to the Assessor",
+          "bor": "Appeal to the Board of Review"
+        }
+      },
+      "status": {
+        "open": "Open",
+        "complied": "Complied"
+      },
+      "fact": {
+        "year_built": "Year built",
+        "stories": "Stories",
+        "bldg_sqft": "Floor area",
+        "units": "Units"
+      },
+      "source": {
+        "assessor": "Cook County Assessor",
+        "footprint": "City building footprints",
+        "commercial_valuation": "Assessor's commercial valuation",
+        "condo_unit": "Assessor's condo records",
+        "energy_benchmark": "City energy benchmarking",
+        "gis": "County parcel map",
+        "geometry": "Parcel outline"
+      },
+      "sourceWhat": {
+        "assessor": "The Assessor's building characteristics",
+        "footprint": "Traced by the City from aerial images; updated unevenly",
+        "commercial_valuation": "The Assessor's valuation of income property",
+        "condo_unit": "The Assessor's record of this unit",
+        "energy_benchmark": "Reported by the owner for buildings of 50,000 sq ft or more"
+      },
+      "sentence": {
+        "noRecord": "There's no property record for this lot, so its history can't be shown",
+        "sold": "Last sold in {{year}} for {{price}}",
+        "onlyTransfers": "No market sale on record; only other transfers",
+        "noSale": "No sale on record",
+        "permits_one": "{{count}} City permit since {{year}}",
+        "permits_other": "{{count}} City permits since {{year}}",
+        "noPermits": "no City permits on record",
+        "noViolations": "no building violations on record",
+        "openViolations_one": "{{count}} building violation still open",
+        "openViolations_other": "{{count}} building violations still open",
+        "resolvedViolations_one": "{{count}} building violation, resolved",
+        "resolvedViolations_other": "{{count}} building violations, all resolved"
+      },
+      "tile": {
+        "saleNote": "{{date}} · {{years}} years ago",
+        "onlyTransfers_one": "{{count}} transfer, not a market sale",
+        "onlyTransfers_other": "{{count}} transfers, none a market sale",
+        "builtSource": "Per the {{source}}",
+        "permits": "City permits",
+        "permitsNote": "{{first}} to {{last}}",
+        "noPermits": "None on record since 2006",
+        "permitsAssessor": "The Assessor's record",
+        "notChecked": "Not checked",
+        "violations": "Open violations",
+        "violationsNote_one": "Of {{count}} on record",
+        "violationsNote_other": "Of {{count}} on record",
+        "noViolations": "None on record",
+        "builtSources": "{{list}}"
+      },
+      "checking": {
+        "permits": "Checking City permits…",
+        "violations": "Checking violations…"
+      },
+      "what": {
+        "permits": "City permits",
+        "violations": "building violations",
+        "records": "building records",
+        "record": "City lists and appeals"
+      },
+      "timeline": {
+        "title": "What has happened here",
+        "kinds": "Kinds of records shown",
+        "chart": "Records by year, {{from}} to {{to}}",
+        "mark_one": "{{year}}: {{count}} {{kind}}",
+        "mark_other": "{{year}}: {{count}} {{kind}}",
+        "how": "Hover a mark for its year; click it to list only that year.",
+        "showing": "Showing {{kind}} in {{year}}",
+        "allYears": "All years",
+        "none": "Nothing on record for this lot.",
+        "noneOn": "Nothing of the kinds chosen. Turn on another kind above."
+      },
+      "building": {
+        "title": "The building",
+        "vacant": "No building on record: the Assessor classes this lot as vacant land."
+      },
+      "records": {
+        "title": "Building records",
+        "subtitle": "What each source says about the building",
+        "differ": "Records differ",
+        "noneOnRecord": "No source has a figure.",
+        "asOf": "As of {{year}}",
+        "shown": "The figure this Profile shows",
+        "range": "The sources span {{range}}.",
+        "unanswered": "Didn't answer today: {{list}}.",
+        "whyTitle": "Why records differ",
+        "why": "Each source records the building for its own purpose and at its own time. The Assessor's figures come from its property records; the City's footprints were traced from aerial images and updated unevenly; a rebuilt or extended building can carry an old year in one record and a new one in another. We show each source's figure and don't choose between them."
+      },
+      "record": {
+        "title": "On the record",
+        "cityOwned": "Owned by the City",
+        "scofflaw": "On the City's scofflaw list",
+        "str": "Short-term rentals prohibited",
+        "chrs": "Historic resources survey (1996)",
+        "chrsRating": {
+          "orange": "Orange: 90-day demolition review",
+          "red": "Red: 90-day demolition review"
+        },
+        "notRated": "Not rated",
+        "taxSale": "Offered at a tax sale",
+        "noneOnRecord": "None on record",
+        "taxSaleNote": "The County's tax-sale records end around 2015; these years are history, not today's taxes.",
+        "appeals": "Tax appeals",
+        "appealsCount_one": "{{count}} · {{cut}} with a cut",
+        "appealsCount_other": "{{count}} · {{cut}} with a cut",
+        "showAppeals": "Show on the timeline"
+      },
+      "details": {
+        "title": "Sources and what they cover",
+        "sales": {
+          "name": "Sales and transfers",
+          "covers": "Cook County Assessor's sales records: the 10 most recent, from 1999. A market sale passes the County's own filters; the rest are shown as transfers."
+        },
+        "permits": {
+          "name": "Building permits",
+          "covers": "City of Chicago building permits at this address, every year on record (2006 on)."
+        },
+        "violations": {
+          "name": "Building violations",
+          "covers": "City of Chicago building violations at this address, every year on record, grouped by inspection."
+        },
+        "zoning": {
+          "name": "Zoning",
+          "covers": "The City's zoning map (the ordinance behind today's district) and the City Clerk's filings and passed ordinances listing this address."
+        },
+        "appeals": {
+          "name": "Tax appeals",
+          "covers": "Appeals to the Assessor and the Board of Review."
+        },
+        "building": {
+          "name": "Building facts",
+          "covers": "The Assessor's characteristics, the City's building footprints, the Assessor's commercial valuation and the City's energy benchmarking, each shown separately."
+        }
+      },
+      "define": {
+        "sale": "The latest sale that passes the County's own filters for a market sale. $1 deeds, quit claims and sales of several parcels together are listed as transfers, never as a price.",
+        "built": "The year the building was built, as each source records it. When the sources are two or more years apart, the range shows and \"Records differ\" opens every source.",
+        "permits": "Building permits the City issued for this address, from its permit records (2006 on).",
+        "violations": "Building code violations the City recorded at this address that are still open.",
+        "timeline": "Every record about this lot, newest first. Appeals and transfers that weren't market sales start hidden; turn them on with the chips.",
+        "building": "The building's facts, with the source of each. A \"Records differ\" badge means the sources disagree.",
+        "record": "Lists the City and County keep that name this lot."
+      },
+      "ask": {
+        "sale": "What do the sale records say about {{address}}?",
+        "built": "When was the building at {{address}} built, and why do the records differ?",
+        "permits": "What work has been permitted at {{address}}?",
+        "violations": "What building violations are on record at {{address}}?",
+        "timeline": "What has happened at {{address}} over the years?",
+        "record": "Is {{address}} on any City or County lists I should know about?",
+        "records": "Why do the building records for {{address}} differ?"
       }
     }
   },

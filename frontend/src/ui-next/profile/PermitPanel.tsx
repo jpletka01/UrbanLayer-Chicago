@@ -3,8 +3,8 @@
 // built in the City's words, where the permit stands on the City's path (applied → issued → inspections → complete),
 // its facts, a button that shows it on the map, the City's records, then "Ask the analyst" last. Facts only (rule 11).
 import { useTranslation } from "react-i18next";
-import { Building2, CircleCheck, MapPin, SquareArrowOutUpRight, TriangleAlert, Wrench } from "lucide-react";
-import type { ConstructionProject } from "../../lib/api";
+import { Building2, CircleCheck, FileText, Hammer, MapPin, SquareArrowOutUpRight, TriangleAlert, Wrench } from "lucide-react";
+import type { AddressPermit, ConstructionProject } from "../../lib/api";
 import { RightDrawer } from "../ui/RightDrawer";
 import { Pill } from "../ui/Blocks";
 import { useAskHandoff } from "../ask/askContext";
@@ -25,7 +25,8 @@ function sentenceCase(s: string | null): string | null {
 }
 
 export function PermitPanel({ permit, onClose, onShowOnMap, closing, instant }: {
-  permit: ConstructionProject;
+  /** A permit nearby (Neighborhood) or at the address (History: any kind, no distance). */
+  permit: ConstructionProject | AddressPermit;
   onClose: () => void;
   onShowOnMap?: () => void;
   closing?: boolean;
@@ -47,19 +48,23 @@ export function PermitPanel({ permit, onClose, onShowOnMap, closing, instant }: 
     // The City's unit change: blank is "not stated", never "no change" (a 2-flat's permit can leave it blank).
     [t("profile.nb.permit.homes"), permit.units_added ? t(permit.units_added > 0 ? "profile.nb.building.addsUnits" : "profile.nb.building.removesUnits", { count: Math.abs(permit.units_added) })
       : permit.units_added === 0 ? t("profile.nb.permit.noUnitChange") : t("profile.nb.permit.unitsNotStated")],
-    [t("profile.nb.permit.distance"), t("profile.money.miles", { mi: permit.distance_mi.toFixed(2) })],
+    ...(permit.distance_mi != null ? [[t("profile.nb.permit.distance"), t("profile.money.miles", { mi: permit.distance_mi.toFixed(2) })] as [string, string]] : []),
     ...(permit.processing_days != null ? [[t("profile.nb.permit.reviewTime"), t("profile.nb.permit.days", { count: permit.processing_days })] as [string, string]] : []),
     ...(permit.review_type ? [[t("profile.nb.permit.reviewType"), sentenceCase(permit.review_type)!] as [string, string]] : []),
     ...(permit.permit ? [[t("profile.nb.permit.number"), permit.permit] as [string, string]] : []),
   ];
-  const KindIcon = permit.kind === "new" ? Building2 : Wrench;
+  const KindIcon = permit.kind === "new" ? Building2 : permit.kind === "renovation" ? Wrench : permit.kind === "demolition" ? Hammer : FileText;
+  const kindTone = permit.kind === "new" ? "green" : permit.kind === "renovation" ? "yellow" : "gray";
+  const kindWords = permit.kind === "new" || permit.kind === "renovation" ? t(`profile.nb.building.kind.${permit.kind}`)
+    : permit.kind === "demolition" ? t("profile.history.permitKind.demolition")
+    : sentenceCase(("permit_type" in permit ? permit.permit_type : null) ?? null) ?? t("profile.history.ev.permit");
   const AskIcon = ICON.ask;
 
   return (
     <RightDrawer testId="permit-panel" title={permit.address ?? t("profile.nb.building.noAddress")} onClose={onClose} closing={closing} instant={instant}
       subtitle={(
         <span className="mt-1 inline-flex flex-wrap gap-1.5">
-          <Pill tone={permit.kind === "new" ? "green" : "yellow"} icon={KindIcon}>{t(`profile.nb.building.kind.${permit.kind}`)}</Pill>
+          <Pill tone={kindTone} icon={KindIcon}>{kindWords}</Pill>
           {stopped ? <Pill tone="red" icon={TriangleAlert}>{sentenceCase(stopped)}</Pill>
             : step === 3 ? <Pill tone="gray" icon={CircleCheck}>{t("profile.nb.permit.step.complete")}</Pill> : null}
         </span>

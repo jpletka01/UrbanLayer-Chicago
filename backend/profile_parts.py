@@ -280,6 +280,19 @@ async def _run_late(rec: Record, part: str, deadline_s: float) -> list[str]:
                 ("property_history", pin14, rl.lat, rl.lon),
                 lambda: main._limited(property_history(pin14, rl.lat, rl.lon, workflow="property_intelligence"), "property.history"),
             )
+        # The History tab's own sources (Item 103, ``next_ui``): the full /api/scorecard never asks them.
+        for k in ("permits_at_address", "violations_at_address"):
+            sources[k] = (
+                (k, rl.address),
+                (lambda k=k: main._scorecard_task(k, rl.lat, rl.lon, rl.address, pin=rl.pin, ca=rec.ca, ca_name=rec.ca_name)),
+            )
+        if prop is not None:
+            from backend.retrieval.property.building_records import building_records
+
+            sources["building_records"] = (
+                ("building_records", pin14, rl.lat, rl.lon),
+                lambda: main._limited(building_records(prop, rl.lat, rl.lon), "building_records"),
+            )
     elif part in ("incentives", "neighborhood"):
         sources[part] = (
             (part, rl.lat, rl.lon, rl.address, rec.ca),

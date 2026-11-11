@@ -122,7 +122,7 @@ describe("PartsStatus", () => {
         onRetry={onRetry}
       />,
     );
-    expect(screen.getByTestId("parts-waiting").textContent).toBe("Still checking: City lists, appeals and Assessor permits");
+    expect(screen.getByTestId("parts-waiting").textContent).toBe("Still checking: City permits and violations, building records, City lists and appeals");
     expect(screen.getByTestId("parts-timed-out").textContent).toContain("Couldn't check in time: crime and 311 requests.");
     expect(screen.getByTestId("parts-failed").textContent).toContain("Couldn't load: nearby sales.");
     screen.getAllByRole("button", { name: "Retry" })[0].click();
@@ -133,7 +133,7 @@ describe("PartsStatus", () => {
   it("reads in Mexican Spanish and says nothing once everything is in", async () => {
     await i18n.changeLanguage("es");
     const { rerender } = render(<PartsStatus parts={{ history: "waiting", activity: "done" }} timedOut={{ activity: ["crime"] }} onRetry={() => {}} />);
-    expect(screen.getByTestId("parts-waiting").textContent).toBe("Seguimos revisando: listas de la Ciudad, apelaciones y permisos del Asesor");
+    expect(screen.getByTestId("parts-waiting").textContent).toBe("Seguimos revisando: permisos e infracciones de la Ciudad, registros del edificio, listas de la Ciudad y apelaciones");
     expect(screen.getByTestId("parts-timed-out").textContent).toContain("No se pudo revisar a tiempo: delitos.");
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeTruthy();
     rerender(<PartsStatus parts={{ history: "done", activity: "done" }} timedOut={{ activity: [] }} onRetry={() => {}} />);

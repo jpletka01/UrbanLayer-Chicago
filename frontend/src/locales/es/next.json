@@ -213,7 +213,7 @@
       "cityLists": "Seguimos revisando las listas de la Ciudad (terrenos municipales, infractores, rentas de corto plazo), que pueden agregar una advertencia.",
       "part": {
         "building": "registros de edificios de la Ciudad (benchmarking de energía, huellas de edificios)",
-        "history": "listas de la Ciudad, apelaciones y permisos del Asesor",
+        "history": "permisos e infracciones de la Ciudad, registros del edificio, listas de la Ciudad y apelaciones",
         "money": "ventas cercanas",
         "incentives": "informes TIF y subvenciones",
         "neighborhood": "vecindario (sector censal, transporte, tráfico, renta)",
@@ -912,6 +912,229 @@
         "vsYear": "{{pct}}% vs. hace un año",
         "since": "{{pct}}% desde {{from}}",
         "rent": "{{pct}}% · {{real}}% descontando la inflación"
+      }
+    },
+    "history": {
+      "and": " y ",
+      "yes": "Sí",
+      "no": "No",
+      "sqft": "pies²",
+      "deed": "escritura: {{deed}}",
+      "notMarket": "No es una venta de mercado",
+      "assessorRecord": "Registro del Tasador",
+      "openCount_one": "{{count}} abierta",
+      "openCount_other": "{{count}} abiertas",
+      "allResolved": "Todas resueltas",
+      "ordinance": "Ordenanza {{num}}",
+      "notOnMapYet": "Aún no está en el mapa de la Ciudad",
+      "cut": "Reducción de {{pct}}%",
+      "noChange": "Sin cambio",
+      "assessorStandIn": "Los registros de permisos de la Ciudad no respondieron; estas son las copias del Tasador (con menos detalle y sin página por permiso).",
+      "noAddressSearch": "Esta dirección no se puede buscar en los registros de permisos e infracciones de la Ciudad, así que no se muestran.",
+      "kind": {
+        "sale": "Ventas de mercado",
+        "transfer": "Otras transferencias",
+        "permit": "Permisos",
+        "violation": "Infracciones",
+        "zoning": "Zonificación",
+        "appeal": "Apelaciones de impuestos"
+      },
+      "kindCount": {
+        "sale_one": "venta de mercado",
+        "sale_other": "ventas de mercado",
+        "transfer_one": "transferencia",
+        "transfer_other": "transferencias",
+        "permit_one": "permiso",
+        "permit_other": "permisos",
+        "violation_one": "inspección con infracciones",
+        "violation_other": "inspecciones con infracciones",
+        "zoning_one": "registro de zonificación",
+        "zoning_other": "registros de zonificación",
+        "appeal_one": "apelación de impuestos",
+        "appeal_other": "apelaciones de impuestos"
+      },
+      "permitKind": {
+        "new": "Construcción nueva",
+        "renovation": "Remodelación",
+        "demolition": "Demolición"
+      },
+      "ev": {
+        "sale": "Se vendió en {{price}}",
+        "transfer": "Cambio de propietario",
+        "transferPrice": "Transferencia registrada en {{price}}",
+        "permit": "Permiso de construcción",
+        "violations_one": "Inspección: {{count}} infracción",
+        "violations_other": "Inspección: {{count}} infracciones",
+        "zoned": "Zonificado {{zone}}",
+        "filing": "Solicitud de rezonificación que incluye esta dirección",
+        "passed": "Rezonificación aprobada que incluye esta dirección",
+        "passedTo": "Rezonificación a {{zone}} aprobada que incluye esta dirección",
+        "landmark": {
+          "building": "Designación de monumento aprobada: {{name}}",
+          "district": "Distrito de monumentos aprobado: {{name}}"
+        },
+        "appeal": {
+          "assessor": "Apelación ante el Tasador",
+          "bor": "Apelación ante la Junta de Revisión"
+        }
+      },
+      "status": {
+        "open": "Abierta",
+        "complied": "Corregida"
+      },
+      "fact": {
+        "year_built": "Año de construcción",
+        "stories": "Pisos",
+        "bldg_sqft": "Superficie construida",
+        "units": "Unidades"
+      },
+      "source": {
+        "assessor": "Tasador del Condado de Cook",
+        "footprint": "Huellas de edificios de la Ciudad",
+        "commercial_valuation": "Valuación comercial del Tasador",
+        "condo_unit": "Registros de condominios del Tasador",
+        "energy_benchmark": "Registro de energía de la Ciudad",
+        "gis": "Mapa de predios del Condado",
+        "geometry": "Contorno del predio"
+      },
+      "sourceWhat": {
+        "assessor": "Las características del edificio según el Tasador",
+        "footprint": "Trazadas por la Ciudad a partir de imágenes aéreas; actualizadas de forma desigual",
+        "commercial_valuation": "La valuación del Tasador para propiedades que generan ingresos",
+        "condo_unit": "El registro del Tasador para esta unidad",
+        "energy_benchmark": "Reportado por el propietario en edificios de 50,000 pies² o más"
+      },
+      "sentence": {
+        "noRecord": "No hay registro de propiedad para este predio, así que no se puede mostrar su historial",
+        "sold": "Se vendió por última vez en {{year}} en {{price}}",
+        "onlyTransfers": "No hay venta de mercado registrada; solo otras transferencias",
+        "noSale": "No hay ventas registradas",
+        "permits_one": "{{count}} permiso de la Ciudad desde {{year}}",
+        "permits_other": "{{count}} permisos de la Ciudad desde {{year}}",
+        "noPermits": "ningún permiso de la Ciudad registrado",
+        "noViolations": "ninguna infracción de construcción registrada",
+        "openViolations_one": "{{count}} infracción de construcción aún abierta",
+        "openViolations_other": "{{count}} infracciones de construcción aún abiertas",
+        "resolvedViolations_one": "{{count}} infracción de construcción, resuelta",
+        "resolvedViolations_other": "{{count}} infracciones de construcción, todas resueltas"
+      },
+      "tile": {
+        "saleNote": "{{date}} · hace {{years}} años",
+        "onlyTransfers_one": "{{count}} transferencia, no es venta de mercado",
+        "onlyTransfers_other": "{{count}} transferencias, ninguna es venta de mercado",
+        "builtSource": "Según: {{source}}",
+        "permits": "Permisos de la Ciudad",
+        "permitsNote": "De {{first}} a {{last}}",
+        "noPermits": "Ninguno registrado desde 2006",
+        "permitsAssessor": "Registro del Tasador",
+        "notChecked": "No verificado",
+        "violations": "Infracciones abiertas",
+        "violationsNote_one": "De {{count}} registrada",
+        "violationsNote_other": "De {{count}} registradas",
+        "noViolations": "Ninguna registrada",
+        "builtSources": "{{list}}"
+      },
+      "checking": {
+        "permits": "Revisando permisos de la Ciudad…",
+        "violations": "Revisando infracciones…"
+      },
+      "what": {
+        "permits": "permisos de la Ciudad",
+        "violations": "infracciones de construcción",
+        "records": "registros del edificio",
+        "record": "listas de la Ciudad y apelaciones"
+      },
+      "timeline": {
+        "title": "Lo que ha pasado aquí",
+        "kinds": "Tipos de registros que se muestran",
+        "chart": "Registros por año, de {{from}} a {{to}}",
+        "mark_one": "{{year}}: {{count}} {{kind}}",
+        "mark_other": "{{year}}: {{count}} {{kind}}",
+        "how": "Pase el cursor sobre una marca para ver su año; haga clic para listar solo ese año.",
+        "showing": "Mostrando {{kind}} en {{year}}",
+        "allYears": "Todos los años",
+        "none": "No hay nada registrado para este predio.",
+        "noneOn": "Nada de los tipos elegidos. Active otro tipo arriba."
+      },
+      "building": {
+        "title": "El edificio",
+        "vacant": "No hay edificio registrado: el Tasador clasifica este predio como terreno baldío."
+      },
+      "records": {
+        "title": "Registros del edificio",
+        "subtitle": "Lo que dice cada fuente sobre el edificio",
+        "differ": "Los registros difieren",
+        "noneOnRecord": "Ninguna fuente tiene una cifra.",
+        "asOf": "Al {{year}}",
+        "shown": "La cifra que muestra esta Ficha",
+        "range": "Las fuentes van de {{range}}.",
+        "unanswered": "No respondieron hoy: {{list}}.",
+        "whyTitle": "Por qué difieren los registros",
+        "why": "Cada fuente registra el edificio con su propio fin y en su propio momento. Las cifras del Tasador vienen de sus registros de propiedad; las huellas de la Ciudad se trazaron a partir de imágenes aéreas y se actualizan de forma desigual; un edificio reconstruido o ampliado puede llevar un año antiguo en un registro y uno nuevo en otro. Mostramos la cifra de cada fuente y no elegimos entre ellas."
+      },
+      "record": {
+        "title": "En los registros",
+        "cityOwned": "Propiedad de la Ciudad",
+        "scofflaw": "En la lista de infractores de la Ciudad",
+        "str": "Rentas de corto plazo prohibidas",
+        "chrs": "Inventario de recursos históricos (1996)",
+        "chrsRating": {
+          "orange": "Naranja: revisión de demolición de 90 días",
+          "red": "Rojo: revisión de demolición de 90 días"
+        },
+        "notRated": "Sin calificación",
+        "taxSale": "Ofrecido en una venta por impuestos",
+        "noneOnRecord": "Ninguno registrado",
+        "taxSaleNote": "Los registros de ventas por impuestos del Condado terminan alrededor de 2015; estos años son historia, no los impuestos de hoy.",
+        "appeals": "Apelaciones de impuestos",
+        "appealsCount_one": "{{count}} · {{cut}} con reducción",
+        "appealsCount_other": "{{count}} · {{cut}} con reducción",
+        "showAppeals": "Mostrar en la línea de tiempo"
+      },
+      "details": {
+        "title": "Fuentes y lo que cubren",
+        "sales": {
+          "name": "Ventas y transferencias",
+          "covers": "Registros de ventas del Tasador del Condado de Cook: las 10 más recientes, desde 1999. Una venta de mercado pasa los filtros del propio Condado; las demás se muestran como transferencias."
+        },
+        "permits": {
+          "name": "Permisos de construcción",
+          "covers": "Permisos de construcción de la Ciudad de Chicago en esta dirección, todos los años registrados (desde 2006)."
+        },
+        "violations": {
+          "name": "Infracciones de construcción",
+          "covers": "Infracciones de construcción de la Ciudad de Chicago en esta dirección, todos los años registrados, agrupadas por inspección."
+        },
+        "zoning": {
+          "name": "Zonificación",
+          "covers": "El mapa de zonificación de la Ciudad (la ordenanza detrás del distrito actual) y las solicitudes y ordenanzas aprobadas de la Secretaría Municipal que incluyen esta dirección."
+        },
+        "appeals": {
+          "name": "Apelaciones de impuestos",
+          "covers": "Apelaciones ante el Tasador y la Junta de Revisión."
+        },
+        "building": {
+          "name": "Datos del edificio",
+          "covers": "Las características del Tasador, las huellas de edificios de la Ciudad, la valuación comercial del Tasador y el registro de energía de la Ciudad, cada uno por separado."
+        }
+      },
+      "define": {
+        "sale": "La venta más reciente que pasa los filtros del propio Condado para una venta de mercado. Las escrituras de $1, las cesiones de derechos y las ventas de varios predios juntos se listan como transferencias, nunca como precio.",
+        "built": "El año en que se construyó el edificio, según cada fuente. Cuando las fuentes difieren por dos años o más, se muestra el rango y \"Los registros difieren\" abre todas las fuentes.",
+        "permits": "Permisos de construcción que la Ciudad emitió para esta dirección, según sus registros de permisos (desde 2006).",
+        "violations": "Infracciones al código de construcción que la Ciudad registró en esta dirección y que siguen abiertas.",
+        "timeline": "Todos los registros sobre este predio, del más reciente al más antiguo. Las apelaciones y las transferencias que no fueron ventas de mercado empiezan ocultas; actívelas con los botones.",
+        "building": "Los datos del edificio, con la fuente de cada uno. La etiqueta \"Los registros difieren\" indica que las fuentes no coinciden.",
+        "record": "Listas de la Ciudad y del Condado que mencionan este predio."
+      },
+      "ask": {
+        "sale": "¿Qué dicen los registros de ventas sobre {{address}}?",
+        "built": "¿Cuándo se construyó el edificio en {{address}} y por qué difieren los registros?",
+        "permits": "¿Qué obras se han permitido en {{address}}?",
+        "violations": "¿Qué infracciones de construcción hay registradas en {{address}}?",
+        "timeline": "¿Qué ha pasado en {{address}} a lo largo de los años?",
+        "record": "¿Aparece {{address}} en alguna lista de la Ciudad o del Condado que deba conocer?",
+        "records": "¿Por qué difieren los registros del edificio en {{address}}?"
       }
     }
   },

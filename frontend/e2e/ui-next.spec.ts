@@ -193,3 +193,32 @@ test("Neighborhood tab: late outlines, same map, jump links, axe light and dark,
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow, "neighborhood overflow").toBeLessThanOrEqual(1);
 });
+
+// The History tab (decision Item 103): the City's permits and violations wait in their own place while `history` is
+// held (the Overview's sales show at once), the map is the same canvas after the switch, the kind chips filter the
+// list, and the tab passes axe in both themes with nothing overflowing.
+test("History tab: late sources in place, same map, kind chips, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  let release: () => void = () => {};
+  const held = new Promise<void>((r) => { release = r; });
+  await page.route(/\/api\/profile\/part\/history\?/, async (route) => { await held; await route.continue(); });
+  await open(page, ROUTES[1].path, ROUTES[1].ready);
+  await page.evaluate(() => { const c = document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas'); if (c) c.dataset.probe = "overview"; });
+  await page.getByRole("tab", { name: "History" }).click();
+  await expect(page.getByTestId("history-sentence")).toBeVisible();
+  await expect(page.getByText("Checking City permits…").first()).toBeVisible();
+  release();
+  await expect(page.getByText("Checking City permits…")).toHaveCount(0, { timeout: 90_000 });
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("overview");
+  const appeals = page.getByTestId("history-kinds").getByRole("button", { name: /Tax appeals/ });
+  await expect(appeals).toHaveAttribute("aria-pressed", "false");
+  await appeals.click();
+  await expect(appeals).toHaveAttribute("aria-pressed", "true");
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(400);
+    expect(await axe(page), `axe ${scheme}`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "history overflow").toBeLessThanOrEqual(1);
+});

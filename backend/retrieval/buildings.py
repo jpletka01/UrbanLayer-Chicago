@@ -121,13 +121,19 @@ async def violations_by_community_area(
 
 _SUFFIXES = r"(?:AVE|ST|BLVD|DR|PL|CT|RD|WAY|TER|PKWY|LN|CIR|HWY|SQ)"
 _ADDR_RE = re.compile(
-    r"^\s*(\d+)\s+(N|S|E|W)\s+(.+?)\s+" + _SUFFIXES + r"(?:\s.*|,.*)?$",
+    r"^\s*(\d+)\s+(N|S|E|W)\s+(.+?)\s+(" + _SUFFIXES + r")(?:\s.*|,.*)?$",
     re.IGNORECASE,
 )
 _ADDR_RE_NO_SUFFIX = re.compile(
     r"^\s*(\d+)\s+(N|S|E|W)\s+([A-Z]+)(?:\s.*|,.*)?$",
     re.IGNORECASE,
 )
+
+
+def street_suffix(address: str) -> str | None:
+    """The street suffix ("AVE") of an address ``parse_chicago_address`` reads, or None when it has none."""
+    m = _ADDR_RE.match(address.strip().upper())
+    return m.group(4) if m else None
 
 
 def parse_chicago_address(address: str) -> dict[str, str] | None:
@@ -150,21 +156,35 @@ def parse_chicago_address(address: str) -> dict[str, str] | None:
     return None
 
 
+def _permit_street_clause(street_name: str, suffix: str | None) -> str:
+    """The permits dataset's ``street_name`` carries the street's suffix ("MILWAUKEE AVE"; it once held the bare
+    name, and an exact match on that found nothing for every address, decision Item 103). Match the name with its
+    suffix, or the bare name for older rows; with no suffix known, the name followed by any one word."""
+    name = street_name.upper().replace("'", "''")
+    if suffix:
+        return f"upper(street_name) in ('{name}', '{name} {suffix.upper()}')"
+    return f"(upper(street_name)='{name}' OR upper(street_name) like '{name} %')"
+
+
 async def address_specific_permits(
     street_number: str,
     street_direction: str,
     street_name: str,
     *,
+    suffix: str | None = None,
     years: int | None = None,
     limit: int | None = None,
+    raise_errors: bool = False,
+    select: str | None = None,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
-    """Query permits by exact street address fields."""
+    """Query permits by exact street address fields. ``raise_errors``: a failed call raises (and caches nothing)
+    instead of returning [], for a caller that must not read a failure as "no permits" (the History tab)."""
     settings = get_settings()
     years = years or settings.address_permits_years
     limit = limit or settings.limit_address_permits
 
-    key = f"addr_permits:{street_number}:{street_direction}:{street_name}"
+    key = f"addr_permits:{street_number}:{street_direction}:{street_name}:{suffix}:{years}:{limit}:{select}"
     cached = _addr_permits_cache.get(key)
     if cached is not None:
         return cached
@@ -172,7 +192,7 @@ async def address_specific_permits(
     where = (
         f"street_number='{street_number}' "
         f"AND street_direction='{street_direction}' "
-        f"AND upper(street_name)='{street_name.upper()}' "
+        f"AND {_permit_street_clause(street_name, suffix)} "
         f"AND issue_date > '{cutoff_iso(years * 365)}'"
     )
     try:
@@ -180,7 +200,7 @@ async def address_specific_permits(
             settings.dataset_permits,
             {
                 "$where": where,
-                "$select": (
+                "$select": select or (
                     "permit_,permit_type,work_description,issue_date,reported_cost,"
                     "contact_1_type,contact_1_name,"
                     "contact_2_type,contact_2_name,"
@@ -195,6 +215,8 @@ async def address_specific_permits(
         return result
     except Exception as exc:
         log.warning("Address permits failed for %s %s %s: %s", street_number, street_direction, street_name, exc)
+        if raise_errors:
+            raise
         return []
 
 
@@ -205,14 +227,16 @@ async def address_specific_violations(
     *,
     years: int | None = None,
     limit: int | None = None,
+    raise_errors: bool = False,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
-    """Query violations by exact street address fields."""
+    """Query violations by exact street address fields. ``raise_errors``: a failed call raises (and caches
+    nothing) instead of returning [], for a caller that must not read a failure as "none"."""
     settings = get_settings()
     years = years or settings.address_violations_years
     limit = limit or settings.limit_address_violations
 
-    key = f"addr_violations:{street_number}:{street_direction}:{street_name}"
+    key = f"addr_violations:{street_number}:{street_direction}:{street_name}:{years}:{limit}"
     cached = _addr_violations_cache.get(key)
     if cached is not None:
         return cached
@@ -242,6 +266,8 @@ async def address_specific_violations(
         return result
     except Exception as exc:
         log.warning("Address violations failed for %s %s %s: %s", street_number, street_direction, street_name, exc)
+        if raise_errors:
+            raise
         return []
 
 
@@ -431,3 +457,95 @@ async def construction_within(lat: float, lon: float, *, client: httpx.AsyncClie
     }
     _construction_within_cache.set(key, result)
     return result
+
+
+# ── The History tab's records at the address (new UI only, decision Item 103) ─────────────────────────────────────
+# Every year the City's datasets hold (permits from 2006, violations from about 2000), not the Profile's 5.
+HISTORY_YEARS = 30
+HISTORY_PERMITS_LIMIT = 300
+HISTORY_VIOLATIONS_LIMIT = 300
+
+
+def _permit_kind(permit_type: str | None) -> str:
+    t = (permit_type or "").upper()
+    if "NEW CONSTRUCTION" in t:
+        return "new"
+    if "WRECKING" in t or "DEMOLITION" in t:
+        return "demolition"
+    if "RENOVATION" in t or "ALTERATION" in t:
+        return "renovation"
+    return "other"
+
+
+async def permits_at_address(address: str | None, *, client: httpx.AsyncClient | None = None) -> dict[str, Any] | None:
+    """The City's building permits at this address, every year on record, newest first, in the shape of
+    ``construction_within``'s projects (the permit page reads both) plus the City's ``permit_type``. None when the
+    address can't be read into street fields (nothing was asked); raises on a failed call (never "no permits")."""
+    parsed = parse_chicago_address(address) if address else None
+    if not parsed:
+        return None
+    rows = await address_specific_permits(
+        parsed["number"], parsed["direction"], parsed["name"], suffix=street_suffix(address or ""),
+        years=HISTORY_YEARS, limit=HISTORY_PERMITS_LIMIT, raise_errors=True, client=client,
+        select=("permit_,permit_type,work_description,issue_date,reported_cost,residential_unit_change,"
+                "street_number,street_direction,street_name,latitude,longitude,"
+                "permit_status,permit_milestone,application_start_date,processing_time,review_type"),
+    )
+    projects: list[dict[str, Any]] = []
+    for r in rows:
+        try:
+            cost = float(r.get("reported_cost")) if r.get("reported_cost") not in (None, "") else None
+        except (TypeError, ValueError):
+            cost = None
+        try:
+            units = int(float(r["residential_unit_change"])) if r.get("residential_unit_change") not in (None, "") else None
+        except (TypeError, ValueError):
+            units = None
+        try:
+            plat, plon = float(r["latitude"]), float(r["longitude"])
+        except (KeyError, TypeError, ValueError):
+            plat = plon = None
+        street = " ".join(x for x in (r.get("street_number"), r.get("street_direction"), r.get("street_name")) if x)
+        ptype = (r.get("permit_type") or "").strip()
+        projects.append({
+            "permit": r.get("permit_"),
+            "kind": _permit_kind(ptype),
+            # The City's type without its "PERMIT - " prefix ("SIGNS", "ELEVATOR EQUIPMENT", "EASY PERMIT PROCESS").
+            "permit_type": re.sub(r"^PERMIT\s*[-–]\s*", "", ptype, flags=re.IGNORECASE) or None,
+            "description": (r.get("work_description") or "").strip() or None,
+            "issued": (r.get("issue_date") or "")[:10] or None,
+            "cost": cost,
+            "units_added": units,
+            "address": street.title() or None,
+            "lat": plat,
+            "lon": plon,
+            "distance_mi": None,
+            "status": (r.get("permit_status") or "").strip() or None,
+            "milestone": (r.get("permit_milestone") or "").strip() or None,
+            "applied": (r.get("application_start_date") or "")[:10] or None,
+            "processing_days": _int_or_none(r.get("processing_time")),
+            "review_type": (r.get("review_type") or "").strip() or None,
+        })
+    return {"years": HISTORY_YEARS, "projects": projects, "capped": len(rows) >= HISTORY_PERMITS_LIMIT}
+
+
+async def violations_at_address(address: str | None, *, client: httpx.AsyncClient | None = None) -> dict[str, Any] | None:
+    """The City's building violations at this address, every year on record, newest first: date, code, the City's
+    words, status and its date, and the inspection that found it (the page groups by inspection). None when the
+    address can't be read; raises on a failed call."""
+    parsed = parse_chicago_address(address) if address else None
+    if not parsed:
+        return None
+    rows = await address_specific_violations(
+        parsed["number"], parsed["direction"], parsed["name"],
+        years=HISTORY_YEARS, limit=HISTORY_VIOLATIONS_LIMIT, raise_errors=True, client=client,
+    )
+    out = [{
+        "date": (r.get("violation_date") or "")[:10] or None,
+        "code": (r.get("violation_code") or "").strip() or None,
+        "description": (r.get("violation_description") or "").strip() or None,
+        "status": (r.get("violation_status") or "").strip().upper() or None,
+        "status_date": (r.get("violation_status_date") or "")[:10] or None,
+        "inspection": (r.get("inspection_number") or "").strip() or None,
+    } for r in rows]
+    return {"years": HISTORY_YEARS, "violations": out, "capped": len(rows) >= HISTORY_VIOLATIONS_LIMIT}

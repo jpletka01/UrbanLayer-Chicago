@@ -706,7 +706,7 @@ async def _fetch_report_data(
     )
     from backend.retrieval.buildings import (
         address_specific_permits, address_specific_violations,
-        nearby_new_construction, parse_chicago_address,
+        nearby_new_construction, parse_chicago_address, street_suffix,
     )
     from backend.retrieval.property.sales import nearby_comparable_sales
     from backend.zoning_extract import calculate_development_potential
@@ -739,7 +739,7 @@ async def _fetch_report_data(
         if parsed:
             v2_tasks["address_permits"] = asyncio.create_task(
                 _limited(address_specific_permits(
-                    parsed["number"], parsed["direction"], parsed["name"]
+                    parsed["number"], parsed["direction"], parsed["name"], suffix=street_suffix(resolved_address),
                 ))
             )
             v2_tasks["address_violations"] = asyncio.create_task(

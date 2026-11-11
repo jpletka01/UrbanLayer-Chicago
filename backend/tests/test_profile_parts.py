@@ -72,6 +72,10 @@ def _commercial(stack):
 
 
 REAL_FALLBACKS = prop_mod._fetch_building_fallbacks
+ADDRESS_PERMITS = {"years": 30, "projects": [{"permit": "100384380", "kind": "other", "permit_type": "EASY PERMIT PROCESS",
+                                             "issued": "2011-03-09", "description": "GARAGE"}], "capped": False}
+ADDRESS_VIOLATIONS = {"years": 30, "violations": [{"date": "2019-05-01", "code": "CN104015", "status": "OPEN",
+                                                   "description": "REPAIR PORCH", "inspection": "123"}], "capped": False}
 
 
 def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL, commercial=False):
@@ -127,6 +131,11 @@ def _sources(*, zone_class="RS-3", crime_sleep=0.0, block_face_exc=None, rl=RL, 
     p(patch("backend.retrieval.neighborhood.schools.assigned_schools", new=AsyncMock(return_value=SCHOOLS)))
     p(patch.object(main.buildings, "construction_within", new=AsyncMock(return_value=CONSTRUCTION)))
     p(patch.object(main.three11, "top_311_by_community_area", new=AsyncMock(return_value=AREA_311)))
+    # the History tab's own sources (Item 103)
+    p(patch.object(main.buildings, "permits_at_address", new=AsyncMock(return_value=ADDRESS_PERMITS)))
+    p(patch.object(main.buildings, "violations_at_address", new=AsyncMock(return_value=ADDRESS_VIOLATIONS)))
+    p(patch("backend.retrieval.property.building_facts.get_footprint_facts", new=AsyncMock(
+        return_value={"bldg_sqft": 2400, "year_built": 1899, "stories": 2})))
     p(patch("backend.retrieval.neighborhood.demographics.fetch_demographics", new=AsyncMock(return_value=None)))
     p(patch("backend.retrieval.property.sales.nearby_comparable_sales", new=AsyncMock(return_value={"sales": []})))
     p(patch("backend.retrieval.property.block_face.block_face_test", new=AsyncMock(
@@ -462,6 +471,27 @@ async def test_the_activity_part_carries_the_new_uis_sources_and_the_full_respon
     assert nu["schools"] == SCHOOLS and nu["construction_within"] == CONSTRUCTION and nu["area_311"] == AREA_311
     assert nu["crime"]["current"] == {"violent": 0, "property": 0, "other": 0}  # the stub's crime rows are empty
     assert "failed" not in nu
+
+
+async def test_the_history_part_carries_the_address_records_and_each_sources_building_facts():
+    with _sources():
+        full = await main._scorecard_payload(ADDRESS, None, None, None)
+        _ov, responses = await _all_parts()
+    assert "next_ui" not in full
+    nu = max(responses, key=lambda r: r["version"])["profile"]["next_ui"]
+    assert nu["permits_at_address"] == ADDRESS_PERMITS and nu["violations_at_address"] == ADDRESS_VIOLATIONS
+    rec = nu["building_records"]
+    # The Assessor's 1890 (its characteristics) beside the City footprint's 1899: years 2+ apart differ.
+    assert rec["facts"]["year_built"] == [{"source": "assessor", "value": 1890, "as_of": None},
+                                          {"source": "footprint", "value": 1899, "as_of": None}]
+    assert rec["differ"] == ["year_built"]
+
+
+async def test_a_failed_history_source_is_listed_never_none():
+    with _sources(), patch.object(main.buildings, "permits_at_address", new=AsyncMock(side_effect=RuntimeError("503"))):
+        _ov, responses = await _all_parts()
+    nu = max(responses, key=lambda r: r["version"])["profile"]["next_ui"]
+    assert nu["failed"] == ["permits_at_address"] and "permits_at_address" not in nu
 
 
 async def test_a_failed_new_ui_source_is_listed_never_none():

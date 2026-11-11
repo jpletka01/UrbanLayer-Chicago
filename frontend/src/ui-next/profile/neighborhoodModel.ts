@@ -273,7 +273,7 @@ export function permitList(projects: ConstructionProject[], filter: PermitFilter
 
 /** Where a permit stands on the City's path: applied → issued → inspections → complete. `stopped` = suspended or
     revoked (the City's status), shown instead of a stage. */
-export function permitStage(p: ConstructionProject): { step: 0 | 1 | 2 | 3; stopped: string | null } {
+export function permitStage(p: Pick<ConstructionProject, "status" | "milestone">): { step: 0 | 1 | 2 | 3; stopped: string | null } {
   const status = (p.status ?? "").toUpperCase();
   const m = (p.milestone ?? "").toUpperCase();
   const stopped = /SUSPEND|REVOK|EXPIRE|CANCEL/.test(status) ? status.toLowerCase() : null;

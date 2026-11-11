@@ -1136,6 +1136,16 @@ export interface ConstructionProject {
   review_type?: string | null;
 }
 
+/** A City building permit at this address (History, Item 103): the same fields as a permit nearby, any kind (signs,
+    elevators, easy permits, … as "other" with the City's own `permit_type`), no distance. The permit page reads both. */
+export interface AddressPermit extends Omit<ConstructionProject, "kind" | "lat" | "lon" | "distance_mi"> {
+  kind: "new" | "renovation" | "demolition" | "other";
+  permit_type: string | null;
+  lat: number | null;
+  lon: number | null;
+  distance_mi: null;
+}
+
 export interface NextUiConstruction {
   radius_mi: number;
   months: number;
@@ -1173,7 +1183,13 @@ export interface NextUiData {
   tract?: NextUiTract;
   /** The community area's own figures (population, a bracket-estimated median income); null when none. */
   area_demographics?: import("./types").DemographicsSummary | null;
-  failed?: Array<"schools" | "construction_within" | "area_311" | "area_demographics">;
+  /** The History tab (Item 103): the City's permits and violations at the address, every year on record; null when
+      the address can't be searched by street fields. */
+  permits_at_address?: { years: number; projects: AddressPermit[]; capped: boolean } | null;
+  violations_at_address?: { years: number; violations: import("../ui-next/profile/historyModel").ViolationRow[]; capped: boolean } | null;
+  /** Every source's value per building fact; null for vacant land. */
+  building_records?: import("../ui-next/profile/historyModel").BuildingRecords | null;
+  failed?: Array<"schools" | "construction_within" | "area_311" | "area_demographics" | "permits_at_address" | "violations_at_address" | "building_records">;
 }
 
 export async function fetchScorecard(params: {

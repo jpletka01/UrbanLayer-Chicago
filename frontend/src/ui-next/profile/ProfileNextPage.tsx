@@ -34,8 +34,11 @@ import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
 import { MoneyTab } from "./MoneyTab";
 import { NeighborhoodTab } from "./NeighborhoodTab";
+import { HistoryTab } from "./HistoryTab";
+import { RecordsPanel } from "./RecordsPanel";
+import type { BuildingFact } from "./historyModel";
 import { PermitPanel } from "./PermitPanel";
-import type { ConstructionProject } from "../../lib/api";
+import type { AddressPermit, ConstructionProject } from "../../lib/api";
 import { sourceState } from "./neighborhoodModel";
 import { ProgramPanel } from "./ProgramPanel";
 import { RulePanel } from "./RulePanel";
@@ -47,7 +50,7 @@ import { SourcesDialog } from "./SourcesDialog";
 import { PartsStatus } from "./PartsStatus";
 import { useProfileParts, type PartStatus } from "./useProfileParts";
 
-type TabId = "overview" | "build" | "money" | "neighborhood";
+type TabId = "overview" | "build" | "money" | "neighborhood" | "history";
 
 /** Each tab's camera and layers on the one map (map track M1): the Overview looks at the lot among its neighbors and
     recent sales; Build pulls back to the districts around it. Zoning is on in both (owner's review: it reads best
@@ -61,8 +64,10 @@ const MAP_VIEWS: Record<TabId, MapView> = {
   // Neighborhood: new construction within half a mile (the brief's map default for this tab, Item 102), framed on the
   // permits; zoning off so the pins read, transit on (getting around).
   neighborhood: { id: "neighborhood", zoom: 14.6, fit: "building", modes: { zoning: "off", parcels: "on", sales: "off", building: "on", transit: "on", streets: "on" } },
+  // History: the lot alone (owner, Item 103), zoning on so its district (and a rezoning's) reads.
+  history: { id: "history", zoom: 17.2, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "off", streets: "on" } },
 };
-const TABS: TabId[] = ["overview", "build", "money", "neighborhood"];
+const TABS: TabId[] = ["overview", "build", "money", "neighborhood", "history"];
 
 function queryFrom(params: URLSearchParams): ParcelQuery | null {
   const pin = params.get("pin");
@@ -256,7 +261,7 @@ function ProfileScreen({
   // last panel stays mounted (`shownPanel`) for the slide; `seq` remounts it for a new question or program, and
   // `instant` skips the slide when the panel was already open.
   type Panel = { kind: "ask"; text?: string } | { kind: "program"; program: IncentiveKey } | { kind: "rule"; rule: RuleKey }
-    | { kind: "permit"; permit: ConstructionProject };
+    | { kind: "permit"; permit: ConstructionProject | AddressPermit } | { kind: "records"; fact?: BuildingFact };
   // "Show on the map" from a permit's page: the map flies to it and opens its card (Item 102).
   const [mapFocus, setMapFocus] = useState<{ permit: ConstructionProject; seq: number } | null>(null);
   const [panel, setPanel] = useState<Panel | null>(null);
@@ -380,6 +385,7 @@ function ProfileScreen({
     openProgram: (program) => { track("investigate_click", { card_name: `next_program_${program}` }); openPanel({ kind: "program", program }); },
     openRule: (rule) => { track("investigate_click", { card_name: `next_rule_${rule}` }); openPanel({ kind: "rule", rule }); },
     openPermit: (permit) => { track("investigate_click", { card_name: "next_permit" }); openPanel({ kind: "permit", permit }); },
+    openRecords: (fact) => { track("investigate_click", { card_name: "next_building_records" }); openPanel({ kind: "records", fact }); },
   };
 
   const focusAsk = useRef<HTMLElement | null>(null);
@@ -396,7 +402,9 @@ function ProfileScreen({
           ready ? <AskDrawer key={shownPanel.seq} chat={chat} onClose={closePanel} returnFocusRef={focusAsk} tabLabel={t(`profile.tabs.${tab}`)} initialDraft={shownPanel.p.text} closing={!panel} instant={shownPanel.instant} /> : null
         ) : shownPanel.p.kind === "permit" ? (
           <PermitPanel key={shownPanel.seq} permit={shownPanel.p.permit} onClose={closePanel} closing={!panel} instant={shownPanel.instant}
-            onShowOnMap={() => { const pm = (shownPanel.p as { permit: ConstructionProject }).permit; setMapFocus((f) => ({ permit: pm, seq: (f?.seq ?? 0) + 1 })); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+            onShowOnMap={shownPanel.p.permit.distance_mi != null ? () => { const pm = (shownPanel.p as { permit: ConstructionProject }).permit; setMapFocus((f) => ({ permit: pm, seq: (f?.seq ?? 0) + 1 })); window.scrollTo({ top: 0, behavior: "smooth" }); } : undefined} />
+        ) : shownPanel.p.kind === "records" ? (
+          <RecordsPanel key={shownPanel.seq} data={data} fact={shownPanel.p.fact} onClose={closePanel} closing={!panel} instant={shownPanel.instant} />
         ) : shownPanel.p.kind === "rule" ? (
           <RulePanel key={shownPanel.seq} data={data} rule={shownPanel.p.rule} {...ruleState(shownPanel.p.rule)} onClose={closePanel} closing={!panel} instant={shownPanel.instant} />
         ) : (
@@ -513,6 +521,17 @@ function ProfileScreen({
                 late={{ neighborhood: lateOf("neighborhood"), activity: lateOf("activity") }}
                 timedOutActivity={timedOut.activity ?? []}
                 onRetry={(p) => onRetryParts([p])}
+              />
+            </Tabs.Content>
+          )}
+
+          {data && verdict && (
+            <Tabs.Content value="history" className="focus:outline-none">
+              <HistoryTab
+                data={data}
+                late={lateOf("history")}
+                timedOutHistory={timedOut.history ?? []}
+                onRetry={() => onRetryParts(["history"])}
               />
             </Tabs.Content>
           )}
