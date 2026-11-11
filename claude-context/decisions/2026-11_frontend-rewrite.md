@@ -988,7 +988,7 @@ How (`backend/discovery/lot_facts.py`, `index_backfill.py`; the monthly build ru
 
 ## Item 105: Phase 7 step 1, building heights from LiDAR, measured before use (2026-11-10)
 
-**Status: measured; nothing changed in the app or on the live site. The fills below wait for the owner's call.** Asked by the Phase 7 brief: can LiDAR fill the stories that 8,192 City footprints lack (Item 104), and give M6 (3D) its neighbors' heights?
+**Status: measured; nothing changed in the app or on the live site. Owner's calls (2026-11-10): Discovery's story-less lots stay unknown (the recommended no-go); Phase 7's order is M6 (3D), then M4 (capacity), then M5 (land in use).** Asked by the Phase 7 brief: can LiDAR fill the stories that 8,192 City footprints lack (Item 104), and give M6 (3D) its neighbors' heights?
 
 **The sources found (newest first):**
 - **Cook County's 2022 building footprints** (`gis.cookcountyil.gov/traditional/rest/services/buildingFootprint_2022/MapServer/0`, item `7c4f47a3b32944e58c5f18652880fc05`): 1,960,186 polygons countywide, **779,930 inside Chicago**. Made from the County's spring-2022 LiDAR (20 points/m²) and 2022 orthophotos; each polygon has `Ground_Z`, `Max_Point` and `Height` = the **highest LiDAR return inside it** minus ground, in feet (minimum 7 ft: smaller structures aren't in it). Public ArcGIS service, the County's "as is" open-data terms. Read with the `httpx` and `shapely` we already have: about 3 minutes for Chicago's bounding box (1,254,045 polygons, 490 MB in SQLite), 25 s to match. **No new dependency.**
