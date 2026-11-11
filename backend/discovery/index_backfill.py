@@ -1,4 +1,5 @@
-"""Fill building areas, room to build and the card warnings into an existing Discovery index (decision Item 104).
+"""Fill building areas, room to build, the card warnings (decision Item 104) and the Assessor's address for lots with
+no Address Point (Item 109) into an existing Discovery index.
 
 The monthly ``index_build --refresh`` does the same through ``enrich_rows`` for every community area it builds; this
 tool applies it to an index already on disk without re-reading the County (minutes instead of hours), then runs the
@@ -6,7 +7,7 @@ builder's own ``finalize_index`` so ``populated_fields``, recipe counts and ``da
 
 Needs ``backend/data/discovery_lot_sources.db`` (``python -m backend.discovery.lot_sources``) and PTAXSIM.
 
-    PYTHONPATH=. python -m backend.discovery.index_backfill [--index <discovery_index.db>] [--report-only]
+    PYTHONPATH=. python -m backend.discovery.index_backfill [--index <discovery_index.db>] [--sources <copy>] [--report-only]
 """
 
 from __future__ import annotations
@@ -24,6 +25,9 @@ from typing import Any, Iterable
 import shapely
 from shapely import wkt as shapely_wkt
 
+from backend.discovery.assessor_address import AddressSources, verified_address
+from backend.discovery.assessor_address import apply as apply_assessor_address
+from backend.discovery.assessor_address import needs_tier as needs_assessor_tier
 from backend.discovery.lot_facts import (
     NARROW_STRIP_FT, LotSources, derive_capacity, fill_building_area, lot_warnings, lot_width_ft, pending_rezoning_pin10s,
 )
@@ -112,6 +116,7 @@ def enrich_rows(rows: list[tuple], *, ptaxsim: Path, sources: Path = SOURCES_PAT
     lots = lot_outlines(ptaxsim, {r[0].replace("-", "")[:10] for r in rows})
     from backend.discovery.neighborhoods import neighborhood_of
 
+    apply_assessor_addresses(rows, lots, sources)
     for pin, lat, lon, attrs, _regions in rows:
         p = pin.replace("-", "")
         enrich(attrs, p, lots.get(p[:10]), src, pending)
@@ -119,6 +124,31 @@ def enrich_rows(rows: list[tuple], *, ptaxsim: Path, sources: Path = SOURCES_PAT
         if hood:
             attrs["hood"] = hood
     complex_room(rows)
+
+
+def apply_assessor_addresses(rows: list[tuple], lots: dict[str, Any], sources: Path) -> collections.Counter:
+    """The Assessor's address on each base lot with no Address Point, where it lands on the lot (Item 109).
+
+    Rows ``(pin, lat, lon, attrs, regions)`` in place; a lot that fails keeps its ``~`` nearest address. Returns the
+    count of outcomes by reason. A no-op (warned) when the copy predates the address tables."""
+    out: collections.Counter = collections.Counter()
+    addr_src = AddressSources.load(sources)
+    if addr_src is None:
+        log.warning("discovery index: %s has no address tables; approximate addresses kept (run lot_sources "
+                    "--addresses-only)", sources)
+        return out
+    todo = [r for r in rows if r[0].replace("-", "").endswith("0000") and needs_assessor_tier(r[3])]
+    assessor, points = addr_src.lookup(r[0].replace("-", "") for r in todo)
+    for pin, lat, lon, attrs, _regions in todo:
+        p = pin.replace("-", "")
+        lot = lots.get(p[:10])
+        if lot is None:
+            lot = shapely.Point(lon, lat)
+        address, reason = verified_address(assessor.get(p), lot, addr_src.streets, points)
+        apply_assessor_address(attrs, address)
+        out[reason] += 1
+    log.info("discovery index: Assessor address tier %s", dict(out))
+    return out
 
 
 def complex_room(rows: list[tuple]) -> None:
@@ -182,6 +212,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--index", type=Path, default=None)
     ap.add_argument("--report-only", action="store_true", help="measure coverage, write nothing")
+    ap.add_argument("--sources", type=Path, default=SOURCES_PATH, help="the lot_sources copy")
     args = ap.parse_args()
 
     from backend.config import get_settings
@@ -198,12 +229,17 @@ def main() -> None:
         a = r[3]
         if built and a.get("last_sale_date") is None and a.get("sale_recency_days") is not None:
             a["last_sale_date"] = (built - datetime.timedelta(days=int(a["sale_recency_days"]))).isoformat()
+    def approximate() -> int:
+        return sum(1 for r in rows if r[0].endswith("0000") and str(r[3].get("address") or "~").startswith("~"))
+
     before = coverage((r[0], r[3]) for r in rows)
-    enrich_rows(rows, ptaxsim=settings.ptaxsim_db_path,
+    approx_before = approximate()
+    enrich_rows(rows, ptaxsim=settings.ptaxsim_db_path, sources=args.sources,
                 pending_db=settings.discovery_index_path.parent / "pending_legislation.db")
     after = coverage((r[0], r[3]) for r in rows)
     warn = collections.Counter(k for r in rows for k in r[3] if k.startswith("warn_"))
     print(json.dumps({"before": before, "after": after, "warnings": warn,
+                      "approximate_addresses": {"before": approx_before, "after": approximate()},
                       "seconds": round(time.monotonic() - t0, 1)}, indent=1))
     if args.report_only:
         return

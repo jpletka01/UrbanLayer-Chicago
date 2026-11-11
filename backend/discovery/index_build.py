@@ -619,9 +619,14 @@ def _address_for(
     pin_digits: str, lat: float, lon: float,
     exact: dict[str, dict], base: dict[str, dict], tree: STRtree | None, addrs: list[str],
 ) -> str | None:
-    """Final display address: own/building Address Point, else the nearest one prefixed "~"
+    """Display address: own/building Address Point, else the nearest one prefixed "~"
     (approximate — used for vacant lots & parcels with no assigned address; the nearest point
-    is typically the adjacent frontage, ~30 ft away)."""
+    is another parcel's, typically the adjacent frontage, ~30 ft away).
+
+    A tier sits between the two (Item 109): ``index_backfill.apply_assessor_addresses``, run by
+    ``enrich_rows`` on every build and backfill, replaces a base lot's "~" with the Assessor's own
+    address for that PIN when it lands on the lot (it needs the lot outline and the local street
+    centerlines, which this per-point step doesn't have). What stays "~" is still approximate."""
     a = _resolve_address(pin_digits, exact, base)
     if a:
         return a.get("cmpaddabrv") or a.get("addrdeliv")

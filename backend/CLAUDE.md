@@ -158,7 +158,7 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
     matches yet" badges. `parcel_source.pin_lookup` is **memoized per dataVersion** (was O(N)/req).
 - **Builder** `index_build.py` computes the derived fields (`is_teardown_candidate`, `upside_score`
   = 0.6·FAR-headroom + 0.4·land-share, `cta_rail_distance_mi`, cross-parcel `value_percentile`),
-  3-tier addresses (`_address_for`: own → building base-PIN → nearest-approx `~` via shapely STRtree),
+  addresses (`_address_for`: own → building base-PIN → nearest-approx `~` via shapely STRtree; then `index_backfill.apply_assessor_addresses` swaps a base lot's `~` for the Assessor's own address when it lands on the lot, `assessor_address.py`, Item 109, from the `lot_sources` address tables),
   `populated_fields` + `recipe_counts` manifest. **`--refresh`** rebuilds the current `meta.community_areas`
   (monthly timer). **Assessment join filters for a present value** (latest CCAO year is valueless — see
   known-issues). **Geometry land fill (2026-07-07):** `_load_geometry_land` reads the local ptaxsim
