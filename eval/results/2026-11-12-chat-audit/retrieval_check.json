@@ -1,0 +1,1124 @@
+[
+ {
+  "id": "restaurant_rm6_wrightwood",
+  "district": "RM-6",
+  "own_table": "17-2-0200",
+  "specific_gold": [
+   "17-9-01"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "use table allowed uses restaurant food service zoning district",
+   "sections": [
+    "17-5-0200",
+    "17-3-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-17-0100"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200"
+   ],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "RM-6 use table allowed uses permitted special uses",
+   "sections": [
+    "17-5-0200",
+    "17-6-0400",
+    "17-4-0200",
+    "17-3-0200",
+    "17-13-0900"
+   ],
+   "own_table": false,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "restaurant_b3_milwaukee",
+  "district": "B3-2",
+  "own_table": "17-3-0200",
+  "specific_gold": [
+   "2-120-74"
+  ],
+  "router_named_districts": [
+   "B3"
+  ],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "B3 permitted uses commercial use table allowed uses restaurant food service",
+   "sections": [
+    "17-3-0300",
+    "17-3-0200",
+    "17-3-0100",
+    "17-17-0100",
+    "17-5-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-5-0200"
+   ],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "B3-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "bar_b23_chicago",
+  "district": "B2-3",
+  "own_table": "17-3-0200",
+  "specific_gold": [],
+  "router_named_districts": [
+   "B3"
+  ],
+  "router_guessed_wrong_district": true,
+  "router": {
+   "query": "B3 use table allowed uses tavern drinking establishment permitted uses",
+   "sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-6-0400",
+    "17-17-0100"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "B2-3 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-2-0200",
+    "17-4-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "restaurant_m23_clybourn",
+  "district": "M2-3",
+  "own_table": "17-5-0200",
+  "specific_gold": [],
+  "router_named_districts": [
+   "B3"
+  ],
+  "router_guessed_wrong_district": true,
+  "router": {
+   "query": "B3 use table allowed uses permitted uses commercial restaurant food service",
+   "sections": [
+    "17-3-0200",
+    "17-3-0300",
+    "17-17-0100",
+    "17-3-0100",
+    "17-5-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200"
+   ],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "M2-3 use table allowed uses permitted special uses",
+   "sections": [
+    "17-5-0200",
+    "17-3-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-3-0200",
+    "17-4-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "twoflat_rs2_rockwell",
+  "district": "RS-2",
+  "own_table": "17-2-0200",
+  "specific_gold": [],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "two-flat two family residential allowed uses use table RS RT zoning district",
+   "sections": [
+    "17-2-0200",
+    "17-2-0100",
+    "17-2-0300",
+    "17-7-0570",
+    "17-7-0580"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "RS-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-3-0200",
+    "17-5-0200",
+    "17-6-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0200"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "twoflat_rs3_central_park",
+  "district": "RS-3",
+  "own_table": "17-2-0200",
+  "specific_gold": [
+   "17-2-03"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "two-flat two-unit residential allowed uses RS RT RM use table permitted uses",
+   "sections": [
+    "17-2-0300",
+    "17-2-0200",
+    "17-2-0100",
+    "17-7-0570",
+    "17-4-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-4-0200"
+   ],
+   "specific_gold": [
+    "17-2-0300"
+   ]
+  },
+  "district_aware": {
+   "query": "RS-3 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400",
+    "17-2-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "units_rm45_artesian",
+  "district": "RM-4.5",
+  "own_table": "17-2-0300",
+  "specific_gold": [],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "residential density maximum units allowed bulk and density standards dwelling units per lot",
+   "sections": [
+    "17-2-0300",
+    "17-4-0400",
+    "17-3-0400",
+    "17-5-0400",
+    "17-7-0570"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "RM-4.5 bulk and density standards floor area ratio height lot area per unit",
+   "sections": [
+    "17-2-0300",
+    "17-5-0400",
+    "17-4-0400",
+    "17-3-0400",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "height_rt4_george",
+  "district": "RT-4",
+  "own_table": "17-2-0300",
+  "specific_gold": [],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "bulk and density standards building height residential zoning district",
+   "sections": [
+    "17-2-0300",
+    "17-3-0400",
+    "17-2-0100",
+    "17-4-0400",
+    "17-5-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "RT-4 bulk and density standards floor area ratio height lot area per unit",
+   "sections": [
+    "17-2-0300",
+    "17-4-0400",
+    "17-5-0400",
+    "17-3-0400",
+    "17-17-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "far_dc16_wacker",
+  "district": "DC-16",
+  "own_table": "17-4-0400",
+  "specific_gold": [
+   "17-4-10"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "floor area ratio FAR maximum bulk and density standards bonus exceeded transfer development rights",
+   "sections": [
+    "17-4-0400",
+    "17-3-0400",
+    "17-7-0400",
+    "17-2-0300",
+    "17-5-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "DC-16 bulk and density standards floor area ratio height lot area per unit",
+   "sections": [
+    "17-4-0400",
+    "17-2-0300",
+    "17-3-0400",
+    "17-5-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "tod_b33_irving",
+  "district": "B3-3",
+  "own_table": "17-3-0400",
+  "specific_gold": [
+   "17-10-01",
+   "17-13-03"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "transit-oriented development TOD bonus density FAR height allowance near transit station",
+   "sections": [
+    "2-44-085",
+    "17-4-0400",
+    "17-3-0400",
+    "2-44-080",
+    "17-4-0300"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "B3-3 bulk and density standards floor area ratio height lot area per unit",
+   "sections": [
+    "17-2-0300",
+    "17-4-0400",
+    "17-3-0400",
+    "17-5-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "tod_c25_chicago_bonus",
+  "district": "C2-5",
+  "own_table": "17-3-0200",
+  "specific_gold": [
+   "17-10-01",
+   "17-3-04"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "transit served location density bonus TOD transit-oriented development bulk and density standards floor area ratio",
+   "sections": [
+    "17-4-0400",
+    "17-3-0400",
+    "2-44-085",
+    "17-7-0400",
+    "17-2-0300"
+   ],
+   "own_table": false,
+   "other_use_tables": [],
+   "specific_gold": [
+    "17-3-0400"
+   ]
+  },
+  "district_aware": {
+   "query": "C2-5 use table allowed uses permitted special uses",
+   "sections": [
+    "17-5-0200",
+    "17-3-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "multiunit_rm65_lsd",
+  "district": "RM-6.5",
+  "own_table": "17-2-0200",
+  "specific_gold": [],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "multi-unit residential allowed uses use table overlay district planned development lakefront protection",
+   "sections": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-3-0200",
+    "17-7-0580"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200"
+   ],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "RM-6.5 use table allowed uses permitted special uses",
+   "sections": [
+    "17-5-0200",
+    "17-6-0400",
+    "17-4-0200",
+    "17-3-0200",
+    "14B-5-509"
+   ],
+   "own_table": false,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "demolish_landmark_milwaukee",
+  "district": "B3-2",
+  "own_table": "17-3-0200",
+  "specific_gold": [
+   "13-32-23",
+   "2-120-74"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "demolition permit requirements zoning landmark historic preservation district restrictions",
+   "sections": [
+    "2-120-825",
+    "2-120-740",
+    "14A-4-407",
+    "17-4-0400",
+    "14A-2-202"
+   ],
+   "own_table": false,
+   "other_use_tables": [],
+   "specific_gold": [
+    "2-120-740"
+   ]
+  },
+  "district_aware": {
+   "query": "B3-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "parking_b12_wilson",
+  "district": "B1-2",
+  "own_table": "17-3-0400",
+  "specific_gold": [
+   "17-10-01",
+   "17-10-02"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "off-street parking ratio residential dwelling units apartment",
+   "sections": [
+    "17-10-0100",
+    "17-10-0200",
+    "13-72-020"
+   ],
+   "own_table": false,
+   "other_use_tables": [],
+   "specific_gold": [
+    "17-10-0100",
+    "17-10-0200"
+   ]
+  },
+  "district_aware": {
+   "query": "B1-2 bulk and density standards floor area ratio height lot area per unit",
+   "sections": [
+    "17-2-0300",
+    "17-4-0400",
+    "17-5-0400",
+    "17-3-0400",
+    "17-17-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "groundfloor_apts_b12_wilson",
+  "district": "B1-2",
+  "own_table": "17-3-0200",
+  "specific_gold": [
+   "17-3-01"
+  ],
+  "router_named_districts": [
+   "B2",
+   "B3"
+  ],
+  "router_guessed_wrong_district": true,
+  "router": {
+   "query": "ground floor residential use table allowed uses B3 B2 transit-served commercial district",
+   "sections": [
+    "17-3-0100",
+    "17-3-0200",
+    "17-3-0300",
+    "17-4-0400",
+    "17-7-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": [
+    "17-3-0100"
+   ]
+  },
+  "district_aware": {
+   "query": "B1-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "adu_rs3_central_park",
+  "district": "RS-3",
+  "own_table": "17-2-0200",
+  "specific_gold": [
+   "17-7-05"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "coach house additional dwelling unit accessory dwelling allowed uses RS residential zoning district",
+   "sections": [
+    "17-7-0570",
+    "17-9-0200",
+    "17-15-0300",
+    "17-2-0300",
+    "17-2-0100"
+   ],
+   "own_table": false,
+   "other_use_tables": [],
+   "specific_gold": [
+    "17-7-0570"
+   ]
+  },
+  "district_aware": {
+   "query": "RS-3 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400",
+    "17-2-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "coachhouse_rt4_george",
+  "district": "RT-4",
+  "own_table": "17-2-0200",
+  "specific_gold": [
+   "17-9-02"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "coach house additional dwelling unit accessory dwelling permitted uses allowed RS RT residential district",
+   "sections": [
+    "17-7-0570",
+    "17-9-0200",
+    "17-15-0300",
+    "17-2-0300",
+    "17-10-1000"
+   ],
+   "own_table": false,
+   "other_use_tables": [],
+   "specific_gold": [
+    "17-9-0200"
+   ]
+  },
+  "district_aware": {
+   "query": "RT-4 use table allowed uses permitted special uses",
+   "sections": [
+    "17-4-0200",
+    "17-5-0200",
+    "17-3-0200",
+    "17-6-0400",
+    "17-13-0900"
+   ],
+   "own_table": false,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "daycare_rs3",
+  "district": "RS-3",
+  "own_table": "17-2-0200",
+  "specific_gold": [],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "use table allowed uses day care child care public civic",
+   "sections": [
+    "17-17-0100",
+    "17-6-0200",
+    "17-6-0400",
+    "17-5-0200",
+    "4-75-130"
+   ],
+   "own_table": false,
+   "other_use_tables": [
+    "17-5-0200",
+    "17-6-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "RS-3 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400",
+    "17-2-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "cannabis_b1_wilson",
+  "district": "B1-2",
+  "own_table": "17-3-0200",
+  "specific_gold": [
+   "17-9-01"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "cannabis dispensary allowed uses use table zoning district permitted retail",
+   "sections": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-9-0100",
+    "17-2-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200"
+   ],
+   "specific_gold": [
+    "17-9-0100"
+   ]
+  },
+  "district_aware": {
+   "query": "B1-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "tattoo_b3_milwaukee",
+  "district": "B3-2",
+  "own_table": "17-3-0200",
+  "specific_gold": [],
+  "router_named_districts": [
+   "B3"
+  ],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "B3 use table allowed uses personal service",
+   "sections": [
+    "17-17-0100",
+    "17-3-0200",
+    "3-27-050",
+    "3-27-060",
+    "3-28-031"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "B3-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "hotel_b33_irving",
+  "district": "B3-3",
+  "own_table": "17-3-0200",
+  "specific_gold": [],
+  "router_named_districts": [
+   "B3"
+  ],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "B3 use table allowed uses hotel lodging commercial district",
+   "sections": [
+    "17-3-0200",
+    "17-3-0100",
+    "17-5-0200",
+    "17-3-0300",
+    "17-17-0100"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-5-0200"
+   ],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "B3-3 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-6-0400",
+    "17-2-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "gas_station_c25_chicago",
+  "district": "C2-5",
+  "own_table": "17-3-0200",
+  "specific_gold": [],
+  "router_named_districts": [
+   "B3"
+  ],
+  "router_guessed_wrong_district": true,
+  "router": {
+   "query": "B3 use table allowed uses automobile service station fueling",
+   "sections": [
+    "17-3-0100",
+    "3-52-010",
+    "17-3-0500",
+    "17-3-0200",
+    "3-52-110"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "C2-5 use table allowed uses permitted special uses",
+   "sections": [
+    "17-5-0200",
+    "17-3-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "carwash_b1_wilson",
+  "district": "B1-2",
+  "own_table": "17-3-0200",
+  "specific_gold": [],
+  "router_named_districts": [
+   "B3"
+  ],
+  "router_guessed_wrong_district": true,
+  "router": {
+   "query": "B3 use table allowed uses automobile service",
+   "sections": [
+    "17-3-0100",
+    "17-3-0200",
+    "17-17-0100",
+    "17-3-0500",
+    "3-52-010"
+   ],
+   "own_table": true,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "B1-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "warehouse_b3_milwaukee",
+  "district": "B3-2",
+  "own_table": "17-3-0200",
+  "specific_gold": [],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "warehouse storage use table allowed uses industrial commercial zoning district permitted uses",
+   "sections": [
+    "17-9-0100",
+    "17-17-0100",
+    "17-5-0200",
+    "17-3-0200",
+    "17-4-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-4-0200",
+    "17-5-0200"
+   ],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "B3-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-6-0400"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "airbnb_rs3",
+  "district": "RS-3",
+  "own_table": "17-2-0200",
+  "specific_gold": [],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "short-term rental license requirements dwelling unit",
+   "sections": [
+    "4-14-060",
+    "4-6-300",
+    "4-13-260",
+    "4-14-030",
+    "4-13-100"
+   ],
+   "own_table": false,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "RS-3 use table allowed uses permitted special uses",
+   "sections": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400",
+    "17-2-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "tenstory_rs2",
+  "district": "RS-2",
+  "own_table": "17-2-0200",
+  "specific_gold": [
+   "17-2-03"
+  ],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "bulk and density standards building height FAR residential zoning district",
+   "sections": [
+    "17-2-0300",
+    "17-3-0400",
+    "17-4-0400",
+    "17-5-0400"
+   ],
+   "own_table": false,
+   "other_use_tables": [],
+   "specific_gold": [
+    "17-2-0300"
+   ]
+  },
+  "district_aware": {
+   "query": "RS-2 use table allowed uses permitted special uses",
+   "sections": [
+    "17-2-0200",
+    "17-4-0200",
+    "17-3-0200",
+    "17-5-0200",
+    "17-6-0200"
+   ],
+   "own_table": true,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0200"
+   ],
+   "specific_gold": []
+  }
+ },
+ {
+  "id": "landmark_status_lsd",
+  "district": "RM-6.5",
+  "own_table": "17-2-0200",
+  "specific_gold": [],
+  "router_named_districts": [],
+  "router_guessed_wrong_district": false,
+  "router": {
+   "query": "Chicago landmark designation criteria individual building landmark status",
+   "sections": [
+    "17-8-0600",
+    "2-120-620",
+    "2-120-630",
+    "2-120-700",
+    "2-120-710"
+   ],
+   "own_table": false,
+   "other_use_tables": [],
+   "specific_gold": []
+  },
+  "district_aware": {
+   "query": "RM-6.5 use table allowed uses permitted special uses",
+   "sections": [
+    "17-5-0200",
+    "17-6-0400",
+    "17-4-0200",
+    "17-3-0200",
+    "14B-5-509"
+   ],
+   "own_table": false,
+   "other_use_tables": [
+    "17-3-0200",
+    "17-4-0200",
+    "17-5-0200",
+    "17-6-0400"
+   ],
+   "specific_gold": []
+  }
+ }
+]
