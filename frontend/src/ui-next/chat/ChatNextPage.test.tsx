@@ -16,20 +16,11 @@ vi.mock("../../contexts/ThemeContext", () => ({
   useThemeContext: () => ({ theme: "system", resolvedTheme: "light", setTheme: vi.fn() }),
 }));
 vi.mock("./ChatMap", () => ({ ChatMap: () => <div data-testid="chat-map" /> }));
-vi.mock("../../components/MessageBubble", () => ({
-  MessageBubble: ({ message, footer, onCitationClick, onDataClick }: { message: Message; footer?: React.ReactNode; onCitationClick?: (n: number) => void; onDataClick?: (s: string) => void }) => (
-    <div>
-      <p>{message.content}</p>
-      {message.role === "assistant" && <button type="button" onClick={() => onCitationClick?.(2)}>[2]</button>}
-      {message.role === "assistant" && <button type="button" onClick={() => onDataClick?.("crime")}>[data:crime]</button>}
-      {footer}
-    </div>
-  ),
-}));
+
 
 const ANSWER: Message = {
   role: "assistant",
-  content: "Probably yes.",
+  content: "Probably yes [1]. The rear yard rule applies [2]. Crime is average [data:crime].",
   context: {
     resolved_address: "2611 N Sawyer Ave",
     property: { pin14: "13254020120000" },
@@ -90,7 +81,7 @@ describe("the full chat page", () => {
     const panel = screen.getByTestId("chat-evidence");
     expect(within(panel).getByTestId("chat-map")).toBeTruthy();
     // Read side by side: the answer and the box stay on screen.
-    expect(screen.getByText("Probably yes.")).toBeTruthy();
+    expect(screen.getByTestId("chat-answer").textContent).toContain("Probably yes");
     expect(screen.getByTestId("chat-box")).toBeTruthy();
     // The panel's tabs are only those this answer has; the chip reads as selected.
     expect(within(panel).getAllByRole("tab").map((t) => t.textContent)).toEqual(["Sources · 5", "Map"]);
@@ -113,7 +104,7 @@ describe("the full chat page", () => {
   it("opens a citation's own source in the panel, one open at a time", () => {
     session.messages = [{ role: "user", content: "Q" }, ANSWER];
     mount();
-    fireEvent.click(screen.getByText("[2]"));
+    fireEvent.click(screen.getByRole("button", { name: /§ 17-2-0309, source 2/ }));
     const list = within(screen.getByTestId("chat-evidence")).getByTestId("chat-sources");
     const open = within(list).getAllByRole("button").filter((b) => b.getAttribute("aria-expanded") === "true");
     expect(open).toHaveLength(1);
@@ -123,7 +114,7 @@ describe("the full chat page", () => {
   it("opens a data citation's record in the Sources list", () => {
     session.messages = [{ role: "user", content: "Q" }, ANSWER];
     mount();
-    fireEvent.click(screen.getByText("[data:crime]"));
+    fireEvent.click(screen.getAllByTestId("cite").find((c) => c.textContent?.includes("Crime"))!);
     const row = within(screen.getByTestId("chat-evidence")).getByTestId("source-crime");
     expect(within(row).getAllByRole("button")[0].getAttribute("aria-expanded")).toBe("true");
   });
@@ -163,5 +154,27 @@ describe("the full chat page", () => {
     expect(screen.getByRole("heading", { name: "What do you want to know about 2611 N Sawyer Ave?" })).toBeTruthy();
     expect(screen.queryByTestId("chat-example")).toBeNull();
     expect(screen.getByTestId("chat-about").textContent).toContain("2611 N Sawyer Ave");
+  });
+});
+
+describe("the answer's citations (owner, 2026-11-12: the new UI, not the old pill)", () => {
+  it("colors each citation by its source's kind and shows the source in a card on hover", () => {
+    session.messages = [{ role: "user", content: "Q" }, ANSWER];
+    mount();
+    const cites = screen.getAllByTestId("cite");
+    expect(cites.map((c) => c.getAttribute("data-group"))).toEqual(["code", "code", "area"]);
+    fireEvent.mouseEnter(cites[1]);
+    expect(screen.getByTestId("cite-card").textContent).toContain("Rear setbacks");
+  });
+});
+
+describe("the chat list beside the panel (owner, 2026-11-12)", () => {
+  it("opens beside a collapsed main panel, hides from its header, and comes back from the top bar", () => {
+    mount();
+    expect(screen.getByTestId("chat-list")).toBeTruthy();
+    expect(document.querySelector("nav[data-collapsed]")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("chat-list-hide"));
+    expect(screen.queryByTestId("chat-list")).toBeNull();
+    expect(localStorage.getItem("urbanlayer-next-chatlist")).toBe("hidden");
   });
 });

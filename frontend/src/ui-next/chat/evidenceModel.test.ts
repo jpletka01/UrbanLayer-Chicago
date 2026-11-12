@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CodeChunk, Message } from "../../lib/types";
-import { citingSentence, codeTable, numberForData, passageFor, recordsIn, sourcesFor } from "./evidenceModel";
+import { citingSentence, citingSentences, codeTable, numberForData, passageFor, recordsIn, sourcesFor } from "./evidenceModel";
 
 const ADU: CodeChunk = {
   text: "17-7-0570-A Purpose. The ADU overlay allows additional dwelling units. 17-7-0570-C Coach houses. On a zoning lot in an RS district within an ADU-eligible area, one coach house containing one dwelling unit may be established in a detached accessory building. 17-7-0570-E Owner occupancy. The owner must live on the lot.",
@@ -40,6 +40,13 @@ describe("the passage the answer used", () => {
     const [s, e] = passageFor(ADU.text, citingSentence(ANSWER.content, 2))!;
     expect(ADU.text.slice(s, e)).toContain("one coach house containing one dwelling unit");
     expect(ADU.text.slice(s, e)).not.toContain("Owner occupancy");
+  });
+  it("weighs every sentence citing the section, skips the reference list, and reads RS-3 as RS3 (owner, 2026-11-12)", () => {
+    const content = "It's in the 606 District [1], an overlay on RS-3 lots. Up to 2 units under the 606 reduction [1].\n- [1] Municipal Code §17-7-0590 — Predominance of the Block District";
+    expect(citingSentences(content, 1)).toHaveLength(2);
+    const text = "17-7-0591 Boundaries. The district covers the blocks named. 17-7-0593-A In the RS3 district the minimum lot area per dwelling unit may be reduced to 1,500 square feet to allow a two-flat.";
+    const [s, e] = passageFor(text, citingSentences(content, 1))!;
+    expect(text.slice(s, e)).toContain("may be reduced to 1,500");
   });
   it("highlights nothing when nothing matches strongly", () => {
     expect(passageFor(ADU.text, "Parking is reduced near transit")).toBeNull();

@@ -1913,7 +1913,16 @@
       "tableRow": "Show only this district's row",
       "tableAll": "Show the whole table ({{count}} rows)",
       "passageUsed": "Highlighted: the part the answer used.",
-      "noPassage": "No single passage matched the answer closely; the whole section is shown."
+      "noPassage": "No single passage matched the answer closely; the whole section is shown.",
+      "groupCode": "Municipal code",
+      "groupLot": "This lot",
+      "groupArea": "Around the lot",
+      "notCited": "Read, not cited",
+      "arrestShare": "{{pct}}% led to an arrest",
+      "areaCrimes_one": "{{count}} across all of {{area}}",
+      "areaCrimes_other": "{{count}} across all of {{area}}",
+      "assessorRecord": "The Assessor's record",
+      "dataset": "The City's dataset"
     },
     "map": {
       "layers": "Map layers",
@@ -1933,6 +1942,34 @@
       "closeCard": "Close",
       "arrest": "Arrest made",
       "noArrest": "No arrest"
+    },
+    "cite": {
+      "open": "{{name}}, source {{n}}: open in Sources",
+      "click": "Click to open it in Sources",
+      "copy": "Copy the answer",
+      "copied": "Copied",
+      "crime": "Crime",
+      "311": "311",
+      "permits": "Permits",
+      "violations": "Violations",
+      "business": "Businesses",
+      "vacant_buildings": "Vacant buildings",
+      "food_inspections": "Food inspections"
+    },
+    "list": {
+      "label": "Your chats",
+      "title": "Chats",
+      "hide": "Hide chats",
+      "show": "Show chats",
+      "search": "Search chats",
+      "noMatch": "No chat matches",
+      "group": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "week": "Previous 7 days",
+        "month": "Previous 30 days",
+        "older": "Older"
+      }
     }
   },
   "landing": {

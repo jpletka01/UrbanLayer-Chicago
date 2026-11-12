@@ -7,11 +7,11 @@
 // storing, limits and errors are shared, not forked.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import * as Dialog from "@radix-ui/react-dialog";
 import { FileDown, Map as MapIcon, Maximize2, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, LogIn, X } from "lucide-react";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
 import { RightDrawer } from "../ui/RightDrawer";
 import { FrameOutline } from "../frame/FrameOutline";
-import { MessageBubble } from "../../components/MessageBubble";
 import { AnsweredOnNote } from "../../components/AnsweredOnNote";
 import { ExportReport } from "../../components/ExportReport";
 import { ShareModal } from "../../components/ShareModal";
@@ -20,17 +20,21 @@ import { propertyStarterKeys } from "../../lib/scorecardContext";
 import { useChatSession } from "../../lib/useChatSession";
 import { useAuthContext } from "../../contexts/AuthContext";
 import type { Message } from "../../lib/types";
-import { STROKE } from "../icons";
+import { ICON, STROKE } from "../icons";
+import { ChatList } from "./ChatList";
+import { ChatMessage } from "./ChatMessage";
 import { Composer } from "./Composer";
 import { ChatMap } from "./ChatMap";
 import { EvidenceSources, type MapLayer } from "./EvidenceSources";
-import { numberForData, sourcesFor } from "./evidenceModel";
+import { sourcesFor } from "./evidenceModel";
 import { ThinkingSteps } from "./ThinkingSteps";
 import { chatTitle, evidenceTabs, previewsFor, type EvidenceTab, type Preview } from "./chatModel";
 
 /** The evidence panel: which answer, which tab, the source (its number) to open first, and a map layer a source asked
     to show ("Show on map"). */
 interface Panel { message: number; tab: EvidenceTab; source: number | null; show?: MapLayer }
+
+const LIST_KEY = "urbanlayer-next-chatlist";
 
 export default function ChatNextPage() {
   const { t } = useTranslation(["next", "chat", "common"]);
@@ -52,6 +56,13 @@ export default function ChatNextPage() {
   const [draft, setDraft] = useState("");
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  // The chat list beside the panel (owner review 2026-11-12): shown unless the visitor hid it; a sheet on a phone.
+  const [listShown, setListShown] = useState(() => { try { return localStorage.getItem(LIST_KEY) !== "hidden"; } catch { return true; } });
+  const [listSheet, setListSheet] = useState(false);
+  const showList = (on: boolean) => {
+    setListShown(on);
+    try { localStorage.setItem(LIST_KEY, on ? "shown" : "hidden"); } catch { /* per-viewer convenience only */ }
+  };
   const scroller = useRef<HTMLDivElement | null>(null);
   const stickToEnd = useRef(true);
 
@@ -87,8 +98,13 @@ export default function ChatNextPage() {
   const panelMessage: Message | undefined = panel ? messages[panel.message] : undefined;
   const needsSignIn = (rateLimited && !session.canPersist) || session.showAuthModal;
 
+  const startNew = () => { setDraft(""); session.newChat(); };
+  const wide = () => typeof window !== "undefined" && window.matchMedia?.("(min-width: 1024px)").matches;
   const tools = (
     <>
+      <span className={listShown ? "lg:hidden" : ""}>
+        <ToolButton label={t("next:chat.list.show")} icon={ICON.chats} onClick={() => (wide() ? showList(true) : setListSheet(true))} testId="chat-list-show" />
+      </span>
       {answered && !streaming && (
         <ToolButton
           label={t("next:chat.export")}
@@ -100,7 +116,7 @@ export default function ChatNextPage() {
       {answered && !streaming && session.conversationId && session.canPersist && (
         <ToolButton label={t("next:chat.share")} icon={Share2} onClick={() => setShareOpen(true)} testId="chat-share" />
       )}
-      <ToolButton label={t("next:frame.newChat")} icon={Plus} onClick={() => { setDraft(""); session.newChat(); }} testId="chat-new" />
+      <ToolButton label={t("next:frame.newChat")} icon={Plus} onClick={startNew} testId="chat-new" />
     </>
   );
 
@@ -154,7 +170,25 @@ export default function ChatNextPage() {
   ) : null;
 
   return (
-    <AppFrame crumbs={[t("next:nav.chat"), title ?? t("next:frame.newChat")]} tools={tools} fill drawer={drawer}>
+    <AppFrame
+      crumbs={[t("next:nav.chat"), title ?? t("next:frame.newChat")]} tools={tools} fill drawer={drawer}
+      secondary={listShown ? <ChatList activeId={session.conversationId} refreshKey={session.conversationId} onNewChat={startNew} onHide={() => showList(false)} /> : null}
+    >
+      <Dialog.Root open={listSheet} onOpenChange={setListSheet}>
+        <Dialog.Portal>
+          <div className="ui-next">
+            <Dialog.Overlay className="fixed inset-0 z-[65] bg-black/30" />
+            <Dialog.Content className="fixed inset-y-0 left-0 z-[66] bg-nx-page text-body text-nx-ink shadow-[0_8px_32px_rgb(0_0_0/0.2)] focus:outline-none" data-testid="chat-list-sheet">
+              <Dialog.Title className="sr-only">{t("next:chat.list.label")}</Dialog.Title>
+              <Dialog.Description className="sr-only">{t("next:chat.list.search")}</Dialog.Description>
+              <Dialog.Close className="absolute right-3 top-4 grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" aria-label={t("next:chat.list.hide")}>
+                <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+              </Dialog.Close>
+              <ChatList activeId={session.conversationId} refreshKey={session.conversationId} onNewChat={startNew} onNavigate={() => setListSheet(false)} />
+            </Dialog.Content>
+          </div>
+        </Dialog.Portal>
+      </Dialog.Root>
       <div className="relative flex min-h-0 flex-1 flex-col" data-testid="chat-page">
         {(
           <div
@@ -187,7 +221,6 @@ export default function ChatNextPage() {
               <div className="mx-auto flex max-w-[760px] flex-col gap-5 py-6" aria-live="polite">
                 {messages.map((m, i) => {
                   const streamingThis = m.role === "assistant" && i === messages.length - 1 && streaming;
-                  const ctx = streamingThis ? context : m.context;
                   const previews = streamingThis ? [] : previewsFor(m);
                   // The steps belong to the answer of this visit's latest turn: live while it streams, then one line.
                   // One element for both phases, so its clock runs from the question to the first words.
@@ -196,25 +229,21 @@ export default function ChatNextPage() {
                   return (
                     <div key={i} className="flex flex-col gap-2">
                     {isLatest && <ThinkingSteps activities={activities} answering={!waiting} />}
-                    {!waiting && <MessageBubble
+                    {!waiting && <ChatMessage
                       message={m}
                       streaming={streamingThis}
-                      hideThinking
-                      codeChunks={ctx?.code_chunks ?? []}
-                      onCitationClick={(n) => { if ((m.context?.code_chunks?.length ?? 0) >= n) openEvidence({ message: i, tab: "sources", source: n }); }}
-                      onDataClick={(ds) => { const n = numberForData(sourcesFor(m), ds); if (n != null) openEvidence({ message: i, tab: "sources", source: n }); }}
-                      footer={m.role === "assistant" && !streamingThis ? (
-                        <>
-                          {previews.length > 0 && <PreviewRow previews={previews} onOpen={(tab) => openEvidence({ message: i, tab, source: null })} active={panel?.message === i ? panel.tab : null} />}
-                          {m.createdAt != null && (
-                            <AnsweredOnNote
-                              createdAt={m.createdAt}
-                              note={session.sinceThen[String(i)]}
-                              profileHref={previews.find((p) => p.kind === "lot")?.href ?? null}
-                              onAskAgain={!session.isSharedView && i > 0 && messages[i - 1].role === "user" ? () => send(messages[i - 1].content) : undefined}
-                            />
-                          )}
-                        </>
+                      onOpenSource={(n) => openEvidence({ message: i, tab: "sources", source: n })}
+                      footer={m.role === "assistant" && !streamingThis && previews.length > 0
+                        ? <PreviewRow previews={previews} onOpen={(tab) => openEvidence({ message: i, tab, source: null })} active={panel?.message === i ? panel.tab : null} />
+                        : undefined}
+                      meta={m.role === "assistant" && !streamingThis && m.createdAt != null ? (
+                        <AnsweredOnNote
+                          inset={false}
+                          createdAt={m.createdAt}
+                          note={session.sinceThen[String(i)]}
+                          profileHref={previews.find((p) => p.kind === "lot")?.href ?? null}
+                          onAskAgain={!session.isSharedView && i > 0 && messages[i - 1].role === "user" ? () => send(messages[i - 1].content) : undefined}
+                        />
                       ) : undefined}
                     />}
                     </div>
@@ -272,7 +301,7 @@ function PreviewRow({ previews, onOpen, active }: { previews: Preview[]; onOpen:
   // The chip whose evidence is in the panel reads as selected.
   const chipFor = (tab: EvidenceTab) => (active === tab ? `${base} bg-nx-pill-purple-bg ring-nx-pill-purple/40` : chip);
   return (
-    <div className="mt-2 flex flex-wrap gap-2 pl-9" data-testid="chat-previews">
+    <div className="flex flex-wrap gap-2" data-testid="chat-previews">
       {previews.map((p) => p.kind === "lot" ? (
         <a key="lot" href={p.href} target="_blank" rel="noopener noreferrer" className={chip} data-testid="preview-lot">
           <MapPin aria-hidden className="h-4 w-4" strokeWidth={STROKE} />

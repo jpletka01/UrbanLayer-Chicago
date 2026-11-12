@@ -2,7 +2,7 @@
 // lucide-react), 1.5 stroke. A new concept gets one line here before it gets a component.
 import {
   ArrowUpToLine, BadgeDollarSign, House, BookOpen, Bookmark, Building2, ChartColumn, HandCoins, KeyRound, CircleUser, Download, FileClock, LandPlot, Layers,
-  Footprints, GraduationCap, Hammer, ListChecks, Map as MapIcon, Megaphone, Shield, Users, MessageCircle, MessageCircleQuestion, Receipt, Ruler, Search, Square, type LucideIcon,
+  Footprints, GraduationCap, Hammer, History, ListChecks, LocateFixed, Map as MapIcon, Scale, Megaphone, Shield, Users, MessageCircle, MessageCircleQuestion, Receipt, Ruler, Search, Square, type LucideIcon,
 } from "lucide-react";
 import type { NavIcon } from "./readiness";
 
@@ -39,6 +39,11 @@ export const ICON = {
   requests311: Megaphone,
   people: Users,
   schools: GraduationCap,
+  // the chat's sources (Phase 8): the code, this lot, around the lot; "on the map"
+  code: Scale,
+  around: LocateFixed,
+  onMap: MapIcon,
+  chats: History,
 } satisfies Record<string, LucideIcon>;
 
 export const NAV_ICON: Record<NavIcon, LucideIcon> = {

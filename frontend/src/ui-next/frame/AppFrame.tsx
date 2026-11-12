@@ -20,6 +20,7 @@ export function AppFrame({
   drawer,
   bar,
   fill = false,
+  secondary,
   children,
 }: {
   /** The breadcrumb, first to last; the last one is the current page. */
@@ -33,13 +34,19 @@ export function AppFrame({
   bar?: ReactNode;
   /** The page fills the screen below the top bar (Discovery's map): the bar may grow to a second row. */
   fill?: boolean;
+  /** A page's own sidebar beside the main panel (the chat's list, owner review 2026-11-12). When the page has one, the
+      main panel opens collapsed to its icons, and expanding it there is not remembered for other pages. */
+  secondary?: ReactNode | null;
   children: ReactNode;
 }) {
   const { t } = useTranslation("next");
-  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const ownSidebar = secondary !== undefined;
+  const [collapsed, setCollapsed] = useState(() => ownSidebar || readCollapsed());
   const toggle = () => {
     setCollapsed((c) => {
-      try { localStorage.setItem(COLLAPSE_KEY, c ? "open" : "collapsed"); } catch { /* per-viewer convenience only */ }
+      if (!ownSidebar) {
+        try { localStorage.setItem(COLLAPSE_KEY, c ? "open" : "collapsed"); } catch { /* per-viewer convenience only */ }
+      }
       return !c;
     });
   };
@@ -52,6 +59,9 @@ export function AppFrame({
       <aside className="sticky top-0 hidden h-dvh shrink-0 border-r border-nx-ink/10 lg:block">
         <SidePanel collapsed={collapsed} onToggleCollapsed={toggle} />
       </aside>
+      {secondary && (
+        <div className="sticky top-0 hidden h-dvh shrink-0 border-r border-nx-ink/10 lg:block">{secondary}</div>
+      )}
 
       <div className="flex min-w-0 flex-1">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">

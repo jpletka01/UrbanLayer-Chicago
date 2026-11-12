@@ -1913,7 +1913,16 @@
       "tableRow": "Mostrar solo la fila de este distrito",
       "tableAll": "Mostrar toda la tabla ({{count}} filas)",
       "passageUsed": "Resaltado: la parte que usó la respuesta.",
-      "noPassage": "Ningún pasaje coincidió de cerca con la respuesta; se muestra la sección completa."
+      "noPassage": "Ningún pasaje coincidió de cerca con la respuesta; se muestra la sección completa.",
+      "groupCode": "Código Municipal",
+      "groupLot": "Este terreno",
+      "groupArea": "Alrededor del terreno",
+      "notCited": "Consultado, no citado",
+      "arrestShare": "{{pct}}% terminó en arresto",
+      "areaCrimes_one": "{{count}} en todo {{area}}",
+      "areaCrimes_other": "{{count}} en todo {{area}}",
+      "assessorRecord": "El registro del Asesor",
+      "dataset": "El conjunto de datos de la Ciudad"
     },
     "map": {
       "layers": "Capas del mapa",
@@ -1933,6 +1942,34 @@
       "closeCard": "Cerrar",
       "arrest": "Hubo arresto",
       "noArrest": "Sin arresto"
+    },
+    "cite": {
+      "open": "{{name}}, fuente {{n}}: abrir en Fuentes",
+      "click": "Haga clic para abrirla en Fuentes",
+      "copy": "Copiar la respuesta",
+      "copied": "Copiado",
+      "crime": "Delitos",
+      "311": "311",
+      "permits": "Permisos",
+      "violations": "Infracciones",
+      "business": "Negocios",
+      "vacant_buildings": "Edificios vacíos",
+      "food_inspections": "Inspecciones de alimentos"
+    },
+    "list": {
+      "label": "Sus conversaciones",
+      "title": "Conversaciones",
+      "hide": "Ocultar conversaciones",
+      "show": "Mostrar conversaciones",
+      "search": "Buscar conversaciones",
+      "noMatch": "Ninguna conversación coincide",
+      "group": {
+        "today": "Hoy",
+        "yesterday": "Ayer",
+        "week": "Últimos 7 días",
+        "month": "Últimos 30 días",
+        "older": "Anteriores"
+      }
     }
   },
   "landing": {

@@ -8,13 +8,20 @@ import { ChevronDown, SquareArrowOutUpRight } from "lucide-react";
 import type { ContextObject, Message } from "../../lib/types";
 import { formatDay, humanizeShoutyCase } from "../../lib/format";
 import { streetViewUrl } from "../map/mapInfo";
-import { STROKE } from "../icons";
-import { sourcesFor, type SourceItem } from "./evidenceModel";
+import { ICON, STROKE } from "../icons";
+import { CITY_DATASET, assessorUrl, datasetUrl, groupOf, sourcesFor, type SourceGroup, type SourceItem } from "./evidenceModel";
 import { constructionRecord, crimeRecord, factTiles, requestsRecord, type BuildCard } from "./recordModel";
 import { LENS_COLORS } from "./chatLens";
 import { lotHref } from "./chatModel";
 
 export type MapLayer = "building" | "crime";
+
+/** Each kind of source keeps one color on its number and one icon on its heading. */
+const GROUP: Record<SourceGroup, { badge: string; icon: typeof ICON.code; label: string }> = {
+  code: { badge: "bg-nx-pill-purple-bg text-nx-pill-purple", icon: ICON.code, label: "chat.src.groupCode" },
+  lot: { badge: "bg-nx-pill-green-bg text-nx-pill-green", icon: ICON.lot, label: "chat.src.groupLot" },
+  area: { badge: "bg-nx-pill-blue-bg text-nx-pill-blue", icon: ICON.around, label: "chat.src.groupArea" },
+};
 
 export function EvidenceSources({ message, openN, onShowOnMap }: { message: Message; openN: number | null; onShowOnMap: (layer: MapLayer) => void }) {
   const { t, i18n } = useTranslation("next");
@@ -31,24 +38,36 @@ export function EvidenceSources({ message, openN, onShowOnMap }: { message: Mess
 
   return (
     <ol className="flex flex-col gap-2" data-testid="chat-sources">
-      {items.map((it) => {
+      {items.map((it, idx) => {
         const isOpen = open === it.n;
         const head = header(it, ctx, t);
+        const group = groupOf(it.kind);
+        const g = GROUP[group];
+        const first = idx === 0 || groupOf(items[idx - 1].kind) !== group;
+        const uncited = it.kind === "code" && !it.cited;
         return (
-          <li key={it.n} ref={(el) => { rows.current[it.n] = el; }} className={`rounded-2xl ${isOpen ? "bg-nx-block" : "ring-1 ring-nx-ink/10"}`} data-testid={`source-${it.kind}`}>
+          <li key={it.n} ref={(el) => { rows.current[it.n] = el; }} className="flex flex-col gap-2">
+            {first && (
+              <h3 className={`flex items-center gap-1.5 text-caption font-semibold nx-muted ${idx > 0 ? "mt-2" : ""}`} data-testid={`source-group-${group}`}>
+                <g.icon aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{t(g.label)}
+              </h3>
+            )}
+            <div className={`rounded-2xl ${isOpen ? "bg-nx-block" : "ring-1 ring-nx-ink/10"}`} data-testid={`source-${it.kind}`}>
             <button type="button" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : it.n)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left touch-target">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-nx-pill-purple-bg text-caption font-semibold text-nx-pill-purple">{it.n}</span>
+              <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-caption font-semibold ${g.badge}`} data-group={group}>{it.n}</span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{head.title}</span>
-                <span className="block truncate text-caption nx-muted">{head.from}</span>
+                <span className={`block truncate font-medium ${uncited ? "nx-muted" : ""}`}>{head.title}</span>
+                <span className="block truncate text-caption nx-muted">{uncited ? `${t("chat.src.notCited")} · ${head.from}` : head.from}</span>
               </span>
               <ChevronDown aria-hidden className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} strokeWidth={STROKE} />
             </button>
             {isOpen && (
               <div className="flex flex-col gap-3 px-3 pb-3 sm:pl-12">
                 <SourceBody it={it} message={message} locale={locale} onShowOnMap={onShowOnMap} />
+                <RecordLink it={it} ctx={ctx} />
               </div>
             )}
+            </div>
           </li>
         );
       })}
@@ -143,9 +162,9 @@ function SourceBody({ it, message, locale, onShowOnMap }: { it: SourceItem; mess
           )}
         </ul>
         <p className="text-caption nx-muted">
-          {[r.arrests != null && t("chat.src.arrests", { n: r.arrests, total: r.total }), r.scope === "near" && r.areaTotal != null && t("chat.lens.inArea", { count: r.areaTotal, area: ctx?.community_area_name ?? t("chat.lens.theArea") })].filter(Boolean).join(" · ")}
+          {[r.arrests != null && r.total > 0 && t("chat.src.arrestShare", { pct: Math.round((r.arrests / r.total) * 100) }), r.scope === "near" && r.areaTotal != null && t("chat.src.areaCrimes", { count: r.areaTotal, area: ctx?.community_area_name ?? t("chat.lens.theArea") })].filter(Boolean).join(" · ")}
         </p>
-        {r.scope === "near" && <button type="button" onClick={() => onShowOnMap("crime")} className={`${link} self-start`} data-testid="show-crime-on-map">{t("chat.src.showViolent")}</button>}
+        {r.scope === "near" && <button type="button" onClick={() => onShowOnMap("crime")} className={`${link} self-start`} data-testid="show-crime-on-map"><ICON.onMap aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{t("chat.src.showViolent")}</button>}
       </>
     );
   }
@@ -203,6 +222,21 @@ function SourceBody({ it, message, locale, onShowOnMap }: { it: SourceItem; mess
   );
 }
 
+/** The official record behind a source row: the Assessor's page for the lot's PIN, the City's dataset for a record
+    around the lot. Code sections carry their text in full, so they need none. */
+function RecordLink({ it, ctx }: { it: SourceItem; ctx: ContextObject | undefined }) {
+  const { t } = useTranslation("next");
+  const pin = ctx?.property?.pin14 ?? null;
+  const id = it.kind === "code" ? undefined : CITY_DATASET[it.kind];
+  const href = (it.kind === "facts" || it.kind === "lot") && pin ? assessorUrl(pin) : id ? datasetUrl(id) : null;
+  if (!href) return null;
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 self-start text-caption underline underline-offset-2 hover:no-underline touch-target" data-testid="record-link">
+      {t(id ? "chat.src.dataset" : "chat.src.assessorRecord")}<SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} /><span className="sr-only">{t("common:opensInNewTab")}</span>
+    </a>
+  );
+}
+
 function BuildCardView({ c, money, onShowOnMap }: { c: BuildCard; money: Intl.NumberFormat; onShowOnMap: () => void }) {
   const { t } = useTranslation("next");
   const link = "inline-flex items-center gap-1 text-caption underline underline-offset-2 hover:no-underline touch-target";
@@ -217,7 +251,7 @@ function BuildCardView({ c, money, onShowOnMap }: { c: BuildCard; money: Intl.Nu
       <span className="text-caption nx-muted">{[c.cost ? money.format(c.cost) : null, c.date ? t("chat.src.issued", { date: formatDay(c.date) }) : null].filter(Boolean).join(" · ")}</span>
       <span className="line-clamp-2 text-caption" title={c.description}>{humanizeShoutyCase(c.description)}</span>
       <span className="flex gap-4">
-        <button type="button" onClick={onShowOnMap} className={link}>{t("chat.src.showOnMap")}</button>
+        <button type="button" onClick={onShowOnMap} className={link}><ICON.onMap aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{t("chat.src.showOnMap")}</button>
         <a href={streetViewUrl(c.lat, c.lon)} target="_blank" rel="noopener noreferrer" className={link}>
           {t("chat.src.streetView")}<SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} /><span className="sr-only">{t("common:opensInNewTab")}</span>
         </a>

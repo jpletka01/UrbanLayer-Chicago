@@ -32,6 +32,14 @@ const MSG: Message = {
 afterEach(cleanup);
 
 describe("the Sources tab", () => {
+  it("sorts sources under three colored headings: the code, this lot, around the lot (owner, 2026-11-12)", () => {
+    render(<EvidenceSources message={MSG} openN={4} onShowOnMap={vi.fn()} />);
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Municipal code", "This lot", "Around the lot"]);
+    const facts = screen.getByTestId("source-facts");
+    expect(within(facts).getByText("4").getAttribute("data-group")).toBe("lot");
+    expect(within(facts).getByTestId("record-link").getAttribute("href")).toBe("https://www.cookcountyassessor.com/pin/13264210060000");
+  });
+
   it("opens a cited code section on its highlighted passage", async () => {
     const { container } = render(<EvidenceSources message={MSG} openN={2} onShowOnMap={vi.fn()} />);
     expect(screen.getByTestId("code-passage").textContent).toContain("one coach house with one dwelling unit");
@@ -51,7 +59,8 @@ describe("the Sources tab", () => {
     render(<EvidenceSources message={MSG} openN={5} onShowOnMap={show} />);
     const row = screen.getByTestId("source-crime");
     expect(row.textContent).toContain("Within ½ mile");
-    expect(row.textContent).toContain("Arrest made in 1 of 2");
+    expect(row.textContent).toContain("50% led to an arrest");
+    expect(within(row).getByTestId("record-link").getAttribute("href")).toBe("https://data.cityofchicago.org/d/ijzp-q8t2");
     fireEvent.click(within(row).getByTestId("show-crime-on-map"));
     expect(show).toHaveBeenCalledWith("crime");
   });
