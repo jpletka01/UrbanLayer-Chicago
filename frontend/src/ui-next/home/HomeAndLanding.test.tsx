@@ -77,6 +77,11 @@ describe("the signed-in home", () => {
     fireEvent.click(within(screen.getByTestId("home-recent")).getByRole("button", { name: "Save 1 N Milwaukee Ave" }));
     expect(readSaved().map((l) => l.address)).toEqual(["1 N Milwaukee Ave"]);
     expect(within(screen.getByTestId("home-saved")).getByText("1 N Milwaukee Ave")).toBeTruthy();
+    // Saved shows as selected, and its bookmark unsaves it.
+    const unsave = within(screen.getByTestId("home-saved")).getByRole("button", { name: "Remove 1 N Milwaukee Ave from saved" });
+    expect(unsave.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(unsave);
+    expect(readSaved()).toEqual([]);
   });
 
   it("clears all recent lots at once, and folds the row away", () => {

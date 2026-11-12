@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bookmark, BookmarkCheck, ChevronRight, Map as MapIcon, MapPin, Plus } from "lucide-react";
+import { Bookmark, ChevronRight, Map as MapIcon, MapPin, Plus } from "lucide-react";
 import { AddressInput } from "../../components/AddressInput";
 import { listConversations } from "../../lib/api";
 import type { Conversation } from "../../lib/types";
@@ -145,7 +145,6 @@ function startOfDay(ms: number): number {
 /** One lot: its outline on a plain block, the address, a line about it, and a bookmark that saves or unsaves it. */
 function LotCard({ lot, meta, saved, onToggle }: { lot: RememberedLot; meta: string; saved: boolean; onToggle: () => void }) {
   const { t } = useTranslation("next");
-  const Icon = saved ? BookmarkCheck : Bookmark;
   return (
     <li className="relative">
       <Link to={lotHref(lot)} className="flex flex-col gap-2 rounded-2xl bg-nx-block p-3.5 hover:bg-nx-ink/5" data-testid="home-lot">
@@ -165,10 +164,11 @@ function LotCard({ lot, meta, saved, onToggle }: { lot: RememberedLot; meta: str
         aria-pressed={saved}
         aria-label={saved ? t("home.unsave", { address: lot.address }) : t("home.save", { address: lot.address })}
         title={saved ? t("home.unsaveShort") : t("home.saveShort")}
-        className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg bg-nx-page hover:bg-nx-ink/5 touch-icon"
+        // Saved reads as selected (owner, 2026-11-12): a filled bookmark on a dark badge; a click unsaves it.
+        className={`absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg touch-icon ${saved ? "bg-nx-ink text-nx-on-ink hover:bg-nx-ink/80" : "bg-nx-page hover:bg-nx-ink/5"}`}
         data-testid="home-bookmark"
       >
-        <Icon aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+        <Bookmark aria-hidden className="h-4 w-4" strokeWidth={STROKE} fill={saved ? "currentColor" : "none"} />
       </button>
     </li>
   );
