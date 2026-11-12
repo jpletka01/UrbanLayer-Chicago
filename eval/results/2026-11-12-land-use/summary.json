@@ -1,0 +1,590 @@
+{
+ "lots": 590174,
+ "with_outline": 589574,
+ "sources": {
+  "cmap": {
+   "source": "CMAP Land Use Inventory for Northeastern Illinois",
+   "vintage": "2023 (Spring 2023 aerials; published 2026-03-25)",
+   "url": "https://services5.arcgis.com/LcMXE3TFhi1BSaCY/arcgis/rest/services/LUI_2023_view/FeatureServer/1/query",
+   "licence": "Not restricted; cite CMAP",
+   "fetched": "2026-11-11",
+   "polygons": 231348,
+   "unreadable_geometry": 3
+  },
+  "osm": {
+   "source": "OpenStreetMap via Overpass",
+   "attribution": "(c) OpenStreetMap contributors",
+   "licence": "ODbL 1.0",
+   "osm_base": "2026-11-12T05:31:07Z",
+   "fetched": "2026-11-11",
+   "counts": {
+    "landuse": 21835,
+    "parking": 9314,
+    "no_area": 771
+   }
+  }
+ },
+ "coverage": {
+  "cmap_any": 589574,
+  "cmap_half": 589540,
+  "cmap_uncodeable_or_nonparcel": 157,
+  "osm_landuse": 515626,
+  "osm_landuse_half": 505418,
+  "osm_parking_any": 19609,
+  "assessor": 577641,
+  "structure": 589574
+ },
+ "cmap_share_quantiles": {
+  "0.05": 0.87,
+  "0.1": 0.89,
+  "0.25": 0.945,
+  "0.5": 0.981
+ },
+ "assessor_vs_cmap": {
+  "commercial": {
+   "commercial": 20839,
+   "industrial": 1073,
+   "residential": 1052,
+   "mixed_use": 996,
+   "institutional": 720,
+   "vacant": 124,
+   "parking": 56,
+   "construction": 52,
+   "_n": 25004
+  },
+  "exempt": {
+   "institutional": 13628,
+   "road": 6635,
+   "vacant": 4374,
+   "open_space": 3939,
+   "residential": 3489,
+   "commercial": 1799,
+   "rail": 1349,
+   "transport": 654,
+   "_n": 36736
+  },
+  "industrial": {
+   "industrial": 5496,
+   "commercial": 718,
+   "utility": 211,
+   "vacant": 71,
+   "transport": 41,
+   "mixed_use": 29,
+   "institutional": 11,
+   "residential": 11,
+   "_n": 6592
+  },
+  "parking": {
+   "commercial": 6946,
+   "industrial": 3427,
+   "vacant": 1222,
+   "institutional": 454,
+   "parking": 382,
+   "utility": 375,
+   "mixed_use": 339,
+   "residential": 128,
+   "_n": 13568
+  },
+  "rail": {
+   "rail": 1534,
+   "transport": 569,
+   "vacant": 354,
+   "road": 87,
+   "industrial": 86,
+   "utility": 58,
+   "commercial": 28,
+   "institutional": 12,
+   "_n": 2768
+  },
+  "residential": {
+   "residential": 436383,
+   "mixed_use": 13185,
+   "vacant": 1511,
+   "commercial": 808,
+   "construction": 300,
+   "institutional": 173,
+   "residential_common": 168,
+   "industrial": 97,
+   "_n": 452683
+  },
+  "vacant": {
+   "vacant": 23096,
+   "residential": 12809,
+   "commercial": 742,
+   "residential_common": 684,
+   "utility": 670,
+   "mixed_use": 585,
+   "industrial": 548,
+   "road": 458,
+   "_n": 40258
+  }
+ },
+ "cmap_by_structure": {
+  "residential": {
+   "disagree": 24030,
+   "built": 400907,
+   "empty": 14415,
+   "new_construction": 331,
+   "accessory": 13924,
+   "demolished_since_2022": 446,
+   "_n": 454053
+  },
+  "vacant": {
+   "empty": 34867,
+   "new_construction": 945,
+   "disagree": 2581,
+   "built": 279,
+   "demolished_since_2022": 122,
+   "accessory": 1142,
+   "_n": 39936
+  },
+  "commercial": {
+   "built": 14774,
+   "disagree": 7569,
+   "new_construction": 97,
+   "empty": 9011,
+   "accessory": 635,
+   "demolished_since_2022": 58,
+   "_n": 32144
+  },
+  "institutional": {
+   "empty": 7531,
+   "accessory": 241,
+   "disagree": 3862,
+   "built": 4907,
+   "demolished_since_2022": 57,
+   "new_construction": 47,
+   "_n": 16645
+  },
+  "mixed_use": {
+   "demolished_since_2022": 28,
+   "built": 12319,
+   "empty": 1295,
+   "disagree": 1508,
+   "accessory": 180,
+   "new_construction": 22,
+   "_n": 15352
+  },
+  "industrial": {
+   "built": 3639,
+   "empty": 4022,
+   "accessory": 186,
+   "disagree": 3034,
+   "new_construction": 38,
+   "demolished_since_2022": 39,
+   "_n": 10958
+  },
+  "road": {
+   "empty": 7258,
+   "accessory": 40,
+   "new_construction": 34,
+   "disagree": 51,
+   "built": 8,
+   "_n": 7391
+  },
+  "open_space": {
+   "empty": 4034,
+   "built": 269,
+   "accessory": 105,
+   "disagree": 112,
+   "new_construction": 23,
+   "demolished_since_2022": 2,
+   "_n": 4545
+  },
+  "rail": {
+   "disagree": 117,
+   "empty": 2712,
+   "accessory": 150,
+   "built": 55,
+   "new_construction": 11,
+   "demolished_since_2022": 1,
+   "_n": 3046
+  },
+  "transport": {
+   "empty": 1062,
+   "disagree": 235,
+   "built": 203,
+   "accessory": 74,
+   "demolished_since_2022": 4,
+   "new_construction": 5,
+   "_n": 1583
+  },
+  "utility": {
+   "built": 202,
+   "disagree": 112,
+   "empty": 1042,
+   "accessory": 129,
+   "new_construction": 2,
+   "_n": 1487
+  },
+  "residential_common": {
+   "disagree": 61,
+   "empty": 777,
+   "accessory": 69,
+   "built": 11,
+   "new_construction": 2,
+   "_n": 920
+  },
+  "parking": {
+   "empty": 491,
+   "disagree": 55,
+   "built": 28,
+   "accessory": 10,
+   "new_construction": 14,
+   "demolished_since_2022": 2,
+   "_n": 600
+  },
+  "construction": {
+   "new_construction": 83,
+   "built": 87,
+   "disagree": 103,
+   "empty": 185,
+   "accessory": 8,
+   "demolished_since_2022": 6,
+   "_n": 472
+  },
+  "water": {
+   "empty": 107,
+   "disagree": 2,
+   "accessory": 1,
+   "built": 1,
+   "_n": 111
+  },
+  "non_parcel": {
+   "empty": 100,
+   "built": 1,
+   "new_construction": 1,
+   "accessory": 4,
+   "disagree": 2,
+   "_n": 108
+  },
+  "cemetery": {
+   "disagree": 7,
+   "empty": 38,
+   "accessory": 18,
+   "built": 29,
+   "_n": 92
+  },
+  "agriculture": {
+   "disagree": 4,
+   "empty": 48,
+   "_n": 52
+  },
+  "uncodeable": {
+   "empty": 41,
+   "accessory": 3,
+   "new_construction": 1,
+   "_n": 45
+  }
+ },
+ "osm_landuse_vs_cmap": {
+  "cemetery": {
+   "cemetery": 71,
+   "open_space": 7,
+   "institutional": 1,
+   "commercial": 1,
+   "_n": 80
+  },
+  "commercial": {
+   "commercial": 18822,
+   "mixed_use": 6822,
+   "residential": 2131,
+   "vacant": 1920,
+   "institutional": 1619,
+   "industrial": 988,
+   "_n": 33197
+  },
+  "construction": {
+   "vacant": 126,
+   "institutional": 51,
+   "industrial": 38,
+   "commercial": 33,
+   "construction": 19,
+   "rail": 18,
+   "_n": 310
+  },
+  "industrial": {
+   "industrial": 4229,
+   "vacant": 937,
+   "utility": 824,
+   "commercial": 781,
+   "transport": 307,
+   "institutional": 259,
+   "_n": 7724
+  },
+  "institutional": {
+   "institutional": 1279,
+   "vacant": 65,
+   "commercial": 49,
+   "residential": 43,
+   "parking": 10,
+   "mixed_use": 8,
+   "_n": 1472
+  },
+  "open_space": {
+   "vacant": 1756,
+   "road": 788,
+   "institutional": 523,
+   "open_space": 155,
+   "residential": 72,
+   "rail": 66,
+   "_n": 3573
+  },
+  "rail": {
+   "rail": 1361,
+   "transport": 419,
+   "vacant": 168,
+   "industrial": 48,
+   "road": 34,
+   "commercial": 30,
+   "_n": 2140
+  },
+  "residential": {
+   "residential": 406094,
+   "vacant": 26232,
+   "mixed_use": 6042,
+   "institutional": 5615,
+   "commercial": 5482,
+   "road": 980,
+   "_n": 453538
+  },
+  "utility": {
+   "utility": 8,
+   "_n": 8
+  },
+  "vacant": {
+   "vacant": 2626,
+   "commercial": 114,
+   "industrial": 108,
+   "institutional": 75,
+   "residential": 57,
+   "mixed_use": 18,
+   "_n": 3079
+  }
+ },
+ "parking_signals": {
+  "assessor": {
+   "lots": 9456,
+   "built": 193,
+   "empty": 8108,
+   "new_construction": 67,
+   "disagree": 603,
+   "accessory": 462,
+   "demolished_since_2022": 23
+  },
+  "osm": {
+   "lots": 5446,
+   "built": 508,
+   "disagree": 414,
+   "empty": 4381,
+   "accessory": 116,
+   "new_construction": 21,
+   "demolished_since_2022": 6
+  },
+  "osm+assessor": {
+   "lots": 3732,
+   "empty": 3520,
+   "accessory": 71,
+   "disagree": 114,
+   "new_construction": 14,
+   "built": 10,
+   "demolished_since_2022": 3
+  },
+  "cmap+osm+assessor": {
+   "lots": 327,
+   "accessory": 6,
+   "empty": 310,
+   "disagree": 7,
+   "new_construction": 4
+  },
+  "cmap": {
+   "lots": 144,
+   "disagree": 44,
+   "built": 26,
+   "empty": 69,
+   "new_construction": 3,
+   "demolished_since_2022": 2
+  },
+  "cmap+osm": {
+   "lots": 74,
+   "disagree": 3,
+   "built": 1,
+   "empty": 65,
+   "new_construction": 3,
+   "accessory": 2
+  },
+  "cmap+assessor": {
+   "lots": 55,
+   "empty": 47,
+   "accessory": 2,
+   "new_construction": 4,
+   "built": 1,
+   "disagree": 1
+  }
+ },
+ "surface_parking_candidates": {
+  "lots": 17159,
+  "by_sources": {
+   "assessor": 8570,
+   "osm": 4497,
+   "osm+assessor": 3591,
+   "cmap+osm+assessor": 316,
+   "cmap": 69,
+   "cmap+osm": 67,
+   "cmap+assessor": 49
+  },
+  "by_land_kind": {
+   "parking": 12526,
+   "exempt": 2661,
+   "city_owned": 619,
+   "residential": 516,
+   "commercial": 357,
+   "vacant": 351,
+   "railroad": 53,
+   "other": 45,
+   "side_yard": 31
+  },
+  "already_empty_land": 16157,
+  "hidden_unusual": 480,
+  "approx_address": 4866
+ },
+ "parking_with_building": {
+  "lots": 702,
+  "osm_garage": 695
+ },
+ "surface_parking_not_empty_land": {
+  "residential": 516,
+  "commercial": 357,
+  "railroad": 53,
+  "other": 45,
+  "side_yard": 31
+ },
+ "empty_land_by_cmap": {
+  "vacant": {
+   "vacant": 20272,
+   "residential": 5321,
+   "utility": 656,
+   "commercial": 591,
+   "residential_common": 567,
+   "industrial": 483,
+   "road": 431,
+   "mixed_use": 337,
+   "institutional": 163,
+   "open_space": 141,
+   "rail": 78,
+   "water": 41,
+   "non_parcel": 40,
+   "construction": 34,
+   "transport": 32,
+   "uncodeable": 21,
+   "parking": 16,
+   "no_main_use": 14,
+   "agriculture": 7,
+   "cemetery": 1,
+   "_n": 29246
+  },
+  "exempt": {
+   "road": 6563,
+   "institutional": 6272,
+   "vacant": 4045,
+   "open_space": 3568,
+   "rail": 1233,
+   "residential": 961,
+   "commercial": 687,
+   "transport": 464,
+   "industrial": 71,
+   "mixed_use": 63,
+   "utility": 63,
+   "cemetery": 51,
+   "water": 50,
+   "residential_common": 49,
+   "parking": 47,
+   "agriculture": 41,
+   "non_parcel": 33,
+   "construction": 28,
+   "uncodeable": 13,
+   "no_main_use": 7,
+   "_n": 24309
+  },
+  "parking": {
+   "commercial": 6475,
+   "industrial": 3133,
+   "vacant": 1106,
+   "institutional": 437,
+   "parking": 365,
+   "utility": 342,
+   "mixed_use": 311,
+   "residential": 113,
+   "transport": 105,
+   "road": 81,
+   "rail": 31,
+   "construction": 21,
+   "open_space": 17,
+   "residential_common": 5,
+   "non_parcel": 5,
+   "water": 3,
+   "cemetery": 1,
+   "uncodeable": 1,
+   "_n": 12552
+  },
+  "city_owned": {
+   "vacant": 8884,
+   "institutional": 796,
+   "open_space": 404,
+   "residential": 128,
+   "transport": 107,
+   "road": 91,
+   "commercial": 67,
+   "parking": 55,
+   "rail": 35,
+   "industrial": 18,
+   "utility": 12,
+   "residential_common": 11,
+   "water": 9,
+   "mixed_use": 4,
+   "no_main_use": 2,
+   "uncodeable": 1,
+   "non_parcel": 1,
+   "_n": 10625
+  }
+ },
+ "empty_land_not_building_site_per_cmap": {
+  "open_space": 4130,
+  "road": 7166,
+  "transport": 708,
+  "rail": 1377,
+  "cemetery": 53,
+  "utility": 1073,
+  "water": 103,
+  "_n": 14610
+ },
+ "vacant_classes_vs_cmap": {
+  "class_1": {
+   "vacant": 22267,
+   "residential": 5838,
+   "commercial": 712,
+   "utility": 670,
+   "residential_common": 618,
+   "industrial": 539,
+   "road": 452,
+   "mixed_use": 397,
+   "_n": 32151
+  },
+  "side_yard_2-41": {
+   "residential": 6983,
+   "vacant": 955,
+   "mixed_use": 189,
+   "residential_common": 68,
+   "commercial": 33,
+   "non_parcel": 14,
+   "institutional": 14,
+   "road": 13,
+   "_n": 8294
+  }
+ },
+ "osm_landuse_vs_cmap_agreement": {
+  "lots": 505121,
+  "agree": 442653,
+  "share": 0.876
+ }
+}

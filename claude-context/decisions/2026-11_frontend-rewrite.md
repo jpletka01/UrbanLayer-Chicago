@@ -1058,7 +1058,7 @@ The City's stories run high against the Assessor too (median 1.19; the Assessor'
 - **The lot itself** isn't yet treated in 3D: its black outline sits on the ground under its own building. M6's next step draws today's building on the lot in the lot's color and the illustrative zoning mass around it.
 - Buildings since 2022 are missing; demolished ones remain.
 
-**Production steps (only when 3D ships):** `docker compose run --rm --no-deps backend python -m backend.map_tiles.building_tiles` (about 3 min fetch + 3 min cut), then verify `/api/map/info` lists `buildings`. A data-health source and a refresh cadence come with that PR (the County flew in 2017 and 2022).
+**Production steps (only when 3D ships):** `docker compose run --rm --no-deps backend python -m backend.map_tiles.building_tiles` (about 3 min fetch + 3 min cut), then verify `/api/map/info` lists `buildings`. **The County's LiDAR service (gis.cookcountyil.gov) blocks the prod server** (found 2026-11-12), as FEMA does (Item 84): the source copy `map_sources/county_buildings_2022.db` is fetched on the Mac, installed on the server, and the tiles are built there with `--offline`. A data-health source and a refresh cadence come with that PR (the County flew in 2017 and 2022).
 
 *Alternatives:* the City's footprints raised by stories (52% coverage, approximate, 2015); OpenStreetMap heights (the same City import, Item 104); deck.gl's 3D layers (MapLibre's own extrusion is enough and keeps one map).
 
@@ -1304,3 +1304,112 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - **An unmoderated link:** it can't score the criteria.
 
 *Revisit if* the owner lines up builders earlier: the test can run at any phase boundary, and earlier is cheaper.
+
+## Item 112: Phase 7 M5 step 1, land in use: three sources measured, surface parking first (2026-11-12)
+
+**Status: measurement only. Nothing live changes and no UI is built** until the owner labels the blind panel and answers the questions at the end. Eval code: `eval/land_use.py` (fetch + measure), `eval/land_use_label.py` + `eval/land_use_label_page.html` (blind check), panel `eval/land_use_panel.json`, counts in `eval/results/2026-11-12-land-use/summary.json`. Read-only, offline after the fetch, no model calls. Tests: `eval/tests/test_land_use.py`.
+
+**The sources.**
+- **CMAP's Land Use Inventory, 2023:** the newest release, not 2020.
+  - Published 2026-03-25 as the ArcGIS feature service `LUI_2023_view`; 477,225 polygons for the seven counties, 231,348 in Chicago's box (a 146 MB local copy, fetched in about 2 minutes by id batches).
+  - Licence: "Not restricted. Users are expected to cite the Chicago Metropolitan Agency for Planning (CMAP)."
+  - How it is made: CMAP staff update the 2020 inventory from Spring 2023 aerial photography, "supplemented by County Assessor files". The update focuses on parcels whose Assessor record or geometry changed since 2020, so an unchanged parcel carries an older code.
+  - Fields: 57 codes in `LANDUSE`, a second use in `LANDUSE2`, `MODIFIER` (multi-use, stalled construction, transitional) and `OS_MGMT` (park manager).
+  - Parcels are **dissolved on a common use**, so a lot is matched by overlap area, never by PIN. The median lot is 98% inside one CMAP polygon (5th percentile 87%).
+  - Not fully independent of the Assessor: CMAP's vacant subtypes and its rule for a lot held with the house next door both read the Assessor's files.
+  - **Parking, code 1540**, means *independent* parking, "with or without a multi-level structure". A parking lot that serves an adjacent use is coded to that use (classification schema, December 2020). So CMAP alone can't say "surface", and it misses most accessory lots.
+  - FAC_NAME (facility names) is not kept.
+- **The Assessor's class:** already on every lot as `land_kind` (Item 110). Only 5-90 / 5-80 (minor improvement) say parking.
+- **OpenStreetMap,** through Overpass inside the City (relation 122604), as of 2026-11-12:
+  - 9,314 `amenity=parking` areas and 21,835 `landuse` areas. On-street parking (`parking=lane / street_side / layby`, 1,175 areas) is not counted as a lot; `multi-storey / underground / rooftop` count as a garage.
+  - Kept in its own file and attributed "(c) OpenStreetMap contributors" (ODbL 1.0). Never merged into a government source.
+- **What stands on the lot:** Item 110's `structure` (City footprints + 2022 LiDAR + permits), unchanged and reused.
+
+**Measured on the local citywide index** (590,174 base lots, 589,574 with an outline):
+- *Coverage:* CMAP 100% (every lot with an outline; 157 "non-parcel" or "uncodeable"). OSM `landuse` 515,626 lots (87%), mostly block-sized residential areas. OSM parking touches 19,609 lots. The Assessor's crosswalk covers 577,641 (City-owned land has no use class).
+- *CMAP vs the Assessor* (CMAP's main code over half the lot):
+  - Residential classes 99.3% (96.4% residential, 2.9% mixed use).
+  - Commercial classes 87.3% (incl. mixed use).
+  - Industrial classes 83.4%.
+  - Vacant class 1-xx 69.3%: CMAP calls 5,838 residential, by its same-owner rule or because something was built. Side yards (2-41) are 84% "residential" in CMAP, by that same rule.
+  - **Exempt land (36,736 lots) is where CMAP adds what the Assessor can't say:** institutional 13,628, road right-of-way 6,635, vacant 4,374, park or open space 3,939, residential 3,489, rail 1,349.
+- *CMAP vs what stands on the lot:* CMAP "vacant" lots have a building on 279 (plus 945 new construction since 2022), so its codes trail new construction.
+- *OSM `landuse` vs CMAP:* agree on 87.6% of 505,121 lots, but OSM's areas are block-sized and sparse beyond residential: 3,079 grass, 3,057 brownfield, 2,141 railway.
+
+**Surface parking** = a source says parking on at least half the lot, and Item 110 finds no building (empty, or a garage or shed only).
+
+| Sources saying parking | Lots | No building |
+|---|---|---|
+| Assessor only (5-90 / 5-80) | 9,456 | 8,570 |
+| OSM only | 5,446 | 4,497 |
+| OSM + Assessor | 3,732 | 3,591 |
+| CMAP + OSM + Assessor | 327 | 316 |
+| CMAP only | 144 | 69 |
+| CMAP + OSM | 74 | 67 |
+| CMAP + Assessor | 55 | 49 |
+
+- **17,159 surface-parking candidates.** 16,157 (94%) are already Empty land under Item 110's four-kind rule. 1,002 aren't, because they are taxed as residential (516), other commercial (357), railroad (53), other (45) or side yards (31). 480 are hidden as unusual.
+- **CMAP finds little parking:** 1540 covers half of only 600 lots. Of the 13,568 lots the Assessor classes as parking, CMAP codes 6,946 commercial, 3,427 industrial and only 382 parking, because they serve a business.
+- **OSM-only parking** (4,497) is mostly exempt land (2,614, which CMAP calls institutional: church, school and hospital lots), then City-owned (564), residential (509) and commercial (345). OSM maps only 4,352 of the Assessor's 12,526 parking lots, so its recall is low.
+- **Garages:** 702 lots carry a parking use and a building; 695 are OSM multi-storey or underground.
+
+**Found on the way: about one in five Empty-land lots is not a building site, per CMAP.**
+- 14,610 of today's 76,732 Empty-land lots (19.0%) are coded as road right-of-way (7,166), park or open space (4,130), rail (1,377), utility (1,073), transport (708), water (103) or cemetery (53). 13,955 of them are shown by default.
+- By kind:
+  - exempt: road 6,563, open space 3,568, rail 1,233, transport 464;
+  - vacant class: utility 656, road 431;
+  - parking: utility 342.
+- This is Item 75's "high-confidence infrastructure hidden by default", and the blind panel measures it before anything changes.
+- Item 110's 43/43 checked *empty*, which these are. They are empty but not buildable.
+
+**The blind owner check (pending; counts only in the repo, labels in gitignored `eval/results/2026-11-12-land-use/labels.json`).**
+- The panel holds 86 lots, drawn seeded (112) from the measured pools. Lots on the Item 109 and 110 panels are left out.
+- The labeler answers what the lot is used for today, from 12 choices; surface parking and parking garage are separate answers.
+- The page shows only the outline, the neighbors' own addresses, street names, the City's footprints *around* the lot and a Street View link. **No satellite or aerial view** (Item 78; Item 110's page still had one). The source answers and strata never reach the page (`/data` checked).
+
+| Stratum | Lots | Pool | Measures |
+|---|---|---|---|
+| Parking, by sources (7 strata) | 42 | 16,652 | precision of "surface parking" per source and combination |
+| Parking with a building | 4 | 702 | "parking garage" |
+| No building, CMAP business/institution, no parking source | 6 | 2,434 | parking the sources miss |
+| Empty land, CMAP road/rail/utility/transport | 8 | 8,964 | whether those leave Empty land |
+| Empty land, CMAP park or open space | 6 | 4,042 | same |
+| Empty land, no parking source | 6 | 44,517 | parking inside Empty land the sources miss |
+| CMAP and the Assessor agree / disagree on the use | 6 / 8 | 460,180 / 25,069 | which source is right on disagreement |
+
+`python -m eval.land_use_label score` gives precision per source and per category (Wilson 95% range) and the surface-parking rule's precision weighted by pool. Proposed thresholds (Item 75), for the owner:
+- a category or source is shown at standard confidence only with blind precision of 90% or more;
+- under that it is "low" (shown with its source, never filtered on), or withheld if under 70%;
+- a lot where the sources disagree shows the conflict, never a silent pick.
+
+**Recommendation, pending the panel (not decided):**
+- *Categories:* one observed-use field:
+  - homes, business (commercial and mixed use), industrial, institution, park or open space, surface parking, parking garage, empty, under construction.
+  - Plus a separate **infrastructure** field (road right-of-way, rail, utility, transport) and Item 75's utilization later from M4. No "underused".
+- *Sources per category:*
+  - Homes, business and industrial: **the Assessor's class** (current tax year), with CMAP as the cross-check. On disagreement the conflict shows.
+  - Institution, park and infrastructure: **CMAP** (the Assessor's "exempt" and the City's inventory say who owns or pays, not the use).
+  - Surface parking: **Assessor 5-90 / 5-80, CMAP 1540 or OSM surface parking, AND no building** (Item 110), each source's precision from the panel.
+  - Garage: OSM multi-storey/underground or CMAP 1540 with a building.
+  - Empty: Item 110 unchanged.
+  - **OSM is never the only source of a shown fact until a licensing review** (ODbL share-alike may reach a derived database). Until then it raises or lowers confidence and marks conflicts.
+- *Fields on a lot* (index, so the evaluator can filter):
+  - `use` and `use_source` (assessor / cmap / osm / rule);
+  - `use_vintage` (Assessor tax year, "CMAP 2023", the OSM date);
+  - `use_confidence` (standard / low);
+  - `use_conflict` (the sources that disagree);
+  - `infrastructure`, `parking` (surface / garage) with `parking_sources`.
+  - OSM inputs in their own `osm_*` keys.
+
+*Alternatives rejected:*
+- **CMAP 2020:** superseded by 2023.
+- **CMAP alone for parking:** it finds 600 lots and codes accessory lots to the use they serve.
+- **OSM alone:** sparse (4,352 of 12,526 Assessor parking lots) and licence-bound.
+- **Classifying imagery:** a model call per lot, and imagery we must not use (Items 78, 110).
+- **A new copy of `land_kind` / `structure`:** reused as is (the phase rule).
+
+*Not measured yet:*
+- precision of any category: the panel is unlabeled;
+- whether CMAP and Overpass answer from the prod server (prod access was not available to this session). The likely path is a fetch on the Mac and an installed copy, as for FEMA and the County's LiDAR.
+
+*Revisit if:* the panel's precision for a source is under 90%, CMAP publishes a newer inventory, or the licensing review clears OSM.
