@@ -20,6 +20,10 @@ interface Props {
   dropUp?: boolean;
   /** The field's accessible name when the placeholder isn't one (the pinned bar's "Look up another address"). */
   label?: string;
+  /** A worded submit button in place of the arrow (the new landing's pinned bar: "Show me this lot"). */
+  submitLabel?: string;
+  /** Fill the container instead of the centered 2xl column. */
+  fullWidth?: boolean;
 }
 
 // Per-variant chrome. Hero keeps the original over-image styling verbatim; page
@@ -65,13 +69,16 @@ const SIZING = {
  * (300ms debounce), suggestion select submits immediately, free-text Enter
  * submits too (backend resolves it server-side).
  */
-export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "md", defaultValue, busy = false, dropUp = false, label }: Props) {
+export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "md", defaultValue, busy = false, dropUp = false, label, submitLabel, fullWidth = false }: Props) {
   const { t } = useTranslation("common");
   const [value, setValue] = useState(defaultValue ?? "");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Suggestions open only once the visitor has typed: a field that starts filled (a failed query, the landing's
+  // example address) doesn't open its list by itself.
+  const typedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const chrome = CHROME[variant];
@@ -89,7 +96,7 @@ export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "
     debounceRef.current = setTimeout(async () => {
       const results = await getAutocomplete(value.trim());
       setSuggestions(results);
-      setShowSuggestions(results.length > 0);
+      setShowSuggestions(results.length > 0 && typedRef.current);
       setSelectedIndex(-1);
     }, AUTOCOMPLETE_DEBOUNCE_MS);
 
@@ -158,7 +165,7 @@ export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "
   const isActive = value.length > 0;
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-2xl mx-auto">
+    <div ref={containerRef} className={`relative w-full ${fullWidth ? "" : "max-w-2xl mx-auto"}`}>
       <form
         onSubmit={submit}
         className={`relative transition-all duration-300 ${sizing.form} ${isActive ? chrome.formActive : chrome.formIdle}`}
@@ -177,22 +184,26 @@ export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "
           type="text"
           aria-label={label}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => { typedRef.current = true; setValue(e.target.value); }}
           onKeyDown={handleKeyDown}
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
           placeholder={placeholder}
           autoComplete="off"
-          className={`w-full bg-transparent focus:outline-none ${sizing.input} ${chrome.input}`}
+          className={`w-full bg-transparent focus:outline-none ${sizing.input} ${chrome.input} ${submitLabel ? "!pr-14 sm:!pr-44" : ""}`}
         />
         <button
           type="submit"
           disabled={!value.trim() || busy}
-          className={`absolute top-1/2 -translate-y-1/2 rounded-lg flex items-center justify-center transition-all duration-300 ${sizing.button} ${
+          className={submitLabel
+            ? `absolute right-1.5 top-1/2 -translate-y-1/2 h-10 min-w-10 flex items-center justify-center rounded-xl px-3 sm:px-4 font-semibold whitespace-nowrap transition-all duration-300 ${chrome.submitActive} disabled:opacity-60`
+            : `absolute top-1/2 -translate-y-1/2 rounded-lg flex items-center justify-center transition-all duration-300 ${sizing.button} ${
             isActive ? chrome.submitActive : chrome.submitIdle
           } disabled:opacity-60`}
-          aria-label={t("submit")}
+          aria-label={submitLabel ?? t("submit")}
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          {/* A worded button from `sm` up; an arrow on a phone, so the address keeps the width. */}
+          {submitLabel && <span aria-hidden className="hidden sm:inline">{submitLabel}</span>}
+          <svg className={`w-4 h-4 ${submitLabel ? "sm:hidden" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
           </svg>
         </button>

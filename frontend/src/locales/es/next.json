@@ -7,7 +7,8 @@
     "search": "Buscar",
     "discovery": "Descubrir",
     "saved": "Guardados",
-    "chat": "Chat"
+    "chat": "Chat",
+    "home": "Inicio"
   },
   "frame": {
     "panel": "Menú principal",
@@ -32,7 +33,8 @@
     "settings": "Configuración",
     "signIn": "Iniciar sesión",
     "signOut": "Cerrar sesión",
-    "newChat": "Chat nuevo"
+    "newChat": "Chat nuevo",
+    "about": "Acerca de UrbanLayer"
   },
   "tools": {
     "ask": "Preguntar al analista",
@@ -1804,5 +1806,127 @@
     "signInBody": "Ya usó las preguntas gratuitas de hoy. Inicie sesión para hacer más; su conversación se queda aquí.",
     "signInGoogle": "Continuar con Google",
     "signInClose": "Cerrar"
+  },
+  "landing": {
+    "openApp": "Abrir la aplicación",
+    "headline": "Sepa qué puede construir en cualquier terreno de Chicago.",
+    "subline": "Zonificación, costos y el camino a la aprobación, con registros públicos.",
+    "explore": "Explorar el mapa",
+    "heroAlt": "Una cuadra de la ciudad en 3D, moviéndose despacio: los edificios vecinos a su altura, teñidos por zonificación, y un terreno con el edificio más grande que su zonificación permite, dibujado con una línea punteada encima",
+    "heroAllowed": "Permitido: 6 unidades, 60 pies",
+    "heroBuilt": "Construido hoy: 2 unidades, 32 pies",
+    "example": "Terreno de ejemplo",
+    "stats": {
+      "label": "Lo que respalda cada respuesta",
+      "sources": "Fuentes públicas",
+      "sourcesNote": "Ciudad, Condado, Censo y gobierno federal",
+      "sections": "Secciones del código",
+      "sectionsNote": "del Código Municipal, cada una enlazada",
+      "lots": "Terrenos",
+      "lotsNote": "todos los de la ciudad",
+      "areas": "Áreas comunitarias",
+      "areasNote": "de Rogers Park a Hegewisch"
+    },
+    "build": {
+      "kicker": "¿Qué puedo construir?",
+      "title": "Vea el límite antes de contratar a un arquitecto.",
+      "body": "Unidades, área de construcción y altura permitidas frente a lo que hay hoy.",
+      "units": "Unidades",
+      "unitsValue": "2 de 6",
+      "floor": "Área de construcción",
+      "height": "Altura",
+      "heightValue": "32 de 60 pies",
+      "note": "A un lado, en la Ficha, el volumen de zonificación del terreno en 3D, con las reglas que deja fuera."
+    },
+    "city": {
+      "kicker": "¿Me lo permitirá la Ciudad?",
+      "title": "Sepa qué está cambiando antes de comprar.",
+      "body": "Rezonificaciones pendientes, zonas superpuestas y las reglas que aplican al terreno.",
+      "pending": "En comité",
+      "rezoning": "Rezonificación de RS-3 a RM-5 en esta cuadra",
+      "rezoningNote": "de 6 a 12 unidades permitidas si se aprueba",
+      "applies": "Aplica",
+      "coach": "Zona de casa en la cochera",
+      "coachNote": "Se permite una unidad más detrás del edificio principal"
+    },
+    "money": {
+      "kicker": "¿Qué haría falta?",
+      "title": "Impuestos, ventas y rentas de al lado, no de toda la ciudad.",
+      "body": "Solo ventas de mercado. Las transferencias por $1 nunca cuentan.",
+      "sale": "Ventas cercanas",
+      "saleValue": "${{value}} / pie²",
+      "saleNote": "mediana de 14 ventas de mercado, a ¼ de milla",
+      "rent": "Renta",
+      "rentValue": "${{value}} / mes",
+      "rentNote": "2 recámaras, este sector censal",
+      "tax": "Impuesto predial",
+      "taxValue": "${{value}} / año",
+      "taxNote": "la última boleta de este terreno"
+    },
+    "find": {
+      "kicker": "O encuentre primero el terreno",
+      "title": "Toda la ciudad, coloreada por espacio para construir.",
+      "body": "Filtre por zonificación, tamaño del terreno, terrenos vacíos y estacionamientos.",
+      "gridAlt": "El mapa de Descubrir alejado: la ciudad en cuadras coloreadas por espacio para construir, rayadas donde no se sabe",
+      "little": "Poco espacio",
+      "most": "Más espacio",
+      "unknown": "No se sabe"
+    },
+    "ask": {
+      "kicker": "Pregunte al analista",
+      "title": "Pregunte sobre el código. Obtenga la sección, no una suposición.",
+      "question": "¿Podría agregar una casa en la cochera en 2611 N Sawyer?",
+      "lead": "Probablemente sí.",
+      "answer1": "El terreno es RS-3 y está en una zona de casas en la cochera",
+      "answer2": ", y con 125 pies de fondo tiene espacio para el patio trasero",
+      "chipLot": "2611 N Sawyer Ave · Ficha",
+      "chipMap": "Mapa · zona de casa en la cochera",
+      "chipSources": "Fuentes · 2"
+    },
+    "faq": {
+      "title": "Preguntas",
+      "free": {
+        "q": "¿Qué es gratis?",
+        "a": "Todas las pestañas de la Ficha, Descubrir y los mapas. Las preguntas al analista tienen un límite diario; si inicia sesión, tiene más."
+      },
+      "data": {
+        "q": "¿De dónde vienen los datos y qué tan actuales son?",
+        "a": "De la Ciudad de Chicago, el Condado de Cook, el Censo y fuentes federales. Cada cifra de la Ficha muestra su fecha."
+      },
+      "coverage": {
+        "q": "¿Cubre toda la ciudad?",
+        "a": "Todos los terrenos de las 77 áreas comunitarias. Donde una fuente tiene un hueco, la página lo dice."
+      }
+    },
+    "footer": "Enlaces del sitio",
+    "pricing": "Precios",
+    "about": "Acerca de",
+    "privacy": "Privacidad",
+    "legal": "No es asesoría legal. No está afiliado a la Ciudad de Chicago.",
+    "showLot": "Mostrar este terreno",
+    "addressLabel": "Una dirección de Chicago",
+    "addressPlaceholder": "Cualquier dirección de Chicago"
+  },
+  "home": {
+    "welcome": "Bienvenido de nuevo",
+    "searchLabel": "Una dirección o PIN de Chicago",
+    "searchPlaceholder": "Cualquier dirección o PIN de Chicago",
+    "saved": "Terrenos guardados",
+    "savedHere": "en este navegador hasta que Guardados llegue a su cuenta",
+    "savedEmpty": "Guarde un terreno con el marcador de su tarjeta y se queda aquí.",
+    "savedOn": "guardado el {{date}}",
+    "recent": "Terrenos recientes",
+    "recentHere": "en este navegador · los últimos 6",
+    "recentEmpty": "Los terrenos que abra aparecen aquí, seis como máximo.",
+    "clearAll": "Borrar todos",
+    "today": "hoy",
+    "yesterday": "ayer",
+    "save": "Guardar {{address}}",
+    "unsave": "Quitar {{address}} de guardados",
+    "saveShort": "Guardar este terreno",
+    "unsaveShort": "Guardado: haga clic para quitarlo",
+    "chats": "Conversaciones recientes",
+    "findLots": "Encontrar terrenos en el mapa",
+    "findLotsNote": "Toda la ciudad coloreada por espacio para construir"
   }
 }

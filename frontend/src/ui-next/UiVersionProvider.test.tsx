@@ -143,7 +143,7 @@ describe("analytics tagging", () => {
 
 describe("readiness registry", () => {
   it("drives the side panel: Saved stays hidden until its route exists", () => {
-    expect(navEntries().map((e) => e.id)).toEqual(["profile", "discovery", "chat"]);
+    expect(navEntries().map((e) => e.id)).toEqual(["home", "profile", "discovery", "chat"]);
     expect(isReady("saved")).toBe(false);
     expect(isReady("profile")).toBe(true);
     expect(isReady("chat")).toBe(true);

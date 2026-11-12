@@ -20,16 +20,15 @@ export function isChatDoor(search: string): boolean {
 export function VersionedRoute({ id, old, door = false }: {
   id: keyof typeof NEXT_PAGES;
   old: ReactNode;
-  /** "/" in the preview: only its chat doors go to the new chat page (at /chat, keeping their parameters); the rest
-      of "/" stays today's page until the new landing is ready. */
+  /** "/" in the preview: its chat doors go to the new chat page at /chat, keeping their parameters. */
   door?: boolean;
 }) {
   const { version } = useUiVersion();
   const { search } = useLocation();
-  const next = version === "next" && isReady(id) && (!door || isChatDoor(search));
+  const next = version === "next" && isReady(id);
   useNoindex(next);
   if (!next) return <>{old}</>;
-  if (door) return <Navigate to={`/chat${search}`} replace />;
+  if (door && isChatDoor(search)) return <Navigate to={`/chat${search}`} replace />;
   const Page = NEXT_PAGES[id];
   return (
     <Suspense fallback={<FrameOutline />}>

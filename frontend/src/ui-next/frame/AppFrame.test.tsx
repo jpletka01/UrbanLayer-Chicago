@@ -25,11 +25,11 @@ beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 
 describe("AppFrame", () => {
-  it("shows Search, Discovery and Chat, never Saved, with the current page marked", async () => {
+  it("shows Home, Search, Discovery and Chat, never Saved, with the current page marked", async () => {
     const { container } = mount();
     const panel = screen.getAllByRole("navigation", { name: "Main menu" })[0];
     const links = within(panel).getAllByRole("link").map((a) => a.textContent);
-    expect(links).toEqual(["UrbanLayer", "Search", "Discovery"]);
+    expect(links).toEqual(["UrbanLayer", "Home", "Search", "Discovery", "About UrbanLayer"]);
     expect(within(panel).getByRole("button", { name: "Chat" }).getAttribute("aria-expanded")).toBe("false");
     expect(within(panel).queryByText("Saved")).toBeNull();
     expect(within(panel).getByRole("link", { name: "Search" }).getAttribute("aria-current")).toBe("page");

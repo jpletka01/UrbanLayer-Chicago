@@ -152,6 +152,16 @@ export default {
         'nx-figure': ['1.5rem', { lineHeight: '2.25rem', fontWeight: '600' }],
       },
       keyframes: {
+        // The new landing (Phase 8, owner 2026-11-12): the hero scene drifts slowly; Discovery's block grid glows a few
+        // blocks at a time. Both stop under reduced motion (motion-safe: in the markup).
+        'scene-drift': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '50%': { transform: 'translate(-36px, -10px) scale(1.05)' },
+        },
+        'block-glow': {
+          '0%, 40%, 60%, 100%': { filter: 'none' },
+          '50%': { filter: 'brightness(1.35) saturate(1.25)' },
+        },
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
@@ -191,6 +201,8 @@ export default {
         },
       },
       animation: {
+        'scene-drift': 'scene-drift 26s ease-in-out infinite',
+        'block-glow': 'block-glow 9s ease-in-out infinite',
         'fade-in': 'fade-in 2s ease-in-out forwards',
         'blink': 'blink 1s step-end infinite',
         'flash': 'flash 0.8s ease-out',

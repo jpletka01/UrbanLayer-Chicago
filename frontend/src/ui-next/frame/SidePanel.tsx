@@ -86,7 +86,12 @@ export function SidePanel({
         })}
       </ul>
 
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-1">
+        {!collapsed && (
+          <Link to="/?landing=1" onClick={onNavigate} className="rounded-lg px-2 py-1 text-caption nx-muted hover:text-nx-ink touch-target">
+            {t("frame.about")}
+          </Link>
+        )}
         <AccountMenu collapsed={collapsed} />
       </div>
     </nav>

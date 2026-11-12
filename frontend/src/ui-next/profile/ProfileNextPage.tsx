@@ -51,6 +51,7 @@ import type { LateBlockState } from "./moneyModel";
 import { SourcesDialog } from "./SourcesDialog";
 import { PartsStatus } from "./PartsStatus";
 import { useProfileParts, type PartStatus } from "./useProfileParts";
+import { lotKey, outlineRing, rememberRecent } from "../home/lotMemory";
 
 type TabId = "overview" | "build" | "money" | "neighborhood" | "history";
 
@@ -105,6 +106,18 @@ export default function ProfileNextPage() {
       const result = ov.profile;
       track("scorecard_view", { confidence: result.resolved_confidence, pin_resolved: !!result.resolved_pin });
       if (result.address) setTrackingAddress(result.address);
+      // The signed-in home's Recent lots (this browser only, the last six).
+      if (result.address) {
+        const ctx = result.context;
+        rememberRecent({
+          key: lotKey(result.resolved_pin, result.address),
+          address: humanizeShoutyCase(result.address),
+          pin: result.resolved_pin ?? null,
+          zone: ctx?.parcel_zoning?.zone_class ?? null,
+          area: result.community_area_name ?? null,
+          outline: outlineRing(ctx?.property?.parcel_geometry as GeoJSON.Geometry | null | undefined),
+        });
+      }
       if (result.resolved_pin) {
         const next = new URLSearchParams({ pin: result.resolved_pin });
         const shown = result.address ?? params.get("address");

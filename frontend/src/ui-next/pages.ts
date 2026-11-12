@@ -5,4 +5,5 @@ export const NEXT_PAGES = {
   profile: lazy(() => import("./profile/ProfileNextPage")),
   discovery: lazy(() => import("./discovery/DiscoveryNextPage")),
   chat: lazy(() => import("./chat/ChatNextPage")),
+  home: lazy(() => import("./home/RootNextPage")),
 };

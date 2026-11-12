@@ -7,7 +7,8 @@
     "search": "Search",
     "discovery": "Discovery",
     "saved": "Saved",
-    "chat": "Chat"
+    "chat": "Chat",
+    "home": "Home"
   },
   "frame": {
     "panel": "Main menu",
@@ -32,7 +33,8 @@
     "settings": "Settings",
     "signIn": "Sign in",
     "signOut": "Sign out",
-    "newChat": "New chat"
+    "newChat": "New chat",
+    "about": "About UrbanLayer"
   },
   "tools": {
     "ask": "Ask the analyst",
@@ -1804,5 +1806,127 @@
     "signInBody": "You've used today's free questions. Sign in for more; your conversation stays here.",
     "signInGoogle": "Continue with Google",
     "signInClose": "Close"
+  },
+  "landing": {
+    "openApp": "Open the app",
+    "headline": "Know what you can build on any Chicago lot.",
+    "subline": "Zoning, costs and the path to approval, from public records.",
+    "explore": "Explore the map",
+    "heroAlt": "A block of the city in 3D, drifting slowly: neighboring buildings at their heights tinted by zoning, and one lot with the largest building its zoning allows drawn as a dashed outline above it",
+    "heroAllowed": "Allowed: 6 units, 60 ft",
+    "heroBuilt": "Built today: 2 units, 32 ft",
+    "example": "Example lot",
+    "stats": {
+      "label": "What's behind every answer",
+      "sources": "Public sources",
+      "sourcesNote": "City, County, Census and federal",
+      "sections": "Code sections",
+      "sectionsNote": "of the Municipal Code, each one linked",
+      "lots": "Lots",
+      "lotsNote": "every one in the city",
+      "areas": "Community areas",
+      "areasNote": "from Rogers Park to Hegewisch"
+    },
+    "build": {
+      "kicker": "What can I build?",
+      "title": "See the limit before you hire an architect.",
+      "body": "Units, floor area and height allowed against what stands there now.",
+      "units": "Units",
+      "unitsValue": "2 of 6",
+      "floor": "Floor area",
+      "height": "Height",
+      "heightValue": "32 of 60 ft",
+      "note": "Beside it on the Profile, the lot's zoning mass in 3D, with the rules it leaves out listed."
+    },
+    "city": {
+      "kicker": "Will the City let me?",
+      "title": "Know what's changing before you buy.",
+      "body": "Pending rezonings, overlays and the rules that apply to the lot.",
+      "pending": "In committee",
+      "rezoning": "Rezoning RS-3 to RM-5 on this block",
+      "rezoningNote": "6 to 12 units allowed if it passes",
+      "applies": "Applies",
+      "coach": "Coach-house area",
+      "coachNote": "One more unit allowed behind the main building"
+    },
+    "money": {
+      "kicker": "What would it take?",
+      "title": "Taxes, sales and rents next door, not citywide.",
+      "body": "Market sales only. Transfers for $1 never count.",
+      "sale": "Sales nearby",
+      "saleValue": "${{value}} / sq ft",
+      "saleNote": "median of 14 market sales, ¼ mile",
+      "rent": "Rent",
+      "rentValue": "${{value}} / mo",
+      "rentNote": "2 bedrooms, this tract",
+      "tax": "Property tax",
+      "taxValue": "${{value}} / yr",
+      "taxNote": "this lot's last bill"
+    },
+    "find": {
+      "kicker": "Or find the lot first",
+      "title": "The whole city, colored by room to build.",
+      "body": "Filter by zoning, lot size, empty land and surface parking.",
+      "gridAlt": "Discovery's map zoomed out: the city as blocks colored by room to build, hatched where it isn't known",
+      "little": "Little room",
+      "most": "Most room",
+      "unknown": "Not known"
+    },
+    "ask": {
+      "kicker": "Ask the analyst",
+      "title": "Ask about the code. Get the section, not a guess.",
+      "question": "Could I add a coach house at 2611 N Sawyer?",
+      "lead": "Probably yes.",
+      "answer1": "The lot is RS-3 and in a coach-house area",
+      "answer2": ", and at 125 feet deep it has room for the rear yard",
+      "chipLot": "2611 N Sawyer Ave · Profile",
+      "chipMap": "Map · coach-house area",
+      "chipSources": "Sources · 2"
+    },
+    "faq": {
+      "title": "Questions",
+      "free": {
+        "q": "What's free?",
+        "a": "Every Profile tab, Discovery and the maps. Questions to the analyst have a daily allowance; signing in gives you more."
+      },
+      "data": {
+        "q": "Where does the data come from, and how current is it?",
+        "a": "The City of Chicago, Cook County, the Census and federal sources. Each figure on a Profile shows its date."
+      },
+      "coverage": {
+        "q": "Does it cover the whole city?",
+        "a": "Every lot in all 77 community areas. Where a source has a gap, the page says so."
+      }
+    },
+    "footer": "Site links",
+    "pricing": "Pricing",
+    "about": "About",
+    "privacy": "Privacy",
+    "legal": "Not legal advice. Not affiliated with the City of Chicago.",
+    "showLot": "Show me this lot",
+    "addressLabel": "A Chicago address",
+    "addressPlaceholder": "Any Chicago address"
+  },
+  "home": {
+    "welcome": "Welcome back",
+    "searchLabel": "A Chicago address or PIN",
+    "searchPlaceholder": "Any Chicago address or PIN",
+    "saved": "Saved lots",
+    "savedHere": "on this browser until Saved comes to your account",
+    "savedEmpty": "Save a lot with the bookmark on its card and it stays here.",
+    "savedOn": "saved {{date}}",
+    "recent": "Recent lots",
+    "recentHere": "on this browser · the last 6",
+    "recentEmpty": "Lots you open show up here, six at most.",
+    "clearAll": "Clear all",
+    "today": "today",
+    "yesterday": "yesterday",
+    "save": "Save {{address}}",
+    "unsave": "Remove {{address}} from saved",
+    "saveShort": "Save this lot",
+    "unsaveShort": "Saved: click to remove",
+    "chats": "Recent chats",
+    "findLots": "Find lots on the map",
+    "findLotsNote": "The whole city colored by room to build"
   }
 }

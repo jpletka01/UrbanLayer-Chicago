@@ -223,3 +223,27 @@
 .ui-next .nx-cards-even { align-items: stretch; }
 @container (min-width: 26rem) { .ui-next .nx-masonry { column-count: 2; } }
 @container (min-width: 56rem) { .ui-next .nx-masonry { column-count: 3; } }
+
+/* The landing's hero scene and Discovery grid (Phase 8, wireframe v5): the scene's ground, streets, neighbors by
+   zoning tint and the lot, in light and dark; the room-to-build ramp (Coastal greens, strongest = most room). */
+.ui-next.nx-scene,
+.ui-next .nx-scene {
+  --sc-g1: #eef1f4; --sc-g2: #e6eaee; --sc-street: #ffffff;
+  --sc-b1: #c9dfdd; --sc-b2: #b4d0cd; --sc-b3: #dcebea;
+  --sc-p1: #f4d5cd; --sc-p2: #eec2b6; --sc-p3: #f9e5df;
+  --sc-n1: #d9dee3; --sc-n2: #cbd2d8; --sc-n3: #e7ebee;
+  --sc-lot-side: #3a3a3a; --sc-lot-top: #5a5a5a;
+  --sc-r1: #dcebea; --sc-r2: #b4d0cd; --sc-r3: #72b0ab; --sc-r4: #355e58; --sc-hatch: #c4cad0;
+}
+[data-theme="dark"] .ui-next.nx-scene,
+[data-theme="dark"] .ui-next .nx-scene,
+.ui-next[data-theme="dark"] .nx-scene {
+  --sc-g1: #232527; --sc-g2: #2b2e31; --sc-street: #1c1c1c;
+  --sc-b1: #3f5653; --sc-b2: #344846; --sc-b3: #4c6663;
+  --sc-p1: #6b4a42; --sc-p2: #5a3e37; --sc-p3: #7d5850;
+  --sc-n1: #3a3d40; --sc-n2: #323538; --sc-n3: #46494c;
+  --sc-lot-side: #d6d6d6; --sc-lot-top: #efefef;
+  --sc-r1: #2f3b3a; --sc-r2: #4f6f6b; --sc-r3: #72b0ab; --sc-r4: #a6d8cf; --sc-hatch: #4a4f54;
+}
+.ui-next .nx-scene .nx-drift { transform-origin: 600px 300px; transform-box: view-box; }
+.ui-next .nx-hatched { background: repeating-linear-gradient(45deg, var(--sc-g1) 0 4px, var(--sc-hatch) 4px 6px); }

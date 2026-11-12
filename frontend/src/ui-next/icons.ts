@@ -1,13 +1,14 @@
 // One icon per concept, everywhere in the new UI (decision Item 75, standard 1). Lucide only (pinned
 // lucide-react), 1.5 stroke. A new concept gets one line here before it gets a component.
 import {
-  ArrowUpToLine, BadgeDollarSign, BookOpen, Bookmark, Building2, ChartColumn, HandCoins, KeyRound, CircleUser, Download, FileClock, LandPlot, Layers,
+  ArrowUpToLine, BadgeDollarSign, House, BookOpen, Bookmark, Building2, ChartColumn, HandCoins, KeyRound, CircleUser, Download, FileClock, LandPlot, Layers,
   Footprints, GraduationCap, Hammer, ListChecks, Map as MapIcon, Megaphone, Shield, Users, MessageCircle, MessageCircleQuestion, Receipt, Ruler, Search, Square, type LucideIcon,
 } from "lucide-react";
 import type { NavIcon } from "./readiness";
 
 export const ICON = {
   // destinations
+  home: House,
   search: Search,
   discovery: MapIcon,
   saved: Bookmark,
@@ -41,6 +42,7 @@ export const ICON = {
 } satisfies Record<string, LucideIcon>;
 
 export const NAV_ICON: Record<NavIcon, LucideIcon> = {
+  home: ICON.home,
   search: ICON.search,
   discovery: ICON.discovery,
   saved: ICON.saved,
