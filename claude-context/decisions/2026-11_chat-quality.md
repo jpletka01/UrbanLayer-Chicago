@@ -3,7 +3,7 @@
 Decisions made while measuring and fixing chat answers. The audit itself is
 `claude-context/audits/2026-11-12_chat-answer-audit.md`.
 
-## Item 113: the chat answer audit (2026-11-12)
+## Item 118: the chat answer audit (2026-11-12)
 
 **Decision.** Measure chat with a wide, gold-labeled question set before changing any prompt or retrieval code:
 `eval/chat_audit_questions.json` (71 questions, 15 follow-ups) and a deterministic scorer `eval/chat_audit.py`. The

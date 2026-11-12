@@ -3,7 +3,7 @@
 Why: the owner stopped trusting chat after "Can I put a restaurant in 443 w wrightwood?" (RM-6) opened "Yes, likely
 allowable", offered a special-use route that does not exist, closed "not permitted by right", and padded itself
 with Lincoln Park permit trends, 435 food licenses, ARO counts, a flood zone and an ADU aside. This audit asks how
-common those failures are, and what one turn carries into the next. No production code changed. Decision Item 113.
+common those failures are, and what one turn carries into the next. No production code changed. Decision Item 118.
 
 **Spend: $0.88–0.93 of the $1.00 cap.** $0.7034 is measured (the local backend's own `llm_calls`, priced by
 `backend.llm.estimate_cost`): 19 full turns (8 question + follow-up pairs, 3 single turns). A further 54 router-only
