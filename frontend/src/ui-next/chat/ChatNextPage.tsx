@@ -167,7 +167,7 @@ export default function ChatNextPage() {
                 <Minimize2 aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
               </button>
             </div>
-            <div className="min-h-0 flex-1"><ChatMap data={fullMapMessage.mapData} /></div>
+            <div className="min-h-0 flex-1"><ChatMap data={fullMapMessage.mapData} plan={fullMapMessage.plan} /></div>
           </section>
         ) : (
           <div
@@ -296,7 +296,7 @@ function PreviewRow({ previews, onOpen, active }: { previews: Preview[]; onOpen:
       ) : p.kind === "map" ? (
         <button key="map" type="button" onClick={() => onOpen("map")} aria-pressed={active === "map"} className={chipFor("map")} data-testid="preview-map">
           <MapIcon aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-          <span><span className="font-medium">{t("chat.preview.map")}</span> · {t("chat.points", { count: p.points })}</span>
+          <span><span className="font-medium">{t("chat.preview.map")}</span> · {t(`chat.lens.chip.${p.lens}${p.near || p.lens === "lot" || p.lens === "area" ? "" : "Area"}`, { count: p.count })}</span>
         </button>
       ) : p.kind === "data" ? (
         <button key="data" type="button" onClick={() => onOpen("data")} aria-pressed={active === "data"} className={chipFor("data")} data-testid="preview-data">
@@ -346,7 +346,7 @@ function EvidencePanel({ message, tab, source, onTab, onFullScreen }: {
         )}
       </div>
       <div role="tabpanel" className={`min-h-0 flex-1 ${shown === "map" ? "" : "overflow-y-auto"}`}>
-        {shown === "map" && message.mapData ? <ChatMap data={message.mapData} />
+        {shown === "map" && message.mapData ? <ChatMap data={message.mapData} plan={message.plan} />
           : shown === "data" ? <div data-testid="chat-data"><DataView context={message.context ?? null} loading={false} mapData={message.mapData ?? null} /></div>
           : <SourcesList chunks={message.context?.code_chunks ?? []} openIndex={source} />}
       </div>

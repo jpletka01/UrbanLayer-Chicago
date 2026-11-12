@@ -1819,6 +1819,51 @@
       "fullScreen": "Open the map full screen",
       "forAnswer": "For the answer to: {{question}}",
       "tabs": "Evidence for this answer"
+    },
+    "lens": {
+      "theArea": "the community area",
+      "lot": "The lot and the zoning around it",
+      "lotLeftOut": "Crime and permits aren't drawn for a question about the lot.",
+      "safety_one": "{{count}} crime within ½ mile · {{days}} days",
+      "safety_other": "{{count}} crimes within ½ mile · {{days}} days",
+      "safetyArea_one": "{{count}} crime · {{days}} days",
+      "safetyArea_other": "{{count}} crimes · {{days}} days",
+      "split": "{{violent}} violent · {{property}} property",
+      "inArea_one": "{{count}} in {{area}}",
+      "inArea_other": "{{count}} in {{area}}",
+      "recentPins_one": "Pin: the {{count}} from the last 30 days within ¼ mile",
+      "recentPins_other": "Pins: the {{count}} from the last 30 days within ¼ mile",
+      "noPins": "Squares show counts; too many or none recent to pin",
+      "construction_one": "{{count}} new building, demolition or big renovation within ½ mile",
+      "construction_other": "{{count}} new buildings, demolitions and big renovations within ½ mile",
+      "constructionArea_one": "{{count}} new building, demolition or big renovation",
+      "constructionArea_other": "{{count}} new buildings, demolitions and big renovations",
+      "smallLeftOut_one": "{{count}} smaller permit not drawn",
+      "smallLeftOut_other": "{{count}} smaller permits not drawn (repairs, signs, small work)",
+      "area_one": "{{count}} record · {{days}} days, counted by block",
+      "area_other": "{{count}} records · {{days}} days, counted by block",
+      "kind": {
+        "new": "New building",
+        "renovation": "Big renovation",
+        "demolition": "Demolition"
+      },
+      "units_one": "{{count}} unit",
+      "units_other": "{{count}} units",
+      "away": "{{feet}} ft away",
+      "chip": {
+        "lot": "the lot's zoning",
+        "safety_one": "{{count}} crime nearby",
+        "safety_other": "{{count}} crimes nearby",
+        "construction_one": "{{count}} project nearby",
+        "construction_other": "{{count}} projects nearby",
+        "area_one": "{{count}} record",
+        "area_other": "{{count}} records",
+        "safetyArea_one": "{{count}} crime in the area",
+        "safetyArea_other": "{{count}} crimes in the area",
+        "constructionArea_one": "{{count}} project in the area",
+        "constructionArea_other": "{{count}} projects in the area"
+      },
+      "noPoint": "The address couldn't be placed exactly, so this counts the whole community area."
     }
   },
   "landing": {

@@ -1819,6 +1819,51 @@
       "fullScreen": "Abrir el mapa en pantalla completa",
       "forAnswer": "Para la respuesta a: {{question}}",
       "tabs": "Evidencia de esta respuesta"
+    },
+    "lens": {
+      "theArea": "el área comunitaria",
+      "lot": "El terreno y la zonificación alrededor",
+      "lotLeftOut": "No se dibujan delitos ni permisos para una pregunta sobre el terreno.",
+      "safety_one": "{{count}} delito a ½ milla · {{days}} días",
+      "safety_other": "{{count}} delitos a ½ milla · {{days}} días",
+      "safetyArea_one": "{{count}} delito · {{days}} días",
+      "safetyArea_other": "{{count}} delitos · {{days}} días",
+      "split": "{{violent}} violentos · {{property}} contra la propiedad",
+      "inArea_one": "{{count}} en {{area}}",
+      "inArea_other": "{{count}} en {{area}}",
+      "recentPins_one": "Marcador: el {{count}} de los últimos 30 días a ¼ de milla",
+      "recentPins_other": "Marcadores: los {{count}} de los últimos 30 días a ¼ de milla",
+      "noPins": "Los cuadros muestran conteos; demasiados o ninguno reciente para marcar",
+      "construction_one": "{{count}} edificio nuevo, demolición o renovación grande a ½ milla",
+      "construction_other": "{{count}} edificios nuevos, demoliciones y renovaciones grandes a ½ milla",
+      "constructionArea_one": "{{count}} edificio nuevo, demolición o renovación grande",
+      "constructionArea_other": "{{count}} edificios nuevos, demoliciones y renovaciones grandes",
+      "smallLeftOut_one": "{{count}} permiso menor no se dibuja",
+      "smallLeftOut_other": "{{count}} permisos menores no se dibujan (reparaciones, letreros, obras pequeñas)",
+      "area_one": "{{count}} registro · {{days}} días, contado por cuadra",
+      "area_other": "{{count}} registros · {{days}} días, contados por cuadra",
+      "kind": {
+        "new": "Edificio nuevo",
+        "renovation": "Renovación grande",
+        "demolition": "Demolición"
+      },
+      "units_one": "{{count}} unidad",
+      "units_other": "{{count}} unidades",
+      "away": "a {{feet}} pies",
+      "chip": {
+        "lot": "la zonificación del terreno",
+        "safety_one": "{{count}} delito cerca",
+        "safety_other": "{{count}} delitos cerca",
+        "construction_one": "{{count}} obra cerca",
+        "construction_other": "{{count}} obras cerca",
+        "area_one": "{{count}} registro",
+        "area_other": "{{count}} registros",
+        "safetyArea_one": "{{count}} delito en el área",
+        "safetyArea_other": "{{count}} delitos en el área",
+        "constructionArea_one": "{{count}} obra en el área",
+        "constructionArea_other": "{{count}} obras en el área"
+      },
+      "noPoint": "No se pudo ubicar la dirección con precisión; esto cuenta toda el área comunitaria."
     }
   },
   "landing": {

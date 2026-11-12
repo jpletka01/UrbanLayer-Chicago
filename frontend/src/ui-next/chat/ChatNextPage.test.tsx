@@ -78,7 +78,7 @@ describe("the full chat page", () => {
     const row = screen.getByTestId("chat-previews");
     expect(within(row).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/scorecard?pin=13254020120000&address=2611+N+Sawyer+Ave"]);
     expect(screen.getByTestId("preview-lot").getAttribute("target")).toBe("_blank");
-    expect(screen.getByTestId("preview-map").textContent).toContain("1 record");
+    expect(screen.getByTestId("preview-map").textContent).toContain("the lot's zoning");
     expect(screen.getByTestId("preview-sources").textContent).toContain("2");
     expect(await axeViolations(container)).toEqual([]);
   });

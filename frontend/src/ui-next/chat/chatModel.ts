@@ -3,11 +3,13 @@
 // when the visitor asks for it.
 import type { ContextObject, MapData, Message } from "../../lib/types";
 import { countDataCategories } from "../../lib/contextSummary";
+import { chooseLens, lensView, type Lens } from "./chatLens";
 
 export type PreviewKind = "lot" | "map" | "data" | "sources";
 
 export interface LotPreview { kind: "lot"; address: string; pin: string | null; href: string }
-export interface MapPreview { kind: "map"; points: number; hasAddress: boolean }
+/** The map chip names what its lens draws: the lot, or how many crimes or projects are nearby. */
+export interface MapPreview { kind: "map"; lens: Lens; count: number; near: boolean }
 export interface DataPreview { kind: "data"; count: number }
 export interface SourcesPreview { kind: "sources"; count: number }
 export type Preview = LotPreview | MapPreview | DataPreview | SourcesPreview;
@@ -34,8 +36,11 @@ export function previewsFor(message: Message): Preview[] {
   const address = ctx?.resolved_address ?? null;
   // A lot only when the answer resolved a parcel (its PIN, or zoning at the address), as today's chat links it.
   if (address && (pin || ctx?.parcel_zoning)) out.push({ kind: "lot", address, pin, href: lotHref(address, pin) });
-  const points = mapPointCount(message.mapData);
-  if (points > 0) out.push({ kind: "map", points, hasAddress: !!message.mapData?.queried_address });
+  const lens = chooseLens(message);
+  if (lens && message.mapData) {
+    const v = lens === "lot" ? null : lensView(message.mapData, lens);
+    out.push({ kind: "map", lens, count: v?.counts.shown ?? 0, near: !!message.mapData.queried_address });
+  }
   // The records the answer read (property, zoning rules, crime, permits, 311 …), the cards a data citation opens.
   const data = countDataCategories(ctx ?? null);
   if (data > 0) out.push({ kind: "data", count: data });
@@ -93,6 +98,6 @@ export function evidenceTabs(message: Message | undefined): EvidenceTab[] {
   const out: EvidenceTab[] = [];
   if ((message.context?.code_chunks?.length ?? 0) > 0) out.push("sources");
   if (countDataCategories(message.context ?? null) > 0) out.push("data");
-  if (mapPointCount(message.mapData) > 0) out.push("map");
+  if (chooseLens(message)) out.push("map");
   return out;
 }
