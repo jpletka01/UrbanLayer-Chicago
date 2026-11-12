@@ -67,6 +67,9 @@ def test_empty_land_only_on_the_four_kinds_and_the_old_assessor_area_is_set_asid
     g = {"class": "EX"}
     mark_empty_land(g, LOT, PIN10, _src([(GARAGE, 1)], lidar={PIN10: (380.0, 380.0)}))
     assert g["structure"] == "accessory" and g["empty_land"] is True  # a garage or shed alone counts (owner, 2026-11-11)
+    o = {"class": "1-00", "bldg_sqft": 2400.0}  # an index built before Item 104: no source named yet
+    mark_empty_land(o, LOT, PIN10, src)
+    assert o["bldg_sqft"] == 0.0 and o["bldg_sqft_source"] == "empty_lot" and o["bldg_sqft_assessor_old"] == 2400.0
     r = {"class": "2-11"}
     mark_empty_land(r, LOT, PIN10, src)
     assert r["structure"] == "empty" and "empty_land" not in r  # residential class: never offered
