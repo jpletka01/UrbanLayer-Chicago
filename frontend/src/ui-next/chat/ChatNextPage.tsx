@@ -35,12 +35,6 @@ export default function ChatNextPage() {
   const { t } = useTranslation(["next", "chat", "common"]);
   const [panel, setPanel] = useState<Panel | null>(null);
   const [closing, setClosing] = useState(false);
-  const [fullMap, setFullMap] = useState<number | null>(null);
-  // Full screen takes the map out of the panel (owner's review: a second map over the chat wasn't useful); minimize
-  // puts the panel back where it was.
-  const restorePanel = useRef<Panel | null>(null);
-  const enterFullMap = (p: Panel) => { restorePanel.current = p; setPanel(null); setClosing(false); setFullMap(p.message); };
-  const leaveFullMap = () => { setFullMap(null); if (restorePanel.current) setPanel(restorePanel.current); restorePanel.current = null; };
   // While the panel is open it follows the newest answer, on the same tab when that answer has it.
   const session = useChatSession({
     startPath: "/chat",
@@ -73,13 +67,12 @@ export default function ChatNextPage() {
     if (el && stickToEnd.current) el.scrollTop = el.scrollHeight;
   }, [messages, streaming, activities]);
   // A new conversation (new chat, another chat from the side panel) closes the evidence.
-  useEffect(() => { setPanel(null); setFullMap(null); }, [session.conversationId]);
+  useEffect(() => { setPanel(null); }, [session.conversationId]);
 
   const send = (text = draft) => {
     const q = text.trim();
     if (!q || streaming || atMessageLimit) return;
     stickToEnd.current = true;
-    setFullMap(null);
     setDraft("");
     session.sendMessage(q);
   };
@@ -91,7 +84,6 @@ export default function ChatNextPage() {
   };
 
   const panelMessage: Message | undefined = panel ? messages[panel.message] : undefined;
-  const fullMapMessage: Message | undefined = fullMap != null ? messages[fullMap] : undefined;
   const needsSignIn = (rateLimited && !session.canPersist) || session.showAuthModal;
 
   const tools = (
@@ -153,7 +145,6 @@ export default function ChatNextPage() {
         tab={panel.tab}
         source={panel.source}
         onTab={(tab) => setPanel({ ...panel, tab, source: null })}
-        onFullScreen={() => enterFullMap(panel)}
       />
     </RightDrawer>
   ) : null;
@@ -161,20 +152,7 @@ export default function ChatNextPage() {
   return (
     <AppFrame crumbs={[t("next:nav.chat"), title ?? t("next:frame.newChat")]} tools={tools} fill drawer={drawer}>
       <div className="relative flex min-h-0 flex-1 flex-col" data-testid="chat-page">
-        {fullMapMessage?.mapData ? (
-          // The map full screen, to explore (the panel's Full screen button); minimize returns to the conversation.
-          <section className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-2 pt-4 sm:px-7" aria-label={t("next:chat.preview.map")} data-testid="chat-fullmap">
-            <div className="flex items-center gap-2">
-              <h2 className="min-w-0 flex-1 truncate text-body font-medium">
-                {t("next:chat.mapTitle", { place: fullMapMessage.mapData.queried_address?.label ?? fullMapMessage.context?.community_area_name ?? "" })}
-              </h2>
-              <button type="button" onClick={leaveFullMap} aria-label={t("next:chat.minimize")} title={t("next:chat.minimize")} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" data-testid="chat-minimize">
-                <Minimize2 aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
-              </button>
-            </div>
-            <div className="min-h-0 flex-1"><ChatMap data={fullMapMessage.mapData} plan={fullMapMessage.plan} /></div>
-          </section>
-        ) : (
+        {(
           <div
             ref={scroller}
             onScroll={(e) => { const el = e.currentTarget; stickToEnd.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}
@@ -257,7 +235,7 @@ export default function ChatNextPage() {
           </div>
         )}
 
-        {!empty || fullMapMessage ? (
+        {!empty ? (
           <div className="px-4 pb-4 pt-2 sm:px-7">
             <div className="mx-auto flex max-w-[760px] flex-col gap-1.5">
               {composer}
@@ -319,10 +297,13 @@ function PreviewRow({ previews, onOpen, active }: { previews: Preview[]; onOpen:
 }
 
 /** The evidence for one answer: its tabs (only those it has), then the chosen one filling the panel. */
-function EvidencePanel({ message, tab, source, onTab, onFullScreen }: {
-  message: Message; tab: EvidenceTab; source: number | null; onTab: (t: EvidenceTab) => void; onFullScreen: () => void;
+function EvidencePanel({ message, tab, source, onTab }: {
+  message: Message; tab: EvidenceTab; source: number | null; onTab: (t: EvidenceTab) => void;
 }) {
   const { t } = useTranslation("next");
+  // Full screen is the same map grown to cover the screen (as on the Profile, owner's review 2026-11-12): no second
+  // map, no reload, the camera and tiles carry over. Escape or the corner button shrinks it back into the panel.
+  const [focused, setFocused] = useState(false);
   const tabs = evidenceTabs(message);
   const shown: EvidenceTab = tabs.includes(tab) ? tab : (tabs[0] ?? tab);
   const label: Record<EvidenceTab, string> = { sources: t("chat.preview.sources"), data: t("chat.preview.data"), map: t("chat.preview.map") };
@@ -344,14 +325,31 @@ function EvidencePanel({ message, tab, source, onTab, onFullScreen }: {
           </button>
         ))}
       </div>
-        {shown === "map" && (
-          <button type="button" onClick={onFullScreen} aria-label={t("chat.evidence.fullScreen")} title={t("chat.evidence.fullScreen")} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" data-testid="evidence-fullscreen">
-            <Maximize2 aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-          </button>
-        )}
       </div>
       <div role="tabpanel" className={`min-h-0 flex-1 ${shown === "map" ? "" : "overflow-y-auto"}`}>
-        {shown === "map" && message.mapData ? <ChatMap data={message.mapData} plan={message.plan} />
+        {shown === "map" && message.mapData ? (
+          <div
+            role={focused ? "dialog" : undefined}
+            aria-modal={focused || undefined}
+            aria-label={focused ? t("chat.preview.map") : undefined}
+            onKeyDown={(e) => { if (focused && e.key === "Escape") { e.stopPropagation(); setFocused(false); } }}
+            className={focused ? "fixed inset-0 z-[70] bg-nx-page p-3 sm:p-6" : "relative h-full"}
+            data-testid={focused ? "chat-fullmap" : undefined}
+          >
+            <ChatMap data={message.mapData} plan={message.plan} />
+            <button
+              type="button"
+              onClick={() => setFocused((f) => !f)}
+              aria-expanded={focused}
+              aria-label={focused ? t("chat.minimize") : t("chat.evidence.fullScreen")}
+              title={focused ? t("chat.minimize") : t("chat.evidence.fullScreen")}
+              className={`absolute z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-icon ${focused ? "bottom-5 right-5 sm:bottom-8 sm:right-8" : "bottom-2 right-2"}`}
+              data-testid={focused ? "chat-minimize" : "evidence-fullscreen"}
+            >
+              {focused ? <Minimize2 aria-hidden className="h-4 w-4" strokeWidth={STROKE} /> : <Maximize2 aria-hidden className="h-4 w-4" strokeWidth={STROKE} />}
+            </button>
+          </div>
+        )
           : shown === "data" ? <div data-testid="chat-data"><DataView context={message.context ?? null} loading={false} mapData={message.mapData ?? null} /></div>
           : <SourcesList chunks={message.context?.code_chunks ?? []} openIndex={source} />}
       </div>

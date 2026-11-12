@@ -72,7 +72,7 @@ export function RightDrawer({
         aria-labelledby={titleId}
         data-testid={testId}
         onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } }}
-        className={`fixed z-50 flex flex-col gap-4 bg-nx-page p-5 transition-[transform,opacity,height] duration-200 ease-out motion-reduce:transition-none lg:static lg:z-auto lg:h-full lg:shrink-0 lg:rounded-none lg:border-l lg:border-nx-ink/10 lg:shadow-none lg:translate-y-0 ${size === "wide" ? "lg:w-[clamp(400px,42vw,680px)]" : "lg:w-[clamp(360px,33vw,480px)]"} ${phoneSheet ? `inset-x-0 bottom-0 rounded-t-3xl pt-2 shadow-[0_-8px_32px_rgb(0_0_0/0.18)] ${tall ? "h-[92dvh]" : "h-[55dvh]"}` : "inset-0"} ${shown ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}
+        className={`fixed z-50 flex flex-col gap-4 bg-nx-page p-5 transition-[transform,opacity,height] duration-200 ease-out motion-reduce:transition-none lg:static lg:z-auto lg:h-full lg:shrink-0 lg:rounded-none lg:border-l lg:border-nx-ink/10 lg:shadow-none lg:transform-none ${size === "wide" ? "lg:w-[clamp(400px,42vw,680px)]" : "lg:w-[clamp(360px,33vw,480px)]"} ${phoneSheet ? `inset-x-0 bottom-0 rounded-t-3xl pt-2 shadow-[0_-8px_32px_rgb(0_0_0/0.18)] ${tall ? "h-[92dvh]" : "h-[55dvh]"}` : "inset-0"} ${shown ? "transform-none opacity-100" : "translate-y-full opacity-0"}`}
       >
         {phoneSheet && (
           <button
