@@ -91,11 +91,11 @@ test("keyboard walkthrough of the preview Profile", async ({ page }, testInfo) =
   // Tab from the top of a fresh load reaches the side panel's destinations before the page.
   await open(page, "/scorecard?ui=next");
   const seen: string[] = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     await page.keyboard.press("Tab");
     seen.push(await page.evaluate(() => document.activeElement?.getAttribute("aria-label") || document.activeElement?.textContent?.trim() || ""));
   }
-  expect(seen.join(" | ")).toMatch(/Search.*Discovery.*Chat/);
+  expect(seen.join(" | ")).toMatch(/Home.*Search.*Discovery.*Chat/);
 });
 
 // Progressive loading (decision Items 82, 89): the Overview part is held back so the first screen can be checked,
