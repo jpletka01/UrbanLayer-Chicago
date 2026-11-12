@@ -362,8 +362,8 @@ export default function DiscoveryNextPage() {
           if (!(e.target as HTMLElement).closest("[data-testid=measure-key]")) setMapTouches((n) => n + 1);
         } : undefined}>
           {map}
-          {/* On a phone the key sits on its own line below the quick filters, never over them (owner's review). */}
-          <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-start" : "items-start justify-between"}`}>
+          {/* On a phone the key sits on its own line below the quick filters at the right, never over them (owner's review). */}
+          <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-end" : "items-start justify-between"}`}>
             <div className={`flex min-w-0 flex-col items-start gap-2 ${phone ? "w-full" : ""}`}>
               <QuickFilters on={quickOn} onToggle={toggleQuick} loading={!response && viewMatches.loading} />
               {!phone && !response && registry && (

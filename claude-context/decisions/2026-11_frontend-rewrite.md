@@ -1460,7 +1460,7 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - *Phone, from the owner's look at the screenshots* ("a lot of dead space", "the key isn't collapsible"):
   - the filter groups are one row that scrolls sideways (edge fade; "Show N lots" first) instead of three wrapped rows;
   - the key has a visible close button ("Hide the key"), folds when the map is touched, and lays out in two columns without the notes.
-  - the key sits on its own line below the quick filters, never over them (the owner's second look).
+  - the key sits on its own line below the quick filters at the right, never over them (the owner's second and third looks).
   - e2e: "Discovery on a phone: one row of filter groups, a key that folds".
 - *Local tiles:* rebuilt into a private folder (33.7 MB, 154 s).
 - *Gates:* backend 2,964, vitest 1,189, build, lint 67 (cap), the Discovery e2e checks, the mobile matrix's Discovery page on five phones.
