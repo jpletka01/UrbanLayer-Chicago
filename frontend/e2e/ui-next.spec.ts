@@ -280,6 +280,25 @@ test("Discovery: the Lot group's surface parking toggle, axe light and dark", as
   }
 });
 
+// Phone layout (owner's review of M5, 2026-11-12): the filter groups are one scrolling row, and the key has a visible
+// close and folds when the map is touched.
+test("Discovery on a phone: one row of filter groups, a key that folds", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, ROUTES[2].path);
+  const tops = await page.getByTestId("filter-groups").getByRole("button").evaluateAll((els) => [...new Set(els.map((e) => Math.round(e.getBoundingClientRect().top)))]);
+  expect(tops.length, "filter groups on one row").toBe(1);
+  const key = page.getByTestId("measure-key");
+  await key.getByRole("button", { name: "Color lots by" }).click();
+  await expect(key.getByRole("button", { name: "Hide the key" })).toBeVisible();
+  await expect(page.locator("#nx-measure")).toBeVisible();
+  // A tap on open map (below the key, above the sheet).
+  const box = (await page.locator('[data-testid="explore-map"]').boundingBox())!;
+  await page.mouse.click(box.x + 40, box.y + box.height * 0.6);
+  await expect(page.locator("#nx-measure")).toBeHidden();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "discovery overflow").toBeLessThanOrEqual(1);
+});
+
 // 3D (M6, decision Item 106): the phone's map band has no 3D button; the expanded map does, and its controls are
 // labeled and pass axe in both themes. Build opens in 3D. Skipped when the server has no building tiles.
 test("3D: phone band flat, expanded map 3D with turn, tilt and reset, axe light and dark", async ({ page }, testInfo) => {

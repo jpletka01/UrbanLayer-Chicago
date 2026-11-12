@@ -21,7 +21,7 @@ import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
 import { PALETTES, ZONING_COLORS, buildStyle, groupLayerIds, themePaint, type MapTiles, type Theme } from "../map/mapStyle";
 import { STROKE } from "../icons";
 import {
-  LOTS_MIN_ZOOM, MEASURE_PROP, cardModel, clampMiles, measureColorExpr, milesBetween, ringPolygon, type MeasureId,
+  LOTS_MIN_ZOOM, cardModel, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
 } from "./discoveryModel";
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -123,6 +123,11 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
     map.addLayer({ id: "lot-unknown", type: "fill", source: "parcels", "source-layer": "parcels",
       filter: unknownFilter(measure), paint: { "fill-pattern": PATTERN_IMAGE("dots", theme), "fill-opacity": dim ? 0.35 : 1 } }, map.getLayer("parcel-line") ? "parcel-line" : before);
     map.addLayer({ id: "lot-measure", type: "fill", source: "parcels", "source-layer": "parcels", paint: paint["lot-measure"] as never }, map.getLayer("parcel-line") ? "parcel-line" : before);
+    // Marks over some measure colors (land in use: "P" on surface parking, "+" on road land), so color isn't alone.
+    const tex = measureTexture(measure, theme);
+    map.addLayer({ id: "lot-texture", type: "fill", source: "parcels", "source-layer": "parcels",
+      filter: (tex?.filter ?? NONE) as never, paint: { "fill-pattern": (tex?.pattern ?? PATTERN_IMAGE("plus", theme)) as never,
+        "fill-opacity": dim ? 0.35 : 1 } }, map.getLayer("parcel-line") ? "parcel-line" : before);
   }
   // Zoomed out, the city is a grid of about a block each in the same measure (Item 104), so the map is never empty.
   if (grid) {
@@ -131,6 +136,9 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
       filter: unknownFilter(measure), paint: { "fill-pattern": PATTERN_IMAGE("dots", theme), "fill-opacity": 0.7 } }, before);
     map.addLayer({ id: "grid-measure", type: "fill", source: "grid", "source-layer": "grid", maxzoom: LOTS_MIN_ZOOM,
       paint: paint["grid-measure"] as never }, before);
+    const gtex = measureTexture(measure, theme);
+    map.addLayer({ id: "grid-texture", type: "fill", source: "grid", "source-layer": "grid", maxzoom: LOTS_MIN_ZOOM,
+      filter: (gtex?.filter ?? NONE) as never, paint: { "fill-pattern": (gtex?.pattern ?? PATTERN_IMAGE("plus", theme)) as never } }, before);
   }
   map.addLayer({ id: "area-fill", type: "fill", source: "areas", maxzoom: LOTS_MIN_ZOOM, paint: paint["area-fill"] as never }, before);
   map.addLayer({ id: "walk-fill", type: "fill", source: "walk", paint: paint["walk-fill"] as never }, before);
@@ -154,7 +162,8 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
   map.addLayer({ id: "ring-handle", type: "circle", source: "ring-handle", paint: paint["ring-handle"] as never });
 }
 
-const unknownFilter = (m: MeasureId) => ["!", ["has", MEASURE_PROP[m]]] as never;
+const unknownFilter = (m: MeasureId) => unknownMeasureFilter(m) as never;
+const NONE = ["==", ["get", "__none__"], "__never__"];
 
 /** A lot's card: the list's own row (`/api/discovery/parcel`). */
 /** `ll` = the click on the ground [lon, lat]; `roads` = the street lines loaded at the click (Street View, Item 94). */
@@ -302,6 +311,13 @@ export function ExploreMap({
     for (const [id, paint] of Object.entries(ownPaint(theme, measure, matches !== null))) {
       if (!map.getLayer(id)) continue;
       for (const [k, v] of Object.entries(paint)) map.setPaintProperty(id, k as never, v as never);
+    }
+    const tex = measureTexture(measure, theme);
+    for (const id of ["lot-texture", "grid-texture"]) {
+      if (!map.getLayer(id)) continue;
+      map.setFilter(id, (tex?.filter ?? NONE) as never);
+      if (tex) map.setPaintProperty(id, "fill-pattern", tex.pattern as never);
+      if (id === "lot-texture") map.setPaintProperty(id, "fill-opacity", matches !== null ? 0.35 : 1);
     }
   }, [theme, measure, matches, ready]);
 

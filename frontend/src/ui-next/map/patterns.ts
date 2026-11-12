@@ -5,7 +5,7 @@
 // handed to MapLibre as repeating fill patterns, in ink for light and white for dark.
 
 export type PatternTheme = "light" | "dark";
-export type PatternKind = "plus" | "dots";
+export type PatternKind = "plus" | "dots" | "p";
 
 const SIZE = 10; // CSS px per repeat (sparser, owner: the lot lines must stay readable)
 const RATIO = 2;
@@ -35,6 +35,12 @@ export function drawPattern(kind: PatternKind, theme: PatternTheme): { width: nu
     ctx.moveTo(c - 1.5, c); ctx.lineTo(c + 1.5, c);
     ctx.moveTo(c, c - 1.5); ctx.lineTo(c, c + 1.5);
     ctx.stroke();
+  } else if (kind === "p") {
+    // A small "P" (surface parking, Item 112): a separate mark like the "+", never a line.
+    ctx.font = "bold 6px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("P", SIZE / 2, SIZE / 2 + 0.5);
   } else {
     ctx.beginPath();
     ctx.arc(SIZE / 2, SIZE / 2, 1, 0, Math.PI * 2);
@@ -44,10 +50,10 @@ export function drawPattern(kind: PatternKind, theme: PatternTheme): { width: nu
   return { width: n, height: n, data: img.data };
 }
 
-/** Add the four pattern images once (idempotent). */
+/** Add the pattern images once, both themes (idempotent). */
 export function addPatternImages(map: { hasImage(id: string): boolean; addImage(id: string, img: { width: number; height: number; data: Uint8ClampedArray }, opts: { pixelRatio: number }): void }): void {
   for (const theme of ["light", "dark"] as const) {
-    for (const kind of ["plus", "dots"] as const) {
+    for (const kind of ["plus", "dots", "p"] as const) {
       const id = PATTERN_IMAGE(kind, theme);
       if (map.hasImage(id)) continue;
       const img = drawPattern(kind, theme);
@@ -61,6 +67,10 @@ export function patternCss(kind: PatternKind, theme: PatternTheme): string {
   // Stronger than on the map: a 16 px swatch needs it to read at all.
   const ink = theme === "dark" ? "rgba(255,255,255,0.85)" : "rgba(28,28,28,0.8)";
   if (kind === "dots") return `radial-gradient(${ink} 0.9px, transparent 1.1px) 0 0 / 4px 4px`;
+  if (kind === "p") {
+    const p = `<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><text x='4' y='6.2' font-size='6' font-weight='bold' font-family='sans-serif' text-anchor='middle' fill='${ink}'>P</text></svg>`;
+    return `url("data:image/svg+xml;utf8,${encodeURIComponent(p)}") 0 0 / 8px 8px`;
+  }
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='6' height='6'><path d='M1.5 3h3M3 1.5v3' stroke='${ink}' stroke-width='1'/></svg>`;
   return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") 0 0 / 6px 6px`;
 }

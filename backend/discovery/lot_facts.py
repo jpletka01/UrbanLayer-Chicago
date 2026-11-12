@@ -370,10 +370,28 @@ ROOM_BANDS = (0, 2_500, 5_000, 10_000)  # sq ft of room: "0" = built out, then <
 LOT_BANDS = (2_500, 5_000, 10_000, 43_560)  # sq ft: <2.5k, 2.5-5k (the city lot), 5-10k, 10k-1 acre, 1 acre+
 SALE_YEARS = (1, 3, 5, 10)  # years since the last recorded sale: <1, 1-3, 3-5, 5-10, 10+
 LAND_USES = ("vacant", "residential", "multi_family", "commercial", "industrial", "exempt")
+# Land in use (Item 112): what the lot is used for, measured. Empty land is what stands on it (Item 110), surface
+# parking and road land the owner's blind checks (23/23, 27/27); the rest is the Assessor's use class. A vacant-class lot
+# with a building on it gets no band (drawn dotted, not known), never "vacant".
+LAND_IN_USE = ("empty", "parking", "homes", "apartments", "business", "industrial", "exempt", "road_rail")
+_IN_USE_FROM_CLASS = {"residential": "homes", "multi_family": "apartments", "commercial": "business",
+                      "industrial": "industrial", "exempt": "exempt"}
+
+
+def land_in_use(attrs: dict[str, Any]) -> str | None:
+    if attrs.get("surface_parking"):
+        return "parking"
+    if attrs.get("empty_land"):
+        return "empty"
+    if attrs.get("infrastructure") == "road" or attrs.get("land_kind") == "railroad":
+        return "road_rail"
+    use = attrs.get("land_use_class") or ("exempt" if str(attrs.get("class") or "").upper().startswith("EX") else None)
+    return _IN_USE_FROM_CLASS.get(use)
 
 
 def measure_bands(attrs: dict[str, Any]) -> dict[str, str]:
-    """The tile properties for one lot: r (room), s (lot size), y (last sale), u (land use); absent = unknown."""
+    """The tile properties for one lot: r (room), s (lot size), y (last sale), u (land use, the tax class), l (land in
+    use, Item 112); absent = unknown."""
     out: dict[str, str] = {}
     room = attrs.get("room_sqft")
     if room is not None:
@@ -389,4 +407,7 @@ def measure_bands(attrs: dict[str, Any]) -> dict[str, str]:
     use = attrs.get("land_use_class") or ("exempt" if str(attrs.get("class") or "").upper().startswith("EX") else None)
     if use in LAND_USES:
         out["u"] = str(LAND_USES.index(use))
+    in_use = land_in_use(attrs)
+    if in_use is not None:
+        out["l"] = str(LAND_IN_USE.index(in_use))
     return out

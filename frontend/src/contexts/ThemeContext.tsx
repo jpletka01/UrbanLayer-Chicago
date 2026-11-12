@@ -1,7 +1,6 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 import { type UseTheme, useTheme } from "../lib/useTheme";
-
-const ThemeContext = createContext<UseTheme | null>(null);
+import { ThemeContext } from "./themeContextObject";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const theme = useTheme();

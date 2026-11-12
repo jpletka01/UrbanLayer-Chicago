@@ -134,3 +134,23 @@ def test_a_short_land_use_table_is_refused(tmp_path):
     db = sqlite3.connect(":memory:")
     with pytest.raises(RuntimeError, match="refusing"):
         lot_sources._write_land_use(db, [(PIN10, "1512", 1.0)], tmp_path / "cmap.db")
+
+
+@pytest.mark.parametrize("attrs, band", [
+    ({"surface_parking": True, "empty_land": True, "land_use_class": "commercial"}, "parking"),
+    ({"empty_land": True, "land_use_class": "vacant"}, "empty"),
+    ({"empty_land": True, "class": "EX"}, "empty"),
+    ({"infrastructure": "road", "class": "EX"}, "road_rail"),
+    ({"land_kind": "railroad", "class": "RR"}, "road_rail"),
+    ({"land_use_class": "residential"}, "homes"),
+    ({"land_use_class": "multi_family"}, "apartments"),
+    ({"land_use_class": "commercial"}, "business"),
+    ({"land_use_class": "industrial"}, "industrial"),
+    ({"class": "EX"}, "exempt"),
+    ({"land_use_class": "vacant", "structure": "built"}, None),  # a building on a vacant-class lot: not known
+    ({}, None),
+])
+def test_land_in_use_band(attrs, band):
+    from backend.discovery.lot_facts import LAND_IN_USE, land_in_use, measure_bands
+    assert land_in_use(attrs) == band
+    assert measure_bands(attrs).get("l") == (str(LAND_IN_USE.index(band)) if band else None)

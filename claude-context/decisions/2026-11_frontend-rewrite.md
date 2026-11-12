@@ -1449,11 +1449,27 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
   - the Profile line;
   - OSM-only parking (licensing review).
 
+**Built: land use as a mode of the one map (2026-11-12, the owner's "Map mode first"; awaiting his review).**
+- *Mode:* in the new UI, "Color lots by → Land use" now shows land IN use, not the tax class.
+  - The old mode called every vacant-class lot "Vacant", even one with a house on it, and knew nothing about parking.
+  - The lot tiles carry a new band `l` (`lot_facts.LAND_IN_USE`/`land_in_use`); the block grid takes the most common value.
+  - Categories: empty land (Item 110), surface parking, homes, apartments, business, industrial, tax-exempt, road or railroad land (CMAP road land + railroad class). A vacant-class lot with a building gets no band and is drawn dotted ("not known"), never "vacant".
+  - Coastal colors and a gray, each named in the key. Surface parking (lavender) carries small "P" marks and road land (peach) the transportation "+" marks (`patterns.ts`), so neither relies on color alone. They are marks, not lines (Item 97).
+  - A tile file built before this has only the tax-class `u`. The mode then reads it with "vacant" left unknown, so the map is never blank before the tile rebuild.
+  - The live UI and its `u` band are unchanged.
+- *Phone, from the owner's look at the screenshots* ("a lot of dead space", "the key isn't collapsible"):
+  - the filter groups are one row that scrolls sideways (edge fade; "Show N lots" first) instead of three wrapped rows;
+  - the key has a visible close button ("Hide the key"), folds when the map is touched, and lays out in two columns without the notes.
+  - e2e: "Discovery on a phone: one row of filter groups, a key that folds".
+- *Local tiles:* rebuilt into a private folder (33.7 MB, 154 s).
+- *Gates:* backend 2,964, vitest 1,189, build, lint 67 (cap), the Discovery e2e checks, the mobile matrix's Discovery page on five phones.
+
 **Production steps** (server, after merge; Jack types sudo):
 1. Fetch CMAP on the Mac and install the copy as `backend/data/map_sources/cmap_lui_2023.db` (`python -m backend.discovery.cmap_land_use`). First check whether CMAP answers the server; if not, the Mac copy is the path, as for FEMA and the County's LiDAR.
 2. `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --land-use-only` (about 8 minutes).
 3. `... python -m backend.discovery.index_backfill`; check `surface_parking` about 12,500 and `road_land` 6,563.
-4. Restart the backend.
+4. `... python -m backend.discovery.parcel_tiles` (about 3 min), so the lot tiles carry the land-in-use band `l`.
+5. Restart the backend.
 
 **The first recommendation, before the panel (kept for the record):**
 - *Categories:* one observed-use field:

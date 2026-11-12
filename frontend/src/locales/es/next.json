@@ -1263,6 +1263,7 @@
     "pinMissing": "No hay ningún terreno con el PIN {{pin}} en los datos de Chicago.",
     "measure": {
       "colorBy": "Colorear terrenos por",
+      "hideKey": "Ocultar la leyenda",
       "unknown": "Sin dato (punteado)",
       "match": "Coincide con la búsqueda",
       "showZoning": "Mostrar distritos de zonificación",
@@ -1297,12 +1298,15 @@
       },
       "use": {
         "name": "Uso del suelo",
-        "0": "Baldío",
-        "1": "Residencial",
-        "2": "Multifamiliar",
-        "3": "Comercial",
-        "4": "Industrial",
-        "5": "Exento"
+        "note": "El terreno vacío y el estacionamiento, según lo que hay en cada lote; lo demás, según la clase de uso del Tasador.",
+        "0": "Terreno vacío",
+        "1": "Estacionamiento en superficie",
+        "2": "Viviendas",
+        "3": "Departamentos",
+        "4": "Comercio",
+        "5": "Industrial",
+        "6": "Exento de impuestos",
+        "7": "Terreno vial o ferroviario"
       },
       "zoning": {
         "name": "Familia de zonificación",

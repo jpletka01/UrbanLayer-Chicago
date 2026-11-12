@@ -1263,6 +1263,7 @@
     "pinMissing": "No lot with PIN {{pin}} in Chicago's data.",
     "measure": {
       "colorBy": "Color lots by",
+      "hideKey": "Hide the key",
       "unknown": "Not known (dotted)",
       "match": "Matches the search",
       "showZoning": "Show zoning districts",
@@ -1297,12 +1298,15 @@
       },
       "use": {
         "name": "Land use",
-        "0": "Vacant",
-        "1": "Residential",
-        "2": "Multifamily",
-        "3": "Commercial",
-        "4": "Industrial",
-        "5": "Exempt"
+        "note": "Empty land and parking from what stands on each lot; the rest from the Assessor's use class.",
+        "0": "Empty land",
+        "1": "Surface parking",
+        "2": "Homes",
+        "3": "Apartments",
+        "4": "Business",
+        "5": "Industrial",
+        "6": "Tax-exempt",
+        "7": "Road or railroad land"
       },
       "zoning": {
         "name": "Zoning family",

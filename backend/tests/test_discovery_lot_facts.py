@@ -117,8 +117,9 @@ def test_a_condo_unit_pin_gets_warnings_but_no_building_area():
 
 def test_measure_bands():
     assert measure_bands({"room_sqft": 0, "land_sqft": 3_125, "sale_recency_days": 400,
-                          "land_use_class": "residential"}) == {"r": "0", "s": "1", "y": "1", "u": "1"}
-    assert measure_bands({"room_sqft": 12_000, "land_sqft": 50_000, "class": "EX"}) == {"r": "4", "s": "4", "u": "5"}
+                          "land_use_class": "residential"}) == {"r": "0", "s": "1", "y": "1", "u": "1", "l": "2"}
+    assert measure_bands({"room_sqft": 12_000, "land_sqft": 50_000, "class": "EX"}) == {"r": "4", "s": "4", "u": "5",
+                                                                                        "l": "6"}
     assert measure_bands({}) == {}
 
 

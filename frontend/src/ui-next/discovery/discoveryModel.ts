@@ -48,7 +48,9 @@ export const MEASURES: MeasureId[] = ["room", "lot", "sale", "use", "zoning"];
 export const DEFAULT_MEASURE: MeasureId = "room";
 
 /** The tile property each measure reads (`backend/discovery/lot_facts.measure_bands`; zoning is the family `g`). */
-export const MEASURE_PROP: Record<MeasureId, string> = { room: "r", lot: "s", sale: "y", use: "u", zoning: "g" };
+// "use" is land IN use (Item 112): the tiles' `l` band, measured (empty land, surface parking, road land) over the
+// Assessor's use class; a tile file built before it has only the tax-class `u`, read as a fallback.
+export const MEASURE_PROP: Record<MeasureId, string> = { room: "r", lot: "s", sale: "y", use: "l", zoning: "g" };
 
 // Sequential steps from Sapphire to Spruce (Item 74: maps use Sapphire, Spruce and black); lighter = less.
 const SEQ = ["#DCEDEB", "#A9D2CE", "#72B0AB", "#4A867E", "#2C4F4A"];
@@ -56,10 +58,17 @@ const SEQ = ["#DCEDEB", "#A9D2CE", "#72B0AB", "#4A867E", "#2C4F4A"];
 const SALE = [SEQ[4], SEQ[3], SEQ[2], SEQ[1], SEQ[0]];
 // The named "room" states: planned development gray (the zoning map's PD gray), park green, transportation peach.
 const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4" };
-// Land use: Coastal's five and a gray, each named in the key (never color alone).
-export const USE_COLORS = ["#B89D47", "#DCEDEB", "#72B0AB", "#FE9179", "#355E58", "#B4B4B4"];
+// Land in use (Item 112), in the tiles' `l` order (`lot_facts.LAND_IN_USE`): empty land, surface parking, homes,
+// apartments, business, industrial, tax-exempt, road or railroad land. Coastal's colors and a gray, each named in the
+// key; surface parking (lavender) and road land (peach) also carry marks, so neither relies on color alone.
+export const USE_COLORS = ["#B89D47", "#9184C4", "#DCEDEB", "#A9D2CE", "#FE9179", "#355E58", "#B4B4B4", "#FDC1B4"];
+/** The marks over a land-in-use color: "P" on surface parking, "+" on road or railroad land (as transportation zoning). */
+export const USE_TEXTURE: Record<string, "p" | "plus"> = { "1": "p", "7": "plus" };
+// A tile file built before Item 112 (`u` only): its tax-class bands, mapped to the same colors. Its "vacant" is the tax
+// class, not what stands on the lot, so it is left unknown.
+const U_TO_L: Record<string, string> = { "1": "2", "2": "3", "3": "4", "4": "5", "5": "6" };
 
-export interface MeasureStep { value: string; color: string; key: string }
+export interface MeasureStep { value: string; color: string; key: string; texture?: "p" | "plus" }
 
 /** Each measure's steps in the key's order: the tile value, its color and its words (i18n key under `discovery.measure`). */
 export function measureSteps(m: MeasureId): MeasureStep[] {
@@ -73,7 +82,7 @@ export function measureSteps(m: MeasureId): MeasureStep[] {
     ];
     case "lot": return SEQ.map((color, i) => ({ value: String(i), color, key: `lot.${i}` }));
     case "sale": return SALE.map((color, i) => ({ value: String(i), color, key: `sale.${i}` }));
-    case "use": return USE_COLORS.map((color, i) => ({ value: String(i), color, key: `use.${i}` }));
+    case "use": return USE_COLORS.map((color, i) => ({ value: String(i), color, key: `use.${i}`, texture: USE_TEXTURE[String(i)] }));
     case "zoning": return [];
   }
 }
@@ -90,7 +99,27 @@ export function measureColorExpr(m: MeasureId, zoningFamily?: Record<string, str
   const expr: unknown[] = ["match", ["get", prop]];
   for (const s of measureSteps(m)) expr.push(s.value, s.color);
   expr.push("rgba(0,0,0,0)");
-  return expr;
+  if (m !== "use") return expr;
+  const old: unknown[] = ["match", ["get", "u"]];
+  for (const [u, l] of Object.entries(U_TO_L)) old.push(u, USE_COLORS[Number(l)]);
+  old.push("rgba(0,0,0,0)");
+  return ["case", ["has", "l"], expr, old];
+}
+
+/** Lots with no band for the measure: drawn dotted ("not known"). Land in use also reads an older file's `u`. */
+export function unknownMeasureFilter(m: MeasureId): unknown {
+  if (m === "use") return ["all", ["!", ["has", "l"]], ["!", ["in", ["get", "u"], ["literal", Object.keys(U_TO_L)]]]];
+  return ["!", ["has", MEASURE_PROP[m]]];
+}
+
+/** The texture layer's filter and pattern for a measure (only land in use has marks); null = no texture layer content. */
+export function measureTexture(m: MeasureId, theme: "light" | "dark"): { filter: unknown; pattern: unknown } | null {
+  if (m !== "use") return null;
+  const vals = Object.keys(USE_TEXTURE);
+  const pattern: unknown[] = ["match", ["get", "l"]];
+  for (const v of vals) pattern.push(v, `pattern-${USE_TEXTURE[v]}-${theme}`);
+  pattern.push(`pattern-plus-${theme}`);
+  return { filter: ["in", ["get", "l"], ["literal", vals]], pattern };
 }
 
 /** Below this zoom the map shows community areas; lots from here up (the lot tiles start at 14). */
