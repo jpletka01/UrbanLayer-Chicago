@@ -84,3 +84,15 @@ export function chatTitle(messages: Message[]): string | null {
   const text = first.content.trim();
   return text.length > 50 ? `${text.slice(0, 47)}...` : text;
 }
+
+export type EvidenceTab = "sources" | "data" | "map";
+
+/** The evidence panel's tabs for one answer, in a fixed order; only those the answer has. */
+export function evidenceTabs(message: Message | undefined): EvidenceTab[] {
+  if (!message || message.role !== "assistant") return [];
+  const out: EvidenceTab[] = [];
+  if ((message.context?.code_chunks?.length ?? 0) > 0) out.push("sources");
+  if (countDataCategories(message.context ?? null) > 0) out.push("data");
+  if (mapPointCount(message.mapData) > 0) out.push("map");
+  return out;
+}

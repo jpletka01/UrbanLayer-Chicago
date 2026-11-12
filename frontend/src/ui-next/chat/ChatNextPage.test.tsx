@@ -83,22 +83,37 @@ describe("the full chat page", () => {
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it("fills the space above the box with an opened preview; minimize puts the thread back", () => {
+  it("opens the evidence beside the answer: the answer stays, the panel shows the chosen tab", async () => {
+    session.messages = [{ role: "user", content: "Q" }, ANSWER];
+    const { container } = mount();
+    fireEvent.click(screen.getByTestId("preview-map"));
+    const panel = screen.getByTestId("chat-evidence");
+    expect(within(panel).getByTestId("chat-map")).toBeTruthy();
+    // Read side by side: the answer and the box stay on screen.
+    expect(screen.getByText("Probably yes.")).toBeTruthy();
+    expect(screen.getByTestId("chat-box")).toBeTruthy();
+    // The panel's tabs are only those this answer has; the chip reads as selected.
+    expect(within(panel).getAllByRole("tab").map((t) => t.textContent)).toEqual(["Sources", "Data", "Map"]);
+    expect(screen.getByTestId("preview-map").getAttribute("aria-pressed")).toBe("true");
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("sends the map full screen to explore, and back", () => {
     session.messages = [{ role: "user", content: "Q" }, ANSWER];
     mount();
     fireEvent.click(screen.getByTestId("preview-map"));
-    expect(screen.getByTestId("chat-map")).toBeTruthy();
-    expect(screen.getByTestId("chat-box")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("evidence-fullscreen"));
+    expect(screen.getByTestId("chat-fullmap")).toBeTruthy();
     expect(screen.queryByText("Probably yes.")).toBeNull();
     fireEvent.click(screen.getByTestId("chat-minimize"));
     expect(screen.getByText("Probably yes.")).toBeTruthy();
   });
 
-  it("opens a citation's own source, one open at a time", () => {
+  it("opens a citation's own source in the panel, one open at a time", () => {
     session.messages = [{ role: "user", content: "Q" }, ANSWER];
     mount();
     fireEvent.click(screen.getByText("[2]"));
-    const list = screen.getByTestId("chat-sources");
+    const list = within(screen.getByTestId("chat-evidence")).getByTestId("chat-sources");
     const open = within(list).getAllByRole("button").filter((b) => b.getAttribute("aria-expanded") === "true");
     expect(open).toHaveLength(1);
     expect(open[0].textContent).toContain("17-2-0309");
@@ -108,10 +123,11 @@ describe("the full chat page", () => {
     session.messages = [{ role: "user", content: "Q" }, ANSWER];
     mount();
     fireEvent.click(screen.getByText("[data:crime]"));
-    expect(screen.getByTestId("data-cards")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("chat-minimize"));
+    expect(within(screen.getByTestId("chat-evidence")).getByTestId("data-cards")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("evidence-tab-sources"));
+    expect(within(screen.getByTestId("chat-evidence")).queryByTestId("data-cards")).toBeNull();
     fireEvent.click(screen.getByTestId("preview-data"));
-    expect(screen.getByTestId("data-cards")).toBeTruthy();
+    expect(within(screen.getByTestId("chat-evidence")).getByTestId("data-cards")).toBeTruthy();
   });
 
   it("names a failed step and offers Try again", () => {

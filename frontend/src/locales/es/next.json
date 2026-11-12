@@ -1812,6 +1812,13 @@
       "reading": "Leyendo su pregunta",
       "summary_one": "Se revisó {{count}} fuente · {{seconds}} s",
       "summary_other": "Se revisaron {{count}} fuentes · {{seconds}} s"
+    },
+    "evidence": {
+      "title": "Evidencia",
+      "close": "Cerrar la evidencia",
+      "fullScreen": "Abrir el mapa en pantalla completa",
+      "forAnswer": "Para la respuesta a: {{question}}",
+      "tabs": "Evidencia de esta respuesta"
     }
   },
   "landing": {
@@ -1944,5 +1951,9 @@
       "coach": "Un terreno en zona de casas en la cochera, RS-3",
       "bookmark": "Los terrenos que abra aparecen aquí, los últimos seis. Guarde uno con el marcador para tenerlo arriba."
     }
+  },
+  "drawer": {
+    "taller": "Mostrar más del panel",
+    "shorter": "Mostrar menos del panel"
   }
 }

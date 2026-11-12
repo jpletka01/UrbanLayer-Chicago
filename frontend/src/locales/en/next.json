@@ -1812,6 +1812,13 @@
       "reading": "Reading your question",
       "summary_one": "Checked {{count}} source · {{seconds}} s",
       "summary_other": "Checked {{count}} sources · {{seconds}} s"
+    },
+    "evidence": {
+      "title": "Evidence",
+      "close": "Close the evidence",
+      "fullScreen": "Open the map full screen",
+      "forAnswer": "For the answer to: {{question}}",
+      "tabs": "Evidence for this answer"
     }
   },
   "landing": {
@@ -1944,5 +1951,9 @@
       "coach": "A lot in a coach-house area, RS-3",
       "bookmark": "Lots you open show up here, the last six. Bookmark one to keep it at the top."
     }
+  },
+  "drawer": {
+    "taller": "Show more of the panel",
+    "shorter": "Show less of the panel"
   }
 }

@@ -1,13 +1,16 @@
 // The full chat page in the new frame (Phase 8; brief "Chat", chat wireframe approved 2026-11-06): the side panel with
 // its chats on the left, the conversation at reading width, a nearly empty first screen with one example question
-// typing itself, and answers that lead with text, their lot, map and sources waiting as small previews. An opened
-// preview fills the space above the message box; minimize puts it back. Same chat path as today's workspace
-// (lib/useChatSession.ts): /c/:id, the doors from other pages, storing, limits and errors are shared, not forked.
+// typing itself, and answers that lead with text, their lot, map and sources waiting as small previews. A preview or a
+// citation opens the evidence panel on the right (owner, 2026-11-12: read the answer and its sources side by side; a
+// sheet over the lower half on a phone), with Sources, Records and Map tabs for that answer; the map can also go full
+// screen to explore. Same chat path as today's workspace (lib/useChatSession.ts): /c/:id, the doors from other pages,
+// storing, limits and errors are shared, not forked.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FileDown, Map as MapIcon, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, LogIn, X, Table2 } from "lucide-react";
+import { FileDown, Map as MapIcon, Maximize2, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, LogIn, X, Table2 } from "lucide-react";
 import { DataView } from "../../components/sidebar/DataView";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
+import { RightDrawer } from "../ui/RightDrawer";
 import { FrameOutline } from "../frame/FrameOutline";
 import { MessageBubble } from "../../components/MessageBubble";
 import { AnsweredOnNote } from "../../components/AnsweredOnNote";
@@ -23,22 +26,33 @@ import { Composer } from "./Composer";
 import { ChatMap } from "./ChatMap";
 import { SourcesList } from "./SourcesList";
 import { ThinkingSteps } from "./ThinkingSteps";
-import { chatTitle, previewsFor, type Preview } from "./chatModel";
+import { chatTitle, evidenceTabs, previewsFor, type EvidenceTab, type Preview } from "./chatModel";
 
-/** The open preview: which answer, which kind, and the source to open first. */
-interface OpenPreview { message: number; kind: "map" | "data" | "sources"; source: number | null }
+/** The evidence panel: which answer, which tab, and the source to open first. */
+interface Panel { message: number; tab: EvidenceTab; source: number | null }
 
 export default function ChatNextPage() {
   const { t } = useTranslation(["next", "chat", "common"]);
-  const session = useChatSession({ startPath: "/chat" });
+  const [panel, setPanel] = useState<Panel | null>(null);
+  const [closing, setClosing] = useState(false);
+  const [fullMap, setFullMap] = useState<number | null>(null);
+  // While the panel is open it follows the newest answer, on the same tab when that answer has it.
+  const session = useChatSession({
+    startPath: "/chat",
+    onTurnDone: (msgs) => setPanel((p) => {
+      if (!p) return p;
+      const last = msgs.length - 1;
+      const tabs = evidenceTabs(msgs[last]);
+      if (tabs.length === 0) return p;
+      return { message: last, tab: tabs.includes(p.tab) ? p.tab : tabs[0], source: null };
+    }),
+  });
   const { signIn } = useAuthContext();
   const { messages, streaming, context, activities, errorMsg, canRetry, retry, rateLimited, atMessageLimit, messagesRemaining } = session;
   const [draft, setDraft] = useState("");
-  const [open, setOpen] = useState<OpenPreview | null>(null);
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const scroller = useRef<HTMLDivElement | null>(null);
-  const savedScroll = useRef<number | null>(null);
   const stickToEnd = useRef(true);
 
   const examples = useMemo(() => [t("next:chat.examples.lot"), t("next:chat.examples.code"), t("next:chat.examples.area")], [t]);
@@ -53,31 +67,26 @@ export default function ChatNextPage() {
     const el = scroller.current;
     if (el && stickToEnd.current) el.scrollTop = el.scrollHeight;
   }, [messages, streaming, activities]);
-  // A new conversation (new chat, another chat from the panel) closes any open preview.
-  useEffect(() => { setOpen(null); }, [session.conversationId]);
+  // A new conversation (new chat, another chat from the side panel) closes the evidence.
+  useEffect(() => { setPanel(null); setFullMap(null); }, [session.conversationId]);
 
   const send = (text = draft) => {
     const q = text.trim();
     if (!q || streaming || atMessageLimit) return;
     stickToEnd.current = true;
-    setOpen(null);
+    setFullMap(null);
     setDraft("");
     session.sendMessage(q);
   };
 
-  const openPreview = (p: OpenPreview) => {
-    if (!open) savedScroll.current = scroller.current?.scrollTop ?? null;
-    setOpen(p);
-  };
-  const minimize = () => {
-    setOpen(null);
-    // Back to the same spot in the thread.
-    requestAnimationFrame(() => {
-      if (scroller.current && savedScroll.current != null) scroller.current.scrollTop = savedScroll.current;
-    });
+  const openEvidence = (p: Panel) => { setClosing(false); setPanel(p); };
+  const closeEvidence = () => {
+    setClosing(true);
+    window.setTimeout(() => { setPanel(null); setClosing(false); }, 200);
   };
 
-  const openMessage: Message | undefined = open ? messages[open.message] : undefined;
+  const panelMessage: Message | undefined = panel ? messages[panel.message] : undefined;
+  const fullMapMessage: Message | undefined = fullMap != null ? messages[fullMap] : undefined;
   const needsSignIn = (rateLimited && !session.canPersist) || session.showAuthModal;
 
   const tools = (
@@ -120,31 +129,45 @@ export default function ChatNextPage() {
     />
   );
 
+  const drawer = panel && panelMessage ? (
+    <RightDrawer
+      testId="chat-evidence"
+      size="wide"
+      phoneSheet
+      closing={closing}
+      onClose={closeEvidence}
+      closeLabel={t("next:chat.evidence.close")}
+      title={t("next:chat.evidence.title")}
+      subtitle={(() => {
+        const q = messages[panel.message - 1]?.content;
+        return q ? <span className="line-clamp-1">{t("next:chat.evidence.forAnswer", { question: q })}</span> : undefined;
+      })()}
+    >
+      <EvidencePanel
+        message={panelMessage}
+        tab={panel.tab}
+        source={panel.source}
+        onTab={(tab) => setPanel({ ...panel, tab, source: null })}
+        onFullScreen={() => setFullMap(panel.message)}
+      />
+    </RightDrawer>
+  ) : null;
+
   return (
-    <AppFrame crumbs={[t("next:nav.chat"), title ?? t("next:frame.newChat")]} tools={tools} fill>
+    <AppFrame crumbs={[t("next:nav.chat"), title ?? t("next:frame.newChat")]} tools={tools} fill drawer={drawer}>
       <div className="relative flex min-h-0 flex-1 flex-col" data-testid="chat-page">
-        {open && openMessage ? (
-          <section className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-2 pt-4 sm:px-7" aria-label={t(`next:chat.preview.${open.kind}`)} data-testid="chat-preview">
+        {fullMapMessage?.mapData ? (
+          // The map full screen, to explore (the panel's Full screen button); minimize returns to the conversation.
+          <section className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-2 pt-4 sm:px-7" aria-label={t("next:chat.preview.map")} data-testid="chat-fullmap">
             <div className="flex items-center gap-2">
               <h2 className="min-w-0 flex-1 truncate text-body font-medium">
-                {open.kind === "map"
-                  ? t("next:chat.mapTitle", { place: openMessage.mapData?.queried_address?.label ?? openMessage.context?.community_area_name ?? "" })
-                  : open.kind === "data"
-                    ? t("next:chat.dataTitle", { place: openMessage.context?.resolved_address ?? openMessage.context?.community_area_name ?? "" })
-                    : t("next:chat.sourcesTitle", { count: openMessage.context?.code_chunks?.length ?? 0 })}
+                {t("next:chat.mapTitle", { place: fullMapMessage.mapData.queried_address?.label ?? fullMapMessage.context?.community_area_name ?? "" })}
               </h2>
-              <button type="button" onClick={minimize} aria-label={t("next:chat.minimize")} title={t("next:chat.minimize")} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" data-testid="chat-minimize">
+              <button type="button" onClick={() => setFullMap(null)} aria-label={t("next:chat.minimize")} title={t("next:chat.minimize")} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" data-testid="chat-minimize">
                 <Minimize2 aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {open.kind === "map" && openMessage.mapData
-                ? <ChatMap data={openMessage.mapData} />
-                : open.kind === "data"
-                  // The records behind the answer, as today's chat shows them (its data cards), at reading width.
-                  ? <div className="mx-auto max-w-[760px]" data-testid="chat-data"><DataView context={openMessage.context ?? null} loading={false} mapData={openMessage.mapData ?? null} /></div>
-                  : <div className="mx-auto max-w-[760px]"><SourcesList chunks={openMessage.context?.code_chunks ?? []} openIndex={open.source} /></div>}
-            </div>
+            <div className="min-h-0 flex-1"><ChatMap data={fullMapMessage.mapData} /></div>
           </section>
         ) : (
           <div
@@ -191,11 +214,11 @@ export default function ChatNextPage() {
                       streaming={streamingThis}
                       hideThinking
                       codeChunks={ctx?.code_chunks ?? []}
-                      onCitationClick={(n) => { if ((m.context?.code_chunks?.length ?? 0) > 0) openPreview({ message: i, kind: "sources", source: Math.max(0, n - 1) }); }}
-                      onDataClick={() => { if (m.context) openPreview({ message: i, kind: "data", source: null }); }}
+                      onCitationClick={(n) => { if ((m.context?.code_chunks?.length ?? 0) > 0) openEvidence({ message: i, tab: "sources", source: Math.max(0, n - 1) }); }}
+                      onDataClick={() => { if (evidenceTabs(m).includes("data")) openEvidence({ message: i, tab: "data", source: null }); }}
                       footer={m.role === "assistant" && !streamingThis ? (
                         <>
-                          {previews.length > 0 && <PreviewRow previews={previews} onOpen={(kind) => openPreview({ message: i, kind, source: null })} />}
+                          {previews.length > 0 && <PreviewRow previews={previews} onOpen={(tab) => openEvidence({ message: i, tab, source: null })} active={panel?.message === i ? panel.tab : null} />}
                           {m.createdAt != null && (
                             <AnsweredOnNote
                               createdAt={m.createdAt}
@@ -229,7 +252,7 @@ export default function ChatNextPage() {
           </div>
         )}
 
-        {!empty || open ? (
+        {!empty || fullMapMessage ? (
           <div className="px-4 pb-4 pt-2 sm:px-7">
             <div className="mx-auto flex max-w-[760px] flex-col gap-1.5">
               {composer}
@@ -255,9 +278,12 @@ export default function ChatNextPage() {
 }
 
 /** The small previews under an answer: each says what it is in two words. Only the lot leaves the page (new tab). */
-function PreviewRow({ previews, onOpen }: { previews: Preview[]; onOpen: (kind: "map" | "data" | "sources") => void }) {
+function PreviewRow({ previews, onOpen, active }: { previews: Preview[]; onOpen: (tab: EvidenceTab) => void; active: EvidenceTab | null }) {
   const { t } = useTranslation("next");
-  const chip = "inline-flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-caption ring-1 ring-nx-ink/10 hover:bg-nx-ink/5 touch-target";
+  const base = "inline-flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-caption ring-1 hover:bg-nx-ink/5 touch-target";
+  const chip = `${base} ring-nx-ink/10`;
+  // The chip whose evidence is in the panel reads as selected.
+  const chipFor = (tab: EvidenceTab) => (active === tab ? `${base} bg-nx-pill-purple-bg ring-nx-pill-purple/40` : chip);
   return (
     <div className="mt-2 flex flex-wrap gap-2 pl-9" data-testid="chat-previews">
       {previews.map((p) => p.kind === "lot" ? (
@@ -268,21 +294,62 @@ function PreviewRow({ previews, onOpen }: { previews: Preview[]; onOpen: (kind: 
           <span className="sr-only">{t("common:opensInNewTab")}</span>
         </a>
       ) : p.kind === "map" ? (
-        <button key="map" type="button" onClick={() => onOpen("map")} className={chip} data-testid="preview-map">
+        <button key="map" type="button" onClick={() => onOpen("map")} aria-pressed={active === "map"} className={chipFor("map")} data-testid="preview-map">
           <MapIcon aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
           <span><span className="font-medium">{t("chat.preview.map")}</span> · {t("chat.points", { count: p.points })}</span>
         </button>
       ) : p.kind === "data" ? (
-        <button key="data" type="button" onClick={() => onOpen("data")} className={chip} data-testid="preview-data">
+        <button key="data" type="button" onClick={() => onOpen("data")} aria-pressed={active === "data"} className={chipFor("data")} data-testid="preview-data">
           <Table2 aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
           <span><span className="font-medium">{t("chat.preview.data")}</span> · {p.count}</span>
         </button>
       ) : (
-        <button key="sources" type="button" onClick={() => onOpen("sources")} className={chip} data-testid="preview-sources">
+        <button key="sources" type="button" onClick={() => onOpen("sources")} aria-pressed={active === "sources"} className={chipFor("sources")} data-testid="preview-sources">
           <BookText aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
           <span><span className="font-medium">{t("chat.preview.sources")}</span> · {p.count}</span>
         </button>
       ))}
+    </div>
+  );
+}
+
+/** The evidence for one answer: its tabs (only those it has), then the chosen one filling the panel. */
+function EvidencePanel({ message, tab, source, onTab, onFullScreen }: {
+  message: Message; tab: EvidenceTab; source: number | null; onTab: (t: EvidenceTab) => void; onFullScreen: () => void;
+}) {
+  const { t } = useTranslation("next");
+  const tabs = evidenceTabs(message);
+  const shown: EvidenceTab = tabs.includes(tab) ? tab : (tabs[0] ?? tab);
+  const label: Record<EvidenceTab, string> = { sources: t("chat.preview.sources"), data: t("chat.preview.data"), map: t("chat.preview.map") };
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex items-center gap-1 border-b border-nx-ink/10">
+      <div role="tablist" aria-label={t("chat.evidence.tabs")} className="flex flex-1 items-center gap-1">
+        {tabs.map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={shown === k}
+            onClick={() => onTab(k)}
+            className={`-mb-px border-b-2 px-3 py-2 text-caption touch-target ${shown === k ? "border-nx-ink font-semibold" : "border-transparent nx-muted hover:text-nx-ink"}`}
+            data-testid={`evidence-tab-${k}`}
+          >
+            {label[k]}
+          </button>
+        ))}
+      </div>
+        {shown === "map" && (
+          <button type="button" onClick={onFullScreen} aria-label={t("chat.evidence.fullScreen")} title={t("chat.evidence.fullScreen")} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" data-testid="evidence-fullscreen">
+            <Maximize2 aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+          </button>
+        )}
+      </div>
+      <div role="tabpanel" className={`min-h-0 flex-1 ${shown === "map" ? "" : "overflow-y-auto"}`}>
+        {shown === "map" && message.mapData ? <ChatMap data={message.mapData} />
+          : shown === "data" ? <div data-testid="chat-data"><DataView context={message.context ?? null} loading={false} mapData={message.mapData ?? null} /></div>
+          : <SourcesList chunks={message.context?.code_chunks ?? []} openIndex={source} />}
+      </div>
     </div>
   );
 }
