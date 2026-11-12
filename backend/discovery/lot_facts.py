@@ -318,7 +318,8 @@ def mark_empty_land(attrs: dict[str, Any], lot, pin10: str, src: LotSources) -> 
     # keeps the difference for the card.
     if kind in EMPTY_LAND_KINDS and state in ("empty", "demolished_since_2022", "accessory"):
         attrs["empty_land"] = True
-        if kind == "vacant" and attrs.get("bldg_sqft") and attrs.get("bldg_sqft_source") == "assessor":
+        # An index built before Item 104 has the Assessor's area with no source named yet (the backfill names it later).
+        if kind == "vacant" and attrs.get("bldg_sqft") and attrs.get("bldg_sqft_source", "assessor") == "assessor":
             attrs["bldg_sqft_assessor_old"] = attrs["bldg_sqft"]
             attrs["bldg_sqft"] = 0.0
             attrs["bldg_sqft_source"] = "empty_lot"
