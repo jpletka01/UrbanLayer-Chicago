@@ -103,10 +103,15 @@ describe("the full chat page", () => {
     mount();
     fireEvent.click(screen.getByTestId("preview-map"));
     fireEvent.click(screen.getByTestId("evidence-fullscreen"));
+    // One map: the panel closes and the map takes the screen.
     expect(screen.getByTestId("chat-fullmap")).toBeTruthy();
+    expect(screen.queryByTestId("chat-evidence")).toBeNull();
+    expect(screen.getAllByTestId("chat-map")).toHaveLength(1);
     expect(screen.queryByText("Probably yes.")).toBeNull();
     fireEvent.click(screen.getByTestId("chat-minimize"));
     expect(screen.getByText("Probably yes.")).toBeTruthy();
+    // Back where it was: the panel on its Map tab.
+    expect(screen.getByTestId("evidence-tab-map").getAttribute("aria-selected")).toBe("true");
   });
 
   it("opens a citation's own source in the panel, one open at a time", () => {

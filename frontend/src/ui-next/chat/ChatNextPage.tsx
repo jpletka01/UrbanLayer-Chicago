@@ -36,6 +36,11 @@ export default function ChatNextPage() {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [closing, setClosing] = useState(false);
   const [fullMap, setFullMap] = useState<number | null>(null);
+  // Full screen takes the map out of the panel (owner's review: a second map over the chat wasn't useful); minimize
+  // puts the panel back where it was.
+  const restorePanel = useRef<Panel | null>(null);
+  const enterFullMap = (p: Panel) => { restorePanel.current = p; setPanel(null); setClosing(false); setFullMap(p.message); };
+  const leaveFullMap = () => { setFullMap(null); if (restorePanel.current) setPanel(restorePanel.current); restorePanel.current = null; };
   // While the panel is open it follows the newest answer, on the same tab when that answer has it.
   const session = useChatSession({
     startPath: "/chat",
@@ -148,7 +153,7 @@ export default function ChatNextPage() {
         tab={panel.tab}
         source={panel.source}
         onTab={(tab) => setPanel({ ...panel, tab, source: null })}
-        onFullScreen={() => setFullMap(panel.message)}
+        onFullScreen={() => enterFullMap(panel)}
       />
     </RightDrawer>
   ) : null;
@@ -163,7 +168,7 @@ export default function ChatNextPage() {
               <h2 className="min-w-0 flex-1 truncate text-body font-medium">
                 {t("next:chat.mapTitle", { place: fullMapMessage.mapData.queried_address?.label ?? fullMapMessage.context?.community_area_name ?? "" })}
               </h2>
-              <button type="button" onClick={() => setFullMap(null)} aria-label={t("next:chat.minimize")} title={t("next:chat.minimize")} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" data-testid="chat-minimize">
+              <button type="button" onClick={leaveFullMap} aria-label={t("next:chat.minimize")} title={t("next:chat.minimize")} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" data-testid="chat-minimize">
                 <Minimize2 aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
               </button>
             </div>
