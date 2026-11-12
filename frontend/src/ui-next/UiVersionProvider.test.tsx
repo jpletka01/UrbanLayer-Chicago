@@ -146,6 +146,6 @@ describe("readiness registry", () => {
     expect(navEntries().map((e) => e.id)).toEqual(["profile", "discovery", "chat"]);
     expect(isReady("saved")).toBe(false);
     expect(isReady("profile")).toBe(true);
-    expect(isReady("chat")).toBe(false);
+    expect(isReady("chat")).toBe(true);
   });
 });

@@ -1750,5 +1750,59 @@
   "lowConfidence": {
     "label": "What does Low confidence mean?",
     "census": "The Census survey asks a sample of households, so each figure has a margin of error. Here the margin is at least 10% of the figure for some of these values (common in an area of a few blocks): read them as rough, not exact."
+  },
+  "chat": {
+    "heading": "What do you want to know?",
+    "headingAt": "What do you want to know about {{address}}?",
+    "hint": "About any lot, the code or a neighborhood · answers link to their sources",
+    "placeholder": "Ask about a lot, the code or a neighborhood",
+    "followUp": "Ask a follow-up",
+    "about": "About:",
+    "examples": {
+      "lot": "Could I add a coach house at 2611 N Sawyer Ave?",
+      "code": "How many units does RT-4 allow on a 25 by 125 lot?",
+      "area": "How has crime changed near Logan Square this year?"
+    },
+    "attach": "Attach a document or image",
+    "attachments": "Attached files",
+    "removeAttachment": "Remove {{name}}",
+    "dictate": "Dictate",
+    "dictateStop": "Stop dictating",
+    "dictateFailed": "Dictation isn't working in this browser right now. Type your question instead.",
+    "send": "Send",
+    "stop": "Stop",
+    "export": "Export as PDF",
+    "share": "Share",
+    "minimize": "Back to the conversation",
+    "mapTitle": "Map · {{place}}",
+    "sourcesTitle_one": "{{count}} source",
+    "sourcesTitle_other": "{{count}} sources",
+    "mapLabel": "Map of this answer's records",
+    "mapUnavailable": "The map can't be shown in this browser.",
+    "codeSource": "Chicago Municipal Code",
+    "amendedSince_one": "The City Council passed {{count}} amendment touching this section on {{date}}, after this text's date.",
+    "amendedSince_other": "The City Council passed {{count}} amendments touching this section since {{date}}, after this text's date.",
+    "point": {
+      "crime_one": "{{count}} crime",
+      "crime_other": "{{count}} crimes",
+      "request_one": "{{count}} 311 request",
+      "request_other": "{{count}} 311 requests",
+      "permit_one": "{{count}} permit",
+      "permit_other": "{{count}} permits"
+    },
+    "points_one": "{{count}} record",
+    "points_other": "{{count}} records",
+    "preview": {
+      "lot": "Profile",
+      "map": "Map",
+      "sources": "Sources"
+    },
+    "atLimit": "This conversation has reached its question limit.",
+    "remaining_one": "{{count}} question left in this conversation",
+    "remaining_other": "{{count}} questions left in this conversation",
+    "signInTitle": "Sign in to keep going",
+    "signInBody": "You've used today's free questions. Sign in for more; your conversation stays here.",
+    "signInGoogle": "Continue with Google",
+    "signInClose": "Close"
   }
 }

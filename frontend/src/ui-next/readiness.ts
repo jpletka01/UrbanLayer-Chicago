@@ -31,8 +31,8 @@ export const READINESS: readonly ReadinessEntry[] = [
     nav: { labelKey: "nav.discovery", icon: "discovery", to: "/discovery" } },
   { id: "saved", path: "/saved", status: "hidden", analytics: "next_saved",
     nav: { labelKey: "nav.saved", icon: "saved", to: "/saved" } },
-  { id: "chat", path: "/", status: "old", analytics: "chat",
-    nav: { labelKey: "nav.chat", icon: "chat", to: "/?ask=1" } },
+  { id: "chat", path: "/chat", status: "ready", analytics: "next_chat",
+    nav: { labelKey: "nav.chat", icon: "chat", to: "/chat" } },
 ];
 
 export function readinessOf(id: string): ReadinessEntry | undefined {

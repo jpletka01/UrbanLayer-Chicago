@@ -1750,5 +1750,59 @@
   "lowConfidence": {
     "label": "¿Qué significa Confianza baja?",
     "census": "La encuesta del Censo pregunta a una muestra de hogares, así que cada cifra tiene un margen de error. Aquí el margen es de al menos 10% de la cifra en algunos de estos valores (común en una zona de pocas cuadras): tómelos como aproximados, no exactos."
+  },
+  "chat": {
+    "heading": "¿Qué desea saber?",
+    "headingAt": "¿Qué desea saber sobre {{address}}?",
+    "hint": "Sobre cualquier terreno, el código o un vecindario · las respuestas enlazan a sus fuentes",
+    "placeholder": "Pregunte sobre un terreno, el código o un vecindario",
+    "followUp": "Haga otra pregunta",
+    "about": "Sobre:",
+    "examples": {
+      "lot": "¿Podría agregar una casa en la cochera en 2611 N Sawyer Ave?",
+      "code": "¿Cuántas unidades permite RT-4 en un terreno de 25 por 125?",
+      "area": "¿Cómo ha cambiado el crimen cerca de Logan Square este año?"
+    },
+    "attach": "Adjuntar un documento o una imagen",
+    "attachments": "Archivos adjuntos",
+    "removeAttachment": "Quitar {{name}}",
+    "dictate": "Dictar",
+    "dictateStop": "Dejar de dictar",
+    "dictateFailed": "El dictado no funciona en este navegador por ahora. Escriba su pregunta.",
+    "send": "Enviar",
+    "stop": "Detener",
+    "export": "Exportar como PDF",
+    "share": "Compartir",
+    "minimize": "Volver a la conversación",
+    "mapTitle": "Mapa · {{place}}",
+    "sourcesTitle_one": "{{count}} fuente",
+    "sourcesTitle_other": "{{count}} fuentes",
+    "mapLabel": "Mapa de los registros de esta respuesta",
+    "mapUnavailable": "El mapa no se puede mostrar en este navegador.",
+    "codeSource": "Código Municipal de Chicago",
+    "amendedSince_one": "El Concejo Municipal aprobó {{count}} enmienda que toca esta sección el {{date}}, después de la fecha de este texto.",
+    "amendedSince_other": "El Concejo Municipal aprobó {{count}} enmiendas que tocan esta sección desde el {{date}}, después de la fecha de este texto.",
+    "point": {
+      "crime_one": "{{count}} delito",
+      "crime_other": "{{count}} delitos",
+      "request_one": "{{count}} solicitud al 311",
+      "request_other": "{{count}} solicitudes al 311",
+      "permit_one": "{{count}} permiso",
+      "permit_other": "{{count}} permisos"
+    },
+    "points_one": "{{count}} registro",
+    "points_other": "{{count}} registros",
+    "preview": {
+      "lot": "Ficha",
+      "map": "Mapa",
+      "sources": "Fuentes"
+    },
+    "atLimit": "Esta conversación llegó a su límite de preguntas.",
+    "remaining_one": "Le queda {{count}} pregunta en esta conversación",
+    "remaining_other": "Le quedan {{count}} preguntas en esta conversación",
+    "signInTitle": "Inicie sesión para continuar",
+    "signInBody": "Ya usó las preguntas gratuitas de hoy. Inicie sesión para hacer más; su conversación se queda aquí.",
+    "signInGoogle": "Continuar con Google",
+    "signInClose": "Cerrar"
   }
 }

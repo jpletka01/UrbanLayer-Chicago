@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
 import { HeroEntrance } from "./components/landing/HeroEntrance";
@@ -11,18 +11,7 @@ import { HistorySidebar } from "./components/HistorySidebar";
 import { MobileSidebarSheet } from "./components/MobileSidebarSheet";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
-import type { PendingAttachment } from "./components/ChatInput";
-import {
-  fetchMapData,
-  fetchSection,
-  isNotCodified,
-  getConversation,
-  getSharedConversation,
-  getSharedChanges,
-  getConversationChanges,
-  updateMessageMapData,
-  uploadFiles,
-} from "./lib/api";
+import { fetchMapData, fetchSection, isNotCodified, updateMessageMapData } from "./lib/api";
 import { SPLASH_STATS } from "./lib/constants";
 import { Footer } from "./components/landing/Footer";
 import { ValueProps } from "./components/landing/ValueProps";
@@ -31,15 +20,6 @@ import { StorySection } from "./components/landing/StorySection";
 import { ChaosToVerdict } from "./components/landing/ChaosToVerdict";
 import { PersonaScenarios } from "./components/landing/PersonaScenarios";
 import { HowItWorks } from "./components/landing/HowItWorks";
-import {
-  appendMessages,
-  clearAllHistory,
-  deleteConversation,
-  generateId,
-  loadConversations,
-  migrateLocalStorageToSQLite,
-} from "./lib/history";
-import { createConversation } from "./lib/api";
 import type {
   Conversation,
   ContextObject,
@@ -47,13 +27,9 @@ import type {
   MapData,
   RetrievalPlan,
   SidebarView,
-  SinceThenResult,
   SourceTag,
 } from "./lib/types";
-import { useChat } from "./lib/useChat";
-import { useConversationRouter } from "./lib/useConversationRouter";
-import { useSelectedParcel } from "./contexts/SelectedParcelContext";
-import { buildScorecardContext } from "./lib/scorecardContext";
+import { useChatSession } from "./lib/useChatSession";
 import { buildReportData, type ReportData } from "./lib/reportBuilder";
 import { ExportReport } from "./components/ExportReport";
 import { ShareModal } from "./components/ShareModal";
@@ -63,9 +39,7 @@ import { useThemeContext } from "./contexts/ThemeContext";
 import AuthModal from "./components/AuthModal";
 import FloatingNav from "./components/FloatingNav";
 import { useTranslation } from "react-i18next";
-import { track } from "./lib/tracking";
 import { countDataCategories } from "./lib/contextSummary";
-import { takeHandoff } from "./lib/openInNewTab";
 import { RotateCcw } from "lucide-react";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -75,15 +49,6 @@ export function App() {
   const { resolvedTheme } = useThemeContext();
   const heroLight = resolvedTheme === "light";
   const { t: tc } = useTranslation("common");
-  const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace, navigateBack } =
-    useConversationRouter();
-  const { scorecard: heldScorecard, select: selectParcel } = useSelectedParcel();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [loadingConversation, setLoadingConversation] = useState(!!conversationIdFromUrl);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -97,136 +62,19 @@ export function App() {
   const [mapSources, setMapSources] = useState<SourceTag[]>([]);
   const [mapIntent, setMapIntent] = useState<string | null>(null);
   const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
-  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [dataTabViewed, setDataTabViewed] = useState(true);
   const [sourcesTabViewed, setSourcesTabViewed] = useState(true);
   const [mapTabViewed, setMapTabViewed] = useState(true);
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  // True only in the empty "New Chat" state: keeps the workspace mounted (with an
-  // empty composer) when there are no messages yet. Set in handleNewChat; cleared
-  // on exit-to-home (reset) and on the first send.
-  const [composing, setComposing] = useState(false);
-  const [isSharedView, setIsSharedView] = useState(false);
-  // "Since then" notes for a reopened or shared conversation, by message index (WS6 M9).
-  const [sinceThen, setSinceThen] = useState<Record<string, SinceThenResult>>({});
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const { isAuthenticated, authRequired, loading: authLoading, signIn } = useAuthContext();
+  const { isAuthenticated, signIn } = useAuthContext();
   const planRef = useRef<RetrievalPlan | null>(null);
-  const prevStreamingRef = useRef(false);
-  const conversationIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    conversationIdRef.current = conversationId;
-  }, [conversationId]);
-
-  // Sync URL → state: load conversation when URL changes (direct link, browser back/forward)
-  useEffect(() => {
-    if (conversationIdFromUrl && conversationIdFromUrl !== conversationId) {
-      setLoadingConversation(true);
-      (async () => {
-        const detail = await getConversation(conversationIdFromUrl);
-        if (!detail) {
-          navigateReplace("/");
-          setLoadingConversation(false);
-          return;
-        }
-        const loaded = detail.messages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-          context: m.context ?? undefined,
-          plan: m.plan ?? undefined,
-          mapData: m.map_data ?? undefined,
-          mapFetchedAt: m.map_fetched_at ?? undefined,
-          createdAt: m.created_at ?? undefined,
-        }));
-        setMessages(loaded);
-        setSinceThen({});
-        void getConversationChanges(conversationIdFromUrl).then((notes) => {
-          if (conversationIdRef.current === conversationIdFromUrl) setSinceThen(notes);
-        });
-        setConversationId(conversationIdFromUrl);
-        conversationIdRef.current = conversationIdFromUrl;
-        setHistoryOpen(false);
-        clearTurnState();
-        const lastUserIdx = loaded.length - 2;
-        if (lastUserIdx >= 0) {
-          handleMessageClick(lastUserIdx, loaded);
-        }
-        setLoadingConversation(false);
-      })();
-    } else if (!conversationIdFromUrl && conversationId) {
-      // Browser navigated back to splash
-      resetChat();
-      setComposing(false);
-      setConversationId(null);
-      conversationIdRef.current = null;
-      setSidebarOpen(false);
-      setSidebarView("data");
-      setHighlightedSourceIndex(null);
-      setActiveSidebarContext(null);
-      setMapData(null);
-      setMapLoading(false);
-      setMapSources([]);
-      setMapIntent(null);
-      setSelectedMessageIndex(null);
-      setDataTabViewed(true);
-      setSourcesTabViewed(true);
-      setMapTabViewed(true);
-    } else if (!conversationIdFromUrl) {
-      setLoadingConversation(false);
-    }
-  }, [conversationIdFromUrl]);
-
-  // Load shared conversation when navigating to /s/:token
-  useEffect(() => {
-    if (!shareTokenFromUrl) {
-      if (isSharedView) setIsSharedView(false);
-      return;
-    }
-    setLoadingConversation(true);
-    (async () => {
-      const detail = await getSharedConversation(shareTokenFromUrl);
-      if (!detail) {
-        navigateReplace("/");
-        setLoadingConversation(false);
-        return;
-      }
-      const loaded = detail.messages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        context: m.context ?? undefined,
-        plan: m.plan ?? undefined,
-        mapData: m.map_data ?? undefined,
-        mapFetchedAt: m.map_fetched_at ?? undefined,
-        createdAt: m.created_at ?? undefined,
-      }));
-      setMessages(loaded);
-      setSinceThen({});
-      void getSharedChanges(shareTokenFromUrl).then(setSinceThen);
-      setIsSharedView(true);
-      setHistoryOpen(false);
-      clearTurnState();
-      const lastUserIdx = loaded.length - 2;
-      if (lastUserIdx >= 0) {
-        handleMessageClick(lastUserIdx, loaded);
-      }
-      setLoadingConversation(false);
-    })();
-  }, [shareTokenFromUrl]);
 
   function handleContext(ctx: ContextObject) {
     setActiveSidebarContext(ctx);
     openSidebarResponsive();
     const hasDomain = ctx.parcel_zoning || ctx.property || ctx.regulatory || ctx.incentives || ctx.neighborhood;
-    const isMobile = window.innerWidth < 768;
-
-    let autoView: SidebarView;
-    if (isMobile) {
-      autoView = hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data";
-    } else {
-      autoView = hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data";
-    }
+    const autoView: SidebarView = hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data";
     setSidebarView(autoView);
     setDataTabViewed(autoView === "data");
     setSourcesTabViewed(autoView === "sources");
@@ -261,278 +109,8 @@ export function App() {
     }
   }
 
-  const {
-    messages,
-    setMessages,
-    streaming,
-    plan,
-    context,
-    showDisclaimer,
-    errorMsg,
-    canRetry,
-    retry,
-    rateLimited,
-    atMessageLimit,
-    messagesRemaining,
-    activities,
-    sendMessage: sendChat,
-    clearTurnState,
-    reset: resetChat,
-    setGrounding,
-  } = useChat({
-    onContext: handleContext,
-    onPlan: handlePlan,
-    onMapData: handleMapData,
-    conversationId,
-    language: localStorage.getItem("urbanlayer-language") || "en",
-  });
-
-  useEffect(() => {
-    planRef.current = plan;
-  }, [plan]);
-
-  // Init: migrate localStorage, load conversations (wait for auth to resolve first).
-  // Anonymous visitors have no server-side persistence — skip entirely (the
-  // conversation endpoints 401 without a session).
-  useEffect(() => {
-    if (authLoading) return;
-    if (authRequired && !isAuthenticated) return;
-    (async () => {
-      await migrateLocalStorageToSQLite();
-      const convos = await loadConversations();
-      setConversations(convos);
-    })();
-  }, [authLoading, authRequired, isAuthenticated]);
-
-  // Save messages to SQLite after stream completes
-  useEffect(() => {
-    if (prevStreamingRef.current && !streaming) {
-      setMapLoading(false);
-      if (messages.length >= 2) {
-        const lastTwo = messages.slice(-2);
-        if (lastTwo[0]?.role === "user" && lastTwo[1]?.role === "assistant") {
-          const cid = conversationIdRef.current;
-          if (cid) {
-            appendMessages(cid, lastTwo)
-              .then(() => loadConversations().then(setConversations))
-              .catch((err) => console.error("Failed to save messages:", err));
-          }
-          setSelectedMessageIndex(messages.length - 2);
-        }
-      }
-    }
-    prevStreamingRef.current = streaming;
-  }, [streaming, messages]);
-
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
-        e.preventDefault();
-        setSidebarOpen((prev) => !prev);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  const active = messages.length > 0 || streaming || composing;
-
-  // Anonymous visitors chat in-memory only: no server-side conversation,
-  // no history, no uploads. Auth is asked for where identity is needed
-  // (save/share/purchase) — never as a precondition for the first answer.
-  const canPersist = !authRequired || isAuthenticated;
-
-  async function sendMessage(
-    text: string,
-    _attachments?: undefined,
-    opts?: { parcelPin?: string | null; scorecardContext?: import("./lib/types").ScorecardContext | null },
-  ) {
-    setHistoryOpen(false);
-    let cid = conversationId;
-    if (!cid && canPersist) {
-      cid = generateId();
-      const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
-      try {
-        await createConversation(cid, title, localStorage.getItem("urbanlayer-language") || "en");
-      } catch (err) {
-        console.error("Failed to create conversation:", err);
-        setShowAuthModal(true);
-        return;
-      }
-      setConversationId(cid);
-      conversationIdRef.current = cid;
-      navigateToConversation(cid);
-    }
-
-    let uploadMetas: import("./lib/types").UploadMeta[] | undefined;
-    if (pendingAttachments.length > 0 && cid) {
-      try {
-        uploadMetas = await uploadFiles(cid, pendingAttachments.map((a) => a.file));
-      } catch (err) {
-        console.error("Upload failed:", err);
-      }
-      // Clean up preview URLs
-      for (const att of pendingAttachments) {
-        if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
-      }
-      setPendingAttachments([]);
-    }
-
-    track("chat_message_sent");
-    sendChat(text, uploadMetas, opts);
-    // Clear the empty-state flag only now: sendChat has synchronously appended
-    // the user message, so `active` never dips false mid-send. Clearing it
-    // before the awaited conversation creation opened a ~200ms active=false
-    // window in which AnimatePresence (mode="wait") began swapping the splash
-    // in and dropped the workspace's re-entry when `active` flipped back —
-    // stranding the app on the splash while the answer streamed unseen
-    // (flaky, mostly mobile; diagnosed 2026-07-03).
-    setComposing(false);
-  }
-
-  // Auto-send ?q= query parameter (from Investigate buttons on Scorecard).
-  // ?pin= rides along so the turn resolves the exact parcel instead of
-  // re-geocoding the address text (read-only handoff — truth-model §3), and
-  // carries pre-resolved grounding (scorecard_context) so the answer reads the
-  // facts the Scorecard already resolved instead of re-fetching them.
-  const qConsumedRef = useRef(false);
-  // True when this chat visit is a handoff from another page (?q= deep link).
-  // If the user then declines the sign-in modal without ever getting an
-  // answer, dismissing returns them to the page they came from instead of
-  // stranding them on an empty workspace.
-  const handoffOriginRef = useRef(false);
-  useEffect(() => {
-    const q = searchParams.get("q");
-    if (!q || qConsumedRef.current) return;
-    if (authLoading || conversationIdFromUrl || shareTokenFromUrl) return;
-    if (messages.length > 0 || streaming) return;
-    qConsumedRef.current = true;
-    handoffOriginRef.current = true;
-    const pin = searchParams.get("pin");
-    setSearchParams({}, { replace: true });
-    if (!pin) {
-      // Ungrounded ?q= handoff (Discovery area seam, persona cards, Scorecard
-      // failure-recovery): no parcel named, so clear any sticky grounding left
-      // from a prior in-session conversation before sending. Same defensive
-      // clean-open as the ?ask=1 doors — closes stale grounding on all three.
-      setGrounding(null);
-      sendMessage(q);
-      return;
-    }
-    // Reuse the held ScorecardResponse from the in-SPA navigation; on a cold
-    // deep-link it isn't there, so hydrate once via the scorecard endpoint.
-    (async () => {
-      const resp = heldScorecard?.resolved_pin === pin ? heldScorecard : await selectParcel({ pin });
-      const scorecardContext = resp?.resolved_pin === pin ? buildScorecardContext(resp) : null;
-      // Persist as the conversation's grounding so typed follow-ups stay grounded.
-      setGrounding(scorecardContext);
-      sendMessage(q, undefined, { parcelPin: pin, scorecardContext });
-    })();
-  }, [authLoading, searchParams, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
-
-  // Bare ?pin= (the "Ask about this property" entry — no ?q=, so no auto-send):
-  // activate the workspace (composing) so the grounded empty-state renders
-  // instead of the splash, and ensure the parcel is held so the starters can
-  // build. On in-SPA navigation it's already held; on a cold deep-link, hydrate
-  // once. composing must be set even when already held, so it can't sit behind
-  // the hydration short-circuit.
-  useEffect(() => {
-    const pin = searchParams.get("pin");
-    if (!pin || searchParams.get("q")) return;
-    if (conversationIdFromUrl || shareTokenFromUrl) return;
-    setComposing(true);
-    if (heldScorecard?.resolved_pin !== pin) selectParcel({ pin });
-  }, [searchParams, conversationIdFromUrl, shareTokenFromUrl, heldScorecard]);
-
-  // Quick-chat dock escalation: the Profile's MiniChatDock stores its ephemeral
-  // transcript under a one-time id (lib/openInNewTab.ts) and opens this page in a
-  // NEW tab with ?handoff=<id> (plus ?pin= for the grounding door). Seed those turns
-  // into the workspace so the conversation continues instead of restarting — from
-  // this point it lives (and persists) like any other conversation. Consumed exactly
-  // once; a stale handoff never overwrites an active chat.
-  const dockHandoffConsumedRef = useRef(false);
-  const handoffId = searchParams.get("handoff");
-  useEffect(() => {
-    if (dockHandoffConsumedRef.current || !handoffId) return;
-    if (conversationIdFromUrl || shareTokenFromUrl) return;
-    dockHandoffConsumedRef.current = true;
-    const seeded = takeHandoff(handoffId);
-    if (!seeded?.length || messages.length > 0 || streaming) return;
-    setComposing(true);
-    setMessages(seeded.map((m) => ({ role: m.role, content: m.content })));
-  }, [handoffId, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
-
-  // Bare ?ask=1 — the labeled "Ask the analyst" door (Home hero + page nav).
-  // Opens an EMPTY, UNGROUNDED chat: the user hasn't named a parcel here, so
-  // clear any sticky grounding left from a prior in-session conversation and just
-  // activate the composer. This is the general navigation door — deliberately
-  // distinct from the Scorecard's grounded handoff (?pin=/?q=), which carries
-  // parcel context. Here the chat knows nothing about a parcel, by design.
-  useEffect(() => {
-    if (!searchParams.get("ask")) return;
-    if (conversationIdFromUrl || shareTokenFromUrl) return;
-    setGrounding(null);
-    setComposing(true);
-    setSearchParams({}, { replace: true });
-  }, [searchParams, conversationIdFromUrl, shareTokenFromUrl]);
-
-  // Grounding for the empty-state starters: shown only when the workspace was
-  // entered for a parcel (?pin= present and the held Scorecard matches it), so
-  // the generic librarian entry never surfaces property starters by accident.
-  const entryPin = searchParams.get("pin");
-  const groundedContext = useMemo(
-    () => (entryPin && heldScorecard?.resolved_pin === entryPin ? buildScorecardContext(heldScorecard) : null),
-    [entryPin, heldScorecard],
-  );
-
-  // Persist the parcel grounding for the whole conversation. Only ever sets (never
-  // clears) here, so it survives the autosend's searchParams reset — follow-up
-  // turns stay grounded. Cleared only by reset() (New Chat).
-  useEffect(() => {
-    if (groundedContext) setGrounding(groundedContext);
-  }, [groundedContext]);
-
-  function sendPropertyStarter(question: string) {
-    if (!groundedContext) return;
-    // Embed the address so the router types the turn as an address query — that
-    // is what lets _apply_parcel_hint anchor it to the pin (a deictic "this lot"
-    // routes to clarification before grounding is ever read). Mirrors the
-    // address-bearing InvestigateButton questions.
-    const addr = groundedContext.address;
-    const text = addr ? `${question} — ${addr}` : question;
-    sendMessage(text, undefined, {
-      parcelPin: groundedContext.pin,
-      scorecardContext: groundedContext,
-    });
-  }
-
-  function handleAttach(files: File[]) {
-    const remaining = 3 - pendingAttachments.length;
-    const toAdd = files.slice(0, remaining);
-    const newAttachments: PendingAttachment[] = toAdd.map((file) => ({
-      file,
-      previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
-    }));
-    setPendingAttachments((prev) => [...prev, ...newAttachments]);
-  }
-
-  function handleRemoveAttachment(index: number) {
-    setPendingAttachments((prev) => {
-      const next = [...prev];
-      const removed = next.splice(index, 1)[0];
-      if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
-      return next;
-    });
-  }
-
-  // Shared teardown for both "exit to home" (reset) and "new chat in place"
-  // (handleNewChat): aborts any in-flight stream, clears the conversation,
-  // sidebar, and map state. Does NOT touch `composing` or the URL — the two
-  // callers differ only in those.
-  function clearWorkspace() {
-    resetChat();
-    setConversationId(null);
-    conversationIdRef.current = null;
+  // Clear what sits beside the conversation (the data rail and its map); the session clears the conversation.
+  function clearSidebar() {
     setSidebarOpen(false);
     setMobileSidebarOpen(false);
     setSidebarView("data");
@@ -546,71 +124,107 @@ export function App() {
     setDataTabViewed(true);
     setSourcesTabViewed(true);
     setMapTabViewed(true);
-    setLoadError(null);
   }
 
-  // Exit to home: clear everything and show the splash. `composing` must go
-  // false here, or active stays true and the splash never renders.
+  // The chat session (lib/useChatSession.ts, shared with the new UI's full chat page): loading, storing,
+  // creating conversations and the doors into chat from other pages.
+  const session = useChatSession({
+    onContext: handleContext,
+    onPlan: handlePlan,
+    onMapData: handleMapData,
+    onLoaded: (loaded) => {
+      setHistoryOpen(false);
+      // Load the last question's state into the sidebar.
+      const lastUserIdx = loaded.length - 2;
+      if (lastUserIdx >= 0) handleMessageClick(lastUserIdx, loaded);
+    },
+    onTurnDone: (msgs) => {
+      setMapLoading(false);
+      const lastTwo = msgs.slice(-2);
+      if (msgs.length >= 2 && lastTwo[0]?.role === "user" && lastTwo[1]?.role === "assistant") {
+        setSelectedMessageIndex(msgs.length - 2);
+      }
+    },
+    onCleared: clearSidebar,
+  });
+  const {
+    messages,
+    streaming,
+    plan,
+    context,
+    showDisclaimer,
+    errorMsg,
+    canRetry,
+    retry,
+    rateLimited,
+    atMessageLimit,
+    messagesRemaining,
+    activities,
+    conversationId,
+    conversationIdRef,
+    conversations,
+    loadingConversation,
+    loadError,
+    setLoadError,
+    isSharedView,
+    sinceThen,
+    active,
+    canPersist,
+    groundedContext,
+    pendingAttachments,
+    showAuthModal,
+    setShowAuthModal,
+    sendPropertyStarter,
+  } = session;
+
+  useEffect(() => {
+    planRef.current = plan;
+  }, [plan]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+        e.preventDefault();
+        setSidebarOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  function sendMessage(
+    text: string,
+    _attachments?: undefined,
+    opts?: { parcelPin?: string | null; scorecardContext?: import("./lib/types").ScorecardContext | null },
+  ) {
+    setHistoryOpen(false);
+    return session.sendMessage(text, undefined, opts);
+  }
+
+  const handleAttach = session.attach;
+  const handleRemoveAttachment = session.removeAttachment;
+
+  // Exit to home: clear everything and show the splash.
   function reset() {
-    clearWorkspace();
-    setComposing(false);
-    navigateToSplash();
+    session.exitToStart();
   }
 
-  // New Chat (in place): same teardown, but stay in the workspace with an empty
-  // composer. Navigates to `/` so a refresh can't resurrect the old /c/:id;
-  // `composing` keeps `/` on the workspace instead of the splash.
+  // New Chat (in place): the same teardown, but stay in the workspace with an empty composer.
   function handleNewChat() {
-    clearWorkspace();
-    setComposing(true);
-    navigateToSplash();
-    setHistoryOpen(false); // no-op from the header (drawer already closed); closes it when invoked from the history drawer
+    session.newChat();
+    setHistoryOpen(false); // closes the history drawer when invoked from it
   }
 
   async function loadConv(conv: Conversation) {
-    setLoadError(null);
-    const detail = await getConversation(conv.id);
-    if (!detail) {
-      setLoadError(tc("loadConversationError"));
-      return;
-    }
-
-    const loaded = detail.messages.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-      context: m.context ?? undefined,
-      plan: m.plan ?? undefined,
-      mapData: m.map_data ?? undefined,
-      mapFetchedAt: m.map_fetched_at ?? undefined,
-    }));
-
-    setMessages(loaded);
-    setConversationId(conv.id);
-    conversationIdRef.current = conv.id;
-    setHistoryOpen(false);
-    clearTurnState();
-    navigateToConversation(conv.id);
-
-    // Load the last question's state into the sidebar
-    const lastUserIdx = loaded.length - 2;
-    if (lastUserIdx >= 0) {
-      handleMessageClick(lastUserIdx, loaded);
-    }
+    await session.openConversation(conv);
   }
 
   async function handleDeleteConversation(id: string) {
-    await deleteConversation(id);
-    const convos = await loadConversations();
-    setConversations(convos);
-    if (conversationId === id) {
-      reset();
-    }
+    await session.removeConversation(id);
   }
 
   async function handleClearAll() {
-    await clearAllHistory();
-    setConversations([]);
-    reset();
+    await session.removeAll();
   }
 
   // Per-question state toggling
@@ -713,7 +327,7 @@ export function App() {
         });
       }
     },
-    [messages],
+    [messages, conversationIdRef],
   );
 
   function openSidebarResponsive() {
@@ -1200,17 +814,8 @@ export function App() {
       {showAuthModal && (
         <AuthModal
           onSignIn={signIn}
-          onClose={() => {
-            setShowAuthModal(false);
-            // Dead-end handoff: arrived via ?q= from another page and never
-            // received an answer (rate-limited / failed). Declining sign-in
-            // returns the user to where they actually were.
-            const gotAnswer = messages.some((m) => m.role === "assistant" && m.content);
-            if (handoffOriginRef.current && !gotAnswer) {
-              handoffOriginRef.current = false;
-              navigateBack();
-            }
-          }}
+          // A ?q= visit that never got an answer goes back to where the visitor was (useChatSession).
+          onClose={session.dismissAuth}
         />
       )}
 

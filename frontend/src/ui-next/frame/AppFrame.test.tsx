@@ -45,7 +45,7 @@ describe("AppFrame", () => {
     const folder = within(panel).getByTestId("chat-folder");
     const rows = within(folder).getAllByRole("listitem").map((li) => li.textContent);
     expect(rows).toEqual(["New chat", "Sign in to see past chats"]);
-    expect(within(folder).getByRole("link", { name: "New chat" }).getAttribute("href")).toBe("/?ask=1");
+    expect(within(folder).getByRole("link", { name: "New chat" }).getAttribute("href")).toBe("/chat");
   });
 
   it("collapses to icons that keep their names, and remembers it", () => {
