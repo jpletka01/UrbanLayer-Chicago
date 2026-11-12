@@ -1,15 +1,15 @@
 // The chat's own sidebar (owner review 2026-11-12): beside the main panel, which the chat page opens collapsed to its
 // icons, so past chats are one click away instead of behind the panel's Chat folder. New chat first, a search over
-// titles, then the chats grouped by date with the open one marked. Hidden from its header, back from the top bar; on
-// a phone the same list opens as a sheet.
+// titles, then the chats grouped by date with the open one marked. Hiding it folds it to a strip of icons in place,
+// like the main panel (owner review 2026-11-12: a list that vanished read as lost); on a phone it opens as a sheet.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LogIn, PanelLeftClose, Plus, Search } from "lucide-react";
+import { LogIn, PanelLeftClose, PanelLeftOpen, Plus, Search } from "lucide-react";
 import { listConversations } from "../../lib/api";
 import type { Conversation } from "../../lib/types";
 import { useAuthContext } from "../../contexts/AuthContext";
-import { STROKE } from "../icons";
+import { ICON, STROKE } from "../icons";
 import { groupChats } from "./chatListModel";
 
 export function ChatList({
@@ -97,6 +97,26 @@ export function ChatList({
           ))
         )}
       </div>
+    </nav>
+  );
+}
+
+/** The chat list folded: a strip with the button that opens it again where its hide button was, and New chat. */
+export function ChatListStrip({ onShow, onNewChat }: { onShow: () => void; onNewChat: () => void }) {
+  const { t } = useTranslation("next");
+  const btn = "grid h-9 w-9 place-items-center rounded-xl hover:bg-nx-ink/5 touch-icon";
+  const Chats = ICON.chats;
+  return (
+    <nav aria-label={t("chat.list.label")} className="flex h-full w-14 flex-col items-center gap-2 py-5" data-testid="chat-list-strip">
+      <button type="button" onClick={onShow} aria-label={t("chat.list.show")} title={t("chat.list.show")} className={`${btn} h-7`} data-testid="chat-list-expand">
+        <PanelLeftOpen aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+      </button>
+      <button type="button" onClick={onNewChat} aria-label={t("frame.newChat")} title={t("frame.newChat")} className={btn}>
+        <Plus aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+      </button>
+      <button type="button" onClick={onShow} aria-label={t("chat.list.show")} title={t("chat.list.show")} className={btn}>
+        <Chats aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+      </button>
     </nav>
   );
 }

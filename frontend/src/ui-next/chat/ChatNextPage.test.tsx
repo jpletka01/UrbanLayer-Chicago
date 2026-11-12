@@ -169,12 +169,15 @@ describe("the answer's citations (owner, 2026-11-12: the new UI, not the old pil
 });
 
 describe("the chat list beside the panel (owner, 2026-11-12)", () => {
-  it("opens beside a collapsed main panel, hides from its header, and comes back from the top bar", () => {
+  it("opens beside a collapsed main panel, folds to a strip from its header, and opens again from the strip", () => {
     mount();
     expect(screen.getByTestId("chat-list")).toBeTruthy();
     expect(document.querySelector("nav[data-collapsed]")).toBeTruthy();
     fireEvent.click(screen.getByTestId("chat-list-hide"));
     expect(screen.queryByTestId("chat-list")).toBeNull();
     expect(localStorage.getItem("urbanlayer-next-chatlist")).toBe("hidden");
+    // Folded in place, not gone: the strip's button sits where the hide button was (owner, 2026-11-12).
+    fireEvent.click(screen.getByTestId("chat-list-expand"));
+    expect(screen.getByTestId("chat-list")).toBeTruthy();
   });
 });

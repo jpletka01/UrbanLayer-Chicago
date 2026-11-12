@@ -21,7 +21,7 @@ import { useChatSession } from "../../lib/useChatSession";
 import { useAuthContext } from "../../contexts/AuthContext";
 import type { Message } from "../../lib/types";
 import { ICON, STROKE } from "../icons";
-import { ChatList } from "./ChatList";
+import { ChatList, ChatListStrip } from "./ChatList";
 import { ChatMessage } from "./ChatMessage";
 import { Composer } from "./Composer";
 import { ChatMap } from "./ChatMap";
@@ -99,11 +99,10 @@ export default function ChatNextPage() {
   const needsSignIn = (rateLimited && !session.canPersist) || session.showAuthModal;
 
   const startNew = () => { setDraft(""); session.newChat(); };
-  const wide = () => typeof window !== "undefined" && window.matchMedia?.("(min-width: 1024px)").matches;
   const tools = (
     <>
-      <span className={listShown ? "lg:hidden" : ""}>
-        <ToolButton label={t("next:chat.list.show")} icon={ICON.chats} onClick={() => (wide() ? showList(true) : setListSheet(true))} testId="chat-list-show" />
+      <span className="lg:hidden">
+        <ToolButton label={t("next:chat.list.show")} icon={ICON.chats} onClick={() => setListSheet(true)} testId="chat-list-show" />
       </span>
       {answered && !streaming && (
         <ToolButton
@@ -172,7 +171,9 @@ export default function ChatNextPage() {
   return (
     <AppFrame
       crumbs={[t("next:nav.chat"), title ?? t("next:frame.newChat")]} tools={tools} fill drawer={drawer}
-      secondary={listShown ? <ChatList activeId={session.conversationId} refreshKey={session.conversationId} onNewChat={startNew} onHide={() => showList(false)} /> : null}
+      secondary={listShown
+        ? <ChatList activeId={session.conversationId} refreshKey={session.conversationId} onNewChat={startNew} onHide={() => showList(false)} />
+        : <ChatListStrip onShow={() => showList(true)} onNewChat={startNew} />}
     >
       <Dialog.Root open={listSheet} onOpenChange={setListSheet}>
         <Dialog.Portal>
@@ -198,6 +199,9 @@ export default function ChatNextPage() {
           >
             {empty ? (
               <div className="mx-auto flex min-h-full max-w-[760px] flex-col justify-center gap-6 py-10">
+                {session.loadError && (
+                  <p className="rounded-xl bg-nx-pill-red-bg px-3 py-2 text-caption text-nx-pill-red" role="alert" data-testid="chat-load-error">{session.loadError}</p>
+                )}
                 <h1 className="text-center text-[1.75rem] font-semibold leading-tight tracking-[-0.02em]">
                   {grounded ? t("next:chat.headingAt", { address: grounded.address }) : t("next:chat.heading")}
                 </h1>

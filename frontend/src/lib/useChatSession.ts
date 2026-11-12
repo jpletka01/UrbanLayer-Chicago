@@ -104,7 +104,16 @@ export function useChatSession(options: ChatSessionOptions = {}) {
     if (conversationIdFromUrl && conversationIdFromUrl !== conversationId) {
       setLoadingConversation(true);
       (async () => {
-        const detail = await getConversation(conversationIdFromUrl);
+        // A network failure throws: stop loading and say so, instead of an outline that never ends (owner review
+        // 2026-11-12, the backend down while the page opened).
+        let detail: Awaited<ReturnType<typeof getConversation>>;
+        try {
+          detail = await getConversation(conversationIdFromUrl);
+        } catch {
+          setLoadError(tc("loadConversationError"));
+          setLoadingConversation(false);
+          return;
+        }
         if (!detail) {
           go(startPath);
           setLoadingConversation(false);
@@ -143,7 +152,7 @@ export function useChatSession(options: ChatSessionOptions = {}) {
     }
     setLoadingConversation(true);
     (async () => {
-      const detail = await getSharedConversation(shareTokenFromUrl);
+      const detail = await getSharedConversation(shareTokenFromUrl).catch(() => null);
       if (!detail) {
         go(startPath);
         setLoadingConversation(false);
