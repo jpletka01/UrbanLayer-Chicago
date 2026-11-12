@@ -56,12 +56,13 @@ export default function ChatNextPage() {
   const [draft, setDraft] = useState("");
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  // The chat list beside the panel (owner review 2026-11-12): shown unless the visitor hid it; a sheet on a phone.
-  const [listShown, setListShown] = useState(() => { try { return localStorage.getItem(LIST_KEY) !== "hidden"; } catch { return true; } });
+  // The chat list beside the panel (owner review 2026-11-12): open on every visit to a wide screen; hiding it lasts
+  // for this tab only (sessionStorage), so the next visit opens it again. A sheet on a phone.
+  const [listShown, setListShown] = useState(() => { try { return sessionStorage.getItem(LIST_KEY) !== "hidden"; } catch { return true; } });
   const [listSheet, setListSheet] = useState(false);
   const showList = (on: boolean) => {
     setListShown(on);
-    try { localStorage.setItem(LIST_KEY, on ? "shown" : "hidden"); } catch { /* per-viewer convenience only */ }
+    try { sessionStorage.setItem(LIST_KEY, on ? "shown" : "hidden"); } catch { /* per-viewer convenience only */ }
   };
   const scroller = useRef<HTMLDivElement | null>(null);
   const stickToEnd = useRef(true);

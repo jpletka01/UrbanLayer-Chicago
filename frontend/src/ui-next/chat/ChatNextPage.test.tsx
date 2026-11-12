@@ -47,7 +47,7 @@ vi.mock("../../lib/useChatSession", () => ({ useChatSession: () => session }));
 
 const mount = () => render(<MemoryRouter initialEntries={["/chat"]}><ChatNextPage /></MemoryRouter>);
 
-beforeEach(() => { localStorage.clear(); session = base(); });
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); session = base(); });
 afterEach(cleanup);
 
 describe("the full chat page", () => {
@@ -175,7 +175,7 @@ describe("the chat list beside the panel (owner, 2026-11-12)", () => {
     expect(document.querySelector("nav[data-collapsed]")).toBeTruthy();
     fireEvent.click(screen.getByTestId("chat-list-hide"));
     expect(screen.queryByTestId("chat-list")).toBeNull();
-    expect(localStorage.getItem("urbanlayer-next-chatlist")).toBe("hidden");
+    expect(sessionStorage.getItem("urbanlayer-next-chatlist")).toBe("hidden");
     // Folded in place, not gone: the strip's button sits where the hide button was (owner, 2026-11-12).
     fireEvent.click(screen.getByTestId("chat-list-expand"));
     expect(screen.getByTestId("chat-list")).toBeTruthy();
