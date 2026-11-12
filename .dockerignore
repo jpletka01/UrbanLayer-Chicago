@@ -26,6 +26,7 @@ ingestion/data/
 !ingestion/data/fema_flood_chicago.meta.json
 chicago-il-*.html
 eval/
+research/
 test-results/
 .env
 .env.*

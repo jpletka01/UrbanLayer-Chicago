@@ -17,7 +17,7 @@ import pytest
 from backend.config import get_settings
 from backend.data_health import probes
 from backend.data_health.registry import BY_ID
-from backend.legislation import pending, sync, upcoming
+from backend.legislation import filing_reader, pending, sync, upcoming
 from backend.legislation import address_titles
 from backend.legislation.pending_store import Snapshot, Store, read_status
 from backend.retrieval import clerk
@@ -151,6 +151,123 @@ async def test_recorded_pending_detail_is_parseable_and_contains_no_eds_metadata
     }
     assert len(snapshot.matters[0].attachments) == 3
     assert snapshot.matters[0].application_number == "23180"
+
+
+def test_filing_reader_selects_only_ordinance_and_narrative_never_application_or_eds():
+    good = _matter(
+        "O2026-9", title="Zoning Reclassification Map No. 1-A - App No. 23123T1",
+        attachments=[
+            {"fileName": "O2026-9 EDS.pdf", "path": "https://example.test/eds.pdf", "attachmentType": "EDS"},
+            {"fileName": "O2026-9 Application.pdf", "path": "https://example.test/app.pdf", "attachmentType": "Miscellaneous"},
+            {"fileName": "O2026-9 Narrative and Plans.pdf", "path": "https://example.test/n.pdf", "attachmentType": "Exhibits"},
+            {"fileName": "O2026-9 Ordinance.pdf", "path": "https://example.test/o.pdf", "attachmentType": "Legislation"},
+        ],
+    )
+    not_type1 = _matter("O2026-8", title="Zoning Reclassification Map No. 1-A - App No. 23122")
+    selected = filing_reader.sample_candidates([not_type1, good])
+    assert [(row.role, row.url) for row in selected] == [
+        ("ordinance", "https://example.test/o.pdf"), ("narrative", "https://example.test/n.pdf"),
+    ]
+
+
+def test_filing_reader_skips_a_matter_missing_a_role_or_with_two_candidates_for_one():
+    one_role = _matter("O2026-7", title="Zoning Reclassification Map No. 1-A - App No. 23121T1", attachments=[
+        {"fileName": "O2026-7 Ordinance.pdf", "path": "https://example.test/o.pdf", "attachmentType": "Legislation"},
+    ])
+    two = _matter("O2026-6", title="Zoning Reclassification Map No. 1-A - App No. 23120T1", attachments=[
+        {"fileName": "O2026-6 Ordinance.pdf", "path": "https://example.test/o1.pdf", "attachmentType": "Legislation"},
+        {"fileName": "O2026-6 Ordinance 2.pdf", "path": "https://example.test/o2.pdf", "attachmentType": "Legislation"},
+        {"fileName": "O2026-6 Narrative.pdf", "path": "https://example.test/n.pdf", "attachmentType": "Exhibits"},
+    ])
+    assert filing_reader.sample_candidates([one_role, two]) == []
+
+
+def test_filing_reader_does_not_treat_non_zoning_type1_text_as_a_candidate():
+    text = _matter(
+        "O2026-7", matterCategory="MUNICIPAL CODE AMENDMENTS",
+        title="Amendment regarding Type 1 applications", attachments=[
+            {"fileName": "O2026-7 Ordinance.pdf", "path": "https://example.test/text.pdf", "attachmentType": "Legislation"},
+        ],
+    )
+    assert filing_reader.sample_candidates([text]) == []
+
+
+def test_filing_reader_page_types_are_positive_and_eds_wins():
+    assert filing_reader.classify_page_text("Economic Disclosure Statement and Affidavit") == "eds"
+    assert filing_reader.classify_page_text("Section II - Disclosing Party information, Lot Area: 5 sq ft") == "eds"
+    assert filing_reader.classify_page_text("BE IT ORDAINED BY THE CITY COUNCIL: Title 17 of the Municipal Code") == "ordinance"
+    assert filing_reader.classify_page_text("Narrative. Lot Area: 3,000 square feet") == "narrative"
+    assert filing_reader.classify_page_text("NOTICE to property owners within 250 feet") == "other"
+    assert filing_reader.classify_page_text("  ") == "unreadable"
+
+
+ORDINANCE_OCR = """ORDINANCE
+BE IT ORDAINED BY THE CITY COUNCIL OF THE CITY OF CHICAGO:
+SECTION 1. Title 17 of the Municipal Code, the Chicago Zoning Ordinance, be
+amended by changing all the RS3 Residential Single-Unit (Detached House) District symbols and
+indications as shown on Map No. 9-L in the area bounded by:
+West Addison Street; North Long Avenue
+to those of a B2-2 Neighborhood Mixed-Use District.
+SECTION 2. This ordinance shall be in force"""
+
+
+def test_filing_reader_reads_one_reclassification_clause_and_normalizes_districts():
+    assert filing_reader.parse_ordinance_pages([(1, ORDINANCE_OCR)]) == [
+        filing_reader.ParsedField("from_district", "RS-3", None, 1, "ordinance"),
+        filing_reader.ParsedField("to_district", "B2-2", None, 1, "ordinance"),
+    ]
+    two_clauses = ORDINANCE_OCR + "\n" + ORDINANCE_OCR.replace("B2-2", "B2-3")
+    assert filing_reader.parse_ordinance_pages([(1, two_clauses)]) == []
+    same_district = ORDINANCE_OCR.replace("RS3 Residential Single-Unit (Detached House)", "B2-2, Neighborhood Mixed-Use")
+    assert [f.value for f in filing_reader.parse_ordinance_pages([(1, same_district)])] == ["B2-2", "B2-2"]
+    planned = ORDINANCE_OCR.replace("a B2-2 Neighborhood Mixed-Use District", "Residential Planned Development No. 1")
+    assert [f.id for f in filing_reader.parse_ordinance_pages([(1, planned)])] == ["from_district"]
+    two_sources = ORDINANCE_OCR.replace("District symbols", "District and the RT-4 Residential District symbols")
+    assert [f.id for f in filing_reader.parse_ordinance_pages([(1, two_sources)])] == ["to_district"]
+
+
+NARRATIVE_OCR = """Floor Area and Floor Area Ratio
+Lot Area: 5,361 square feet
+Total Building Area: 18,358 square feet
+FAR: 3.5
+Dwelling Units: 9
+Efficiency Units: 21
+Vehicular Parking: 0 spaces*
+Bicycle Parking: 0 spaces
+Building Height: 38 feet and 10 inches"""
+
+
+def test_filing_reader_parses_only_unambiguous_labeled_values_with_units():
+    assert filing_reader.parse_narrative_pages([(2, NARRATIVE_OCR)]) == [
+        filing_reader.ParsedField("lot_area", "5361", "sq ft", 2, "narrative"),
+        filing_reader.ParsedField("far", "3.5", None, 2, "narrative"),
+        filing_reader.ParsedField("parking", "0", "spaces", 2, "narrative"),
+    ]
+    simple = "Lot Area: 3,125 sq. ft.\nDwelling Units: 4\nBuilding Height: 45 feet\nParking: 2"
+    assert {f.id: f.value for f in filing_reader.parse_labeled_type1_text(simple)} == {
+        "lot_area": "3125", "dwelling_units": "4", "height": "45", "parking": "2",
+    }
+    assert filing_reader.parse_labeled_type1_text("Height: 45 ft\nHeight: 50 ft") == []
+    # The same label on two pages cannot be cited to one page.
+    assert filing_reader.parse_narrative_pages([(1, "FAR: 2.0"), (2, "FAR: 2.0")]) == []
+
+
+def test_filing_reader_v4_withholds_dropped_decimal_far_and_other_property_narratives():
+    assert filing_reader.parse_labeled_type1_text("c) FAR 217") == []
+    assert [f.value for f in filing_reader.parse_labeled_type1_text("FAR: 2.17")] == ["2.17"]
+    streets = filing_reader.title_streets("Zoning Reclassification Map No. 3-J at 3724 W Le Moyne St - App No. 23187T1")
+    assert filing_reader._names_street("Property Location: 3724 W. LeMoyne Street", streets)
+    assert not filing_reader._names_street("500 West 26th Street", streets)
+    assert filing_reader.title_streets("not a zoning title") == set()
+
+
+def test_filing_reader_v5_withholds_letter_spaced_counts_and_contradicted_heights():
+    assert filing_reader.parse_labeled_type1_text("On-Site Accessory Parking: 1 7 spaces") == []
+    assert [f.value for f in filing_reader.parse_labeled_type1_text("Parking: 17 spaces")] == ["17"]
+    contradicted = "The height of the building will be 63.5 feet.\nLot Area: 8,625 sq. ft.\nHeight: 66.5 ft."
+    assert "height" not in {f.id for f in filing_reader.parse_labeled_type1_text(contradicted)}
+    agreeing = "a proposed height of 32.33'.\nBuilding Height: 32.33'"
+    assert [f.value for f in filing_reader.parse_labeled_type1_text(agreeing) if f.id == "height"] == ["32.33"]
 
 
 def test_hand_labeled_pending_title_panel_meets_precision_floor_with_no_wrong_streets():

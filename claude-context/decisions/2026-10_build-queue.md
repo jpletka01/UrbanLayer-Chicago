@@ -9,6 +9,110 @@ Standing constraints that shaped many of these:
 
 ---
 
+## Item 70: pending Type 1 proposal details (WS2 PR4, planned 2026-11-06)
+
+- **Human review is the publication boundary.** The local deterministic reader drafts candidates only. Any value
+  eventually displayed is a `hand_reviewed` artifact with its own cited PDF page; the reader's held-out evaluation
+  measures the drafting aid, not the facts users see.
+- **Premium is a real API boundary, not hidden markup.** Today the Profile is anonymous and cached, and the only
+  premium identities are vouchers and admin comps (Stripe is not configured). A later integration resolves the user
+  after shared work/cache, removes gated fields for free callers, sends premium responses `Cache-Control: private,
+  no-store`, and keeps proposal details out of `scorecard_context`, chat, and reports.
+- **Dark by default.** `pending_proposal_details_enabled=false` controls display; the separately reserved
+  `pending_filing_reader_enabled=false` controls a future model fallback. Neither flag is enabled by a code deploy.
+- **Private working files, public audit metadata.** Real PDFs and their OCR text stay under ignored
+  `research/pending-filing-pdfs/`; Git may contain only matter/attachment identity, SHA-256, page numbers, labels,
+  reviewed values, and synthetic test fixtures. Page-level EDS detection drops those pages before OCR text is stored.
+- **Evaluation cannot win by silence.** A held-out panel reports emitted-value precision (>=95%, zero wrong units and
+  zero wrong pages) and recall/coverage separately. The initial release floor is 60% recall on the held-out panel;
+  this is intentionally conservative because absent/ambiguous fields are withheld. Failure stops the reader and
+  records the decision; it never falls through to a model.
+
+**Revisit:** after the Clerk-only count determines whether 30 eligible pending Type 1 filings exist. If not, the
+hand-labelled panel uses historical passed Type 1 filings, still with no EDS material in Git.
+
+**2026-11-06 progress and correction:** The Clerk list yielded 921 pending candidates and 192 titles mentioning a
+Type 1 application. A selected 30-file manifest totalled 16,318,264 bytes by HEAD. All 30 were downloaded into
+ignored `research/pending-filing-pdfs/` and screened locally. Nine application packets contained an OCR-detected
+EDS page 2; those nine local copies were deleted, leaving 21 PDFs. The first downloader version retained bundled
+EDS packets; the revised version refuses to retain any packet with an EDS or unreadable page. This was a real
+privacy mistake during development, not evidence that the exclusion invariant held from the beginning. OCR is an
+imperfect screen, so human review must still establish the safe page set. No 30-item hand-labelled panel or held-out
+accuracy result exists yet, and the feature must remain dark. The production image and served API are unchanged.
+
+**2026-11-06 (later) — role-scoped reader and the first measured gate: FAIL.**
+- *Attachments by role, not by order.* Every Type 1 matter carries four attachments: Ordinance (Legislation),
+  Narrative and Plans (Exhibits), Application (Miscellaneous) and EDS. The first manifest took whichever allowed PDF
+  came first, which is how Application packets with a bundled EDS page were downloaded. The reader now selects only
+  the Ordinance and the Narrative (`filing_reader.ROLES`); the Application (owner, applicant and attorney identity)
+  and the EDS are never requested. A matter missing either role, or with two candidates for one, is skipped.
+  *Revisit if* the Clerk renames attachments (the selector then finds nothing, which fails closed).
+- *Positive page types.* A page is parsed only when it is an `ordinance` page (ORDAIN + Title 17) or a `narrative`
+  page (says "Lot Area"); any EDS-marker or unreadable page still rejects the whole packet before it is kept.
+- *Sample.* All 58 pending Type 1 matters with both roles (45 + 13; 189 Type 1 titles in all) were requested:
+  116 PDFs requested, 110 kept (40.2 MB), 5 narratives rejected by the page screen, 1 refused by the 8 MB cap.
+  34 matters were labelled (21 train, 13 held out by the fixed hash rule; O2026-0029378 moved to train because
+  its narrative was read before the split existed). OCR text is cached only beside the private PDFs under the
+  ignored `research/` tree.
+- *Labels are assistant drafts.* Claude labelled each row from the page images (not the OCR the parser reads),
+  under the rules in `eval/filing_panel.json`. No person has checked them, so the panel cannot pass even when the
+  numbers clear the floors (`gate: provisional`). A row becomes `human_verified` only with a name and date.
+- *Result (reader `ws2-pr4a-3`, frozen in `be63466` before any held-out page was opened).* Train: precision
+  99.1%, recall 94.2%, 1 wrong value. **Held out: precision 93.1% (floor 95%), recall 80.6%, 4 wrong values, 0 wrong
+  page/unit: FAIL.** Causes: O2024-0007192's narrative attachment describes another property (3 values correct
+  for that property, wrong for this matter); O2024-0012331's FAR 2.17 OCR'd as 217.
+- *v4 guards (`ws2-pr4a-4`) only withhold:* a whole-number FAR of 10 or more is withheld, and a narrative is read
+  only when it names a street from the matter's Clerk title. Re-scored on the same rows: held out 100% precision,
+  76.1% recall, 0 wrong. **That is post hoc, not a gate**: the panel records `held_out_scored_with: ws2-pr4a-3`, and
+  the runner reports `post_hoc` for any later version.
+- *What a pass needs:* (1) a person checks the 34 labels against the cited pages; (2) a fresh held-out set scored
+  once with the then-current reader. Every eligible *pending* Type 1 filing is now in the panel, so the fresh set
+  must be historical passed Type 1 filings (the Revisit above), downloaded by role. Until then
+  `pending_proposal_details_enabled` stays false and nothing is published. Full numbers:
+  `eval/results/filing_panel_2026-11-06_v3_gate.json` (gate) and `_v4_posthoc.json`.
+
+**2026-11-06 (later) — fresh historical held-out set: FAIL again (2 wrong values).**
+- *Source.* Every pending filing was spent, so `filing_reader --passed-since 2023-01-01` picked the 20 newest
+  passed Type 1 matters with both roles from Clerk metadata (none of them in the first panel). 40 PDFs were
+  requested and 35 kept; 5 narratives were rejected by the page screen, leaving 15 complete matters. These are
+  `eval/filing_panel_historical.json`; `eval.filing_panel --fresh` scores them as the held-out set, with all 34
+  earlier rows as development data. Reader v4 was frozen in `c0f26a4` before any of their pages was opened, and the
+  labels are again assistant drafts.
+- *Result.* Held out: precision 96.8% (floor 95%), recall 76.3% (floor 60%), **2 wrong values**, 0 wrong page or
+  unit. **FAIL**, because the gate allows zero wrong values.
+  1. SO2023-0005329: letter-spaced "1 7 spaces" was read as parking 1 (true 17).
+  2. SO2026-0027411: the table's height of 66.5 ft contradicts the prose's 63.5 feet. Contradictions are unlabelled
+     by rule, so the table value counts as wrong.
+  The set is now spent (`held_out_scored_with: ws2-pr4a-4`).
+- *Reading.* Both failure classes are narrow, and both fixes would only withhold: a count followed by a lone digit
+  before its unit ("1 7 spaces"), and a height that disagrees with another "N feet" height statement on the same
+  narrative page. A v5 with those guards needs another unseen held-out set (passed Type 1 filings before 2023) and
+  person-checked labels before it can pass. *Revisit if* Jack decides that a precision floor alone, without the
+  zero-wrong-value rule, is the publication gate. That is his call, not this record's.
+
+**2026-11-06 (later) — reader v5, and the supply of unseen filings runs out.**
+- *v5 (`ws2-pr4a-5`, frozen in `a1d9ebe`)* adds two withhold-only guards. A count never takes the first digit of a
+  letter-spaced number ("1 7 spaces"). A table height is withheld when the narrative's prose states a different
+  height. On all 49 development rows (both earlier sets, now spent) it changes only the two rows that failed v4,
+  and both are now withheld. That is post hoc, not a gate.
+- *Pre-2023 is not a usable source.* The 479 passed Type 1 titles from 2019 to 2022 come from the old Legistar
+  system as one combined `Legislation` PDF per matter (`O2022-3372.pdf`), with no separate Ordinance or Narrative.
+  The role selector skips them. Downloading them would pull Application and EDS pages onto disk, which is the
+  privacy mistake this reader was rebuilt to prevent. *Alternative rejected:* screening and deleting those
+  packets, because the page screen runs only after the bytes are written.
+- *Accruing set.* Only 6 unseen 2023+ passed matters with both roles remain (5 kept, 1 over the 8 MB cap). They
+  are labelled in `eval/filing_panel_accruing.json` but not scored: `--fresh-panel` refuses to score (and so spend)
+  a set under 10 rows, and an unspent set never joins development data. New pending Type 1 filings introduced
+  after 2026-11-06 are to be added (by role, labelled before scoring) until the set reaches 10 or more; then v5 is
+  scored once. Two of the five already test v5's limits: a lot area printed "27.503 square feet" and "Automobile
+  Parking: None for Roaster and Cafe / 1 per 10 occupants" (neither is labelled; a reader that emits them is
+  wrong).
+- *Status.* No passing gate exists. The panel labels are still assistant drafts. Both flags stay false.
+- *Jack's call (2026-11-06):* keep the gate rules as they are (including zero wrong values) and wait until the
+  accruing set reaches 10 unseen filings, then score v5 once.
+
+---
+
 ## Item 0: nightly backups and an off-box copy (#58, 2026-10-20)
 *Reconstructed from the earlier session's notes; that session holds the full reasoning.*
 

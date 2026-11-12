@@ -83,6 +83,9 @@ eval/lot_coverage_report.md
 # --- Private material (this repo is public) ---
 # Market research and product strategy are kept in a private backup, not here.
 research/
+# Downloaded public Clerk PDFs can contain applicant/attorney names.  The reader
+# keeps them outside Git; only reviewed metadata and synthetic fixtures belong here.
+research/pending-filing-pdfs/
 claude-context/strategy/
 
 # Local agent configuration

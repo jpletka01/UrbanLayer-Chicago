@@ -580,6 +580,24 @@ async def probe_pending_impact_review(spec: SourceSpec, ctx: ProbeContext) -> Pr
     return res
 
 
+async def probe_pending_filing_details_review(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """Validate the local-only reviewed-detail artifact; it makes no network call."""
+    from backend.legislation import filing_details
+
+    res = ProbeResult()
+    try:
+        raw = json.loads(filing_details.DETAILS_FILE.read_text())
+    except (OSError, ValueError) as exc:
+        raise ProbeError("service", _clean(f"{type(exc).__name__}: {exc}")) from exc
+    problems = filing_details.validate_artifact(raw)
+    if problems:
+        res.findings.append(Finding("alarm", f"invalid pending filing detail artifact: {problems[0]}"))
+        return res
+    count = len(raw["details"])
+    res.info = f"{count} hand-reviewed pending filing detail entr{'y' if count == 1 else 'ies'}"
+    return res
+
+
 async def probe_qdrant(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     from backend.code_vintage import get_code_vintage_record
 
@@ -865,6 +883,7 @@ PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] 
     "clerk_latest": probe_clerk_latest,
     "pending_legislation": probe_pending_legislation,
     "pending_impact_review": probe_pending_impact_review,
+    "pending_filing_details_review": probe_pending_filing_details_review,
     "code_text": probe_code_text,
     "amendment_review": probe_amendment_review,
     "qdrant": probe_qdrant,
