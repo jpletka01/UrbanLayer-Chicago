@@ -993,6 +993,7 @@
       "land_use": "Property use",
       "vacancy": "Vacant",
       "empty_land": "Empty land",
+      "surface_parking": "Surface parking",
       "lot_size": "Lot size",
       "building_size": "Building size",
       "year_built": "Year built",
@@ -1146,7 +1147,7 @@
       "including": "Including unusual parcels",
       "show": "Show",
       "hide": "Hide them",
-      "explain": "Railroad land, vacant common land on a development's shared outline, and lots narrower than 16 ft. None is a buildable lot on its own. Show them only if you know what you're looking for."
+      "explain": "Railroad land, road right-of-way, vacant common land on a development's shared outline, and lots narrower than 16 ft. None is a buildable lot on its own. Show them only if you know what you're looking for."
     },
     "mapMatchingLot": "Matching lot"
   },

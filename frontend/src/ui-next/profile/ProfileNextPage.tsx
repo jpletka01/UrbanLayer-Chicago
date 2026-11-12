@@ -29,6 +29,8 @@ import { AskDrawer } from "../ask/AskDrawer";
 import { AskContext, type AskHandoff } from "../ask/askContext";
 import { ICON } from "../icons";
 import { OverviewTab, TileCard } from "./OverviewTab";
+import { useLotInUse } from "./useLotInUse";
+import { lotInUse } from "./profileModel";
 import { checkingTiles, firstSentence } from "./firstModel";
 import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
@@ -284,9 +286,12 @@ function ProfileScreen({
   const [mapFocused, setMapFocused] = useState(false);
   const mapButtonRef = useRef<HTMLButtonElement | null>(null);
   // Keep focus on the map's toggle across the switch (it moves between the band and the focused view).
-  const mapToggled = useRef(false);
+  // Only on a real switch: React's development mode runs effects twice on mount, which focused (and ringed) the
+  // button on load with a "first render" flag (owner's review, 2026-11-12).
+  const mapFocusedBefore = useRef(mapFocused);
   useEffect(() => {
-    if (!mapToggled.current) { mapToggled.current = true; return; } // not on first render
+    if (mapFocusedBefore.current === mapFocused) return;
+    mapFocusedBefore.current = mapFocused;
     mapButtonRef.current?.focus({ preventScroll: true });
   }, [mapFocused]);
   const askButtonRef = useRef<HTMLSpanElement | null>(null);
@@ -311,6 +316,9 @@ function ProfileScreen({
   // The lot's PIN10 marks its outline in the parcel layer; only for an exact match (a nearest parcel may be a neighbor).
   const resolvedPin = data?.resolved_pin ?? first?.resolved_pin ?? null;
   const mapPin10 = identity === "exact" && resolvedPin ? resolvedPin.replace(/\D/g, "").slice(0, 10) : null;
+  // Surface parking or empty land, from Discovery's row for this lot (Item 112): exact matches only.
+  const lotRow = useLotInUse(mapPin10);
+  const lotUse = useMemo(() => lotInUse(lotRow, t), [lotRow, t]);
   // Recent sales come with the late `money` part: the map names them while they wait (Item 89's skeleton rule).
   const salesState: LateState = !data ? "loading"
     : parts.money === "waiting" ? "loading"
@@ -458,7 +466,7 @@ function ProfileScreen({
                 aria-label={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
                 title={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
                 data-testid="map-focus"
-                className="absolute bottom-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
+                className="absolute bottom-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-icon"
               >
                 {mapFocused
                   ? <Shrink aria-hidden className="h-4 w-4" strokeWidth={1.5} />
@@ -495,6 +503,8 @@ function ProfileScreen({
                 identity={identity}
                 checkingCityLists={parts.history === "waiting"}
                 buildingPending={parts.building === "waiting"}
+                lotInUse={lotUse}
+                address={address}
                 onOpenTab={(id) => { setTab(id); window.scrollTo({ top: 0 }); }}
               />
             ) : first ? (

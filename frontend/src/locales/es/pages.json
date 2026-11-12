@@ -993,6 +993,7 @@
       "land_use": "Uso de la propiedad",
       "vacancy": "Vacante",
       "empty_land": "Terreno vacío",
+      "surface_parking": "Estacionamiento en superficie",
       "lot_size": "Tamaño del lote",
       "building_size": "Tamaño del edificio",
       "year_built": "Año de construcción",
@@ -1146,7 +1147,7 @@
       "including": "Incluye parcelas inusuales",
       "show": "Mostrar",
       "hide": "Ocultarlas",
-      "explain": "Terrenos de ferrocarril, áreas comunes baldías dentro del contorno compartido de un desarrollo y lotes de menos de 16 pies de ancho. Ninguno es por sí solo un lote edificable. Muéstrelos solo si sabe lo que busca."
+      "explain": "Terrenos de ferrocarril, derechos de vía viales, áreas comunes baldías dentro del contorno compartido de un desarrollo y lotes de menos de 16 pies de ancho. Ninguno es por sí solo un lote edificable. Muéstrelos solo si sabe lo que busca."
     },
     "mapMatchingLot": "Lote que coincide"
   },

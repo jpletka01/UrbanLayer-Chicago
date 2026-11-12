@@ -16,7 +16,11 @@ multifamily lots (the Assessor's characteristics are residential only). This mod
 * **what stands on each lot** (decision Item 110): every demolition permit since 2006 and every new-construction permit
   since the County's 2022 LiDAR flight, as points, and ``lidar_on_lot``, the County's 2022 LiDAR buildings measured
   against each lot's PTAXSIM outline once (one row per PIN10 with a structure on it), so the index build never loads
-  the 1.25 million outlines.
+  the 1.25 million outlines;
+* **CMAP's land use on each lot** (decision Item 112): ``cmap_on_lot``, the code of CMAP's 2023 Land Use Inventory
+  covering the most of each lot's PTAXSIM outline and that share, measured once from the local copy
+  ``map_sources/cmap_lui_2023.db`` (``cmap_land_use.fetch``, run on the Mac and installed). Without the copy the
+  table is not written and no lot is marked road land.
 
 The fetch refuses to write a copy that looks partial (row floors below), so "could not read" never becomes "no
 building" or "no case". The copy is read only by the index build and ``index_backfill``; the live Profile is unchanged.
@@ -24,7 +28,8 @@ building" or "no case". The copy is read only by the index build and ``index_bac
     PYTHONPATH=. python -m backend.discovery.lot_sources [--out backend/data/discovery_lot_sources.db] [--addresses-only]
 
 ``--addresses-only`` adds (or replaces) just the address tables in an existing copy; ``--structures-only`` just the
-Item 110 tables (needs ``map_sources/county_buildings_2022.db`` and PTAXSIM beside the copy, or ``--lidar``/``--ptaxsim``).
+Item 110 tables (needs ``map_sources/county_buildings_2022.db`` and PTAXSIM beside the copy, or ``--lidar``/``--ptaxsim``);
+``--land-use-only`` just ``cmap_on_lot`` (needs ``map_sources/cmap_lui_2023.db`` and PTAXSIM, or ``--cmap``/``--ptaxsim``).
 """
 
 from __future__ import annotations
@@ -329,6 +334,48 @@ def _lidar_fetched(lidar: Path) -> str:
     return row[0] if row else ""
 
 
+LAND_USE_TABLES = """
+    DROP TABLE IF EXISTS cmap_on_lot;
+    CREATE TABLE cmap_on_lot (pin10 TEXT PRIMARY KEY, code TEXT NOT NULL, share REAL NOT NULL);
+"""
+MIN_CMAP_LOTS = 500_000  # 589,574 of Chicago's lots matched on 2026-11-12: fewer means a partial copy
+
+
+def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path) -> dict:
+    from backend.discovery.cmap_land_use import read_meta
+
+    if len(rows) < MIN_CMAP_LOTS:
+        raise RuntimeError(f"CMAP matched only {len(rows)} lots: refusing to write")
+    db.executescript(LAND_USE_TABLES)
+    db.executemany("INSERT INTO cmap_on_lot VALUES (?, ?, ?)", rows)
+    meta = read_meta(cmap)
+    return {"cmap_lots": len(rows), "cmap_vintage": meta.get("vintage"), "cmap_fetched": meta.get("fetched")}
+
+
+def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsim: Path | None = None) -> dict:
+    """Add (or replace) only ``cmap_on_lot`` in an existing copy, in one transaction (Item 112)."""
+    from backend.discovery.cmap_land_use import codes_on_lots
+
+    if not out.exists():
+        raise FileNotFoundError(f"{out} missing: run without --land-use-only first")
+    cmap = cmap or out.parent / "map_sources" / "cmap_lui_2023.db"
+    ptaxsim = ptaxsim or out.parent / "ptaxsim.db"
+    for need in (cmap, ptaxsim):
+        if not need.exists() or need.stat().st_size == 0:
+            raise FileNotFoundError(f"{need} missing")
+    t0 = time.monotonic()
+    rows = codes_on_lots(cmap, ptaxsim)
+    db = sqlite3.connect(out)
+    try:
+        with db:
+            summary = _write_land_use(db, rows, cmap)
+            db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
+    finally:
+        db.close()
+    summary["seconds"] = round(time.monotonic() - t0, 1)
+    return summary
+
+
 def fetch_structures(out: Path = DEFAULT_PATH, *, token: str = "", lidar: Path | None = None,
                      ptaxsim: Path | None = None) -> dict:
     """Add (or replace) only the Item 110 tables in an existing copy, in one transaction."""
@@ -430,6 +477,12 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
         address_summary.update(_write_structures(db, permit_history, lidar_on_lots(lidar, ptaxsim), _lidar_fetched(lidar)))
     else:  # the build then marks no lot empty (Item 110), with a warning
         log.warning("lot sources: %s or %s missing; the Item 110 structure tables are not written", lidar, ptaxsim)
+    cmap = out.parent / "map_sources" / "cmap_lui_2023.db"
+    if cmap.exists() and cmap.stat().st_size and ptaxsim.exists():
+        from backend.discovery.cmap_land_use import codes_on_lots
+        address_summary.update(_write_land_use(db, codes_on_lots(cmap, ptaxsim), cmap))
+    else:  # the build then marks no lot road land (Item 112), with a warning
+        log.warning("lot sources: %s missing; the Item 112 land-use table is not written", cmap)
     summary = {
         "fetched": today.isoformat(), "footprints": len(fps), "footprints_with_stories": sum(1 for f in fps if f[1]),
         "footprints_skipped": bad, "vacant_cases": sum(1 for p in pts if p[0] == "vacant_case"),
@@ -449,6 +502,8 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=DEFAULT_PATH)
     ap.add_argument("--addresses-only", action="store_true", help="add or replace only the address tables (Item 109)")
     ap.add_argument("--structures-only", action="store_true", help="add or replace only the Item 110 tables")
+    ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 table")
+    ap.add_argument("--cmap", type=Path, default=None, help="default: map_sources/cmap_lui_2023.db beside --out")
     ap.add_argument("--lidar", type=Path, default=None, help="default: map_sources/county_buildings_2022.db beside --out")
     ap.add_argument("--ptaxsim", type=Path, default=None, help="default: ptaxsim.db beside --out")
     args = ap.parse_args()
@@ -456,6 +511,8 @@ def main() -> None:
     token = get_settings().socrata_app_token or ""
     if args.addresses_only:
         print(json.dumps(fetch_addresses(args.out, token=token), indent=1))
+    elif args.land_use_only:
+        print(json.dumps(fetch_land_use(args.out, cmap=args.cmap, ptaxsim=args.ptaxsim), indent=1))
     elif args.structures_only:
         print(json.dumps(fetch_structures(args.out, token=token, lidar=args.lidar, ptaxsim=args.ptaxsim), indent=1))
     else:

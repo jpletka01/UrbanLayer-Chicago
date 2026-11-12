@@ -29,6 +29,7 @@ import type { ZoningMass } from "../profile/profileModel";
 import { Toggletip } from "../../components/ui/Toggletip";
 import { useIsPhone } from "../../lib/useIsPhone";
 import { permitWords } from "../profile/neighborhoodModel";
+import { foldAttribution } from "./attribution";
 
 export interface MapView {
   /** Which tab asked for this view; a new id re-applies its camera and modes. */
@@ -153,6 +154,7 @@ export function NextMap({
         compact: true,
         customAttribution: t("map.attribution"),
       }), "bottom-left");
+      m.once("load", () => foldAttribution(m.getContainer()));
       // No +/- buttons (owner): the wheel and pinch zoom. In the page band the wheel scrolls the page until the
       // map is clicked; in the expanded map it zooms at once.
       if (!expandedRef.current) m.scrollZoom.disable();
@@ -633,7 +635,7 @@ export function NextMap({
                 ["reset", Compass, reset3d],
               ] as const).map(([key, Icon, onClick]) => (
                 <button key={key} type="button" onClick={onClick} aria-label={t(`map.view3d.${key}`)} title={t(`map.view3d.${key}`)}
-                  className="grid h-8 w-8 place-items-center hover:bg-nx-block touch-target" data-testid={`map-3d-${key}`}>
+                  className="grid h-8 w-8 place-items-center hover:bg-nx-block touch-icon" data-testid={`map-3d-${key}`}>
                   <Icon aria-hidden className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               ))}

@@ -99,3 +99,5 @@ AGENTS.md
 *.key
 .venv
 eval/results/2026-11-11-empty-land/labels.json
+eval/results/2026-11-12-land-use/labels.json
+eval/.land_use_panel_blind.json

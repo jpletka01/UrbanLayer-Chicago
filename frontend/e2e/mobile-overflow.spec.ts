@@ -313,7 +313,9 @@ for (const pageDef of PAGES) {
     }
     // The preview Discovery: one goal search, then audit the result cards.
     if (pageDef.id === "discovery-next") {
-      await page.getByRole("group", { name: "Try:" }).getByRole("button").first().click();
+      // Since Item 104 the goals sit in the phone sheet over the map (the old "Try:" row is the Profile's search page).
+      await page.getByTestId("phone-sheet").getByRole("button", { name: "Show more of the list" }).click();
+      await page.getByTestId("goals").getByRole("button").first().click();
       await page.getByTestId("next-results").waitFor({ timeout: 60_000 }).catch(() => {});
       topAudit = mergeAudits(topAudit, await auditOverflow(page));
     }

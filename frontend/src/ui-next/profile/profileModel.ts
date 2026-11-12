@@ -270,6 +270,19 @@ const money = (n: number, lng: string) =>
 
 /** A market sale, by the County's own sale filters as the server reads them (`arms_length`, decision Item 89; it
     retired Item 77's client-side deed test). Unknown (null or absent) is not counted as a market sale. */
+// ── What the lot is used for today (Item 112) ─────────────────────────────────────────────────────────
+
+export interface LotInUse { kind: "parking" | "empty"; words: string }
+
+/** The Overview's line from Discovery's row: surface parking or empty land, in the list card's own words; else null. */
+export function lotInUse(row: { surface_parking?: boolean | null; empty_land?: boolean | null; land_kind?: string | null; structure?: string | null } | null, t: TFunc): LotInUse | null {
+  if (!row?.empty_land && !row?.surface_parking) return null;
+  const base = row.surface_parking ? t("discovery.card.now.surfaceParking")
+    : t(`discovery.card.now.emptyKind.${row.land_kind ?? "vacant"}`, { defaultValue: t("discovery.card.now.empty") });
+  const words = row.structure === "accessory" ? `${base}, ${t("discovery.card.now.shed")}` : base;
+  return { kind: row.surface_parking ? "parking" : "empty", words };
+}
+
 export function isMarketSale(s: { price: number | null; arms_length?: boolean | null }): boolean {
   return s.price != null && s.arms_length === true;
 }

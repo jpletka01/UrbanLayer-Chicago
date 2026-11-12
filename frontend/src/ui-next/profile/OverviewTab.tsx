@@ -2,7 +2,7 @@
 // per tab with its key figure, a small visual and at most one warning. Tiles alternate SnowUI's two pale stat
 // colors and reflow from four to two to one.
 import { useTranslation } from "react-i18next";
-import { ArrowRight, TriangleAlert } from "lucide-react";
+import { ArrowRight, SquareParking, Sprout, TriangleAlert } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict } from "../../lib/scorecardVerdict";
 import { answerSentence } from "../../lib/answerSentence";
@@ -10,7 +10,8 @@ import { ScoreRing } from "../ui/ScoreRing";
 import { ConfidenceState } from "../../components/ui/ConfidenceState";
 import { ICON, STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
-import { overviewTiles, type Tile, type TileTab } from "./profileModel";
+import { overviewTiles, type LotInUse, type Tile, type TileTab } from "./profileModel";
+import { Term } from "../ui/Term";
 
 const TILE_ICON = { units: ICON.units, tax: ICON.tax, walk: ICON.walk, lastSale: ICON.sale } as const;
 
@@ -20,6 +21,8 @@ export function OverviewTab({
   identity,
   checkingCityLists = false,
   buildingPending = false,
+  lotInUse = null,
+  address = "",
   onOpenTab,
 }: {
   data: ScorecardResponse;
@@ -29,6 +32,9 @@ export function OverviewTab({
   checkingCityLists?: boolean;
   /** The City's building records (the `building` part) haven't answered. */
   buildingPending?: boolean;
+  /** Surface parking or empty land, measured from what stands on the lot (Item 112); null shows nothing. */
+  lotInUse?: LotInUse | null;
+  address?: string;
   onOpenTab: (tab: TileTab) => void;
 }) {
   const { t, i18n } = useTranslation("next");
@@ -39,6 +45,16 @@ export function OverviewTab({
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
         <p className="text-nx-answer" data-testid="answer-sentence">{answerSentence(data, verdict, tp)}</p>
         {identity === "approximate" && <Pill tone="yellow" icon={TriangleAlert}>{t("profile.approximate")}</Pill>}
+        {lotInUse && identity === "exact" && (
+          // What stands on the lot today, in the Discovery card's words; how we know is behind the Info tool.
+          <p className="flex w-full items-center gap-2 text-caption" data-testid="lot-in-use">
+            {lotInUse.kind === "parking"
+              ? <SquareParking aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
+              : <Sprout aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />}
+            <Term label={lotInUse.words} definition={t(`profile.lotInUse.define.${lotInUse.kind}`)}
+              question={t(`profile.lotInUse.ask.${lotInUse.kind}`, { address })} />
+          </p>
+        )}
         {checkingCityLists && (
           <p className="w-full text-caption nx-muted" role="status" data-testid="checking-city-lists">{t("profile.parts.cityLists")}</p>
         )}

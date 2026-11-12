@@ -72,6 +72,16 @@
       "neighborhood": "Neighborhood",
       "history": "History"
     },
+    "lotInUse": {
+      "define": {
+        "parking": "The Assessor taxes it as a minor improvement (class 5-90 or 5-80), and nothing stands on it in the City's building footprints or the County's 2022 LiDAR, except at most a garage or shed. A hand check of 23 such lots found every one was surface parking.",
+        "empty": "Nothing stands on it in the City's building footprints or the County's 2022 LiDAR, after demolition and new-construction permits, except at most a garage or shed. Shown for vacant, City-owned, parking and tax-exempt land only."
+      },
+      "ask": {
+        "parking": "What could be built on the surface parking lot at {{address}}?",
+        "empty": "What could be built on the empty lot at {{address}}?"
+      }
+    },
     "approximate": "Approximate match",
     "another": "Look up another address",
     "opensInNewTab": "(opens in a new tab)",
@@ -1182,6 +1192,7 @@
       "now": {
         "empty": "Empty lot",
         "shed": "garage or shed only",
+        "surfaceParking": "Surface parking lot",
         "emptyKind": {
           "vacant": "Empty lot",
           "city_owned": "Empty lot, City-owned",
@@ -1235,8 +1246,8 @@
     "inView_other": "{{n}} lots in view",
     "listThem": "List them",
     "capped": "More matches than the map can outline at once: zoom in",
-    "hiddenUnusual_one": "{{n}} unusual lot hidden (railroad or common land, or a strip under 16 ft wide).",
-    "hiddenUnusual_other": "{{n}} unusual lots hidden (railroad or common land, or strips under 16 ft wide).",
+    "hiddenUnusual_one": "{{n}} unusual lot hidden (railroad, road or common land, or a strip under 16 ft wide).",
+    "hiddenUnusual_other": "{{n}} unusual lots hidden (railroad, road or common land, or strips under 16 ft wide).",
     "show": "Show",
     "focus": {
       "label": "Show as",
@@ -1262,6 +1273,7 @@
     "pinMissing": "No lot with PIN {{pin}} in Chicago's data.",
     "measure": {
       "colorBy": "Color lots by",
+      "hideKey": "Hide the key",
       "unknown": "Not known (dotted)",
       "match": "Matches the search",
       "showZoning": "Show zoning districts",
@@ -1296,12 +1308,15 @@
       },
       "use": {
         "name": "Land use",
-        "0": "Vacant",
-        "1": "Residential",
-        "2": "Multifamily",
-        "3": "Commercial",
-        "4": "Industrial",
-        "5": "Exempt"
+        "note": "Empty land and parking from what stands on each lot; the rest from the Assessor's use class.",
+        "0": "Empty land",
+        "1": "Surface parking",
+        "2": "Homes",
+        "3": "Apartments",
+        "4": "Business",
+        "5": "Industrial",
+        "6": "Tax-exempt",
+        "7": "Road or railroad land"
       },
       "zoning": {
         "name": "Zoning family",
@@ -1369,6 +1384,12 @@
         "hint": "Nothing stands on it today but at most a garage or shed: vacant, City-owned, parking and tax-exempt land.",
         "on": "Only empty land",
         "tech": "No building in the City's footprints or the County's 2022 LiDAR, after demolition and new-construction permits"
+      },
+      "surface_parking": {
+        "name": "Surface parking",
+        "hint": "A parking lot with nothing on it but at most a garage or shed.",
+        "on": "Only surface parking",
+        "tech": "The Assessor's minor-improvement classes (5-90, 5-80) and no building in the City's footprints or the County's 2022 LiDAR"
       },
       "room_to_build": {
         "name": "Room to build",

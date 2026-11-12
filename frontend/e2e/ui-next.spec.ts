@@ -231,9 +231,10 @@ test("Discovery: a search, matches on the map as outlines, the list, axe light a
   await canvas.evaluate((c) => { (c as HTMLCanvasElement).dataset.probe = "explore"; });
   // A quick filter in Explore asks the server about the view; nothing is evaluated in the page.
   const search = page.waitForRequest((r) => r.url().includes("/api/discovery/search") && r.method() === "POST");
-  await page.getByTestId("quick-filters").getByRole("button", { name: "Vacant" }).click();
-  expect((await search).postDataJSON().userFilters.vacancy).toEqual({ kind: "flag", value: true });
-  await page.getByTestId("quick-filters").getByRole("button", { name: "Vacant" }).click();
+  // The first quick filter is physically empty land since Item 110, not the tax class.
+  await page.getByTestId("quick-filters").getByRole("button", { name: "Empty land" }).click();
+  expect((await search).postDataJSON().userFilters.empty_land).toEqual({ kind: "flag", value: true });
+  await page.getByTestId("quick-filters").getByRole("button", { name: "Empty land" }).click();
   // A goal: the list in the sheet over the map, the same canvas, matches handed to the map as outlines.
   const goal = page.waitForResponse((r) => r.url().includes("/api/discovery/search") && r.request().postDataJSON()?.includeAreaCounts === true);
   // On a phone the goals are in the sheet over the map: open it, pick the first goal.
@@ -258,6 +259,49 @@ test("Discovery: a search, matches on the map as outlines, the list, axe light a
     await page.waitForTimeout(300);
     expect(await axe(page), `axe ${scheme}, zoning panel`).toEqual([]);
   }
+});
+
+// Land in use (M5, decision Item 112): the Lot group offers surface parking beside empty land; turning it on asks the
+// server (never evaluated here) and the panel passes axe in both themes.
+test("Discovery: the Lot group's surface parking toggle, axe light and dark", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, ROUTES[2].path);
+  await page.getByTestId("filter-bar").getByRole("button", { name: /^Lot/ }).click();
+  const panel = page.getByTestId("group-panel");
+  await expect(panel.getByText("Surface parking", { exact: true })).toBeVisible();
+  const count = page.waitForRequest((r) => r.url().includes("/api/discovery/search") && r.method() === "POST"
+    && !!r.postDataJSON()?.userFilters?.surface_parking);
+  await panel.getByText("Only surface parking").click();
+  expect((await count).postDataJSON().userFilters.surface_parking).toEqual({ kind: "flag", value: true });
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(300);
+    expect(await axe(page), `axe ${scheme}, lot panel`).toEqual([]);
+  }
+});
+
+// Phone layout (owner's review of M5, 2026-11-12): the filter groups are one scrolling row, and the key has a visible
+// close and folds when the map is touched.
+test("Discovery on a phone: one row of filter groups, a key that folds", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, ROUTES[2].path);
+  const tops = await page.getByTestId("filter-groups").getByRole("button").evaluateAll((els) => [...new Set(els.map((e) => Math.round(e.getBoundingClientRect().top)))]);
+  expect(tops.length, "filter groups on one row").toBe(1);
+  const key = page.getByTestId("measure-key");
+  // The key sits below the quick filters, not over them.
+  const chips = (await page.getByTestId("quick-filters").boundingBox())!;
+  const keyBox = (await key.boundingBox())!;
+  expect(keyBox.y).toBeGreaterThanOrEqual(chips.y + chips.height);
+  expect(keyBox.x + keyBox.width, "key at the right").toBeGreaterThan(chips.x + chips.width - 24);
+  await key.getByRole("button", { name: "Color lots by" }).click();
+  await expect(key.getByRole("button", { name: "Hide the key" })).toBeVisible();
+  await expect(page.locator("#nx-measure")).toBeVisible();
+  // A tap on open map (below the key, above the sheet).
+  const box = (await page.locator('[data-testid="explore-map"]').boundingBox())!;
+  await page.mouse.click(box.x + 40, box.y + box.height * 0.6);
+  await expect(page.locator("#nx-measure")).toBeHidden();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "discovery overflow").toBeLessThanOrEqual(1);
 });
 
 // 3D (M6, decision Item 106): the phone's map band has no 3D button; the expanded map does, and its controls are

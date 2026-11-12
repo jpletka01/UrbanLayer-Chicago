@@ -431,7 +431,7 @@ GRID_MIN_KNOWN = 0.5  # a cell's measure is drawn only when at least half its lo
 
 
 def grid_cells(rows) -> list[Parcel]:
-    """The city as squares of about a block, each carrying its lots' measure bands (the lot tiles' r/s/y/u/g):
+    """The city as squares of about a block, each carrying its lots' measure bands (the lot tiles' r/s/y/u/l/g):
     the median band for room, lot size and last sale, the most common for land use and zoning family. A cell
     with fewer than 3 lots is left out; a measure known for under half a cell's lots is left off it (drawn dotted),
     so a few known lots never speak for the block. Display only, like the lot bands (Item 104)."""
@@ -460,7 +460,7 @@ def grid_cells(rows) -> list[Parcel]:
                 props[key] = str(nums[len(nums) // 2])
             elif named and len(vals) >= GRID_MIN_KNOWN * len(lots) and len(named) >= len(nums):
                 props[key] = Counter(named).most_common(1)[0][0]
-        for key in ("u", "g"):
+        for key in ("u", "l", "g"):
             vals = [b[key] for b in lots if key in b]
             if len(vals) >= GRID_MIN_KNOWN * len(lots):
                 props[key] = Counter(vals).most_common(1)[0][0]

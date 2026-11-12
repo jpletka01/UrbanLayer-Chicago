@@ -75,7 +75,7 @@ export function RightDrawer({
             type="button"
             onClick={onClose}
             aria-label={closeLabel ?? t("term.close")}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon"
           >
             <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
           </button>

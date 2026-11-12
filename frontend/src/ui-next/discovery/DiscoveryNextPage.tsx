@@ -12,6 +12,8 @@ import {
   Receipt, Search, Shovel, Sprout, Store, Target, TrendingDown, TriangleAlert, X, type LucideIcon,
 } from "lucide-react";
 import { loadRegistry } from "../../discovery/registryClient";
+import { useResolvedThemeOrLight } from "../../contexts/useResolvedThemeOrLight";
+import { patternCss } from "../map/patterns";
 import { useDiscoverySearch } from "../../discovery/useDiscoverySearch";
 import { recipeStatus } from "../../discovery/recipeStatus";
 import { chipLabel } from "../../discovery/chips";
@@ -69,6 +71,7 @@ export default function DiscoveryNextPage() {
   const [camera, setCamera] = useState<{ bbox?: [number, number, number, number]; center?: [number, number]; zoom?: number; seq: number } | null>(null);
   const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
   const [goalsFolded, setGoalsFolded] = useState(false);
+  const [mapTouches, setMapTouches] = useState(0);
   const [walkPreview, setWalkPreview] = useState<number | null>(null);
   const [barPending, setBarPending] = useState<PanelState | null>(null);
   const [place, setPlace] = useState<Place | null>(null);
@@ -354,17 +357,22 @@ export default function DiscoveryNextPage() {
         )}
 
         {/* The map, always mounted; List covers it on a desktop, a sheet sits over it on a phone. */}
-        <div className="relative min-h-0 flex-1">
+        {/* A touch on the map folds a phone's open key (owner's review: open, it covered the map). */}
+        <div className="relative min-h-0 flex-1" onPointerDownCapture={phone ? (e) => {
+          if (!(e.target as HTMLElement).closest("[data-testid=measure-key]")) setMapTouches((n) => n + 1);
+        } : undefined}>
           {map}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3">
-            <div className="flex min-w-0 flex-col items-start gap-2">
+          {/* On a phone the key sits on its own line below the quick filters at the right, never over them (owner's review). */}
+          <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-end" : "items-start justify-between"}`}>
+            <div className={`flex min-w-0 flex-col items-start gap-2 ${phone ? "w-full" : ""}`}>
               <QuickFilters on={quickOn} onToggle={toggleQuick} loading={!response && viewMatches.loading} />
               {!phone && !response && registry && (
                 <GoalCard open={goalsOpen} onToggle={() => setGoalsFolded((f) => !f)} topics={topics} counts={registry.recipeCounts ?? {}} fmt={fmt}
                   onPick={(topic) => { search.pickRecipe(topic); setFocus("list"); }} />
               )}
             </div>
-            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} showZoning={showZoning} onZoning={setShowZoning} compact={phone} />
+            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} showZoning={showZoning} onZoning={setShowZoning} compact={phone}
+              foldSignal={mapTouches} />
           </div>
           {place && <PlaceCard place={place} ring={ring} onRing={(miles) => { const r = { lat: place.lat, lon: place.lon, miles }; setRing(r); }}
             onSearchRing={() => ring && searchRing(ring)} ringActive={ringActive}
@@ -579,20 +587,28 @@ function QuickFilters({ on, onToggle, loading }: { on: ReadonlySet<QuickId>; onT
   );
 }
 
-function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact }: {
+function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact, foldSignal = 0 }: {
   measure: MeasureId; onMeasure: (m: MeasureId) => void; showZoning: boolean; onZoning: (b: boolean) => void; compact: boolean;
+  /** Changes when the map is touched: a phone's open key folds. */
+  foldSignal?: number;
 }) {
   const { t } = useTranslation("next");
   // Open on a desktop, folded on a phone (the page remounts it when that changes: `key`).
-  const [open, setOpen] = useState(!compact);
+  // Open = opened since the last map touch (a phone folds it on the next touch); a desktop ignores touches.
+  const [openedAt, setOpenedAt] = useState<number | null>(compact ? null : foldSignal);
+  const open = openedAt !== null && (!compact || openedAt === foldSignal);
+  const setOpen = (f: (o: boolean) => boolean) => setOpenedAt(f(open) ? foldSignal : null);
   const steps = measureSteps(measure);
+  const theme = useResolvedThemeOrLight();
   return (
-    <div className={`pointer-events-auto shrink-0 rounded-2xl bg-nx-page text-caption shadow-[0_4px_16px_rgb(0_0_0/0.14)] ${open ? "w-[13.5rem] p-3" : "p-1"}`} data-testid="measure-key">
+    <div className={`pointer-events-auto shrink-0 rounded-2xl bg-nx-page text-caption shadow-[0_4px_16px_rgb(0_0_0/0.14)] ${open ? (compact ? "w-[min(19rem,calc(100vw-1.5rem))] p-3" : "w-[13.5rem] p-3") : "p-1"}`} data-testid="measure-key">
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}
-        aria-label={open ? undefined : t("discovery.measure.colorBy")}
-        className={`flex items-center gap-2 font-medium ${open ? "w-full" : "h-9 rounded-xl px-2.5 touch-target"}`}>
+        aria-label={open ? t("discovery.measure.hideKey") : t("discovery.measure.colorBy")}
+        className={`flex items-center gap-2 font-medium ${open ? "w-full touch-target" : "h-9 rounded-xl px-2.5 touch-target"}`}>
         <Palette aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
         {(open || !compact) && <span className="flex-1 text-left">{t("discovery.measure.colorBy")}</span>}
+        {/* A visible way to fold it (owner's review: nothing said the title folds the key). */}
+        {open && <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-nx-ink/5"><X aria-hidden className="h-4 w-4" strokeWidth={STROKE} /></span>}
       </button>
       {open && (
         <div className="mt-2 flex flex-col gap-2">
@@ -601,10 +617,11 @@ function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact }: {
             className="h-9 w-full appearance-none rounded-lg bg-nx-ink/5 px-2">
             {MEASURES.map((m) => <option key={m} value={m}>{t(`discovery.measure.${m}.name`)}</option>)}
           </select>
-          <ul className="flex flex-col gap-1">
+          <ul className={compact ? "grid grid-cols-2 gap-x-3 gap-y-1" : "flex flex-col gap-1"}>
             {steps.map((s) => (
               <li key={s.value} className="flex items-center gap-2">
-                <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm" style={{ background: s.color }} />
+                <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm"
+                  style={{ background: s.texture ? `${patternCss(s.texture, theme)}, ${s.color}` : s.color }} />
                 <span>{t(`discovery.measure.${s.key}`)}</span>
               </li>
             ))}
@@ -618,12 +635,13 @@ function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact }: {
               <span>{t("discovery.measure.match")}</span>
             </li>
           </ul>
-          {measure === "room" && <p className="nx-muted">{t("discovery.measure.room.note")}</p>}
+          {!compact && measure === "room" && <p className="nx-muted">{t("discovery.measure.room.note")}</p>}
+          {!compact && measure === "use" && <p className="nx-muted">{t("discovery.measure.use.note")}</p>}
           <label className="mt-1 flex items-center gap-2">
             <input type="checkbox" checked={showZoning} onChange={(e) => onZoning(e.target.checked)} className="h-4 w-4" />
             {t("discovery.measure.showZoning")}
           </label>
-          <p className="nx-muted">{t("discovery.measure.zoomHint")}</p>
+          {!compact && <p className="nx-muted">{t("discovery.measure.zoomHint")}</p>}
         </div>
       )}
     </div>
@@ -638,7 +656,7 @@ function PlaceCard({ place, ring, onRing, onSearchRing, ringActive, onClose }: {
   const mi = (m: number) => new Intl.NumberFormat(numLocale(i18n.language), { maximumFractionDigits: 2 }).format(m);
   return (
     <div className="absolute left-3 top-16 z-10 w-[18rem] max-w-[calc(100%-1.5rem)] rounded-2xl bg-nx-page p-4 text-caption shadow-[0_8px_32px_rgb(0_0_0/0.18)]" data-testid="place-card">
-      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target">
+      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
         <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
       </button>
       <p className="flex items-center gap-2 pr-6 text-body font-semibold"><MapPin aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{place.label}</p>
@@ -698,7 +716,7 @@ function PhoneSheet({ state, setState, head, children }: {
         className="flex shrink-0 touch-none flex-col items-center gap-2 px-4 pb-2 pt-2">
         <button type="button" aria-label={state === "full" ? t("discovery.sheet.less") : t("discovery.sheet.more")}
           onClick={() => setState(state === "full" ? "peek" : state === "peek" ? "half" : "full")}
-          className="grid h-6 w-16 place-items-center touch-target">
+          className="grid h-6 w-16 place-items-center touch-icon">
           <span aria-hidden className="h-1.5 w-10 rounded-full bg-nx-ink/20" />
         </button>
         <div className="flex w-full items-center justify-between gap-2 text-body">{head}</div>

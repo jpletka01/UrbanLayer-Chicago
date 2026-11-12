@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land use check</title>
+<style>
+:root { --bg:#f7f6f3; --card:#fff; --ink:#1c1c1c; --muted:#666; --line:#ddd; --accent:#1d4ed8; --lot:#111;
+        --nb:#9ca3af; --street:#cbd5e1; --ok:#15803d; --bldg:#94a3b8; }
+@media (prefers-color-scheme: dark) { :root { --bg:#141414; --card:#1f1f1f; --ink:#eee; --muted:#aaa; --line:#333;
+        --accent:#93b4ff; --lot:#f5f5f5; --nb:#6b7280; --street:#334155; --bldg:#475569; } }
+* { box-sizing:border-box; }
+body { margin:0; font:14px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+.app { display:grid; grid-template-columns:220px 1fr; height:100vh; }
+aside { border-right:1px solid var(--line); overflow:auto; background:var(--card); }
+aside header { position:sticky; top:0; background:var(--card); padding:10px 12px; border-bottom:1px solid var(--line); }
+aside .row { padding:6px 12px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; gap:8px; align-items:center; }
+aside .row.cur { background:color-mix(in srgb, var(--accent) 14%, transparent); }
+aside .row .dot { width:9px; height:9px; border-radius:50%; border:1.5px solid var(--muted); flex:none; }
+aside .row.done .dot { background:var(--ok); border-color:var(--ok); }
+main { overflow:auto; padding:16px 20px 60px; }
+.grid { display:grid; grid-template-columns:minmax(340px, 1.2fr) minmax(300px, 1fr); gap:16px; align-items:start; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+h1 { font-size:18px; margin:0 0 4px; } h2 { font-size:14px; margin:0 0 8px; }
+.muted { color:var(--muted); }
+a.btn, button { font:inherit; padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; text-decoration:none; display:inline-block; }
+button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+@media (prefers-color-scheme: dark) { button.primary { color:#111; } }
+svg { width:100%; height:420px; background:color-mix(in srgb, var(--bg) 60%, var(--card)); border-radius:8px; }
+.choice { display:block; padding:8px 10px; border:1px solid var(--line); border-radius:8px; margin:6px 0; cursor:pointer; }
+.choice:has(input:checked) { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent); }
+textarea { width:100%; min-height:44px; font:inherit; background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:4px 6px; }
+kbd { border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <header><strong>Land use check</strong> <span id="progress" class="muted"></span></header>
+    <div id="list"></div>
+  </aside>
+  <main id="main">Loading…</main>
+</div>
+<script>
+let LOTS = [], LABELS = {}, cur = 0;
+const FT_LAT = 364000, FT_LON = FT_LAT * 0.7447, HALF = 170;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+// Two views: Street View from the nearest street, and the lot from above (Google's satellite, pinned on the lot).
+// The owner asked for the overhead view for this internal check (2026-11-12); Item 78 governs the product's maps.
+const ANSWERS = [
+  ["surface_parking", "1", "Surface parking: a paved or gravel lot used to park cars"],
+  ["parking_garage", "2", "A parking garage (a building for parking)"],
+  ["empty", "3", "Empty: grass, dirt, gravel or unused paving, not used for parking"],
+  ["accessory", "4", "Only a garage, shed or small structure"],
+  ["homes", "5", "A building: home(s) or apartments"],
+  ["commercial", "6", "A building: shop, office, restaurant or mixed use"],
+  ["industrial", "7", "A building: industrial, warehouse or yard"],
+  ["institutional", "8", "A building: school, church, hospital or government"],
+  ["open_space", "9", "Park, playground, garden or cemetery"],
+  ["construction", "0", "Construction under way"],
+  ["rail_utility", "u", "Rail, utility or road land"],
+  ["cant_tell", "c", "Can't tell"],
+];
+
+async function load() {
+  const d = await (await fetch("/data")).json();
+  LOTS = d.lots; LABELS = d.labels || {};
+  const first = LOTS.findIndex(l => !LABELS[l.pin]?.answer);
+  cur = first < 0 ? 0 : first;
+  render();
+}
+function list() {
+  document.getElementById("progress").textContent = `${LOTS.filter(l => LABELS[l.pin]?.answer).length} / ${LOTS.length}`;
+  document.getElementById("list").innerHTML = LOTS.map((l, i) => `<div class="row ${LABELS[l.pin]?.answer ? "done" : ""} ${i === cur ? "cur" : ""}" data-i="${i}">
+    <span class="dot"></span><span>#${l.id} <span class="muted">${esc(l.pin)}</span></span></div>`).join("");
+  document.querySelectorAll("#list .row").forEach(r => r.onclick = () => { cur = +r.dataset.i; render(); });
+}
+const xy = (lot, lon, lat) => [(lon - lot.lon) * FT_LON, -(lat - lot.lat) * FT_LAT];
+const path = (lot, ring) => ring.map(([lo, la], i) => (i ? "L" : "M") + xy(lot, lo, la).map(v => v.toFixed(1)).join(" ")).join("") + "Z";
+const line = (lot, pts) => pts.map(([lo, la], i) => (i ? "L" : "M") + xy(lot, lo, la).map(v => v.toFixed(1)).join(" ")).join("");
+function centroid(lot, ring) {
+  let x = 0, y = 0; ring.forEach(([lo, la]) => { const q = xy(lot, lo, la); x += q[0]; y += q[1]; });
+  return [x / ring.length, y / ring.length];
+}
+function svg(lot) {
+  const p = [];
+  lot.street.forEach(s => p.push(`<path d="${line(lot, s)}" stroke="var(--street)" stroke-width="18" fill="none" stroke-linecap="round"/>`));
+  (lot.buildings || []).forEach(b => p.push(`<path d="${path(lot, b)}" fill="var(--bldg)" fill-opacity="0.75" stroke="none"/>`));
+  lot.neighbors.forEach(n => p.push(`<path d="${path(lot, n.ring || n)}" fill="none" stroke="var(--nb)" stroke-width="1"/>`));
+  if (lot.ring) p.push(`<path d="${path(lot, lot.ring)}" fill="none" stroke="var(--accent)" stroke-width="3"/>`);
+  lot.neighbors.forEach(n => {
+    if (!n.address) return;
+    const [x, y] = centroid(lot, n.ring);
+    if (Math.abs(x) < HALF - 10 && Math.abs(y) < HALF - 10)
+      p.push(`<text x="${x}" y="${y}" font-size="9" text-anchor="middle" fill="var(--ink)" paint-order="stroke" stroke="var(--card)" stroke-width="2.5">${esc(n.address.split(" ")[0])}</text>`);
+  });
+  // One label per street name, on its longest visible piece.
+  const best = {};
+  lot.street.forEach((s, i) => {
+    const name = (lot.street_names || [])[i]; if (!name) return;
+    const pts = s.map(([lo, la]) => xy(lot, lo, la)).filter(([x, y]) => Math.abs(x) < HALF && Math.abs(y) < HALF);
+    if (pts.length < 2) return;
+    const len = Math.hypot(pts[pts.length - 1][0] - pts[0][0], pts[pts.length - 1][1] - pts[0][1]);
+    if (!best[name] || len > best[name].len) best[name] = { len, a: pts[0], b: pts[pts.length - 1] };
+  });
+  Object.entries(best).forEach(([name, { a, b }]) => {
+    let ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    p.push(`<text x="${mx}" y="${my}" font-size="9.5" font-weight="600" text-anchor="middle" dominant-baseline="middle" fill="var(--ink)" transform="rotate(${ang} ${mx} ${my})">${esc(name)}</text>`);
+  });
+  if (lot.viewpoint) {
+    const [x, y] = xy(lot, lot.viewpoint.lon, lot.viewpoint.lat), h = lot.viewpoint.heading * Math.PI / 180;
+    p.push(`<circle cx="${x}" cy="${y}" r="4" fill="var(--accent)"/><line x1="${x}" y1="${y}" x2="${x + 16 * Math.sin(h)}" y2="${y - 16 * Math.cos(h)}" stroke="var(--accent)" stroke-width="2"/>`);
+  }
+  p.push(`<text x="${-HALF + 6}" y="${-HALF + 14}" font-size="10" fill="var(--muted)">N ↑ · ${2 * HALF} ft across</text>`);
+  return `<svg viewBox="${-HALF} ${-HALF} ${2 * HALF} ${2 * HALF}">${p.join("")}</svg>`;
+}
+function render() {
+  list();
+  const lot = LOTS[cur], lab = LABELS[lot.pin] || {}, vp = lot.viewpoint;
+  // The lot's middle: the mean of its outline's corners (the last corner repeats the first).
+  const pts = lot.ring ? lot.ring.slice(0, -1) : [[lot.lon, lot.lat]];
+  const mid = [pts.reduce((a, q) => a + q[0], 0) / pts.length, pts.reduce((a, q) => a + q[1], 0) / pts.length];
+  const at = `${mid[1].toFixed(7)},${mid[0].toFixed(7)}`;
+  const above = `https://www.google.com/maps/place/${at}/@${at},20z/data=!3m1!1e3`;
+  const sv = vp ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${vp.lat},${vp.lon}&heading=${vp.heading}` : null;
+  document.getElementById("main").innerHTML = `
+    <h1>Lot #${lot.id} <span class="muted" style="font-weight:400">${esc(lot.pin)}${lot.lot_sqft ? ` · ${lot.lot_sqft.toLocaleString("en-US")} sq ft` : ""}</span></h1>
+    <p class="muted">What is this lot used for today? The lot is outlined in blue; gray lines are the neighboring lots, with their own house numbers; gray shapes are the City's building footprints around it (left off the lot itself, which is what you're checking); the blue dot is where Street View stands, facing the lot; Lot from above opens the lot with a pin on its middle. Judge the outlined lot only.</p>
+    <div class="grid">
+      <div class="card">${svg(lot)}
+        <p>${sv ? `<a class="btn" href="${sv}" target="_blank" rel="noopener">Street View ↗</a>` : "<span class=\"muted\">No street to stand on</span>"}
+          <a class="btn" href="${above}" target="_blank" rel="noopener">Lot from above ↗</a></p>
+      </div>
+      <div class="card">
+        <h2>Used for, today</h2>
+        ${ANSWERS.map(([v, k, t]) => `<label class="choice"><input type="radio" name="ans" value="${v}" ${lab.answer === v ? "checked" : ""}> <kbd>${k}</kbd> ${t}</label>`).join("")}
+        <p class="muted" style="margin:10px 0 4px">Note (optional)</p>
+        <textarea id="note">${esc(lab.note || "")}</textarea>
+        <p><button class="primary" id="save">Save and next <kbd>Enter</kbd></button> <button id="prev">Back</button></p>
+        <p class="muted" id="status"></p>
+      </div>
+    </div>`;
+  document.getElementById("save").onclick = save;
+  document.getElementById("prev").onclick = () => { cur = Math.max(0, cur - 1); render(); };
+}
+async function save() {
+  const lot = LOTS[cur], ans = document.querySelector('input[name="ans"]:checked')?.value;
+  if (!ans) { document.getElementById("status").textContent = "Pick an answer first."; return; }
+  const label = { pin: lot.pin, answer: ans, note: document.getElementById("note").value.trim() || null, at: new Date().toISOString() };
+  const r = await fetch("/label", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(label) });
+  if (!r.ok) { document.getElementById("status").textContent = "Couldn't save: " + r.status; return; }
+  LABELS[lot.pin] = label;
+  const next = LOTS.findIndex((l, i) => i > cur && !LABELS[l.pin]?.answer);
+  cur = next < 0 ? Math.min(LOTS.length - 1, cur + 1) : next;
+  render();
+}
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "TEXTAREA") return;
+  const a = ANSWERS.find(x => x[1] === e.key.toLowerCase());
+  if (a) { const el = document.querySelector(`input[name="ans"][value="${a[0]}"]`); if (el) el.checked = true; }
+  else if (e.key === "Enter") save();
+});
+load();
+</script>
+</body>
+</html>

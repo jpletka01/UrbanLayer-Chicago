@@ -22,7 +22,7 @@ export function SourcesDialog({ data, open, onOpenChange }: { data: ScorecardRes
           <Dialog.Content className="fixed left-1/2 top-1/2 z-[66] flex max-h-[85dvh] w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-2xl bg-nx-page p-6 text-body text-nx-ink shadow-[0_8px_32px_rgb(0_0_0/0.2)]">
             <div className="flex items-start justify-between gap-3">
               <Dialog.Title className="text-body font-semibold">{t("sources.title")}</Dialog.Title>
-              <Dialog.Close aria-label={t("sources.close")} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target">
+              <Dialog.Close aria-label={t("sources.close")} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
                 <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
               </Dialog.Close>
             </div>

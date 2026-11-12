@@ -54,9 +54,21 @@ export function FilterBar({
     onWalkPreview?.(null);
     if (id) buttons.current[id]?.focus({ preventScroll: true });
   };
+  const showButton = (
+    <button type="button" onClick={apply} data-testid="bar-show"
+      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-nx-primary px-3 text-caption font-medium text-nx-primary-fg touch-target">
+      {count.loading && <LoaderCircle aria-hidden className="h-3.5 w-3.5 animate-spin" strokeWidth={STROKE} />}
+      {count.n == null ? t("discovery.filters.showUnknown") : t("discovery.filters.show", { count: count.n, n: fmt.format(count.n) })}
+    </button>
+  );
   return (
     <div className="relative flex min-w-0 flex-wrap items-center gap-2" data-testid="filter-bar">
-      <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label={t("discovery.groups.label")}>
+      {/* On a phone the groups are one row that scrolls sideways (owner's review, 2026-11-12: three wrapped rows ate
+          the map); the edge fades so the next group shows it scrolls, and "Show N lots" comes first. */}
+      <div className={compact
+        ? "-mx-4 flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none] [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [&::-webkit-scrollbar]:hidden"
+        : "flex min-w-0 flex-wrap items-center gap-2"} role="group" aria-label={t("discovery.groups.label")} data-testid="filter-groups">
+        {compact && dirty && !open && showButton}
         {groups.map((g) => {
           const n = groupFilters(g).filter((f) => draft[f]).length;
           const Icon = g.icon;
@@ -74,13 +86,7 @@ export function FilterBar({
             </button>
           );
         })}
-        {dirty && !open && (
-          <button type="button" onClick={apply} data-testid="bar-show"
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-nx-primary px-3 text-caption font-medium text-nx-primary-fg touch-target">
-            {count.loading && <LoaderCircle aria-hidden className="h-3.5 w-3.5 animate-spin" strokeWidth={STROKE} />}
-            {count.n == null ? t("discovery.filters.showUnknown") : t("discovery.filters.show", { count: count.n, n: fmt.format(count.n) })}
-          </button>
-        )}
+        {!compact && dirty && !open && showButton}
       </div>
       {open && (
         <GroupPanel key={open.id} group={open} draft={draft} setDraft={setDraft} count={count} compact={compact}
@@ -139,7 +145,7 @@ function GroupPanel({ group, draft, setDraft, count, compact, onClose, onApply, 
             <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{t("discovery.filters.clear")}
           </button>
         )}
-        <button type="button" onClick={onClose} aria-label={t("discovery.filters.close")} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target">
+        <button type="button" onClick={onClose} aria-label={t("discovery.filters.close")} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
           <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
         </button>
       </div>
