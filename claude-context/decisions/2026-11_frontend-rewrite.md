@@ -1421,7 +1421,7 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 4. **The 2,434 "possibly parking" lots stay out** (4 of 6 is under the 70% floor).
 5. Still open: land use as a map mode, a filter or both, and the phone (a mockup with the build step).
 
-**Built: surface parking and road land on the lot (2026-11-12, awaiting the owner's localhost review).**
+**Built: surface parking and road land on the lot (2026-11-12; the owner approved it on localhost, "Looks right").**
 - *Data path:*
   - `backend/discovery/cmap_land_use.py` holds the CMAP fetch (moved from the eval) and `codes_on_lots`, CMAP's main code and its share of every lot outline.
   - `lot_sources --land-use-only` writes it as `cmap_on_lot` (957,545 PIN10s in Chicago's box, 7.8 min) from `map_sources/cmap_lui_2023.db`. The full `lot_sources` writes it too when the copy is there, and warns when it isn't.
