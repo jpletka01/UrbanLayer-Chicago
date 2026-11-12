@@ -1365,7 +1365,7 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 **The blind owner check (pending; counts only in the repo, labels in gitignored `eval/results/2026-11-12-land-use/labels.json`).**
 - The panel holds 86 lots, drawn seeded (112) from the measured pools. Lots on the Item 109 and 110 panels are left out.
 - The labeler answers what the lot is used for today, from 12 choices; surface parking and parking garage are separate answers.
-- The page shows only the outline, the neighbors' own addresses, street names, the City's footprints *around* the lot and a Street View link. **No satellite or aerial view** (Item 78; Item 110's page still had one). The source answers and strata never reach the page (`/data` checked).
+- The page shows only the outline, the neighbors' own addresses, street names, the City's footprints *around* the lot, a Street View link and **Lot from above** (Google's satellite view with a pin on the lot's middle). The owner asked for the overhead view on 2026-11-12, as Item 110's check had it. Item 78 bans satellite from the product's maps; this is an internal labeling page. The source answers and strata never reach the page (`/data` checked).
 
 | Stratum | Lots | Pool | Measures |
 |---|---|---|---|

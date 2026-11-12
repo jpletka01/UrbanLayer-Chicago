@@ -45,7 +45,8 @@ kbd { border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:
 let LOTS = [], LABELS = {}, cur = 0;
 const FT_LAT = 364000, FT_LON = FT_LAT * 0.7447, HALF = 170;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-// Street-level context only: no satellite or aerial imagery on this page (Item 78).
+// Two views: Street View from the nearest street, and the lot from above (Google's satellite, pinned on the lot).
+// The owner asked for the overhead view for this internal check (2026-11-12); Item 78 governs the product's maps.
 const ANSWERS = [
   ["surface_parking", "1", "Surface parking: a paved or gravel lot used to park cars"],
   ["parking_garage", "2", "A parking garage (a building for parking)"],
@@ -118,13 +119,19 @@ function svg(lot) {
 function render() {
   list();
   const lot = LOTS[cur], lab = LABELS[lot.pin] || {}, vp = lot.viewpoint;
+  // The lot's middle: the mean of its outline's corners (the last corner repeats the first).
+  const pts = lot.ring ? lot.ring.slice(0, -1) : [[lot.lon, lot.lat]];
+  const mid = [pts.reduce((a, q) => a + q[0], 0) / pts.length, pts.reduce((a, q) => a + q[1], 0) / pts.length];
+  const at = `${mid[1].toFixed(7)},${mid[0].toFixed(7)}`;
+  const above = `https://www.google.com/maps/place/${at}/@${at},20z/data=!3m1!1e3`;
   const sv = vp ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${vp.lat},${vp.lon}&heading=${vp.heading}` : null;
   document.getElementById("main").innerHTML = `
     <h1>Lot #${lot.id} <span class="muted" style="font-weight:400">${esc(lot.pin)}${lot.lot_sqft ? ` · ${lot.lot_sqft.toLocaleString("en-US")} sq ft` : ""}</span></h1>
-    <p class="muted">What is this lot used for today? The lot is outlined in blue; gray lines are the neighboring lots, with their own house numbers; gray shapes are the City's building footprints around it (left off the lot itself, which is what you're checking); the blue dot is where Street View stands, facing the lot. Judge the outlined lot only.</p>
+    <p class="muted">What is this lot used for today? The lot is outlined in blue; gray lines are the neighboring lots, with their own house numbers; gray shapes are the City's building footprints around it (left off the lot itself, which is what you're checking); the blue dot is where Street View stands, facing the lot; Lot from above opens the lot with a pin on its middle. Judge the outlined lot only.</p>
     <div class="grid">
       <div class="card">${svg(lot)}
-        <p>${sv ? `<a class="btn" href="${sv}" target="_blank" rel="noopener">Street View ↗</a>` : "<span class=\"muted\">No street to stand on</span>"}</p>
+        <p>${sv ? `<a class="btn" href="${sv}" target="_blank" rel="noopener">Street View ↗</a>` : "<span class=\"muted\">No street to stand on</span>"}
+          <a class="btn" href="${above}" target="_blank" rel="noopener">Lot from above ↗</a></p>
       </div>
       <div class="card">
         <h2>Used for, today</h2>

@@ -11,8 +11,9 @@ precision is measured on its own; lots called parking by no source but physicall
 miss); and lots for the general categories, where CMAP and the Assessor agree and where they disagree.
 
 **Blind.** The page shows the lot's outline, its neighbors with their own City addresses, the street names, the
-City's footprints AROUND the lot (cut out of the lot itself), and a Street View link standing on the nearest street
-facing the lot. Never satellite or aerial imagery (Item 78), and never the sources' answers or the stratum.
+City's footprints AROUND the lot (cut out of the lot itself), a Street View link standing on the nearest street
+facing the lot, and "Lot from above" (Google's satellite view pinned on the lot's middle, added at the owner's request
+on 2026-11-12; Item 78 governs the product's maps, not this internal check). Never the sources' answers or the stratum.
 
 Labels are saved as they are made to ``eval/results/2026-11-12-land-use/labels.json``, which stays out of the repo
 (``.gitignore``); ``score`` prints counts only.

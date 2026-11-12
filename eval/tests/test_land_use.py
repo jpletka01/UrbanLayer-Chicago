@@ -110,9 +110,10 @@ def test_score_counts_by_source(tmp_path, monkeypatch):
     assert out["use_precision"]["cmap"]["vacant"] == {"right": 1, "wrong": 0, "precision": 1.0, "ci95": lul._wilson(1, 1)}
 
 
-def test_page_is_blind_and_has_no_satellite():
+def test_page_is_blind_and_offers_both_views():
     page = lul.PAGE.read_text()
-    assert "1e3" not in page and "satellite" not in page.lower().replace("no satellite", "")
+    assert "map_action=pano" in page  # Street View
+    assert "!3m1!1e3" in page  # the lot from above, pinned
     for hidden in lul.HIDDEN:
         assert hidden not in page
 
