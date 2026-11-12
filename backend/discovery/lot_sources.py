@@ -91,15 +91,26 @@ def area_sqft(geom) -> float:
     return float(geom.area) * SQFT_PER_SQDEG
 
 
+def _get_page(client: httpx.Client, url: str, params: dict, attempts: int = 5) -> httpx.Response:
+    """One page, retried: the portals answer 503 now and then, or drop the connection mid-download."""
+    for attempt in range(attempts):
+        try:
+            r = client.get(url, params=params)
+        except httpx.TransportError:
+            if attempt == attempts - 1:
+                raise
+        else:
+            if r.status_code < 500 or attempt == attempts - 1:
+                return r
+        time.sleep(5 * (attempt + 1))
+    raise AssertionError("unreachable")
+
+
 def _pages(client: httpx.Client, dataset: str, params: dict, portal: str = PORTAL) -> list[dict]:
     rows: list[dict] = []
     offset = 0
     while True:
-        for attempt in range(5):  # the portals answer 503 now and then
-            r = client.get(f"{portal}/{dataset}.json", params={**params, "$limit": PAGE, "$offset": offset})
-            if r.status_code < 500:
-                break
-            time.sleep(5 * (attempt + 1))
+        r = _get_page(client, f"{portal}/{dataset}.json", {**params, "$limit": PAGE, "$offset": offset})
         r.raise_for_status()
         batch = r.json()
         rows.extend(batch)
