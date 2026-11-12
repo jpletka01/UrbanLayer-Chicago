@@ -105,9 +105,24 @@ def test_score_counts_by_source(tmp_path, monkeypatch):
     labels.write_text(json.dumps({"a": {"answer": "surface_parking"}, "b": {"answer": "empty"}}))
     monkeypatch.setattr(lul, "LABELS", labels)
     out = lul.score(p)
-    assert out["parking_precision"]["assessor"]["surface_precision"] == 0.5
-    assert out["parking_precision"]["cmap"]["surface_precision"] == 1.0
-    assert out["use_precision"]["cmap"]["vacant"] == {"right": 1, "wrong": 0, "precision": 1.0, "ci95": lul._wilson(1, 1)}
+    assert out["surface_by_source"]["assessor"]["precision"] == 0.5
+    assert out["surface_by_source"]["cmap"]["precision"] == 1.0
+    assert out["surface_rule"]["surface_parking"] == 1 and out["surface_rule"]["decided"] == 2
+    assert out["use_precision"]["cmap"] == {}  # parking strata never score a use
+
+
+def test_score_disagreement_winner(tmp_path, monkeypatch):
+    lot = {"pin": "c", "stratum": "use_disagree", "truth_keys": {"cmap": "mixed_use", "assessor": "residential",
+                                                                "osm": None, "signals": {}}}
+    p = tmp_path / "panel.json"
+    p.write_text(json.dumps({"pool": {}, "lots": [lot]}))
+    labels = tmp_path / "labels.json"
+    labels.write_text(json.dumps({"c": {"answer": "commercial"}}))
+    monkeypatch.setattr(lul, "LABELS", labels)
+    out = lul.score(p)
+    assert out["use_disagree_matched"] == {"cmap": 1}
+    assert out["use_precision"]["cmap"]["commercial"]["right"] == 1
+    assert out["use_precision"]["assessor"]["residential"]["wrong"] == 1
 
 
 def test_page_is_blind_and_offers_both_views():

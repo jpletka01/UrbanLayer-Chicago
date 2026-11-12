@@ -221,35 +221,55 @@ def serve(panel_path: Path, port: int) -> None:
         blind.unlink(missing_ok=True)
 
 
+SURFACE_STRATA = ("park_all3", "park_cmap_assessor", "park_cmap_osm", "park_cmap_only", "park_osm_only",
+                  "park_assessor_only", "park_osm_assessor")
+# Use precision is read only where the draw was about use: a parking lot CMAP codes to the business it serves is
+# CMAP's own rule, not a wrong use, so the parking strata are left out of it.
+USE_STRATA = ("use_agree", "use_disagree", "empty_infra", "empty_open_space")
+
+
+def _ci(k: int, n: int) -> list[float]:
+    return [max(0.0, round(x, 3)) for x in _wilson(k, n)]
+
+
 def score(panel_path: Path) -> dict:
-    """Counts only. Per stratum: the owner's answers. Per source: precision of "parking" and of each use category."""
+    """Counts only. Per stratum: the owner's answers. Per source: precision of surface parking (parking strata) and of
+    each use category (use strata); on a CMAP/Assessor disagreement, which one the owner's answer matched."""
     panel = json.loads(panel_path.read_text())
     labels = json.loads(LABELS.read_text()) if LABELS.exists() else {}
     per_stratum: dict[str, Counter] = {}
     src_park = {k: Counter() for k in ("cmap", "osm", "assessor")}
     src_use = {k: Counter() for k in ("cmap", "assessor")}
+    winner = Counter()
     for lot in panel["lots"]:
         ans = (labels.get(lot["pin"]) or {}).get("answer") or "unlabeled"
-        per_stratum.setdefault(lot["stratum"], Counter())[ans] += 1
+        s = lot["stratum"]
+        per_stratum.setdefault(s, Counter())[ans] += 1
         if ans in ("unlabeled", "cant_tell"):
+            if s == "use_disagree":
+                winner[ans] += 1
             continue
         t = lot["truth_keys"]
-        for k, said in t["signals"].items():
-            if said:
-                src_park[k]["surface_parking" if ans == "surface_parking" else
-                            "parking_garage" if ans == "parking_garage" else "not_parking"] += 1
+        if s in SURFACE_STRATA:
+            for k, said in t["signals"].items():
+                if said:
+                    src_park[k]["surface_parking" if ans == "surface_parking" else "not_surface_parking"] += 1
         human = ANSWER_CATEGORY.get(ans)
-        for k in src_use:
-            c = _common(t.get(k))
-            if c in USE_CATEGORIES or c in ("parking", "rail_utility"):
-                src_use[k][f"{c}:{'right' if c == human else 'wrong'}"] += 1
-    out: dict = {"strata": {s: dict(c) for s, c in per_stratum.items()}}
+        if s in USE_STRATA:
+            for k in src_use:
+                c = _common(t.get(k))
+                if c in USE_CATEGORIES or c in ("parking", "rail_utility"):
+                    src_use[k][f"{c}:{'right' if c == human else 'wrong'}"] += 1
+        if s == "use_disagree":
+            cm, asr = _common(t.get("cmap")), _common(t.get("assessor"))
+            winner["cmap" if cm == human else "assessor" if asr == human else "neither"] += 1
+    out: dict = {"labeled": sum(sum(v for k, v in c.items() if k != "unlabeled") for c in per_stratum.values()),
+                 "strata": {s: dict(c) for s, c in per_stratum.items()}}
     # The candidate rule (any source says parking, no building): precision, weighted by each stratum's pool share.
-    park = [s for s, _n in STRATA if s.startswith("park_") and s != "park_garage"]
-    pool = {s: panel["pool"].get(s, 0) for s in park}
+    pool = {s: panel["pool"].get(s, 0) for s in SURFACE_STRATA}
     w = tot = 0.0
     rule = Counter()
-    for s in park:
+    for s in SURFACE_STRATA:
         c = per_stratum.get(s, Counter())
         dec = sum(v for k, v in c.items() if k not in ("cant_tell", "unlabeled"))
         rule["surface_parking"] += c["surface_parking"]
@@ -257,14 +277,22 @@ def score(panel_path: Path) -> dict:
         if dec:
             w += c["surface_parking"] / dec * pool[s]
             tot += pool[s]
-    out["surface_rule"] = {**dict(rule), "ci95_unweighted": _wilson(rule["surface_parking"], rule["decided"]),
+    out["surface_rule"] = {**dict(rule), "ci95": _ci(rule["surface_parking"], rule["decided"]),
                            "weighted_precision": round(w / tot, 3) if tot else None}
-    out["parking_precision"] = {}
+    out["surface_by_source"] = {}
     for k, c in src_park.items():
         n = sum(c.values())
-        ok = c["surface_parking"]
-        out["parking_precision"][k] = {**dict(c), "surface_precision": round(ok / n, 3) if n else None,
-                                       "ci95": _wilson(ok, n)}
+        out["surface_by_source"][k] = {**dict(c), "precision": round(c["surface_parking"] / n, 3) if n else None,
+                                       "ci95": _ci(c["surface_parking"], n)}
+    g = per_stratum.get("park_garage", Counter())
+    gn = sum(v for k, v in g.items() if k not in ("cant_tell", "unlabeled"))
+    out["garage"] = {"parking_garage": g["parking_garage"], "decided": gn, "ci95": _ci(g["parking_garage"], gn)}
+    m = per_stratum.get("nobldg_use_no_parking", Counter())
+    mn = sum(v for k, v in m.items() if k not in ("cant_tell", "unlabeled"))
+    out["parking_missed_by_sources"] = {"surface_parking": m["surface_parking"], "decided": mn,
+                                        "ci95": _ci(m["surface_parking"], mn),
+                                        "pool": panel["pool"].get("nobldg_use_no_parking", 0)}
+    out["use_disagree_matched"] = dict(winner)
     out["use_precision"] = {}
     for k, c in src_use.items():
         cats: dict[str, dict] = {}
@@ -274,7 +302,7 @@ def score(panel_path: Path) -> dict:
         for cat, d in cats.items():
             n = d["right"] + d["wrong"]
             d["precision"] = round(d["right"] / n, 3) if n else None
-            d["ci95"] = _wilson(d["right"], n)
+            d["ci95"] = _ci(d["right"], n)
         out["use_precision"][k] = cats
     return out
 
@@ -294,13 +322,17 @@ def main() -> None:
     s.add_argument("--port", type=int, default=8034)
     c = sub.add_parser("score")
     c.add_argument("--panel", type=Path, default=PANEL)
+    c.add_argument("--out", type=Path, default=None, help="write the counts here (precision.json)")
     a = ap.parse_args()
     if a.cmd == "draw":
         print(json.dumps(draw(a.lots, a.index, a.sources, a.ptaxsim, a.exclude, a.out), indent=1))
     elif a.cmd == "serve":
         serve(a.panel, a.port)
     else:
-        print(json.dumps(score(a.panel), indent=1))
+        result = score(a.panel)
+        if a.out:
+            a.out.write_text(json.dumps(result, indent=1) + "\n")
+        print(json.dumps(result, indent=1))
 
 
 if __name__ == "__main__":

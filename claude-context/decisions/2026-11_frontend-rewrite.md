@@ -1307,7 +1307,7 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 
 ## Item 112: Phase 7 M5 step 1, land in use: three sources measured, surface parking first (2026-11-12)
 
-**Status: measurement only. Nothing live changes and no UI is built** until the owner labels the blind panel and answers the questions at the end. Eval code: `eval/land_use.py` (fetch + measure), `eval/land_use_label.py` + `eval/land_use_label_page.html` (blind check), panel `eval/land_use_panel.json`, counts in `eval/results/2026-11-12-land-use/summary.json`. Read-only, offline after the fetch, no model calls. Tests: `eval/tests/test_land_use.py`.
+**Status: measured, and the owner's blind panel labeled (86 of 86, 2026-11-12). Nothing live changes and no UI is built** until the owner answers the questions at the end. Eval code: `eval/land_use.py` (fetch + measure), `eval/land_use_label.py` + `eval/land_use_label_page.html` (blind check), panel `eval/land_use_panel.json`, counts in `eval/results/2026-11-12-land-use/summary.json`. Read-only, offline after the fetch, no model calls. Tests: `eval/tests/test_land_use.py`.
 
 **The sources.**
 - **CMAP's Land Use Inventory, 2023:** the newest release, not 2020.
@@ -1362,7 +1362,7 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - This is Item 75's "high-confidence infrastructure hidden by default", and the blind panel measures it before anything changes.
 - Item 110's 43/43 checked *empty*, which these are. They are empty but not buildable.
 
-**The blind owner check (pending; counts only in the repo, labels in gitignored `eval/results/2026-11-12-land-use/labels.json`).**
+**The blind owner check (labeled 2026-11-12; counts in `eval/results/2026-11-12-land-use/precision.json`, labels in gitignored `labels.json`).**
 - The panel holds 86 lots, drawn seeded (112) from the measured pools. Lots on the Item 109 and 110 panels are left out.
 - The labeler answers what the lot is used for today, from 12 choices; surface parking and parking garage are separate answers.
 - The page shows only the outline, the neighbors' own addresses, street names, the City's footprints *around* the lot, a Street View link and **Lot from above** (Google's satellite view with a pin on the lot's middle). The owner asked for the overhead view on 2026-11-12, as Item 110's check had it. Item 78 bans satellite from the product's maps; this is an internal labeling page. The source answers and strata never reach the page (`/data` checked).
@@ -1382,7 +1382,39 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - under that it is "low" (shown with its source, never filtered on), or withheld if under 70%;
 - a lot where the sources disagree shows the conflict, never a silent pick.
 
-**Recommendation, pending the panel (not decided):**
+**What the owner found** (86 lots labeled, none skipped; Wilson 95% ranges):
+- **Surface parking, the rule** (a parking source on half the lot and no building): **39 of 42 were surface parking (92.9%, 81.0-97.5%)**, and 99.8% weighted by each source combination's share of the 16,652 candidates. Two of the three misses are parking lots under an elevated line or beside a railway, which the owner labeled rail; one CMAP-only lot on exempt land is empty.
+- *By source:*
+  - the Assessor's 5-90 / 5-80: **23 of 23 (85.7-100%)**;
+  - OSM: **22 of 23 (95.7%; 79.0-99.2%)**;
+  - CMAP 1540: 18 of 21 (85.7%; 65.4-95.0%). All three misses carry CMAP's parking code, and two of them nothing else, so CMAP alone is the weak source (4 of 6 CMAP-only lots were parking).
+- **Parking garages: 0 of 4** (0-49%). OSM's multi-storey tag landed on commercial buildings.
+- **Parking the sources miss:** of 6 lots with no building that CMAP calls a business or institution and no source calls parking, **4 were surface parking** (30-90%; pool 2,434). Inside Empty land with no parking source, 6 of 6 were empty: no hidden parking there.
+- **Empty land that CMAP calls infrastructure: 7 of 8 are rail or road land** (52.9-97.8%). All seven were **CMAP road right-of-way on exempt land, 7 of 7** (64.6-100%). The miss was CMAP "utility" on a vacant-class lot, which was empty. No rail, transport or City-owned lot was drawn, so those aren't measured.
+- **Empty land that CMAP calls park or open space: 2 of 6 are parks** (9.7-70.0%); 4 were plain empty lots. CMAP's open space doesn't separate a park from empty exempt land.
+- **Use, where CMAP and the Assessor agree: 6 of 6 right** (homes). **Where they disagree (8):** the owner's answer matched CMAP on 4 (institution over commercial class; mixed use over a residential class, twice; vacant over a residential class), the Assessor on 2 (a new home CMAP still calls vacant; an empty lot CMAP calls residential), neither on 1 (a special district with a park, church and homes), and 1 can't tell.
+- *Against the proposed 90% threshold:*
+  - pass: the surface-parking rule, the Assessor's and OSM's parking;
+  - short of 90%: CMAP parking alone (85.7%, 4 of 6 alone), CMAP infrastructure overall (87.5%) and use on disagreement;
+  - under 70%: garages and CMAP open space;
+  - too few lots to call: use categories beyond homes, and CMAP road on exempt land (7 of 7, but the lower bound is 64.6%).
+
+**So, the recommendation (for the owner's answers; not built):**
+- **Surface parking ships as its own field** from the Assessor (5-90 / 5-80) or OSM plus no building, both at standard confidence: **17,090 lots** (Assessor 8,619, OSM 4,564, both 3,907). CMAP alone stays out (it would add 69 lots at 4 of 6). **16,097 of them are already Empty land**; the other 993 are taxed as residential (511), commercial (354), railroad (52), other (45) or side yards (31) and stay out of Empty land under Item 110's four-kind rule.
+- **Garage: not shown** (0 of 4).
+- **Infrastructure:** hide by default from Empty land only **CMAP road right-of-way on exempt land, 6,563 lots (6,279 shown today)**, with a visible count and a Show option (Item 75). The 7-of-7 sample is small: a second blind draw of 20 such lots would settle the 90% bar before it ships. Rail, utility and transport stay in Empty land (unmeasured or missed).
+- **Parks: no change.** CMAP's open space isn't shown or used to hide anything (2 of 6).
+- **Use field:** homes, business and industrial from the Assessor; institution and mixed use from CMAP; on any disagreement the lot shows both with the conflict, never a pick (CMAP matched 4 of 8, the Assessor 2). Not filterable until a larger random panel measures it.
+- **OSM:** a licensing review before OSM-only parking (4,564 lots) is shown; until then those lots show surface parking only where the Assessor agrees, or the OSM attribution rides with the field.
+
+**Open for the owner (2026-11-12):**
+1. Surface parking as its own filter and card line (17,090 lots), or only as a label inside Empty land (16,097 of them already there)?
+2. Hide CMAP road right-of-way on exempt land from Empty land by default (6,279 shown lots), now on 7 of 7, or after a second blind draw of 20?
+3. OSM-only parking (4,564 lots): show it with OSM's attribution now, or wait for a licensing review?
+4. Land use on the map: a mode of the one map, a filter, or both, and what a phone shows (a mockup comes with the answer).
+5. The 2,434 lots with no building that CMAP calls a business and no source calls parking (4 of 6 were parking): leave them out, or offer them as "possibly parking, unconfirmed"?
+
+**The first recommendation, before the panel (kept for the record):**
 - *Categories:* one observed-use field:
   - homes, business (commercial and mixed use), industrial, institution, park or open space, surface parking, parking garage, empty, under construction.
   - Plus a separate **infrastructure** field (road right-of-way, rail, utility, transport) and Item 75's utilization later from M4. No "underused".
@@ -1409,7 +1441,8 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - **A new copy of `land_kind` / `structure`:** reused as is (the phase rule).
 
 *Not measured yet:*
-- precision of any category: the panel is unlabeled;
+- use precision on a random panel (this one drew agreements and disagreements on purpose);
+- CMAP rail, transport and utility inside Empty land (one utility lot, wrong);
 - whether CMAP and Overpass answer from the prod server (prod access was not available to this session). The likely path is a fetch on the Mac and an installed copy, as for FEMA and the County's LiDAR.
 
 *Revisit if:* the panel's precision for a source is under 90%, CMAP publishes a newer inventory, or the licensing review clears OSM.
