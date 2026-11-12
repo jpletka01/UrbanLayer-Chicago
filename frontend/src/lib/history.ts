@@ -32,7 +32,19 @@ export async function appendMessages(
     ...(m.mapFetchedAt ? { map_fetched_at: m.mapFetchedAt } : {}),
     ...(m.turnSummary ? { summary: m.turnSummary } : {}),
   }));
-  await apiSaveMessages(conversationId, stored);
+  try {
+    await apiSaveMessages(conversationId, stored);
+  } catch (err) {
+    // The server re-checks an answer's context and plan against strict types; one that fails (422) used to be
+    // dropped, so a reopened chat came back empty (owner's review, 2026-11-12). Keep the turn: store it again with
+    // its text and map only. The server logs which field failed.
+    if (!(err instanceof Error && err.message.includes("422"))) throw err;
+    await apiSaveMessages(conversationId, stored.map(({ role, content, map_data, map_fetched_at }) => ({
+      role, content,
+      ...(map_data ? { map_data } : {}),
+      ...(map_fetched_at ? { map_fetched_at } : {}),
+    })));
+  }
 }
 
 export async function deleteConversation(id: string): Promise<void> {

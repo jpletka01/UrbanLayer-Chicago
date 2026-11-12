@@ -86,7 +86,12 @@ export function SidePanel({
         })}
       </ul>
 
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-1">
+        {!collapsed && (
+          <Link to="/?landing=1" onClick={onNavigate} className="rounded-lg px-2 py-1 text-caption nx-muted hover:text-nx-ink touch-target">
+            {t("frame.about")}
+          </Link>
+        )}
         <AccountMenu collapsed={collapsed} />
       </div>
     </nav>
@@ -94,7 +99,7 @@ export function SidePanel({
 }
 
 /** Chat as a folder (owner review 2026-11-07): the row opens and closes like a directory; inside, "New chat" first,
-    then a signed-in visitor's recent conversations. Both open today's chat page (its route isn't rebuilt yet). */
+    then a signed-in visitor's recent conversations, both on the new chat page (Phase 8). */
 function ChatFolder({ label, onNavigate }: { label: string; onNavigate?: () => void }) {
   const { t } = useTranslation("next");
   const { isAuthenticated, authRequired, signIn } = useAuthContext();
@@ -103,6 +108,8 @@ function ChatFolder({ label, onNavigate }: { label: string; onNavigate?: () => v
   const [chats, setChats] = useState<Conversation[] | null>(null);
   const listId = useId();
   const Icon = NAV_ICON.chat;
+  const { pathname } = useLocation();
+  const active = pathname === "/chat" || pathname.startsWith("/c/");
 
   const toggle = () => {
     const next = !open;
@@ -120,8 +127,9 @@ function ChatFolder({ label, onNavigate }: { label: string; onNavigate?: () => v
         onClick={toggle}
         aria-expanded={open}
         aria-controls={listId}
-        className="flex h-9 items-center gap-2 rounded-xl px-2 text-left hover:bg-nx-ink/5 touch-target"
+        className={`relative flex h-9 items-center gap-2 rounded-xl px-2 text-left touch-target ${active ? "bg-nx-ink/5 font-medium" : "hover:bg-nx-ink/5"}`}
       >
+        {active && <span aria-hidden className="absolute left-0 top-2.5 h-4 w-1 rounded-sm bg-nx-ink" />}
         <Icon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={STROKE} />
         <span className="flex-1 truncate">{label}</span>
         <ChevronRight aria-hidden className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} strokeWidth={STROKE} />
@@ -129,7 +137,7 @@ function ChatFolder({ label, onNavigate }: { label: string; onNavigate?: () => v
       {open && (
         <ul id={listId} role="list" className="mt-0.5 flex flex-col gap-0.5" data-testid="chat-folder">
           <li>
-            <Link to="/?ask=1" onClick={onNavigate} className={`${child} font-medium`}>
+            <Link to="/chat" onClick={onNavigate} className={`${child} font-medium`}>
               <Plus aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={STROKE} />
               {t("frame.newChat")}
             </Link>

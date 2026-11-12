@@ -3,10 +3,12 @@
 // beside the page and its width animates, so the page makes room; the panel itself stays put while its edge sweeps
 // (anchored right, clipped, never scrolled, which removed the jump at the start). On a phone it covers the screen and
 // slides up. It slides out before the page unmounts it (`closing`); `instant` skips the slide when it is already
-// open and only its content changes. Reduced motion skips both.
+// open and only its content changes. Reduced motion skips both. The chat's evidence panel (Phase 8) asks for a wider
+// size and, on a phone, a sheet over the lower half of the screen (the answer stays readable above it) that its
+// handle pulls up to nearly full height.
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { ChevronUp, X } from "lucide-react";
 import { STROKE } from "../icons";
 
 export function RightDrawer({
@@ -19,6 +21,9 @@ export function RightDrawer({
   initialFocusRef,
   closeLabel,
   testId,
+  size = "normal",
+  phoneSheet = false,
+  preferTall = false,
   children,
 }: {
   title: ReactNode;
@@ -32,12 +37,21 @@ export function RightDrawer({
   initialFocusRef?: RefObject<HTMLElement | null>;
   closeLabel?: string;
   testId: string;
+  /** "wide" for the chat's evidence (a map needs room). */
+  size?: "normal" | "wide";
+  /** On a phone: a sheet over the lower half, not the whole screen. */
+  phoneSheet?: boolean;
+  /** The phone sheet's height until its handle is used: taller for a map (about 70% of the screen). */
+  preferTall?: boolean;
   children: ReactNode;
 }) {
   const { t } = useTranslation("next");
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const [entered, setEntered] = useState(instant);
+  const [tallChoice, setTall] = useState<"half" | "tall" | "full" | null>(null);
+  const sheet = tallChoice ?? (preferTall ? "tall" : "half");
+  const tall = sheet === "full";
   useEffect(() => {
     if (entered) return;
     const id = requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
@@ -54,7 +68,7 @@ export function RightDrawer({
 
   return (
     <div
-      className={`lg:sticky lg:top-0 lg:flex lg:h-dvh lg:shrink-0 lg:justify-end lg:overflow-clip lg:transition-[width] lg:duration-200 lg:ease-out motion-reduce:transition-none ${shown ? "lg:w-[clamp(360px,33vw,480px)]" : "lg:w-0"}`}
+      className={`lg:sticky lg:top-0 lg:flex lg:h-dvh lg:shrink-0 lg:justify-end lg:overflow-clip lg:transition-[width] lg:duration-200 lg:ease-out motion-reduce:transition-none ${shown ? (size === "wide" ? "lg:w-[clamp(400px,42vw,680px)]" : "lg:w-[clamp(360px,33vw,480px)]") : "lg:w-0"}`}
       data-state={shown ? "open" : "closed"}
     >
       <section
@@ -63,8 +77,21 @@ export function RightDrawer({
         aria-labelledby={titleId}
         data-testid={testId}
         onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } }}
-        className={`fixed inset-0 z-50 flex flex-col gap-4 bg-nx-page p-5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none lg:static lg:z-auto lg:h-full lg:w-[clamp(360px,33vw,480px)] lg:shrink-0 lg:border-l lg:border-nx-ink/10 lg:translate-y-0 ${shown ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}
+        className={`fixed z-50 flex flex-col gap-4 bg-nx-page p-5 transition-[transform,opacity,height] duration-200 ease-out motion-reduce:transition-none lg:static lg:z-auto lg:h-full lg:shrink-0 lg:rounded-none lg:border-l lg:border-nx-ink/10 lg:shadow-none lg:transform-none ${size === "wide" ? "lg:w-[clamp(400px,42vw,680px)]" : "lg:w-[clamp(360px,33vw,480px)]"} ${phoneSheet ? `inset-x-0 bottom-0 rounded-t-3xl pt-2 shadow-[0_-8px_32px_rgb(0_0_0/0.18)] ${sheet === "full" ? "h-[92dvh]" : sheet === "tall" ? "h-[72dvh]" : "h-[55dvh]"}` : "inset-0"} ${shown ? "transform-none opacity-100" : "translate-y-full opacity-0"}`}
       >
+        {phoneSheet && (
+          <button
+            type="button"
+            onClick={() => setTall(tall ? "half" : "full")}
+            aria-expanded={tall}
+            aria-label={tall ? t("drawer.shorter") : t("drawer.taller")}
+            className="-mb-2 flex h-6 items-center justify-center self-stretch rounded-lg lg:hidden"
+            data-testid={`${testId}-handle`}
+          >
+            <span aria-hidden className="h-1 w-10 rounded-full bg-nx-ink/25" />
+            <ChevronUp aria-hidden className={`sr-only ${tall ? "rotate-180" : ""}`} strokeWidth={STROKE} />
+          </button>
+        )}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 id={titleId} className="text-body font-semibold">{title}</h2>

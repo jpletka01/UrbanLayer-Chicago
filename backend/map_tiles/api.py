@@ -67,6 +67,7 @@ def map_info() -> dict:
     # Discovery's parcel outlines (Item 68) are the map's parcel layer; same file, same endpoint.
     out["parcels"] = None if p is None else {
         "minZoom": int(p.get("minzoom", 14)), "maxZoom": int(p.get("maxzoom", 16)), "builtAt": p.get("built_at"),
+        **_version(get_settings().discovery_tiles_path),
     }
     # The zoomed-out grid beside the lot tiles (Discovery's city view, Item 104).
     from backend.discovery.parcel_tiles import grid_path
@@ -74,6 +75,7 @@ def map_info() -> dict:
     g = tiles_info(grid_path(get_settings().discovery_tiles_path))
     out["grid"] = None if g is None else {
         "minZoom": int(g.get("minzoom", 10)), "maxZoom": int(g.get("maxzoom", 13)), "builtAt": g.get("built_at"),
+        **_version(grid_path(get_settings().discovery_tiles_path)),
     }
     for name in _TILESETS:
         m = tileset_meta(name)
@@ -83,11 +85,17 @@ def map_info() -> dict:
         }
     # Tiles are cached for a day: the building heights' URL carries the file's version so a rebuild shows at once.
     if out.get("buildings"):
-        try:
-            out["buildings"]["version"] = str(int(_path("buildings").stat().st_mtime))
-        except OSError:
-            pass
+        out["buildings"].update(_version(_path("buildings")))
     return out
+
+
+def _version(path: Path) -> dict:
+    """The file's modification time as a tile URL version (``?v=``). Tiles are cached for a day, so a rebuilt file
+    must change the URL or browsers keep the old tiles (M5's rebuild kept old parcel colors, Item 112)."""
+    try:
+        return {"version": str(int(path.stat().st_mtime))}
+    except OSError:
+        return {}
 
 
 @router.get("/tiles/{name}/{z}/{x}/{y}.mvt")

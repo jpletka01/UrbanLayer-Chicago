@@ -22,6 +22,8 @@ import uuid
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -140,6 +142,16 @@ if _settings_init.sentry_dsn:
     )
 
 app = FastAPI(title="Chicago City Intelligence")
+
+
+@app.exception_handler(RequestValidationError)
+async def _log_rejected_messages(request: Request, exc: RequestValidationError):
+    """A saved chat turn rejected by validation used to vanish without a trace (2026-11-12): log where it failed,
+    field paths and error types only (no values: they hold the visitor's question), then answer as FastAPI would."""
+    if request.method == "PUT" and request.url.path.endswith("/messages"):
+        where = [(".".join(str(p) for p in e.get("loc", ())), e.get("type")) for e in exc.errors()[:8]]
+        log.warning("chat turn save rejected (%d errors): %s", len(exc.errors()), where)
+    return await request_validation_exception_handler(request, exc)
 
 _CSRF_EXEMPT_PATHS = {
     "/api/webhook/stripe",

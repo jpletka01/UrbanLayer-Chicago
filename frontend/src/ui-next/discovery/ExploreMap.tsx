@@ -18,7 +18,7 @@ import { apiOrigin, loadMapInfo, streetViewUrl } from "../map/mapInfo";
 import { loadedRoads, streetOfAddress, viewpointFor, type RoadLine } from "../map/streetView";
 import { addPinImages } from "../map/pins";
 import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
-import { PALETTES, ZONING_COLORS, buildStyle, groupLayerIds, themePaint, type MapTiles, type Theme } from "../map/mapStyle";
+import { PALETTES, ZONING_COLORS, buildStyle, groupLayerIds, themePaint, versionedTiles, type MapTiles, type Theme } from "../map/mapStyle";
 import { STROKE } from "../icons";
 import {
   LOTS_MIN_ZOOM, cardModel, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
@@ -132,7 +132,7 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
   }
   // Zoomed out, the city is a grid of about a block each in the same measure (Item 104), so the map is never empty.
   if (grid) {
-    map.addSource("grid", { type: "vector", tiles: [`${apiOrigin()}/api/discovery/grid/{z}/{x}/{y}.mvt`], minzoom: grid.minZoom, maxzoom: grid.maxZoom });
+    map.addSource("grid", { type: "vector", tiles: [versionedTiles(`${apiOrigin()}/api/discovery/grid/{z}/{x}/{y}.mvt`, grid)], minzoom: grid.minZoom, maxzoom: grid.maxZoom });
     map.addLayer({ id: "grid-unknown", type: "fill", source: "grid", "source-layer": "grid", maxzoom: LOTS_MIN_ZOOM,
       filter: unknownFilter(measure), paint: { "fill-pattern": PATTERN_IMAGE("dots", theme), "fill-opacity": 0.7 } }, before);
     map.addLayer({ id: "grid-measure", type: "fill", source: "grid", "source-layer": "grid", maxzoom: LOTS_MIN_ZOOM,

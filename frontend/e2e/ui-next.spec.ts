@@ -14,6 +14,10 @@ const ROUTES = [
   { id: "search", path: "/scorecard?ui=next" },
   { id: "profile", path: "/scorecard?address=1601%20N%20Milwaukee%20Ave&ui=next", ready: "answer-sentence" },
   { id: "discovery", path: "/discovery?ui=next" },
+  // Phase 8: the landing, the signed-in home (sign-in is off locally, so "/" is the home), the full chat page.
+  { id: "landing", path: "/?ui=next&landing=1", ready: "landing" },
+  { id: "home", path: "/?ui=next", ready: "home" },
+  { id: "chat", path: "/chat?ui=next", ready: "chat-page" },
 ];
 
 async function open(page: Page, path: string, ready?: string) {
@@ -87,11 +91,11 @@ test("keyboard walkthrough of the preview Profile", async ({ page }, testInfo) =
   // Tab from the top of a fresh load reaches the side panel's destinations before the page.
   await open(page, "/scorecard?ui=next");
   const seen: string[] = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     await page.keyboard.press("Tab");
     seen.push(await page.evaluate(() => document.activeElement?.getAttribute("aria-label") || document.activeElement?.textContent?.trim() || ""));
   }
-  expect(seen.join(" | ")).toMatch(/Search.*Discovery.*Chat/);
+  expect(seen.join(" | ")).toMatch(/Home.*Search.*Discovery.*Chat/);
 });
 
 // Progressive loading (decision Items 82, 89): the Overview part is held back so the first screen can be checked,
@@ -327,4 +331,29 @@ test("3D: phone band flat, expanded map 3D with turn, tilt and reset, axe light 
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByTestId("map-3d-reset")).toHaveCount(0);
   await expect(page.getByTestId("map-mass-label")).toHaveCount(0);
+});
+
+test("Phase 8: chat doors from / open the new chat page; the landing's bar stays pinned; the home saves a lot", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
+  // A chat door keeps its parameters on the way to /chat. No question is sent.
+  await open(page, "/?ui=next&ask=1", "chat-page");
+  expect(new URL(page.url()).pathname).toBe("/chat");
+  await expect(page.getByRole("heading", { name: "What do you want to know?" })).toBeVisible();
+
+  // The landing's address bar is on screen at the top and after scrolling to the footer.
+  await open(page, "/?landing=1", "landing");
+  const bar = page.getByTestId("landing-bar");
+  await expect(bar).toBeInViewport();
+  await page.locator("footer").scrollIntoViewIfNeeded();
+  await expect(bar).toBeInViewport();
+
+  // The home: a recent lot saved with its bookmark appears under Saved lots.
+  await page.evaluate(() => localStorage.setItem("urbanlayer-next-recent-lots:v1", JSON.stringify([
+    { key: "addr:2541 n spaulding ave", address: "2541 N Spaulding Ave", pin: null, zone: "RS-3", area: "Logan Square", outline: null, at: Date.now() },
+  ])));
+  await open(page, "/", "home");
+  await page.getByTestId("home-recent").getByRole("button", { name: "Save 2541 N Spaulding Ave" }).click();
+  await expect(page.getByTestId("home-saved").getByText("2541 N Spaulding Ave")).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
 });

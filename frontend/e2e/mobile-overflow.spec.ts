@@ -69,6 +69,10 @@ const PAGES: Array<{
     settle: 3000,
   },
   { id: "discovery-next", path: "/discovery?ui=next", settle: 1500 },
+  // Phase 8: the landing, the signed-in home and the full chat page.
+  { id: "landing-next", path: "/?ui=next&landing=1", settle: 1500 },
+  { id: "home-next", path: "/?ui=next", settle: 1500 },
+  { id: "chat-next", path: "/chat?ui=next", settle: 1500 },
 ];
 
 const OUT_DIR = path.join(

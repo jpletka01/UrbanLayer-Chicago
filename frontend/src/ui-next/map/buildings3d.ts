@@ -4,7 +4,7 @@
 // the expanded map can show it. Turn, tilt and reset are buttons beside it; a right-drag / Ctrl-drag or two fingers
 // also turn and tilt.
 import type { FillExtrusionLayerSpecification, Map as MLMap, VectorSourceSpecification } from "maplibre-gl";
-import { PALETTES, ZONING_COLORS, type Theme, type TileSet } from "./mapStyle";
+import { PALETTES, ZONING_COLORS, versionedTiles, type Theme, type TileSet } from "./mapStyle";
 
 export const BUILDINGS_SOURCE = "buildings";
 export const BUILDINGS_LAYER = "buildings-3d";
@@ -45,8 +45,7 @@ export function tintedColors(theme: Theme): Record<string, { low: string; high: 
 
 export function buildingsSource(apiOrigin: string, tiles: TileSet): VectorSourceSpecification {
   // The version changes with every rebuild, so a day-cached tile never outlives a correction.
-  const v = tiles.version ? `?v=${encodeURIComponent(tiles.version)}` : "";
-  return { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/buildings/{z}/{x}/{y}.mvt${v}`], minzoom: tiles.minZoom, maxzoom: tiles.maxZoom };
+  return { type: "vector", tiles: [versionedTiles(`${apiOrigin}/api/map/tiles/buildings/{z}/{x}/{y}.mvt`, tiles)], minzoom: tiles.minZoom, maxzoom: tiles.maxZoom };
 }
 
 const METERS = ["*", ["to-number", ["get", "h"], 0], FEET_TO_METERS];

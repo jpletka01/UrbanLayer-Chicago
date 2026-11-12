@@ -82,8 +82,12 @@ createRoot(document.getElementById('root')!).render(
           <SegmentPrompt />
           <PreviewBadge />
           <Routes>
-            <Route path="/" element={<App />} />
-            <Route path="/c/:id" element={<App />} />
+            {/* "/" in the preview: the landing, or the home when signed in; its chat doors (?q=, ?pin=, ?handoff=,
+                ?ask=1) go to the new chat page at /chat. /c/:id and /chat share one VersionedRoute shape, so a conversation that gets its id
+                mid-answer keeps streaming (Phase 8). */}
+            <Route path="/" element={<VersionedRoute id="home" old={<App />} door />} />
+            <Route path="/c/:id" element={<VersionedRoute id="chat" old={<App />} />} />
+            <Route path="/chat" element={<VersionedRoute id="chat" old={<Navigate to="/?ask=1" replace />} />} />
             <Route path="/s/:shareToken" element={<App />} />
             {/* Versioned routes: today's page unless ?ui=next is on and the readiness registry says ready. */}
             <Route path="/scorecard" element={<VersionedRoute id="profile" old={<ScorecardPage />} />} />

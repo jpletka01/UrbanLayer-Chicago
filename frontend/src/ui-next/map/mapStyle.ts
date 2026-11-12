@@ -21,6 +21,12 @@ export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "building", "tra
 export const STREET_LABEL_MIN_ZOOM = 15;
 
 export interface TileSet { minZoom: number; maxZoom: number; version?: string }
+
+/** A tile URL template with the file's version (`?v=`) when the server gave one. Tiles are cached for a day, so a
+    rebuilt file has to change the URL or browsers keep the old tiles (M5's parcel colors, Item 112). */
+export function versionedTiles(url: string, tiles: Pick<TileSet, "version">): string {
+  return tiles.version ? `${url}?v=${encodeURIComponent(tiles.version)}` : url;
+}
 export interface MapTiles { base: TileSet | null; parcels: TileSet | null; zoning: TileSet | null; grid?: TileSet | null; buildings?: TileSet | null }
 
 // ---------------------------------------------------------------- colors
@@ -277,7 +283,7 @@ export function buildStyle({ theme, apiOrigin, glyphsBase, tiles }: StyleInput):
   };
   if (tiles.base) sources.base = { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/base/{z}/{x}/{y}.mvt`], minzoom: tiles.base.minZoom, maxzoom: tiles.base.maxZoom };
   if (tiles.zoning) sources.zoning = { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/zoning/{z}/{x}/{y}.mvt`], minzoom: tiles.zoning.minZoom, maxzoom: tiles.zoning.maxZoom };
-  if (tiles.parcels) sources.parcels = { type: "vector", tiles: [`${apiOrigin}/api/discovery/tiles/{z}/{x}/{y}.mvt`], minzoom: tiles.parcels.minZoom, maxzoom: tiles.parcels.maxZoom, promoteId: undefined };
+  if (tiles.parcels) sources.parcels = { type: "vector", tiles: [versionedTiles(`${apiOrigin}/api/discovery/tiles/{z}/{x}/{y}.mvt`, tiles.parcels)], minzoom: tiles.parcels.minZoom, maxzoom: tiles.parcels.maxZoom, promoteId: undefined };
   const layers = LAYERS.filter((l) => l.needs === null || l.needs === "lot" || l.needs === "sales" || l.needs === "building" || l.needs === "transit" || tiles[l.needs] != null)
     .map((l) => l.spec(theme));
   return {
