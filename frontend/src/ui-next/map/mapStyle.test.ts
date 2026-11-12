@@ -2,7 +2,7 @@
 // zoomed in, On / Dim / Off, and a theme switch that repaints every layer without a reload.
 import { describe, expect, it } from "vitest";
 import {
-  GROUPS, LAYER_IDS, ROAD_METERS, metersPerPixel, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint,
+  GROUPS, LAYER_IDS, ROAD_METERS, metersPerPixel, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint, versionedTiles,
   type MapTiles,
 } from "./mapStyle";
 
@@ -19,6 +19,13 @@ describe("the style document", () => {
       "https://urbanlayerchicago.com/api/discovery/tiles/{z}/{x}/{y}.mvt",
     ]);
     expect(s.glyphs).toBe("https://urbanlayerchicago.com/map/fonts/{fontstack}/{range}.pbf");
+  });
+
+  it("puts the parcel file's version in its tile URL, so a rebuild isn't hidden by the day-long cache (Item 112)", () => {
+    const s = buildStyle(input({ ...ALL, parcels: { minZoom: 14, maxZoom: 16, version: "1800000000" } }));
+    const parcels = s.sources.parcels as { tiles: string[] };
+    expect(parcels.tiles).toEqual(["https://urbanlayerchicago.com/api/discovery/tiles/{z}/{x}/{y}.mvt?v=1800000000"]);
+    expect(versionedTiles("/t/{z}.mvt", {})).toBe("/t/{z}.mvt");
   });
 
   it("draws streets above zoning and parcels, and the lot above the streets", () => {
