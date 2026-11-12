@@ -23,6 +23,20 @@ function renderOverview(onOpenTab = vi.fn()) {
 }
 
 describe("Overview", () => {
+  it("says a lot is surface parking, with how we know behind Info, and never for an approximate match (Item 112)", async () => {
+    const data = profileFixture();
+    const use = { kind: "parking" as const, words: "Surface parking lot" };
+    const { container, rerender } = render(
+      <div className="ui-next"><OverviewTab data={data} verdict={computeVerdict(data, tp)} identity="exact" lotInUse={use} address="1 Test St" onOpenTab={vi.fn()} /></div>,
+    );
+    const line = screen.getByTestId("lot-in-use");
+    expect(line.textContent).toContain("Surface parking lot");
+    expect(within(line).getAllByRole("button").length).toBeGreaterThan(0);  // the Info tool
+    expect(await axeViolations(container)).toEqual([]);
+    rerender(<div className="ui-next"><OverviewTab data={data} verdict={computeVerdict(data, tp)} identity="approximate" lotInUse={use} onOpenTab={vi.fn()} /></div>);
+    expect(screen.queryByTestId("lot-in-use")).toBeNull();
+  });
+
   it("leads with the answer sentence, then four tiles with icon, label and figure", async () => {
     const { container, onOpenTab } = renderOverview();
     expect(screen.getByTestId("answer-sentence").textContent).toMatch(/^B3-2 allows/);

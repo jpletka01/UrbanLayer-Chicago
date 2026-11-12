@@ -29,6 +29,8 @@ import { AskDrawer } from "../ask/AskDrawer";
 import { AskContext, type AskHandoff } from "../ask/askContext";
 import { ICON } from "../icons";
 import { OverviewTab, TileCard } from "./OverviewTab";
+import { useLotInUse } from "./useLotInUse";
+import { lotInUse } from "./profileModel";
 import { checkingTiles, firstSentence } from "./firstModel";
 import { Pill } from "../ui/Blocks";
 import { BuildTab } from "./BuildTab";
@@ -311,6 +313,9 @@ function ProfileScreen({
   // The lot's PIN10 marks its outline in the parcel layer; only for an exact match (a nearest parcel may be a neighbor).
   const resolvedPin = data?.resolved_pin ?? first?.resolved_pin ?? null;
   const mapPin10 = identity === "exact" && resolvedPin ? resolvedPin.replace(/\D/g, "").slice(0, 10) : null;
+  // Surface parking or empty land, from Discovery's row for this lot (Item 112): exact matches only.
+  const lotRow = useLotInUse(mapPin10);
+  const lotUse = useMemo(() => lotInUse(lotRow, t), [lotRow, t]);
   // Recent sales come with the late `money` part: the map names them while they wait (Item 89's skeleton rule).
   const salesState: LateState = !data ? "loading"
     : parts.money === "waiting" ? "loading"
@@ -495,6 +500,8 @@ function ProfileScreen({
                 identity={identity}
                 checkingCityLists={parts.history === "waiting"}
                 buildingPending={parts.building === "waiting"}
+                lotInUse={lotUse}
+                address={address}
                 onOpenTab={(id) => { setTab(id); window.scrollTo({ top: 0 }); }}
               />
             ) : first ? (

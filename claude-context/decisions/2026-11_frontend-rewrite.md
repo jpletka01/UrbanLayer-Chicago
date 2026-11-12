@@ -1465,6 +1465,13 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - *Local tiles:* rebuilt into a private folder (33.7 MB, 154 s).
 - *Gates:* backend 2,964, vitest 1,189, build, lint 67 (cap), the Discovery e2e checks, the mobile matrix's Discovery page on five phones.
 
+**Built: the Profile line (2026-11-12, the owner's "Profile line first"; awaiting his review).**
+- *What:* the new UI's Overview says, under the answer sentence, "Surface parking lot" or "Empty lot …" (the Discovery card's own words, "garage or shed only" when one stands there). Behind the Info tool: how we know (the class and the two building sources; for parking, the hand check of 23 lots), and Ask pre-fills "What could be built on …".
+- *Source:* Discovery's own row for the lot (`GET /api/discovery/parcel?pin=<PIN10>`, every tier; `profile/useLotInUse.ts`), asked only for an exact match: a nearest parcel may be a neighbor's. `/api/scorecard`, chat and the report are unchanged.
+- *What it never says:* a failed or missing row, or any other lot, shows nothing, never "not parking". An approximate match never shows it.
+- *Example:* 2802 S Michigan Ave (C2-3, Assessor 5-90, nothing in the footprints or LiDAR).
+- *Tests:* `profileModel.test.ts` (`lotInUse`), `ProfileTabs.test.tsx` (the line, its Info tool, axe; hidden for an approximate match). Gates as above; vitest 1,191.
+
 **Production steps** (server, after merge; Jack types sudo):
 1. Fetch CMAP on the Mac and install the copy as `backend/data/map_sources/cmap_lui_2023.db` (`python -m backend.discovery.cmap_land_use`). First check whether CMAP answers the server; if not, the Mac copy is the path, as for FEMA and the County's LiDAR.
 2. `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --land-use-only` (about 8 minutes).

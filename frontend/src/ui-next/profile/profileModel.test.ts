@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import i18n from "../../lib/i18n";
 import { computeVerdict } from "../../lib/scorecardVerdict";
 import { profileFixture } from "../test/fixtures";
-import { allowedVsBuilt, FLOOR_FT, heightFeet, heightRangeLow, isMarketSale, overviewTiles, pendingRezonings, ruleChips, stageOf, zoningMass } from "./profileModel";
+import { allowedVsBuilt, FLOOR_FT, heightFeet, heightRangeLow, isMarketSale, lotInUse, overviewTiles, pendingRezonings, ruleChips, stageOf, zoningMass } from "./profileModel";
 
 const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "next", ...opts }) as string;
 const tp = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts }) as string;
@@ -149,5 +149,19 @@ describe("zoningMass", () => {
   it("is withheld for an approximate lot", () => {
     const d = withZone(2.2, "45 ft");
     expect(zoningMass(d, computeVerdict(d, t), true)).toBeNull();
+  });
+});
+
+
+describe("what the lot is used for today (Item 112)", () => {
+  it("names surface parking and empty land in the list card's words, and nothing else", () => {
+    expect(lotInUse({ surface_parking: true, empty_land: true, land_kind: "parking", structure: "empty" }, t))
+      .toEqual({ kind: "parking", words: "Surface parking lot" });
+    expect(lotInUse({ surface_parking: true, empty_land: true, land_kind: "parking", structure: "accessory" }, t)?.words)
+      .toBe("Surface parking lot, garage or shed only");
+    expect(lotInUse({ empty_land: true, land_kind: "city_owned", structure: "empty" }, t))
+      .toEqual({ kind: "empty", words: "Empty lot, City-owned" });
+    expect(lotInUse({ empty_land: false, land_kind: "residential", structure: "built" }, t)).toBeNull();
+    expect(lotInUse(null, t)).toBeNull();
   });
 });

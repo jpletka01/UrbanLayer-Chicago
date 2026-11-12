@@ -72,6 +72,16 @@
       "neighborhood": "Neighborhood",
       "history": "History"
     },
+    "lotInUse": {
+      "define": {
+        "parking": "The Assessor taxes it as a minor improvement (class 5-90 or 5-80), and nothing stands on it in the City's building footprints or the County's 2022 LiDAR, except at most a garage or shed. A hand check of 23 such lots found every one was surface parking.",
+        "empty": "Nothing stands on it in the City's building footprints or the County's 2022 LiDAR, after demolition and new-construction permits, except at most a garage or shed. Shown for vacant, City-owned, parking and tax-exempt land only."
+      },
+      "ask": {
+        "parking": "What could be built on the surface parking lot at {{address}}?",
+        "empty": "What could be built on the empty lot at {{address}}?"
+      }
+    },
     "approximate": "Approximate match",
     "another": "Look up another address",
     "opensInNewTab": "(opens in a new tab)",

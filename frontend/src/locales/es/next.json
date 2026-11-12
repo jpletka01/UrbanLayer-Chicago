@@ -72,6 +72,16 @@
       "neighborhood": "Vecindario",
       "history": "Historial"
     },
+    "lotInUse": {
+      "define": {
+        "parking": "El Tasador lo grava como mejora menor (clase 5-90 o 5-80), y no hay nada construido en las huellas de edificios de la Ciudad ni en el LiDAR 2022 del Condado, salvo a lo más una cochera o un cobertizo. Una revisión a mano de 23 lotes así encontró que todos eran estacionamiento en superficie.",
+        "empty": "No hay nada construido en las huellas de edificios de la Ciudad ni en el LiDAR 2022 del Condado, tras los permisos de demolición y de obra nueva, salvo a lo más una cochera o un cobertizo. Solo se muestra en terrenos baldíos, de la Ciudad, de estacionamiento y exentos de impuestos."
+      },
+      "ask": {
+        "parking": "¿Qué se podría construir en el estacionamiento en superficie de {{address}}?",
+        "empty": "¿Qué se podría construir en el terreno vacío de {{address}}?"
+      }
+    },
     "approximate": "Coincidencia aproximada",
     "another": "Buscar otra dirección",
     "opensInNewTab": "(se abre en una pestaña nueva)",
