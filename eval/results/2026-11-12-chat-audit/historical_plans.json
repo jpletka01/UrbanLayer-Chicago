@@ -1,0 +1,730 @@
+{
+ "unique_questions": 52,
+ "parcel_scoped_use_or_bulk": 10,
+ "with_area_feeds": 9,
+ "area_feed_counts": {
+  "311_api": 2,
+  "business_api": 6,
+  "crime_api": 2,
+  "food_inspections_api": 0,
+  "permits_api": 8,
+  "vacant_buildings_api": 2,
+  "violations_api": 2
+ },
+ "rows": [
+  {
+   "question": "are there any bars being built in lakeview east?",
+   "workflow": null,
+   "sources": [
+    "permits_api",
+    "business_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "business_api",
+    "permits_api"
+   ]
+  },
+  {
+   "question": "Could I start a restaurant at 443 W WRIGHTWOOD AVE, CHICAGO, IL, 60614?",
+   "workflow": null,
+   "sources": [
+    "vector_search",
+    "permits_api",
+    "business_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "business_api",
+    "permits_api"
+   ]
+  },
+  {
+   "question": "What's going on near 2400 N Milwaukee Ave?",
+   "workflow": null,
+   "sources": [
+    "crime_api",
+    "311_api",
+    "permits_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "crime_api",
+    "permits_api"
+   ]
+  },
+  {
+   "question": "could I start a business at 443 W WRIGHTWOOD AVE, CHICAGO, IL, 60614?",
+   "workflow": "general",
+   "sources": [
+    "vector_search",
+    "regulatory_domain",
+    "property_domain",
+    "incentives_domain",
+    "neighborhood_domain",
+    "permits_api",
+    "business_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "business_api",
+    "permits_api"
+   ]
+  },
+  {
+   "question": "how is the crime in the area?",
+   "workflow": "general",
+   "sources": [
+    "crime_api",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "is it walkable around there?",
+   "workflow": "general",
+   "sources": [
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "Crime trends in Wicker Park last 90 days",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "Crime trends in englewood",
+   "workflow": "general",
+   "sources": [
+    "crime_api",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "Crime trends in pilsen",
+   "workflow": "general",
+   "sources": [
+    "crime_api",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "crime trends in pullman",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "crime trends in West Garfield Park",
+   "workflow": "general",
+   "sources": [
+    "crime_api",
+    "vector_search",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "Is this the most dangerour neighborhood in the city?",
+   "workflow": "general",
+   "sources": [
+    "crime_api",
+    "neighborhood_domain",
+    "vector_search"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "how does that compare to englewood?",
+   "workflow": "general",
+   "sources": [
+    "crime_api",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "Can you look up englewood crime rates and compare that to westgarfield park?",
+   "workflow": "general",
+   "sources": [
+    "crime_api",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "crime trends in lincoln park in the last 90 days",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "How does that compare to austin, chicago?",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "What can you tell me about 443 W WRIGHTWOOD AVE, CHICAGO, IL, 60614",
+   "workflow": "general",
+   "sources": [
+    "property_domain",
+    "regulatory_domain",
+    "incentives_domain",
+    "neighborhood_domain",
+    "permits_api",
+    "violations_api",
+    "crime_api",
+    "311_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "crime_api",
+    "permits_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "what can you tell me about 525 W ARLINGTON PL, CHICAGO, IL, 60614?",
+   "workflow": "site_due_diligence",
+   "sources": [
+    "crime_api",
+    "311_api",
+    "permits_api",
+    "violations_api",
+    "business_api",
+    "regulatory_domain",
+    "property_domain",
+    "incentives_domain",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "business_api",
+    "crime_api",
+    "permits_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "Tell me about the property at 1425 N Wells St",
+   "workflow": "site_due_diligence",
+   "sources": [
+    "property_domain",
+    "regulatory_domain",
+    "incentives_domain",
+    "neighborhood_domain",
+    "crime_api",
+    "311_api",
+    "permits_api",
+    "violations_api",
+    "business_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "business_api",
+    "crime_api",
+    "permits_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "Can I open a bar at 2200 W Chicago Ave?",
+   "workflow": "business_launch",
+   "sources": [
+    "vector_search",
+    "regulatory_domain",
+    "incentives_domain",
+    "business_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "business_api"
+   ]
+  },
+  {
+   "question": "tell me about the property at 525 w arlington pl chicago",
+   "workflow": "site_due_diligence",
+   "sources": [
+    "property_domain",
+    "regulatory_domain",
+    "incentives_domain",
+    "neighborhood_domain",
+    "crime_api",
+    "311_api",
+    "permits_api",
+    "violations_api",
+    "business_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "business_api",
+    "crime_api",
+    "permits_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "Would I be albe to build a bar at that address?",
+   "workflow": "development_feasibility",
+   "sources": [
+    "vector_search",
+    "regulatory_domain",
+    "property_domain",
+    "permits_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "permits_api"
+   ]
+  },
+  {
+   "question": "can you tell me the tax history of 443 w wrightwood ave?",
+   "workflow": "property_intelligence",
+   "sources": [
+    "property_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "Is Logan Square in a TIF district?",
+   "workflow": "general",
+   "sources": [
+    "incentives_domain",
+    "vector_search"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "Is Lincoln Park in a TIF district?",
+   "workflow": "general",
+   "sources": [
+    "incentives_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "what is the Red and Purple Modernization Phase One Project and how much are people paying?",
+   "workflow": "general",
+   "sources": [
+    "vector_search",
+    "incentives_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "What zone is 123 Main St",
+   "workflow": "general",
+   "sources": [
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "Crime near Logan Square",
+   "workflow": "neighborhood_overview",
+   "sources": [
+    "crime_api",
+    "311_api",
+    "permits_api",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "crime_api",
+    "permits_api"
+   ]
+  },
+  {
+   "question": "What does the ARO require for residential developments in the municipal code?",
+   "workflow": "general",
+   "sources": [
+    "vector_search",
+    "regulatory_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "What can I build on this lot? — 642 W Belden Ave",
+   "workflow": "development_feasibility",
+   "sources": [
+    "regulatory_domain",
+    "property_domain",
+    "vector_search",
+    "permits_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "permits_api"
+   ]
+  },
+  {
+   "question": "what can you tell me about this lot?",
+   "workflow": "general",
+   "sources": [],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "What's the constraint on this property at 622 W Deming Pl?",
+   "workflow": "property_intelligence",
+   "sources": [
+    "property_domain",
+    "regulatory_domain",
+    "incentives_domain",
+    "neighborhood_domain",
+    "crime_api",
+    "311_api",
+    "permits_api",
+    "violations_api",
+    "business_api",
+    "vacant_buildings_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "311_api",
+    "business_api",
+    "crime_api",
+    "permits_api",
+    "vacant_buildings_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "How many violations does this property have?",
+   "workflow": "general",
+   "sources": [
+    "violations_api",
+    "property_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "violations_api"
+   ]
+  },
+  {
+   "question": "What's the constraint on this property at 1601 N Milwaukee Ave?",
+   "workflow": "property_intelligence",
+   "sources": [
+    "regulatory_domain",
+    "property_domain",
+    "incentives_domain",
+    "neighborhood_domain",
+    "crime_api",
+    "311_api",
+    "permits_api",
+    "violations_api",
+    "business_api",
+    "vacant_buildings_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "311_api",
+    "business_api",
+    "crime_api",
+    "permits_api",
+    "vacant_buildings_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "What about the FAR?",
+   "workflow": "development_feasibility",
+   "sources": [
+    "regulatory_domain",
+    "property_domain",
+    "vector_search"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "What is the zoning at 500 N State St?",
+   "workflow": "development_feasibility",
+   "sources": [
+    "regulatory_domain",
+    "property_domain",
+    "vector_search"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": []
+  },
+  {
+   "question": "How many building code violations are on record for this property at 622 W Deming Pl? Be specific about whether the count is for this address or the surrounding area.",
+   "workflow": "property_intelligence",
+   "sources": [
+    "violations_api",
+    "property_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "violations_api"
+   ]
+  },
+  {
+   "question": "How many building code violations are on record for this property at 1601 N Milwaukee Ave? Be specific about whether the count is for this address or the surrounding area.",
+   "workflow": "property_intelligence",
+   "sources": [
+    "violations_api",
+    "property_domain",
+    "regulatory_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "violations_api"
+   ]
+  },
+  {
+   "question": "What are the 311 complaint patterns at 443 W Wrightwood Ave and what do they indicate?",
+   "workflow": "general",
+   "sources": [
+    "311_api",
+    "violations_api",
+    "permits_api",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "permits_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "How many crimes were reported near 1601 N Milwaukee Ave in the last 90 days?",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "Delitos cerca de 1601 N Milwaukee Ave en los últimos 30 días",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "Crime near 1601 N Milwaukee Ave in the last 90 days",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "What building permits were issued near 1601 N Milwaukee Ave this year?",
+   "workflow": "general",
+   "sources": [
+    "permits_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "permits_api"
+   ]
+  },
+  {
+   "question": "What does the historic-survey (CHRS) rating mean for demolition or renovation here? — 2648 W Crystal St",
+   "workflow": "development_feasibility",
+   "sources": [
+    "vector_search",
+    "regulatory_domain",
+    "property_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "what do you know about 443 w wrightwood?",
+   "workflow": "site_due_diligence",
+   "sources": [
+    "crime_api",
+    "311_api",
+    "permits_api",
+    "violations_api",
+    "business_api",
+    "vacant_buildings_api",
+    "regulatory_domain",
+    "property_domain",
+    "incentives_domain",
+    "neighborhood_domain"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "business_api",
+    "crime_api",
+    "permits_api",
+    "vacant_buildings_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "Could I add a coach house at 2611 N Sawyer Ave?",
+   "workflow": "development_feasibility",
+   "sources": [
+    "vector_search",
+    "regulatory_domain",
+    "property_domain",
+    "permits_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "permits_api"
+   ]
+  },
+  {
+   "question": "Tell me about 44 W Wrightwood Ave",
+   "workflow": "site_due_diligence",
+   "sources": [
+    "regulatory_domain",
+    "property_domain",
+    "incentives_domain",
+    "neighborhood_domain",
+    "crime_api",
+    "311_api",
+    "permits_api",
+    "violations_api",
+    "business_api",
+    "vacant_buildings_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "311_api",
+    "business_api",
+    "crime_api",
+    "permits_api",
+    "vacant_buildings_api",
+    "violations_api"
+   ]
+  },
+  {
+   "question": "What is the zoning at 2541 N Spaulding Ave and how many units could fit?",
+   "workflow": "development_feasibility",
+   "sources": [
+    "regulatory_domain",
+    "property_domain",
+    "vector_search",
+    "permits_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "permits_api"
+   ]
+  },
+  {
+   "question": "How has crime been around 44 W Wrightwood Ave in the last 90 days?",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "How has crime been around 2541 N Spaulding Ave lately?",
+   "workflow": "general",
+   "sources": [
+    "crime_api"
+   ],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": [
+    "crime_api"
+   ]
+  },
+  {
+   "question": "what time isit?",
+   "workflow": "general",
+   "sources": [],
+   "parcel_scoped_use_or_bulk": false,
+   "area_feeds": []
+  },
+  {
+   "question": "Can I put a restaurant in 443 w wrightwood?",
+   "workflow": "business_launch",
+   "sources": [
+    "vector_search",
+    "regulatory_domain",
+    "business_api",
+    "permits_api"
+   ],
+   "parcel_scoped_use_or_bulk": true,
+   "area_feeds": [
+    "business_api",
+    "permits_api"
+   ]
+  }
+ ]
+}
