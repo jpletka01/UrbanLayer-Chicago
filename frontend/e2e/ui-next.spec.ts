@@ -288,6 +288,9 @@ test("Discovery on a phone: one row of filter groups, a key that folds", async (
   const tops = await page.getByTestId("filter-groups").getByRole("button").evaluateAll((els) => [...new Set(els.map((e) => Math.round(e.getBoundingClientRect().top)))]);
   expect(tops.length, "filter groups on one row").toBe(1);
   const key = page.getByTestId("measure-key");
+  // The key sits below the quick filters, not over them.
+  const chips = (await page.getByTestId("quick-filters").boundingBox())!;
+  expect((await key.boundingBox())!.y).toBeGreaterThanOrEqual(chips.y + chips.height);
   await key.getByRole("button", { name: "Color lots by" }).click();
   await expect(key.getByRole("button", { name: "Hide the key" })).toBeVisible();
   await expect(page.locator("#nx-measure")).toBeVisible();

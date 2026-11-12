@@ -362,8 +362,9 @@ export default function DiscoveryNextPage() {
           if (!(e.target as HTMLElement).closest("[data-testid=measure-key]")) setMapTouches((n) => n + 1);
         } : undefined}>
           {map}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3">
-            <div className="flex min-w-0 flex-col items-start gap-2">
+          {/* On a phone the key sits on its own line below the quick filters, never over them (owner's review). */}
+          <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-start" : "items-start justify-between"}`}>
+            <div className={`flex min-w-0 flex-col items-start gap-2 ${phone ? "w-full" : ""}`}>
               <QuickFilters on={quickOn} onToggle={toggleQuick} loading={!response && viewMatches.loading} />
               {!phone && !response && registry && (
                 <GoalCard open={goalsOpen} onToggle={() => setGoalsFolded((f) => !f)} topics={topics} counts={registry.recipeCounts ?? {}} fmt={fmt}
