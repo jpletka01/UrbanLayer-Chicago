@@ -1,0 +1,72 @@
+{
+ "labeled": 20,
+ "strata": {
+  "empty_road_exempt": {
+   "rail_utility": 20
+  }
+ },
+ "surface_rule": {
+  "surface_parking": 0,
+  "decided": 0,
+  "ci95": [
+   0.0,
+   0.0
+  ],
+  "weighted_precision": null
+ },
+ "surface_by_source": {
+  "cmap": {
+   "precision": null,
+   "ci95": [
+    0.0,
+    0.0
+   ]
+  },
+  "osm": {
+   "precision": null,
+   "ci95": [
+    0.0,
+    0.0
+   ]
+  },
+  "assessor": {
+   "precision": null,
+   "ci95": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "garage": {
+  "parking_garage": 0,
+  "decided": 0,
+  "ci95": [
+   0.0,
+   0.0
+  ]
+ },
+ "parking_missed_by_sources": {
+  "surface_parking": 0,
+  "decided": 0,
+  "ci95": [
+   0.0,
+   0.0
+  ],
+  "pool": 0
+ },
+ "use_disagree_matched": {},
+ "use_precision": {
+  "cmap": {
+   "rail_utility": {
+    "right": 20,
+    "wrong": 0,
+    "precision": 1.0,
+    "ci95": [
+     0.839,
+     1.0
+    ]
+   }
+  },
+  "assessor": {}
+ }
+}

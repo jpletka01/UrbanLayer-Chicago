@@ -1416,7 +1416,7 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 
 **Owner's answers (2026-11-12):**
 1. **Surface parking gets its own filter and a card line** on all qualifying lots; Empty land keeps its lots and labels the parking ones.
-2. **Road right-of-way: a second blind draw of 20 first.** `eval/land_use_road_panel.json` (seed 113, from the 6,268 eligible lots not on an earlier panel; `draw --road-recheck`). Hidden by default only if the 27 together reach 90%.
+2. **Road right-of-way: a second blind draw of 20 first.** `eval/land_use_road_panel.json` (seed 113, from the 6,268 eligible lots not on an earlier panel; `draw --road-recheck`). Hidden by default only if the 27 together reach 90%. **Result (2026-11-12): 20 of 20 were road or rail land (83.9-100%), so 27 of 27 together (100%; 95% range 87.5-100%). It passes: in the build step, Empty land hides these 6,563 lots by default (6,279 shown today) behind a visible count and a Show option (Item 75), using CMAP 2023's `1512` code on exempt land only.** Counts in `precision_road_recheck.json`.
 3. **OSM-only parking waits for a licensing review.** Surface parking ships from the Assessor's classes alone for now: 12,526 lots (8,619 Assessor only + 3,907 with OSM agreeing), at 23 of 23. The 4,564 OSM-only lots join after the review.
 4. **The 2,434 "possibly parking" lots stay out** (4 of 6 is under the 70% floor).
 5. Still open: land use as a map mode, a filter or both, and the phone (a mockup with the build step).
