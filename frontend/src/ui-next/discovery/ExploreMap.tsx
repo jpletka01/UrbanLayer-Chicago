@@ -23,6 +23,7 @@ import { STROKE } from "../icons";
 import {
   LOTS_MIN_ZOOM, cardModel, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
 } from "./discoveryModel";
+import { foldAttribution } from "../map/attribution";
 
 maplibregl.setWorkerUrl(workerUrl);
 
@@ -208,6 +209,7 @@ export function ExploreMap({
       map = m;
       m.touchZoomRotate.disableRotation();
       m.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: t("map.attribution") }), "bottom-left");
+      m.once("load", () => foldAttribution(m.getContainer()));
       m.on("webglcontextlost", () => undefined);
       let retryAt = 0;
       m.on("error", (e) => {
@@ -504,7 +506,7 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
   return (
     <div role="dialog" aria-label={card?.title ?? t("discovery.map.lot")} data-testid="lot-card"
       className="absolute z-10 w-[17.5rem] rounded-2xl bg-nx-page p-4 text-caption shadow-[0_8px_32px_rgb(0_0_0/0.18)]" style={style}>
-      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target">
+      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
         <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
       </button>
       {!picked.lookup && <p className="flex items-center gap-2 nx-muted"><LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={STROKE} />{t("discovery.map.loading")}</p>}

@@ -59,7 +59,7 @@ export function AppFrame({
           <header className={`flex items-center gap-2 border-b border-nx-ink/10 px-4 sm:px-7 ${bar ? "min-h-[68px] py-2" : "h-[68px]"}`}>
             <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
               <Dialog.Trigger
-                className="-ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 lg:hidden touch-target"
+                className="-ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 lg:hidden touch-icon"
                 aria-label={t("frame.openMenu")}
               >
                 <Menu aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
@@ -71,7 +71,7 @@ export function AppFrame({
                     <Dialog.Title className="sr-only">{t("frame.panel")}</Dialog.Title>
                     <Dialog.Description className="sr-only">{t("frame.panelHint")}</Dialog.Description>
                     <Dialog.Close
-                      className="absolute right-2 top-5 grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target"
+                      className="absolute right-2 top-5 grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon"
                       aria-label={t("frame.closeMenu")}
                     >
                       <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
@@ -136,7 +136,7 @@ export function ToolButton({
       aria-pressed={pressed}
       aria-controls={controls}
       data-testid={testId}
-      className={`grid h-9 w-9 place-items-center rounded-lg touch-target disabled:cursor-not-allowed disabled:opacity-40 ${pressed ? "bg-nx-ink/5" : "hover:bg-nx-ink/5"}`}
+      className={`grid h-9 w-9 place-items-center rounded-lg touch-icon disabled:cursor-not-allowed disabled:opacity-40 ${pressed ? "bg-nx-ink/5" : "hover:bg-nx-ink/5"}`}
     >
       <Icon aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
     </button>

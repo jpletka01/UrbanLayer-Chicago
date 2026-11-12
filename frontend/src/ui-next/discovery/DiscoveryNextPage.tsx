@@ -656,7 +656,7 @@ function PlaceCard({ place, ring, onRing, onSearchRing, ringActive, onClose }: {
   const mi = (m: number) => new Intl.NumberFormat(numLocale(i18n.language), { maximumFractionDigits: 2 }).format(m);
   return (
     <div className="absolute left-3 top-16 z-10 w-[18rem] max-w-[calc(100%-1.5rem)] rounded-2xl bg-nx-page p-4 text-caption shadow-[0_8px_32px_rgb(0_0_0/0.18)]" data-testid="place-card">
-      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target">
+      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
         <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
       </button>
       <p className="flex items-center gap-2 pr-6 text-body font-semibold"><MapPin aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{place.label}</p>
@@ -716,7 +716,7 @@ function PhoneSheet({ state, setState, head, children }: {
         className="flex shrink-0 touch-none flex-col items-center gap-2 px-4 pb-2 pt-2">
         <button type="button" aria-label={state === "full" ? t("discovery.sheet.less") : t("discovery.sheet.more")}
           onClick={() => setState(state === "full" ? "peek" : state === "peek" ? "half" : "full")}
-          className="grid h-6 w-16 place-items-center touch-target">
+          className="grid h-6 w-16 place-items-center touch-icon">
           <span aria-hidden className="h-1.5 w-10 rounded-full bg-nx-ink/20" />
         </button>
         <div className="flex w-full items-center justify-between gap-2 text-body">{head}</div>

@@ -145,7 +145,7 @@ function GroupPanel({ group, draft, setDraft, count, compact, onClose, onApply, 
             <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{t("discovery.filters.clear")}
           </button>
         )}
-        <button type="button" onClick={onClose} aria-label={t("discovery.filters.close")} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target">
+        <button type="button" onClick={onClose} aria-label={t("discovery.filters.close")} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
           <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
         </button>
       </div>

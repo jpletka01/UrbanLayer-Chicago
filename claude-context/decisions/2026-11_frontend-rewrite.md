@@ -1472,6 +1472,12 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - *Example:* 2802 S Michigan Ave (C2-3, Assessor 5-90, nothing in the footprints or LiDAR).
 - *Tests:* `profileModel.test.ts` (`lotInUse`), `ProfileTabs.test.tsx` (the line, its Info tool, axe; hidden for an approximate match). Gates as above; vitest 1,191.
 
+**The owner's look at the Profile on a phone (2026-11-12): three map fixes.**
+- *The expand button's icon sat off-center.* On a touch screen `.touch-target` turned every square icon button (grid, centered) into an inline-flex 44 px tall and 32 px wide with its icon at the left. The new `.touch-icon` (index.css: 44 x 44 minimum, centering kept) replaces it on the new UI's 12 icon buttons (expand, close buttons, the frame's tools). Measured: 44 x 44, the icon 14 px in from every side.
+- *A dark ring around the expand button on load* (localhost): React's development mode runs effects twice, so the "skip the first render" flag let the second run focus the button. It now moves focus only when the map really switches.
+- *"City of Chicago, Cook County" took room:* the credit starts folded to MapLibre's small "i" button on both maps (`map/attribution.ts`) instead of open until the first drag. A tap still shows it, so the sources stay credited.
+- *No 3D on a phone's map band:* intentional, the owner's call in Item 106. The 2D/3D button shows in the expanded map.
+
 **Production steps** (server, after merge; Jack types sudo):
 1. Fetch CMAP on the Mac and install the copy as `backend/data/map_sources/cmap_lui_2023.db` (`python -m backend.discovery.cmap_land_use`). First check whether CMAP answers the server; if not, the Mac copy is the path, as for FEMA and the County's LiDAR.
 2. `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --land-use-only` (about 8 minutes).

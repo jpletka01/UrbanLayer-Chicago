@@ -286,9 +286,12 @@ function ProfileScreen({
   const [mapFocused, setMapFocused] = useState(false);
   const mapButtonRef = useRef<HTMLButtonElement | null>(null);
   // Keep focus on the map's toggle across the switch (it moves between the band and the focused view).
-  const mapToggled = useRef(false);
+  // Only on a real switch: React's development mode runs effects twice on mount, which focused (and ringed) the
+  // button on load with a "first render" flag (owner's review, 2026-11-12).
+  const mapFocusedBefore = useRef(mapFocused);
   useEffect(() => {
-    if (!mapToggled.current) { mapToggled.current = true; return; } // not on first render
+    if (mapFocusedBefore.current === mapFocused) return;
+    mapFocusedBefore.current = mapFocused;
     mapButtonRef.current?.focus({ preventScroll: true });
   }, [mapFocused]);
   const askButtonRef = useRef<HTMLSpanElement | null>(null);
@@ -463,7 +466,7 @@ function ProfileScreen({
                 aria-label={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
                 title={mapFocused ? t("profile.map.close") : t("profile.map.expand")}
                 data-testid="map-focus"
-                className="absolute bottom-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-target"
+                className="absolute bottom-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-lg bg-nx-page shadow-[0_1px_2px_rgb(0_0_0/0.15)] hover:bg-nx-block touch-icon"
               >
                 {mapFocused
                   ? <Shrink aria-hidden className="h-4 w-4" strokeWidth={1.5} />

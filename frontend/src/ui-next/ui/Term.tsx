@@ -97,7 +97,7 @@ function TermSheet({ label, definition, question }: { label: string; definition:
             <span aria-hidden className="mx-auto mb-1 h-1 w-10 rounded-full bg-nx-ink/20" />
             <div className="flex items-start justify-between gap-3">
               <Dialog.Title className="font-semibold">{label}</Dialog.Title>
-              <Dialog.Close className="-mr-1 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 touch-target" aria-label={t("term.close")}>
+              <Dialog.Close className="-mr-1 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" aria-label={t("term.close")}>
                 <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
               </Dialog.Close>
             </div>
