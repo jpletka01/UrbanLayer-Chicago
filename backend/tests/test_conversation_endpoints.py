@@ -172,6 +172,25 @@ class TestOwnership:
         assert resp.status_code == 200
 
 
+class TestRejectedTurnIsLogged:
+    """A turn the server rejects names the failing fields in the log, never the visitor's words (2026-11-12)."""
+
+    async def test_logs_paths_and_types_only(self, _auth_enabled, test_db, caplog):
+        await db.upsert_user("user-a", "a@example.com", "Alice", None, "ga")
+        client = _make_client("user-a", "a@example.com")
+        client.post("/api/conversations", json={"id": "conv_a", "title": "A"}, headers=CSRF_HEADERS)
+        with caplog.at_level("WARNING", logger="backend.main"):
+            resp = client.put(
+                "/api/conversations/conv_a/messages",
+                json={"messages": [{"role": "assistant", "content": "secret words", "context": {"community_area": "not a number"}}]},
+                headers=CSRF_HEADERS,
+            )
+        assert resp.status_code == 422
+        logged = " ".join(r.getMessage() for r in caplog.records if "chat turn save rejected" in r.getMessage())
+        assert "messages.0.context" in logged
+        assert "secret words" not in logged and "not a number" not in logged
+
+
 # ---------------------------------------------------------------------------
 # CSRF bootstrap: anonymous visitors get the double-submit cookie on /me
 # (without it, anon POST /chat is blocked by CSRFMiddleware in production)

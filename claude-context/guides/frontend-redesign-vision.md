@@ -329,5 +329,7 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 6. **Phases 4–6 done** (the Profile in parts, the one map in the Cities: Skylines look, every Profile tab and
    Discovery; Items 89–104). **Phase 7 (data tracks) in progress:** LiDAR heights measured (Item 105), M6 3D done
    (Item 106); next M4 capacity, then M5 land in use. The runbook keeps the live status.
+7. **Phase 8 done (2026-11-12, Items 113–117):** the full chat page, the landing and the signed-in home. Next:
+   Phase 9, the commercial epics (quotas, billing and entitlements, identity, Saved), each with its own plan.
 
 Update this brief when a decision changes; the design pages hold the detail.

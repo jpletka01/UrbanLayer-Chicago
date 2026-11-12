@@ -24,9 +24,11 @@ interface Props {
   activities?: ActivityItem[];
   /** Rendered under a completed assistant bubble (per-message context chips). */
   footer?: ReactNode;
+  /** The page draws its own progress (the new UI's chat steps, Phase 8): no thinking trace, no activity line. */
+  hideThinking?: boolean;
 }
 
-export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [], isSelected, onSelect, activities, footer }: Props) {
+export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [], isSelected, onSelect, activities, footer, hideThinking = false }: Props) {
   const { t } = useTranslation("common");
   const isUser = message.role === "user";
   const [hovered, setHovered] = useState(false);
@@ -255,7 +257,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              {streaming && !displayedContent && (
+              {streaming && !displayedContent && !hideThinking && (
                 <ThinkingTrace collapsed={false} />
               )}
               {displayedContent ? (
@@ -273,7 +275,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
           </div>
         </div>
       </div>
-      {streaming && activities && activities.length > 0 && (
+      {streaming && !hideThinking && activities && activities.length > 0 && (
         <ActivityStatus activities={activities} visible={!displayedContent} />
       )}
       {!streaming && footer}

@@ -16,14 +16,15 @@ interface Props {
   onAskAgain?: () => void;
 }
 
-export function AnsweredOnNote({ createdAt, note, profileHref, onAskAgain }: Props) {
+export function AnsweredOnNote({ createdAt, note, profileHref, onAskAgain, inset = true }: Props & { /** Indented under the old bubble's avatar; the new chat has none. */ inset?: boolean }) {
+  const pad = inset ? "mt-2 pl-9" : "";
   const { t } = useTranslation("chat");
   const date = formatDate(new Date(createdAt).toISOString());
   const answered = t("sinceThen.answeredOn", { date });
 
   if (note?.status === "changes") {
     return (
-      <div className="mt-2 pl-9" data-testid="since-then">
+      <div className={pad} data-testid="since-then">
         <p className="text-caption text-text-muted">{answered}</p>
         <div className="mt-1.5 rounded-lg border border-state-warning/40 bg-state-warning/10 px-3 py-2" data-testid="since-then-changes">
           <p className="text-caption font-medium text-text-primary">{t("sinceThen.heading", { date })}</p>
@@ -72,7 +73,7 @@ export function AnsweredOnNote({ createdAt, note, profileHref, onAskAgain }: Pro
     else if (note.status === "unavailable") tail = t("sinceThen.unavailable");
   }
   return (
-    <p className="mt-2 pl-9 text-caption text-text-muted" data-testid="since-then">
+    <p className={`${pad} text-caption text-text-muted`} data-testid="since-then">
       {answered}
       {tail && <> · {tail}</>}
       {note?.reconstructed && tail && <> · {t("sinceThen.rebuilt")}</>}

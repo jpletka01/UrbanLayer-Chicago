@@ -11,7 +11,7 @@
 
 export type Readiness = "ready" | "old" | "hidden";
 
-export type NavIcon = "search" | "discovery" | "saved" | "chat";
+export type NavIcon = "home" | "search" | "discovery" | "saved" | "chat";
 
 export interface ReadinessEntry {
   id: string;
@@ -25,14 +25,17 @@ export interface ReadinessEntry {
 }
 
 export const READINESS: readonly ReadinessEntry[] = [
+  // "/" is the landing for visitors and the home for signed-in visitors (Phase 8); its chat doors go to /chat.
+  { id: "home", path: "/", status: "ready", analytics: "next_home",
+    nav: { labelKey: "nav.home", icon: "home", to: "/" } },
   { id: "profile", path: "/scorecard", status: "ready", analytics: "next_profile",
     nav: { labelKey: "nav.search", icon: "search", to: "/scorecard" } },
   { id: "discovery", path: "/discovery", status: "ready", analytics: "next_discovery",
     nav: { labelKey: "nav.discovery", icon: "discovery", to: "/discovery" } },
   { id: "saved", path: "/saved", status: "hidden", analytics: "next_saved",
     nav: { labelKey: "nav.saved", icon: "saved", to: "/saved" } },
-  { id: "chat", path: "/", status: "old", analytics: "chat",
-    nav: { labelKey: "nav.chat", icon: "chat", to: "/?ask=1" } },
+  { id: "chat", path: "/chat", status: "ready", analytics: "next_chat",
+    nav: { labelKey: "nav.chat", icon: "chat", to: "/chat" } },
 ];
 
 export function readinessOf(id: string): ReadinessEntry | undefined {

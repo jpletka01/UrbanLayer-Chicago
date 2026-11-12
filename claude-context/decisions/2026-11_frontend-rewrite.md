@@ -1519,3 +1519,44 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - whether CMAP and Overpass answer from the prod server (prod access was not available to this session). The likely path is a fetch on the Mac and an installed copy, as for FEMA and the County's LiDAR.
 
 *Revisit if:* the panel's precision for a source is under 90%, CMAP publishes a newer inventory, or the licensing review clears OSM.
+
+## Item 113: Phase 8, the full chat page on the shared chat path (2026-11-12)
+
+**Decision.** The new UI's chat lives at `/chat` and `/c/:id` (`ui-next/chat/ChatNextPage.tsx`) and runs on the same conversation logic as today's chat, moved out of `App.tsx` into `lib/useChatSession.ts` (load `/c/:id` and shared links, store turns, create the conversation on the first send, the `?q` / `?pin` / `?handoff` / `?ask` doors, New chat, the sign-in moment). Both UIs call the hook; nothing is forked. `VersionedRoute`'s new `door` prop sends a chat door that lands on `/` to `/chat` with its parameters.
+
+- **Thinking, not a spinner:** `ThinkingSteps` names the steps as they happen (shimmer text, one step every 2.4 s at most), then folds to one line, "Checked N sources · S s".
+- **A turn that fails to save is saved without its maps** (`lib/history.ts`: on a 422, retry text + map-only). The owner lost one turn on 2026-11-12 and it could not be reproduced. The backend now logs a rejected save's field paths and types, never values (`RequestValidationError` handler for `PUT …/messages`).
+- **A chat that fails to load stops loading** and says so (`useChatSession`: a network error used to leave the outline forever; shared links too).
+- **Alternatives:** a copy of App's state machine for the new page (rejected: two chats to keep correct); a new backend chat endpoint (not needed; the SSE contract is unchanged).
+- **Evidence:** 5 model turns on the local stack, about $0.25 of the owner's $1 (Item 83), logged in the session notes. The owner's localhost review on 2026-11-12.
+- **Revisit if** the old UI's chat is deleted (Phase 10): the hook then has one caller.
+
+## Item 114: Phase 8, the landing and the signed-in home at `/` (2026-11-12)
+
+**Decision.** `/` shows the landing to a visitor who isn't signed in and the home to one who is (`ui-next/home/RootNextPage.tsx`; `/?landing=1` shows the landing to anyone, linked from the panel's "About UrbanLayer"). Both follow wireframe v5, which the owner approved before build.
+
+- **Landing:** one address search in the hero over the drifting 3D block, then the Profile's figures counting up as they scroll in (units, floors and height filling, sales, rent and tax counting), a pulsing grid, dark mode.
+- **Home (B1):** search first; saved lots before recent ones; recent lots kept in this browser (`ui-next/home/lotMemory.ts`, at most 6, newest first), with "Clear all" and a bookmark on each (filled when saved; clicking a saved one unsaves it), no per-lot remove; then recent chats.
+- **Alternatives:** recent lots on the server (waits for Saved, Phase 9); a per-lot remove (the owner preferred bookmark + Clear all).
+- **Revisit if** Saved lands in Phase 9: saved lots move to the account.
+
+## Item 115: Phase 8, chat evidence in a side panel: sources as what they are, and a map that matches the question (2026-11-12)
+
+**Decision.** An answer's evidence opens in the right panel beside it (the owner chose a side panel over inline previews), with two tabs, Sources and Map, from the chips under the answer or any citation. On a phone it is a sheet.
+
+- **Sources (`EvidenceSources.tsx`, `evidenceModel.ts`, `recordModel.ts`):** one numbered list under three headings, each with its own number color: *Municipal code* (purple), *This lot* (green: the address match and the County's facts) and *Around the lot* (blue: the City's records). A code section opens on the passage the answer used, highlighted. A code table is cut to the district's row, with the whole table one click away. Records look like the Profile's: crime split violent/property with arrests as a percentage, construction as permit cards, 311 as bars, the lot's facts as tiles. Each record links to its official source (the Assessor's PIN page, the City dataset). Code the answer read but never cited says "Read, not cited".
+- **How the passage is found:** every sentence of the answer that cites the section (the reference list left out) is matched against the section's sentences. Shared numbers and district names weigh 3, other words weigh 1 and are matched on their first five letters ("reduction" meets "reduced"), and "RS-3" equals "RS3". The best sentence needs a score of 4 or it isn't highlighted. The owner found older answers bare; after this, all 5 cited sections in the 2 stored local answers with code are highlighted (uncited ones have nothing to match).
+  - *Alternative:* have the analyst name the passage in its answer. Rejected for now: it needs a prompt change and more tokens, and chat isn't changing in this phase.
+- **Map (`ChatMap.tsx`, `chatLens.ts`):** the Profile's own pieces (MapLibre, our tiles, the building pins and colors), with layer chips (Building nearby, Violent incidents, Zoning), hover labels, a card per point with Street View, and the ½-mile ring. What is on depends on the question: construction questions show new buildings, demolitions and renovations over $500k; safety questions show violent incidents of the last 30 days. Crime is off otherwise and never shown as squares (the owner read them as a bug). "Show on map" from a source turns its layer on and frames the ring. One map grows to full screen in place (no second map).
+- **Revisit if** chat answers start naming their passages, or a lens is added (incentives, sales, conditions are open questions to the owner).
+
+## Item 116: Phase 8 owner review, answers in the new UI and a chat list beside the panel (2026-11-12)
+
+**Decision.** The new chat renders answers itself (`ChatMessage.tsx`), not with today's `MessageBubble`: the question is a quiet bubble, the answer is plain text, and a citation is a chip whose number takes its source's color (the Sources colors). Hovering or focusing a citation shows a card with the highlighted passage; a click opens that source. Copy sits beside "Answered <date>".
+
+- **The chat list** (`ChatList.tsx`, `chatListModel.ts`) sits beside the main panel, which the chat page opens folded to its icons (`AppFrame secondary`). It holds New chat, a search over titles, and chats grouped Today / Yesterday / Previous 7 days / Previous 30 days / Older with the open one marked. Hiding it folds it to a strip in place, whose top button opens it again. The owner first found it "gone" when it hid completely. Hiding lasts for the tab (sessionStorage): every new visit on a wide screen opens it. On a phone it is a sheet from the top bar.
+- **Alternatives:** keep the panel's Chat folder only (the owner: three clicks to reach history when the panel is folded); remember "hidden" across visits (the owner wants it open by default).
+
+## Item 117: parcel and grid tiles carry their file's version (2026-11-12)
+
+**Decision.** `/api/map/info` returns a `version` (the file's modified time) for the parcel, grid and building tile files, and the client adds it as `?v=` to their tile URLs (`mapStyle.versionedTiles`; Discovery's grid and the 3D buildings use it). A rebuilt tile file therefore reaches browsers at once instead of after their cache expires. Test: `backend/tests/test_map_tiles.py`, `mapStyle.test.ts`.

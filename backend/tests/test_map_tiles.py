@@ -202,6 +202,22 @@ def test_tiles_404_when_not_installed_then_serve(client, tmp_path):
     assert info["zoning"] is None
 
 
+def test_parcel_and_grid_tiles_carry_their_file_version(client, tmp_path):
+    """Tiles are cached for a day, so a rebuilt file must change the tile URL (Item 112's stale parcel colors)."""
+    import os
+
+    pt = Point(LON, LAT)
+    for name, layer in (("parcels.mbtiles", "parcels"), ("parcel_grid.mbtiles", "grid")):
+        write_mbtiles(tmp_path / name, [Feature(layer, to_mercator(pt), {"pin10": "1"})], name=layer, minzoom=10,
+                      maxzoom=16, layer_order=[layer], fields={layer: {}}, extra_meta={})
+        os.utime(tmp_path / name, (1_800_000_000, 1_800_000_000))
+    info = client.get("/api/map/info").json()
+    assert info["parcels"]["version"] == "1800000000"
+    assert info["grid"]["version"] == "1800000000"
+    os.utime(tmp_path / "parcels.mbtiles", (1_800_000_100, 1_800_000_100))
+    assert client.get("/api/map/info").json()["parcels"]["version"] == "1800000100"
+
+
 # ---------------------------------------------------------------- full-precision outlines (Item 92)
 
 

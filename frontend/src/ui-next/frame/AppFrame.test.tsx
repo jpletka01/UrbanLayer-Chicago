@@ -25,11 +25,11 @@ beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 
 describe("AppFrame", () => {
-  it("shows Search, Discovery and Chat, never Saved, with the current page marked", async () => {
+  it("shows Home, Search, Discovery and Chat, never Saved, with the current page marked", async () => {
     const { container } = mount();
     const panel = screen.getAllByRole("navigation", { name: "Main menu" })[0];
     const links = within(panel).getAllByRole("link").map((a) => a.textContent);
-    expect(links).toEqual(["UrbanLayer", "Search", "Discovery"]);
+    expect(links).toEqual(["UrbanLayer", "Home", "Search", "Discovery", "About UrbanLayer"]);
     expect(within(panel).getByRole("button", { name: "Chat" }).getAttribute("aria-expanded")).toBe("false");
     expect(within(panel).queryByText("Saved")).toBeNull();
     expect(within(panel).getByRole("link", { name: "Search" }).getAttribute("aria-current")).toBe("page");
@@ -45,7 +45,7 @@ describe("AppFrame", () => {
     const folder = within(panel).getByTestId("chat-folder");
     const rows = within(folder).getAllByRole("listitem").map((li) => li.textContent);
     expect(rows).toEqual(["New chat", "Sign in to see past chats"]);
-    expect(within(folder).getByRole("link", { name: "New chat" }).getAttribute("href")).toBe("/?ask=1");
+    expect(within(folder).getByRole("link", { name: "New chat" }).getAttribute("href")).toBe("/chat");
   });
 
   it("collapses to icons that keep their names, and remembers it", () => {

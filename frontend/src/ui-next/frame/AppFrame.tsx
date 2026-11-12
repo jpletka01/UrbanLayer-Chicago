@@ -20,6 +20,7 @@ export function AppFrame({
   drawer,
   bar,
   fill = false,
+  secondary,
   children,
 }: {
   /** The breadcrumb, first to last; the last one is the current page. */
@@ -33,54 +34,39 @@ export function AppFrame({
   bar?: ReactNode;
   /** The page fills the screen below the top bar (Discovery's map): the bar may grow to a second row. */
   fill?: boolean;
+  /** A page's own sidebar beside the main panel (the chat's list, owner review 2026-11-12). When the page has one, the
+      main panel opens collapsed to its icons, and expanding it there is not remembered for other pages. */
+  secondary?: ReactNode | null;
   children: ReactNode;
 }) {
   const { t } = useTranslation("next");
-  const [collapsed, setCollapsed] = useState(readCollapsed);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const ownSidebar = secondary !== undefined;
+  const [collapsed, setCollapsed] = useState(() => ownSidebar || readCollapsed());
   const toggle = () => {
     setCollapsed((c) => {
-      try { localStorage.setItem(COLLAPSE_KEY, c ? "open" : "collapsed"); } catch { /* per-viewer convenience only */ }
+      if (!ownSidebar) {
+        try { localStorage.setItem(COLLAPSE_KEY, c ? "open" : "collapsed"); } catch { /* per-viewer convenience only */ }
+      }
       return !c;
     });
   };
 
   return (
     <div
-      className={`ui-next flex bg-nx-page font-sans text-body text-nx-ink ${fill ? "h-dvh overflow-hidden" : "min-h-dvh"}`}
+      className={`ui-next flex bg-nx-page font-sans text-body text-nx-ink ${fill ? "h-dvh overflow-clip" : "min-h-dvh"}`}
       data-ui-version="next"
     >
       <aside className="sticky top-0 hidden h-dvh shrink-0 border-r border-nx-ink/10 lg:block">
         <SidePanel collapsed={collapsed} onToggleCollapsed={toggle} />
       </aside>
+      {secondary && (
+        <div className="sticky top-0 hidden h-dvh shrink-0 border-r border-nx-ink/10 lg:block">{secondary}</div>
+      )}
 
       <div className="flex min-w-0 flex-1">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className={`flex items-center gap-2 border-b border-nx-ink/10 px-4 sm:px-7 ${bar ? "min-h-[68px] py-2" : "h-[68px]"}`}>
-            <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
-              <Dialog.Trigger
-                className="-ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 lg:hidden touch-icon"
-                aria-label={t("frame.openMenu")}
-              >
-                <Menu aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
-              </Dialog.Trigger>
-              <Dialog.Portal>
-                <div className="ui-next">
-                  <Dialog.Overlay className="fixed inset-0 z-[65] bg-black/30" />
-                  <Dialog.Content className="fixed inset-y-0 left-0 z-[66] bg-nx-page text-body text-nx-ink shadow-[0_8px_32px_rgb(0_0_0/0.2)] focus:outline-none">
-                    <Dialog.Title className="sr-only">{t("frame.panel")}</Dialog.Title>
-                    <Dialog.Description className="sr-only">{t("frame.panelHint")}</Dialog.Description>
-                    <Dialog.Close
-                      className="absolute right-2 top-5 grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon"
-                      aria-label={t("frame.closeMenu")}
-                    >
-                      <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-                    </Dialog.Close>
-                    <SidePanel onNavigate={() => setMenuOpen(false)} />
-                  </Dialog.Content>
-                </div>
-              </Dialog.Portal>
-            </Dialog.Root>
+            <PanelMenuButton className="lg:hidden" />
 
             {bar && <div className="min-w-0 flex-1">{bar}</div>}
             <nav aria-label={t("frame.breadcrumb")} className={bar ? "sr-only" : "min-w-0 flex-1"}>
@@ -104,6 +90,39 @@ export function AppFrame({
         {drawer}
       </div>
     </div>
+  );
+}
+
+/** The menu button that opens the side panel as a sheet from the left: the frame's top bar below `lg`, and the
+    landing page's top bar at every width (brief: "the same panel opens from a menu button on the landing page"). */
+export function PanelMenuButton({ className = "" }: { className?: string }) {
+  const { t } = useTranslation("next");
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger
+        className={`-ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon ${className}`}
+        aria-label={t("frame.openMenu")}
+      >
+        <Menu aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <div className="ui-next">
+          <Dialog.Overlay className="fixed inset-0 z-[65] bg-black/30" />
+          <Dialog.Content className="fixed inset-y-0 left-0 z-[66] bg-nx-page text-body text-nx-ink shadow-[0_8px_32px_rgb(0_0_0/0.2)] focus:outline-none">
+            <Dialog.Title className="sr-only">{t("frame.panel")}</Dialog.Title>
+            <Dialog.Description className="sr-only">{t("frame.panelHint")}</Dialog.Description>
+            <Dialog.Close
+              className="absolute right-2 top-5 grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon"
+              aria-label={t("frame.closeMenu")}
+            >
+              <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+            </Dialog.Close>
+            <SidePanel onNavigate={() => setOpen(false)} />
+          </Dialog.Content>
+        </div>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
