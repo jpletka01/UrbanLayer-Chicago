@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MapData, Message } from "../../lib/types";
-import { chatTitle, lotHref, mapBounds, mapPointCount, mapPoints, pointCounts, previewsFor } from "./chatModel";
+import { chatTitle, lotHref, previewsFor } from "./chatModel";
 
 const MAP: MapData = {
   crimes: [{ latitude: 41.91, longitude: -87.68, primary_type: "THEFT", date: "2026-10-01", description: "", arrest: false }],
@@ -18,8 +18,8 @@ const answer = (over: Partial<Message> = {}): Message => ({
 });
 
 describe("answer previews", () => {
-  it("offers the lot, the map, the data and the sources in that order", () => {
-    expect(previewsFor(answer()).map((p) => p.kind)).toEqual(["lot", "map", "data", "sources"]);
+  it("offers the lot, the map and the sources (code and records) in that order", () => {
+    expect(previewsFor(answer()).map((p) => p.kind)).toEqual(["lot", "map", "sources"]);
   });
 
   it("links the lot by PIN when the answer resolved one, else by address", () => {
@@ -31,17 +31,6 @@ describe("answer previews", () => {
     expect(previewsFor({ role: "user", content: "Hi" })).toEqual([]);
     expect(previewsFor(answer({ content: "" }))).toEqual([]);
     expect(previewsFor({ role: "assistant", content: "RT-4 allows 4 units." })).toEqual([]);
-  });
-
-  it("counts only points with a location", () => {
-    expect(mapPointCount(MAP)).toBe(2);
-    expect(pointCounts(MAP)).toEqual({ crime: 1, request: 1, permit: 0 });
-    expect(mapPoints(MAP).features).toHaveLength(2);
-  });
-
-  it("frames the address with its points", () => {
-    expect(mapBounds(MAP)).toEqual([[-87.69, 41.9], [-87.67, 41.92]]);
-    expect(mapBounds({ crimes: [], requests_311: [], building_permits: [], queried_address: null })).toBeNull();
   });
 });
 

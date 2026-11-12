@@ -23,6 +23,7 @@ export function RightDrawer({
   testId,
   size = "normal",
   phoneSheet = false,
+  preferTall = false,
   children,
 }: {
   title: ReactNode;
@@ -40,13 +41,17 @@ export function RightDrawer({
   size?: "normal" | "wide";
   /** On a phone: a sheet over the lower half, not the whole screen. */
   phoneSheet?: boolean;
+  /** The phone sheet's height until its handle is used: taller for a map (about 70% of the screen). */
+  preferTall?: boolean;
   children: ReactNode;
 }) {
   const { t } = useTranslation("next");
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const [entered, setEntered] = useState(instant);
-  const [tall, setTall] = useState(false);
+  const [tallChoice, setTall] = useState<"half" | "tall" | "full" | null>(null);
+  const sheet = tallChoice ?? (preferTall ? "tall" : "half");
+  const tall = sheet === "full";
   useEffect(() => {
     if (entered) return;
     const id = requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
@@ -72,12 +77,12 @@ export function RightDrawer({
         aria-labelledby={titleId}
         data-testid={testId}
         onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } }}
-        className={`fixed z-50 flex flex-col gap-4 bg-nx-page p-5 transition-[transform,opacity,height] duration-200 ease-out motion-reduce:transition-none lg:static lg:z-auto lg:h-full lg:shrink-0 lg:rounded-none lg:border-l lg:border-nx-ink/10 lg:shadow-none lg:transform-none ${size === "wide" ? "lg:w-[clamp(400px,42vw,680px)]" : "lg:w-[clamp(360px,33vw,480px)]"} ${phoneSheet ? `inset-x-0 bottom-0 rounded-t-3xl pt-2 shadow-[0_-8px_32px_rgb(0_0_0/0.18)] ${tall ? "h-[92dvh]" : "h-[55dvh]"}` : "inset-0"} ${shown ? "transform-none opacity-100" : "translate-y-full opacity-0"}`}
+        className={`fixed z-50 flex flex-col gap-4 bg-nx-page p-5 transition-[transform,opacity,height] duration-200 ease-out motion-reduce:transition-none lg:static lg:z-auto lg:h-full lg:shrink-0 lg:rounded-none lg:border-l lg:border-nx-ink/10 lg:shadow-none lg:transform-none ${size === "wide" ? "lg:w-[clamp(400px,42vw,680px)]" : "lg:w-[clamp(360px,33vw,480px)]"} ${phoneSheet ? `inset-x-0 bottom-0 rounded-t-3xl pt-2 shadow-[0_-8px_32px_rgb(0_0_0/0.18)] ${sheet === "full" ? "h-[92dvh]" : sheet === "tall" ? "h-[72dvh]" : "h-[55dvh]"}` : "inset-0"} ${shown ? "transform-none opacity-100" : "translate-y-full opacity-0"}`}
       >
         {phoneSheet && (
           <button
             type="button"
-            onClick={() => setTall((v) => !v)}
+            onClick={() => setTall(tall ? "half" : "full")}
             aria-expanded={tall}
             aria-label={tall ? t("drawer.shorter") : t("drawer.taller")}
             className="-mb-2 flex h-6 items-center justify-center self-stretch rounded-lg lg:hidden"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MapData, RetrievalPlan } from "../../lib/types";
-import { HALF_MILE_M, buildKind, chooseLens, crimeKind, distanceM, lensView, permitUnits, squareCounts } from "./chatLens";
+import { HALF_MILE_M, buildKind, chooseLens, crimeKind, distanceM, lensView, permitUnits } from "./chatLens";
 
 const LOT = { latitude: 41.9278, longitude: -87.7105, label: "2541 N Spaulding Ave" };
 const NOW = Date.parse("2026-11-12T12:00:00Z");
@@ -44,7 +44,6 @@ describe("the safety lens", () => {
     expect(v.radiusM).toBe(HALF_MILE_M);
     expect(v.counts).toMatchObject({ shown: 2, inArea: 3, violent: 1, property: 1, recentNear: 1 });
     expect(v.pins.features).toHaveLength(1);
-    expect(v.squares!.features.reduce((n, f) => n + (f.properties as { n: number }).n, 0)).toBe(2);
   });
   it("shows no pins once there are too many to read", () => {
     const many = Array.from({ length: 60 }, () => ({ latitude: near(0.0005), longitude: LOT.longitude, primary_type: "THEFT", date: "2026-11-10", description: "", arrest: false }));
@@ -67,11 +66,8 @@ describe("the construction lens", () => {
 });
 
 describe("helpers", () => {
-  it("measures distance and buckets points into squares", () => {
+  it("measures distance", () => {
     expect(Math.round(distanceM(41.9, -87.7, 41.91, -87.7))).toBe(1112);
-    const sq = squareCounts([{ latitude: 41.9, longitude: -87.7 }, { latitude: 41.9001, longitude: -87.7001 }]);
-    expect(sq.features).toHaveLength(1);
-    expect((sq.features[0].properties as { n: number }).n).toBe(2);
   });
   it("sorts crimes the way the Profile does", () => {
     expect(crimeKind({ primary_type: "ROBBERY" })).toBe("violent");

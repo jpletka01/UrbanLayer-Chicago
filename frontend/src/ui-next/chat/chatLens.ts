@@ -1,9 +1,14 @@
 // What a chat answer's map shows, picked by the question (owner's review 2026-11-12; proposal "Chat maps by
 // question"). One map, several lenses. Raw pins are never the default: an answer about a lot shows the lot and its
-// rules, a safety question shows counts in small squares around the lot, a construction question shows only new
-// buildings, demolitions and big renovations, each within a radius of the asked-about address. Pure: the map draws
-// what these return.
+// rules, a safety question shows violent incidents near the lot, a construction question shows only new buildings,
+// demolitions and big renovations, each within a radius of the asked-about address (the block-sized count squares
+// were dropped after the owner's review read them as a bug). Pure: the map and the sources draw what these return.
 import type { MapCrime, MapData, MapPermit, Message } from "../../lib/types";
+import { PIN_COLORS } from "../map/pins";
+
+/** Record colors: building as the Profile's pins (new = Ballet Slipper, renovation = Pistachio); crime in the sources'
+    bars, violent vs property (Coastal); violent incidents on the map as dark red dots, apart from the pins. */
+export const LENS_COLORS = { new: PIN_COLORS.build, renovation: PIN_COLORS.reno, demolition: PIN_COLORS.reno, violent: "#FE9179", property: "#72B0AB", other: "#B89D47", incident: "#B42828" } as const;
 
 export type Lens = "lot" | "safety" | "construction" | "area";
 
@@ -48,33 +53,6 @@ export function circle(lat: number, lon: number, radiusM: number, steps = 64): G
   return { type: "Polygon", coordinates: [coords] };
 }
 
-/** Squares about a block wide (≈ 125 m), each with how many points fall in it. */
-export function squareCounts(points: Array<{ latitude: number; longitude: number }>, sizeM = 125): GeoJSON.FeatureCollection<GeoJSON.Polygon> {
-  if (points.length === 0) return { type: "FeatureCollection", features: [] };
-  const lat0 = points[0].latitude;
-  const dLat = sizeM / 111_320, dLon = sizeM / (111_320 * Math.cos((lat0 * Math.PI) / 180));
-  const cells = new Map<string, { i: number; j: number; n: number }>();
-  for (const p of points) {
-    const i = Math.floor(p.longitude / dLon), j = Math.floor(p.latitude / dLat);
-    const k = `${i}:${j}`;
-    const c = cells.get(k) ?? { i, j, n: 0 };
-    c.n += 1;
-    cells.set(k, c);
-  }
-  const max = Math.max(...[...cells.values()].map((c) => c.n));
-  return {
-    type: "FeatureCollection",
-    features: [...cells.values()].map(({ i, j, n }) => {
-      const [w, s] = [i * dLon, j * dLat];
-      return {
-        type: "Feature",
-        properties: { n, share: n / max },
-        geometry: { type: "Polygon", coordinates: [[[w, s], [w + dLon, s], [w + dLon, s + dLat], [w, s + dLat], [w, s]]] },
-      };
-    }),
-  };
-}
-
 // The same split as the Profile's crime figures (backend main.py CRIME_VIOLENT / CRIME_PROPERTY).
 const VIOLENT = new Set(["HOMICIDE", "CRIMINAL SEXUAL ASSAULT", "CRIM SEXUAL ASSAULT", "ROBBERY", "ASSAULT", "BATTERY", "KIDNAPPING", "HUMAN TRAFFICKING"]);
 const PROPERTY = new Set(["BURGLARY", "THEFT", "MOTOR VEHICLE THEFT", "ARSON", "CRIMINAL DAMAGE"]);
@@ -108,8 +86,6 @@ export interface LensView {
   center: { lat: number; lon: number; label: string } | null;
   ring: GeoJSON.Polygon | null;
   radiusM: number | null;
-  /** Counts by square (safety, area). */
-  squares: GeoJSON.FeatureCollection<GeoJSON.Polygon> | null;
   /** The few points shown one by one. */
   pins: GeoJSON.FeatureCollection<GeoJSON.Point>;
   /** Counts for the key. */
@@ -129,7 +105,7 @@ export function lensView(map: MapData, lens: Lens, now = Date.now()): LensView {
     !center || distanceM(center.lat, center.lon, p.latitude, p.longitude) <= r;
   const located = <T extends { latitude: number; longitude: number }>(xs: T[]) => xs.filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude));
   const empty: GeoJSON.FeatureCollection<GeoJSON.Point> = { type: "FeatureCollection", features: [] };
-  const base: Omit<LensView, "lens" | "counts"> = { center, ring: null, radiusM: null, squares: null, pins: empty, closest: [] };
+  const base: Omit<LensView, "lens" | "counts"> = { center, ring: null, radiusM: null, pins: empty, closest: [] };
 
   if (lens === "lot") {
     return { ...base, lens, counts: { shown: 0, inArea: 0 } };
@@ -151,7 +127,6 @@ export function lensView(map: MapData, lens: Lens, now = Date.now()): LensView {
       lens,
       ring: center && radius ? circle(center.lat, center.lon, radius) : null,
       radiusM: radius,
-      squares: squareCounts(within),
       pins,
       counts: {
         shown: within.length,

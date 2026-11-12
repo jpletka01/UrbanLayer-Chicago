@@ -46,7 +46,7 @@ export function AppFrame({
 
   return (
     <div
-      className={`ui-next flex bg-nx-page font-sans text-body text-nx-ink ${fill ? "h-dvh overflow-hidden" : "min-h-dvh"}`}
+      className={`ui-next flex bg-nx-page font-sans text-body text-nx-ink ${fill ? "h-dvh overflow-clip" : "min-h-dvh"}`}
       data-ui-version="next"
     >
       <aside className="sticky top-0 hidden h-dvh shrink-0 border-r border-nx-ink/10 lg:block">

@@ -16,7 +16,6 @@ vi.mock("../../contexts/ThemeContext", () => ({
   useThemeContext: () => ({ theme: "system", resolvedTheme: "light", setTheme: vi.fn() }),
 }));
 vi.mock("./ChatMap", () => ({ ChatMap: () => <div data-testid="chat-map" /> }));
-vi.mock("../../components/sidebar/DataView", () => ({ DataView: () => <div data-testid="data-cards" /> }));
 vi.mock("../../components/MessageBubble", () => ({
   MessageBubble: ({ message, footer, onCitationClick, onDataClick }: { message: Message; footer?: React.ReactNode; onCitationClick?: (n: number) => void; onDataClick?: (s: string) => void }) => (
     <div>
@@ -79,7 +78,8 @@ describe("the full chat page", () => {
     expect(within(row).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/scorecard?pin=13254020120000&address=2611+N+Sawyer+Ave"]);
     expect(screen.getByTestId("preview-lot").getAttribute("target")).toBe("_blank");
     expect(screen.getByTestId("preview-map").textContent).toContain("the lot's zoning");
-    expect(screen.getByTestId("preview-sources").textContent).toContain("2");
+    // Code (2) and the records the answer carries (the lot, its facts, crime): one numbered list.
+    expect(screen.getByTestId("preview-sources").textContent).toContain("5");
     expect(await axeViolations(container)).toEqual([]);
   });
 
@@ -93,7 +93,7 @@ describe("the full chat page", () => {
     expect(screen.getByText("Probably yes.")).toBeTruthy();
     expect(screen.getByTestId("chat-box")).toBeTruthy();
     // The panel's tabs are only those this answer has; the chip reads as selected.
-    expect(within(panel).getAllByRole("tab").map((t) => t.textContent)).toEqual(["Sources", "Data", "Map"]);
+    expect(within(panel).getAllByRole("tab").map((t) => t.textContent)).toEqual(["Sources · 5", "Map"]);
     expect(screen.getByTestId("preview-map").getAttribute("aria-pressed")).toBe("true");
     expect(await axeViolations(container)).toEqual([]);
   });
@@ -120,15 +120,12 @@ describe("the full chat page", () => {
     expect(open[0].textContent).toContain("17-2-0309");
   });
 
-  it("opens the answer's records from a data citation and from the Data preview", () => {
+  it("opens a data citation's record in the Sources list", () => {
     session.messages = [{ role: "user", content: "Q" }, ANSWER];
     mount();
     fireEvent.click(screen.getByText("[data:crime]"));
-    expect(within(screen.getByTestId("chat-evidence")).getByTestId("data-cards")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("evidence-tab-sources"));
-    expect(within(screen.getByTestId("chat-evidence")).queryByTestId("data-cards")).toBeNull();
-    fireEvent.click(screen.getByTestId("preview-data"));
-    expect(within(screen.getByTestId("chat-evidence")).getByTestId("data-cards")).toBeTruthy();
+    const row = within(screen.getByTestId("chat-evidence")).getByTestId("source-crime");
+    expect(within(row).getAllByRole("button")[0].getAttribute("aria-expanded")).toBe("true");
   });
 
   it("names a failed step and offers Try again", () => {

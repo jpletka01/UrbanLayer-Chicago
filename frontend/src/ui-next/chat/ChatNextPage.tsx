@@ -7,8 +7,7 @@
 // storing, limits and errors are shared, not forked.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FileDown, Map as MapIcon, Maximize2, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, LogIn, X, Table2 } from "lucide-react";
-import { DataView } from "../../components/sidebar/DataView";
+import { FileDown, Map as MapIcon, Maximize2, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, LogIn, X } from "lucide-react";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
 import { RightDrawer } from "../ui/RightDrawer";
 import { FrameOutline } from "../frame/FrameOutline";
@@ -24,12 +23,14 @@ import type { Message } from "../../lib/types";
 import { STROKE } from "../icons";
 import { Composer } from "./Composer";
 import { ChatMap } from "./ChatMap";
-import { SourcesList } from "./SourcesList";
+import { EvidenceSources, type MapLayer } from "./EvidenceSources";
+import { numberForData, sourcesFor } from "./evidenceModel";
 import { ThinkingSteps } from "./ThinkingSteps";
 import { chatTitle, evidenceTabs, previewsFor, type EvidenceTab, type Preview } from "./chatModel";
 
-/** The evidence panel: which answer, which tab, and the source to open first. */
-interface Panel { message: number; tab: EvidenceTab; source: number | null }
+/** The evidence panel: which answer, which tab, the source (its number) to open first, and a map layer a source asked
+    to show ("Show on map"). */
+interface Panel { message: number; tab: EvidenceTab; source: number | null; show?: MapLayer }
 
 export default function ChatNextPage() {
   const { t } = useTranslation(["next", "chat", "common"]);
@@ -131,6 +132,7 @@ export default function ChatNextPage() {
       testId="chat-evidence"
       size="wide"
       phoneSheet
+      preferTall={panel.tab === "map"}
       closing={closing}
       onClose={closeEvidence}
       closeLabel={t("next:chat.evidence.close")}
@@ -144,7 +146,9 @@ export default function ChatNextPage() {
         message={panelMessage}
         tab={panel.tab}
         source={panel.source}
-        onTab={(tab) => setPanel({ ...panel, tab, source: null })}
+        show={panel.show}
+        onTab={(tab) => setPanel({ ...panel, tab, source: null, show: undefined })}
+        onShowOnMap={(layer) => setPanel({ ...panel, tab: "map", source: null, show: layer })}
       />
     </RightDrawer>
   ) : null;
@@ -197,8 +201,8 @@ export default function ChatNextPage() {
                       streaming={streamingThis}
                       hideThinking
                       codeChunks={ctx?.code_chunks ?? []}
-                      onCitationClick={(n) => { if ((m.context?.code_chunks?.length ?? 0) > 0) openEvidence({ message: i, tab: "sources", source: Math.max(0, n - 1) }); }}
-                      onDataClick={() => { if (evidenceTabs(m).includes("data")) openEvidence({ message: i, tab: "data", source: null }); }}
+                      onCitationClick={(n) => { if ((m.context?.code_chunks?.length ?? 0) >= n) openEvidence({ message: i, tab: "sources", source: n }); }}
+                      onDataClick={(ds) => { const n = numberForData(sourcesFor(m), ds); if (n != null) openEvidence({ message: i, tab: "sources", source: n }); }}
                       footer={m.role === "assistant" && !streamingThis ? (
                         <>
                           {previews.length > 0 && <PreviewRow previews={previews} onOpen={(tab) => openEvidence({ message: i, tab, source: null })} active={panel?.message === i ? panel.tab : null} />}
@@ -281,11 +285,6 @@ function PreviewRow({ previews, onOpen, active }: { previews: Preview[]; onOpen:
           <MapIcon aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
           <span><span className="font-medium">{t("chat.preview.map")}</span> · {t(`chat.lens.chip.${p.lens}${p.near || p.lens === "lot" || p.lens === "area" ? "" : "Area"}`, { count: p.count })}</span>
         </button>
-      ) : p.kind === "data" ? (
-        <button key="data" type="button" onClick={() => onOpen("data")} aria-pressed={active === "data"} className={chipFor("data")} data-testid="preview-data">
-          <Table2 aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-          <span><span className="font-medium">{t("chat.preview.data")}</span> · {p.count}</span>
-        </button>
       ) : (
         <button key="sources" type="button" onClick={() => onOpen("sources")} aria-pressed={active === "sources"} className={chipFor("sources")} data-testid="preview-sources">
           <BookText aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
@@ -297,8 +296,8 @@ function PreviewRow({ previews, onOpen, active }: { previews: Preview[]; onOpen:
 }
 
 /** The evidence for one answer: its tabs (only those it has), then the chosen one filling the panel. */
-function EvidencePanel({ message, tab, source, onTab }: {
-  message: Message; tab: EvidenceTab; source: number | null; onTab: (t: EvidenceTab) => void;
+function EvidencePanel({ message, tab, source, show, onTab, onShowOnMap }: {
+  message: Message; tab: EvidenceTab; source: number | null; show?: MapLayer; onTab: (t: EvidenceTab) => void; onShowOnMap: (l: MapLayer) => void;
 }) {
   const { t } = useTranslation("next");
   // Full screen is the same map grown to cover the screen (as on the Profile, owner's review 2026-11-12): no second
@@ -306,7 +305,7 @@ function EvidencePanel({ message, tab, source, onTab }: {
   const [focused, setFocused] = useState(false);
   const tabs = evidenceTabs(message);
   const shown: EvidenceTab = tabs.includes(tab) ? tab : (tabs[0] ?? tab);
-  const label: Record<EvidenceTab, string> = { sources: t("chat.preview.sources"), data: t("chat.preview.data"), map: t("chat.preview.map") };
+  const label: Record<EvidenceTab, string> = { sources: `${t("chat.preview.sources")} · ${sourcesFor(message).length}`, map: t("chat.preview.map") };
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex items-center gap-1 border-b border-nx-ink/10">
@@ -336,7 +335,7 @@ function EvidencePanel({ message, tab, source, onTab }: {
             className={focused ? "fixed inset-0 z-[70] bg-nx-page p-3 sm:p-6" : "relative h-full"}
             data-testid={focused ? "chat-fullmap" : undefined}
           >
-            <ChatMap data={message.mapData} plan={message.plan} />
+            <ChatMap data={message.mapData} plan={message.plan} show={show} />
             <button
               type="button"
               onClick={() => setFocused((f) => !f)}
@@ -350,8 +349,7 @@ function EvidencePanel({ message, tab, source, onTab }: {
             </button>
           </div>
         )
-          : shown === "data" ? <div data-testid="chat-data"><DataView context={message.context ?? null} loading={false} mapData={message.mapData ?? null} /></div>
-          : <SourcesList chunks={message.context?.code_chunks ?? []} openIndex={source} />}
+          : <EvidenceSources message={message} openN={source} onShowOnMap={onShowOnMap} />}
       </div>
     </div>
   );
