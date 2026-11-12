@@ -263,8 +263,11 @@ async def test_a_bad_or_expired_lookup_is_a_409(monkeypatch):
     with _sources():
         ov = await profile_parts.overview(ADDRESS, None, None, None)
     body, mac = ov["lookup"].split(".")
+    # A signature that always differs from the real one: "AA" alone was the real ending about 1 time in 4,096, and the
+    # "tampered" token then passed (it failed CI on main once, 2026-11-12).
+    tampered = mac[:-2] + ("AB" if mac.endswith("AA") else "AA")
     with pytest.raises(main.HTTPException) as e:
-        await profile_parts.part("history", body + "." + mac[:-2] + "AA", None)
+        await profile_parts.part("history", body + "." + tampered, None)
     assert e.value.status_code == 409
     claims = profile_parts.read_lookup(ov["lookup"])
     claims["exp"] = 0
