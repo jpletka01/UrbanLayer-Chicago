@@ -1449,7 +1449,7 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
   - the Profile line;
   - OSM-only parking (licensing review).
 
-**Built: land use as a mode of the one map (2026-11-12, the owner's "Map mode first"; awaiting his review).**
+**Built: land use as a mode of the one map (2026-11-12, the owner's "Map mode first"; approved on localhost after three phone passes, "Looks right").**
 - *Mode:* in the new UI, "Color lots by → Land use" now shows land IN use, not the tax class.
   - The old mode called every vacant-class lot "Vacant", even one with a house on it, and knew nothing about parking.
   - The lot tiles carry a new band `l` (`lot_facts.LAND_IN_USE`/`land_in_use`); the block grid takes the most common value.
