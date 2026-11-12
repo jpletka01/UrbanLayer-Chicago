@@ -5,7 +5,8 @@
 // (lib/useChatSession.ts): /c/:id, the doors from other pages, storing, limits and errors are shared, not forked.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FileDown, Map as MapIcon, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, LogIn, X } from "lucide-react";
+import { FileDown, Map as MapIcon, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, LogIn, X, Table2 } from "lucide-react";
+import { DataView } from "../../components/sidebar/DataView";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
 import { FrameOutline } from "../frame/FrameOutline";
 import { MessageBubble } from "../../components/MessageBubble";
@@ -21,10 +22,11 @@ import { STROKE } from "../icons";
 import { Composer } from "./Composer";
 import { ChatMap } from "./ChatMap";
 import { SourcesList } from "./SourcesList";
+import { ThinkingSteps } from "./ThinkingSteps";
 import { chatTitle, previewsFor, type Preview } from "./chatModel";
 
 /** The open preview: which answer, which kind, and the source to open first. */
-interface OpenPreview { message: number; kind: "map" | "sources"; source: number | null }
+interface OpenPreview { message: number; kind: "map" | "data" | "sources"; source: number | null }
 
 export default function ChatNextPage() {
   const { t } = useTranslation(["next", "chat", "common"]);
@@ -127,7 +129,9 @@ export default function ChatNextPage() {
               <h2 className="min-w-0 flex-1 truncate text-body font-medium">
                 {open.kind === "map"
                   ? t("next:chat.mapTitle", { place: openMessage.mapData?.queried_address?.label ?? openMessage.context?.community_area_name ?? "" })
-                  : t("next:chat.sourcesTitle", { count: openMessage.context?.code_chunks?.length ?? 0 })}
+                  : open.kind === "data"
+                    ? t("next:chat.dataTitle", { place: openMessage.context?.resolved_address ?? openMessage.context?.community_area_name ?? "" })
+                    : t("next:chat.sourcesTitle", { count: openMessage.context?.code_chunks?.length ?? 0 })}
               </h2>
               <button type="button" onClick={minimize} aria-label={t("next:chat.minimize")} title={t("next:chat.minimize")} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" data-testid="chat-minimize">
                 <Minimize2 aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
@@ -136,7 +140,10 @@ export default function ChatNextPage() {
             <div className="min-h-0 flex-1 overflow-y-auto">
               {open.kind === "map" && openMessage.mapData
                 ? <ChatMap data={openMessage.mapData} />
-                : <div className="mx-auto max-w-[760px]"><SourcesList chunks={openMessage.context?.code_chunks ?? []} openIndex={open.source} /></div>}
+                : open.kind === "data"
+                  // The records behind the answer, as today's chat shows them (its data cards), at reading width.
+                  ? <div className="mx-auto max-w-[760px]" data-testid="chat-data"><DataView context={openMessage.context ?? null} loading={false} mapData={openMessage.mapData ?? null} /></div>
+                  : <div className="mx-auto max-w-[760px]"><SourcesList chunks={openMessage.context?.code_chunks ?? []} openIndex={open.source} /></div>}
             </div>
           </section>
         ) : (
@@ -172,14 +179,20 @@ export default function ChatNextPage() {
                   const streamingThis = m.role === "assistant" && i === messages.length - 1 && streaming;
                   const ctx = streamingThis ? context : m.context;
                   const previews = streamingThis ? [] : previewsFor(m);
+                  // The steps belong to the answer of this visit's latest turn: live while it streams, then one line.
+                  // One element for both phases, so its clock runs from the question to the first words.
+                  const isLatest = m.role === "assistant" && i === messages.length - 1 && activities.length > 0;
+                  const waiting = streamingThis && !m.content;
                   return (
-                    <MessageBubble
-                      key={i}
+                    <div key={i} className="flex flex-col gap-2">
+                    {isLatest && <ThinkingSteps activities={activities} answering={!waiting} />}
+                    {!waiting && <MessageBubble
                       message={m}
                       streaming={streamingThis}
+                      hideThinking
                       codeChunks={ctx?.code_chunks ?? []}
-                      activities={streamingThis ? activities : undefined}
                       onCitationClick={(n) => { if ((m.context?.code_chunks?.length ?? 0) > 0) openPreview({ message: i, kind: "sources", source: Math.max(0, n - 1) }); }}
+                      onDataClick={() => { if (m.context) openPreview({ message: i, kind: "data", source: null }); }}
                       footer={m.role === "assistant" && !streamingThis ? (
                         <>
                           {previews.length > 0 && <PreviewRow previews={previews} onOpen={(kind) => openPreview({ message: i, kind, source: null })} />}
@@ -193,7 +206,8 @@ export default function ChatNextPage() {
                           )}
                         </>
                       ) : undefined}
-                    />
+                    />}
+                    </div>
                   );
                 })}
                 {errorMsg && (
@@ -241,7 +255,7 @@ export default function ChatNextPage() {
 }
 
 /** The small previews under an answer: each says what it is in two words. Only the lot leaves the page (new tab). */
-function PreviewRow({ previews, onOpen }: { previews: Preview[]; onOpen: (kind: "map" | "sources") => void }) {
+function PreviewRow({ previews, onOpen }: { previews: Preview[]; onOpen: (kind: "map" | "data" | "sources") => void }) {
   const { t } = useTranslation("next");
   const chip = "inline-flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-caption ring-1 ring-nx-ink/10 hover:bg-nx-ink/5 touch-target";
   return (
@@ -257,6 +271,11 @@ function PreviewRow({ previews, onOpen }: { previews: Preview[]; onOpen: (kind: 
         <button key="map" type="button" onClick={() => onOpen("map")} className={chip} data-testid="preview-map">
           <MapIcon aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
           <span><span className="font-medium">{t("chat.preview.map")}</span> · {t("chat.points", { count: p.points })}</span>
+        </button>
+      ) : p.kind === "data" ? (
+        <button key="data" type="button" onClick={() => onOpen("data")} className={chip} data-testid="preview-data">
+          <Table2 aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+          <span><span className="font-medium">{t("chat.preview.data")}</span> · {p.count}</span>
         </button>
       ) : (
         <button key="sources" type="button" onClick={() => onOpen("sources")} className={chip} data-testid="preview-sources">

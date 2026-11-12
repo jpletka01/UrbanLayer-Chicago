@@ -16,11 +16,13 @@ vi.mock("../../contexts/ThemeContext", () => ({
   useThemeContext: () => ({ theme: "system", resolvedTheme: "light", setTheme: vi.fn() }),
 }));
 vi.mock("./ChatMap", () => ({ ChatMap: () => <div data-testid="chat-map" /> }));
+vi.mock("../../components/sidebar/DataView", () => ({ DataView: () => <div data-testid="data-cards" /> }));
 vi.mock("../../components/MessageBubble", () => ({
-  MessageBubble: ({ message, footer, onCitationClick }: { message: Message; footer?: React.ReactNode; onCitationClick?: (n: number) => void }) => (
+  MessageBubble: ({ message, footer, onCitationClick, onDataClick }: { message: Message; footer?: React.ReactNode; onCitationClick?: (n: number) => void; onDataClick?: (s: string) => void }) => (
     <div>
       <p>{message.content}</p>
       {message.role === "assistant" && <button type="button" onClick={() => onCitationClick?.(2)}>[2]</button>}
+      {message.role === "assistant" && <button type="button" onClick={() => onDataClick?.("crime")}>[data:crime]</button>}
       {footer}
     </div>
   ),
@@ -100,6 +102,16 @@ describe("the full chat page", () => {
     const open = within(list).getAllByRole("button").filter((b) => b.getAttribute("aria-expanded") === "true");
     expect(open).toHaveLength(1);
     expect(open[0].textContent).toContain("17-2-0309");
+  });
+
+  it("opens the answer's records from a data citation and from the Data preview", () => {
+    session.messages = [{ role: "user", content: "Q" }, ANSWER];
+    mount();
+    fireEvent.click(screen.getByText("[data:crime]"));
+    expect(screen.getByTestId("data-cards")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("chat-minimize"));
+    fireEvent.click(screen.getByTestId("preview-data"));
+    expect(screen.getByTestId("data-cards")).toBeTruthy();
   });
 
   it("names a failed step and offers Try again", () => {

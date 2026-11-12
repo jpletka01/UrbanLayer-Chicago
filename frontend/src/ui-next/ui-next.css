@@ -245,5 +245,16 @@
   --sc-lot-side: #d6d6d6; --sc-lot-top: #efefef;
   --sc-r1: #2f3b3a; --sc-r2: #4f6f6b; --sc-r3: #72b0ab; --sc-r4: #a6d8cf; --sc-hatch: #4a4f54;
 }
-.ui-next .nx-scene .nx-drift { transform-origin: 600px 300px; transform-box: view-box; }
 .ui-next .nx-hatched { background: repeating-linear-gradient(45deg, var(--sc-g1) 0 4px, var(--sc-hatch) 4px 6px); }
+
+/* The chat's current step (Phase 8): words lit by a passing light (`animate-text-shimmer`), readable when still. */
+.ui-next .nx-shimmer {
+  background-image: linear-gradient(90deg, rgb(var(--nx-ink) / 0.5) 0%, rgb(var(--nx-ink) / 0.5) 35%, rgb(var(--nx-ink)) 50%, rgb(var(--nx-ink) / 0.5) 65%, rgb(var(--nx-ink) / 0.5) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-next .nx-shimmer { background: none; color: rgb(var(--nx-ink) / 0.7); }
+}

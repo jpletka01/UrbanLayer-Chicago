@@ -1797,7 +1797,8 @@
     "preview": {
       "lot": "Profile",
       "map": "Map",
-      "sources": "Sources"
+      "sources": "Sources",
+      "data": "Data"
     },
     "atLimit": "This conversation has reached its question limit.",
     "remaining_one": "{{count}} question left in this conversation",
@@ -1805,7 +1806,13 @@
     "signInTitle": "Sign in to keep going",
     "signInBody": "You've used today's free questions. Sign in for more; your conversation stays here.",
     "signInGoogle": "Continue with Google",
-    "signInClose": "Close"
+    "signInClose": "Close",
+    "dataTitle": "Records · {{place}}",
+    "steps": {
+      "reading": "Reading your question",
+      "summary_one": "Checked {{count}} source · {{seconds}} s",
+      "summary_other": "Checked {{count}} sources · {{seconds}} s"
+    }
   },
   "landing": {
     "openApp": "Open the app",
@@ -1927,6 +1934,15 @@
     "unsaveShort": "Saved: click to remove",
     "chats": "Recent chats",
     "findLots": "Find lots on the map",
-    "findLotsNote": "The whole city colored by room to build"
+    "findLotsNote": "The whole city colored by room to build",
+    "chatsEmpty": "No chats yet. Ask about a lot, the code or a neighborhood.",
+    "start": {
+      "title": "Start with a lot",
+      "body": "Open any Chicago address to see what the code allows, what it costs and what's changing. Three to try:",
+      "corner": "A corner storefront in Wicker Park, B3-2",
+      "twoFlat": "A two-flat in Logan Square, RS-3",
+      "coach": "A lot in a coach-house area, RS-3",
+      "bookmark": "Lots you open show up here, the last six. Bookmark one to keep it at the top."
+    }
   }
 }

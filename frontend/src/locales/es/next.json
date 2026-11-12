@@ -1797,7 +1797,8 @@
     "preview": {
       "lot": "Ficha",
       "map": "Mapa",
-      "sources": "Fuentes"
+      "sources": "Fuentes",
+      "data": "Datos"
     },
     "atLimit": "Esta conversación llegó a su límite de preguntas.",
     "remaining_one": "Le queda {{count}} pregunta en esta conversación",
@@ -1805,7 +1806,13 @@
     "signInTitle": "Inicie sesión para continuar",
     "signInBody": "Ya usó las preguntas gratuitas de hoy. Inicie sesión para hacer más; su conversación se queda aquí.",
     "signInGoogle": "Continuar con Google",
-    "signInClose": "Cerrar"
+    "signInClose": "Cerrar",
+    "dataTitle": "Registros · {{place}}",
+    "steps": {
+      "reading": "Leyendo su pregunta",
+      "summary_one": "Se revisó {{count}} fuente · {{seconds}} s",
+      "summary_other": "Se revisaron {{count}} fuentes · {{seconds}} s"
+    }
   },
   "landing": {
     "openApp": "Abrir la aplicación",
@@ -1927,6 +1934,15 @@
     "unsaveShort": "Guardado: haga clic para quitarlo",
     "chats": "Conversaciones recientes",
     "findLots": "Encontrar terrenos en el mapa",
-    "findLotsNote": "Toda la ciudad coloreada por espacio para construir"
+    "findLotsNote": "Toda la ciudad coloreada por espacio para construir",
+    "chatsEmpty": "Todavía no hay conversaciones. Pregunte sobre un terreno, el código o un vecindario.",
+    "start": {
+      "title": "Empiece con un terreno",
+      "body": "Abra cualquier dirección de Chicago para ver qué permite el código, cuánto cuesta y qué está cambiando. Tres para probar:",
+      "corner": "Un local en esquina en Wicker Park, B3-2",
+      "twoFlat": "Un edificio de dos departamentos en Logan Square, RS-3",
+      "coach": "Un terreno en zona de casas en la cochera, RS-3",
+      "bookmark": "Los terrenos que abra aparecen aquí, los últimos seis. Guarde uno con el marcador para tenerlo arriba."
+    }
   }
 }

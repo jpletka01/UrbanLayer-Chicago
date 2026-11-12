@@ -19,6 +19,10 @@ vi.mock("../../lib/api", () => ({
   getAutocomplete: vi.fn().mockResolvedValue([]),
 }));
 
+// jsdom has no IntersectionObserver; the landing's count-ups and bar fills wait for one (they never fire here).
+class NoIntersection { observe() {} unobserve() {} disconnect() {} takeRecords() { return []; } }
+(globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver ??= NoIntersection;
+
 const mount = (path = "/") => render(<MemoryRouter initialEntries={[path]}><RootNextPage /></MemoryRouter>);
 const lot = (n: number) => ({ key: lotKey(null, `${n} N Milwaukee Ave`), address: `${n} N Milwaukee Ave`, pin: null, zone: "B3-2", area: "West Town", outline: null });
 
@@ -96,8 +100,18 @@ describe("the signed-in home", () => {
     fireEvent.click(heading);
     expect((document.getElementById("home-recent-list") as HTMLElement).hidden).toBe(false);
     fireEvent.click(screen.getByTestId("home-clear"));
-    expect(within(recent).queryAllByTestId("home-lot")).toHaveLength(0);
-    expect(within(recent).getByText("Lots you open show up here, six at most.")).toBeTruthy();
+    // Nothing saved and nothing recent: the home goes back to its start-here block.
+    expect(screen.queryByTestId("home-recent")).toBeNull();
+    expect(screen.getByTestId("home-start")).toBeTruthy();
+  });
+
+  it("with nothing saved or opened yet, offers three lots to start from instead of empty rows", async () => {
+    const { container } = mount();
+    expect(screen.getAllByTestId("home-example").map((a) => a.getAttribute("href"))).toEqual([
+      "/scorecard?address=1601+N+Milwaukee+Ave", "/scorecard?address=2541+N+Spaulding+Ave", "/scorecard?address=2611+N+Sawyer+Ave",
+    ]);
+    expect(screen.queryByTestId("home-recent")).toBeNull();
+    expect(await axeViolations(container)).toEqual([]);
   });
 
   it("keeps recent chats beside the lots", async () => {

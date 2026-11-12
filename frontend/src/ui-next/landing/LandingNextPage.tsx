@@ -5,6 +5,7 @@
 // room-to-build grid glows a few blocks at a time. The hero is a placeholder drawing until the real image exists
 // (a loop rendered from our own 3D map, never satellite, Items 75 and 78).
 import { useEffect, useRef, useState } from "react";
+import { useInView } from "motion/react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Map as MapIcon } from "lucide-react";
@@ -12,7 +13,7 @@ import { AddressInput } from "../../components/AddressInput";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { PanelMenuButton } from "../frame/AppFrame";
 import { STROKE } from "../icons";
-import { countText, useCountUp } from "./useCountUp";
+import { CountUp } from "../../components/CountUp";
 
 const EXAMPLE_ADDRESS = "1601 N Milwaukee Ave";
 
@@ -162,9 +163,12 @@ function Hero() {
   const f = (v: string) => ({ fill: `var(${v})` });
   return (
     <figure className="mt-6 flex w-full max-w-[1200px] flex-col gap-2">
-      <div className="overflow-hidden rounded-[20px] bg-nx-block">
+      {/* The drift moves the whole picture as one composited layer (transform on a box, not on SVG shapes), so
+          nothing re-renders frame by frame (owner's review: the drawing jittered). The label stays still on top. */}
+      <div className="relative overflow-hidden rounded-[20px] bg-nx-block">
+        <div className="motion-safe:animate-scene-drift [will-change:transform]">
         <svg viewBox="0 0 1200 460" role="img" aria-label={t("landing.heroAlt")} className="block h-auto w-full">
-          <g className="nx-drift motion-safe:animate-scene-drift">
+          <g>
             <path d="M0 300 L600 120 L1200 300 L600 480 Z" style={f("--sc-g1")} />
             <path d="M120 300 L600 156 L1080 300 L600 444 Z" style={f("--sc-g2")} />
             <path d="M330 237 L600 156 L870 237 L600 318 Z" fill="none" strokeWidth={10} style={{ stroke: "var(--sc-street)" }} />
@@ -186,12 +190,12 @@ function Hero() {
             <path d="M560 263 L610 248 L650 260 L600 275 Z" style={f("--sc-lot-top")} />
             <path d="M560 300 L610 285 L610 150 L560 165 Z M610 285 L650 297 L650 162 L610 150 Z M560 165 L610 150 L650 162 L600 177 Z" className="fill-nx-lot/[0.07] stroke-nx-lot" strokeWidth={2} strokeDasharray="7 5" />
           </g>
-          <g fontFamily="Inter, sans-serif">
-            <rect x={676} y={146} width={220} height={58} rx={10} className="fill-nx-page stroke-nx-ink/20" />
-            <text x={690} y={170} fontSize={14} fontWeight={600} className="fill-nx-ink">{t("landing.heroAllowed")}</text>
-            <text x={690} y={190} fontSize={13} className="fill-nx-ink/60">{t("landing.heroBuilt")}</text>
-          </g>
         </svg>
+        </div>
+        <div aria-hidden className="absolute left-[56.5%] top-[31.5%] hidden flex-col rounded-xl bg-nx-page px-3 py-2 text-left shadow-[0_2px_10px_rgb(0_0_0/0.12)] ring-1 ring-nx-ink/15 sm:flex">
+          <span className="text-caption font-semibold">{t("landing.heroAllowed")}</span>
+          <span className="text-caption nx-muted">{t("landing.heroBuilt")}</span>
+        </div>
       </div>
     </figure>
   );
@@ -200,8 +204,6 @@ function Hero() {
 function Stats() {
   const { t } = useTranslation("next");
   const locale = useLocaleTag();
-  const ref = useRef<HTMLDivElement | null>(null);
-  const p = useCountUp(ref);
   const items = [
     { key: "sources", value: 25, suffix: "+", card: "bg-nx-stat-a" },
     { key: "sections", value: 14500, suffix: "", card: "bg-nx-stat-b" },
@@ -210,13 +212,16 @@ function Stats() {
   ];
   return (
     <section aria-label={t("landing.stats.label")} className="mx-auto max-w-[1200px] px-4 pb-6 pt-16 sm:pt-20">
-      <div ref={ref} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" data-testid="landing-stats">
-        {items.map((s) => (
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" data-testid="landing-stats">
+        {items.map((s, i) => (
           <div key={s.key} className={`flex flex-col gap-1.5 rounded-2xl p-4 text-nx-card-ink sm:p-6 ${s.card}`}>
             <span className="text-caption font-semibold">{t(`landing.stats.${s.key}`)}</span>
             {/* The final figure for screen readers; the counting one is decoration. */}
             <span className="sr-only">{`${s.value.toLocaleString(locale)}${s.suffix}`}</span>
-            <span aria-hidden className="text-[1.75rem] font-bold tabular-nums tracking-[-0.02em] sm:text-[2.5rem]">{countText(s.value, p, locale)}{s.suffix}</span>
+            {/* The original landing's count-up (components/CountUp): starts on scroll-in, staggered. */}
+            <span aria-hidden className="text-[1.75rem] font-bold tabular-nums tracking-[-0.02em] sm:text-[2.5rem]">
+              <CountUp to={s.value} delay={i * 0.15} format={(n) => `${n.toLocaleString(locale)}${s.suffix}`} />
+            </span>
             <span className="hidden text-caption text-nx-card-ink/70 sm:block">{t(`landing.stats.${s.key}Note`)}</span>
           </div>
         ))}
@@ -225,11 +230,17 @@ function Stats() {
   );
 }
 
-function Bar({ label, share, value }: { label: string; share: number; value: string }) {
+/** A built-vs-allowed bar that fills from empty the first time it scrolls into view (owner, 2026-11-12). */
+function Bar({ label, share, value, shown, delay }: { label: string; share: number; value: string; shown: boolean; delay: number }) {
   return (
     <>
       <span>{label}</span>
-      <div className="relative h-3.5 rounded-full bg-nx-ink/10"><div className="absolute inset-y-0 left-0 rounded-full bg-nx-lot" style={{ width: `${share}%` }} /></div>
+      <div className="relative h-3.5 rounded-full bg-nx-ink/10">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-nx-lot motion-safe:transition-[width] motion-safe:duration-[1400ms] motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]"
+          style={{ width: shown ? `${share}%` : "0%", transitionDelay: `${delay}s` }}
+        />
+      </div>
       <span className="font-semibold">{value}</span>
     </>
   );
@@ -237,13 +248,15 @@ function Bar({ label, share, value }: { label: string; share: number; value: str
 
 function BuildVisual() {
   const { t } = useTranslation("next");
+  const ref = useRef<HTMLDivElement | null>(null);
+  const inView = useInView(ref, { once: true, amount: 0.6 });
   return (
     <div className="flex flex-col gap-3.5 rounded-[20px] bg-nx-block p-5 sm:p-6">
       <ExampleTag />
-      <div className="grid grid-cols-[80px_minmax(0,1fr)_88px] items-center gap-x-3.5 gap-y-2.5 text-caption sm:text-body">
-        <Bar label={t("landing.build.units")} share={34} value={t("landing.build.unitsValue")} />
-        <Bar label={t("landing.build.floor")} share={52} value="52%" />
-        <Bar label={t("landing.build.height")} share={53} value={t("landing.build.heightValue")} />
+      <div ref={ref} className="grid grid-cols-[80px_minmax(0,1fr)_88px] items-center gap-x-3.5 gap-y-2.5 text-caption sm:text-body" data-testid="landing-bars">
+        <Bar label={t("landing.build.units")} share={34} value={t("landing.build.unitsValue")} shown={inView} delay={0} />
+        <Bar label={t("landing.build.floor")} share={52} value="52%" shown={inView} delay={0.15} />
+        <Bar label={t("landing.build.height")} share={53} value={t("landing.build.heightValue")} shown={inView} delay={0.3} />
       </div>
       <span className="text-caption nx-muted">{t("landing.build.note")}</span>
     </div>
@@ -272,8 +285,6 @@ function CityVisual() {
 function MoneyVisual() {
   const { t } = useTranslation("next");
   const locale = useLocaleTag();
-  const ref = useRef<HTMLDivElement | null>(null);
-  const p = useCountUp(ref);
   const cards = [
     { key: "sale", value: 240, card: "bg-nx-stat-a" },
     { key: "rent", value: 1850, card: "bg-nx-stat-b" },
@@ -282,12 +293,14 @@ function MoneyVisual() {
   return (
     <div className="flex flex-col gap-2">
       <ExampleTag />
-      <div ref={ref} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {cards.map((c) => (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {cards.map((c, i) => (
           <div key={c.key} className={`flex flex-col gap-1 rounded-2xl p-4 text-nx-card-ink ${c.card}`}>
             <span className="text-caption font-semibold">{t(`landing.money.${c.key}`)}</span>
             <span className="sr-only">{t(`landing.money.${c.key}Value`, { value: c.value.toLocaleString(locale) })}</span>
-            <span aria-hidden className="text-[1.625rem] font-bold tabular-nums">{t(`landing.money.${c.key}Value`, { value: countText(c.value, p, locale) })}</span>
+            <span aria-hidden className="text-[1.625rem] font-bold tabular-nums">
+              <CountUp to={c.value} delay={i * 0.15} format={(n) => t(`landing.money.${c.key}Value`, { value: n.toLocaleString(locale) })} />
+            </span>
             <span className="text-caption text-nx-card-ink/70">{t(`landing.money.${c.key}Note`)}</span>
           </div>
         ))}
@@ -346,9 +359,9 @@ function AnalystVisual() {
   }, [question]);
   const pill = "inline-block rounded-full bg-nx-pill-purple-bg px-1.5 text-caption font-semibold text-nx-pill-purple";
   return (
-    <div className="nx-ai-edge rounded-[20px] p-[2px]">
-      <div className="flex flex-col gap-3 rounded-[18px] bg-nx-page p-5" aria-hidden>
-        <div className="min-h-[2.5rem] max-w-[80%] self-end rounded-2xl bg-nx-block px-3.5 py-2.5">{question.slice(0, shown)}</div>
+    <div className="nx-ai-edge rounded-[22px]" style={{ padding: 2 }}>
+      <div className="flex flex-col gap-3.5 rounded-[20px] bg-nx-page p-6" aria-hidden>
+        <div className="min-h-[2.5rem] max-w-[85%] self-end rounded-2xl bg-nx-ink/[0.06] px-3.5 py-2.5">{question.slice(0, shown)}</div>
         <p className={`transition-opacity duration-500 ${answered ? "opacity-100" : "opacity-0"}`}>
           <strong>{t("landing.ask.lead")}</strong> {t("landing.ask.answer1")} <span className={pill}>1</span>{t("landing.ask.answer2")} <span className={pill}>2</span>.
         </p>

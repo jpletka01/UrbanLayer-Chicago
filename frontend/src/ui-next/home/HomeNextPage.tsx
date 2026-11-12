@@ -59,6 +59,7 @@ export default function HomeNextPage() {
 
         <div className="flex flex-wrap items-start gap-7">
           <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-7">
+            {saved.length === 0 && recent.length === 0 ? <StartHere /> : (<>
             <section aria-labelledby="home-saved" className="flex flex-col gap-3" data-testid="home-saved">
               <div className="flex flex-wrap items-baseline gap-2.5">
                 <h2 id="home-saved" className="text-[1.0625rem] font-semibold">{t("home.saved")}</h2>
@@ -99,14 +100,17 @@ export default function HomeNextPage() {
                 )}
               </div>
             </section>
+            </>)}
           </div>
 
           <section aria-labelledby="home-chats" className="flex min-w-0 flex-[1_1_280px] flex-col gap-2.5" data-testid="home-chats">
             <h2 id="home-chats" className="text-[1.0625rem] font-semibold text-nx-pill-purple">{t("home.chats")}</h2>
-            {!canList ? null : chats === null ? (
+            {!canList ? (
+              <p className="text-caption nx-muted">{t("frame.signInForChats")}</p>
+            ) : chats === null ? (
               <p className="text-caption nx-muted" role="status">{t("frame.loading")}</p>
             ) : chats.length === 0 ? (
-              <p className="text-caption nx-muted">{t("frame.noChats")}</p>
+              <p className="text-caption nx-muted">{t("home.chatsEmpty")}</p>
             ) : (
               <ul role="list" className="flex flex-col gap-2">
                 {chats.map((c) => (
@@ -133,6 +137,41 @@ export default function HomeNextPage() {
         </Link>
       </div>
     </AppFrame>
+  );
+}
+
+/** Example lots for a first visit, each a different reason to look (owner, 2026-11-12: a better empty state). */
+const EXAMPLES = [
+  { address: "1601 N Milwaukee Ave", key: "corner" },
+  { address: "2541 N Spaulding Ave", key: "twoFlat" },
+  { address: "2611 N Sawyer Ave", key: "coach" },
+] as const;
+
+/** Nothing saved or opened yet: three lots to start from and what the bookmark does, instead of two empty rows. */
+function StartHere() {
+  const { t } = useTranslation("next");
+  return (
+    <section aria-labelledby="home-start" className="flex flex-col gap-4 rounded-[20px] bg-nx-block p-5 sm:p-6" data-testid="home-start">
+      <div className="flex flex-col gap-1">
+        <h2 id="home-start" className="text-[1.0625rem] font-semibold">{t("home.start.title")}</h2>
+        <p className="nx-muted">{t("home.start.body")}</p>
+      </div>
+      <ul role="list" className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+        {EXAMPLES.map((e) => (
+          <li key={e.key}>
+            <Link to={lotHref({ pin: null, address: e.address })} className="flex h-full flex-col gap-1.5 rounded-2xl bg-nx-page p-4 ring-1 ring-nx-ink/10 hover:ring-nx-ink/30" data-testid="home-example">
+              <MapPin aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
+              <span className="font-semibold">{e.address}</span>
+              <span className="text-caption nx-muted">{t(`home.start.${e.key}`)}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="flex items-start gap-2 text-caption nx-muted">
+        <Bookmark aria-hidden className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={STROKE} />
+        {t("home.start.bookmark")}
+      </p>
+    </section>
   );
 }
 

@@ -2,13 +2,15 @@
 // map, its sources), the map's points, and the conversation's title. Answers lead with text; a preview opens only
 // when the visitor asks for it.
 import type { ContextObject, MapData, Message } from "../../lib/types";
+import { countDataCategories } from "../../lib/contextSummary";
 
-export type PreviewKind = "lot" | "map" | "sources";
+export type PreviewKind = "lot" | "map" | "data" | "sources";
 
 export interface LotPreview { kind: "lot"; address: string; pin: string | null; href: string }
 export interface MapPreview { kind: "map"; points: number; hasAddress: boolean }
+export interface DataPreview { kind: "data"; count: number }
 export interface SourcesPreview { kind: "sources"; count: number }
-export type Preview = LotPreview | MapPreview | SourcesPreview;
+export type Preview = LotPreview | MapPreview | DataPreview | SourcesPreview;
 
 /** The Profile link for an answer's lot: by PIN when the answer resolved one, else by address. */
 export function lotHref(address: string, pin: string | null): string {
@@ -23,7 +25,7 @@ export function mapPointCount(map: MapData | null | undefined): number {
   return map.crimes.filter(ok).length + map.requests_311.filter(ok).length + map.building_permits.filter(ok).length;
 }
 
-/** The previews under one finished answer, in a fixed order: the lot, the map, the sources. */
+/** The previews under one finished answer, in a fixed order: the lot, the map, the data, the sources. */
 export function previewsFor(message: Message): Preview[] {
   if (message.role !== "assistant" || !message.content) return [];
   const ctx: ContextObject | undefined = message.context;
@@ -34,6 +36,9 @@ export function previewsFor(message: Message): Preview[] {
   if (address && (pin || ctx?.parcel_zoning)) out.push({ kind: "lot", address, pin, href: lotHref(address, pin) });
   const points = mapPointCount(message.mapData);
   if (points > 0) out.push({ kind: "map", points, hasAddress: !!message.mapData?.queried_address });
+  // The records the answer read (property, zoning rules, crime, permits, 311 …), the cards a data citation opens.
+  const data = countDataCategories(ctx ?? null);
+  if (data > 0) out.push({ kind: "data", count: data });
   const count = ctx?.code_chunks?.length ?? 0;
   if (count > 0) out.push({ kind: "sources", count });
   return out;

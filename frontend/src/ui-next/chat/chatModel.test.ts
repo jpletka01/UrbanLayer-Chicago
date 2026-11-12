@@ -18,8 +18,8 @@ const answer = (over: Partial<Message> = {}): Message => ({
 });
 
 describe("answer previews", () => {
-  it("offers the lot, the map and the sources in that order", () => {
-    expect(previewsFor(answer()).map((p) => p.kind)).toEqual(["lot", "map", "sources"]);
+  it("offers the lot, the map, the data and the sources in that order", () => {
+    expect(previewsFor(answer()).map((p) => p.kind)).toEqual(["lot", "map", "data", "sources"]);
   });
 
   it("links the lot by PIN when the answer resolved one, else by address", () => {
