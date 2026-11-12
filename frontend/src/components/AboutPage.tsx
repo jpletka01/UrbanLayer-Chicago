@@ -3012,6 +3012,20 @@ Consumers → Property Profile (renders pin + confidence badge)
             carries small P marks, so it never depends on color alone (Item 112).
           </P>
 
+          <Sub>Showing which sentence of the code an answer stands on</Sub>
+          <P>
+            A chat answer cites code sections by number, and the new evidence panel opens each one on the passage the
+            answer used. Asking the model to name its passage would cost tokens on every answer and change a prompt
+            that wasn&apos;t otherwise changing, so the panel finds it instead: every sentence of the answer that cites
+            the section is matched against the section&apos;s sentences, with shared numbers and district names weighing
+            three times a word. The owner then opened an older answer and found nothing highlighted. Two habits of the
+            text were to blame: the answer writes &ldquo;RS-3&rdquo; where the ordinance writes &ldquo;RS3&rdquo;, and
+            &ldquo;reduction&rdquo; where it writes &ldquo;reduced&rdquo;. Joining district names and comparing words by
+            their first five letters fixed both; a sentence must still score four points or nothing is lit, so a weak
+            guess never passes for a quote. Both interfaces now share one chat lifecycle (loading, saving, the doors in
+            from other pages) instead of a copy per interface (Items 113&ndash;117).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}
