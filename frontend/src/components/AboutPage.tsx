@@ -2996,6 +2996,22 @@ Consumers → Property Profile (renders pin + confidence badge)
             1.25 million outlines (Items 109–110).
           </P>
 
+          <Sub>Parking lots, and the empty land that was really road</Sub>
+          <P>
+            The owner asked where the surface parking lots are. Three sources each claim to know: the Assessor's class
+            (its minor-improvement classes are mostly paved lots), the regional planning agency's 2023 land-use
+            inventory, and OpenStreetMap. Matched against every lot outline, they disagree in instructive ways. The
+            planning inventory codes a lot that serves the business next door to that business, so it calls only 600
+            lots parking; OpenStreetMap had drawn barely a third of the Assessor's lots. A blind check by the owner in
+            Street View settled it: the Assessor's class with nothing standing on the lot (the footprint and LiDAR test
+            built for empty land) was parking 23 times out of 23, while the inventory alone was right 4 times out of 6
+            and OpenStreetMap waits for a licence review. The same inventory exposed a problem in the empty-land filter
+            itself: about one empty lot in five was road right-of-way, rail or park. Two blind draws found 27 of 27 of
+            the road lots really were road or rail, so 6,563 of them are now hidden by default, with a visible count,
+            and the parks stay (only 2 of 6 checked were parks). The map gained a land-in-use mode in which parking
+            carries small P marks, so it never depends on color alone (Item 112).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}
