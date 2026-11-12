@@ -49,6 +49,16 @@ STRATA = (
     ("use_agree", 6), ("use_disagree", 8),
 )
 INFRA = ("road", "rail", "utility", "transport")
+# The owner's second draw (2026-11-12): 20 more Empty-land lots CMAP codes as road right-of-way on exempt land, before
+# they are hidden by default (7 of 7 in the first panel; the bar is 90%).
+ROAD_RECHECK = (("empty_road_exempt", 20),)
+ROAD_PANEL = Path("eval/land_use_road_panel.json")
+
+
+def road_stratum_of(r: dict) -> str | None:
+    if r.get("no_outline") or r.get("unusual") or not r.get("empty_land") or r.get("land_kind") != "exempt":
+        return None
+    return "empty_road_exempt" if r.get("cmap") == "road" and r.get("cmap_share", 0) >= 0.5 else None
 # What the owner's answer means for each common category.
 ANSWER_CATEGORY = {
     "surface_parking": "parking", "parking_garage": "parking", "empty": "vacant", "accessory": "vacant",
@@ -126,7 +136,8 @@ def _exclusions(paths: list[Path]) -> set[str]:
     return out
 
 
-def draw(lots_path: Path, index: Path, sources: Path, ptaxsim: Path, exclude: list[Path], out: Path) -> dict:
+def draw(lots_path: Path, index: Path, sources: Path, ptaxsim: Path, exclude: list[Path], out: Path,
+         strata: tuple = STRATA, stratum_fn=None, seed: int = SEED) -> dict:
     import numpy as np
     import shapely
     from shapely.strtree import STRtree
@@ -138,12 +149,12 @@ def draw(lots_path: Path, index: Path, sources: Path, ptaxsim: Path, exclude: li
     skip = _exclusions(exclude)
     pool: dict[str, list[dict]] = {}
     for r in rows:
-        s = stratum_of(r)
+        s = (stratum_fn or stratum_of)(r)
         if s and r["pin"] not in skip:
             pool.setdefault(s, []).append(r)
-    rnd = random.Random(SEED)
+    rnd = random.Random(seed)
     picked = []
-    for s, n in STRATA:
+    for s, n in strata:
         got = pool.get(s, [])
         picked += [dict(r, stratum=s) for r in rnd.sample(got, min(n, len(got)))]
     rnd.shuffle(picked)
@@ -202,7 +213,7 @@ def draw(lots_path: Path, index: Path, sources: Path, ptaxsim: Path, exclude: li
                                         "signals": _sig(r), "structure": r.get("structure"),
                                         "land_kind": r.get("land_kind")}})
     pool_n = {s: len(v) for s, v in pool.items()}
-    out.write_text(json.dumps({"seed": SEED, "pool": pool_n, "lots": out_lots}, separators=(",", ":")))
+    out.write_text(json.dumps({"seed": seed, "pool": pool_n, "lots": out_lots}, separators=(",", ":")))
     return pool_n
 
 
@@ -225,7 +236,7 @@ SURFACE_STRATA = ("park_all3", "park_cmap_assessor", "park_cmap_osm", "park_cmap
                   "park_assessor_only", "park_osm_assessor")
 # Use precision is read only where the draw was about use: a parking lot CMAP codes to the business it serves is
 # CMAP's own rule, not a wrong use, so the parking strata are left out of it.
-USE_STRATA = ("use_agree", "use_disagree", "empty_infra", "empty_open_space")
+USE_STRATA = ("use_agree", "use_disagree", "empty_infra", "empty_open_space", "empty_road_exempt")
 
 
 def _ci(k: int, n: int) -> list[float]:
@@ -316,7 +327,9 @@ def main() -> None:
     d.add_argument("--sources", type=Path, default=Path("backend/data/discovery_lot_sources.db"))
     d.add_argument("--ptaxsim", type=Path, default=Path("backend/data/ptaxsim.db"))
     d.add_argument("--exclude", type=Path, action="append", default=[])
-    d.add_argument("--out", type=Path, default=PANEL)
+    d.add_argument("--out", type=Path, default=None)
+    d.add_argument("--road-recheck", action="store_true",
+                   help="the owner's second draw: 20 Empty-land lots CMAP calls road right-of-way on exempt land")
     s = sub.add_parser("serve")
     s.add_argument("--panel", type=Path, default=PANEL)
     s.add_argument("--port", type=int, default=8034)
@@ -325,7 +338,12 @@ def main() -> None:
     c.add_argument("--out", type=Path, default=None, help="write the counts here (precision.json)")
     a = ap.parse_args()
     if a.cmd == "draw":
-        print(json.dumps(draw(a.lots, a.index, a.sources, a.ptaxsim, a.exclude, a.out), indent=1))
+        if a.road_recheck:
+            res = draw(a.lots, a.index, a.sources, a.ptaxsim, a.exclude, a.out or ROAD_PANEL, ROAD_RECHECK,
+                       road_stratum_of, SEED + 1)
+        else:
+            res = draw(a.lots, a.index, a.sources, a.ptaxsim, a.exclude, a.out or PANEL)
+        print(json.dumps(res, indent=1))
     elif a.cmd == "serve":
         serve(a.panel, a.port)
     else:

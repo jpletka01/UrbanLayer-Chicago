@@ -1414,6 +1414,13 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 4. Land use on the map: a mode of the one map, a filter, or both, and what a phone shows (a mockup comes with the answer).
 5. The 2,434 lots with no building that CMAP calls a business and no source calls parking (4 of 6 were parking): leave them out, or offer them as "possibly parking, unconfirmed"?
 
+**Owner's answers (2026-11-12):**
+1. **Surface parking gets its own filter and a card line** on all qualifying lots; Empty land keeps its lots and labels the parking ones.
+2. **Road right-of-way: a second blind draw of 20 first.** `eval/land_use_road_panel.json` (seed 113, from the 6,268 eligible lots not on an earlier panel; `draw --road-recheck`). Hidden by default only if the 27 together reach 90%.
+3. **OSM-only parking waits for a licensing review.** Surface parking ships from the Assessor's classes alone for now: 12,526 lots (8,619 Assessor only + 3,907 with OSM agreeing), at 23 of 23. The 4,564 OSM-only lots join after the review.
+4. **The 2,434 "possibly parking" lots stay out** (4 of 6 is under the 70% floor).
+5. Still open: land use as a map mode, a filter or both, and the phone (a mockup with the build step).
+
 **The first recommendation, before the panel (kept for the record):**
 - *Categories:* one observed-use field:
   - homes, business (commercial and mixed use), industrial, institution, park or open space, surface parking, parking garage, empty, under construction.

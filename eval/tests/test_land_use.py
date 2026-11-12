@@ -141,3 +141,14 @@ def test_pair_shares_bulk():
     li, gi, sh = lu._pair_shares(lots, STRtree(geoms), geoms)
     got = sorted(zip(li.tolist(), gi.tolist(), [round(x, 3) for x in sh]))
     assert got == [(0, 0, 1.0), (1, 1, 0.5)]
+
+
+@pytest.mark.parametrize("row, stratum", [
+    (_row(empty_land=True, land_kind="exempt", cmap="road", cmap_share=0.9), "empty_road_exempt"),
+    (_row(empty_land=True, land_kind="vacant", cmap="road", cmap_share=0.9), None),
+    (_row(empty_land=True, land_kind="exempt", cmap="rail", cmap_share=0.9), None),
+    (_row(empty_land=False, land_kind="exempt", cmap="road", cmap_share=0.9), None),
+    (_row(empty_land=True, land_kind="exempt", cmap="road", cmap_share=0.9, unusual=True), None),
+])
+def test_road_recheck_stratum(row, stratum):
+    assert lul.road_stratum_of(row) == stratum
