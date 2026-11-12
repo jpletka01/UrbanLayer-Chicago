@@ -1465,14 +1465,14 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - *Local tiles:* rebuilt into a private folder (33.7 MB, 154 s).
 - *Gates:* backend 2,964, vitest 1,189, build, lint 67 (cap), the Discovery e2e checks, the mobile matrix's Discovery page on five phones.
 
-**Built: the Profile line (2026-11-12, the owner's "Profile line first"; awaiting his review).**
+**Built: the Profile line (2026-11-12, the owner's "Profile line first"; approved on localhost, "Looks right").**
 - *What:* the new UI's Overview says, under the answer sentence, "Surface parking lot" or "Empty lot …" (the Discovery card's own words, "garage or shed only" when one stands there). Behind the Info tool: how we know (the class and the two building sources; for parking, the hand check of 23 lots), and Ask pre-fills "What could be built on …".
 - *Source:* Discovery's own row for the lot (`GET /api/discovery/parcel?pin=<PIN10>`, every tier; `profile/useLotInUse.ts`), asked only for an exact match: a nearest parcel may be a neighbor's. `/api/scorecard`, chat and the report are unchanged.
 - *What it never says:* a failed or missing row, or any other lot, shows nothing, never "not parking". An approximate match never shows it.
 - *Example:* 2802 S Michigan Ave (C2-3, Assessor 5-90, nothing in the footprints or LiDAR).
 - *Tests:* `profileModel.test.ts` (`lotInUse`), `ProfileTabs.test.tsx` (the line, its Info tool, axe; hidden for an approximate match). Gates as above; vitest 1,191.
 
-**The owner's look at the Profile on a phone (2026-11-12): three map fixes.**
+**The owner's look at the Profile on a phone (2026-11-12): three map fixes (approved, "Looks right").**
 - *The expand button's icon sat off-center.* On a touch screen `.touch-target` turned every square icon button (grid, centered) into an inline-flex 44 px tall and 32 px wide with its icon at the left. The new `.touch-icon` (index.css: 44 x 44 minimum, centering kept) replaces it on the new UI's 12 icon buttons (expand, close buttons, the frame's tools). Measured: 44 x 44, the icon 14 px in from every side.
 - *A dark ring around the expand button on load* (localhost): React's development mode runs effects twice, so the "skip the first render" flag let the second run focus the button. It now moves focus only when the map really switches.
 - *"City of Chicago, Cook County" took room:* the credit starts folded to MapLibre's small "i" button on both maps (`map/attribution.ts`) instead of open until the first drag. A tap still shows it, so the sources stay credited.
