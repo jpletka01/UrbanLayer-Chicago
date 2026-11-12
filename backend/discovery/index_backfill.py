@@ -29,7 +29,7 @@ from backend.discovery.assessor_address import AddressSources, verified_address
 from backend.discovery.assessor_address import apply as apply_assessor_address
 from backend.discovery.assessor_address import needs_tier as needs_assessor_tier
 from backend.discovery.lot_facts import (
-    NARROW_STRIP_FT, LotSources, derive_capacity, mark_empty_land, fill_building_area, lot_warnings, lot_width_ft, pending_rezoning_pin10s,
+    NARROW_STRIP_FT, LotSources, derive_capacity, mark_empty_land, mark_land_use, fill_building_area, lot_warnings, lot_width_ft, pending_rezoning_pin10s,
 )
 from backend.discovery.lot_sources import DEFAULT_PATH as SOURCES_PATH
 
@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 
 # Keys this pass owns: cleared before each fill so a rerun never keeps a stale answer.
 OWNED = ("hood", "lot_width_ft", "narrow_strip", "bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
-         "warn_landmark")
+         "warn_landmark", "surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source")
 
 
 def lot_outlines(ptaxsim: Path, pin10s: Iterable[str]) -> dict[str, Any]:
@@ -91,6 +91,7 @@ def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set
                 attrs["narrow_strip"] = True
     if lot is not None:
         mark_empty_land(attrs, lot, pin10, src)  # Item 110: before the building area, which it may set aside
+        mark_land_use(attrs, pin10, src)  # Item 112: reads land_kind, structure and empty_land
     from backend.discovery.index_build import unusual_rule
     attrs["unusual"] = unusual_rule(attrs)
     if attrs.get("bldg_sqft_source") in ("footprint", "city_land_inventory"):  # a rerun recomputes these
@@ -253,6 +254,8 @@ def main() -> None:
                       "approximate_addresses": {"before": approx_before, "after": approximate()},
                       "empty_land": dict(collections.Counter(r[3]["land_kind"] for r in rows if r[3].get("empty_land"))),
                       "structure_by_kind": {k: dict(v) for k, v in _structure_by_kind(rows).items()},
+                      "surface_parking": sum(1 for r in rows if r[3].get("surface_parking")),
+                      "road_land": sum(1 for r in rows if r[3].get("infrastructure") == "road"),
                       "assessor_area_set_aside": sum(1 for r in rows if r[3].get("bldg_sqft_source") == "empty_lot"),
                       "unusual": {"before": unusual_before, "after": sum(1 for r in rows if r[3].get("unusual")),
                                   "empty_land_hidden": sum(1 for r in rows if r[3].get("unusual") and r[3].get("empty_land"))},

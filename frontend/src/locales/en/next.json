@@ -1182,6 +1182,7 @@
       "now": {
         "empty": "Empty lot",
         "shed": "garage or shed only",
+        "surfaceParking": "Surface parking lot",
         "emptyKind": {
           "vacant": "Empty lot",
           "city_owned": "Empty lot, City-owned",
@@ -1235,8 +1236,8 @@
     "inView_other": "{{n}} lots in view",
     "listThem": "List them",
     "capped": "More matches than the map can outline at once: zoom in",
-    "hiddenUnusual_one": "{{n}} unusual lot hidden (railroad or common land, or a strip under 16 ft wide).",
-    "hiddenUnusual_other": "{{n}} unusual lots hidden (railroad or common land, or strips under 16 ft wide).",
+    "hiddenUnusual_one": "{{n}} unusual lot hidden (railroad, road or common land, or a strip under 16 ft wide).",
+    "hiddenUnusual_other": "{{n}} unusual lots hidden (railroad, road or common land, or strips under 16 ft wide).",
     "show": "Show",
     "focus": {
       "label": "Show as",
@@ -1369,6 +1370,12 @@
         "hint": "Nothing stands on it today but at most a garage or shed: vacant, City-owned, parking and tax-exempt land.",
         "on": "Only empty land",
         "tech": "No building in the City's footprints or the County's 2022 LiDAR, after demolition and new-construction permits"
+      },
+      "surface_parking": {
+        "name": "Surface parking",
+        "hint": "A parking lot with nothing on it but at most a garage or shed.",
+        "on": "Only surface parking",
+        "tech": "The Assessor's minor-improvement classes (5-90, 5-80) and no building in the City's footprints or the County's 2022 LiDAR"
       },
       "room_to_build": {
         "name": "Room to build",

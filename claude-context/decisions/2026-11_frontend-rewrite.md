@@ -1421,6 +1421,40 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 4. **The 2,434 "possibly parking" lots stay out** (4 of 6 is under the 70% floor).
 5. Still open: land use as a map mode, a filter or both, and the phone (a mockup with the build step).
 
+**Built: surface parking and road land on the lot (2026-11-12, awaiting the owner's localhost review).**
+- *Data path:*
+  - `backend/discovery/cmap_land_use.py` holds the CMAP fetch (moved from the eval) and `codes_on_lots`, CMAP's main code and its share of every lot outline.
+  - `lot_sources --land-use-only` writes it as `cmap_on_lot` (957,545 PIN10s in Chicago's box, 7.8 min) from `map_sources/cmap_lui_2023.db`. The full `lot_sources` writes it too when the copy is there, and warns when it isn't.
+  - `LotSources.cmap_on_lot` is None on an older copy, so no lot is marked road land.
+- *Fields* (`lot_facts.mark_land_use`, run by `index_backfill.enrich` right after `mark_empty_land`, so the full build and the in-place backfill both apply it):
+  - `surface_parking: true` with `surface_parking_source: "assessor_class"`: `land_kind` parking (5-90 / 5-80) and `structure` empty or a garage or shed only.
+  - `infrastructure: "road"` with `infrastructure_source: "cmap_2023"`: CMAP 1512 over at least half the lot, on exempt land that is `empty_land`.
+  - Vintage: the Assessor's class year and CMAP 2023 (index `cmap_vintage`); confidence: both measured standard (23 of 23, 27 of 27). CMAP codes a parking lot to the business it serves, so no conflict field is kept for parking.
+- *Hidden by default:* `index_build.unusual_rule` adds `infrastructure: road`. The existing "N unusual lots hidden · Show" names road land (en + es-MX); nothing is excluded for good.
+- *Filter:* registry `surface_parking` (flag, `unknownPolicy: exclude`, tier more). In the new UI it is a toggle in the Lot group under Empty land. Rows carry `surface_parking` and `infrastructure`; the card says "Surface parking lot" (es "Estacionamiento en superficie").
+- *Local citywide copy* (backfill of a private copy):
+  - 12,529 surface-parking lots (12,195 shown; 334 strips under 16 ft stay hidden);
+  - 6,563 road lots, all now hidden;
+  - unusual 10,629 → 16,908;
+  - Empty land shown 73,482 → **67,203**.
+- *Gates:*
+  - `test_discovery_land_use.py` (21);
+  - registry counts 35 → 36;
+  - `LotCard.test.tsx`;
+  - `e2e/ui-next.spec.ts`: a new surface-parking check (request + axe light and dark). The Discovery test's stale "Vacant" quick filter now clicks "Empty land" (Item 110 renamed it).
+  - The mobile matrix's Discovery audit waited for a "Try:" row that Discovery hasn't had since Item 104 (it is the Profile's search page), so it timed out on every phone; it now opens the phone sheet and picks the first goal. All 110 routes × devices pass (100 skipped by design).
+  - Data Health registers CMAP's layer (`cmap.land_use_inventory`, the ArcGIS completeness test); `make test` backend 2,952 + eval 229, vitest 1,188, `npm run build`, `npm run lint` (warning cap).
+- *Not built:*
+  - a land-use map mode (the owner's open question 5; a mockup first);
+  - the Profile line;
+  - OSM-only parking (licensing review).
+
+**Production steps** (server, after merge; Jack types sudo):
+1. Fetch CMAP on the Mac and install the copy as `backend/data/map_sources/cmap_lui_2023.db` (`python -m backend.discovery.cmap_land_use`). First check whether CMAP answers the server; if not, the Mac copy is the path, as for FEMA and the County's LiDAR.
+2. `docker compose run --rm --no-deps backend python -m backend.discovery.lot_sources --land-use-only` (about 8 minutes).
+3. `... python -m backend.discovery.index_backfill`; check `surface_parking` about 12,500 and `road_land` 6,563.
+4. Restart the backend.
+
 **The first recommendation, before the panel (kept for the record):**
 - *Categories:* one observed-use field:
   - homes, business (commercial and mixed use), industrial, institution, park or open space, surface parking, parking garage, empty, under construction.

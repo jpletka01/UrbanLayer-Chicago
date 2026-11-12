@@ -409,6 +409,15 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         "backend/discovery/neighborhoods.py", surfaces=("discovery",), fact_keys=(),
         frozen=Frozen("2012-12-18", "the City's 98 named neighborhoods; committed copy backend/discovery/neighborhoods.geojson"),
     ),
+    _layer(
+        "https://services5.arcgis.com/LcMXE3TFhi1BSaCY/arcgis/rest/services/LUI_2023_view/FeatureServer/1",
+        "cmap.land_use_inventory", "Land Use Inventory, northeastern Illinois (2023)",
+        "Chicago Metropolitan Agency for Planning", "backend/discovery/cmap_land_use.py", surfaces=("discovery",),
+        fact_keys=(), contract=Contract(layer_name="Dissolved (External)"),
+        cadence_days=1460, warn_days=1825, alarm_days=2190,
+        note="Item 112. Read from a local copy (map_sources/cmap_lui_2023.db, fetched on the Mac; data edited "
+             "2026-09-15 when copied 2026-11-11). A newer data edit means re-fetch. New inventories come every 3-5 years.",
+    ),
     _socrata(
         CITY, "igwz-8jzy", "chi.community_areas", "Boundaries - Community Areas", "City of Chicago",
         "backend/config.py", surfaces=("profile", "chat"), fact_keys=("geo.community_area",),

@@ -1181,6 +1181,7 @@
       "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
       "now": {
         "empty": "Terreno baldío",
+        "surfaceParking": "Estacionamiento en superficie",
         "shed": "solo con cochera o cobertizo",
         "emptyKind": {
           "vacant": "Terreno baldío",
@@ -1235,8 +1236,8 @@
     "inView_other": "{{n}} terrenos a la vista",
     "listThem": "Ver la lista",
     "capped": "Hay más coincidencias de las que el mapa puede marcar a la vez: acérquese",
-    "hiddenUnusual_one": "{{n}} terreno inusual oculto (vía férrea, área común o franja de menos de 16 pies).",
-    "hiddenUnusual_other": "{{n}} terrenos inusuales ocultos (vías férreas, áreas comunes o franjas de menos de 16 pies).",
+    "hiddenUnusual_one": "{{n}} terreno inusual oculto (vía férrea, derecho de vía vial, área común o franja de menos de 16 pies).",
+    "hiddenUnusual_other": "{{n}} terrenos inusuales ocultos (vías férreas, derechos de vía viales, áreas comunes o franjas de menos de 16 pies).",
     "show": "Mostrar",
     "focus": {
       "label": "Mostrar como",
@@ -1369,6 +1370,12 @@
         "hint": "Hoy no hay nada construido, salvo a lo más una cochera o un cobertizo: terrenos baldíos, de la Ciudad, estacionamientos y terrenos exentos.",
         "on": "Solo terreno vacío",
         "tech": "Sin edificio en las huellas de la Ciudad ni en el LiDAR 2022 del Condado, tras los permisos de demolición y de obra nueva"
+      },
+      "surface_parking": {
+        "name": "Estacionamiento en superficie",
+        "hint": "Un estacionamiento sin nada construido, salvo a lo más una cochera o un cobertizo.",
+        "on": "Solo estacionamiento en superficie",
+        "tech": "Las clases de mejora menor del Tasador (5-90, 5-80) y sin edificio en las huellas de la Ciudad ni en el LiDAR 2022 del Condado"
       },
       "room_to_build": {
         "name": "Espacio para construir",

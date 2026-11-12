@@ -34,4 +34,17 @@ describe("LotCard: empty land", () => {
     render(<LotCard row={{ ...base, land_use: "vacant" } as ResultRow} hoodName={null} onOpen={() => {}} />);
     expect(screen.getByText(/Empty lot/)).toBeTruthy();
   });
+
+  it("names a parking lot with no building as surface parking (Item 112)", () => {
+    render(<LotCard row={{ ...base, land_use: "commercial", empty_land: true, land_kind: "parking", surface_parking: true } as ResultRow}
+      hoodName={null} onOpen={() => {}} />);
+    expect(screen.getByText(/Surface parking lot/)).toBeTruthy();
+    expect(screen.queryByText(/Empty lot or parking/)).toBeNull();
+  });
+
+  it("keeps the old words for a parking-class lot an index marked before Item 112", () => {
+    render(<LotCard row={{ ...base, land_use: "commercial", empty_land: true, land_kind: "parking" } as ResultRow}
+      hoodName={null} onOpen={() => {}} />);
+    expect(screen.getByText(/Empty lot or parking/)).toBeTruthy();
+  });
 });

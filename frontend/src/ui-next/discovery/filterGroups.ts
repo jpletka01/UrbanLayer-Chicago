@@ -4,7 +4,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Bird, Building, Building2, Factory, Gift, Hotel, House, Hourglass, Landmark, LandPlot, Maximize2,
-  Receipt, Ruler, Shovel, Sprout, Square, Store, TrainFront, TrendingDown, Warehouse,
+  Receipt, Ruler, Shovel, Sprout, SquareParking, Square, Store, TrainFront, TrendingDown, Warehouse,
 } from "lucide-react";
 import { isPopulated } from "../../discovery/coverage";
 import type { Predicate, Registry } from "../../discovery/types";
@@ -44,6 +44,7 @@ export const INTENSITY: Choice[] = [
 export const GROUPS: GroupSpec[] = [
   { id: "lot", icon: Square, filters: [
     { filter: "empty_land", icon: Sprout, kind: "toggle" },  // physically empty, not the tax class (Item 110)
+    { filter: "surface_parking", icon: SquareParking, kind: "toggle" },  // a parking lot with no building (Item 112)
     { filter: "room_to_build", icon: Maximize2, kind: "cards", choices: [
       { id: "some", icon: Maximize2, predicate: range(2500) },
       { id: "more", icon: Maximize2, predicate: range(5000) },

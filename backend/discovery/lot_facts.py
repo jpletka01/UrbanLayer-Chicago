@@ -58,6 +58,9 @@ class LotSources:
     # PIN10 -> (largest, total) area of the County's 2022 LiDAR structures on the lot (Item 110); None when the copy
     # predates the table, so no lot is called empty.
     lidar_on_lot: dict[str, tuple[float, float]] | None = None
+    # PIN10 -> (CMAP 2023 code covering the most of the lot, that share) (Item 112); None when the copy predates the
+    # table, so no lot is marked road land.
+    cmap_on_lot: dict[str, tuple[str, float]] | None = None
 
     @classmethod
     def load(cls, path: Path) -> "LotSources":
@@ -80,6 +83,10 @@ class LotSources:
                 lidar = {r[0]: (r[1], r[2]) for r in db.execute("SELECT pin10, max_sqft, sum_sqft FROM lidar_on_lot")}
             except sqlite3.OperationalError:  # a copy made before Item 110
                 lidar = None
+            try:
+                cmap = {r[0]: (r[1], r[2]) for r in db.execute("SELECT pin10, code, share FROM cmap_on_lot")}
+            except sqlite3.OperationalError:  # a copy made before Item 112
+                cmap = None
         finally:
             db.close()
         reps = shapely.point_on_surface(geoms)
@@ -89,7 +96,7 @@ class LotSources:
             fp_stories=[r[0] for r in fps], fp_area=[r[1] for r in fps],
             pt_tree={k: (STRtree(g), d) for k, (g, d) in pts.items()},
             area_tree=(STRtree(area_geoms), [a[1] or "" for a in areas]) if areas else None,
-            meta=meta, city_land=city_land, lidar_on_lot=lidar,
+            meta=meta, city_land=city_land, lidar_on_lot=lidar, cmap_on_lot=cmap,
         )
 
 
@@ -325,8 +332,34 @@ def mark_empty_land(attrs: dict[str, Any], lot, pin10: str, src: LotSources) -> 
             attrs["bldg_sqft_source"] = "empty_lot"
 
 
+# --- land in use (decision Item 112) --------------------------------------------------------------------------------
+# Measured against the owner's blind checks: surface parking from the Assessor's minor-improvement classes with
+# nothing standing on the lot was 23 of 23 (all source combinations together 39 of 42); CMAP's road right-of-way on
+# exempt land the Item 110 rule calls empty was 27 of 27 road or rail land. OSM parking (22 of 23) waits for a
+# licensing review, CMAP's parking code alone (4 of 6), its parks (2 of 6) and garages (0 of 4) are not used.
+NO_BUILDING = ("empty", "accessory")
+ROAD_MIN_SHARE = 0.5  # CMAP's road polygon covers at least half the lot
+
+
+def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
+    """``surface_parking`` and ``infrastructure`` on one base lot, in place, from the fields ``mark_empty_land`` just
+    set; each with its source. Reruns clear them first."""
+    from backend.discovery.cmap_land_use import CMAP_ROAD
+
+    for k in ("surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source"):
+        attrs.pop(k, None)
+    if attrs.get("land_kind") == "parking" and attrs.get("structure") in NO_BUILDING:
+        attrs["surface_parking"] = True
+        attrs["surface_parking_source"] = "assessor_class"
+    cm = src.cmap_on_lot.get(pin10) if src.cmap_on_lot is not None else None
+    if cm and cm[0] == CMAP_ROAD and cm[1] >= ROAD_MIN_SHARE and attrs.get("land_kind") == "exempt" \
+            and attrs.get("empty_land"):
+        attrs["infrastructure"] = "road"
+        attrs["infrastructure_source"] = "cmap_2023"
+
+
 __all__ = [
-    "LotSources", "EMPTY_LAND_KINDS", "land_kind", "structure_on_lot", "mark_empty_land", "footprint_area", "lot_warnings", "pending_rezoning_pin10s", "derive_capacity",
+    "LotSources", "EMPTY_LAND_KINDS", "land_kind", "structure_on_lot", "mark_empty_land", "mark_land_use", "footprint_area", "lot_warnings", "pending_rezoning_pin10s", "derive_capacity",
     "fill_building_area", "WARNING_ORDER", "area_sqft",
 ]
 

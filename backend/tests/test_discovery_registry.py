@@ -13,7 +13,7 @@ from backend.discovery import registry as reg
 # hide_unusual default), grouped by category.
 EXPECTED_BY_CATEGORY = {
     "location": {"neighborhood", "ward", "radius", "transit_proximity"},
-    "property_use": {"land_use", "vacancy", "hide_unusual", "empty_land", "lot_size", "building_size", "year_built", "units"},
+    "property_use": {"land_use", "vacancy", "hide_unusual", "empty_land", "surface_parking", "lot_size", "building_size", "year_built", "units"},
     "zoning_dev": {
         "zoning_group", "density_band", "overlay", "adu_eligible", "aro_zone",
         "upside_score", "is_teardown_candidate", "room_to_build"
@@ -41,6 +41,7 @@ EXPECTED_KINDS = {
     "upside_score": "range", "is_teardown_candidate": "flag", "value_percentile": "range",
     "room_to_build": "range",  # Item 104: room to build, the new Discovery map's measure
     "empty_land": "flag",  # Item 110: physically empty land
+    "surface_parking": "flag",  # Item 112: a parking lot with no building
 }
 
 
@@ -55,7 +56,7 @@ def test_shipped_registry_loads_and_validates():
     r = reg.load()
     assert r.version
     # 4 location + 8 property_use + 7 zoning_dev + 4 incentives + 6 financial + 5 condition_risk
-    assert len(r.filters) == 35
+    assert len(r.filters) == 36
 
 
 def test_all_expected_filters_present_with_correct_category_and_kind():

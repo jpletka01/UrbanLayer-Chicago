@@ -42,9 +42,10 @@ import numpy as np
 import shapely
 from shapely.strtree import STRtree
 
-CMAP_URL = "https://services5.arcgis.com/LcMXE3TFhi1BSaCY/arcgis/rest/services/LUI_2023_view/FeatureServer/1/query"
-CMAP_VINTAGE = "2023 (Spring 2023 aerials; published 2026-03-25)"
-CHICAGO_BBOX = (-87.94, 41.64, -87.52, 42.03)
+from backend.discovery.cmap_land_use import _get
+from backend.discovery.cmap_land_use import fetch as fetch_cmap
+from backend.discovery.cmap_land_use import pair_shares as _pair_shares
+
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 CHICAGO_OSM_AREA = 3600122604  # relation 122604 + 3600000000
 OSM_GARAGE = ("multi-storey", "underground", "rooftop")
@@ -112,83 +113,6 @@ def assessor_common(cls: str | None, kind: str | None) -> str | None:
 
 
 # --- fetch -------------------------------------------------------------------------------------------------------
-
-def _get(client: httpx.Client, url: str, method: str = "GET", **kw) -> httpx.Response:
-    for attempt in range(6):
-        try:
-            r = client.request(method, url, **kw)
-            if r.status_code < 500 and r.status_code != 429:
-                r.raise_for_status()
-                return r
-        except httpx.TransportError:
-            pass
-        time.sleep(5 * (attempt + 1))
-    raise RuntimeError(f"{url} did not answer after 6 attempts")
-
-
-def _cmap_rows(feats: list[dict]) -> tuple[list[tuple], int]:
-    rows, bad = [], 0
-    for f in feats:
-        try:
-            g = shapely.geometry.shape(f["geometry"])
-        except (TypeError, ValueError, KeyError, AttributeError):
-            bad += 1
-            continue
-        p = f["properties"]
-        rows.append((p["OBJECTID"], p.get("LANDUSE"), (p.get("LANDUSE2") or "").strip() or None,
-                     p.get("MODIFIER"), p.get("OS_MGMT"), shapely.to_wkb(g)))
-    return rows, bad
-
-
-def fetch_cmap(out: Path, workers: int = 6, batch: int = 500) -> dict:
-    """CMAP 2023 polygons touching Chicago's bounding box, as WKB in lon/lat, into a fresh SQLite file. The ids come
-    first (one request), then batches of ids in parallel: paging by offset under a spatial filter was ~13 s a page."""
-    from concurrent.futures import ThreadPoolExecutor
-
-    spatial = {"geometry": ",".join(map(str, CHICAGO_BBOX)), "geometryType": "esriGeometryEnvelope", "inSR": 4326,
-               "spatialRel": "esriSpatialRelIntersects"}
-    with httpx.Client(timeout=300) as c:
-        ids = _get(c, CMAP_URL, params={"where": "1=1", **spatial, "returnIdsOnly": "true", "f": "json"}).json()
-        ids = sorted(ids["objectIds"])
-        print(f"{len(ids)} polygons in Chicago's box", flush=True)
-
-        def one(chunk: list[int]) -> list[dict]:
-            r = _get(c, CMAP_URL, method="POST", data={
-                "objectIds": ",".join(map(str, chunk)), "outSR": 4326, "f": "geojson",
-                "outFields": "OBJECTID,LANDUSE,LANDUSE2,MODIFIER,OS_MGMT"})
-            feats = r.json().get("features")
-            if feats is None:
-                raise RuntimeError("CMAP answered without a feature list")
-            return feats
-
-        chunks = [ids[i:i + batch] for i in range(0, len(ids), batch)]
-        tmp = out.with_suffix(".part")
-        tmp.unlink(missing_ok=True)
-        db = sqlite3.connect(tmp)
-        db.execute("CREATE TABLE lui (oid INTEGER PRIMARY KEY, landuse TEXT, landuse2 TEXT, modifier TEXT, "
-                   "os_mgmt TEXT, wkb BLOB)")
-        n = bad = 0
-        with ThreadPoolExecutor(workers) as ex:
-            for k, feats in enumerate(ex.map(one, chunks)):
-                rows, b = _cmap_rows(feats)
-                db.executemany("INSERT OR REPLACE INTO lui VALUES (?,?,?,?,?,?)", rows)
-                db.commit()
-                n += len(rows)
-                bad += b
-                if k % 20 == 0:
-                    print(f"{n} / {len(ids)}", flush=True)
-    if n < 0.99 * len(ids):
-        raise RuntimeError(f"short read: {n} of {len(ids)}")
-    meta = {"source": "CMAP Land Use Inventory for Northeastern Illinois", "vintage": CMAP_VINTAGE,
-            "url": CMAP_URL, "licence": "Not restricted; cite CMAP", "fetched": time.strftime("%Y-%m-%d"),
-            "polygons": n, "unreadable_geometry": bad}
-    db.execute("CREATE TABLE meta (value TEXT)")
-    db.execute("INSERT INTO meta VALUES (?)", (json.dumps(meta),))
-    db.commit()
-    db.close()
-    tmp.replace(out)
-    return meta
-
 
 def _osm_polygons(el: dict, ways: dict[int, list]) -> shapely.Geometry | None:
     if el["type"] == "way":
@@ -275,35 +199,6 @@ def _shares(lot, lot_area: float, idx, geoms) -> list[tuple[int, float]]:
         if a > 0:
             out.append((int(i), a / lot_area))
     return out
-
-
-def _pair_shares(lots: np.ndarray, tree: STRtree, geoms: np.ndarray, chunk: int = 20_000):
-    """Every (lot, source polygon) pair that overlaps, with the share of the lot it covers. Bulk: a prepared
-    containment test first (a lot wholly inside one dissolved polygon is the common case), intersections only for the
-    lots crossing an edge."""
-    li, gi = tree.query(lots, predicate="intersects")
-    shapely.prepare(geoms)
-    share = np.zeros(len(li))
-    for a in range(0, len(li), chunk):
-        sl = slice(a, a + chunk)
-        share[sl] = shapely.contains(geoms[gi[sl]], lots[li[sl]]).astype(float)
-    rest = np.nonzero(share == 0)[0]
-    for a in range(0, len(rest), chunk):
-        r = rest[a:a + chunk]
-        try:
-            inter = shapely.area(shapely.intersection(lots[li[r]], geoms[gi[r]]))
-        except shapely.errors.GEOSException:
-            inter = np.array([_safe_area(lots[li[k]], geoms[gi[k]]) for k in r])
-        share[r] = inter / shapely.area(lots[li[r]])
-    keep = share > 0
-    return li[keep], gi[keep], share[keep]
-
-
-def _safe_area(a, b) -> float:
-    try:
-        return a.intersection(b).area
-    except shapely.errors.GEOSException:
-        return 0.0
 
 
 def measure(index: Path, cmap: Path, osm: Path, ptaxsim: Path) -> tuple[list[dict], dict]:

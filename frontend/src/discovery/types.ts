@@ -210,6 +210,10 @@ export interface ResultRow {
   empty_land?: boolean | null;
   /** What stands on it (Item 110): "accessory" = a garage or shed only. */
   structure?: string | null;
+  /** A parking lot with no building: the Assessor's 5-90/5-80 and nothing in the footprints or LiDAR (Item 112). */
+  surface_parking?: boolean | null;
+  /** "road": road right-of-way per CMAP 2023, on empty exempt land; hidden by default as unusual (Item 112). */
+  infrastructure?: string | null;
   community_area: number | null;
   land_use: string | null;
   class: string | null;
