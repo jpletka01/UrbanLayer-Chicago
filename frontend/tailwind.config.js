@@ -163,6 +163,11 @@ export default {
           '0%': { backgroundPosition: '100% 0' },
           '100%': { backgroundPosition: '-100% 0' },
         },
+        // Pricing's Pro cards (Item 123): a slow lavender light running round the rim.
+        'nx-rim': {
+          '0%': { backgroundPosition: '0% 50%' },
+          '100%': { backgroundPosition: '300% 50%' },
+        },
         'block-glow': {
           '0%, 40%, 60%, 100%': { filter: 'none' },
           '50%': { filter: 'brightness(1.35) saturate(1.25)' },
@@ -209,6 +214,7 @@ export default {
         'scene-drift': 'scene-drift 26s ease-in-out infinite',
         'block-glow': 'block-glow 9s ease-in-out infinite',
         'text-shimmer': 'text-shimmer 2.2s linear infinite',
+        'nx-rim': 'nx-rim 8s linear infinite',
         'fade-in': 'fade-in 2s ease-in-out forwards',
         'blink': 'blink 1s step-end infinite',
         'flash': 'flash 0.8s ease-out',

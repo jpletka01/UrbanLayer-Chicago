@@ -65,46 +65,44 @@ describe("pricingModel", () => {
 });
 
 describe("the page", () => {
-  it("Free and Pro side by side, the free plan complete, nothing locked", async () => {
+  it("three plans side by side: Free complete, Pro monthly and yearly each with its own price and button", async () => {
     const { container } = page();
     const free = screen.getByTestId("pricing-free");
     expect(free.textContent).toContain("$0");
     expect(free.textContent).toContain("One Deep analysis, free");
     expect(within(free).getByText("Your plan")).toBeTruthy();
-    const pro = screen.getByTestId("pricing-pro");
-    expect(screen.getByTestId("pricing-price").textContent).toBe("$19");
-    expect(pro.textContent).toContain("200 questions a month");
-    expect(await screen.findByTestId("pricing-get-pro")).toBeTruthy();
-    expect(container.textContent).not.toMatch(/\$99|\$25/);
+    expect(screen.getByTestId("pricing-month-price").textContent).toBe("$19");
+    expect(screen.getByTestId("pricing-year-price").textContent).toBe("$199");
+    const year = screen.getByTestId("pricing-year");
+    expect(year.textContent).toContain("Save $29");
+    expect(year.textContent).toContain("$16.58 a month, billed yearly");
+    expect(screen.getByTestId("pricing-month").textContent).toContain("200 questions a month");
+    expect(await screen.findByTestId("pricing-get-pro-month")).toBeTruthy();
+    expect(screen.getByTestId("pricing-get-pro-year")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/\$99|\$25|Stripe/);
+    expect(container.querySelectorAll(".nx-pro-rim")).toHaveLength(2);
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it("Yearly shows $199, the monthly figure and the saving; Get Pro starts the yearly checkout", async () => {
+  it("each Pro card starts its own checkout", async () => {
     api.createCheckoutSession.mockReturnValue(new Promise(() => {}));
     page();
-    const year = screen.getByRole("radio", { name: /Yearly/ });
-    expect(year.textContent).toContain("Save $29");
-    fireEvent.click(year);
-    expect(screen.getByTestId("pricing-price").textContent).toBe("$199");
-    expect(screen.getByTestId("pricing-pro").textContent).toContain("$16.58 a month, billed yearly");
-    const button = await screen.findByTestId("pricing-get-pro");
-    expect(button.textContent).toBe("Get Pro, $199 a year");
-    fireEvent.click(button);
+    fireEvent.click(await screen.findByTestId("pricing-get-pro-year"));
     expect(api.createCheckoutSession).toHaveBeenCalledWith("year", "pricing");
-    expect((await screen.findByTestId("pricing-get-pro")).textContent).toBe("Opening Stripe…");
+    expect(screen.getByTestId("pricing-get-pro-year").textContent).toBe("Opening Stripe…");
   });
 
-  it("purchases off: Pro says Coming soon, no button", async () => {
+  it("purchases off: both Pro cards say Coming soon, no buttons", async () => {
     api.fetchPaymentsStatus.mockResolvedValue({ reports: false, subscriptions: false });
     page();
-    expect(await screen.findByText("Coming soon")).toBeTruthy();
-    expect(screen.queryByTestId("pricing-get-pro")).toBeNull();
+    expect(await screen.findAllByText("Coming soon")).toHaveLength(2);
+    expect(screen.queryByTestId("pricing-get-pro-month")).toBeNull();
   });
 
   it("signed out: sign in first, nothing is sent to Stripe", async () => {
     auth = { ...person(), user: null, isAuthenticated: false };
     page();
-    fireEvent.click(await screen.findByRole("button", { name: "Sign in to get Pro" }));
+    fireEvent.click(await screen.findByTestId("pricing-get-pro-month"));
     expect(auth.signIn).toHaveBeenCalled();
     expect(api.createCheckoutSession).not.toHaveBeenCalled();
     expect(screen.queryByText("Your plan")).toBeNull();
@@ -113,16 +111,16 @@ describe("the page", () => {
   it("a failed checkout says nothing was charged", async () => {
     api.createCheckoutSession.mockRejectedValue(new api.CheckoutError("error"));
     page();
-    fireEvent.click(await screen.findByTestId("pricing-get-pro"));
+    fireEvent.click(await screen.findByTestId("pricing-get-pro-month"));
     expect((await screen.findByRole("alert")).textContent).toContain("nothing was charged");
   });
 
-  it("a Pro account sees its plan on Pro and a way to Settings", async () => {
+  it("a Pro account sees its plan and a way to Settings", async () => {
     auth = person("premium");
     page();
-    const pro = screen.getByTestId("pricing-pro");
-    expect(within(pro).getByText("Your plan")).toBeTruthy();
-    expect(within(pro).getByRole("link", { name: "See your plan" }).getAttribute("href")).toBe("/settings/plan");
+    const month = screen.getByTestId("pricing-month");
+    expect(within(month).getByText("Your plan")).toBeTruthy();
+    expect(within(month).getByRole("link", { name: "See your plan" }).getAttribute("href")).toBe("/settings/plan");
     expect(within(screen.getByTestId("pricing-free")).queryByText("Your plan")).toBeNull();
   });
 });

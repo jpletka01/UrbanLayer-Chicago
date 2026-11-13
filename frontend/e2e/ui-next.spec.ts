@@ -477,9 +477,8 @@ test("Phase 9 billing: Pricing yearly checkout, the Plan's Pro states, axe light
   });
 
   await open(page, "/pricing?ui=next", "pricing");
-  await page.getByRole("radio", { name: /Yearly/ }).click();
-  await expect(page.getByTestId("pricing-price")).toHaveText("$199");
-  const getPro = page.getByTestId("pricing-get-pro");
+  await expect(page.getByTestId("pricing-year-price")).toHaveText("$199");
+  const getPro = page.getByTestId("pricing-get-pro-year");
   if (await getPro.count()) {  // sign-in off locally: the stand-in account is an admin, which has no checkout
     await getPro.click();
     await expect.poll(() => page.url()).toContain("stubbed=stripe");

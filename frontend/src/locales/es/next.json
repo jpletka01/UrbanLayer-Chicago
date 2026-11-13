@@ -2304,16 +2304,12 @@
       "Todo lo del plan gratuito",
       "200 preguntas al mes",
       "Análisis a fondo de cualquier terreno, con su PDF",
-      "Cancele cuando quiera; Pro dura hasta el final del periodo"
+      "Pro dura hasta el final del periodo que pagó"
     ],
     "signedOutNote": "Sin iniciar sesión, puede hacer 3 preguntas.",
     "signInFree": "Iniciar sesión, gratis",
-    "getProMonth": "Obtener Pro, {{price}} al mes",
-    "getProYear": "Obtener Pro, {{price}} al año",
     "toStripe": "Abriendo Stripe…",
-    "stripeNote": "El pago lo procesa Stripe. Nunca vemos su tarjeta.",
     "signInForPro": "Inicie sesión para obtener Pro",
-    "signInNote": "Pro pertenece a una cuenta, así que inicie sesión primero. No se cobra nada hasta que confirme en Stripe.",
     "comingSoonNote": "Las compras abren pronto. Todo lo gratuito ya funciona.",
     "seeYourPlan": "Ver su plan",
     "adminNote": "Las cuentas de administrador tienen todo lo de Pro.",
@@ -2336,6 +2332,18 @@
         "q": "¿Y los informes que ya compré?",
         "a": "Siguen en Configuración → Informes comprados, el original y una copia actualizada."
       }
-    }
+    },
+    "proMonthly": "Pro mensual",
+    "proYearly": "Pro anual",
+    "freeNote": "Sin tarjeta, sin límite de tiempo",
+    "monthNote": "Cancele cuando quiera",
+    "getProMonthly": "Obtener Pro mensual",
+    "getProYearly": "Obtener Pro anual",
+    "yearFeatures": [
+      "Todo lo de Pro mensual",
+      "Un solo pago al año",
+      "Dos meses menos que pagar mensualmente",
+      "Cambie o cancele desde Configuración"
+    ]
   }
 }

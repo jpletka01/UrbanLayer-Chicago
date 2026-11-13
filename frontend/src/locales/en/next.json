@@ -2304,16 +2304,12 @@
       "Everything in Free",
       "200 questions a month",
       "Deep analysis on every lot, with its PDF",
-      "Cancel any time; Pro lasts to the end of the period"
+      "Pro lasts to the end of the period you paid for"
     ],
     "signedOutNote": "Signed out, you can ask 3 questions before signing in.",
     "signInFree": "Sign in, free",
-    "getProMonth": "Get Pro, {{price}} a month",
-    "getProYear": "Get Pro, {{price}} a year",
     "toStripe": "Opening Stripe…",
-    "stripeNote": "Payment by Stripe. We never see your card.",
     "signInForPro": "Sign in to get Pro",
-    "signInNote": "Pro belongs to an account, so sign in first. Nothing is charged until you confirm at Stripe.",
     "comingSoonNote": "Purchases open soon. Everything free works today.",
     "seeYourPlan": "See your plan",
     "adminNote": "Admin accounts have everything Pro has.",
@@ -2336,6 +2332,18 @@
         "q": "Reports I bought before?",
         "a": "They stay in Settings → Reports you bought, the original and an updated copy."
       }
-    }
+    },
+    "proMonthly": "Pro monthly",
+    "proYearly": "Pro yearly",
+    "freeNote": "No card, no time limit",
+    "monthNote": "Cancel any time",
+    "getProMonthly": "Get Pro monthly",
+    "getProYearly": "Get Pro yearly",
+    "yearFeatures": [
+      "Everything in Pro monthly",
+      "Paid once a year",
+      "Two months less than paying monthly",
+      "Switch or cancel from Settings"
+    ]
   }
 }

@@ -258,3 +258,16 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-next .nx-shimmer { background: none; color: rgb(var(--nx-ink) / 0.7); }
 }
+
+/* Pricing's Pro cards (Item 123, owner 2026-11-13): a thin lavender rim, the analyst's own colors, with a slow light
+   running round it (`animate-nx-rim`); still under reduced motion. The card inside keeps the block fill. */
+.ui-next .nx-pro-rim {
+  padding: 1.5px;
+  border-radius: calc(1rem + 1.5px);
+  background-image: linear-gradient(110deg, rgb(var(--nx-ai-a)), rgb(var(--nx-send-a)), rgb(var(--nx-ai-b)), rgb(var(--nx-send-b)), rgb(var(--nx-ai-a)));
+  background-size: 300% 100%;
+  box-shadow: 0 10px 32px -18px rgb(var(--nx-send-a) / 0.7);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-next .nx-pro-rim { animation: none; }
+}
