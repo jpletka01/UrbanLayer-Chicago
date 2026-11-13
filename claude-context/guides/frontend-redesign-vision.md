@@ -224,11 +224,12 @@ until its map meets this look. How it was made: `research/15-ui-data-inspiration
   within ¼ mile; Neighborhood new construction within ½ mile; Discovery lots colored by the chosen
   measure; a chat answer shows only the layer it is about.
 
-## Saved — Draft
+## Saved — Built (Item 119)
 
-In the rail: saved lots, searches and conversations. Named lists with a private note per lot; each saved
-lot shows what changed since it was saved (sale, permit, rezoning introduced, new violation); compare two
-or three; saves work before sign-in and move to the account after.
+In the side panel: saved lots and Discovery searches; conversations stay in the chat page's list. One list with a
+private note per lot (named lists and compare later); each saved lot shows what changed since it was saved (sale,
+permit, violation, rezoning filed or passed, zoning or overlay changes); a saved search says how many new lots match;
+saves work before sign-in and move to the account after. Email alerts later.
 
 ## Ruled out
 
@@ -294,13 +295,13 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 | Question | Answer before |
 |---|---|
 | Tabs on a phone: scrolling tab strip, or one page with jump links? | Detailed Profile mockups |
-| Exact chat allowances; whether past report buyers and voucher holders convert to Pro time; a short trial | Turning purchases on |
+| ~~Exact chat allowances; a short trial~~ Decided (Item 119): free 50 / Pro 200 a month, 3 signed out, no trial; no past buyers exist | — |
 | Race and ethnicity: details only, or left out (fair-housing steering concern)? Schools: include, and which measures? | Building the Neighborhood tab |
 | Renderings of new buildings: link out to filings, or skip? | Building the construction map |
 | Check a project: vague projects, low-confidence lots, two lots combined | Building Check a project |
 | Which violation categories count as serious enough for a card? | Indexing violations |
 | Which missing data to add first? | Starting the data work |
-| Alerts for new matches on saved searches: early or later? | Building Saved |
+| ~~Alerts for new matches on saved searches~~ Later (owner, Item 119): needs email sending | — |
 | Which five quick filters; are the goal names right? | Detailed Discovery mockups |
 
 ## What comes next
@@ -329,7 +330,9 @@ Parked on purpose; none blocks the visual design. Each must be answered before i
 6. **Phases 4–6 done** (the Profile in parts, the one map in the Cities: Skylines look, every Profile tab and
    Discovery; Items 89–104). **Phase 7 (data tracks) in progress:** LiDAR heights measured (Item 105), M6 3D done
    (Item 106); next M4 capacity, then M5 land in use. The runbook keeps the live status.
-7. **Phase 8 done (2026-11-12, Items 113–117):** the full chat page, the landing and the signed-in home. Next:
-   Phase 9, the commercial epics (quotas, billing and entitlements, identity, Saved), each with its own plan.
+7. **Phase 8 done (2026-11-12, Items 113–117):** the full chat page, the landing and the signed-in home.
+8. **Phase 9 in progress (2026-11-12):** Saved (Item 119) and Quotas (Item 120) built and approved; the order and the
+   allowances are set (free 50 / Pro 200 questions a month, 3 signed out, no trial). Next: Identity, then Billing,
+   then Deep analysis and the subscription flow, each with its own plan.
 
 Update this brief when a decision changes; the design pages hold the detail.
