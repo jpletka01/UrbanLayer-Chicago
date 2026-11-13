@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChatStreamError, chatStream } from "./api";
+import { ChatStreamError, chatStream, getUsage, type PausedDetail, type QuotaDetail, type Usage } from "./api";
 import type {
   ActivityItem,
   ContextObject,
@@ -13,7 +13,6 @@ import type {
   UploadMeta,
 } from "./types";
 
-const MESSAGE_LIMIT = 10;
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -66,9 +65,14 @@ interface UseChat {
   showDisclaimer: boolean;
   errorMsg: string | null;
   rateLimited: boolean;
-  atMessageLimit: boolean;
-  /** Turns left before the per-conversation cap (MESSAGE_LIMIT - sent). */
-  messagesRemaining: number;
+  /** The allowance is used up (Quotas, Item 120): the server refused a question, or usage says none are left. */
+  atQuota: boolean;
+  /** Questions left in this allowance (the month's, or a signed-out visitor's 3), null when unlimited or unknown. */
+  questionsLeft: number | null;
+  /** The plan the count belongs to, for the wording. */
+  usagePlan: Usage["plan"] | null;
+  /** What to say once the allowance is used up (null while questions remain). */
+  quotaMessage: string | null;
   activities: ActivityItem[];
   sendMessage: (
     text: string,
@@ -93,10 +97,29 @@ export function turnErrorText(
   chunk: { error: string; error_step?: string; error_kind?: string },
   t: (key: string) => string,
 ): string {
-  if (chunk.error === "MESSAGE_LIMIT_REACHED") return t("common:messageLimit");
   if (chunk.error_kind === "unavailable") return t("chat:turnError.unavailable");
   if (chunk.error_step) return t(`chat:turnError.step.${chunk.error_step}`);
   return chunk.error;
+}
+
+type T = (key: string, opts?: Record<string, unknown>) => string;
+
+/** The words for a refused question (Quotas, Item 120): signed out → sign in; free → when they come back and Pro once;
+ *  Pro → when they come back. Shared by both UIs. */
+export function quotaText(q: QuotaDetail, t: T, language = "en"): string {
+  if (q.network) return t("common:quota.network");
+  if (q.plan === "anonymous") return t("common:quota.anonymous", { count: q.limit, free: q.free_limit ?? 50 });
+  const date = q.resets_on
+    ? new Intl.DateTimeFormat(language.startsWith("es") ? "es-MX" : "en-US", { month: "long", day: "numeric" })
+        .format(new Date(`${q.resets_on}T12:00:00`))
+    : "";
+  return q.plan === "free"
+    ? t("common:quota.free", { limit: q.limit, date, pro: q.pro_limit ?? 200 })
+    : t("common:quota.pro", { limit: q.limit, date });
+}
+
+export function pausedText(p: PausedDetail, t: T): string {
+  return t(p.until === "month" ? "common:quota.pausedMonth" : "common:quota.pausedTomorrow");
 }
 
 export function useChat({
@@ -106,7 +129,7 @@ export function useChat({
   conversationId,
   language,
 }: UseChatOptions = {}): UseChat {
-  const { t } = useTranslation(["chat", "common"]);
+  const { t, i18n } = useTranslation(["chat", "common"]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [plan, setPlan] = useState<RetrievalPlan | null>(null);
   const [context, setContext] = useState<ContextObject | null>(null);
@@ -114,6 +137,13 @@ export function useChat({
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [quotaHit, setQuotaHit] = useState<QuotaDetail | null>(null);
+  const refreshUsage = () => {
+    // Never let the count break chat: a missing or failed usage call leaves it unknown.
+    try { void getUsage().then((u) => { if (u) setUsage(u); }).catch(() => {}); } catch { /* not available */ }
+  };
+  useEffect(() => { refreshUsage(); }, []);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   // The failed turn, kept so "Try again" resends the same question (decision Item 72).
   type FailedTurn = { text: string; attachments?: UploadMeta[]; opts?: SendOpts };
@@ -133,8 +163,14 @@ export function useChat({
   const activeGroundingRef = useRef<ScorecardContext | null>(null);
   const setGrounding = (ctx: ScorecardContext | null) => { activeGroundingRef.current = ctx; };
 
-  const userMessageCount = messages.filter((m) => m.role === "user").length;
-  const atMessageLimit = userMessageCount >= MESSAGE_LIMIT;
+  const questionsLeft = usage && usage.limit != null ? Math.max(0, usage.limit - usage.used) : null;
+  const atQuota = quotaHit != null || questionsLeft === 0;
+  const quotaMessage = quotaHit
+    ? quotaText(quotaHit, t, i18n.language)
+    : atQuota && usage && usage.plan !== "admin"
+      ? quotaText({ error: "quota", plan: usage.plan, limit: usage.limit ?? 0, used: usage.used, resets_on: usage.resets_on,
+          free_limit: usage.free_limit, pro_limit: usage.pro_limit }, t, i18n.language)
+      : null;
 
   function clearTurnState() {
     setPlan(null);
@@ -171,8 +207,8 @@ export function useChat({
   async function send(text: string, attachments: UploadMeta[] | undefined, opts: SendOpts | undefined, base?: Message[]) {
     if (streaming) return;
 
-    if (base ? base.filter((m) => m.role === "user").length >= MESSAGE_LIMIT : atMessageLimit) {
-      setErrorMsg(t("common:messageLimit"));
+    if (quotaHit) {
+      setErrorMsg(quotaText(quotaHit, t, i18n.language));
       return;
     }
 
@@ -298,7 +334,7 @@ export function useChat({
           });
         } else if (chunk.type === "error") {
           setErrorMsg(turnErrorText(chunk, t));
-          if (chunk.error !== "MESSAGE_LIMIT_REACHED") setFailedTurn(thisTurn);
+          setFailedTurn(thisTurn);
         }
       }
     } catch (err) {
@@ -306,9 +342,16 @@ export function useChat({
         console.error(err);
         streamErrored = true;
         if (err instanceof ChatStreamError) {
-          setErrorMsg(err.detail ?? t("common:connectionLost"));
+          if (err.quota) {
+            setQuotaHit(err.quota);
+            setUsage((u) => ({ ...(u ?? {}), plan: err.quota!.plan, used: err.quota!.used, limit: err.quota!.limit,
+              resets_on: err.quota!.resets_on } as Usage));
+          }
+          setErrorMsg(err.quota ? quotaText(err.quota, t, i18n.language)
+            : err.paused ? pausedText(err.paused, t)
+            : err.detail ?? t("common:connectionLost"));
           setRateLimited(err.status === 429);
-          if (err.status !== 429) setFailedTurn(thisTurn);
+          if (err.status !== 429 && !err.paused) setFailedTurn(thisTurn);
         } else {
           setErrorMsg((err as Error).message);
           setFailedTurn(thisTurn);
@@ -324,6 +367,7 @@ export function useChat({
         }
       }
     } finally {
+      if (receivedDone) refreshUsage();
       if (!receivedDone && !controller.signal.aborted && !streamErrored) {
         setErrorMsg(t("common:connectionLost"));
         setFailedTurn(thisTurn);
@@ -342,8 +386,10 @@ export function useChat({
     showDisclaimer,
     errorMsg,
     rateLimited,
-    atMessageLimit,
-    messagesRemaining: MESSAGE_LIMIT - userMessageCount,
+    atQuota,
+    questionsLeft,
+    usagePlan: usage?.plan ?? null,
+    quotaMessage,
     activities,
     sendMessage,
     clearTurnState,

@@ -199,9 +199,24 @@ export function useChatSession(options: ChatSessionOptions = {}) {
     prevStreamingRef.current = streaming;
   }, [streaming, messages]);
 
+  // The conversation the last question created. If the allowance refuses that question (Quotas, Item 120), the
+  // empty conversation is removed again, so a refused question never leaves a chat with no answer in the list.
+  const createdForQuestionRef = useRef<string | null>(null);
+  useEffect(() => {
+    const cid = createdForQuestionRef.current;
+    if (!chat.atQuota || !cid || cid !== conversationIdRef.current) return;
+    if (messages.some((m) => m.role === "assistant" && m.content)) return;
+    createdForQuestionRef.current = null;
+    void deleteConversation(cid)
+      .then(() => loadConversations().then(setConversations))
+      .catch(() => { /* the list will show it until reload; nothing else depends on it */ });
+    exitToStart();
+  }, [chat.atQuota]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function sendMessage(text: string, _attachments?: undefined, opts?: { parcelPin?: string | null; scorecardContext?: ScorecardContext | null }) {
     let cid = conversationId;
-    if (!cid && canPersist) {
+    // A question the allowance will refuse (Quotas, Item 120) must not leave an empty chat in the list.
+    if (!cid && canPersist && !chat.atQuota) {
       cid = generateId();
       const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
       try {
@@ -213,6 +228,7 @@ export function useChatSession(options: ChatSessionOptions = {}) {
       }
       setConversationId(cid);
       conversationIdRef.current = cid;
+      createdForQuestionRef.current = cid;
       navigateToConversation(cid);
     }
 

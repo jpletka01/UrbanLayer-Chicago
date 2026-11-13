@@ -1,4 +1,4 @@
-// The frame: the side panel lists only destinations the readiness registry allows (Saved hidden), collapses to
+// The frame: the side panel lists only destinations the readiness registry allows, collapses to
 // icons with accessible names, opens as a sheet on a phone, and the top bar carries the breadcrumb.
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,27 +25,23 @@ beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 
 describe("AppFrame", () => {
-  it("shows Home, Search, Discovery and Chat, never Saved, with the current page marked", async () => {
+  it("shows Home, Search, Discovery, Saved and Chat, with the current page marked", async () => {
     const { container } = mount();
     const panel = screen.getAllByRole("navigation", { name: "Main menu" })[0];
     const links = within(panel).getAllByRole("link").map((a) => a.textContent);
-    expect(links).toEqual(["UrbanLayer", "Home", "Search", "Discovery", "About UrbanLayer"]);
-    expect(within(panel).getByRole("button", { name: "Chat" }).getAttribute("aria-expanded")).toBe("false");
-    expect(within(panel).queryByText("Saved")).toBeNull();
+    expect(links).toEqual(["UrbanLayer", "Home", "Search", "Discovery", "Saved", "Chat", "About UrbanLayer"]);
     expect(within(panel).getByRole("link", { name: "Search" }).getAttribute("aria-current")).toBe("page");
     expect(container.querySelector(".ui-next")).not.toBeNull();
     expect(screen.getByRole("navigation", { name: "You are here" }).textContent).toContain("1601 N Milwaukee Ave");
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it("opens Chat like a folder: New chat first, then a sign-in line for anonymous visitors", () => {
+  it("links Chat straight to the chat page: past chats live in its own list, not here (owner, 2026-11-12)", () => {
     mount();
     const panel = screen.getAllByRole("navigation", { name: "Main menu" })[0];
-    fireEvent.click(within(panel).getByRole("button", { name: "Chat" }));
-    const folder = within(panel).getByTestId("chat-folder");
-    const rows = within(folder).getAllByRole("listitem").map((li) => li.textContent);
-    expect(rows).toEqual(["New chat", "Sign in to see past chats"]);
-    expect(within(folder).getByRole("link", { name: "New chat" }).getAttribute("href")).toBe("/chat");
+    expect(within(panel).getByRole("link", { name: "Chat" }).getAttribute("href")).toBe("/chat");
+    expect(within(panel).queryByTestId("chat-folder")).toBeNull();
+    expect(within(panel).queryByRole("button", { name: "Chat" })).toBeNull();
   });
 
   it("collapses to icons that keep their names, and remembers it", () => {

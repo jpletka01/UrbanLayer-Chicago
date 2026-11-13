@@ -219,7 +219,7 @@ class TestCsrfBootstrap:
         # Pre-fill the anon rate-limit window so /chat 429s instead of
         # invoking the real pipeline; 429 proves CSRF passed.
         from backend import rate_limit
-        for _ in range(5):
+        for _ in range(11):  # past the hourly burst guard (10 since Item 120)
             rate_limit._windows["ip:testclient"].record()
         resp = client.post("/chat", json={"message": "hi"}, headers={"x-csrf-token": token})
         assert resp.status_code == 429  # not 403

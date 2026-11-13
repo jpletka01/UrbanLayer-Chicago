@@ -18,6 +18,8 @@ const ROUTES = [
   { id: "landing", path: "/?ui=next&landing=1", ready: "landing" },
   { id: "home", path: "/?ui=next", ready: "home" },
   { id: "chat", path: "/chat?ui=next", ready: "chat-page" },
+  // Phase 9: Saved (sign-in is off locally, so these are the account's lots).
+  { id: "saved", path: "/saved?ui=next", ready: "saved" },
 ];
 
 async function open(page: Page, path: string, ready?: string) {
@@ -349,11 +351,77 @@ test("Phase 8: chat doors from / open the new chat page; the landing's bar stays
 
   // The home: a recent lot saved with its bookmark appears under Saved lots.
   await page.evaluate(() => localStorage.setItem("urbanlayer-next-recent-lots:v1", JSON.stringify([
-    { key: "addr:2541 n spaulding ave", address: "2541 N Spaulding Ave", pin: null, zone: "RS-3", area: "Logan Square", outline: null, at: Date.now() },
+    { key: "pin:13264210060000", address: "2541 N Spaulding Ave", pin: "13264210060000", zone: "RS-3", area: "Logan Square", outline: null, at: Date.now(), lat: 41.92776, lon: -87.71049 },
   ])));
   await open(page, "/", "home");
-  await page.getByTestId("home-recent").getByRole("button", { name: "Save 2541 N Spaulding Ave" }).click();
+  // Saved lives in the account now (Item 119, sign-in off locally): a lot saved by an earlier run is unsaved first.
+  const recentCard = page.getByTestId("home-recent");
+  const already = recentCard.getByRole("button", { name: "Remove 2541 N Spaulding Ave from saved" });
+  if (await already.count()) {
+    await already.click();
+    await expect(recentCard.getByRole("button", { name: "Save 2541 N Spaulding Ave" })).toBeVisible();
+  }
+  await recentCard.getByRole("button", { name: "Save 2541 N Spaulding Ave" }).click();
   await expect(page.getByTestId("home-saved").getByText("2541 N Spaulding Ave")).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("Phase 9: Saved lists the lot saved on the home, keeps a note, and a Discovery search saves and reopens", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
+  // Sign-in is off locally: the account is the development user's, so a lot saved on the home is in Saved.
+  await page.goto("/?ui=next", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => localStorage.setItem("urbanlayer-next-recent-lots:v1", JSON.stringify([
+    { key: "pin:13264150210000", address: "2611 N Sawyer Ave", pin: "13264150210000", zone: "RS-3", area: "Logan Square", outline: null, at: Date.now(), lat: 41.92879, lon: -87.70916 },
+  ])));
+  await open(page, "/", "home");
+  const save = page.getByTestId("home-recent").getByRole("button", { name: "Save 2611 N Sawyer Ave" });
+  if (await save.count()) await save.click();
+  await open(page, "/saved", "saved");
+  const card = page.getByTestId("saved-lot").filter({ hasText: "2611 N Sawyer Ave" });
+  await expect(card).toBeVisible();
+  // A private note, kept after a reload.
+  const note = `Ask about the coach house ${Date.now() % 1000}`;
+  await card.getByTestId("saved-note").click();
+  await card.getByTestId("saved-note-input").fill(note);
+  await card.getByTestId("saved-note-save").click();
+  await expect(card.getByTestId("saved-note")).toContainText(note);
+  await open(page, "/saved", "saved");
+  await expect(page.getByTestId("saved-lot").filter({ hasText: "2611 N Sawyer Ave" }).getByTestId("saved-note")).toContainText(note);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+
+  // Discovery: run a goal, save the search, find it under Searches, open it again.
+  await open(page, "/discovery");
+  // On a phone the goals are in the sheet over the map: open it, pick the first goal.
+  await page.getByTestId("phone-sheet").getByRole("button", { name: "Show more of the list" }).click();
+  await page.getByTestId("goals").getByRole("button").first().click();
+  await page.getByTestId("save-search").click();
+  await page.getByTestId("save-search-form").getByRole("button", { name: "Save" }).click();
+  await expect(page.getByTestId("search-saved")).toBeVisible();
+  await open(page, "/saved?tab=searches", "saved");
+  const search = page.getByTestId("saved-search").first();
+  await expect(search.getByTestId("saved-search-news")).not.toHaveText("Checking what changed…");
+  await search.getByTestId("saved-search-open").click();
+  await expect(page.getByTestId("search-summary")).toBeVisible({ timeout: 30_000 });
+  expect(new URL(page.url()).pathname).toBe("/discovery");
+});
+
+test("Phase 9 quotas: the count near the end, and the refusal's words, with the server's replies stubbed", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
+  // No model runs: /api/usage and /chat answer from here, the way the server does (Item 120).
+  await page.route("**/api/usage", (r) => r.fulfill({ json: { plan: "free", used: 46, limit: 50, resets_on: "2026-12-01", pro_limit: 200 } }));
+  await page.route("**/chat", (r) => r.request().method() === "POST"
+    ? r.fulfill({ status: 429, json: { detail: { error: "quota", plan: "free", limit: 50, used: 50, resets_on: "2026-12-01", pro_limit: 200 } } })
+    : r.continue());
+  await open(page, "/chat?ui=next", "chat-page");
+  const box = page.getByTestId("chat-box");
+  await box.fill("Can I build a 3-flat at 2541 N Spaulding Ave?");
+  await box.press("Enter");
+  // The refused question leaves no empty chat behind: the page is a new chat again, saying why.
+  await expect(page.getByTestId("chat-limit-empty")).toContainText("They come back on December 1");
+  await expect(page.getByTestId("chat-box")).toBeDisabled();
+  await expect(page.getByText("Can I build a 3-flat at 2541 N Spaulding Ave?")).toHaveCount(0);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });

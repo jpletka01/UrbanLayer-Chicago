@@ -6,6 +6,7 @@ window counters keyed by user_id (or IP for anonymous users).
 
 from __future__ import annotations
 
+import datetime
 import ipaddress
 import logging
 import os
@@ -21,13 +22,15 @@ log = logging.getLogger(__name__)
 
 
 def _tier_limits() -> dict[str, tuple[int, int]]:
+    """(per day, per hour) burst guards, in memory. 0 = off. Since Quotas (Item 120) the allowance itself lives in
+    SQLite (`quotas.py`); these only stop a burst, so a reset on deploy is harmless."""
     return {
         "anonymous": (
-            int(os.environ.get("RATE_LIMIT_ANON_DAY", "3")),
-            int(os.environ.get("RATE_LIMIT_ANON_HOUR", "3")),
+            int(os.environ.get("RATE_LIMIT_ANON_DAY", "0")),
+            int(os.environ.get("RATE_LIMIT_ANON_HOUR", "10")),
         ),
-        "free": (25, 10),
-        "premium": (100, 30),
+        "free": (0, 10),
+        "premium": (0, 30),
         "admin": (0, 0),
     }
 
@@ -46,12 +49,14 @@ class _UserWindow:
 
 _windows: dict[str, _UserWindow] = defaultdict(_UserWindow)
 _changes_windows: dict[str, _UserWindow] = defaultdict(_UserWindow)
+_saved_windows: dict[str, _UserWindow] = defaultdict(_UserWindow)
 
 
 def clear_rate_limits() -> None:
     """Clear all in-memory rate limit state. Used by tests."""
     _windows.clear()
     _changes_windows.clear()
+    _saved_windows.clear()
 
 
 # Peers allowed to tell us the client's address via X-Real-IP: loopback and the
@@ -154,29 +159,11 @@ async def check_rate_limit(request: Request) -> dict | None:
     return user
 
 
-async def check_daily_budget() -> None:
-    """Check if today's API spend exceeds the daily budget cap.
-
-    Uses the llm_calls table to sum today's estimated costs.
-    """
-    import os
-    budget_str = os.environ.get("DAILY_API_BUDGET_USD", "5.00")
-    try:
-        budget = float(budget_str)
-    except ValueError:
-        return
-
+async def _spend_since(cutoff_ms: int) -> float:
     from backend import db as _db
     from backend.llm import estimate_cost
 
-    try:
-        conn = _db._get_db()
-    except RuntimeError:
-        return
-    import datetime
-    midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    cutoff_ms = int(midnight.timestamp() * 1000)
-
+    conn = _db._get_db()
     cur = await conn.execute(
         "SELECT model, SUM(input_tokens) as inp, SUM(output_tokens) as out, "
         "SUM(cache_read_tokens) as cache_read, SUM(cache_create_tokens) as cache_write "
@@ -184,25 +171,57 @@ async def check_daily_budget() -> None:
         (cutoff_ms,),
     )
     rows = await cur.fetchall()
-
-    total_cost = sum(
-        estimate_cost(
-            row["model"], row["inp"] or 0, row["out"] or 0,
-            row["cache_read"] or 0, row["cache_write"] or 0,
-        )
+    return sum(
+        estimate_cost(row["model"], row["inp"] or 0, row["out"] or 0, row["cache_read"] or 0, row["cache_write"] or 0)
         for row in rows
     )
 
-    if total_cost >= budget:
-        raise HTTPException(
-            status_code=503,
-            detail="Daily API budget reached. Service will resume tomorrow.",
-        )
+
+def _budget(name: str, default: str) -> float | None:
+    try:
+        return float(os.environ.get(name, default))
+    except ValueError:
+        return None
+
+
+async def check_daily_budget(user: dict | None = None, *, now: datetime.datetime | None = None) -> None:
+    """Pause chat when today's or this month's model spend (Chicago days and months) reaches its cap: every
+    `llm_calls` row counts, whatever its phase (Item 120). Admins are exempt so the owner can still test."""
+    if user and user.get("tier") == "admin":
+        return
+    from backend import db as _db
+
+    try:
+        _db._get_db()
+    except RuntimeError:
+        return
+    from zoneinfo import ZoneInfo
+
+    now = (now or datetime.datetime.now(ZoneInfo("America/Chicago"))).astimezone(ZoneInfo("America/Chicago"))
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    first = midnight.replace(day=1)
+    daily, monthly = _budget("DAILY_API_BUDGET_USD", "5.00"), _budget("MONTHLY_API_BUDGET_USD", "75.00")
+    if daily is not None and await _spend_since(int(midnight.timestamp() * 1000)) >= daily:
+        raise HTTPException(status_code=503, detail={"error": "paused", "until": "tomorrow",
+                                                     "message": "Daily API budget reached. Service will resume tomorrow."})
+    if monthly is not None and await _spend_since(int(first.timestamp() * 1000)) >= monthly:
+        raise HTTPException(status_code=503, detail={"error": "paused", "until": "month",
+                                                     "message": "Monthly API budget reached. Service will resume on the 1st."})
 
 
 def check_changes_limit(request: Request, limit: int = 20, window_s: int = 60) -> None:
     """Per-IP limit for the public "since then" endpoint (a shared link is open to anyone). Raises 429."""
     w = _changes_windows[_ip_bucket(client_ip(request))]
+    now = time.time()
+    if w.count_since(now - window_s) >= limit:
+        raise HTTPException(status_code=429, detail="Too many requests.", headers={"Retry-After": str(window_s)})
+    w.record()
+
+
+def check_saved_limit(user_id: str, bucket: str, limit: int, window_s: int = 60) -> None:
+    """Per-user limit for Saved (Item 119): writes, and the "what changed" checks that call the City and the
+    County. Keyed by the account, not the IP (every Saved route needs a signed-in user). Raises 429."""
+    w = _saved_windows[f"{bucket}:{user_id}"]
     now = time.time()
     if w.count_since(now - window_s) >= limit:
         raise HTTPException(status_code=429, detail="Too many requests.", headers={"Retry-After": str(window_s)})

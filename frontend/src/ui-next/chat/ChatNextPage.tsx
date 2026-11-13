@@ -52,7 +52,7 @@ export default function ChatNextPage() {
     }),
   });
   const { signIn } = useAuthContext();
-  const { messages, streaming, context, activities, errorMsg, canRetry, retry, rateLimited, atMessageLimit, messagesRemaining } = session;
+  const { messages, streaming, context, activities, errorMsg, canRetry, retry, rateLimited, atQuota, questionsLeft, usagePlan, quotaMessage } = session;
   const [draft, setDraft] = useState("");
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -84,7 +84,7 @@ export default function ChatNextPage() {
 
   const send = (text = draft) => {
     const q = text.trim();
-    if (!q || streaming || atMessageLimit) return;
+    if (!q || streaming || atQuota) return;
     stickToEnd.current = true;
     setDraft("");
     session.sendMessage(q);
@@ -128,7 +128,7 @@ export default function ChatNextPage() {
       onChange={setDraft}
       onSend={() => send()}
       streaming={streaming}
-      disabled={atMessageLimit || session.isSharedView}
+      disabled={atQuota || session.isSharedView}
       placeholder={empty ? t("next:chat.placeholder") : t("next:chat.followUp")}
       examples={empty && !grounded ? examples : undefined}
       // No autofocus on a new conversation: a focused box hides the example that types itself (brief "Chat").
@@ -218,6 +218,14 @@ export default function ChatNextPage() {
                       );
                     })}
                   </div>
+                ) : atQuota && quotaMessage ? (
+                  // The allowance is spent: say so where the visitor is looking, with sign-in for a signed-out visitor.
+                  <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-caption nx-muted" role="status" data-testid="chat-limit-empty">
+                    {quotaMessage}
+                    {usagePlan === "anonymous" && (
+                      <button type="button" onClick={signIn} className="font-semibold text-nx-ink underline underline-offset-2 touch-target">{t("next:frame.signIn")}</button>
+                    )}
+                  </p>
                 ) : (
                   <p className="text-center text-caption nx-muted">{t("next:chat.hint")}</p>
                 )}
@@ -254,7 +262,7 @@ export default function ChatNextPage() {
                     </div>
                   );
                 })}
-                {errorMsg && (
+                {errorMsg && !atQuota && (
                   <div className="rounded-xl bg-nx-pill-red-bg px-3 py-2 text-caption text-nx-pill-red" role="alert" data-testid="chat-error">
                     <p>{errorMsg}</p>
                     {canRetry && (
@@ -277,13 +285,13 @@ export default function ChatNextPage() {
           <div className="px-4 pb-4 pt-2 sm:px-7">
             <div className="mx-auto flex max-w-[760px] flex-col gap-1.5">
               {composer}
-              {atMessageLimit ? (
-                <p className="flex flex-wrap items-center gap-2 px-2 text-caption nx-muted" role="status" data-testid="chat-limit">
-                  {t("next:chat.atLimit")}
-                  <button type="button" onClick={() => session.newChat()} className="font-medium text-nx-ink underline underline-offset-2">{t("next:frame.newChat")}</button>
+              {/* The allowance (Quotas, Item 120): its message once used up, the count only when 10 or fewer are left. */}
+              {atQuota ? (
+                <p className="px-2 text-caption nx-muted" role="status" data-testid="chat-limit">{quotaMessage}</p>
+              ) : questionsLeft != null && questionsLeft > 0 && questionsLeft <= 10 ? (
+                <p className="px-2 text-caption nx-muted" role="status" data-testid="chat-left">
+                  {usagePlan === "anonymous" ? t("common:quota.left", { count: questionsLeft }) : t("common:quota.leftMonth", { count: questionsLeft })}
                 </p>
-              ) : messagesRemaining <= 2 && messages.length > 0 ? (
-                <p className="px-2 text-caption nx-muted" role="status">{t("next:chat.remaining", { count: messagesRemaining })}</p>
               ) : null}
             </div>
           </div>

@@ -846,7 +846,7 @@ NEIGHBORHOOD-WIDE (community area name):
               ["context", "ContextObject JSON", "Citation data, sidebar content, domain card data"],
               ["map_data", "MapDataResponse JSON", "Inline map data (no separate fetch)"],
               ["token", "text string", "Streaming synthesis text"],
-              ["error", "error message", "MESSAGE_LIMIT_REACHED or exception"],
+              ["error", "error message", "The step that failed (route, retrieval, answer) or an outage"],
               ["done", "final metadata", "Attach context/plan/mapData to message; carries truncated and citation_warnings"],
             ]}
           />
@@ -1610,12 +1610,15 @@ Consumers → Property Profile (renders pin + confidence badge)
             message loads that question's sidebar state.
           </P>
 
-          <Sub>10-Message Limit</Sub>
+          <Sub>Question allowances</Sub>
           <P>
-            Enforced on both sides. Backend: if <Mono>{">="} 10</Mono> user messages in SQLite, emits
-            <Mono>error: "MESSAGE_LIMIT_REACHED"</Mono>. Frontend: replaces input with "Start a new conversation."
-            Controls token costs and prevents context window explosion. Configurable
-            via <Mono>message_limit</Mono> in <Mono>config.py</Mono>.
+            One counter per visitor in SQLite (<Mono>backend/quotas.py</Mono>), so a deploy can't reset it: three
+            questions in total for a signed-out visitor (a signed cookie, plus a soft daily ceiling per network so
+            clearing cookies doesn't mint more), 50 a month on a free account and 200 on Pro, counted in Chicago
+            calendar months. A question is taken with one atomic upsert ("add one only while under the limit"), so fifty
+            requests at once against a limit of fifty admit exactly fifty, and it is given back when the turn ends
+            without an answer. A daily and a monthly spend cap sum every model call. The old cap of 10 questions per
+            conversation is gone; history sent to the model is already bounded.
           </P>
 
           <Sub>Conversation Sharing</Sub>
@@ -3024,6 +3027,30 @@ Consumers → Property Profile (renders pin + confidence badge)
             their first five letters fixed both; a sentence must still score four points or nothing is lit, so a weak
             guess never passes for a quote. Both interfaces now share one chat lifecycle (loading, saving, the doors in
             from other pages) instead of a copy per interface (Items 113&ndash;117).
+          </P>
+
+          <Sub>Counting questions so a deploy can&apos;t forget them</Sub>
+          <P>
+            Chat limits used to live in the server&apos;s memory, so every merge, which deploys, gave everyone a fresh
+            day, and a separate cap of ten questions per conversation sat on top. The allowance now lives in SQLite: three
+            questions in total for a signed-out visitor, fifty a month on a free account, two hundred on Pro. The
+            interesting part was the shared database connection. The obvious design, a transaction per question, breaks
+            when two requests open transactions on the one connection the app shares, so each counter is a single
+            statement that adds one only while it is under the limit; eighty requests at once against a limit of fifty
+            admit exactly fifty. Building the spend cap turned up a leak: the call that translates a clarifying question
+            for Spanish speakers was logged under a phase name the table&apos;s own check rejected, so that spend never
+            reached the cap. The table was rebuilt without the check and every model call now records whose question it
+            was (Item 120).
+          </P>
+
+          <Sub>Saved lots that say what changed</Sub>
+          <P>
+            Saving a lot is easy; telling someone what changed since is the useful part. A saved lot reports the sales,
+            City permits, violations and rezoning filings dated after the day it was saved, and its zoning, overlays and
+            passed ordinances against a baseline the server records on the first check, never from the browser. A failed
+            lookup says it couldn&apos;t check rather than &ldquo;nothing new&rdquo;. One rule came from the owner&apos;s
+            review: a lot whose only address belongs to a neighbor is never looked up by that address, since the records
+            would be the neighbor&apos;s, and the card says why (Item 119).
           </P>
 
           <SectionHeading id="decisions">Design Decisions</SectionHeading>

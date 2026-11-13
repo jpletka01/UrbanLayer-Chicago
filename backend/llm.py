@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import time
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from functools import lru_cache
 from typing import Any, AsyncIterator
 
@@ -19,6 +20,10 @@ from anthropic import AsyncAnthropic
 from backend.config import get_settings
 
 log = logging.getLogger(__name__)
+
+# Who a model call is for (Quotas, Item 120): `/chat` sets it for its request, so every phase's `llm_calls` row
+# carries the account (None for a signed-out visitor). Tasks started inside the request inherit it.
+CURRENT_USER: ContextVar[str | None] = ContextVar("llm_current_user", default=None)
 
 # USD per million tokens (Anthropic first-party list prices). Feeds the admin
 # dashboard and the daily budget cap in rate_limit.py, so an out-of-date rate
@@ -88,6 +93,7 @@ async def tracked_create(
         duration_ms = int((time.monotonic() - start) * 1000)
         try:
             await db.save_llm_call(
+                user_id=CURRENT_USER.get(),
                 request_group=request_group,
                 conversation_id=conversation_id,
                 phase=phase,
@@ -106,6 +112,7 @@ async def tracked_create(
     usage = resp.usage
     try:
         await db.save_llm_call(
+            user_id=CURRENT_USER.get(),
             request_group=request_group,
             conversation_id=conversation_id,
             phase=phase,
@@ -163,6 +170,7 @@ async def tracked_stream(
         duration_ms = int((time.monotonic() - start) * 1000)
         try:
             await db.save_llm_call(
+                user_id=CURRENT_USER.get(),
                 request_group=request_group,
                 conversation_id=conversation_id,
                 phase=phase,

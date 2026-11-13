@@ -38,7 +38,7 @@ const ANSWER: Message = {
 let session: Record<string, unknown>;
 const base = () => ({
   messages: [] as Message[], streaming: false, context: null, activities: [], errorMsg: null, canRetry: false, retry: vi.fn(),
-  rateLimited: false, atMessageLimit: false, messagesRemaining: 10, conversationId: null, loadingConversation: false,
+  rateLimited: false, atQuota: false, questionsLeft: null as number | null, usagePlan: "free", quotaMessage: null as string | null, conversationId: null, loadingConversation: false,
   loadError: null, isSharedView: false, sinceThen: {}, canPersist: false, groundedContext: null, pendingAttachments: [],
   showAuthModal: false, sendMessage: vi.fn(), sendPropertyStarter: vi.fn(), attach: vi.fn(), removeAttachment: vi.fn(),
   newChat: vi.fn(), dismissAuth: vi.fn(),
@@ -55,7 +55,11 @@ describe("the full chat page", () => {
     const { container } = mount();
     expect(screen.getByRole("heading", { name: "What do you want to know?" })).toBeTruthy();
     expect(screen.getByTestId("chat-example")).toBeTruthy();
-    const box = screen.getByTestId("chat-box");
+    const box = screen.getByTestId("chat-box") as HTMLTextAreaElement;
+    // Clicking in clears the example and leaves no second sentence behind (owner, 2026-11-12).
+    fireEvent.focus(box);
+    expect(screen.queryByTestId("chat-example")).toBeNull();
+    expect(box.placeholder).toBe("");
     fireEvent.change(box, { target: { value: "  How many units does RT-4 allow?  " } });
     fireEvent.keyDown(box, { key: "Enter" });
     expect(session.sendMessage).toHaveBeenCalledWith("How many units does RT-4 allow?");
@@ -128,12 +132,34 @@ describe("the full chat page", () => {
     expect(session.retry).toHaveBeenCalled();
   });
 
-  it("says when the conversation is at its limit and offers a new chat", () => {
-    session.messages = [{ role: "user", content: "Q" }, ANSWER];
-    session.atMessageLimit = true;
-    session.messagesRemaining = 0;
+  it("a new chat at the limit says so, offers sign-in signed out, and the box shows no typing example", () => {
+    session.atQuota = true;
+    session.questionsLeft = 0;
+    session.usagePlan = "anonymous";
+    session.quotaMessage = "You've used your 3 free questions. Sign in to keep asking: 50 a month, free.";
     mount();
-    expect(screen.getByTestId("chat-limit").textContent).toContain("question limit");
+    expect(screen.getByTestId("chat-limit-empty").textContent).toContain("3 free questions");
+    expect(within(screen.getByTestId("chat-limit-empty")).getByRole("button", { name: "Sign in" })).toBeTruthy();
+    expect(screen.queryByTestId("chat-example")).toBeNull();
+    expect((screen.getByTestId("chat-box") as HTMLTextAreaElement).disabled).toBe(true);
+    session.usagePlan = "free";
+  });
+
+  it("says when the month's questions are used up, and shows the count only near the end (Item 120)", () => {
+    session.messages = [{ role: "user", content: "Q" }, ANSWER];
+    session.questionsLeft = 12;
+    const { unmount } = mount();
+    expect(screen.queryByTestId("chat-left")).toBeNull();
+    unmount();
+    session.questionsLeft = 4;
+    const second = mount();
+    expect(screen.getByTestId("chat-left").textContent).toBe("4 questions left this month");
+    second.unmount();
+    session.atQuota = true;
+    session.questionsLeft = 0;
+    session.quotaMessage = "You've used this month's 50 questions. They come back on December 1. Pro gives you 200 a month.";
+    mount();
+    expect(screen.getByTestId("chat-limit").textContent).toContain("They come back on December 1");
     expect((screen.getByTestId("chat-box") as HTMLTextAreaElement).disabled).toBe(true);
   });
 

@@ -16,6 +16,11 @@ export interface RememberedLot {
   outline: Array<[number, number]> | null;
   /** When it was opened or saved (epoch ms). */
   at: number;
+  /** The lot's point, for moving a browser save to the account (Saved, Item 119). Older entries have none. */
+  lat?: number | null;
+  lon?: number | null;
+  /** The address is a neighbor's stand-in (Discovery's "~"): shown as "Near …" (Item 119). */
+  approximate?: boolean;
 }
 
 export const RECENT_KEY = "urbanlayer-next-recent-lots:v1";
@@ -53,6 +58,11 @@ export function outlinePath(ring: Array<[number, number]>, w: number, h: number,
     .join(" ") + " Z";
 }
 
+/** How a lot's address reads on a card: an approximate one says "Near". */
+export function shownAddress(lot: Pick<RememberedLot, "address" | "approximate">, t: (k: string, o?: Record<string, unknown>) => string): string {
+  return lot.approximate ? t("discovery.card.near", { address: lot.address }) : lot.address;
+}
+
 /** The Profile link for a remembered lot. */
 export function lotHref(lot: Pick<RememberedLot, "pin" | "address">): string {
   const p = new URLSearchParams(lot.pin ? { pin: lot.pin, address: lot.address } : { address: lot.address });
@@ -81,6 +91,11 @@ export const readSaved = () => read(SAVED_KEY);
 export function rememberRecent(lot: Omit<RememberedLot, "at">, now = Date.now()): void {
   const list = readRecent().filter((l) => l.key !== lot.key);
   write(RECENT_KEY, [{ ...lot, at: now }, ...list].slice(0, RECENT_MAX));
+}
+
+/** Replace the browser's saved lots (after they moved to the account, only those that could not stay here). */
+export function writeSaved(list: RememberedLot[]): void {
+  write(SAVED_KEY, list);
 }
 
 export function clearRecent(): void {

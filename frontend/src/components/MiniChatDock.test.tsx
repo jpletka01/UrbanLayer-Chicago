@@ -12,7 +12,7 @@ vi.mock("../lib/useChat", () => ({
       { role: "user", content: "Can I build a 3-flat? — 642 W Belden Ave" },
       { role: "assistant", content: "RS-3 allows ..." },
     ],
-    streaming: false, context: null, errorMsg: null, atMessageLimit: false, activities: [],
+    streaming: false, context: null, errorMsg: null, atQuota: false, quotaMessage: null, activities: [],
     sendMessage: vi.fn(), setGrounding: vi.fn(),
   }),
 }));

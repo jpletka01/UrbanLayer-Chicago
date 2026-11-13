@@ -30,10 +30,9 @@ beforeEach(() => {
 });
 
 describe("turnErrorText", () => {
-  it("words the failed step, an outage, the message limit, and leaves an older backend's text alone", () => {
+  it("words the failed step and an outage, and leaves an older backend's text alone", () => {
     expect(turnErrorText({ error: "x", error_step: "route", error_kind: "step" }, t)).toBe("chat:turnError.step.route");
     expect(turnErrorText({ error: "x", error_step: "route", error_kind: "unavailable" }, t)).toBe("chat:turnError.unavailable");
-    expect(turnErrorText({ error: "MESSAGE_LIMIT_REACHED" }, t)).toBe("common:messageLimit");
     expect(turnErrorText({ error: "Something went wrong" }, t)).toBe("Something went wrong");
   });
 });

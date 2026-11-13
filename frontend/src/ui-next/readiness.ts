@@ -5,7 +5,7 @@
 //
 //   ready  — the new page exists and renders behind ?ui=next
 //   old    — the destination exists only as today's page; the side panel links to it, the route stays old
-//   hidden — not built yet; neither routed nor shown (Saved, until its route exists)
+//   hidden — not built yet; neither routed nor shown
 //
 // Pure data: no components, so the old bundle and the lazy preview chunk can both import it.
 
@@ -32,7 +32,8 @@ export const READINESS: readonly ReadinessEntry[] = [
     nav: { labelKey: "nav.search", icon: "search", to: "/scorecard" } },
   { id: "discovery", path: "/discovery", status: "ready", analytics: "next_discovery",
     nav: { labelKey: "nav.discovery", icon: "discovery", to: "/discovery" } },
-  { id: "saved", path: "/saved", status: "hidden", analytics: "next_saved",
+  // Saved (Phase 9, Item 119): saved lots and Discovery searches, and what changed since.
+  { id: "saved", path: "/saved", status: "ready", analytics: "next_saved",
     nav: { labelKey: "nav.saved", icon: "saved", to: "/saved" } },
   { id: "chat", path: "/chat", status: "ready", analytics: "next_chat",
     nav: { labelKey: "nav.chat", icon: "chat", to: "/chat" } },

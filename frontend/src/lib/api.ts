@@ -412,15 +412,57 @@ export async function fetchMapData(params: {
   }
 }
 
+/** A question refused by the monthly or signed-out allowance (Quotas, Item 120), as the server sends it. */
+export interface QuotaDetail {
+  error: "quota";
+  plan: "anonymous" | "free" | "pro";
+  limit: number;
+  used: number;
+  resets_on: string | null;
+  network?: boolean;
+  free_limit?: number;
+  pro_limit?: number;
+}
+
+/** Chat paused because the day's or month's model spend reached its cap. */
+export interface PausedDetail {
+  error: "paused";
+  until: "tomorrow" | "month";
+}
+
+/** The visitor's questions: plan, used, allowed, and when they come back (`GET /api/usage`). */
+export interface Usage {
+  plan: "anonymous" | "free" | "pro" | "admin";
+  used: number;
+  limit: number | null;
+  resets_on: string | null;
+  free_limit?: number;
+  pro_limit?: number;
+}
+
 export class ChatStreamError extends Error {
   status: number;
   detail: string | null;
+  quota: QuotaDetail | null;
+  paused: PausedDetail | null;
 
-  constructor(status: number, statusText: string, detail: string | null) {
+  constructor(status: number, statusText: string, detail: string | null, structured: unknown = null) {
     super(detail ?? `Chat request failed: ${status} ${statusText}`);
     this.name = "ChatStreamError";
     this.status = status;
     this.detail = detail;
+    const d = structured as { error?: string } | null;
+    this.quota = d?.error === "quota" ? (d as QuotaDetail) : null;
+    this.paused = d?.error === "paused" ? (d as PausedDetail) : null;
+  }
+}
+
+export async function getUsage(): Promise<Usage | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/usage`);
+    return resp.ok ? ((await resp.json()) as Usage) : null;
+  } catch {
+    return null;
   }
 }
 
@@ -455,7 +497,8 @@ export async function* chatStream(
   if (!resp.ok || !resp.body) {
     const errBody = await resp.json().catch(() => null);
     const detail = typeof errBody?.detail === "string" ? errBody.detail : null;
-    throw new ChatStreamError(resp.status, resp.statusText, detail);
+    throw new ChatStreamError(resp.status, resp.statusText, detail,
+      errBody && typeof errBody.detail === "object" ? errBody.detail : null);
   }
 
   yield* parseSSE<ChatChunk>(resp.body.getReader());
@@ -1609,3 +1652,110 @@ export async function fetchTransitStations(): Promise<import("./types").TransitS
     return _transitStationsCache!;
   } catch { return []; }
 }
+
+// ---------------------------------------------------------------------------
+// Saved (Phase 9, decision Item 119): the account's saved lots and Discovery searches
+// ---------------------------------------------------------------------------
+
+export interface SavedLotWire {
+  id: string;
+  key: string;
+  pin: string | null;
+  address: string;
+  lat: number;
+  lon: number;
+  zone: string | null;
+  area: string | null;
+  outline: Array<[number, number]> | null;
+  note: string;
+  saved_at: number;
+  watching_since: string | null;
+  /** The address is a neighbor's stand-in: shown as "Near …". */
+  approximate?: boolean;
+}
+
+export interface SavedLotInput {
+  pin: string | null;
+  address: string;
+  lat: number;
+  lon: number;
+  zone?: string | null;
+  area?: string | null;
+  outline?: Array<[number, number]> | null;
+  saved_at?: number;
+  approximate?: boolean;
+}
+
+export type SavedChange =
+  | { kind: "sale"; date: string; price: number | null }
+  | { kind: "permit"; date: string; permit: string | null; permit_type: string | null; description: string | null; cost: number | null }
+  | { kind: "violation"; date: string; code: string | null; description: string | null; status: string | null }
+  | { kind: "rezoning_filed"; date: string; record: string; title: string; url: string }
+  | { kind: "district"; date: string | null; old: string; new: string; record?: string | null; url?: string | null }
+  | { kind: "overlay"; date: string | null; change: "added" | "removed"; layer: string; name: string | null }
+  | { kind: "standards"; date: string | null; field: string; old: unknown; new: unknown; zone_class?: string }
+  | { kind: "map_amendment" | "designation"; date: string | null; record: string | null; url: string | null; name?: string | null };
+
+export interface SavedLotChanges {
+  since: string;
+  watching_since: string | null;
+  status: "changes" | "none" | "partial";
+  changes: SavedChange[];
+  unchecked: string[];
+}
+
+export interface SavedSearchWire {
+  id: string;
+  name: string;
+  draft: Record<string, unknown>;
+  cqs: Record<string, unknown>;
+  match_count: number;
+  saved_at: number;
+  seen_at: number;
+}
+
+export interface SavedSearchNew {
+  total: number;
+  new: number;
+  gone: number;
+  exact: boolean;
+  same_data: boolean;
+  since: string;
+}
+
+/** A Saved request that failed: the status (409 = the saved limit) for the page to word. */
+export class SavedError extends Error {
+  status: number;
+  constructor(status: number) {
+    super(`saved request failed: ${status}`);
+    this.status = status;
+  }
+}
+
+async function savedJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const resp = await authFetch(`${API_BASE}/api/saved${path}`, {
+    ...init,
+    headers: init.body ? { "Content-Type": "application/json" } : undefined,
+  });
+  if (!resp.ok) throw new SavedError(resp.status);
+  return (resp.status === 204 ? undefined : await resp.json()) as T;
+}
+
+export const savedApi = {
+  lots: () => savedJson<{ lots: SavedLotWire[]; max: number }>("/lots"),
+  save: (lot: SavedLotInput) => savedJson<SavedLotWire>("/lots", { method: "POST", body: JSON.stringify(lot) }),
+  merge: (lots: SavedLotInput[]) =>
+    savedJson<{ added: number; skipped: number; lots: SavedLotWire[]; max: number }>("/lots/merge", { method: "POST", body: JSON.stringify({ lots }) }),
+  note: (id: string, note: string) =>
+    savedJson<SavedLotWire>(`/lots/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ note }) }),
+  unsave: (id: string) => savedJson<void>(`/lots/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  changes: (id: string) => savedJson<SavedLotChanges>(`/lots/${encodeURIComponent(id)}/changes`),
+  searches: () => savedJson<{ searches: SavedSearchWire[]; max: number }>("/searches"),
+  saveSearch: (name: string, draft: unknown, request: unknown) =>
+    savedJson<SavedSearchWire>("/searches", { method: "POST", body: JSON.stringify({ name, draft, request }) }),
+  searchNew: (id: string) => savedJson<SavedSearchNew>(`/searches/${encodeURIComponent(id)}/new`),
+  searchSeen: (id: string) => savedJson<SavedSearchWire>(`/searches/${encodeURIComponent(id)}/seen`, { method: "POST" }),
+  renameSearch: (id: string, name: string) =>
+    savedJson<SavedSearchWire>(`/searches/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ name }) }),
+  deleteSearch: (id: string) => savedJson<void>(`/searches/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};

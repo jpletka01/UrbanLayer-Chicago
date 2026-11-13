@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 16
+_SCHEMA_VERSION = 18
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -62,8 +62,7 @@ CREATE TABLE IF NOT EXISTS llm_calls (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     request_group       TEXT NOT NULL,
     conversation_id     TEXT,
-    phase               TEXT NOT NULL
-        CHECK(phase IN ('conversation', 'router', 'synthesizer')),
+    phase               TEXT NOT NULL,
     model               TEXT NOT NULL,
     input_tokens        INTEGER NOT NULL,
     output_tokens       INTEGER NOT NULL,
@@ -285,6 +284,99 @@ CREATE TABLE IF NOT EXISTS fact_checks (
 """)
 
 
+async def _migrate_v17(db: aiosqlite.Connection) -> None:
+    """Saved (Phase 9, decision Item 119): a user's saved lots, each with a private note and the "since then"
+    baseline the server took for it, and saved Discovery searches with the matches they had when saved.
+    Both cascade with the user row; ``backend/saved.py`` owns every read and write."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS saved_lots (
+    id            TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lot_key       TEXT NOT NULL,
+    pin           TEXT,
+    address       TEXT NOT NULL,
+    lat           REAL NOT NULL,
+    lon           REAL NOT NULL,
+    display_json  TEXT NOT NULL DEFAULT '{}',
+    note          TEXT NOT NULL DEFAULT '',
+    snapshot_json TEXT,
+    saved_at      INTEGER NOT NULL,
+    updated_at    INTEGER NOT NULL,
+    UNIQUE (user_id, lot_key)
+);
+CREATE INDEX IF NOT EXISTS idx_saved_lots_user ON saved_lots(user_id, saved_at);
+
+CREATE TABLE IF NOT EXISTS saved_searches (
+    id            TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name          TEXT NOT NULL,
+    draft_json    TEXT NOT NULL,
+    request_json  TEXT NOT NULL,
+    cqs_json      TEXT NOT NULL,
+    data_version  TEXT NOT NULL,
+    match_count   INTEGER NOT NULL,
+    match_pins_gz BLOB,
+    saved_at      INTEGER NOT NULL,
+    seen_at       INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_saved_searches_user ON saved_searches(user_id, saved_at);
+""")
+
+
+_LLM_CALLS_COLUMNS = (
+    "id, request_group, conversation_id, phase, model, input_tokens, output_tokens, cache_read_tokens, "
+    "cache_create_tokens, duration_ms, status, error_message, created_at, user_id"
+)
+
+
+async def _migrate_v18(db: aiosqlite.Connection) -> None:
+    """Quotas (Phase 9, decision Item 120): ``usage_counters``, one row per subject per period (``user:<id>`` per
+    Chicago month, ``anon:<id>`` for all time, ``ip:<bucket>`` per day), counts only. And ``llm_calls`` loses its
+    CHECK on ``phase``: the clarification translation logged ``phase="translation"``, the CHECK rejected it, and
+    that spend never reached the daily cap. SQLite can't drop a CHECK, so the table is rebuilt in place."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS usage_counters (
+    subject     TEXT NOT NULL,
+    period      TEXT NOT NULL,
+    used        INTEGER NOT NULL DEFAULT 0,
+    updated_at  INTEGER NOT NULL,
+    PRIMARY KEY (subject, period)
+);
+CREATE INDEX IF NOT EXISTS idx_usage_updated ON usage_counters(updated_at);
+""")
+    cur = await db.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'llm_calls'")
+    row = await cur.fetchone()
+    if row and "CHECK(phase" in (row[0] or "").replace(" ", "").replace("CHECK(phaseIN", "CHECK(phase"):
+        cur = await db.execute("PRAGMA table_info(llm_calls)")
+        cols = {r[1] for r in await cur.fetchall()}
+        if "user_id" not in cols:
+            await db.execute("ALTER TABLE llm_calls ADD COLUMN user_id TEXT")
+        await db.executescript(f"""\
+CREATE TABLE llm_calls_v18 (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_group       TEXT NOT NULL,
+    conversation_id     TEXT,
+    phase               TEXT NOT NULL,
+    model               TEXT NOT NULL,
+    input_tokens        INTEGER NOT NULL,
+    output_tokens       INTEGER NOT NULL,
+    cache_read_tokens   INTEGER NOT NULL DEFAULT 0,
+    cache_create_tokens INTEGER NOT NULL DEFAULT 0,
+    duration_ms         INTEGER NOT NULL,
+    status              TEXT NOT NULL DEFAULT 'ok' CHECK(status IN ('ok', 'error')),
+    error_message       TEXT,
+    created_at          INTEGER NOT NULL,
+    user_id             TEXT
+);
+INSERT INTO llm_calls_v18 ({_LLM_CALLS_COLUMNS}) SELECT {_LLM_CALLS_COLUMNS} FROM llm_calls;
+DROP TABLE llm_calls;
+ALTER TABLE llm_calls_v18 RENAME TO llm_calls;
+CREATE INDEX IF NOT EXISTS idx_llm_calls_created ON llm_calls(created_at);
+CREATE INDEX IF NOT EXISTS idx_llm_calls_group ON llm_calls(request_group);
+CREATE INDEX IF NOT EXISTS idx_llm_calls_user ON llm_calls(user_id, created_at);
+""")
+
+
 async def _migrate_v11(db: aiosqlite.Connection) -> None:
     """Add nullable pin column to report_purchases — entitlement keys on the
     parcel PIN when known. Legacy pin-less rows stay entitled via the
@@ -429,6 +521,8 @@ async def init_db() -> None:
         await _migrate_v14(_db)
         await _migrate_v15(_db)
         await _migrate_v16(_db)
+        await _migrate_v17(_db)
+        await _migrate_v18(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -478,6 +572,12 @@ async def init_db() -> None:
         if version < 16:
             await _migrate_v16(_db)
             version = 16
+        if version < 17:
+            await _migrate_v17(_db)
+            version = 17
+        if version < 18:
+            await _migrate_v18(_db)
+            version = 18
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -934,19 +1034,20 @@ async def save_llm_call(
     duration_ms: int,
     status: str = "ok",
     error_message: str | None = None,
+    user_id: str | None = None,
 ) -> None:
     db = _get_db()
     await db.execute(
         """
         INSERT INTO llm_calls
           (request_group, conversation_id, phase, model, input_tokens, output_tokens,
-           cache_read_tokens, cache_create_tokens, duration_ms, status, error_message, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           cache_read_tokens, cache_create_tokens, duration_ms, status, error_message, created_at, user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             request_group, conversation_id, phase, model,
             input_tokens, output_tokens, cache_read_tokens, cache_create_tokens,
-            duration_ms, status, error_message, _now_ms(),
+            duration_ms, status, error_message, _now_ms(), user_id,
         ),
     )
     await db.commit()
@@ -1440,6 +1541,11 @@ async def delete_user_account(user_id: str) -> dict:
     report_files = [r["pdf_path"] for r in await cur.fetchall()]
 
     await conn.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
+    # Saved lots (with their private notes) and searches: the FK cascades too, but say it here (Item 119).
+    await conn.execute("DELETE FROM saved_lots WHERE user_id = ?", (user_id,))
+    await conn.execute("DELETE FROM saved_searches WHERE user_id = ?", (user_id,))
+    # Quota counters (Item 120): counts only, keyed by the account.
+    await conn.execute("DELETE FROM usage_counters WHERE subject = ?", (f"user:{user_id}",))
     await conn.execute("DELETE FROM report_renders WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM events WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM request_logs WHERE user_id = ?", (user_id,))

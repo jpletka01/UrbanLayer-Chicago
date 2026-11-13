@@ -1,6 +1,6 @@
 // The full chat page's message box (brief "Chat"): a paperclip on the left (where uploads are allowed), dictation
 // beside a round arrow that sends, Enter sends too. On a new conversation one example question types itself in the
-// empty box and gives way to the next; clicking the box (or typing) clears it. With reduced motion the first example
+// empty box and gives way to the next; clicking the box (or typing) clears it and leaves no placeholder behind. With reduced motion the first example
 // just sits there.
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -77,7 +77,9 @@ export function Composer({
   const box = useRef<HTMLTextAreaElement | null>(null);
   const file = useRef<HTMLInputElement | null>(null);
   const [focused, setFocused] = useState(false);
-  const typed = useTypedExample(examples ?? [], !!examples?.length && !focused && !value);
+  // No example while the box can't be used (the allowance is spent): a disabled box can't take focus, so an example
+  // would keep typing over it and read as an input that ignores the visitor (owner, 2026-11-12).
+  const typed = useTypedExample(examples ?? [], !!examples?.length && !focused && !value && !disabled);
   const base = useRef("");
   const dictation = useDictation(i18n.language, (spoken) => onChange(base.current ? `${base.current} ${spoken}` : spoken));
 
@@ -87,9 +89,11 @@ export function Composer({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+    // Scroll only once the text is past the six-line cap; below it a sub-pixel gap let one line scroll.
+    el.style.overflowY = el.scrollHeight > 168 ? "auto" : "hidden";
   }, [value]);
 
-  const showExample = !!examples?.length && !focused && !value;
+  const showExample = !!examples?.length && !focused && !value && !disabled;
   const canSend = !disabled && !streaming && !!value.trim();
 
   return (
@@ -153,7 +157,9 @@ export function Composer({
                   if (canSend) onSend();
                 }
               }}
-              placeholder={showExample ? "" : placeholder}
+              // On a new chat the examples stand in for a placeholder: clicking leaves the box empty with the cursor,
+              // not a second sentence that stays until the first letter (owner, 2026-11-12).
+              placeholder={examples?.length && !disabled ? "" : placeholder}
               className={`block w-full resize-none bg-transparent px-2 py-2 text-body text-nx-ink placeholder:text-nx-ink/[0.64] focus:outline-none focus-visible:outline-none disabled:opacity-50 ${onAttach ? "" : "pl-3"}`}
               data-testid="chat-box"
             />

@@ -135,15 +135,18 @@ export function ToolButton({
   controls,
   testId,
   disabled,
+  filled,
 }: {
   label: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number; "aria-hidden"?: boolean }>;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number; "aria-hidden"?: boolean; fill?: string }>;
   onClick: () => void;
   pressed?: boolean;
   controls?: string;
   testId?: string;
   /** Held in place but not usable yet (the Profile's first screen, before the full response). */
   disabled?: boolean;
+  /** Fill the icon (a saved bookmark). */
+  filled?: boolean;
 }) {
   return (
     <button
@@ -157,7 +160,8 @@ export function ToolButton({
       data-testid={testId}
       className={`grid h-9 w-9 place-items-center rounded-lg touch-icon disabled:cursor-not-allowed disabled:opacity-40 ${pressed ? "bg-nx-ink/5" : "hover:bg-nx-ink/5"}`}
     >
-      <Icon aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
+      {/* A filled icon is a saved bookmark: the palette's lavender, like every bookmark (Item 119). */}
+      <Icon aria-hidden className={`h-5 w-5 ${filled ? "text-nx-pill-purple" : ""}`} strokeWidth={STROKE} fill={filled ? "currentColor" : "none"} />
     </button>
   );
 }

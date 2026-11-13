@@ -32,7 +32,6 @@
   "exportTranscript": "Exportar transcripción",
   "conversationActions": "Acciones de la conversación",
   "connectionLost": "Se perdió la conexión. Por favor, inténtelo de nuevo.",
-  "messageLimit": "Ha alcanzado el límite de 10 mensajes para esta conversación. Por favor, inicie una nueva consulta.",
   "sharedConversation": "Esta es una conversación compartida (solo lectura)",
   "today": "Hoy",
   "yesterday": "Ayer",
@@ -48,11 +47,8 @@
   "done": "Listo",
   "close": "Cerrar",
   "startNewConversation": "Iniciar nueva conversación",
-  "questionsLeft_one": "Queda {{count}} pregunta en esta conversación.",
-  "questionsLeft_other": "Quedan {{count}} preguntas en esta conversación.",
   "upgradeToPro": "Mejorar a Pro",
   "followUpPlaceholder": "Escriba una consulta de seguimiento...",
-  "messageLimitReached": "Ha alcanzado el límite de 10 mensajes para esta conversación.",
   "shared": "Compartida",
   "openDataPanel": "Abrir panel de datos",
   "submit": "Enviar",
@@ -229,5 +225,18 @@
     "source": "Registro oficial: {{label}}",
     "explain": "Qué significa: {{label}}",
     "ask": "Preguntar sobre: {{label}}"
+  },
+  "quota": {
+    "anonymous_one": "Ya usó su {{count}} pregunta gratuita. Inicie sesión para seguir preguntando: {{free}} al mes, gratis.",
+    "anonymous_other": "Ya usó sus {{count}} preguntas gratuitas. Inicie sesión para seguir preguntando: {{free}} al mes, gratis.",
+    "free": "Ya usó las {{limit}} preguntas de este mes. Vuelven el {{date}}. Pro le da {{pro}} al mes.",
+    "pro": "Ya usó las {{limit}} preguntas de este mes. Vuelven el {{date}}.",
+    "network": "Demasiadas preguntas gratuitas desde esta red hoy. Inicie sesión para seguir preguntando.",
+    "pausedTomorrow": "El analista está en pausa por hoy. Vuelve mañana.",
+    "pausedMonth": "El analista está en pausa hasta el día 1 del próximo mes.",
+    "left_one": "Le queda {{count}} pregunta gratuita",
+    "left_other": "Le quedan {{count}} preguntas gratuitas",
+    "leftMonth_one": "Le queda {{count}} pregunta este mes",
+    "leftMonth_other": "Le quedan {{count}} preguntas este mes"
   }
 }
