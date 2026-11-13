@@ -354,7 +354,14 @@ test("Phase 8: chat doors from / open the new chat page; the landing's bar stays
     { key: "addr:2541 n spaulding ave", address: "2541 N Spaulding Ave", pin: null, zone: "RS-3", area: "Logan Square", outline: null, at: Date.now(), lat: 41.9283, lon: -87.7106 },
   ])));
   await open(page, "/", "home");
-  await page.getByTestId("home-recent").getByRole("button", { name: "Save 2541 N Spaulding Ave" }).click();
+  // Saved lives in the account now (Item 119, sign-in off locally): a lot saved by an earlier run is unsaved first.
+  const recentCard = page.getByTestId("home-recent");
+  const already = recentCard.getByRole("button", { name: "Remove 2541 N Spaulding Ave from saved" });
+  if (await already.count()) {
+    await already.click();
+    await expect(recentCard.getByRole("button", { name: "Save 2541 N Spaulding Ave" })).toBeVisible();
+  }
+  await recentCard.getByRole("button", { name: "Save 2541 N Spaulding Ave" }).click();
   await expect(page.getByTestId("home-saved").getByText("2541 N Spaulding Ave")).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
