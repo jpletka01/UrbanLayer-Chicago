@@ -35,6 +35,8 @@ CHICAGO = ZoneInfo("America/Chicago")
 INTERVALS = ("month", "year")
 CHECKOUT_TTL_S = 30 * 60  # Stripe's shortest allowed expiry
 _RETURN_PATHS = {"settings": "/settings/plan", "pricing": "/pricing"}
+# Stripe's pages in the reader's language: Spanish is Latin American (es-419), the closest to the app's es-MX.
+_STRIPE_LOCALES = {"en": "en", "es": "es-419"}
 _user_locks: dict[str, asyncio.Lock] = {}
 
 
@@ -103,7 +105,7 @@ async def _ensure_customer(user: dict) -> dict:
     return await db.set_subscription_customer(user["id"], customer["id"])
 
 
-async def create_checkout_session(user: dict, interval: str, origin: str = "settings") -> str:
+async def create_checkout_session(user: dict, interval: str, origin: str = "settings", language: str = "en") -> str:
     """Start (or reuse) a Pro checkout and return its URL."""
     if interval not in INTERVALS:
         raise HTTPException(status_code=400, detail={"error": "bad_interval"})
@@ -143,6 +145,7 @@ async def create_checkout_session(user: dict, interval: str, origin: str = "sett
             success_url=f"{base}/settings/plan?checkout=done",
             cancel_url=f"{base}{return_path}",
             expires_at=expires_at,
+            locale=_STRIPE_LOCALES.get(language, "auto"),
             metadata={"user_id": user["id"], "interval": interval},
             subscription_data={"metadata": {"user_id": user["id"]}},
         )
@@ -151,7 +154,7 @@ async def create_checkout_session(user: dict, interval: str, origin: str = "sett
         return session["url"]
 
 
-async def create_billing_portal_session(user: dict) -> str:
+async def create_billing_portal_session(user: dict, language: str = "en") -> str:
     """Stripe's Portal: cancel, card, invoices, month <-> year. Back to Settings → Plan."""
     sub = await db.get_subscription(user["id"])
     if not sub or not sub.get("stripe_subscription_id"):
@@ -161,6 +164,7 @@ async def create_billing_portal_session(user: dict) -> str:
     session = stripe.billing_portal.Session.create(
         customer=sub["stripe_customer_id"],
         return_url=f"{s.frontend_url.rstrip('/')}/settings/plan",
+        locale=_STRIPE_LOCALES.get(language, "auto"),
     )
     return session.url
 

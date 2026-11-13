@@ -236,24 +236,62 @@ export async function subscribeNewsletter(email: string, source: string): Promis
   if (!resp.ok) throw new Error("Failed to subscribe");
 }
 
-export async function createCheckoutSession(): Promise<{ url: string }> {
-  track("checkout_started", { type: "subscription" });
+export type BillingInterval = "month" | "year";
+
+/** Pro checkout (Item 123): the server picks the price from the interval; the page then goes to Stripe.
+    Throws `CheckoutError` with the server's reason (`already_subscribed`, `purchases_off`, …). */
+export class CheckoutError extends Error {
+  reason: string;
+  constructor(reason: string) { super(reason); this.reason = reason; }
+}
+
+export async function createCheckoutSession(
+  interval: BillingInterval = "month",
+  origin: "settings" | "pricing" = "settings",
+): Promise<{ url: string }> {
+  track("checkout_started", { type: "subscription", interval });
   flush(); // the page is about to redirect to Stripe
-  const resp = await authFetch(`${API_BASE}/api/checkout`, {
+  const resp = await authFetch(`${API_BASE}/api/billing/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ visitor_id: getVisitorId() }),
+    // Stripe's page in the reader's language (Spanish → Latin American, server side).
+    body: JSON.stringify({ interval, origin, language: i18n.language?.startsWith("es") ? "es" : "en", visitor_id: getVisitorId() }),
   });
-  if (!resp.ok) throw new Error("Failed to create checkout session");
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => null);
+    throw new CheckoutError(body?.detail?.error ?? "error");
+  }
   return resp.json();
 }
 
-export async function getSubscription(): Promise<{
+/** The plan as Settings → Plan shows it (`/api/subscription`, Item 123). Dates are Chicago days (YYYY-MM-DD). */
+export interface SubscriptionStatus {
   tier: string;
-  stripe_customer_id: string | null;
+  plan: "free" | "pro" | "admin";
+  source: "stripe" | "voucher" | null;
+  status: string | null;
+  interval: BillingInterval | null;
+  renews_on: string | null;
+  ends_on: string | null;
+  past_due: boolean;
   subscription_active: boolean;
+  can_manage: boolean;
   comp_until: number | null;
-}> {
+  purchases_enabled: boolean;
+}
+
+export interface Entitlements {
+  signed_in: boolean;
+  deep_analysis: { unlimited: boolean; free_left: number; free_pin: string | null };
+}
+
+export async function getEntitlements(): Promise<Entitlements> {
+  const resp = await authFetch(`${API_BASE}/api/entitlements`);
+  if (!resp.ok) throw new Error("Failed to get entitlements");
+  return resp.json();
+}
+
+export async function getSubscription(): Promise<SubscriptionStatus> {
   const resp = await authFetch(`${API_BASE}/api/subscription`);
   if (!resp.ok) throw new Error("Failed to get subscription");
   return resp.json();
@@ -382,7 +420,8 @@ export async function deleteAccount(): Promise<void> {
 }
 
 export async function createBillingPortal(): Promise<{ url: string }> {
-  const resp = await authFetch(`${API_BASE}/api/billing/portal`, { method: "POST" });
+  const language = i18n.language?.startsWith("es") ? "es" : "en";
+  const resp = await authFetch(`${API_BASE}/api/billing/portal?language=${language}`, { method: "POST" });
   if (!resp.ok) throw new Error("Failed to create billing portal session");
   return resp.json();
 }

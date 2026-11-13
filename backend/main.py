@@ -3160,6 +3160,7 @@ class CheckoutRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
     interval: Literal["month", "year"] = "month"
     origin: Literal["settings", "pricing"] = "settings"
+    language: Literal["en", "es"] = "en"
     visitor_id: str | None = None
 
 
@@ -3169,7 +3170,7 @@ async def checkout(body: CheckoutRequest, user: dict = Depends(require_auth)) ->
     from backend.payments import create_checkout_session
     from backend.rate_limit import check_saved_limit
     check_saved_limit(user["id"], "checkout", 10)
-    url = await create_checkout_session(user, body.interval, body.origin)
+    url = await create_checkout_session(user, body.interval, body.origin, body.language)
     return {"url": url}
 
 
@@ -3249,9 +3250,11 @@ async def subscription_status(
 
 
 @app.post("/api/billing/portal")
-async def billing_portal(request: Request, user: dict = Depends(require_auth)) -> dict:
+async def billing_portal(
+    request: Request, language: Literal["en", "es"] = "en", user: dict = Depends(require_auth),
+) -> dict:
     from backend.payments import create_billing_portal_session
-    url = await create_billing_portal_session(user)
+    url = await create_billing_portal_session(user, language)
     return {"url": url}
 
 

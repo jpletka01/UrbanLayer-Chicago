@@ -23,6 +23,8 @@ const ROUTES = [
   // Settings (design B): two sections, with sign-in off locally (no sign-in methods or delete there).
   { id: "settings-plan", path: "/settings/plan?ui=next", ready: "settings-plan" },
   { id: "settings-preferences", path: "/settings/preferences?ui=next", ready: "settings-preferences" },
+  // Billing (Item 123): the new Pricing page.
+  { id: "pricing", path: "/pricing?ui=next", ready: "pricing" },
 ];
 
 async function open(page: Page, path: string, ready?: string) {
@@ -455,4 +457,45 @@ test("Phase 9 identity: the sign-in chooser and the result notice, axe light and
   await expect(page.getByTestId("auth-notice")).toContainText("signs in to a different UrbanLayer account");
   await expect.poll(() => new URL(page.url()).search).not.toContain("link=");
   expect(await axe(page), "axe, notice").toEqual([]);
+});
+
+// Phase 9 billing (Item 123): Pricing's yearly choice goes to checkout with only the interval, and Settings → Plan's
+// paid states read Stripe's stored state. The server's replies are stubbed (no Stripe call), so this runs anywhere.
+test("Phase 9 billing: Pricing yearly checkout, the Plan's Pro states, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
+  const base = {
+    tier: "premium", plan: "pro", source: "stripe", status: "active", interval: "year", renews_on: "2027-11-13", ends_on: null,
+    past_due: false, subscription_active: true, can_manage: true, comp_until: null, purchases_enabled: true,
+  };
+  let sub: Record<string, unknown> = base;
+  let checkoutBody: unknown = null;
+  await page.route("**/api/payments/status", (r) => r.fulfill({ json: { reports: false, subscriptions: true } }));
+  await page.route("**/api/subscription", (r) => r.fulfill({ json: sub }));
+  await page.route("**/api/billing/checkout", (r) => {
+    checkoutBody = r.request().postDataJSON();
+    return r.fulfill({ json: { url: "/pricing?ui=next&stubbed=stripe" } });
+  });
+
+  await open(page, "/pricing?ui=next", "pricing");
+  await page.getByRole("radio", { name: /Yearly/ }).click();
+  await expect(page.getByTestId("pricing-price")).toHaveText("$199");
+  const getPro = page.getByTestId("pricing-get-pro");
+  if (await getPro.count()) {  // sign-in off locally: the stand-in account is an admin, which has no checkout
+    await getPro.click();
+    await expect.poll(() => page.url()).toContain("stubbed=stripe");
+    expect(checkoutBody).toMatchObject({ interval: "year", origin: "pricing" });
+  }
+
+  for (const [label, state] of [["renewing", base], ["ending", { ...base, renews_on: null, ends_on: "2026-12-13" }],
+    ["past due", { ...base, status: "past_due", past_due: true }]] as const) {
+    sub = state;
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await open(page, "/settings/plan?ui=next", "settings-plan");
+      await expect(page.getByTestId("settings-plan")).toContainText(label === "renewing" ? "Manage billing" : label === "ending" ? "Keep Pro" : "Update your card");
+      expect(await axe(page), `axe ${scheme}, ${label}`).toEqual([]);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+    }
+  }
 });

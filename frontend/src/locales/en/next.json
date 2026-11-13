@@ -2214,12 +2214,30 @@
       "everyMonth": "Chicago time, every month",
       "yourPlan": "Your plan",
       "freeBody": "{{limit}} questions a month. Profiles, Discovery and Saved don't count against it.",
-      "proLine": "Pro gives you {{limit}} questions a month. $19 a month, or $199 a year.",
       "comingSoon": "Coming soon",
       "proBody": "{{limit}} questions a month.",
       "compBody": "Early access: Pro, {{limit}} questions a month, until {{date}}.",
       "manageBilling": "Manage billing",
-      "adminBody": "Admin: questions are counted, never refused."
+      "adminBody": "Admin: questions are counted, never refused.",
+      "proWhat": "{{limit}} questions a month, Deep analysis on every lot",
+      "getPro": "Get Pro",
+      "seePricing": "See pricing",
+      "billedMonthly": "{{price}} a month",
+      "billedYearly": "{{price}} a year",
+      "renews": "Renews",
+      "ends": "Pro ends",
+      "thenFree": "Then the free plan",
+      "proUntil": "Pro until {{date}}",
+      "pastDuePill": "Payment failed",
+      "confirming": "Confirming your payment with Stripe…",
+      "confirmingLong": "Still waiting for Stripe. It can take a minute; this page updates by itself.",
+      "confirmingBody": "Pro starts as soon as Stripe confirms, usually in a few seconds.",
+      "manageNote": "Cancel, change your card, switch between monthly and yearly, or see invoices, at Stripe.",
+      "endingBody": "You canceled. You keep Pro until {{date}}, and nothing more is charged. Your saved lots and chats stay.",
+      "keepPro": "Keep Pro",
+      "pastDueBody": "Your card was declined and Stripe is retrying it. You keep Pro ({{limit}} questions a month) while it does; update your card to keep it after.",
+      "updateCard": "Update your card",
+      "portalFailed": "Stripe's billing page couldn't be opened. Please try again in a moment."
     },
     "code": {
       "title": "Access code",
@@ -2257,6 +2275,67 @@
       "confirm": "Delete account",
       "deleting": "Deleting…",
       "failed": "Your account wasn't deleted. Please try again."
+    }
+  },
+  "pricing": {
+    "title": "Pricing",
+    "heading": "Plans",
+    "lead": "Every lot's Property Profile, Discovery and the map are free. Pro adds more questions and a Deep analysis of any lot.",
+    "billing": "Billing",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "save": "Save {{amount}}",
+    "perMonthPrice": "{{price}} a month",
+    "perYearPrice": "{{price}} a year",
+    "free": "Free",
+    "pro": "Pro",
+    "yourPlan": "Your plan",
+    "aMonth": "a month",
+    "aYear": "a year",
+    "perMonthBilledYearly": "{{price}} a month, billed yearly",
+    "freeFeatures": [
+      "Every Property Profile tab, on every lot",
+      "Discovery across all 77 community areas",
+      "50 questions a month to the analyst",
+      "One Deep analysis, free, on the lot you choose",
+      "Saved lots and searches"
+    ],
+    "proFeatures": [
+      "Everything in Free",
+      "200 questions a month",
+      "Deep analysis on every lot, with its PDF",
+      "Cancel any time; Pro lasts to the end of the period"
+    ],
+    "signedOutNote": "Signed out, you can ask 3 questions before signing in.",
+    "signInFree": "Sign in, free",
+    "getProMonth": "Get Pro, {{price}} a month",
+    "getProYear": "Get Pro, {{price}} a year",
+    "toStripe": "Opening Stripe…",
+    "stripeNote": "Payment by Stripe. We never see your card.",
+    "signInForPro": "Sign in to get Pro",
+    "signInNote": "Pro belongs to an account, so sign in first. Nothing is charged until you confirm at Stripe.",
+    "comingSoonNote": "Purchases open soon. Everything free works today.",
+    "seeYourPlan": "See your plan",
+    "adminNote": "Admin accounts have everything Pro has.",
+    "checkoutFailed": "Stripe couldn't be reached, so nothing was charged. Please try again in a moment.",
+    "qaTitle": "Questions about paying",
+    "qa": {
+      "cancel": {
+        "q": "Can I cancel?",
+        "a": "Yes, from Settings → Plan → Manage billing. You keep Pro until the date shown there."
+      },
+      "interval": {
+        "q": "Monthly or yearly?",
+        "a": "{{month}} a month, or {{year}} a year, which is two months less than paying monthly for 12. You can switch in Manage billing."
+      },
+      "trial": {
+        "q": "Is there a trial?",
+        "a": "The free plan is the trial: every tab, 50 questions a month and one Deep analysis, with no card."
+      },
+      "reports": {
+        "q": "Reports I bought before?",
+        "a": "They stay in Settings → Reports you bought, the original and an updated copy."
+      }
     }
   }
 }

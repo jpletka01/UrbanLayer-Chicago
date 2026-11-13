@@ -306,6 +306,7 @@ class TestCheckout:
         assert kw["success_url"] == "http://localhost:5173/settings/plan?checkout=done"
         assert kw["cancel_url"] == "http://localhost:5173/pricing"
         assert kw["mode"] == "subscription"
+        assert kw["locale"] == "en"
 
     @pytest.mark.asyncio
     async def test_bad_interval_400(self, test_db, pay_settings):
@@ -418,11 +419,12 @@ class TestCheckoutRoute:
         create.assert_not_called()
 
     def test_price_id_from_the_browser_is_ignored(self, client):
-        async def fake(user, interval, origin):
-            return f"https://x/{interval}/{origin}"
+        async def fake(user, interval, origin, language):
+            return f"https://x/{interval}/{origin}/{language}"
         with patch("backend.payments.create_checkout_session", side_effect=fake):
-            r = client.post("/api/billing/checkout", json={"interval": "year", "price": "price_free"}, headers=CSRF)
-        assert r.status_code == 200 and r.json() == {"url": "https://x/year/settings"}
+            r = client.post("/api/billing/checkout", json={"interval": "year", "price": "price_free", "language": "es"},
+                            headers=CSRF)
+        assert r.status_code == 200 and r.json() == {"url": "https://x/year/settings/es"}
 
     def test_report_checkout_is_retired(self, client):
         r = client.post("/api/checkout/report", json={"pin": "14331030110000"}, headers=CSRF)
@@ -464,7 +466,8 @@ class TestStatusAndPortal:
         with patch.object(stripe.billing_portal.Session, "create",
                           return_value=SimpleNamespace(url="https://portal")) as create:
             assert await payments.create_billing_portal_session(await _current("u1")) == "https://portal"
-        assert create.call_args.kwargs == {"customer": "cus_1", "return_url": "http://localhost:5173/settings/plan"}
+        assert create.call_args.kwargs == {"customer": "cus_1", "return_url": "http://localhost:5173/settings/plan",
+                                          "locale": "en"}
 
     @pytest.mark.asyncio
     async def test_deleting_an_account_cancels_its_subscription_first(self, test_db, pay_settings):

@@ -9,47 +9,33 @@
   },
   "pricing": {
     "title": "Planes y precios",
-    "subtitle": "Fichas gratuitas para cualquier parcela de Chicago. Un informe de viabilidad de $25 cuando necesite el panorama completo. Pro para informes ilimitados y prospección.",
+    "subtitle": "Fichas y Descubrir gratuitos para cualquier terreno de Chicago. Pro para más preguntas y un Análisis a fondo de cada terreno.",
     "free": "Gratis",
     "forExploration": "Para exploración",
     "perMonth": "/mes",
-    "perReport": "por informe",
     "currentPlan": "Plan actual",
-    "startHere": "Empiece aquí",
-    "reportTier": "Informe de Viabilidad de Desarrollo",
-    "perParcelNoSub": "Por parcela — sin suscripción",
-    "getReport": "Obtener un informe",
-    "scorecardHint": "Abra la ficha gratuita de cualquier parcela y compre su informe completo.",
     "pro": "Pro",
     "forProfessionals": "Para profesionales",
-    "proMath": "4 informes ≈ un mes de Pro — pase a ilimitado.",
     "active": "Activo",
     "redirecting": "Redirigiendo...",
     "upgradeToPro": "Actualizar a Pro",
-    "billingNote": "Los informes son compras únicas. Las suscripciones Pro se facturan mensualmente a través de Stripe. Cancele en cualquier momento.",
+    "billingNote": "Pro se cobra mensual o anualmente a través de Stripe. Cancele cuando quiera; Pro dura hasta el final del periodo.",
     "freeFeatures": [
-      "25 consultas de IA por día con una cuenta gratuita (3 sin iniciar sesión)",
-      "Búsquedas ilimitadas de Fichas de propiedades",
-      "Mapa interactivo con capas de datos",
-      "Datos de delitos, 311, permisos e infracciones",
+      "50 preguntas al mes con una cuenta gratuita (3 sin iniciar sesión)",
+      "Búsquedas ilimitadas de Fichas",
+      "Descubrir en toda la ciudad",
+      "Un Análisis a fondo gratis",
       "Respuestas citadas del código municipal",
-      "Historial de consultas",
-      "Enlaces de conversaciones para compartir"
-    ],
-    "reportFeatures": [
-      "Informe de Viabilidad de Desarrollo completo (PDF)",
-      "Análisis de zonificación con IA y secciones del código citadas",
-      "Ventas comparables e historial de avalúos",
-      "Proyección de impuestos y elegibilidad de incentivos",
-      "Un entregable para presentar a un prestamista o cliente"
+      "Historial de consultas y enlaces para compartir"
     ],
     "proFeatures": [
-      "Hasta 100 consultas de IA por día",
-      "Informes de Viabilidad de Desarrollo ilimitados",
+      "200 preguntas al mes",
+      "Análisis a fondo de cada terreno, con su PDF",
       "Resultados completos de Descubrir, con mapa y exportación CSV",
-      "Soporte prioritario",
       "Todas las funciones gratuitas incluidas"
-    ]
+    ],
+    "proPrice": "$19",
+    "proYearly": "o $199 al año (ahorre $29)"
   },
   "scorecard": {
     "title": "Ficha de la propiedad",

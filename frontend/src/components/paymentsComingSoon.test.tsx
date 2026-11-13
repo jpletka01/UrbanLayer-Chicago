@@ -25,9 +25,9 @@ describe("purchases unavailable", () => {
     status.subscriptions = false;
   });
 
-  it("report modal shows coming soon, keeps the sample and access codes", async () => {
+  it("report modal says single reports are retired, keeps the sample and access codes", async () => {
     render(<ReportPurchasePrompt parcel={parcel} onClose={() => {}} />);
-    await waitFor(() => expect(screen.getByText(/report purchases are coming soon/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/single reports are no longer sold/i)).toBeTruthy());
     expect(screen.queryByRole("button", { name: /buy report/i })).toBeNull();
     expect(screen.getByRole("button", { name: /access code/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /sample report/i })).toBeTruthy();

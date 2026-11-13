@@ -3,18 +3,18 @@
 // each opens on its own with a way back. Built from the new UI's own pieces: the frame, Block, StatTile, Pill,
 // the provider buttons. Signed out, only Preferences and a quiet sign-in line: nothing is locked.
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
-  Bookmark, Check, ChevronLeft, ChevronRight, CircleUser, FileText, Gauge, KeyRound, LogIn, LogOut, MessageCircle,
-  Monitor, Moon, Search, SlidersHorizontal, Sun, Ticket, Trash2, type LucideIcon,
+  Bookmark, Check, ChevronLeft, ChevronRight, CircleUser, CreditCard, FileText, Gauge, KeyRound, Loader2, LogIn, LogOut,
+  MessageCircle, Monitor, Moon, Search, SlidersHorizontal, SquareArrowOutUpRight, Sun, Ticket, Trash2, type LucideIcon,
 } from "lucide-react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import {
-  createBillingPortal, deleteAccount, fetchMyPurchases, getSubscription, getUsage, listConversations, redeemVoucher,
-  savedApi, type ReportPurchase, type Usage,
+  deleteAccount, fetchMyPurchases, getSubscription, getUsage, listConversations, redeemVoucher,
+  savedApi, type BillingInterval, type ReportPurchase, type SubscriptionStatus, type Usage,
 } from "../../lib/api";
 import { PROVIDER_NAMES } from "../../lib/authNotice";
 import { formatDate } from "../../lib/format";
@@ -25,6 +25,9 @@ import { AppFrame } from "../frame/AppFrame";
 import { NEXT_PROVIDER_BUTTON } from "../frame/signInLook";
 import { STROKE } from "../icons";
 import { Block, Pill, StatTile } from "../ui/Blocks";
+import { IntervalSwitch } from "../pricing/ProOffer";
+import { localeOf, useProCheckout } from "../pricing/useProCheckout";
+import { PRICE_CENTS, chicagoDay, dollars, planState } from "../pricing/pricingModel";
 import { sectionFrom, sectionsFor, usedShare, type SectionId } from "./settingsModel";
 
 const ICONS: Record<SectionId, LucideIcon> = {
@@ -190,9 +193,14 @@ function AccountSection() {
 function PlanSection() {
   const { t, i18n } = useTranslation("next");
   const { user, checkAuth } = useAuthContext();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [usage, setUsage] = useState<Usage | null>(null);
-  const [sub, setSub] = useState<Awaited<ReturnType<typeof getSubscription>> | null>(null);
-  const [portalBusy, setPortalBusy] = useState(false);
+  const [sub, setSub] = useState<SubscriptionStatus | null>(null);
+  const [interval, setBilling] = useState<BillingInterval>("month");
+  const [waitedLong, setWaitedLong] = useState(false);
+  const checkout = useProCheckout("settings");
+  const returning = searchParams.get("checkout") === "done";
+  const locale = localeOf(i18n.language);
 
   useEffect(() => {
     let alive = true;
@@ -201,25 +209,71 @@ function PlanSection() {
     return () => { alive = false; };
   }, []);
 
-  const plan = planOf(user?.tier);
+  // Back from Stripe: the plan comes from Stripe's webhook, never from this address. Ask until it has landed
+  // (every 2 s; after 30 s say it can take a minute and keep asking every 10 s), then drop the parameter.
+  const confirmed = sub?.source === "stripe";
+  useEffect(() => {
+    if (!returning) return;
+    if (confirmed) {
+      checkAuth();
+      getUsage().then(setUsage);
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    let alive = true;
+    const started = Date.now();
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = () => {
+      const long = Date.now() - started > 30_000;
+      if (long) setWaitedLong(true);
+      timer = setTimeout(() => {
+        getSubscription().then((s) => { if (alive) setSub(s); }, () => {}).finally(() => { if (alive) poll(); });
+      }, long ? 10_000 : 2_000);
+    };
+    poll();
+    return () => { alive = false; clearTimeout(timer); };
+  }, [returning, confirmed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const state = planState(sub, user?.tier, returning);
   const share = usage ? usedShare(usage.used, usage.limit) : null;
   const back = usage?.resets_on
-    ? new Intl.DateTimeFormat(i18n.language.startsWith("es") ? "es-MX" : "en-US", { month: "short", day: "numeric" })
-      .format(new Date(`${usage.resets_on}T12:00:00`))
+    ? new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(`${usage.resets_on}T12:00:00`))
     : null;
   const proLimit = usage?.pro_limit ?? 200;
+  const purchasesOff = sub ? !sub.purchases_enabled : false;
+  const intervalPrice = (iv: BillingInterval | null) =>
+    iv ? t(iv === "month" ? "settings.planSection.billedMonthly" : "settings.planSection.billedYearly", { price: dollars(PRICE_CENTS[iv], locale) }) : null;
+  const pill = state === "admin" ? <Pill tone="purple">{t("settings.plan.admin")}</Pill>
+    : state === "pro_ending" && sub?.ends_on ? <Pill tone="yellow">{t("settings.planSection.proUntil", { date: chicagoDay(sub.ends_on, locale) })}</Pill>
+    : state === "pro_past_due" ? <Pill tone="yellow">{t("settings.planSection.pastDuePill")}</Pill>
+    : state.startsWith("pro") || state === "voucher" ? <Pill tone="purple">{t("settings.plan.pro")}</Pill>
+    : <Pill tone="gray">{t("settings.plan.free")}</Pill>;
 
-  async function manageBilling() {
-    setPortalBusy(true);
-    try {
-      window.location.assign((await createBillingPortal()).url);
-    } catch {
-      setPortalBusy(false);
-    }
-  }
+  // The second tile: when questions come back, or for a paid plan when it renews or ends.
+  const dateTile = state === "pro_renewing" && sub?.renews_on
+    ? { label: t("settings.planSection.renews"), figure: chicagoDay(sub.renews_on, locale), note: intervalPrice(sub.interval) }
+    : state === "pro_ending" && sub?.ends_on
+      ? { label: t("settings.planSection.ends"), figure: chicagoDay(sub.ends_on, locale), note: t("settings.planSection.thenFree") }
+      : { label: t("settings.planSection.back"), figure: back ?? "—", note: t("settings.planSection.everyMonth") };
+
+  const manageButton = (label: string) => (
+    <button type="button" onClick={checkout.manage} disabled={checkout.busy} className={`${BTN_SECONDARY} self-start`} data-testid="settings-manage-billing">
+      <CreditCard aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{label}
+      <SquareArrowOutUpRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+    </button>
+  );
 
   return (
     <>
+      {state === "confirming" && (
+        <p role="status" className="flex items-center gap-2.5 rounded-xl bg-nx-pill-purple-bg px-4 py-3 text-nx-pill-purple" data-testid="settings-confirming">
+          <Loader2 aria-hidden className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" strokeWidth={STROKE} />
+          {waitedLong ? t("settings.planSection.confirmingLong") : t("settings.planSection.confirming")}
+        </p>
+      )}
+
       {usage && usage.limit != null && (
         <ul className="grid grid-cols-2 gap-3 sm:gap-4" data-testid="settings-usage">
           <StatTile
@@ -233,35 +287,61 @@ function PlanSection() {
               </span>
             }
           />
-          <StatTile tone="b" label={t("settings.planSection.back")} figure={back ?? "—"} note={t("settings.planSection.everyMonth")} />
+          <StatTile tone="b" label={dateTile.label} figure={dateTile.figure} note={dateTile.note} testId="settings-date-tile" />
         </ul>
       )}
 
-      <Block title={t("settings.planSection.yourPlan")} icon={Gauge} labelledBy="settings-plan" aside={<Pill tone={plan === "free" ? "gray" : "purple"}>{t(`settings.plan.${plan}`)}</Pill>}>
-        {plan === "free" && (
+      <Block title={t("settings.planSection.yourPlan")} icon={Gauge} labelledBy="settings-plan" aside={pill}>
+        {state === "free" && (
           <>
             <p>{t("settings.planSection.freeBody", { limit: usage?.limit ?? 50 })}</p>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-nx-ink/10 pt-4">
-              <span className="nx-muted">{t("settings.planSection.proLine", { limit: proLimit })}</span>
-              <Pill tone="gray">{t("settings.planSection.comingSoon")}</Pill>
+            <div className="flex flex-col gap-3 border-t border-nx-ink/10 pt-4" data-testid="settings-pro-offer">
+              <span><span className="font-semibold">{t("settings.plan.pro")}</span> <span className="nx-muted">· {t("settings.planSection.proWhat", { limit: proLimit })}</span></span>
+              {purchasesOff ? (
+                <span className="flex flex-wrap items-center gap-2">
+                  <Pill tone="gray">{t("settings.planSection.comingSoon")}</Pill>
+                  <Link to="/pricing" className="text-caption underline underline-offset-2">{t("settings.planSection.seePricing")}</Link>
+                </span>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <IntervalSwitch value={interval} onChange={setBilling} prices idPrefix="settings" />
+                  <button type="button" onClick={() => checkout.start(interval)} disabled={checkout.busy} className={BTN_PRIMARY} data-testid="settings-get-pro">
+                    {checkout.busy ? t("pricing.toStripe") : t("settings.planSection.getPro")}
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
-        {plan === "pro" && (
+        {state === "confirming" && <p>{t("settings.planSection.confirmingBody")}</p>}
+        {state === "pro_renewing" && (
           <>
-            <p>
-              {sub?.comp_until
-                ? t("settings.planSection.compBody", { limit: proLimit, date: formatDate(new Date(sub.comp_until).toISOString()) })
-                : t("settings.planSection.proBody", { limit: proLimit })}
-            </p>
-            {sub?.subscription_active && (
-              <button type="button" onClick={manageBilling} disabled={portalBusy} className={`${BTN_SECONDARY} self-start`}>
-                {t("settings.planSection.manageBilling")}
-              </button>
-            )}
+            <p>{t("settings.planSection.proBody", { limit: proLimit })}</p>
+            {manageButton(t("settings.planSection.manageBilling"))}
+            <span className="text-caption nx-muted">{t("settings.planSection.manageNote")}</span>
           </>
         )}
-        {plan === "admin" && <p>{t("settings.planSection.adminBody")}</p>}
+        {state === "pro_ending" && sub?.ends_on && (
+          <>
+            <p>{t("settings.planSection.endingBody", { date: chicagoDay(sub.ends_on, locale) })}</p>
+            {manageButton(t("settings.planSection.keepPro"))}
+          </>
+        )}
+        {state === "pro_past_due" && (
+          <>
+            <p>{t("settings.planSection.pastDueBody", { limit: proLimit })}</p>
+            {manageButton(t("settings.planSection.updateCard"))}
+          </>
+        )}
+        {state === "voucher" && (
+          <p>
+            {sub?.comp_until
+              ? t("settings.planSection.compBody", { limit: proLimit, date: formatDate(new Date(sub.comp_until).toISOString()) })
+              : t("settings.planSection.proBody", { limit: proLimit })}
+          </p>
+        )}
+        {state === "admin" && <p>{t("settings.planSection.adminBody")}</p>}
+        {checkout.error && <p role="alert" className="rounded-xl bg-nx-pill-red-bg px-4 py-3 text-caption text-nx-pill-red">{t(checkout.error === "portal" ? "settings.planSection.portalFailed" : "pricing.checkoutFailed")}</p>}
       </Block>
 
       <AccessCode onRedeemed={() => { checkAuth(); getSubscription().then(setSub, () => {}); }} />
