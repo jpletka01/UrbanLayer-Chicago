@@ -37,6 +37,8 @@ export const READINESS: readonly ReadinessEntry[] = [
     nav: { labelKey: "nav.saved", icon: "saved", to: "/saved" } },
   { id: "chat", path: "/chat", status: "ready", analytics: "next_chat",
     nav: { labelKey: "nav.chat", icon: "chat", to: "/chat" } },
+  // Settings (owner-approved design B, 2026-11-13): reached from the account menu, so no side-panel slot.
+  { id: "settings", path: "/settings", status: "ready", analytics: "next_settings" },
 ];
 
 export function readinessOf(id: string): ReadinessEntry | undefined {

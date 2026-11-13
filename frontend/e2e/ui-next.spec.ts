@@ -20,6 +20,9 @@ const ROUTES = [
   { id: "chat", path: "/chat?ui=next", ready: "chat-page" },
   // Phase 9: Saved (sign-in is off locally, so these are the account's lots).
   { id: "saved", path: "/saved?ui=next", ready: "saved" },
+  // Settings (design B): two sections, with sign-in off locally (no sign-in methods or delete there).
+  { id: "settings-plan", path: "/settings/plan?ui=next", ready: "settings-plan" },
+  { id: "settings-preferences", path: "/settings/preferences?ui=next", ready: "settings-preferences" },
 ];
 
 async function open(page: Page, path: string, ready?: string) {

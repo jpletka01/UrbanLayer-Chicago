@@ -2184,5 +2184,79 @@
     },
     "noOutline": "No lot outline on record",
     "noAddress": "The City's permits and violations aren't checked: this lot has no street address of its own."
+  },
+  "settings": {
+    "title": "Settings",
+    "sectionsLabel": "Settings sections",
+    "signedOut": "Sign in to see your plan, your sign-in methods and your saved things. Preferences work without it.",
+    "sections": {
+      "account": "Account",
+      "plan": "Plan and questions",
+      "signin": "Sign-in methods",
+      "preferences": "Preferences",
+      "things": "Your things",
+      "reports": "Reports you bought",
+      "delete": "Delete account"
+    },
+    "plan": {
+      "free": "Free",
+      "pro": "Pro",
+      "admin": "Admin"
+    },
+    "account": {
+      "fromSignIn": "Your name and photo come from your sign-in, so they're changed there."
+    },
+    "planSection": {
+      "used": "Questions this month",
+      "ofLimit": "of {{limit}}",
+      "usedAria": "{{used}} of {{limit}} questions used",
+      "back": "They come back",
+      "everyMonth": "Chicago time, every month",
+      "yourPlan": "Your plan",
+      "freeBody": "{{limit}} questions a month. Profiles, Discovery and Saved don't count against it.",
+      "proLine": "Pro gives you {{limit}} questions a month. $19 a month, or $199 a year.",
+      "comingSoon": "Coming soon",
+      "proBody": "{{limit}} questions a month.",
+      "compBody": "Early access: Pro, {{limit}} questions a month, until {{date}}.",
+      "manageBilling": "Manage billing",
+      "adminBody": "Admin: questions are counted, never refused."
+    },
+    "code": {
+      "title": "Access code",
+      "body": "An early-access code gives you Pro for a while.",
+      "apply": "Apply",
+      "applying": "Applying…",
+      "success": "Early access is on until {{date}}.",
+      "invalid": "That code isn't valid.",
+      "already_redeemed": "You've already used this code.",
+      "exhausted": "This code has been used up.",
+      "error": "That didn't work. Please try again."
+    },
+    "signin": {
+      "ways": "Ways into this account",
+      "body": "Sign in with any of these. Accounts are never joined by email: a method is added only from here.",
+      "add": "Add another",
+      "addNote": "You'll sign in with that provider, then come back here. If that account already opens a different UrbanLayer account, it won't be added."
+    },
+    "things": {
+      "lots": "Saved lots",
+      "searches": "Saved searches",
+      "chats": "Chats"
+    },
+    "reports": {
+      "body": "Feasibility reports bought before the subscription. Each keeps its original copy."
+    },
+    "delete": {
+      "body": "Deletes your chats, saved lots, notes and saved searches. A Pro plan is cancelled first. This can't be undone.",
+      "open": "Delete account…",
+      "title": "Delete your account?",
+      "dialogBody": "Your chats, saved lots, notes and saved searches go for good. A Pro plan is cancelled first.",
+      "word": "delete",
+      "typeWord": "Type “{{word}}” to confirm",
+      "cancel": "Cancel",
+      "confirm": "Delete account",
+      "deleting": "Deleting…",
+      "failed": "Your account wasn't deleted. Please try again."
+    }
   }
 }
