@@ -65,8 +65,8 @@
     "title": "Get This Report",
     "buy": "Buy Report — $25",
     "redirecting": "Redirecting to checkout…",
-    "orPro": "Or get unlimited reports with Pro",
-    "upgrade": "Upgrade — $99/month",
+    "orPro": "Pro includes the report for every lot",
+    "upgrade": "Upgrade — $19/month",
     "redirectingShort": "Redirecting…",
     "bodyPrefix": "Download a professional development feasibility report for",
     "haveCode": "Have an access code?"
@@ -82,7 +82,7 @@
   },
   "payments": {
     "comingSoon": "Purchases coming soon",
-    "reportsSoon": "Online report purchases are coming soon. The free Property Profile has the same underlying data, and you can view a sample report now.",
+    "reportsSoon": "Single reports are no longer sold: Pro includes the report for every lot. The free Property Profile has the same underlying data, and you can view a sample report now.",
     "proSoon": "Pro subscriptions are coming soon."
   },
   "confidence": {

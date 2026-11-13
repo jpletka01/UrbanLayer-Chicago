@@ -131,7 +131,7 @@ by the decision) and it maps one-to-one to the PDF export, which is today's repo
   deliberate, user-driven exception to "no pro forma": we never judge the deal.
 - **Before you buy:** a short checklist whose items link back into UrbanLayer.
 
-## Pricing — Approved
+## Pricing — Approved, built (Item 123: three plans at `/pricing`, Stripe merged dark)
 
 - **A subscription, not a price per lot.** Paying per address made builders bet on a lot before seeing
   its value. **Pro: $19 a month or $199 a year** (saves $29, about 1½ months free; show it in dollars).
@@ -140,7 +140,7 @@ by the decision) and it maps one-to-one to the PDF export, which is today's repo
   fully open example lot and one free Deep analysis show the value before paying.
 - **Chat limits from cost.** About 3.6¢ a question on development traffic (Sonnet 4.6 at list prices;
   re-measure about a month after real users arrive). Signed-out visitors get 3 questions in total, then
-  sign in. Free accounts and Pro get monthly allowances (about 50 and 300, to confirm), with an overall
+  sign in. Free accounts and Pro get monthly allowances (50 and 200, Item 119), with an overall
   spend cap. Past the limit, users can connect their own Claude or ChatGPT (an MCP connector) with an
   opt-in handoff of the current conversation.
 - **Sign-in only through Google, Apple or Microsoft,** never email, so limits can't be reset with

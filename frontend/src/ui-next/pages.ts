@@ -8,4 +8,5 @@ export const NEXT_PAGES = {
   home: lazy(() => import("./home/RootNextPage")),
   saved: lazy(() => import("./saved/SavedNextPage")),
   settings: lazy(() => import("./settings/SettingsNextPage")),
+  pricing: lazy(() => import("./pricing/PricingNextPage")),
 };

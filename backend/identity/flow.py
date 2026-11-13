@@ -295,6 +295,9 @@ async def _finish_link(request: Request, provider: str, record: dict, claims: di
         log.warning("link refused provider=%s reason=session", provider)
         return _fail(next_path, "session")
     result = await db.link_identity(user_id, claims)
+    if result == "linked":
+        from backend import entitlements
+        await entitlements.carry_on_link(user_id, claims["provider"], claims["subject"])
     log.info("link provider=%s result=%s", provider, result)
     response = RedirectResponse(url=_with_params(next_path, link=result, provider=provider), status_code=303)
     _clear_flow_cookies(response)

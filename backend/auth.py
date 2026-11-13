@@ -150,7 +150,28 @@ async def get_current_user(request: Request) -> dict | None:
         return None
 
     user = await db.get_user_by_id(payload["sub"])
-    return _apply_comp_premium(user)
+    if user is None:
+        return None
+    return _apply_comp_premium(await _with_subscription(user))
+
+
+# A subscription in these states is Pro. past_due = Stripe is still retrying the card (owner, Item 123: keep Pro
+# until Stripe gives up, which moves it to unpaid or canceled).
+PRO_STATUSES = frozenset({"active", "trialing", "past_due"})
+
+
+async def _with_subscription(user: dict) -> dict:
+    """Attach the account's Stripe subscription state (``subscription``) and derive Pro from it. Webhooks never
+    write ``users.tier`` (Item 123), so ``admin`` stays admin whatever happens at Stripe."""
+    try:
+        sub = await db.get_subscription(user["id"])
+    except Exception:  # noqa: BLE001 — a missing table (old test databases) is "no subscription"
+        sub = None
+    user = {**user, "subscription": sub}
+    if sub and sub.get("status") in PRO_STATUSES and user.get("tier") == "free":
+        user["tier"] = "premium"
+        user["paid_premium"] = True
+    return user
 
 
 def _apply_comp_premium(user: dict | None) -> dict | None:
@@ -238,6 +259,8 @@ async def handle_refresh(request: Request) -> dict:
     user = await db.get_user_by_id(token_data["user_id"])
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    # The plan the page shows right after a refresh: a subscription or a voucher, like every other request.
+    user = _apply_comp_premium(await _with_subscription(user))
 
     s = get_settings()
     new_access = create_access_token(user["id"], user.get("email") or "", user["tier"])

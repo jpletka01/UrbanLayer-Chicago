@@ -20,10 +20,7 @@ from fastapi.testclient import TestClient
 from backend import auth, db
 from backend import main as main_mod
 from backend.main import app
-from backend.payments import (
-    _handle_subscription_deleted,
-    get_subscription_status,
-)
+from backend.payments import get_subscription_status
 
 CSRF_TOKEN = "csrf-test"
 CSRF_HEADERS = {"x-csrf-token": CSRF_TOKEN}
@@ -221,18 +218,18 @@ class TestEffectiveTier:
 
 class TestStripeInterplay:
     @pytest.mark.asyncio
-    async def test_subscription_deleted_does_not_clobber_comp(self, test_db):
-        """A canceled Stripe sub downgrades tier but must leave the comp grant."""
-        await _user("u1", "a@b.com", tier="premium")
-        await db.update_user_stripe("u1", "cus_1", "sub_1")
+    async def test_canceled_subscription_leaves_comp(self, _auth_enabled, test_db):
+        """A canceled Stripe subscription leaves the voucher's grant: Pro is derived from both (Item 123)."""
+        await _user("u1", "a@b.com")
+        await db.set_subscription_customer("u1", "cus_1")
+        await db.write_subscription_state("cus_1", subscription_id="sub_1", status="canceled", interval="month",
+                                          current_period_end=None, cancel_at_period_end=False)
         until = _now_ms() + 20 * DAY_MS
         await db.set_premium_until("u1", until)
 
-        await _handle_subscription_deleted({"customer": "cus_1"})
-
-        user = await db.get_user_by_id("u1")
-        assert user["tier"] == "free"
-        assert user["premium_until"] == until  # comp survives; user stays premium via it
+        user = await _current_user("u1", "a@b.com")
+        assert user["tier"] == "premium" and user["comp_premium"] is True
+        assert (await db.get_user_by_id("u1"))["tier"] == "free"  # the column is never written
 
     @pytest.mark.asyncio
     async def test_subscription_status_distinguishes_comp(self, _auth_enabled, test_db):
@@ -248,8 +245,11 @@ class TestStripeInterplay:
 
     @pytest.mark.asyncio
     async def test_subscription_status_real_premium(self, _auth_enabled, test_db):
-        await _user("u1", "a@b.com", tier="premium")
-        user = await _current_user("u1", "a@b.com", "premium")
+        await _user("u1", "a@b.com")
+        await db.set_subscription_customer("u1", "cus_1")
+        await db.write_subscription_state("cus_1", subscription_id="sub_1", status="active", interval="month",
+                                          current_period_end=1_900_000_000, cancel_at_period_end=False)
+        user = await _current_user("u1", "a@b.com")
         status = await get_subscription_status(user)
         assert status["subscription_active"] is True
         assert status["comp_until"] is None

@@ -220,13 +220,13 @@ class TestDeleteUserAccountDb:
 
 class TestCancelUserSubscription:
     @pytest.mark.asyncio
-    async def test_no_subscription_is_noop(self):
+    async def test_no_subscription_is_noop(self, test_db):
         with patch("backend.payments.stripe.Subscription.cancel") as cancel:
             await cancel_user_subscription({"id": "u1", "stripe_subscription_id": None})
         cancel.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_cancels_active_subscription(self):
+    async def test_cancels_active_subscription(self, test_db):
         with patch("backend.payments.stripe.Subscription.cancel") as cancel:
             await cancel_user_subscription(
                 {"id": "u1", "stripe_subscription_id": "sub_1"}
@@ -234,7 +234,7 @@ class TestCancelUserSubscription:
         cancel.assert_called_once_with("sub_1")
 
     @pytest.mark.asyncio
-    async def test_already_canceled_counts_as_success(self):
+    async def test_already_canceled_counts_as_success(self, test_db):
         err = stripe.InvalidRequestError("No such subscription", param=None)
         with patch("backend.payments.stripe.Subscription.cancel", side_effect=err):
             await cancel_user_subscription(
@@ -242,7 +242,7 @@ class TestCancelUserSubscription:
             )  # must not raise
 
     @pytest.mark.asyncio
-    async def test_stripe_failure_raises_502(self):
+    async def test_stripe_failure_raises_502(self, test_db):
         from fastapi import HTTPException
         err = stripe.APIConnectionError("stripe down")
         with patch("backend.payments.stripe.Subscription.cancel", side_effect=err):

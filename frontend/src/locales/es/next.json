@@ -2214,12 +2214,30 @@
       "everyMonth": "Hora de Chicago, cada mes",
       "yourPlan": "Su plan",
       "freeBody": "{{limit}} preguntas al mes. Las fichas, Discovery y lo guardado no cuentan.",
-      "proLine": "Pro le da {{limit}} preguntas al mes. $19 al mes o $199 al año.",
       "comingSoon": "Próximamente",
       "proBody": "{{limit}} preguntas al mes.",
       "compBody": "Acceso anticipado: Pro, {{limit}} preguntas al mes, hasta el {{date}}.",
       "manageBilling": "Administrar facturación",
-      "adminBody": "Admin: las preguntas se cuentan, pero nunca se rechazan."
+      "adminBody": "Admin: las preguntas se cuentan, pero nunca se rechazan.",
+      "proWhat": "{{limit}} preguntas al mes, Análisis a fondo de cualquier terreno",
+      "getPro": "Obtener Pro",
+      "seePricing": "Ver precios",
+      "billedMonthly": "{{price}} al mes",
+      "billedYearly": "{{price}} al año",
+      "renews": "Se renueva",
+      "ends": "Pro termina",
+      "thenFree": "Después, el plan gratuito",
+      "proUntil": "Pro hasta el {{date}}",
+      "pastDuePill": "Pago rechazado",
+      "confirming": "Confirmando su pago con Stripe…",
+      "confirmingLong": "Seguimos esperando a Stripe. Puede tardar un minuto; esta página se actualiza sola.",
+      "confirmingBody": "Pro empieza en cuanto Stripe lo confirma, normalmente en unos segundos.",
+      "manageNote": "Cancele, cambie su tarjeta, pase de mensual a anual o vea sus facturas, en Stripe.",
+      "endingBody": "Usted canceló. Conserva Pro hasta el {{date}} y no se cobra nada más. Sus terrenos guardados y chats se quedan.",
+      "keepPro": "Conservar Pro",
+      "pastDueBody": "Su tarjeta fue rechazada y Stripe lo está reintentando. Mientras tanto conserva Pro ({{limit}} preguntas al mes); actualice su tarjeta para conservarlo después.",
+      "updateCard": "Actualizar su tarjeta",
+      "portalFailed": "No se pudo abrir la página de facturación de Stripe. Intente de nuevo en un momento."
     },
     "code": {
       "title": "Código de acceso",
@@ -2258,5 +2276,74 @@
       "deleting": "Eliminando…",
       "failed": "Su cuenta no se eliminó. Inténtelo de nuevo."
     }
+  },
+  "pricing": {
+    "title": "Precios",
+    "heading": "Planes",
+    "lead": "La Ficha de cada terreno, Descubrir y el mapa son gratuitos. Pro agrega más preguntas y un Análisis a fondo de cualquier terreno.",
+    "billing": "Facturación",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+    "save": "Ahorre {{amount}}",
+    "perMonthPrice": "{{price}} al mes",
+    "perYearPrice": "{{price}} al año",
+    "free": "Gratis",
+    "pro": "Pro",
+    "yourPlan": "Su plan",
+    "aMonth": "al mes",
+    "aYear": "al año",
+    "perMonthBilledYearly": "{{price}} al mes, con cobro anual",
+    "freeFeatures": [
+      "Todas las pestañas de la Ficha, en cada terreno",
+      "Descubrir en las 77 áreas comunitarias",
+      "50 preguntas al mes al analista",
+      "Un Análisis a fondo gratis, en el terreno que usted elija",
+      "Terrenos y búsquedas guardados"
+    ],
+    "proFeatures": [
+      "Todo lo del plan gratuito",
+      "200 preguntas al mes",
+      "Análisis a fondo de cualquier terreno, con su PDF",
+      "Pro dura hasta el final del periodo que pagó"
+    ],
+    "signedOutNote": "Sin iniciar sesión, puede hacer 3 preguntas.",
+    "signInFree": "Iniciar sesión, gratis",
+    "toStripe": "Abriendo Stripe…",
+    "signInForPro": "Inicie sesión para obtener Pro",
+    "comingSoonNote": "Las compras abren pronto. Todo lo gratuito ya funciona.",
+    "seeYourPlan": "Ver su plan",
+    "adminNote": "Las cuentas de administrador tienen todo lo de Pro.",
+    "checkoutFailed": "No se pudo conectar con Stripe, así que no se cobró nada. Intente de nuevo en un momento.",
+    "qaTitle": "Preguntas sobre el pago",
+    "qa": {
+      "cancel": {
+        "q": "¿Puedo cancelar?",
+        "a": "Sí, en Configuración → Plan → Administrar facturación. Conserva Pro hasta la fecha que aparece ahí."
+      },
+      "interval": {
+        "q": "¿Mensual o anual?",
+        "a": "{{month}} al mes, o {{year}} al año, que es dos meses menos que pagar 12 meses. Puede cambiar en Administrar facturación."
+      },
+      "trial": {
+        "q": "¿Hay periodo de prueba?",
+        "a": "El plan gratuito es la prueba: todas las pestañas, 50 preguntas al mes y un Análisis a fondo, sin tarjeta."
+      },
+      "reports": {
+        "q": "¿Y los informes que ya compré?",
+        "a": "Siguen en Configuración → Informes comprados, el original y una copia actualizada."
+      }
+    },
+    "proMonthly": "Pro mensual",
+    "proYearly": "Pro anual",
+    "freeNote": "Sin tarjeta, sin límite de tiempo",
+    "monthNote": "Cancele cuando quiera",
+    "getProMonthly": "Obtener Pro mensual",
+    "getProYearly": "Obtener Pro anual",
+    "yearFeatures": [
+      "Todo lo de Pro mensual",
+      "Un solo pago al año",
+      "Dos meses menos que pagar mensualmente",
+      "Cambie o cancele desde Configuración"
+    ]
   }
 }

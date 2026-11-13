@@ -99,7 +99,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/discovery" element={<VersionedRoute id="discovery" old={<DiscoveryPage />} />} />
             {/* Saved exists only in the new UI (Phase 9, Item 119): today's UI goes home. */}
             <Route path="/saved" element={<VersionedRoute id="saved" old={<Navigate to="/" replace />} />} />
-            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/pricing" element={<VersionedRoute id="pricing" old={<PricingPage />} />} />
             {/* Settings: the new UI's page (sections at /settings/<id>) when the preview is on, today's page otherwise. */}
             <Route path="/settings" element={<VersionedRoute id="settings" old={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />} />
             <Route path="/settings/:section" element={<VersionedRoute id="settings" old={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />} />

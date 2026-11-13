@@ -39,6 +39,8 @@ export const READINESS: readonly ReadinessEntry[] = [
     nav: { labelKey: "nav.chat", icon: "chat", to: "/chat" } },
   // Settings (owner-approved design B, 2026-11-13): reached from the account menu, so no side-panel slot.
   { id: "settings", path: "/settings", status: "ready", analytics: "next_settings" },
+  // Pricing (Item 123): Free and Pro at $19/$199, replacing the $99 page; linked from Settings → Plan and the landing.
+  { id: "pricing", path: "/pricing", status: "ready", analytics: "next_pricing" },
 ];
 
 export function readinessOf(id: string): ReadinessEntry | undefined {

@@ -15,7 +15,9 @@ import logging
 import os
 import re
 import time
-from typing import Any, AsyncIterator, NamedTuple
+from typing import Any, AsyncIterator, Literal, NamedTuple
+
+from pydantic import BaseModel, ConfigDict, Field
 
 import httpx
 import uuid
@@ -2909,9 +2911,10 @@ async def report(
     resolved_lat, resolved_lon, resolved_address = rl.lat, rl.lon, rl.address
 
     if _TIER_ORDER.get(user["tier"], 0) < _TIER_ORDER["premium"]:
+        from backend import entitlements
         if not await db.has_purchased_report(
             user["id"], resolved_lat, resolved_lon, pin=rl.pin
-        ):
+        ) and not await entitlements.opens_lot(user, rl.pin):
             raise HTTPException(
                 status_code=403,
                 detail={"error": "report_purchase_required"},
@@ -3152,40 +3155,48 @@ async def usage(request: Request) -> dict:
 # ---------------------------------------------------------------------------
 
 
+class CheckoutRequest(BaseModel):
+    """Pro checkout (Item 123): the browser names only the billing interval and where it came from."""
+    model_config = ConfigDict(extra="ignore")
+    interval: Literal["month", "year"] = "month"
+    origin: Literal["settings", "pricing"] = "settings"
+    language: Literal["en", "es"] = "en"
+    visitor_id: str | None = None
+
+
 @app.post("/api/checkout")
-async def checkout(request: Request, user: dict = Depends(require_auth)) -> dict:
+@app.post("/api/billing/checkout")
+async def checkout(body: CheckoutRequest, user: dict = Depends(require_auth)) -> dict:
     from backend.payments import create_checkout_session
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    url = await create_checkout_session(user, visitor_id=body.get("visitor_id"))
+    from backend.rate_limit import check_saved_limit
+    check_saved_limit(user["id"], "checkout", 10)
+    url = await create_checkout_session(user, body.interval, body.origin, body.language)
     return {"url": url}
 
 
 @app.post("/api/checkout/report")
-async def checkout_report(request: Request, user: dict = Depends(require_auth)) -> dict:
-    from backend.payments import create_report_checkout_session
-    body = await request.json()
-    address = body.get("address")
-    lat = body.get("lat")
-    lon = body.get("lon")
-    pin = body.get("pin")
-    if not pin and (not address or lat is None or lon is None):
-        raise HTTPException(
-            status_code=400, detail="pin or (address, lat, lon) is required"
-        )
-    if pin and (lat is None or lon is None):
-        # Pin-only checkout: resolve the parcel centroid so the purchase row's
-        # NOT NULL lat/lon (legacy coordinate entitlement) stays populated.
-        rl = await _resolve_location(pin=pin)
-        lat, lon = rl.lat, rl.lon
-        address = address or rl.address
-    url = await create_report_checkout_session(
-        user, address, float(lat), float(lon), pin=pin,
-        visitor_id=body.get("visitor_id"),
-    )
-    return {"url": url}
+async def checkout_report() -> dict:
+    """Retired with the $25 report (Item 123): a subscription and one free Deep analysis replace it."""
+    raise HTTPException(status_code=410, detail={"error": "report_purchase_retired"})
+
+
+@app.get("/api/entitlements")
+async def entitlements_status(user: dict | None = Depends(get_current_user)) -> dict:
+    from backend import entitlements
+    return await entitlements.status(user)
+
+
+class DeepAnalysisClaim(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pin: str = Field(pattern=r"^\d{14}$")
+
+
+@app.post("/api/entitlements/deep-analysis")
+async def claim_deep_analysis(body: DeepAnalysisClaim, user: dict = Depends(require_auth)) -> dict:
+    from backend import entitlements
+    from backend.rate_limit import check_saved_limit
+    check_saved_limit(user["id"], "entitlement", 20)
+    return await entitlements.claim(user, body.pin)
 
 
 @app.get("/api/report/access")
@@ -3203,7 +3214,12 @@ async def check_report_access(
         return {"has_access": True, "reason": "subscription"}
     rl = await _resolve_location(address, lat, lon, pin)
     purchased = await db.has_purchased_report(user["id"], rl.lat, rl.lon, pin=rl.pin)
-    return {"has_access": purchased, "reason": "purchased" if purchased else "none"}
+    if purchased:
+        return {"has_access": True, "reason": "purchased"}
+    from backend import entitlements
+    if await entitlements.opens_lot(user, rl.pin):
+        return {"has_access": True, "reason": "free_deep_analysis"}
+    return {"has_access": False, "reason": "none"}
 
 
 @app.post("/api/webhook/stripe")
@@ -3217,10 +3233,11 @@ async def payments_status() -> dict:
     """Which purchases can start right now. Checkout 503s when Stripe isn't
     configured, and the purchase buttons used to fail silently on that; the
     frontend reads this to show "purchases coming soon" instead."""
-    s = get_settings()
+    from backend.payments import purchases_enabled
     return {
-        "reports": bool(s.stripe_secret_key and s.stripe_price_id_report),
-        "subscriptions": bool(s.stripe_secret_key and s.stripe_price_id_pro_monthly),
+        # The $25 report purchase is retired (Item 123).
+        "reports": False,
+        "subscriptions": purchases_enabled(),
     }
 
 
@@ -3233,9 +3250,11 @@ async def subscription_status(
 
 
 @app.post("/api/billing/portal")
-async def billing_portal(request: Request, user: dict = Depends(require_auth)) -> dict:
+async def billing_portal(
+    request: Request, language: Literal["en", "es"] = "en", user: dict = Depends(require_auth),
+) -> dict:
     from backend.payments import create_billing_portal_session
-    url = await create_billing_portal_session(user)
+    url = await create_billing_portal_session(user, language)
     return {"url": url}
 
 

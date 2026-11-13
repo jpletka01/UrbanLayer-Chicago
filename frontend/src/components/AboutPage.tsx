@@ -3069,6 +3069,22 @@ Consumers → Property Profile (renders pin + confidence badge)
             every signed-in screen be reviewed without real accounts (Item 121).
           </P>
 
+          <Sub>Taking money without trusting the order Stripe tells you things</Sub>
+          <P>
+            The subscription code already existed and looked finished, but reading it before adding a yearly price
+            turned up three ways it could go wrong with real customers. Stripe&apos;s notifications updated the account&apos;s
+            role directly, so an administrator who subscribed would have been demoted to an ordinary account the day the
+            subscription ended. Notifications were applied in the order they arrived, which Stripe does not promise, so a
+            late &quot;active&quot; after a cancellation could have handed out Pro forever. And nothing stopped a person with two
+            tabs open from paying twice. Now the plan is worked out when it is read, from the subscription&apos;s state and
+            never written into the role; every notification must carry Stripe&apos;s signature, is recorded once by its id,
+            and is answered by asking Stripe for the subscription&apos;s current state instead of believing the message; and
+            an account gets one Stripe customer, an open checkout is reused, and a second subscription that still slips
+            through is cancelled and refunded. Returning from the payment page proves nothing, so the page waits for
+            Stripe&apos;s own word. It all ships switched off until production keys exist, and the server refuses to start
+            with a live key anywhere but production (Item 123).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}

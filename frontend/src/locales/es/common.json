@@ -65,11 +65,11 @@
     "title": "Obtenga este informe",
     "buy": "Comprar informe — $25",
     "redirecting": "Redirigiendo al pago…",
-    "orPro": "O obtenga informes ilimitados con Pro",
-    "upgrade": "Actualizar — $99/mes",
+    "orPro": "Pro incluye el informe de cada terreno",
+    "upgrade": "Actualizar — $19 al mes",
     "redirectingShort": "Redirigiendo…",
     "bodyPrefix": "Descargue un informe profesional de viabilidad de desarrollo para",
-    "haveCode": "¿Tienes un código de acceso?"
+    "haveCode": "¿Tiene un código de acceso?"
   },
   "loadConversationError": "No se pudo cargar la conversación. Es posible que se haya eliminado o que no tenga acceso.",
   "transcriptTitle": "Transcripción de Chicago",
@@ -82,7 +82,7 @@
   },
   "payments": {
     "comingSoon": "Compras próximamente",
-    "reportsSoon": "La compra de informes en línea estará disponible próximamente. La Ficha gratuita tiene los mismos datos de base, y ya puede ver un informe de muestra.",
+    "reportsSoon": "Ya no se venden informes sueltos: Pro incluye el informe de cada terreno. La Ficha gratuita tiene los mismos datos de base, y ya puede ver un informe de muestra.",
     "proSoon": "Las suscripciones Pro estarán disponibles próximamente."
   },
   "confidence": {
