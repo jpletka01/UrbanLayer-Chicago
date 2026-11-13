@@ -272,6 +272,7 @@
       "added": "Agregado el {{date}}",
       "removeConfirm": "¿Quitar {{provider}}? No podrá iniciar sesión con esa cuenta hasta que la vuelva a agregar.",
       "error": "No funcionó. Inténtelo de nuevo."
-    }
+    },
+    "testNote": "Revisión local: una cuenta de prueba; no se usa ninguna cuenta real de Google, Apple ni Microsoft."
   }
 }

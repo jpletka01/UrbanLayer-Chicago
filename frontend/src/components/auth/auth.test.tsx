@@ -2,7 +2,8 @@
 // Settings' sign-in methods. The server's rules are tested in backend/tests/test_identity.py.
 import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { parseAuthNotice, stripAuthNotice, takeAuthNotice } from "../../lib/authNotice";
+import { MemoryRouter, useLocation } from "react-router-dom";
+import { parseAuthNotice, stripAuthNotice } from "../../lib/authNotice";
 
 const auth = {
   user: null, isAuthenticated: false, authRequired: true, loading: false, signIn: vi.fn(), signOut: vi.fn(async () => {}),
@@ -37,36 +38,40 @@ describe("the sign-in notice in the address", () => {
   it("is removed from the address, keeping the page's own parameters", () => {
     expect(stripAuthNotice("?tab=history&link=linked&provider=apple")).toBe("?tab=history");
     expect(stripAuthNotice("?signin_error=failed")).toBe("");
-    window.history.replaceState(null, "", "/settings?link=linked&provider=microsoft#x");
-    expect(takeAuthNotice()).toEqual({ kind: "link", result: "linked", provider: "microsoft" });
-    expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe("/settings#x");
-    expect(takeAuthNotice()).toBeNull();
   });
 });
+
+function Where() {
+  const l = useLocation();
+  return <output data-testid="where">{`${l.pathname}${l.search}${l.hash}`}</output>;
+}
+
+function at(url: string) {
+  return render(<MemoryRouter initialEntries={[url]}><AuthOverlays /><Where /></MemoryRouter>);
+}
 
 describe("today's UI overlays", () => {
   beforeEach(() => { auth.chooserOpen = false; vi.clearAllMocks(); });
 
   it("the chooser offers every method in order and goes to the one chosen", () => {
-    window.history.replaceState(null, "", "/scorecard");
     auth.chooserOpen = true;
-    render(<AuthOverlays />);
+    at("/scorecard");
     const dialog = screen.getByRole("dialog");
     const buttons = within(dialog).getAllByRole("button", { name: /^Continue with / });
     expect(buttons.map((b) => b.getAttribute("data-provider"))).toEqual(["google", "apple", "microsoft"]);
-    expect(buttons[2].textContent).toContain("local test account");
+    expect(screen.getByTestId("signin-test-note").textContent).toContain("a test account");
     fireEvent.click(buttons[1]);
     expect(auth.signInWith).toHaveBeenCalledWith("apple");
   });
 
   it("says what a link did, and the hint offers the other method", async () => {
-    window.history.replaceState(null, "", "/settings?link=taken&provider=apple");
-    const { unmount } = render(<AuthOverlays />);
+    const { unmount } = at("/settings?tab=x&link=taken&provider=apple#top");
     expect(screen.getByTestId("auth-notice").textContent).toContain(
       "That Apple account signs in to a different UrbanLayer account, so it wasn't added. Nothing was merged.");
+    // The address keeps the page's own parameters and loses the notice's.
+    await waitFor(() => expect(screen.getByTestId("where").textContent).toBe("/settings?tab=x#top"));
     unmount();
-    window.history.replaceState(null, "", "/?signin_hint=google");
-    render(<AuthOverlays />);
+    at("/?signin_hint=google");
     fireEvent.click(screen.getByRole("button", { name: "Sign in with Google instead" }));
     await waitFor(() => expect(auth.signInWith).toHaveBeenCalledWith("google"));
     expect(auth.signOut).toHaveBeenCalled();

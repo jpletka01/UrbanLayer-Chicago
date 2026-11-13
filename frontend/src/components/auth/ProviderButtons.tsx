@@ -62,9 +62,11 @@ export default function ProviderButtons({ providers, onChoose, buttonClassName =
         >
           <ProviderMark provider={p.id} />
           <span>{t("auth.continueWith", { provider: PROVIDER_NAMES[p.id] })}</span>
-          {p.test && <span className="text-caption opacity-70">({t("auth.testAccount")})</span>}
         </button>
       ))}
+      {providers.some((p) => p.test) && (
+        <p className="text-center text-caption opacity-70" data-testid="signin-test-note">{t("auth.testNote")}</p>
+      )}
     </div>
   );
 }

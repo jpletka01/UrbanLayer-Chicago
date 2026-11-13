@@ -43,17 +43,6 @@ export function stripAuthNotice(search: string): string {
   return rest ? `?${rest}` : "";
 }
 
-/** Reads the notice from the current address once and replaces the address without it. */
-export function takeAuthNotice(): AuthNotice | null {
-  if (typeof window === "undefined") return null;
-  const notice = parseAuthNotice(window.location.search);
-  if (notice) {
-    const clean = `${window.location.pathname}${stripAuthNotice(window.location.search)}${window.location.hash}`;
-    window.history.replaceState(window.history.state, "", clean);
-  }
-  return notice;
-}
-
 /** The i18n key (namespace common) and values for a notice's sentence. */
 export function noticeText(n: AuthNotice, providerName: (p: SignInProviderId) => string): { key: string; values: Record<string, string> } {
   if (n.kind === "error") return { key: `auth.notice.error.${n.code}`, values: {} };

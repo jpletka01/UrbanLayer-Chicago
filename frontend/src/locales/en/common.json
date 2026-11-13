@@ -272,6 +272,7 @@
       "added": "Added {{date}}",
       "removeConfirm": "Remove {{provider}}? You won't be able to sign in with it until you add it again.",
       "error": "That didn't work. Please try again."
-    }
+    },
+    "testNote": "Local review: a test account, no real Google, Apple or Microsoft account is used."
   }
 }

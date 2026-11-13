@@ -40,7 +40,7 @@ export default function AuthOverlaysNext({ notice, onDismiss }: { notice: AuthNo
       {notice && (
         <div
           role="status"
-          className="fixed bottom-4 left-1/2 z-[60] flex w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-2xl bg-nx-page p-4 text-nx-ink ring-1 ring-nx-ink/10 shadow-[0_8px_32px_rgb(0_0_0/0.16)]"
+          className="fixed bottom-16 left-1/2 z-[60] flex w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-2xl bg-nx-page p-4 text-nx-ink ring-1 ring-nx-ink/10 shadow-[0_8px_32px_rgb(0_0_0/0.16)]"
           data-testid="auth-notice"
         >
           <div className="min-w-0 flex-1">

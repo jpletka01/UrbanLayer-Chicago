@@ -425,3 +425,31 @@ test("Phase 9 quotas: the count near the end, and the refusal's words, with the 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });
+
+// Phase 9 identity (Item 121): the chooser offers Google, Apple and Microsoft with their own marks, passes axe in
+// both themes and fits a phone; a round trip's result shows once and leaves the address bar. The server's replies
+// about who is signed in and which methods exist are stubbed, so this runs on any local stack.
+test("Phase 9 identity: the sign-in chooser and the result notice, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
+  await page.route("**/api/auth/me", (r) => r.fulfill({ json: { authenticated: false, auth_required: true, user: null, can_refresh: false } }));
+  await page.route("**/api/auth/providers", (r) => r.fulfill({ json: { providers: [
+    { id: "google", test: false }, { id: "apple", test: false }, { id: "microsoft", test: false }] } }));
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await open(page, "/saved?ui=next", "saved");
+    await page.getByTestId("saved").getByRole("button", { name: "Sign in" }).first().click();
+    const chooser = page.getByRole("dialog", { name: "Sign in to UrbanLayer" });
+    await expect(chooser).toBeVisible();
+    await expect(chooser.getByRole("button", { name: /^Continue with / })).toHaveText([
+      "Continue with Google", "Continue with Apple", "Continue with Microsoft"]);
+    expect(await axe(page), `axe ${scheme}, chooser`).toEqual([]);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    await page.keyboard.press("Escape");
+    await expect(chooser).toHaveCount(0);
+  }
+  await page.goto("/?ui=next&landing=1&link=taken&provider=apple", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("auth-notice")).toContainText("signs in to a different UrbanLayer account");
+  await expect.poll(() => new URL(page.url()).search).not.toContain("link=");
+  expect(await axe(page), "axe, notice").toEqual([]);
+});

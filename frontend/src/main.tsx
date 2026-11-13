@@ -52,6 +52,7 @@ import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 import { SegmentPrompt } from './components/SegmentPrompt.tsx'
+import AuthOverlays from './components/auth/AuthOverlays.tsx'
 import { UiVersionProvider } from './ui-next/UiVersionProvider.tsx'
 import { useUiVersion } from './ui-next/uiVersionContext.ts'
 import { VersionedRoute } from './ui-next/VersionedRoute.tsx'
@@ -80,6 +81,8 @@ createRoot(document.getElementById('root')!).render(
           {/* Post-sign-in "what best describes you" — renders nothing unless
               a sign-in just completed and no segment is stored. */}
           <SegmentPrompt />
+          {/* The sign-in chooser and the sign-in/link result notice, once for the whole app (Item 121). */}
+          <AuthOverlays />
           <PreviewBadge />
           <Routes>
             {/* "/" in the preview: the landing, or the home when signed in; its chat doors (?q=, ?pin=, ?handoff=,
