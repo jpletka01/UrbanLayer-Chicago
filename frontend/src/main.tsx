@@ -52,6 +52,7 @@ import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 import { SegmentPrompt } from './components/SegmentPrompt.tsx'
+import AuthOverlays from './components/auth/AuthOverlays.tsx'
 import { UiVersionProvider } from './ui-next/UiVersionProvider.tsx'
 import { useUiVersion } from './ui-next/uiVersionContext.ts'
 import { VersionedRoute } from './ui-next/VersionedRoute.tsx'
@@ -80,6 +81,8 @@ createRoot(document.getElementById('root')!).render(
           {/* Post-sign-in "what best describes you" — renders nothing unless
               a sign-in just completed and no segment is stored. */}
           <SegmentPrompt />
+          {/* The sign-in chooser and the sign-in/link result notice, once for the whole app (Item 121). */}
+          <AuthOverlays />
           <PreviewBadge />
           <Routes>
             {/* "/" in the preview: the landing, or the home when signed in; its chat doors (?q=, ?pin=, ?handoff=,
@@ -97,11 +100,9 @@ createRoot(document.getElementById('root')!).render(
             {/* Saved exists only in the new UI (Phase 9, Item 119): today's UI goes home. */}
             <Route path="/saved" element={<VersionedRoute id="saved" old={<Navigate to="/" replace />} />} />
             <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            } />
+            {/* Settings: the new UI's page (sections at /settings/<id>) when the preview is on, today's page otherwise. */}
+            <Route path="/settings" element={<VersionedRoute id="settings" old={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />} />
+            <Route path="/settings/:section" element={<VersionedRoute id="settings" old={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/admin" element={

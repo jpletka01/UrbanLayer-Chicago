@@ -1,7 +1,8 @@
-"""Google OAuth2 + JWT session management.
+"""Sessions (our own JWT + rotating refresh token) and the auth dependencies.
 
-When GOOGLE_CLIENT_ID is not set, auth is disabled and all requests are
-treated as an admin user — local dev works without any OAuth setup.
+Sign-in itself (Google, Apple, Microsoft; never email) lives in ``backend/identity/`` (Phase 9, Item 121).
+When no provider is set up and the local test sign-in is off, auth is disabled and every request is treated as an
+admin user, so local dev works without any OAuth setup.
 """
 
 from __future__ import annotations
@@ -10,26 +11,22 @@ import hashlib
 import logging
 import secrets
 import time
-import uuid
-from urllib.parse import urlencode
 
-import httpx
 import jwt
 from fastapi import Request, Response
-from fastapi.responses import RedirectResponse
 
 from backend import db
 from backend.config import _DEV_JWT_SECRET, get_settings
 
 log = logging.getLogger(__name__)
 
-_GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-_GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-_GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
-
 
 def _auth_enabled() -> bool:
-    return bool(get_settings().google_client_id)
+    s = get_settings()
+    if s.google_client_id or s.microsoft_client_id or s.apple_client_id:
+        return True
+    from backend.identity.providers import dev_login_allowed
+    return dev_login_allowed()
 
 
 def _jwt_secret() -> str:
@@ -111,32 +108,17 @@ def clear_auth_cookies(response: Response) -> None:
         response.delete_cookie(name, path=path)
 
 
-# ---------------------------------------------------------------------------
-# Google OAuth helpers
-# ---------------------------------------------------------------------------
-
-async def exchange_google_code(code: str, redirect_uri: str) -> dict:
+async def issue_session(response: Response, user: dict) -> None:
+    """Start a session for ``user`` on ``response``: access JWT, a stored refresh token, a CSRF cookie."""
     s = get_settings()
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(_GOOGLE_TOKEN_URL, data={
-            "code": code,
-            "client_id": s.google_client_id,
-            "client_secret": s.google_client_secret,
-            "redirect_uri": redirect_uri,
-            "grant_type": "authorization_code",
-        })
-        resp.raise_for_status()
-        return resp.json()
-
-
-async def get_google_userinfo(access_token: str) -> dict:
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            _GOOGLE_USERINFO_URL,
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        resp.raise_for_status()
-        return resp.json()
+    access_token = create_access_token(user["id"], user.get("email") or "", user["tier"])
+    refresh_token = create_refresh_token()
+    await db.save_refresh_token(
+        user_id=user["id"],
+        token_hash=hash_token(refresh_token),
+        expires_at=int(time.time() * 1000) + s.jwt_refresh_token_ttl * 1000,
+    )
+    set_auth_cookies(response, access_token, refresh_token, secrets.token_urlsafe(16))
 
 
 # ---------------------------------------------------------------------------
@@ -240,83 +222,6 @@ def csrf_check(request: Request) -> bool:
 # Auth endpoint handlers
 # ---------------------------------------------------------------------------
 
-def _callback_url(request: Request) -> str:
-    s = get_settings()
-    if s.frontend_url:
-        return f"{s.frontend_url.rstrip('/')}/api/auth/google/callback"
-    return str(request.url_for("google_callback"))
-
-
-async def handle_google_login(request: Request) -> RedirectResponse:
-    s = get_settings()
-    if not _auth_enabled():
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Auth not configured")
-
-    state = secrets.token_urlsafe(32)
-    callback_url = _callback_url(request)
-
-    params = urlencode({
-        "client_id": s.google_client_id,
-        "redirect_uri": callback_url,
-        "response_type": "code",
-        "scope": "openid email profile",
-        "state": state,
-        "access_type": "offline",
-        "prompt": "consent",
-    })
-
-    response = RedirectResponse(url=f"{_GOOGLE_AUTH_URL}?{params}", status_code=302)
-    response.set_cookie(
-        "oauth_state", state,
-        httponly=True, secure=s.auth_cookie_secure,
-        samesite="lax", max_age=300,
-    )
-    return response
-
-
-async def handle_google_callback(request: Request) -> RedirectResponse:
-    s = get_settings()
-    code = request.query_params.get("code")
-    state = request.query_params.get("state")
-    stored_state = request.cookies.get("oauth_state")
-
-    from fastapi import HTTPException
-
-    if not code or not state or state != stored_state:
-        raise HTTPException(status_code=400, detail="Invalid OAuth callback")
-
-    callback_url = _callback_url(request)
-    tokens = await exchange_google_code(code, callback_url)
-    userinfo = await get_google_userinfo(tokens["access_token"])
-
-    existing = await db.get_user_by_google_id(str(userinfo["id"]))
-    user_id = existing["id"] if existing else str(uuid.uuid4())
-
-    user = await db.upsert_user(
-        user_id=user_id,
-        email=userinfo["email"],
-        name=userinfo.get("name", userinfo["email"]),
-        picture_url=userinfo.get("picture"),
-        google_id=str(userinfo["id"]),
-    )
-
-    access_token = create_access_token(user["id"], user["email"], user["tier"])
-    refresh_token = create_refresh_token()
-    csrf_token = secrets.token_urlsafe(16)
-
-    await db.save_refresh_token(
-        user_id=user["id"],
-        token_hash=hash_token(refresh_token),
-        expires_at=int(time.time() * 1000) + s.jwt_refresh_token_ttl * 1000,
-    )
-
-    response = RedirectResponse(url=s.frontend_url, status_code=302)
-    set_auth_cookies(response, access_token, refresh_token, csrf_token)
-    response.delete_cookie("oauth_state")
-    return response
-
-
 async def handle_refresh(request: Request) -> dict:
     from fastapi import HTTPException
 
@@ -335,7 +240,7 @@ async def handle_refresh(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="User not found")
 
     s = get_settings()
-    new_access = create_access_token(user["id"], user["email"], user["tier"])
+    new_access = create_access_token(user["id"], user.get("email") or "", user["tier"])
     new_refresh = create_refresh_token()
     csrf = secrets.token_urlsafe(16)
 

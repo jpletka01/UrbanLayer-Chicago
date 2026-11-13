@@ -119,6 +119,7 @@ async function authFetch(url: string, options: RequestInit = {}): Promise<Respon
 
 export interface AuthUser {
   id: string;
+  /** Empty when no sign-in method gave one (Apple may not). */
   email: string;
   name: string;
   picture_url: string | null;
@@ -165,8 +166,61 @@ export async function logout(): Promise<void> {
   await authFetch(`${API_BASE}/api/auth/logout`, { method: "POST" });
 }
 
-export function getSignInUrl(): string {
-  return `${API_BASE}/api/auth/google`;
+// Sign-in methods (Phase 9, Item 121): Google, Apple, Microsoft; never email.
+export type SignInProviderId = "google" | "apple" | "microsoft";
+
+export interface SignInProvider {
+  id: SignInProviderId;
+  /** A local review stack's stand-in ("Local test account"), never in production. */
+  test: boolean;
+}
+
+/** Where to start signing in with a provider; ``next`` is the page to come back to (a path on this site). */
+export function getSignInUrl(provider: SignInProviderId = "google", next?: string): string {
+  const q = next ? `?${new URLSearchParams({ next })}` : "";
+  return `${API_BASE}/api/auth/${provider}${q}`;
+}
+
+export async function getSignInProviders(): Promise<SignInProvider[]> {
+  const resp = await fetch(`${API_BASE}/api/auth/providers`, { credentials: "include" });
+  if (!resp.ok) throw new Error(`providers ${resp.status}`);
+  const data: { providers: SignInProvider[] } = await resp.json();
+  return data.providers;
+}
+
+export interface SignInIdentity {
+  provider: SignInProviderId;
+  /** Masked ("p••••@example.com"), or null when the provider gave none or hid it. */
+  email: string | null;
+  private_email: boolean;
+  added_at: number;
+  last_used_at: number;
+}
+
+export async function getSignInIdentities(): Promise<{ identities: SignInIdentity[]; available: SignInProvider[] }> {
+  const resp = await authFetch(`${API_BASE}/api/auth/identities`);
+  if (!resp.ok) throw new Error(`identities ${resp.status}`);
+  return resp.json();
+}
+
+/** Start adding a provider to the signed-in account; resolves to the provider URL to go to. */
+export async function startLinkProvider(provider: SignInProviderId, next: string): Promise<string> {
+  const resp = await authFetch(`${API_BASE}/api/auth/link/${provider}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ next }),
+  });
+  if (!resp.ok) throw new Error(`link ${resp.status}`);
+  const data: { url: string } = await resp.json();
+  return data.url;
+}
+
+/** Remove a sign-in method; "last" when it is the account's only way in (refused). */
+export async function removeSignInIdentity(provider: SignInProviderId): Promise<"removed" | "last"> {
+  const resp = await authFetch(`${API_BASE}/api/auth/identities/${provider}`, { method: "DELETE" });
+  if (resp.status === 409) return "last";
+  if (!resp.ok) throw new Error(`remove ${resp.status}`);
+  return "removed";
 }
 
 // ---------------------------------------------------------------------------

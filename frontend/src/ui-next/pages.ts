@@ -7,4 +7,5 @@ export const NEXT_PAGES = {
   chat: lazy(() => import("./chat/ChatNextPage")),
   home: lazy(() => import("./home/RootNextPage")),
   saved: lazy(() => import("./saved/SavedNextPage")),
+  settings: lazy(() => import("./settings/SettingsNextPage")),
 };

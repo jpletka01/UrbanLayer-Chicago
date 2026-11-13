@@ -9,13 +9,12 @@
   "viewHistory": "Ver historial",
   "chatHistory": "Historial de consultas",
   "noConversations": "Aún no hay conversaciones",
-  "signIn": "Iniciar sesión con Google",
   "signInShort": "Iniciar sesión",
   "signInToSave": "Inicie sesión para guardar su investigación",
   "signInToSaveShort": "Guardar su trabajo",
   "signInTitle": "Inicie sesión para continuar",
   "signInDescription": "Cree una cuenta para guardar las conversaciones y acceder a todas las funciones.",
-  "signInFreeNote": "Los usuarios de planes gratuitos tienen un límite de 25 consultas por día",
+  "signInFreeNote": "Las cuentas gratuitas tienen 50 preguntas al mes",
   "continueBrowsing": "Continuar navegando",
   "signOut": "Cerrar sesión",
   "settings": "Configuración",
@@ -238,5 +237,42 @@
     "left_other": "Le quedan {{count}} preguntas gratuitas",
     "leftMonth_one": "Le queda {{count}} pregunta este mes",
     "leftMonth_other": "Le quedan {{count}} preguntas este mes"
+  },
+  "auth": {
+    "continueWith": "Continuar con {{provider}}",
+    "testAccount": "cuenta de prueba local",
+    "chooserTitle": "Inicie sesión en UrbanLayer",
+    "chooserBody": "Es gratis, con 50 preguntas al mes. Inicie sesión con Google, Apple o Microsoft; nunca le pedimos una contraseña.",
+    "close": "Cerrar",
+    "notice": {
+      "error": {
+        "declined": "Se canceló el inicio de sesión.",
+        "expired": "Ese inicio de sesión tardó demasiado o se abrió dos veces. Inténtelo de nuevo.",
+        "failed": "No pudimos confirmar ese inicio de sesión. Inténtelo de nuevo.",
+        "unavailable": "El servicio de inicio de sesión no respondió. Inténtelo de nuevo en un minuto.",
+        "session": "Cuando terminó, había una sesión iniciada con otra cuenta, así que no se agregó nada."
+      },
+      "hint": "Es posible que ya tenga una cuenta que inicia sesión con {{provider}}. Esta es nueva y separada.",
+      "hintAction": "Mejor inicie sesión con {{provider}}",
+      "link": {
+        "linked": "Ahora {{provider}} inicia sesión en esta cuenta.",
+        "already_yours": "Esa cuenta de {{provider}} ya inicia sesión aquí.",
+        "taken": "Esa cuenta de {{provider}} inicia sesión en otra cuenta de UrbanLayer, así que no se agregó. No se combinó nada.",
+        "provider_exists": "Esta cuenta ya tiene un inicio de sesión con {{provider}}. Quítelo primero para agregar otro."
+      }
+    },
+    "methods": {
+      "title": "Formas de iniciar sesión",
+      "body": "Las formas de entrar a esta cuenta. Las cuentas nunca se unen por correo electrónico.",
+      "add": "Agregar {{provider}}",
+      "remove": "Quitar",
+      "lastOne": "Es su única forma de entrar, así que no se puede quitar.",
+      "lastOneShort": "Única forma de entrar",
+      "hiddenEmail": "Correo oculto por Apple",
+      "added": "Agregado el {{date}}",
+      "removeConfirm": "¿Quitar {{provider}}? No podrá iniciar sesión con esa cuenta hasta que la vuelva a agregar.",
+      "error": "No funcionó. Inténtelo de nuevo."
+    },
+    "testNote": "Revisión local: una cuenta de prueba; no se usa ninguna cuenta real de Google, Apple ni Microsoft."
   }
 }

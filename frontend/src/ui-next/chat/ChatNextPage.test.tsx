@@ -9,8 +9,12 @@ import ChatNextPage from "./ChatNextPage";
 import { axeViolations } from "../test/axe";
 import type { Message } from "../../lib/types";
 
+const signInWith = vi.fn();
 vi.mock("../../contexts/AuthContext", () => ({
-  useAuthContext: () => ({ user: null, isAuthenticated: false, authRequired: true, signIn: vi.fn(), signOut: vi.fn() }),
+  useAuthContext: () => ({
+    user: null, isAuthenticated: false, authRequired: true, signIn: vi.fn(), signOut: vi.fn(), signInWith,
+    providers: [{ id: "google", test: false }, { id: "apple", test: false }, { id: "microsoft", test: false }],
+  }),
 }));
 vi.mock("../../contexts/ThemeContext", () => ({
   useThemeContext: () => ({ theme: "system", resolvedTheme: "light", setTheme: vi.fn() }),
@@ -169,6 +173,11 @@ describe("the full chat page", () => {
     const { container } = mount();
     const card = screen.getByTestId("chat-signin");
     expect(within(card).getByRole("dialog", { name: "Sign in to keep going" })).toBeTruthy();
+    // Item 121: the three providers, in order, each with its own mark; a click goes to that provider.
+    const providers = within(card).getAllByRole("button", { name: /^Continue with / });
+    expect(providers.map((b) => b.textContent)).toEqual(["Continue with Google", "Continue with Apple", "Continue with Microsoft"]);
+    fireEvent.click(providers[2]);
+    expect(signInWith).toHaveBeenCalledWith("microsoft");
     fireEvent.click(within(card).getByRole("button", { name: "Close" }));
     expect(session.dismissAuth).toHaveBeenCalled();
     expect(await axeViolations(container)).toEqual([]);

@@ -157,6 +157,7 @@ _CSRF_EXEMPT_PATHS = {
     "/api/webhook/stripe",
     "/api/auth/refresh",
     "/api/auth/logout",
+    "/api/auth/apple/callback",  # Apple's cross-site form POST; the signed single-use state is the check
     "/api/events",
     "/api/newsletter",  # anonymous email capture; single INSERT OR IGNORE
 }
@@ -335,8 +336,6 @@ async def health() -> dict:
 
 from backend.auth import (  # noqa: E402 — grouped with the auth endpoints below
     get_current_user,
-    handle_google_callback,
-    handle_google_login,
     handle_logout,
     handle_me,
     handle_refresh,
@@ -345,16 +344,6 @@ from backend.auth import (  # noqa: E402 — grouped with the auth endpoints bel
     set_auth_cookies,
     clear_auth_cookies,
 )
-
-
-@app.get("/api/auth/google")
-async def google_login(request: Request):
-    return await handle_google_login(request)
-
-
-@app.get("/api/auth/google/callback", name="google_callback")
-async def google_callback(request: Request):
-    return await handle_google_callback(request)
 
 
 @app.post("/api/auth/refresh")
@@ -391,6 +380,57 @@ async def logout(request: Request):
     resp = JSONResponse(content=result)
     clear_auth_cookies(resp)
     return resp
+
+
+# Sign-in methods (Phase 9, Item 121): Google, Apple, Microsoft through one flow in backend/identity/. The fixed
+# paths come first: the provider routes below would otherwise catch /api/auth/me and friends.
+from backend.identity import flow as identity_flow  # noqa: E402
+from backend.identity import providers as identity_providers  # noqa: E402
+
+
+@app.get("/api/auth/providers")
+async def auth_providers() -> dict:
+    return {"providers": identity_providers.available()}
+
+
+@app.get("/api/auth/identities")
+async def auth_identities(user: dict = Depends(require_auth)) -> dict:
+    return await identity_flow.identities_for(user)
+
+
+@app.delete("/api/auth/identities/{provider}")
+async def auth_remove_identity(provider: str, request: Request, user: dict = Depends(require_auth)) -> dict:
+    from backend.rate_limit import check_saved_limit
+    check_saved_limit(user["id"], "identity", 20)
+    return await identity_flow.remove(user, provider)
+
+
+@app.post("/api/auth/link/{provider}")
+async def auth_link(provider: str, request: Request, user: dict = Depends(require_auth)):
+    from backend.rate_limit import check_saved_limit
+    check_saved_limit(user["id"], "identity", 20)
+    return await identity_flow.start_link(request, provider, user)
+
+
+@app.get("/api/auth/dev/authorize")
+async def auth_dev_authorize(request: Request):
+    return identity_flow.dev_authorize_page(request)
+
+
+@app.get("/api/auth/{provider}/callback")
+async def auth_callback(provider: str, request: Request):
+    return await identity_flow.callback(request, provider)
+
+
+@app.post("/api/auth/apple/callback")
+async def auth_apple_callback(request: Request):
+    # Apple's answer is a cross-site form POST (CSRF-exempt: the signed, single-use state is the check).
+    return await identity_flow.callback(request, "apple")
+
+
+@app.get("/api/auth/{provider}")
+async def auth_start(provider: str, request: Request):
+    return await identity_flow.start_sign_in(request, provider)
 
 
 @app.get("/autocomplete")
@@ -3270,6 +3310,8 @@ async def delete_account(request: Request, user: dict = Depends(require_auth)):
         )
     from backend.payments import cancel_user_subscription
     await cancel_user_subscription(user)
+    from backend import quotas
+    await quotas.carry_over_on_delete(user["id"])
     await db.delete_user_account(user["id"])
     from fastapi.responses import JSONResponse
     resp = JSONResponse(content={"ok": True})
@@ -3327,7 +3369,14 @@ async def admin_grant_premium(
     days = int(body.get("days", 30))
     if not email or days < 1:
         raise HTTPException(status_code=400, detail="email and days >= 1 are required")
-    target = await db.get_user_by_email(email)
+    # Emails aren't unique since Item 121 (the same address can sign in two accounts through two providers).
+    matches = await db.users_by_email(email)
+    if len(matches) > 1:
+        raise HTTPException(
+            status_code=409,
+            detail="Several accounts use that email. Send a voucher code instead.",
+        )
+    target = matches[0] if matches else None
     if target is None:
         raise HTTPException(
             status_code=404,

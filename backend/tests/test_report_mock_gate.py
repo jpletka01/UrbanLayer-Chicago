@@ -15,6 +15,9 @@ from backend.main import app
 def client_as():
     auth_settings = MagicMock()
     auth_settings.google_client_id = ""
+    auth_settings.microsoft_client_id = ""
+    auth_settings.apple_client_id = ""
+    auth_settings.auth_dev_login = False
 
     def _as(tier: str) -> TestClient:
         app.dependency_overrides[require_auth] = lambda: {"id": "u1", "tier": tier}

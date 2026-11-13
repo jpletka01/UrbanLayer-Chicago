@@ -227,11 +227,55 @@ async def usage(request: Request, user: dict | None, *, now: datetime | None = N
 
 
 async def prune(now: datetime | None = None) -> int:
-    """Drop anonymous and per-network rows untouched for ``ANON_RETENTION_DAYS``; returns how many."""
+    """Drop anonymous and per-network rows untouched for ``ANON_RETENTION_DAYS``, and the deleted accounts' identity
+    counters from past months; returns how many."""
     cutoff = int(((now or datetime.now(CHICAGO)).timestamp() - ANON_RETENTION_DAYS * 86_400) * 1000)
     conn = db._get_db()
     cur = await conn.execute(
-        "DELETE FROM usage_counters WHERE (subject LIKE 'anon:%' OR subject LIKE 'ip:%') AND updated_at < ?", (cutoff,),
+        "DELETE FROM usage_counters WHERE ((subject LIKE 'anon:%' OR subject LIKE 'ip:%') AND updated_at < ?) "
+        "OR (subject LIKE 'idh:%' AND period < ?)",
+        (cutoff, month_period(now)),
     )
     await conn.commit()
     return cur.rowcount
+
+
+# ── Deleting an account doesn't reset the month (Item 121) ────────────────────────────────────────────────────
+
+def identity_subject(provider: str, subject: str) -> str:
+    """A keyed hash of a sign-in identity: no email, no account id, useless without the server's secret."""
+    mac = hmac.new(_secret(), f"identity:{provider}:{subject}".encode(), hashlib.sha256).hexdigest()[:32]
+    return f"idh:{mac}"
+
+
+async def carry_over_on_delete(user_id: str, *, now: datetime | None = None) -> None:
+    """Before an account is deleted: keep this month's count under each of its identities, so signing in again with
+    the same Google/Apple/Microsoft account starts from it instead of a fresh allowance. Dropped at month end."""
+    period = month_period(now)
+    n = await used(f"user:{user_id}", period)
+    if n <= 0:
+        return
+    conn = db._get_db()
+    ts = int(time.time() * 1000)
+    for ident in await db.list_identities(user_id):
+        await conn.execute(
+            "INSERT INTO usage_counters (subject, period, used, updated_at) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(subject, period) DO UPDATE SET used = MAX(used, excluded.used), updated_at = excluded.updated_at",
+            (identity_subject(ident["provider"], ident["subject"]), period, n, ts),
+        )
+    await conn.commit()
+
+
+async def seed_from_identity(user_id: str, provider: str, subject: str, *, now: datetime | None = None) -> None:
+    """A new account made by an identity that a deleted account used this month starts from that count."""
+    period = month_period(now)
+    n = await used(identity_subject(provider, subject), period)
+    if n <= 0:
+        return
+    conn = db._get_db()
+    await conn.execute(
+        "INSERT INTO usage_counters (subject, period, used, updated_at) VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(subject, period) DO UPDATE SET used = MAX(used, excluded.used)",
+        (f"user:{user_id}", period, n, int(time.time() * 1000)),
+    )
+    await conn.commit()

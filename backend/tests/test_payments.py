@@ -31,6 +31,9 @@ async def test_db(tmp_path):
 def _auth_settings():
     settings = MagicMock()
     settings.google_client_id = "test-client-id"
+    settings.microsoft_client_id = ""
+    settings.apple_client_id = ""
+    settings.auth_dev_login = False
     settings.google_client_secret = "test-secret"
     settings.jwt_secret = "test-jwt-secret-key-for-testing"
     settings.jwt_access_token_ttl = 900

@@ -31,6 +31,9 @@ def _auth_settings():
     """Patch get_settings for auth module with test values."""
     settings = MagicMock()
     settings.google_client_id = "test-client-id"
+    settings.microsoft_client_id = ""
+    settings.apple_client_id = ""
+    settings.auth_dev_login = False
     settings.google_client_secret = "test-secret"
     settings.jwt_secret = "test-jwt-secret-key-for-testing"
     settings.jwt_access_token_ttl = 900
@@ -46,6 +49,9 @@ def _auth_disabled():
     """Patch get_settings so auth is disabled (empty google_client_id)."""
     settings = MagicMock()
     settings.google_client_id = ""
+    settings.microsoft_client_id = ""
+    settings.apple_client_id = ""
+    settings.auth_dev_login = False
     settings.jwt_secret = ""
     settings.jwt_access_token_ttl = 900
     settings.jwt_refresh_token_ttl = 604800

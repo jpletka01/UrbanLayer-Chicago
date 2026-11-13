@@ -1802,7 +1802,6 @@
     },
     "signInTitle": "Inicie sesión para continuar",
     "signInBody": "Ya usó las preguntas gratuitas de hoy. Inicie sesión para hacer más; su conversación se queda aquí.",
-    "signInGoogle": "Continuar con Google",
     "signInClose": "Cerrar",
     "dataTitle": "Registros · {{place}}",
     "steps": {
@@ -2185,5 +2184,79 @@
     },
     "noOutline": "Sin contorno del terreno en los registros",
     "noAddress": "No se revisan los permisos ni las infracciones de la Ciudad: este terreno no tiene dirección propia."
+  },
+  "settings": {
+    "title": "Configuración",
+    "sectionsLabel": "Secciones de la configuración",
+    "signedOut": "Inicie sesión para ver su plan, sus formas de iniciar sesión y lo que ha guardado. Las preferencias funcionan sin sesión.",
+    "sections": {
+      "account": "Cuenta",
+      "plan": "Plan y preguntas",
+      "signin": "Formas de iniciar sesión",
+      "preferences": "Preferencias",
+      "things": "Lo que ha guardado",
+      "reports": "Reportes comprados",
+      "delete": "Eliminar cuenta"
+    },
+    "plan": {
+      "free": "Gratis",
+      "pro": "Pro",
+      "admin": "Admin"
+    },
+    "account": {
+      "fromSignIn": "Su nombre y su foto vienen de su inicio de sesión; se cambian ahí."
+    },
+    "planSection": {
+      "used": "Preguntas este mes",
+      "ofLimit": "de {{limit}}",
+      "usedAria": "{{used}} de {{limit}} preguntas usadas",
+      "back": "Se renuevan",
+      "everyMonth": "Hora de Chicago, cada mes",
+      "yourPlan": "Su plan",
+      "freeBody": "{{limit}} preguntas al mes. Las fichas, Discovery y lo guardado no cuentan.",
+      "proLine": "Pro le da {{limit}} preguntas al mes. $19 al mes o $199 al año.",
+      "comingSoon": "Próximamente",
+      "proBody": "{{limit}} preguntas al mes.",
+      "compBody": "Acceso anticipado: Pro, {{limit}} preguntas al mes, hasta el {{date}}.",
+      "manageBilling": "Administrar facturación",
+      "adminBody": "Admin: las preguntas se cuentan, pero nunca se rechazan."
+    },
+    "code": {
+      "title": "Código de acceso",
+      "body": "Un código de acceso anticipado le da Pro por un tiempo.",
+      "apply": "Aplicar",
+      "applying": "Aplicando…",
+      "success": "El acceso anticipado está activo hasta el {{date}}.",
+      "invalid": "Ese código no es válido.",
+      "already_redeemed": "Ya usó este código.",
+      "exhausted": "Este código ya se agotó.",
+      "error": "No funcionó. Inténtelo de nuevo."
+    },
+    "signin": {
+      "ways": "Formas de entrar a esta cuenta",
+      "body": "Inicie sesión con cualquiera de estas. Las cuentas nunca se unen por correo electrónico: una forma se agrega solo desde aquí.",
+      "add": "Agregar otra",
+      "addNote": "Iniciará sesión con ese proveedor y volverá aquí. Si esa cuenta ya abre otra cuenta de UrbanLayer, no se agregará."
+    },
+    "things": {
+      "lots": "Lotes guardados",
+      "searches": "Búsquedas guardadas",
+      "chats": "Chats"
+    },
+    "reports": {
+      "body": "Reportes de factibilidad comprados antes de la suscripción. Cada uno conserva su copia original."
+    },
+    "delete": {
+      "body": "Elimina sus chats, lotes guardados, notas y búsquedas guardadas. Un plan Pro se cancela primero. No se puede deshacer.",
+      "open": "Eliminar cuenta…",
+      "title": "¿Eliminar su cuenta?",
+      "dialogBody": "Sus chats, lotes guardados, notas y búsquedas guardadas se borran para siempre. Un plan Pro se cancela primero.",
+      "word": "eliminar",
+      "typeWord": "Escriba “{{word}}” para confirmar",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar cuenta",
+      "deleting": "Eliminando…",
+      "failed": "Su cuenta no se eliminó. Inténtelo de nuevo."
+    }
   }
 }
