@@ -3053,6 +3053,22 @@ Consumers → Property Profile (renders pin + confidence badge)
             would be the neighbor&apos;s, and the card says why (Item 119).
           </P>
 
+          <Sub>Three ways to sign in, and why an email address links nothing</Sub>
+          <P>
+            Adding Apple and Microsoft beside Google looked like two more buttons. Reading the existing code first turned
+            up a crash waiting to happen: the users table required every email to be unique, so the first person to sign
+            in with Microsoft using the same address as their Google account would have hit a database error. The tempting
+            fix, joining the two accounts because the emails match, is a known way to take over accounts: a Microsoft
+            account&apos;s email is whatever its company administrator typed, never proof of ownership, and Apple often
+            hides the real address. So an account is now reached only by the provider and that provider&apos;s own id for
+            the person; a second sign-in method is added deliberately from Settings, and refused when it already opens
+            someone else&apos;s account. Each sign-in carries a one-time state tied to the browser, a nonce and, where the
+            provider allows it, PKCE, and the provider&apos;s signed ID token is checked against its published keys. Apple
+            answers with a cross-site form post that ordinary cookies don&apos;t ride, so its state travels in a cookie of
+            its own. Deleting an account no longer resets the month&apos;s questions, and a localhost-only test sign-in lets
+            every signed-in screen be reviewed without real accounts (Item 121).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}
