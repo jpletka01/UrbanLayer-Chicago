@@ -101,3 +101,5 @@ AGENTS.md
 eval/results/2026-11-11-empty-land/labels.json
 eval/results/2026-11-12-land-use/labels.json
 eval/.land_use_panel_blind.json
+eval/results/2026-11-13-rail-land/labels.json
+eval/.rail_land_panel_blind.json

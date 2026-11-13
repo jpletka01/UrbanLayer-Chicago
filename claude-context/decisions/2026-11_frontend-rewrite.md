@@ -1596,3 +1596,74 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - **Owner's look (2026-11-12):** the new chat's box swapped its self-typing example for a second placeholder sentence on click (it stayed until the first letter) and could scroll a sliver; now clicking leaves an empty box with the cursor, it scrolls only past six lines, and a box at the limit shows no example (a disabled box can't take focus, so the example never stopped). A new chat at the limit says so under the box, with Sign in for a signed-out visitor. A refused question no longer leaves an empty conversation in the list (`useChatSession` skips creating one at the limit and removes one a first refusal created).
 - **Rollout:** merges with Saved (PR #230). The limits are server-side, so on merge they apply to today's live UI too (signed out 3/day → 3 in total, free 25/day → 50/month, Pro 100/day → 200/month, no per-chat cap). There are no users yet.
 - **Revisit if:** Billing lands (Pro may follow its billing date); real costs differ from 3.7¢ a question after a month of users; the "connect your own Claude/ChatGPT" path past the limit is built; one uvicorn worker becomes several (the counters are already safe across processes; the in-memory burst guard is not).
+
+## Item 121: rail on the map, and rail right-of-way out of "room to build" (2026-11-13)
+
+**Status: measured; the owner's blind panel (70 lots) is drawn and waiting for labels. Nothing live changes and nothing is built** until the owner labels the panel and answers the questions at the end. Eval code: `eval/rail_land.py` (fetch + measure), `eval/rail_land_label.py` + `eval/rail_land_label_page.html` (blind check), panel `eval/rail_land_panel.json`, counts in `eval/results/2026-11-13-rail-land/summary.json`. Read-only, offline after the fetch, no model calls. Tests: `eval/tests/test_rail_land.py` (27).
+
+**The owner's report (2026-11-12):** the map shows roads but no rail (CTA L lines such as the Brown Line, Metra, Amtrak, freight), and lots under or along L structures read as "room to build" in Discovery.
+
+**The sources.**
+- **CTA 'L' lines**, City of Chicago `xbyr-jnvx` (updated 2024-07-23): 153 segments, 92 miles "Elevated or At Grade" and 11 miles "Subway", each with its lines ("Brown Line") and a stretch name. The City says the lines are drawn "approximately".
+- **North American Rail Network lines** (FRA, in USDOT/BTS's National Transportation Atlas Database, updated **2026-10-19**; public domain, 17 U.S.C. § 101): 2,203 segments in Chicago's box with owner (UP, NS, BNSF, CN, NIRC = Metra, AMTK ...), trackage rights, passenger service (Amtrak / commuter / both) and network type. Kept: main and other lines 605 miles, yards 275 miles, industry spurs 75 miles. Left out: abandoned (A), trail (T), out of service (X: includes The 606), rail-banked (R). No CTA lines in it.
+- **CMAP's 2023 Land Use Inventory** (the Item 112 copy): code **1511, rail right-of-way**, 1,687 polygons in Chicago's box.
+- **The Assessor's railroad class (RR)**, already on every lot as `land_kind: railroad` and hidden as unusual since Item 60.
+- *Considered and left out:* the City's "Railroads" (2010) and "Metra Lines" (2011) shapefiles (superseded by NARN, 15 years newer); OpenStreetMap railways (the ODbL licensing review from Item 112 is still open).
+
+**How the lines sit against each other** (points every 50 ft along each line, distance to the other source):
+- *CTA elevated/at-grade vs CMAP rail or an RR-class lot:* 46.9% inside, median **5 ft**. Of 9,766 points: 4,580 on rail land, 1,867 on another lot, 3,319 on no lot at all (the L over streets: Wells, Lake, Wabash, the expressway medians). So the CTA line is where CMAP's rail land is wherever both have it; elsewhere it runs over streets or over lots CMAP codes otherwise (mostly road right-of-way: below).
+- *NARN main lines vs CMAP rail or RR lot:* 77.1% inside, 84.3% within 50 ft, median 0 ft. Yards 58.8% inside (CMAP codes many yards as industrial or transport), industry spurs 70.3%.
+- *CTA vs NARN:* 2.4% within 25 ft: they don't overlap (different railways), so neither checks the other's position.
+
+**Lots** (590,174 base lots, 589,574 with an outline; a line "on the lot" = 25 ft or more of it inside the outline; CMAP = rail right-of-way over half the lot):
+
+| Sources on the lot (not RR class) | Lots | Shown in Empty land today | Shown with room to build today | Built (both building sources) |
+|---|---|---|---|---|
+| CMAP + CTA line | 648 | 570 | 6 | 19 |
+| CMAP only | 520 | 371 | 42 | 5 |
+| CMAP + NARN (+ CTA 16) | 327 | 278 | 17 | 10 |
+| CTA line only | 769 | 85 | 96 | 55 |
+| NARN only | 333 | 142 | 75 | 102 |
+
+- RR-class lots: 2,791, all hidden already (Item 60).
+- **CTA line only:** 579 of the 769 are CMAP *road* right-of-way on exempt land, so Item 112 already hides them as road land. The rest are mostly lots beside the L that the approximate line clips (homes and shops: 26 residential, 21 commercial).
+- **NARN only:** noisy: 102 built, 115 taxed commercial (industrial yards and plants beside the tracks).
+- **The Brown Line's own lots** (example, the 14-18-500 and 14-19-500 blocks along Ravenswood): tax-exempt, nothing built, CMAP rail 84-100% and the CTA line through every one; today they are Empty land and shown. That is the owner's report.
+- **Structure "disagree" on rail land** (78 exempt lots with CMAP rail): one building source sees a structure the other doesn't; on rail land that is likely the elevated structure itself in the LiDAR. The panel checks it.
+- **Not marked, counted:** 61 lots over the CTA subway (10 built; you can build over a subway) and 26 lots crossed only by an industry spur (6 built).
+- **Possible misses:** 3,546 shown Empty-land lots lie within 60 ft of a CTA elevated or NARN line with no source on them (lots beside the tracks).
+- Shown Empty land today: 67,108. The CMAP rule alone would take 1,219 of them out.
+
+**The blind owner check (drawn, seeded 121, not yet labeled).**
+- 70 lots, none on an earlier panel (Items 109, 110, 112). The page is Item 112's: outline, neighbors' own addresses, street names, the City's footprints around the lot, Street View, the lot from above. Never the rail lines, the sources' answers or the stratum (test-checked).
+- Answers: rail (tracks, structure or embankment on or over the lot; parking or storage under the tracks counts), rail yard or station grounds, empty land beside the tracks, parking lot not under the tracks, a building, street/alley/expressway land, park/garden/trail, can't tell.
+
+| Stratum | Lots | Pool | Measures |
+|---|---|---|---|
+| CMAP + CTA, Empty land | 10 | 570 | the main rule, L right-of-way |
+| CMAP + NARN, Empty land | 8 | 278 | the main rule, railroads |
+| CMAP only, Empty land | 10 | 371 | CMAP alone |
+| CMAP, not Empty land (a building source sees something) | 6 | 132 | whether rail land with a "structure" is the L itself |
+| CTA line only, Empty land | 8 | 85 | the CTA line as a source on its own |
+| CTA line only, other (mostly built) | 5 | 104 | what the approximate line clips |
+| NARN only, Empty land | 6 | 142 | NARN on its own |
+| NARN only, other | 5 | 177 | same |
+| CMAP road land with a CTA line (hidden today) | 6 | 579 | rail or road: which words the Profile uses |
+| Empty land within 60 ft of a line, no source | 6 | 3,546 | what the sources miss |
+
+Run: `PYTHONPATH=. python -m eval.rail_land_label serve` (localhost:8035), then `... score --out eval/results/2026-11-13-rail-land/precision.json`.
+
+**The plan (for the owner's go after the labels; not built).**
+1. **Rail on every new-UI map.** A `rail` layer in our base tiles (`base_tiles.py`), from NARN (kept kinds, with `kind` freight / commuter / amtrak / yard from its owner and passenger fields) and the CTA lines (`kind` cta, `name` = the lines, subway left out of the drawing). Drawn in the Cities: Skylines manner as thin rail lines (a quiet casing with short ties, no satellite, Item 80) above the lot fills; the CTA L slightly heavier where elevated, with its line names from zoom 15 like street names; yards and spurs from zoom 14. It joins the Streets group in the key ("Streets and rail"), so every map that has the base gets it (Profile, Discovery, chat panel). Base tiles grow by a few hundred KB.
+2. **Rail land on the lot** (index fields, a `data_version` bump through the backfill): `infrastructure: "rail"`, `infrastructure_source: "cmap_2023"` (plus `"cta"` / `"narn"` when a line confirms), on the rule the panel supports. The working proposal: **CMAP rail right-of-way over half the lot, on vacant, City-owned, parking or exempt land with no building** (1,361 lots, 1,219 shown today), widened to the "structure" lots and to CTA- or NARN-only lots only if their strata reach 90%. `lot_sources --land-use-only` adds the per-lot rail table (`rail_on_lot`: CMAP 1511 share, CTA and NARN feet).
+3. **Hidden by default with a visible count**, like road land: `unusual_rule` adds rail; the "N unusual lots hidden · Show" line names rail land (en + es-MX).
+4. **Never room to build:** rail and road land get no `room_sqft`; their room reads "rail or road land, not a building site" (a new `room_scope: "right_of_way"`, tile band `r` drawn like transportation zones), even when Show brings them back.
+5. **Profile Overview line:** "Rail right-of-way" (es "Derecho de vía ferroviario") under the answer sentence, with how we know (CMAP 2023, the CTA or federal rail line, the owner's check) behind the Info tool, from the Discovery row as Item 112's line does (exact match only).
+6. **Road land crossed by the L:** relabeled rail only if the panel's six say so; otherwise it stays road land (both hidden either way).
+
+**Open for the owner:**
+1. Label the 70 lots (about 15 minutes; Street View and the overhead view).
+2. The CTA L on the map: one neutral rail style for all rail (proposed: color by role, Item 74), or each L line in its CTA color?
+3. Road land too: drop its room to build along with rail land (proposed, so both read the same), or rail only?
+
+**Production steps** (after merge; the owner runs them with sudo): fetch the rail lines (`python -m eval.rail_land fetch`, or the build step's own fetch; the City portal and BTS's ArcGIS answer the server unless proven otherwise, else copy from the Mac), `lot_sources --land-use-only`, `index_backfill`, `parcel_tiles`, `base_tiles`, restart. Written out in full with the build.
