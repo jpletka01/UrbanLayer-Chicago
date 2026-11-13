@@ -43,8 +43,11 @@ _CHICAGO = ZoneInfo("America/Chicago")
 
 LOTS_PER_DAY = 60
 REQUESTS_PER_MINUTE = 10
-# One analysis per lot and language for 30 minutes, like the Profile's parts.
+# One analysis per lot and language for 30 minutes, like the Profile's parts. One with a source that failed is kept
+# only 5 minutes (it still names what couldn't be checked, so it is never read as "none"); without that, a lot whose
+# optional source is down re-ran the 20–40 s lookup on every open.
 _cache = TTLCache(ttl_seconds=1800, maxsize=256, name="deep_analysis")
+_cache_partial = TTLCache(ttl_seconds=300, maxsize=128, name="deep_analysis_partial")
 # account -> (Chicago day, lots opened that day)
 _lots_today: dict[str, tuple[str, set[str]]] = {}
 
@@ -53,6 +56,7 @@ def clear_state() -> None:
     """Tests: forget the day's lots and the cache."""
     _lots_today.clear()
     _cache._store.clear()
+    _cache_partial._store.clear()
 
 
 def _today() -> str:
@@ -222,7 +226,7 @@ async def _analysis(pin: str, language: str) -> dict:
 
     lang = report_i18n.normalize_lang(language)
     key = (pin, lang)
-    cached = _cache.get(key)
+    cached = _cache.get(key) or _cache_partial.get(key)
     if cached is not None:
         return cached
 
@@ -236,9 +240,8 @@ async def _analysis(pin: str, language: str) -> dict:
             rl.lat, rl.lon, rl.address, pin=rl.pin, confidence=rl.confidence, language=lang, rasters=False,
         )
         payload = build_payload(report, pin=pin)
-        # Failures are never cached as a definitive answer (Item 65): only a run with nothing failed is kept.
-        if not payload["partial_failures"]:
-            _cache.set(key, payload)
+        # A run with a failed source is kept briefly and still says what failed (Item 65: never a definitive "none").
+        (_cache_partial if payload["partial_failures"] else _cache).set(key, payload)
         return payload
 
     return await inflight.shared(("deep_analysis",) + key, run)

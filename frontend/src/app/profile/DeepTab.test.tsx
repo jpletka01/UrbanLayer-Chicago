@@ -20,6 +20,7 @@ const api = vi.hoisted(() => {
 vi.mock("../../lib/api", () => api);
 
 import { DeepTab } from "./DeepTab";
+import { analysisCache } from "./deepGate";
 
 const PIN = "14331030110000";
 const A = (value: number, low: number, high: number, source = "builders_reported") => ({ value, low, high, unit: "x", source, as_of: "2025" });
@@ -49,6 +50,7 @@ const show = (props: Partial<{ pin: string | null; exact: boolean }> = {}) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  analysisCache.clear();
   auth = { isAuthenticated: true, authRequired: true, signIn: vi.fn() };
   api.getDeepProject.mockResolvedValue({ project: null, numbers: null, step: 0 });
   api.putDeepProject.mockResolvedValue(undefined);

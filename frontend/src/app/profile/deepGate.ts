@@ -2,8 +2,12 @@
 // sixth tile share it. The server enforces it again on every read (`/api/deep-analysis` answers 403 otherwise); this
 // only words the state.
 import { useCallback, useEffect, useState } from "react";
-import { getEntitlements, type Entitlements } from "../../lib/api";
+import { getEntitlements, type DeepAnalysis, type Entitlements } from "../../lib/api";
 import { useAuthContext } from "../../contexts/AuthContext";
+
+/** This visit's analyses, by lot and language (the server keeps them too; this spares the round trip when a tab
+    switch remounts the Deep analysis tab). */
+export const analysisCache = new Map<string, DeepAnalysis>();
 
 export type Gate = "checking" | "approximate" | "signed_out" | "unused" | "elsewhere" | "open" | "failed";
 

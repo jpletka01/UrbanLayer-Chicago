@@ -182,6 +182,29 @@ class TestNoModelNoRasters:
         assert len(fetch) == 1
 
 
+class TestPartialCache:
+    @pytest.mark.asyncio
+    async def test_a_failed_source_is_kept_briefly_and_still_named(self, store, as_user):
+        calls = []
+
+        async def fetch_with_gap(lat, lon, address, **kw):
+            calls.append(kw)
+            r = _report()
+            r.partial_failures = ["EPA brownfield sites"]
+            return r, None, None
+
+        user = await _user("u1", "premium")
+        with patch("backend.main._resolve_location", AsyncMock(return_value=ResolvedLocation(
+                41.9237, -87.6447, "642 W Belden Ave", LOT_A, "authoritative", "pin"))), \
+             patch("backend.report_builder._fetch_report_data", side_effect=fetch_with_gap):
+            c = as_user(user)
+            first = c.get(f"/api/deep-analysis?pin={LOT_A}").json()
+            second = c.get(f"/api/deep-analysis?pin={LOT_A}").json()
+        assert len(calls) == 1
+        assert first["partial_failures"] == second["partial_failures"] == ["EPA brownfield sites"]
+        assert deep_analysis._cache.get((LOT_A, "en")) is None  # not in the 30-minute cache
+
+
 class TestAntiScrape:
     @pytest.mark.asyncio
     async def test_sixty_first_lot_in_a_day_is_429_and_a_repeat_is_free(self, store, as_user, fetch):

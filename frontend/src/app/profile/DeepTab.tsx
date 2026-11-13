@@ -14,7 +14,7 @@ import {
   DeepAnalysisError, DeepClaimError, claimDeepAnalysis, getDeepAnalysis, getDeepProject, putDeepProject,
   type DeepAnalysis, type DeepInputs,
 } from "../../lib/api";
-import { useDeepGate } from "./deepGate";
+import { analysisCache, useDeepGate } from "./deepGate";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { Pill } from "../ui/Blocks";
 import { ScoreRing } from "../ui/ScoreRing";
@@ -158,12 +158,15 @@ function DeepAnalysisOpen({ pin, freeHere, onProject }: { pin: string; freeHere:
 
   useEffect(() => {
     const c = new AbortController();
-    Promise.all([getDeepAnalysis(pin, i18n.language, c.signal), getDeepProject(pin).catch(() => null)]).then(
-      ([data, proj]) => setAnswer({ key, state: { status: "ready", data }, saved: proj }),
+    // The analysis is kept for this visit (switching tabs unmounts this one); the saved project is asked each time.
+    const cacheKey = `${pin}|${i18n.language}`;
+    const kept = attempt === 0 ? analysisCache.get(cacheKey) : undefined;
+    Promise.all([kept ? Promise.resolve(kept) : getDeepAnalysis(pin, i18n.language, c.signal), getDeepProject(pin).catch(() => null)]).then(
+      ([data, proj]) => { analysisCache.set(cacheKey, data); setAnswer({ key, state: { status: "ready", data }, saved: proj }); },
       (e) => { if (!c.signal.aborted) setAnswer({ key, state: { status: "failed", code: e instanceof DeepAnalysisError ? e.status : null }, saved: null }); },
     );
     return () => c.abort();
-  }, [key, pin, i18n.language]);
+  }, [key, pin, i18n.language, attempt]);
 
   const state: State = answer?.key === key ? answer.state : { status: "loading" };
   const saved = answer?.key === key ? answer.saved : null;
@@ -433,7 +436,7 @@ function ProjectCard({ p, inputs, numbers, edits, mode, selected, onPick, own = 
   };
   return (
     <button type="button" aria-pressed={selected} onClick={onPick}
-      className={`flex flex-col gap-3 rounded-2xl p-5 text-left text-nx-card-ink touch-target ${proj.kind === "three_flat" ? "bg-nx-stat-b" : "bg-nx-stat-a"} ${selected ? "ring-2 ring-nx-card-ink" : ""}`}
+      className={`nx-on-card flex flex-col gap-3 rounded-2xl p-5 text-left text-nx-card-ink touch-target ${proj.kind === "three_flat" ? "bg-nx-stat-b" : "bg-nx-stat-a"} ${selected ? "ring-2 ring-nx-card-ink" : ""}`}
       data-testid={`deep-project-${proj.kind}`} data-selected={selected || undefined}>
       <div className="flex items-baseline justify-between gap-2">
         <b className="font-semibold">{t(`deep.projects.kind.${proj.kind}`, { units: proj.units })}</b>

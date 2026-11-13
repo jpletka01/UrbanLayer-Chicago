@@ -557,10 +557,9 @@ test("Deep analysis tab: the free button, then the analysis, same map, axe light
       floor_ft: 11,
     },
   };
-  let unlimited = false;
   let claimed = false;
   await page.route("**/api/entitlements", (r) => r.fulfill({ json: {
-    signed_in: true, deep_analysis: { unlimited, free_left: claimed ? 0 : 1, free_pin: claimed ? analysis.pin : null, free_address: null } } }));
+    signed_in: true, deep_analysis: { unlimited: false, free_left: claimed ? 0 : 1, free_pin: claimed ? analysis.pin : null, free_address: null } } }));
   await page.route("**/api/entitlements/deep-analysis", (r) => { claimed = true; return r.fulfill({ json: { ok: true, pin: analysis.pin, unlimited: false } }); });
   await page.route(/\/api\/deep-analysis\/project/, (r) => r.fulfill({ json: { pin: analysis.pin, project: null, numbers: null, step: 0 } }));
   await page.route(/\/api\/deep-analysis\?/, (r) => r.fulfill({ json: analysis }));
@@ -589,5 +588,4 @@ test("Deep analysis tab: the free button, then the analysis, same map, axe light
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow, "deep analysis overflow").toBeLessThanOrEqual(1);
-  void unlimited;
 });
