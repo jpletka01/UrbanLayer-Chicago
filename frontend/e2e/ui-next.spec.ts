@@ -418,8 +418,10 @@ test("Phase 9 quotas: the count near the end, and the refusal's words, with the 
   const box = page.getByTestId("chat-box");
   await box.fill("Can I build a 3-flat at 2541 N Spaulding Ave?");
   await box.press("Enter");
-  await expect(page.getByTestId("chat-limit")).toContainText("They come back on December 1");
-  await expect(box).toBeDisabled();
+  // The refused question leaves no empty chat behind: the page is a new chat again, saying why.
+  await expect(page.getByTestId("chat-limit-empty")).toContainText("They come back on December 1");
+  await expect(page.getByTestId("chat-box")).toBeDisabled();
+  await expect(page.getByText("Can I build a 3-flat at 2541 N Spaulding Ave?")).toHaveCount(0);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });

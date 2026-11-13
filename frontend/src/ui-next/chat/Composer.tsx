@@ -1,6 +1,6 @@
 // The full chat page's message box (brief "Chat"): a paperclip on the left (where uploads are allowed), dictation
 // beside a round arrow that sends, Enter sends too. On a new conversation one example question types itself in the
-// empty box and gives way to the next; clicking the box (or typing) clears it. With reduced motion the first example
+// empty box and gives way to the next; clicking the box (or typing) clears it and leaves no placeholder behind. With reduced motion the first example
 // just sits there.
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -157,7 +157,9 @@ export function Composer({
                   if (canSend) onSend();
                 }
               }}
-              placeholder={showExample ? "" : placeholder}
+              // On a new chat the examples stand in for a placeholder: clicking leaves the box empty with the cursor,
+              // not a second sentence that stays until the first letter (owner, 2026-11-12).
+              placeholder={examples?.length && !disabled ? "" : placeholder}
               className={`block w-full resize-none bg-transparent px-2 py-2 text-body text-nx-ink placeholder:text-nx-ink/[0.64] focus:outline-none focus-visible:outline-none disabled:opacity-50 ${onAttach ? "" : "pl-3"}`}
               data-testid="chat-box"
             />

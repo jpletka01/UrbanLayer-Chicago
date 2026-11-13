@@ -55,7 +55,11 @@ describe("the full chat page", () => {
     const { container } = mount();
     expect(screen.getByRole("heading", { name: "What do you want to know?" })).toBeTruthy();
     expect(screen.getByTestId("chat-example")).toBeTruthy();
-    const box = screen.getByTestId("chat-box");
+    const box = screen.getByTestId("chat-box") as HTMLTextAreaElement;
+    // Clicking in clears the example and leaves no second sentence behind (owner, 2026-11-12).
+    fireEvent.focus(box);
+    expect(screen.queryByTestId("chat-example")).toBeNull();
+    expect(box.placeholder).toBe("");
     fireEvent.change(box, { target: { value: "  How many units does RT-4 allow?  " } });
     fireEvent.keyDown(box, { key: "Enter" });
     expect(session.sendMessage).toHaveBeenCalledWith("How many units does RT-4 allow?");
