@@ -12,6 +12,7 @@ import type { DiscoveryDraft } from "../../discovery/draftModel";
 import type { Registry } from "../../discovery/types";
 import { track } from "../../lib/tracking";
 import { STROKE } from "../icons";
+import { shortName } from "./savedModel";
 
 export function SaveSearch({ draft, registry, defaultName }: { draft: DiscoveryDraft; registry: Registry; defaultName: string }) {
   const { t } = useTranslation("next");
@@ -80,10 +81,3 @@ export function SaveSearch({ draft, registry, defaultName }: { draft: DiscoveryD
   );
 }
 
-/** A default name within the 80-character limit, cut between filters (or words), never mid-word. */
-export function shortName(name: string, max = 80): string {
-  if (name.length <= max) return name;
-  const cut = name.slice(0, max - 1);
-  const at = Math.max(cut.lastIndexOf(", "), cut.lastIndexOf(" "));
-  return `${(at > 20 ? cut.slice(0, at) : cut).replace(/[,\s]+$/, "")}…`;
-}

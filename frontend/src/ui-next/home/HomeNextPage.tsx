@@ -12,7 +12,10 @@ import type { Conversation } from "../../lib/types";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
-import { lotHref, outlinePath, type RememberedLot } from "./lotMemory";
+import { lotHref, type RememberedLot } from "./lotMemory";
+import { BlockSlice } from "../ui/BlockSlice";
+import { BOOKMARK_OFF, BOOKMARK_ON } from "../saved/bookmark";
+import { familyOf } from "../saved/savedModel";
 import { useSaved } from "../saved/savedStore";
 
 const FOLD_KEY = "urbanlayer-next-recent-folded";
@@ -99,7 +102,7 @@ export default function HomeNextPage() {
                 ) : (
                   <ul role="list" className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3">
                     {recent.map((lot) => (
-                      <LotCard key={lot.key} lot={lot} meta={[lot.zone, lot.area, when(lot.at)].filter(Boolean).join(" · ")} saved={isSaved(lot.key)} onToggle={() => toggleSaved(lot)} />
+                      <LotCard key={lot.key} lot={lot} meta={[lot.area, when(lot.at)].filter(Boolean).join(" · ")} saved={isSaved(lot.key)} onToggle={() => toggleSaved(lot)} />
                     ))}
                   </ul>
                 )}
@@ -191,16 +194,13 @@ function LotCard({ lot, meta, saved, onToggle }: { lot: RememberedLot; meta: str
   const { t } = useTranslation("next");
   return (
     <li className="relative">
-      <Link to={lotHref(lot)} className="flex flex-col gap-2 rounded-2xl bg-nx-block p-3.5 hover:bg-nx-ink/5" data-testid="home-lot">
-        <span aria-hidden className="grid h-16 place-items-center rounded-xl bg-nx-stat-b">
-          {lot.outline ? (
-            <svg viewBox="0 0 120 64" className="h-16 w-[120px]"><path d={outlinePath(lot.outline, 120, 64, 8)} className="fill-nx-lot" /></svg>
-          ) : (
-            <MapPin className="h-6 w-6 text-nx-card-ink" strokeWidth={STROKE} />
-          )}
+      <Link to={lotHref(lot)} className="flex flex-col overflow-hidden rounded-2xl bg-nx-block hover:bg-nx-ink/5" data-testid="home-lot">
+        {/* The block around the lot, as Discovery's list draws it (owner, 2026-11-12). */}
+        <BlockSlice pin10={lot.pin ? lot.pin.replace(/-/g, "").slice(0, 10) : null} zoneTag={lot.zone} family={familyOf(lot.zone)} outline={lot.outline} className="h-20" />
+        <span className="flex flex-col gap-1 p-3.5 pt-2.5">
+          <span className="truncate font-semibold">{lot.address}</span>
+          {meta && <span className="truncate text-caption nx-muted">{meta}</span>}
         </span>
-        <span className="truncate pr-9 font-semibold">{lot.address}</span>
-        {meta && <span className="truncate text-caption nx-muted">{meta}</span>}
       </Link>
       <button
         type="button"
@@ -208,8 +208,8 @@ function LotCard({ lot, meta, saved, onToggle }: { lot: RememberedLot; meta: str
         aria-pressed={saved}
         aria-label={saved ? t("home.unsave", { address: lot.address }) : t("home.save", { address: lot.address })}
         title={saved ? t("home.unsaveShort") : t("home.saveShort")}
-        // Saved reads as selected (owner, 2026-11-12): a filled bookmark on a dark badge; a click unsaves it.
-        className={`absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg touch-icon ${saved ? "bg-nx-ink text-nx-on-ink hover:bg-nx-ink/80" : "bg-nx-page hover:bg-nx-ink/5"}`}
+        // Saved reads as selected (owner, 2026-11-12): a filled bookmark in the palette's lavender; a click unsaves it.
+        className={`absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg touch-icon ${saved ? BOOKMARK_ON : BOOKMARK_OFF}`}
         data-testid="home-bookmark"
       >
         <Bookmark aria-hidden className="h-4 w-4" strokeWidth={STROKE} fill={saved ? "currentColor" : "none"} />

@@ -5,6 +5,21 @@ import { FileClock, Hammer, Landmark, Layers, Ruler, Tag, TriangleAlert } from "
 import type { SavedChange } from "../../lib/api";
 import { humanizeShoutyCase } from "../../lib/format";
 import { lotHref, type RememberedLot } from "../home/lotMemory";
+import { ZONING_COLORS } from "../map/mapStyle";
+import { zoningFamily } from "../map/buildings3d";
+
+/** The zoning tag's color family for a district ("B3-2" → business), or null when it has none. */
+export function familyOf(zone: string | null | undefined): keyof typeof ZONING_COLORS | null {
+  if (!zone) return null;
+  // Discovery's group labels when the index has no exact district ("Residential (R)", "Planned development").
+  const group = zone.toLowerCase();
+  if (group.startsWith("planned")) return "planned";
+  for (const fam of ["residential", "business", "commercial", "manufacturing", "downtown"]) {
+    if (group.startsWith(fam)) return (fam === "commercial" ? "business" : fam) as keyof typeof ZONING_COLORS;
+  }
+  const f = zoningFamily(zone);
+  return f in ZONING_COLORS ? (f as keyof typeof ZONING_COLORS) : null;
+}
 
 type T = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -89,4 +104,12 @@ export function limiter(n: number) {
       next();
     });
   };
+}
+
+/** A default name within the 80-character limit, cut between filters (or words), never mid-word. */
+export function shortName(name: string, max = 80): string {
+  if (name.length <= max) return name;
+  const cut = name.slice(0, max - 1);
+  const at = Math.max(cut.lastIndexOf(", "), cut.lastIndexOf(" "));
+  return `${(at > 20 ? cut.slice(0, at) : cut).replace(/[,\s]+$/, "")}…`;
 }

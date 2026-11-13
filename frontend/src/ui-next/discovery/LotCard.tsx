@@ -1,14 +1,14 @@
 // A Discovery list card (owner's review 2026-11-10; decision Item 104): enough to decide whether to open the Profile.
 // A slice of the block colored like the map (this lot outlined), the zoning as a colored tag, the neighborhood and
 // what's there now, room to build as the headline with built vs allowed as a bar, then chips for only what applies.
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Bookmark, FileClock, Gift, Hammer, House, Landmark, Receipt, Ruler, Shovel, TrainFront, TriangleAlert, type LucideIcon } from "lucide-react";
 import type { ResultRow } from "../../discovery/types";
 import { ZONING_COLORS } from "../map/mapStyle";
 import { STROKE } from "../icons";
 import { Pill, type PillTone } from "../ui/Blocks";
-import { contextPaths, fetchLotContext } from "./discoveryData";
+import { BlockSlice } from "../ui/BlockSlice";
+import { BOOKMARK_OFF, BOOKMARK_ON } from "../saved/bookmark";
 import { cardModel, measureSteps, type CardWarning } from "./discoveryModel";
 import { lotKey } from "../home/lotMemory";
 import type { SaveInput } from "../saved/savedStore";
@@ -21,38 +21,6 @@ const FAMILY_FROM_GROUP: Record<string, keyof typeof ZONING_COLORS> = {
 const WARNING_ICON: Record<CardWarning["kind"], LucideIcon> = {
   demolition: Hammer, vacant_case: House, pending_rezoning: FileClock, landmark: Landmark, nominal: TriangleAlert,
 };
-
-const W = 320;
-const H = 96;
-
-/** The block around the lot: neighbors in their room color, this lot in its own with an ink outline. */
-function BlockSlice({ pin10, zoneTag, family }: { pin10: string; zoneTag: string | null; family: keyof typeof ZONING_COLORS | null }) {
-  const [paths, setPaths] = useState<ReturnType<typeof contextPaths> | null>(null);
-  useEffect(() => {
-    let live = true;
-    fetchLotContext(pin10).then((fc) => { if (live) setPaths(fc ? contextPaths(fc, W, H) : []); });
-    return () => { live = false; };
-  }, [pin10]);
-  const tag = family ? ZONING_COLORS[family] : null;
-  return (
-    <div className="relative h-24 overflow-hidden rounded-t-2xl bg-nx-ink/[0.04]">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden>
-        {(paths ?? []).map((p, i) => (
-          <path key={i} d={p.d}
-            fill={p.r && ROOM_COLOR[p.r] ? ROOM_COLOR[p.r] : "rgb(var(--nx-ink) / 0.06)"}
-            fillOpacity={p.me ? 1 : 0.55}
-            stroke={p.me ? "rgb(var(--nx-lot))" : "rgb(var(--nx-page))"} strokeWidth={p.me ? 2.5 : 1} strokeLinejoin="round" />
-        ))}
-      </svg>
-      {zoneTag && (
-        <span className="absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-[#1c1c1c]"
-          style={{ background: tag ? tag[1] : "#C9CED6" }}>
-          {zoneTag}
-        </span>
-      )}
-    </div>
-  );
-}
 
 export function LotCard({ row, hoodName, onOpen, moreInComplex = 0, saved, onToggleSave }: {
   row: ResultRow; hoodName: string | null; onOpen: () => void;
@@ -105,8 +73,9 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0, saved, onTog
 
   const pin = row.pin.replace(/-/g, "");
   const saveLot: SaveInput | null = onToggleSave && row.lat != null && row.lon != null ? {
-    key: lotKey(pin, ""), pin, address: c.title,
-    zone: row.zone_class ?? null, area: hoodName, outline: null, lat: row.lat, lon: row.lon,
+    // An approximate stand-in address keeps its "Near" (Item 109); the zoning keeps the card's own tag.
+    key: lotKey(pin, ""), pin, address: c.approx ? t("discovery.card.near", { address: c.title }) : c.title,
+    zone: zoneTag, area: hoodName, outline: null, lat: row.lat, lon: row.lon,
   } : null;
 
   return (
@@ -115,7 +84,7 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0, saved, onTog
         <button type="button" onClick={() => onToggleSave!(saveLot)} aria-pressed={!!saved}
           aria-label={saved ? t("home.unsave", { address: saveLot.address }) : t("home.save", { address: saveLot.address })}
           title={saved ? t("home.unsaveShort") : t("home.saveShort")} data-testid="lot-bookmark"
-          className={`absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-lg touch-icon ${saved ? "bg-nx-ink text-nx-on-ink hover:bg-nx-ink/80" : "bg-nx-page hover:bg-nx-ink/5"}`}>
+          className={`absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-lg touch-icon ${saved ? BOOKMARK_ON : BOOKMARK_OFF}`}>
           <Bookmark aria-hidden className="h-4 w-4" strokeWidth={STROKE} fill={saved ? "currentColor" : "none"} />
         </button>
       )}

@@ -37,10 +37,9 @@ class Seen {
 (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver = Seen;
 
 const { _resetForTests, pointOf, toInput } = await import("./savedStore");
-const { changeLine, limiter, uncheckedWords } = await import("./savedModel");
+const { changeLine, familyOf, limiter, shortName, uncheckedWords } = await import("./savedModel");
 const { default: SavedNextPage } = await import("./SavedNextPage");
 const { SAVED_KEY, readSaved } = await import("../home/lotMemory");
-const { shortName } = await import("./SaveSearch");
 
 const mount = (path = "/saved") => render(<MemoryRouter initialEntries={[path]}><SavedNextPage /></MemoryRouter>);
 const t = (k: string, o?: Record<string, unknown>) => `${k}${o ? JSON.stringify(o) : ""}`;
@@ -105,6 +104,17 @@ describe("change lines", () => {
     const job = () => new Promise<void>((r) => { live++; peak = Math.max(peak, live); setTimeout(() => { live--; r(); }, 5); });
     await Promise.all([1, 2, 3, 4, 5].map(() => run(job)));
     expect(peak).toBe(2);
+  });
+});
+
+describe("the zoning tag on a saved lot's block", () => {
+  it("colors a district or Discovery's group label by its family", () => {
+    expect(familyOf("B3-2")).toBe("business");
+    expect(familyOf("RS-3")).toBe("residential");
+    expect(familyOf("Residential (R)")).toBe("residential");
+    expect(familyOf("Commercial (C)")).toBe("business");
+    expect(familyOf("Planned development")).toBe("planned");
+    expect(familyOf(null)).toBeNull();
   });
 });
 

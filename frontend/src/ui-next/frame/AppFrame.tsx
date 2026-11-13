@@ -160,7 +160,8 @@ export function ToolButton({
       data-testid={testId}
       className={`grid h-9 w-9 place-items-center rounded-lg touch-icon disabled:cursor-not-allowed disabled:opacity-40 ${pressed ? "bg-nx-ink/5" : "hover:bg-nx-ink/5"}`}
     >
-      <Icon aria-hidden className="h-5 w-5" strokeWidth={STROKE} fill={filled ? "currentColor" : "none"} />
+      {/* A filled icon is a saved bookmark: the palette's lavender, like every bookmark (Item 119). */}
+      <Icon aria-hidden className={`h-5 w-5 ${filled ? "text-nx-pill-purple" : ""}`} strokeWidth={STROKE} fill={filled ? "currentColor" : "none"} />
     </button>
   );
 }

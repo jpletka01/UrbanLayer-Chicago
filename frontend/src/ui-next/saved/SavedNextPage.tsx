@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as Tabs from "@radix-ui/react-tabs";
-import { Bookmark, Check, LogIn, Map as MapIcon, MapPin, MessageCircle, Pencil, RefreshCw, Search, SquareArrowOutUpRight, Trash2 } from "lucide-react";
+import { Bookmark, Check, LogIn, Map as MapIcon, MessageCircle, Pencil, RefreshCw, Search, SquareArrowOutUpRight, Trash2 } from "lucide-react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { savedApi, type SavedLotChanges, type SavedSearchNew, type SavedSearchWire } from "../../lib/api";
 import { loadRegistry } from "../../discovery/registryClient";
@@ -17,7 +17,10 @@ import { track } from "../../lib/tracking";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
-import { lotHref, outlinePath } from "../home/lotMemory";
+import { lotHref } from "../home/lotMemory";
+import { BlockSlice } from "../ui/BlockSlice";
+import { BOOKMARK_ON } from "./bookmark";
+import { familyOf } from "./savedModel";
 import { useSaved, type SavedLot } from "./savedStore";
 import { changeLine, limiter, uncheckedWords } from "./savedModel";
 
@@ -116,22 +119,20 @@ function SavedLotCard({ lot, onUnsave, account }: { lot: SavedLot; onUnsave: () 
   const changes = useLotChanges(account ? lot.id : null);
 
   return (
-    <li className="relative flex flex-col gap-3 rounded-2xl bg-nx-block p-4" data-testid="saved-lot" ref={changes.observe}>
-      <Link to={lotHref(lot)} className="flex items-start gap-3 rounded-xl pr-10 hover:opacity-80">
-        <span aria-hidden className="grid h-14 w-20 shrink-0 place-items-center rounded-xl bg-nx-stat-b">
-          {lot.outline ? (
-            <svg viewBox="0 0 80 56" className="h-14 w-20"><path d={outlinePath(lot.outline, 80, 56, 6)} className="fill-nx-lot" /></svg>
-          ) : <MapPin className="h-5 w-5 text-nx-card-ink" strokeWidth={STROKE} />}
-        </span>
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="font-semibold [overflow-wrap:anywhere]">{lot.address}</span>
-          <span className="text-caption nx-muted">{[lot.zone, lot.area, t("home.savedOn", { date: dateFmt.format(lot.at) })].filter(Boolean).join(" · ")}</span>
-        </span>
+    <li className="relative flex flex-col overflow-hidden rounded-2xl bg-nx-block" data-testid="saved-lot" ref={changes.observe}>
+      {/* The block around the lot, as Discovery's list draws it (owner, 2026-11-12). */}
+      <Link to={lotHref(lot)} tabIndex={-1} aria-hidden className="block hover:opacity-90">
+        <BlockSlice pin10={lot.pin ? lot.pin.slice(0, 10) : null} zoneTag={lot.zone} family={familyOf(lot.zone)} outline={lot.outline} />
       </Link>
       <button type="button" onClick={onUnsave} aria-pressed aria-label={t("home.unsave", { address: lot.address })} title={t("home.unsaveShort")}
-        className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg bg-nx-ink text-nx-on-ink hover:bg-nx-ink/80 touch-icon" data-testid="saved-unsave">
+        className={`absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-lg touch-icon ${BOOKMARK_ON}`} data-testid="saved-unsave">
         <Bookmark aria-hidden className="h-4 w-4" strokeWidth={STROKE} fill="currentColor" />
       </button>
+      <div className="flex flex-col gap-3 p-4">
+      <Link to={lotHref(lot)} className="flex min-w-0 flex-col gap-0.5 rounded-xl hover:opacity-80">
+        <span className="font-semibold [overflow-wrap:anywhere]">{lot.address}</span>
+        <span className="text-caption nx-muted">{[lot.area, t("home.savedOn", { date: dateFmt.format(lot.at) })].filter(Boolean).join(" · ")}</span>
+      </Link>
 
       {account && lot.id ? (
         <ChangesBlock state={changes} lot={lot} day={day} money={money} />
@@ -139,6 +140,7 @@ function SavedLotCard({ lot, onUnsave, account }: { lot: SavedLot; onUnsave: () 
         <p className="text-caption nx-muted">{t("saved.changesSignIn")}</p>
       )}
       {account && lot.id && <NoteEditor id={lot.id} note={lot.note} address={lot.address} />}
+      </div>
     </li>
   );
 }
