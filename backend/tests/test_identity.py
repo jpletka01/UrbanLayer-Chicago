@@ -106,6 +106,13 @@ def _id_token(provider: str, n: str, *, key=_RSA, alg="RS256", **over) -> str:
     return jwt.encode(claims, key, algorithm=alg)
 
 
+def _put(c: TestClient, name: str, value: str) -> None:
+    """Replace a cookie: drop every copy of the name first. A cookie set here without a domain sits beside the one the
+    server set for the host, both are sent, and which one wins depends on the jar's order (CI differed from local)."""
+    c.cookies.delete(name)
+    c.cookies.set(name, value, domain="api.example.com")
+
+
 def _client() -> TestClient:
     from backend.main import app
     return TestClient(app, base_url="https://api.example.com", follow_redirects=False)
@@ -238,7 +245,7 @@ class TestState:
         _, q = _start(c, "google")
         cookie = c.cookies.get(flow.FLOW_COOKIE)
         assert _finish(c, "google", q).headers["location"] == f"{FRONT}/saved"
-        c.cookies.set(flow.FLOW_COOKIE, cookie)  # replay the same cookie and state
+        _put(c, flow.FLOW_COOKIE, cookie)  # replay the same cookie and state
         r = c.get("/api/auth/google/callback", params={"code": "the-code", "state": q["state"]})
         assert self._err(r) == "expired"
 
@@ -254,8 +261,9 @@ class TestState:
         rec = _record(c)
         rec["r"] = "//evil.example"
         forged = flow._sign(rec)[:-4] + "0000"
-        c.cookies.set(flow.FLOW_COOKIE, forged)
-        r = c.get("/api/auth/google/callback", params={"code": "the-code", "state": q["state"]})
+        _put(c, flow.FLOW_COOKIE, forged)
+        with patch.object(flow, "_exchange", side_effect=AssertionError("must not exchange")):
+            r = c.get("/api/auth/google/callback", params={"code": "the-code", "state": q["state"]})
         assert self._err(r) == "expired" and r.headers["location"].startswith(f"{FRONT}/?")
 
     def test_provider_error_is_declined(self, settings_patch, store):
@@ -404,8 +412,8 @@ class TestAccounts:
 # ── Linking: rule 3, rule 4 ───────────────────────────────────────────────────────────────────────────────────
 
 def _signed_in(c: TestClient, user_id: str) -> None:
-    c.cookies.set("access_token", create_access_token(user_id, "", "free"))
-    c.cookies.set("csrf_token", "t")
+    _put(c, "access_token", create_access_token(user_id, "", "free"))
+    _put(c, "csrf_token", "t")
 
 
 def _link(c: TestClient, provider: str, token_over: dict | None = None, *, next_path="/settings"):
@@ -476,7 +484,7 @@ class TestLinking:
         _signed_in(c, "pat")
         r = c.post("/api/auth/link/microsoft", json={}, headers={"x-csrf-token": "t"})
         q = {k: v[0] for k, v in parse_qs(urlparse(r.json()["url"]).query).items()}
-        c.cookies.set("access_token", create_access_token("mallory", "", "free"))
+        _put(c, "access_token", create_access_token("mallory", "", "free"))
         r = _finish(c, "microsoft", q)
         assert "signin_error=session" in r.headers["location"]
         assert await db.get_identity("microsoft", f"{TID}:oid-1") is None
@@ -594,7 +602,7 @@ class TestDevLogin:
         me = c.get("/api/auth/me").json()["user"]
         assert me["email"] == "test-a@example.com"
         # Link Microsoft's stand-in for the same person: rule 3 through the same callback code.
-        c.cookies.set("csrf_token", "t")
+        _put(c, "csrf_token", "t")
         url = c.post("/api/auth/link/microsoft", json={}, headers={"x-csrf-token": "t"}).json()["url"]
         state = parse_qs(urlparse(url).query)["state"][0]
         r = c.get("/api/auth/microsoft/callback", params={"code": "dev:a", "state": state})
