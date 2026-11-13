@@ -17,7 +17,7 @@ export function useParcelChat(data: ScorecardResponse | null, language: string) 
   const grounding = useMemo(() => buildScorecardContext(data), [data]);
   const address = data?.address ?? grounding?.address ?? null;
   const chat = useChat({ language });
-  const { messages, streaming, atMessageLimit, sendMessage, setGrounding } = chat;
+  const { messages, streaming, atQuota, sendMessage, setGrounding } = chat;
 
   // Grounding rides every turn — the same conversation-sticky model as the workspace handoff.
   useEffect(() => {
@@ -27,7 +27,7 @@ export function useParcelChat(data: ScorecardResponse | null, language: string) 
 
   const ask = (question: string) => {
     const q = question.trim();
-    if (!q || streaming || atMessageLimit) return;
+    if (!q || streaming || atQuota) return;
     const text = address && !q.includes(address) ? `${q} — ${address}` : q;
     sendMessage(text, undefined, {
       parcelPin: grounding?.pin ?? null,

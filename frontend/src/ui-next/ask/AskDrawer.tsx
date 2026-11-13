@@ -81,7 +81,7 @@ export function AskDrawer({
             ref={boxRef}
             rows={2}
             value={draft}
-            disabled={chat.atMessageLimit}
+            disabled={chat.atQuota}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
             placeholder={t("next:ask.placeholder")}
@@ -91,7 +91,7 @@ export function AskDrawer({
             <span className="text-caption nx-muted">{t("next:ask.knows", { tab: tabLabel })}</span>
             <button
               type="submit"
-              disabled={chat.streaming || chat.atMessageLimit || !draft.trim()}
+              disabled={chat.streaming || chat.atQuota || !draft.trim()}
               className="nx-ai-send inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-caption font-medium disabled:opacity-50 touch-target"
             >
               <ArrowUp aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
@@ -135,7 +135,9 @@ export function AskDrawer({
             );
           })
         )}
-        {chat.errorMsg && (
+        {chat.atQuota && chat.quotaMessage ? (
+          <p className="rounded-xl bg-nx-block px-3 py-2 text-caption" role="status" data-testid="ask-quota">{chat.quotaMessage}</p>
+        ) : chat.errorMsg && (
           <div className="rounded-xl bg-nx-pill-red-bg px-3 py-2 text-caption text-nx-pill-red" role="alert">
             <p>{chat.errorMsg}</p>
             {chat.canRetry && (

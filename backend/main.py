@@ -1464,7 +1464,7 @@ _TRUNCATION_NOTICE = {
 }
 
 
-async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
+async def _event_stream(req: ChatRequest, outcome: dict | None = None) -> AsyncIterator[str]:
     start = time.monotonic()
     def elapsed_ms() -> int:
         return int((time.monotonic() - start) * 1000)
@@ -1485,19 +1485,8 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         except Exception:
             pass
 
-    # Message limit enforcement + query synthesis
+    # Query synthesis. (The 10-questions-per-chat cap is retired: the monthly quota counts questions, Item 120.)
     try:
-        if req.conversation_id:
-            count = await db.count_user_messages(req.conversation_id)
-            if count >= settings.message_limit:
-                yield _sse(ChatChunk(
-                    type="error",
-                    error="MESSAGE_LIMIT_REACHED",
-                    t_ms=elapsed_ms(),
-                ))
-                yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
-                return
-
         t0 = time.monotonic()
         query = await synthesize_query(
             req.message, req.history,
@@ -1683,6 +1672,8 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
 
     if t_first_token is not None:
         timings["first_token"] = t_first_token
+    if outcome is not None and answer_parts and not error_msg:
+        outcome["answered"] = True
 
     citation_warnings: list[str] | None = None
     if answer_parts and not error_msg:
@@ -3075,15 +3066,45 @@ async def _scope_to_caller(req: ChatRequest, user: dict | None) -> ChatRequest:
 
 @app.post("/chat")
 async def chat(request: Request, req: ChatRequest) -> StreamingResponse:
-    from backend.rate_limit import check_rate_limit, check_daily_budget
-    user = await check_rate_limit(request)
-    await check_daily_budget()
+    from backend import quotas
+    from backend.llm import CURRENT_USER
+    from backend.rate_limit import check_daily_budget, check_rate_limit
+
+    user = await check_rate_limit(request)  # the hourly burst guard only (Item 120)
+    await check_daily_budget(user)
+    ticket, anon_cookie = await quotas.reserve(request, user)
     req = await _scope_to_caller(req, user)
-    return StreamingResponse(
-        _event_stream(req),
+    outcome: dict[str, bool] = {}
+
+    async def stream() -> AsyncIterator[str]:
+        # A question counts once it is answered; a clarification or a failed turn gives it back (Item 120).
+        token = CURRENT_USER.set(user["id"] if user else None)
+        try:
+            async for chunk in _event_stream(req, outcome):
+                yield chunk
+        finally:
+            CURRENT_USER.reset(token)
+            if not outcome.get("answered"):
+                await ticket.refund()
+
+    resp = StreamingResponse(
+        stream(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+    if anon_cookie:
+        resp.set_cookie(quotas.ANON_COOKIE, anon_cookie, max_age=quotas.ANON_COOKIE_MAX_AGE, httponly=True,
+                        secure=get_settings().auth_cookie_secure, samesite="lax")
+    return resp
+
+
+@app.get("/api/usage")
+async def usage(request: Request) -> dict:
+    """The caller's questions: plan, used, limit, and when they come back (Quotas, Item 120). Counts only."""
+    from backend import quotas
+
+    user = await get_current_user(request)
+    return await quotas.usage(request, user)
 
 
 # ---------------------------------------------------------------------------

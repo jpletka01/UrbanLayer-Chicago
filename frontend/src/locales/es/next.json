@@ -1800,9 +1800,6 @@
       "sources": "Fuentes",
       "data": "Datos"
     },
-    "atLimit": "Esta conversación llegó a su límite de preguntas.",
-    "remaining_one": "Le queda {{count}} pregunta en esta conversación",
-    "remaining_other": "Le quedan {{count}} preguntas en esta conversación",
     "signInTitle": "Inicie sesión para continuar",
     "signInBody": "Ya usó las preguntas gratuitas de hoy. Inicie sesión para hacer más; su conversación se queda aquí.",
     "signInGoogle": "Continuar con Google",

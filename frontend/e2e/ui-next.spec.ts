@@ -406,3 +406,20 @@ test("Phase 9: Saved lists the lot saved on the home, keeps a note, and a Discov
   await expect(page.getByTestId("search-summary")).toBeVisible({ timeout: 30_000 });
   expect(new URL(page.url()).pathname).toBe("/discovery");
 });
+
+test("Phase 9 quotas: the count near the end, and the refusal's words, with the server's replies stubbed", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
+  // No model runs: /api/usage and /chat answer from here, the way the server does (Item 120).
+  await page.route("**/api/usage", (r) => r.fulfill({ json: { plan: "free", used: 46, limit: 50, resets_on: "2026-12-01", pro_limit: 200 } }));
+  await page.route("**/chat", (r) => r.request().method() === "POST"
+    ? r.fulfill({ status: 429, json: { detail: { error: "quota", plan: "free", limit: 50, used: 50, resets_on: "2026-12-01", pro_limit: 200 } } })
+    : r.continue());
+  await open(page, "/chat?ui=next", "chat-page");
+  const box = page.getByTestId("chat-box");
+  await box.fill("Can I build a 3-flat at 2541 N Spaulding Ave?");
+  await box.press("Enter");
+  await expect(page.getByTestId("chat-limit")).toContainText("They come back on December 1");
+  await expect(box).toBeDisabled();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});

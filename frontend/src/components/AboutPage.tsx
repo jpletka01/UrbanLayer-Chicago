@@ -846,7 +846,7 @@ NEIGHBORHOOD-WIDE (community area name):
               ["context", "ContextObject JSON", "Citation data, sidebar content, domain card data"],
               ["map_data", "MapDataResponse JSON", "Inline map data (no separate fetch)"],
               ["token", "text string", "Streaming synthesis text"],
-              ["error", "error message", "MESSAGE_LIMIT_REACHED or exception"],
+              ["error", "error message", "The step that failed (route, retrieval, answer) or an outage"],
               ["done", "final metadata", "Attach context/plan/mapData to message; carries truncated and citation_warnings"],
             ]}
           />
@@ -1610,12 +1610,15 @@ Consumers → Property Profile (renders pin + confidence badge)
             message loads that question's sidebar state.
           </P>
 
-          <Sub>10-Message Limit</Sub>
+          <Sub>Question allowances</Sub>
           <P>
-            Enforced on both sides. Backend: if <Mono>{">="} 10</Mono> user messages in SQLite, emits
-            <Mono>error: "MESSAGE_LIMIT_REACHED"</Mono>. Frontend: replaces input with "Start a new conversation."
-            Controls token costs and prevents context window explosion. Configurable
-            via <Mono>message_limit</Mono> in <Mono>config.py</Mono>.
+            One counter per visitor in SQLite (<Mono>backend/quotas.py</Mono>), so a deploy can't reset it: three
+            questions in total for a signed-out visitor (a signed cookie, plus a soft daily ceiling per network so
+            clearing cookies doesn't mint more), 50 a month on a free account and 200 on Pro, counted in Chicago
+            calendar months. A question is taken with one atomic upsert ("add one only while under the limit"), so fifty
+            requests at once against a limit of fifty admit exactly fifty, and it is given back when the turn ends
+            without an answer. A daily and a monthly spend cap sum every model call. The old cap of 10 questions per
+            conversation is gone; history sent to the model is already bounded.
           </P>
 
           <Sub>Conversation Sharing</Sub>

@@ -15,7 +15,7 @@ const messages: Array<{ role: string; content: string }> = [];
 vi.mock("../../lib/useChat", () => ({
   useChat: () => ({
     messages, streaming: false, context: null, errorMsg: null, canRetry: false, retry: vi.fn(),
-    atMessageLimit: false, activities: [], sendMessage, setGrounding: vi.fn(),
+    atQuota: false, quotaMessage: null, activities: [], sendMessage, setGrounding: vi.fn(),
   }),
 }));
 vi.mock("../../lib/scorecardContext", () => ({

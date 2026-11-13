@@ -32,7 +32,6 @@
   "exportTranscript": "Export transcript",
   "conversationActions": "Conversation actions",
   "connectionLost": "Connection lost — please try again.",
-  "messageLimit": "You've reached the 10-message limit for this conversation. Please start a new chat.",
   "sharedConversation": "This is a shared conversation — read only",
   "today": "Today",
   "yesterday": "Yesterday",
@@ -48,11 +47,8 @@
   "done": "Done",
   "close": "Close",
   "startNewConversation": "Start a new conversation",
-  "questionsLeft_one": "{{count}} question left in this chat.",
-  "questionsLeft_other": "{{count}} questions left in this chat.",
   "upgradeToPro": "Upgrade to Pro",
   "followUpPlaceholder": "Ask a follow-up...",
-  "messageLimitReached": "You've reached the 10-message limit for this conversation.",
   "shared": "Shared",
   "openDataPanel": "Open data panel",
   "submit": "Submit",
@@ -229,5 +225,18 @@
     "source": "Official record: {{label}}",
     "explain": "What this means: {{label}}",
     "ask": "Ask about: {{label}}"
+  },
+  "quota": {
+    "anonymous_one": "You've used your {{count}} free question. Sign in to keep asking: {{free}} a month, free.",
+    "anonymous_other": "You've used your {{count}} free questions. Sign in to keep asking: {{free}} a month, free.",
+    "free": "You've used this month's {{limit}} questions. They come back on {{date}}. Pro gives you {{pro}} a month.",
+    "pro": "You've used this month's {{limit}} questions. They come back on {{date}}.",
+    "network": "Too many free questions from this network today. Sign in to keep asking.",
+    "pausedTomorrow": "The analyst is paused for today. It's back tomorrow.",
+    "pausedMonth": "The analyst is paused until the 1st of next month.",
+    "left_one": "{{count}} free question left",
+    "left_other": "{{count}} free questions left",
+    "leftMonth_one": "{{count}} question left this month",
+    "leftMonth_other": "{{count}} questions left this month"
   }
 }

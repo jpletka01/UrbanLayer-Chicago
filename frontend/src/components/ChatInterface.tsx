@@ -17,11 +17,13 @@ interface Props {
   streamingContext?: ContextObject | null;
   onMessageClick?: (messageIndex: number) => void;
   selectedMessageIndex?: number | null;
-  atMessageLimit?: boolean;
+  /** The allowance is used up (Quotas, Item 120): its message replaces the input. */
+  quotaNotice?: string | null;
   /** Turns left before the per-conversation cap — surfaced near the composer
    *  from 2 remaining so the limit never lands as a surprise dead-end. */
-  messagesRemaining?: number;
-  onNewChat?: () => void;
+  /** Questions left in the allowance; shown when 10 or fewer remain. */
+  questionsLeft?: number | null;
+  usagePlan?: string | null;
   attachments?: PendingAttachment[];
   onAttach?: (files: File[]) => void;
   onRemoveAttachment?: (index: number) => void;
@@ -57,9 +59,9 @@ export function ChatInterface({
   streamingContext,
   onMessageClick,
   selectedMessageIndex,
-  atMessageLimit,
-  messagesRemaining,
-  onNewChat,
+  quotaNotice,
+  questionsLeft,
+  usagePlan,
   attachments,
   onAttach,
   onRemoveAttachment,
@@ -81,7 +83,7 @@ export function ChatInterface({
 
   // The fresh "New Chat" surface: no messages, not streaming, not a shared/read-only
   // view, and not blocked at the message limit. Reads as ready, not broken.
-  const showEmptyState = messages.length === 0 && !streaming && !readOnly && !atMessageLimit;
+  const showEmptyState = messages.length === 0 && !streaming && !readOnly && !quotaNotice;
 
   // Grounded variant: entered for a parcel → property-specific, flag-aware
   // starters (priority-ordered + capped in propertyStarterKeys — notable flags
@@ -186,27 +188,17 @@ export function ChatInterface({
             <div className="text-center py-3 text-text-muted text-sm">
               {t("sharedConversation")}
             </div>
-          ) : atMessageLimit ? (
-            <div className="text-center py-3 text-text-muted text-sm">
-              {t("messageLimitReached")}{" "}
-              <button
-                onClick={onNewChat}
-                className="text-accent hover:text-accent-hover hover:underline transition-colors"
-              >
-                {t("startNewConversation")}
-              </button>
+          ) : quotaNotice ? (
+            <div className="text-center py-3 text-text-muted text-sm" role="status" data-testid="chat-quota">
+              {quotaNotice}
             </div>
           ) : (
             <>
-              {messagesRemaining != null && messagesRemaining <= 2 && messagesRemaining > 0 && (
-                <p className="text-caption text-text-muted text-center pb-2">
-                  {t("questionsLeft", { count: messagesRemaining })}{" "}
-                  <button
-                    onClick={onNewChat}
-                    className="text-accent hover:text-accent-hover hover:underline transition-colors"
-                  >
-                    {t("startNewConversation")}
-                  </button>
+              {questionsLeft != null && questionsLeft > 0 && questionsLeft <= 10 && (
+                <p className="text-caption text-text-muted text-center pb-2" role="status">
+                  {usagePlan === "anonymous"
+                    ? t("common:quota.left", { count: questionsLeft })
+                    : t("common:quota.leftMonth", { count: questionsLeft })}
                 </p>
               )}
               <ChatInput

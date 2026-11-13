@@ -56,6 +56,16 @@ LOT_CHANGE_KINDS = {"district", "overlay", "standards", "map_amendment", "design
 _PIN = re.compile(r"^\d{14}$")
 # Records at an address, fetched once per hour per address (the City's and County's own caches sit below).
 _records_cache = TTLCache(ttl_seconds=3600, maxsize=512, name="saved_records")
+_merge_guard: asyncio.Lock | None = None
+
+
+def _merge_lock() -> asyncio.Lock:
+    global _merge_guard
+    if _merge_guard is None:
+        _merge_guard = asyncio.Lock()
+    return _merge_guard
+
+
 # At most this many "what changed" checks run at once for the whole app.
 _check_slots: asyncio.Semaphore | None = None
 
@@ -250,32 +260,34 @@ async def _insert_lots(uid: str, lots: list[LotIn], *, keep_times: bool) -> tupl
     oldest = now - 365 * 86_400_000
     added = skipped = 0
     ordered = sorted(lots, key=lambda lot: -(lot.saved_at or now))
-    await conn.execute("BEGIN IMMEDIATE")
-    try:
-        cur = await conn.execute("SELECT COUNT(*) FROM saved_lots WHERE user_id = ?", (uid,))
-        count = (await cur.fetchone())[0]
-        for lot in ordered:
-            key = lot_key(lot.pin, lot.address)
-            cur = await conn.execute("SELECT 1 FROM saved_lots WHERE user_id = ? AND lot_key = ?", (uid, key))
-            if await cur.fetchone():
-                continue
-            if count >= MAX_LOTS:
-                skipped += 1
-                continue
-            saved_at = min(max(lot.saved_at, oldest), now) if keep_times and lot.saved_at else now
-            display = {"zone": lot.zone, "area": lot.area, "outline": lot.outline, "approximate": lot.approximate}
-            await conn.execute(
-                "INSERT OR IGNORE INTO saved_lots (id, user_id, lot_key, pin, address, lat, lon, display_json, saved_at, updated_at)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (secrets.token_urlsafe(12), uid, key, lot.pin, lot.address, lot.lat, lot.lon,
-                 json.dumps(display, separators=(",", ":")), saved_at, now),
-            )
-            count += 1
-            added += 1
-        await conn.commit()
-    except Exception:
-        await conn.rollback()
-        raise
+    # One shared connection serves every request, so no explicit transaction (two would collide): a lock keeps
+    # the count check and the inserts together, and the unique key stops a duplicate whatever happens.
+    async with _merge_lock():
+        try:
+            cur = await conn.execute("SELECT COUNT(*) FROM saved_lots WHERE user_id = ?", (uid,))
+            count = (await cur.fetchone())[0]
+            for lot in ordered:
+                key = lot_key(lot.pin, lot.address)
+                cur = await conn.execute("SELECT 1 FROM saved_lots WHERE user_id = ? AND lot_key = ?", (uid, key))
+                if await cur.fetchone():
+                    continue
+                if count >= MAX_LOTS:
+                    skipped += 1
+                    continue
+                saved_at = min(max(lot.saved_at, oldest), now) if keep_times and lot.saved_at else now
+                display = {"zone": lot.zone, "area": lot.area, "outline": lot.outline, "approximate": lot.approximate}
+                await conn.execute(
+                    "INSERT OR IGNORE INTO saved_lots (id, user_id, lot_key, pin, address, lat, lon, display_json, saved_at, updated_at)"
+                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (secrets.token_urlsafe(12), uid, key, lot.pin, lot.address, lot.lat, lot.lon,
+                     json.dumps(display, separators=(",", ":")), saved_at, now),
+                )
+                count += 1
+                added += 1
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
     return added, skipped
 
 

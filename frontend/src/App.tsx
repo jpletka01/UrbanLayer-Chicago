@@ -157,8 +157,10 @@ export function App() {
     canRetry,
     retry,
     rateLimited,
-    atMessageLimit,
-    messagesRemaining,
+    atQuota,
+    questionsLeft,
+    usagePlan,
+    quotaMessage,
     activities,
     conversationId,
     conversationIdRef,
@@ -687,7 +689,7 @@ export function App() {
               />
             )}
 
-            {errorMsg && (
+            {errorMsg && !atQuota && (
               <div className="px-6 py-3 bg-state-negative/10 border-b border-state-negative/20 text-state-negative text-sm flex items-center justify-between gap-4">
                 <span>{errorMsg}</span>
                 {canRetry && (
@@ -731,9 +733,9 @@ export function App() {
                 streamingContext={context}
                 onMessageClick={handleMessageClick}
                 selectedMessageIndex={selectedMessageIndex}
-                atMessageLimit={atMessageLimit}
-                messagesRemaining={messagesRemaining}
-                onNewChat={handleNewChat}
+                quotaNotice={atQuota ? quotaMessage : null}
+                questionsLeft={questionsLeft}
+                usagePlan={usagePlan}
                 attachments={pendingAttachments}
                 onAttach={canPersist ? handleAttach : undefined}
                 onRemoveAttachment={handleRemoveAttachment}

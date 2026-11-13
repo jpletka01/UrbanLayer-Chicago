@@ -186,7 +186,8 @@ class TestMerge:
         lots = [saved.LotIn(**{**LOT2, "address": f"{1600 + n} N Milwaukee Ave"}) for n in range(20)]
         results = await asyncio.gather(*(saved._insert_lots("user_a", lots, keep_times=False) for _ in range(5)),
                                        return_exceptions=True)
-        added = sum(r[0] for r in results if not isinstance(r, BaseException))
+        assert not [r for r in results if isinstance(r, BaseException)]  # no request errors (one shared connection)
+        added = sum(r[0] for r in results)
         cur = await db._get_db().execute("SELECT COUNT(*), COUNT(DISTINCT lot_key) FROM saved_lots WHERE user_id = 'user_a'")
         total, distinct = await cur.fetchone()
         assert total == distinct == 20 and added == 20
@@ -361,4 +362,4 @@ def test_migration_v17_tables_exist(tmp_path):
             await db.close_db()
         return names, ver
     names, ver = asyncio.run(run())
-    assert names == ["saved_lots", "saved_searches"] and ver == 17
+    assert names == ["saved_lots", "saved_searches"] and ver == 18

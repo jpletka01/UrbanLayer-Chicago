@@ -1800,9 +1800,6 @@
       "sources": "Sources",
       "data": "Data"
     },
-    "atLimit": "This conversation has reached its question limit.",
-    "remaining_one": "{{count}} question left in this conversation",
-    "remaining_other": "{{count}} questions left in this conversation",
     "signInTitle": "Sign in to keep going",
     "signInBody": "You've used today's free questions. Sign in for more; your conversation stays here.",
     "signInGoogle": "Continue with Google",

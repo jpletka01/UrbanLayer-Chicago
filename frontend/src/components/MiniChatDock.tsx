@@ -51,7 +51,7 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
     errorMsg,
     canRetry,
     retry,
-    atMessageLimit,
+    atQuota,
     activities,
     address,
     ask,
@@ -213,13 +213,13 @@ export function MiniChatDock({ data, signal, launcherBelowMd = true }: {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submitDraft()}
           placeholder={t("pages:scorecard.dock.placeholder")}
-          disabled={atMessageLimit}
+          disabled={atQuota}
           className="flex-1 min-w-0 rounded-lg bg-dark-bg border border-dark-border px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent disabled:opacity-50"
         />
         <button
           type="button"
           onClick={submitDraft}
-          disabled={streaming || atMessageLimit || !draft.trim()}
+          disabled={streaming || atQuota || !draft.trim()}
           aria-label={t("pages:scorecard.dock.send")}
           className="shrink-0 rounded-lg bg-action hover:bg-action-hover text-text-on-accent px-3 disabled:opacity-40 transition-colors"
         >

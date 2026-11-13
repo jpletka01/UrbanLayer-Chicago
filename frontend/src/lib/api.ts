@@ -412,15 +412,57 @@ export async function fetchMapData(params: {
   }
 }
 
+/** A question refused by the monthly or signed-out allowance (Quotas, Item 120), as the server sends it. */
+export interface QuotaDetail {
+  error: "quota";
+  plan: "anonymous" | "free" | "pro";
+  limit: number;
+  used: number;
+  resets_on: string | null;
+  network?: boolean;
+  free_limit?: number;
+  pro_limit?: number;
+}
+
+/** Chat paused because the day's or month's model spend reached its cap. */
+export interface PausedDetail {
+  error: "paused";
+  until: "tomorrow" | "month";
+}
+
+/** The visitor's questions: plan, used, allowed, and when they come back (`GET /api/usage`). */
+export interface Usage {
+  plan: "anonymous" | "free" | "pro" | "admin";
+  used: number;
+  limit: number | null;
+  resets_on: string | null;
+  free_limit?: number;
+  pro_limit?: number;
+}
+
 export class ChatStreamError extends Error {
   status: number;
   detail: string | null;
+  quota: QuotaDetail | null;
+  paused: PausedDetail | null;
 
-  constructor(status: number, statusText: string, detail: string | null) {
+  constructor(status: number, statusText: string, detail: string | null, structured: unknown = null) {
     super(detail ?? `Chat request failed: ${status} ${statusText}`);
     this.name = "ChatStreamError";
     this.status = status;
     this.detail = detail;
+    const d = structured as { error?: string } | null;
+    this.quota = d?.error === "quota" ? (d as QuotaDetail) : null;
+    this.paused = d?.error === "paused" ? (d as PausedDetail) : null;
+  }
+}
+
+export async function getUsage(): Promise<Usage | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/usage`);
+    return resp.ok ? ((await resp.json()) as Usage) : null;
+  } catch {
+    return null;
   }
 }
 
@@ -455,7 +497,8 @@ export async function* chatStream(
   if (!resp.ok || !resp.body) {
     const errBody = await resp.json().catch(() => null);
     const detail = typeof errBody?.detail === "string" ? errBody.detail : null;
-    throw new ChatStreamError(resp.status, resp.statusText, detail);
+    throw new ChatStreamError(resp.status, resp.statusText, detail,
+      errBody && typeof errBody.detail === "object" ? errBody.detail : null);
   }
 
   yield* parseSSE<ChatChunk>(resp.body.getReader());

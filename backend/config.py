@@ -210,7 +210,6 @@ class Settings(BaseSettings):
     # Prod sets this: a missing status file then means backups are not running, not "dev checkout".
     backup_status_required: bool = False
 
-    message_limit: int = 10
 
     ptaxsim_db_path: Path = PROJECT_ROOT / "backend" / "data" / "ptaxsim.db"
     ptaxsim_enabled: bool = True
