@@ -2,21 +2,36 @@
 // has its one action pinned, figures that end at their real values for screen readers, and an Explore button; the
 // home lists Saved lots first, then the last six Recent lots with a bookmark each and "Clear all", and no per-lot
 // remove (owner, 2026-11-12).
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import RootNextPage from "./RootNextPage";
 import { axeViolations } from "../test/axe";
 import { lotKey, rememberRecent, readSaved } from "./lotMemory";
+import { _resetForTests } from "../saved/savedStore";
 
 let auth = { user: null, isAuthenticated: false, authRequired: true, loading: false, signIn: vi.fn(), signOut: vi.fn() };
 vi.mock("../../contexts/AuthContext", () => ({ useAuthContext: () => auth }));
 vi.mock("../../contexts/ThemeContext", () => ({
   useThemeContext: () => ({ theme: "system", resolvedTheme: "light", setTheme: vi.fn() }),
 }));
+// The account's saved lots (Saved, Item 119), kept in memory for the test.
+const account: Array<Record<string, unknown>> = [];
 vi.mock("../../lib/api", () => ({
   listConversations: vi.fn().mockResolvedValue([{ id: "c1", title: "Coach house at 2611 N Sawyer", message_count: 2, createdAt: 0, updatedAt: Date.now() }]),
   getAutocomplete: vi.fn().mockResolvedValue([]),
+  SavedError: class extends Error { status = 0; },
+  savedApi: {
+    lots: vi.fn(async () => ({ lots: [...account], max: 200 })),
+    merge: vi.fn(async () => ({ added: 0, skipped: 0, lots: [...account], max: 200 })),
+    save: vi.fn(async (b: { pin: string | null; address: string; lat: number; lon: number }) => {
+      const w = { id: `id${account.length}`, key: b.pin ? `pin:${b.pin}` : `addr:${b.address.toLowerCase()}`, pin: b.pin, address: b.address,
+        lat: b.lat, lon: b.lon, zone: null, area: null, outline: null, note: "", saved_at: Date.now(), watching_since: null };
+      account.unshift(w);
+      return w;
+    }),
+    unsave: vi.fn(async (id: string) => { account.splice(account.findIndex((l) => l.id === id), 1); }),
+  },
 }));
 
 // jsdom has no IntersectionObserver; the landing's count-ups and bar fills wait for one (they never fire here).
@@ -24,10 +39,12 @@ class NoIntersection { observe() {} unobserve() {} disconnect() {} takeRecords()
 (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver ??= NoIntersection;
 
 const mount = (path = "/") => render(<MemoryRouter initialEntries={[path]}><RootNextPage /></MemoryRouter>);
-const lot = (n: number) => ({ key: lotKey(null, `${n} N Milwaukee Ave`), address: `${n} N Milwaukee Ave`, pin: null, zone: "B3-2", area: "West Town", outline: null });
+const lot = (n: number) => ({ key: lotKey(null, `${n} N Milwaukee Ave`), address: `${n} N Milwaukee Ave`, pin: null, zone: "B3-2", area: "West Town", outline: null, lat: 41.91, lon: -87.68 });
 
 beforeEach(() => {
   localStorage.clear();
+  account.length = 0;
+  _resetForTests();
   auth = { user: null, isAuthenticated: false, authRequired: true, loading: false, signIn: vi.fn(), signOut: vi.fn() };
 });
 afterEach(cleanup);
@@ -75,17 +92,18 @@ describe("the signed-in home", () => {
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it("saves a recent lot into Saved with its bookmark", () => {
+  it("saves a recent lot into the account's Saved with its bookmark", async () => {
     rememberRecent(lot(1));
     mount();
     fireEvent.click(within(screen.getByTestId("home-recent")).getByRole("button", { name: "Save 1 N Milwaukee Ave" }));
-    expect(readSaved().map((l) => l.address)).toEqual(["1 N Milwaukee Ave"]);
-    expect(within(screen.getByTestId("home-saved")).getByText("1 N Milwaukee Ave")).toBeTruthy();
+    expect(await within(screen.getByTestId("home-saved")).findByText("1 N Milwaukee Ave")).toBeTruthy();
+    expect(account.map((l) => l.address)).toEqual(["1 N Milwaukee Ave"]);
+    expect(readSaved()).toEqual([]); // the account holds it, not the browser
     // Saved shows as selected, and its bookmark unsaves it.
     const unsave = within(screen.getByTestId("home-saved")).getByRole("button", { name: "Remove 1 N Milwaukee Ave from saved" });
     expect(unsave.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(unsave);
-    expect(readSaved()).toEqual([]);
+    await waitFor(() => expect(account).toEqual([]));
   });
 
   it("clears all recent lots at once, and folds the row away", () => {

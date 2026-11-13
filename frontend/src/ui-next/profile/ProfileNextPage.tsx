@@ -52,6 +52,7 @@ import { SourcesDialog } from "./SourcesDialog";
 import { PartsStatus } from "./PartsStatus";
 import { useProfileParts, type PartStatus } from "./useProfileParts";
 import { lotKey, outlineRing, rememberRecent } from "../home/lotMemory";
+import { useSaved, type SaveInput } from "../saved/savedStore";
 
 type TabId = "overview" | "build" | "money" | "neighborhood" | "history";
 
@@ -116,6 +117,8 @@ export default function ProfileNextPage() {
           zone: ctx?.parcel_zoning?.zone_class ?? null,
           area: result.community_area_name ?? null,
           outline: outlineRing(ctx?.property?.parcel_geometry as GeoJSON.Geometry | null | undefined),
+          lat: result.resolved_lat ?? null,
+          lon: result.resolved_lon ?? null,
         });
       }
       if (result.resolved_pin) {
@@ -273,7 +276,11 @@ function ProfileScreen({
   const verdict = useMemo(() => (data ? computeVerdict(data, tp) : null), [data, tp]);
   // The illustrative zoning mass Build raises in 3D (M6); the map withholds it when the lot is approximate.
   const mass = useMemo(() => (data && verdict ? zoningMass(data, verdict, false) : null), [data, verdict]);
-  const [tab, setTab] = useState<TabId>("overview");
+  // A link may open a tab (Saved's change lines open History or Build: `?tab=`).
+  const [tab, setTab] = useState<TabId>(() => {
+    const want = new URLSearchParams(window.location.search).get("tab");
+    return want === "build" || want === "money" || want === "neighborhood" || want === "history" ? want : "overview";
+  });
   // The right panel: the analyst or a program's page, one at a time (Item 99). Closing slides it out first, so the
   // last panel stays mounted (`shownPanel`) for the slide; `seq` remounts it for a new question or program, and
   // `instant` skips the slide when the panel was already open.
@@ -381,6 +388,19 @@ function ProfileScreen({
     downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables, data.provenance), `${buildFilenameSlug(data.address || "property")}_profile_${date}.csv`);
   };
 
+  // The bookmark (Saved, Item 119): the lot as the Profile resolved it, by PIN when it has one.
+  const { isSaved, toggle: toggleSaved } = useSaved();
+  const saveLot: SaveInput | null = data?.address && data.resolved_lat != null && data.resolved_lon != null ? {
+    key: lotKey(data.resolved_pin, humanizeShoutyCase(data.address)),
+    address: humanizeShoutyCase(data.address),
+    pin: data.resolved_pin ?? null,
+    zone: ctx?.parcel_zoning?.zone_class ?? null,
+    area: data.community_area_name ?? null,
+    outline: outlineRing(ctx?.property?.parcel_geometry as GeoJSON.Geometry | null | undefined),
+    lat: data.resolved_lat,
+    lon: data.resolved_lon,
+  } : null;
+
   const toolsFor = (where: "top" | "slim") => (
     <>
       <span ref={where === "top" ? askButtonRef : undefined} className="contents">
@@ -388,6 +408,9 @@ function ProfileScreen({
       </span>
       <ToolButton label={ready ? t("tools.sources") : `${t("tools.sources")}: ${t("profile.first.toolsLater")}`} icon={ICON.sources} onClick={() => setSourcesOpen(true)} testId={`tool-sources-${where}`} disabled={!ready} />
       <ToolButton label={ready ? t("tools.export") : `${t("tools.export")}: ${t("profile.first.toolsLater")}`} icon={ICON.export} onClick={exportCsv} testId={`tool-export-${where}`} disabled={!ready} />
+      <ToolButton label={saveLot ? (isSaved(saveLot.key) ? t("home.unsaveShort") : t("home.saveShort")) : t("home.saveShort")} icon={ICON.saved}
+        onClick={() => { if (saveLot) { track("investigate_click", { card_name: isSaved(saveLot.key) ? "next_unsave" : "next_save" }); void toggleSaved(saveLot); } }}
+        pressed={saveLot ? isSaved(saveLot.key) : false} filled={saveLot ? isSaved(saveLot.key) : false} testId={`tool-save-${where}`} disabled={!saveLot} />
     </>
   );
 

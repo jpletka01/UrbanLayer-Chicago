@@ -1,7 +1,7 @@
 // The signed-in home (Phase 8, wireframe v5 approved by the owner 2026-11-12): search first, then Saved lots, then
 // the last six Recent lots (a bookmark on each, "Clear all", a heading that folds the row away), with Recent chats
-// beside them as filler until something more useful takes the column. Lots live in this browser until the Saved
-// epic (Phase 9) moves them to the account and adds what changed since a lot was saved.
+// beside them as filler until something more useful takes the column. Saved lots come from the account (Saved,
+// Item 119: `useSaved`, which moves this browser's saves in once); recent lots stay in this browser.
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -12,7 +12,8 @@ import type { Conversation } from "../../lib/types";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
-import { lotHref, outlinePath, useLotMemory, type RememberedLot } from "./lotMemory";
+import { lotHref, outlinePath, type RememberedLot } from "./lotMemory";
+import { useSaved } from "../saved/savedStore";
 
 const FOLD_KEY = "urbanlayer-next-recent-folded";
 
@@ -20,7 +21,7 @@ export default function HomeNextPage() {
   const { t, i18n } = useTranslation("next");
   const navigate = useNavigate();
   const { isAuthenticated, authRequired } = useAuthContext();
-  const { recent, saved, isSaved, toggleSaved, clearRecent } = useLotMemory();
+  const { recent, lots: saved, isSaved, toggle: toggleSaved, clearRecent, account } = useSaved();
   const [folded, setFolded] = useState(() => { try { return localStorage.getItem(FOLD_KEY) === "1"; } catch { return false; } });
   const [chats, setChats] = useState<Conversation[] | null>(null);
   // "Today" for the cards' dates, read once per visit.
@@ -63,13 +64,17 @@ export default function HomeNextPage() {
             <section aria-labelledby="home-saved" className="flex flex-col gap-3" data-testid="home-saved">
               <div className="flex flex-wrap items-baseline gap-2.5">
                 <h2 id="home-saved" className="text-[1.0625rem] font-semibold">{t("home.saved")}</h2>
-                <span className="text-caption nx-muted">{t("home.savedHere")}</span>
+                <span className="text-caption nx-muted">{account ? t("home.savedAccount") : t("home.savedHere")}</span>
+                <span className="flex-1" />
+                {saved.length > 0 && (
+                  <Link to="/saved" className="text-caption font-medium underline underline-offset-2 touch-target" data-testid="home-saved-all">{t("home.savedAll")}</Link>
+                )}
               </div>
               {saved.length === 0 ? (
                 <p className="text-caption nx-muted" data-testid="home-saved-empty">{t("home.savedEmpty")}</p>
               ) : (
                 <ul role="list" className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3">
-                  {saved.map((lot) => (
+                  {saved.slice(0, 6).map((lot) => (
                     <LotCard key={lot.key} lot={lot} meta={t("home.savedOn", { date: dateFmt.format(lot.at) })} saved onToggle={() => toggleSaved(lot)} />
                   ))}
                 </ul>

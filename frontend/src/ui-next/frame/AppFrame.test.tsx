@@ -1,4 +1,4 @@
-// The frame: the side panel lists only destinations the readiness registry allows (Saved hidden), collapses to
+// The frame: the side panel lists only destinations the readiness registry allows, collapses to
 // icons with accessible names, opens as a sheet on a phone, and the top bar carries the breadcrumb.
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,13 +25,12 @@ beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 
 describe("AppFrame", () => {
-  it("shows Home, Search, Discovery and Chat, never Saved, with the current page marked", async () => {
+  it("shows Home, Search, Discovery, Saved and Chat, with the current page marked", async () => {
     const { container } = mount();
     const panel = screen.getAllByRole("navigation", { name: "Main menu" })[0];
     const links = within(panel).getAllByRole("link").map((a) => a.textContent);
-    expect(links).toEqual(["UrbanLayer", "Home", "Search", "Discovery", "About UrbanLayer"]);
+    expect(links).toEqual(["UrbanLayer", "Home", "Search", "Discovery", "Saved", "About UrbanLayer"]);
     expect(within(panel).getByRole("button", { name: "Chat" }).getAttribute("aria-expanded")).toBe("false");
-    expect(within(panel).queryByText("Saved")).toBeNull();
     expect(within(panel).getByRole("link", { name: "Search" }).getAttribute("aria-current")).toBe("page");
     expect(container.querySelector(".ui-next")).not.toBeNull();
     expect(screen.getByRole("navigation", { name: "You are here" }).textContent).toContain("1601 N Milwaukee Ave");

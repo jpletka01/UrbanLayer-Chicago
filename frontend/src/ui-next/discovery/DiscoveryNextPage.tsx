@@ -22,7 +22,11 @@ import { HIDE_UNUSUAL } from "../../discovery/draftModel";
 import { panelFromCqs } from "../../discovery/topicCompiler";
 import { profileAddress } from "../../discovery/rowFigures";
 import type { FilterDef, PanelState, Predicate, Registry, ResultRow, TopicDef } from "../../discovery/types";
-import { getAutocomplete } from "../../lib/api";
+import { getAutocomplete, savedApi } from "../../lib/api";
+import type { DiscoveryDraft } from "../../discovery/draftModel";
+import { SaveSearch } from "../saved/SaveSearch";
+import { useSaved } from "../saved/savedStore";
+import { lotKey } from "../home/lotMemory";
 import type { AddressSuggestion } from "../../lib/types";
 import { track } from "../../lib/tracking";
 import { useIsPhone } from "../../lib/useIsPhone";
@@ -65,6 +69,22 @@ export default function DiscoveryNextPage() {
   const response = search.applied;
   const hoods = useNeighborhoods();
   const [focus, setFocus] = useState<Focus>("map");
+  // A saved search opened from Saved (`?saved=<id>`, Item 119): run its draft once, then its matches count as seen.
+  const reopened = useRef(false);
+  useEffect(() => {
+    if (!registry || reopened.current) return;
+    const id = new URLSearchParams(window.location.search).get("saved");
+    if (!id) return;
+    reopened.current = true;
+    savedApi.searches().then(({ searches }) => {
+      const hit = searches.find((x) => x.id === id);
+      if (!hit) return;
+      search.startWith({ ...(hit.draft as unknown as DiscoveryDraft), sort: (hit.draft as unknown as DiscoveryDraft).sort ?? { ...ROOM_SORT } });
+      setFocus("list");
+      void savedApi.searchSeen(id).catch(() => {});
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registry]);
   const [measure, setMeasure] = useState<MeasureId>(DEFAULT_MEASURE);
   const [showZoning, setShowZoning] = useState(false);
   const [view, setView] = useState<ViewBox | null>(null);
@@ -346,7 +366,13 @@ export default function DiscoveryNextPage() {
                   </span>
                 ))}
                 {response.cqs.scope?.mode === "viewport" && <Pill tone="gray" icon={MapIcon}>{t("discovery.inThisView")}</Pill>}
-                <button type="button" onClick={startOver} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 underline underline-offset-2 hover:bg-nx-ink/5">
+                {registry && (
+                  <span className="ml-auto">
+                    <SaveSearch key={JSON.stringify(response.cqs.filters)} draft={search.draft} registry={registry}
+                      defaultName={chips.map(([id, a]) => label(id, a.predicate as Predicate)).join(", ") || t("saved.allLots")} />
+                  </span>
+                )}
+                <button type="button" onClick={startOver} className=" inline-flex items-center gap-1 rounded-lg px-2 py-1 underline underline-offset-2 hover:bg-nx-ink/5">
                   {t("discovery.newSearch")}
                 </button>
               </div>
@@ -734,6 +760,7 @@ function Results({ response, rows, fmt, onMore, loadingMore, refreshing, hiddenU
   onOpen: (row: ResultRow) => void; hoodName: (slug: string | null | undefined) => string | null;
 }) {
   const { t } = useTranslation("next");
+  const saved = useSaved();
   return (
     <section aria-labelledby="nx-results" aria-busy={refreshing || undefined} className={`nx-cq px-4 pb-8 pt-4 sm:px-7 ${refreshing ? "opacity-60" : ""}`}>
       <h2 id="nx-results" className="sr-only">{t("discovery.resultsTitle")}</h2>
@@ -743,7 +770,9 @@ function Results({ response, rows, fmt, onMore, loadingMore, refreshing, hiddenU
       {response.result.total === 0 && <p className="nx-muted">{t("discovery.noneHint")}</p>}
       <ul className="nx-cards grid gap-4" data-testid="next-results">
         {foldComplexes(rows).map(({ row, more }) => (
-          <LotCard key={row.pin} row={row} moreInComplex={more} hoodName={hoodName(row.hood)} onOpen={() => onOpen(row)} />
+          <LotCard key={row.pin} row={row} moreInComplex={more} hoodName={hoodName(row.hood)} onOpen={() => onOpen(row)}
+            saved={saved.isSaved(lotKey(row.pin.replace(/-/g, ""), ""))}
+            onToggleSave={(lot) => void saved.toggle(lot)} />
         ))}
       </ul>
       {hiddenUnusual > 0 && (

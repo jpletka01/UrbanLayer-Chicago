@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 16
+_SCHEMA_VERSION = 17
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -285,6 +285,45 @@ CREATE TABLE IF NOT EXISTS fact_checks (
 """)
 
 
+async def _migrate_v17(db: aiosqlite.Connection) -> None:
+    """Saved (Phase 9, decision Item 119): a user's saved lots, each with a private note and the "since then"
+    baseline the server took for it, and saved Discovery searches with the matches they had when saved.
+    Both cascade with the user row; ``backend/saved.py`` owns every read and write."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS saved_lots (
+    id            TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lot_key       TEXT NOT NULL,
+    pin           TEXT,
+    address       TEXT NOT NULL,
+    lat           REAL NOT NULL,
+    lon           REAL NOT NULL,
+    display_json  TEXT NOT NULL DEFAULT '{}',
+    note          TEXT NOT NULL DEFAULT '',
+    snapshot_json TEXT,
+    saved_at      INTEGER NOT NULL,
+    updated_at    INTEGER NOT NULL,
+    UNIQUE (user_id, lot_key)
+);
+CREATE INDEX IF NOT EXISTS idx_saved_lots_user ON saved_lots(user_id, saved_at);
+
+CREATE TABLE IF NOT EXISTS saved_searches (
+    id            TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name          TEXT NOT NULL,
+    draft_json    TEXT NOT NULL,
+    request_json  TEXT NOT NULL,
+    cqs_json      TEXT NOT NULL,
+    data_version  TEXT NOT NULL,
+    match_count   INTEGER NOT NULL,
+    match_pins_gz BLOB,
+    saved_at      INTEGER NOT NULL,
+    seen_at       INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_saved_searches_user ON saved_searches(user_id, saved_at);
+""")
+
+
 async def _migrate_v11(db: aiosqlite.Connection) -> None:
     """Add nullable pin column to report_purchases — entitlement keys on the
     parcel PIN when known. Legacy pin-less rows stay entitled via the
@@ -429,6 +468,7 @@ async def init_db() -> None:
         await _migrate_v14(_db)
         await _migrate_v15(_db)
         await _migrate_v16(_db)
+        await _migrate_v17(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -478,6 +518,9 @@ async def init_db() -> None:
         if version < 16:
             await _migrate_v16(_db)
             version = 16
+        if version < 17:
+            await _migrate_v17(_db)
+            version = 17
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -1440,6 +1483,9 @@ async def delete_user_account(user_id: str) -> dict:
     report_files = [r["pdf_path"] for r in await cur.fetchall()]
 
     await conn.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
+    # Saved lots (with their private notes) and searches: the FK cascades too, but say it here (Item 119).
+    await conn.execute("DELETE FROM saved_lots WHERE user_id = ?", (user_id,))
+    await conn.execute("DELETE FROM saved_searches WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM report_renders WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM events WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM request_logs WHERE user_id = ?", (user_id,))

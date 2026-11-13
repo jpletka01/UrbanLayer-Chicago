@@ -94,6 +94,8 @@ createRoot(document.getElementById('root')!).render(
             {/* /explore retired 2026-06-14 — Discovery is a strict superset. Redirect legacy links. */}
             <Route path="/explore" element={<Navigate to="/discovery" replace />} />
             <Route path="/discovery" element={<VersionedRoute id="discovery" old={<DiscoveryPage />} />} />
+            {/* Saved exists only in the new UI (Phase 9, Item 119): today's UI goes home. */}
+            <Route path="/saved" element={<VersionedRoute id="saved" old={<Navigate to="/" replace />} />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/settings" element={
               <ProtectedRoute>

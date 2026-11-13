@@ -142,9 +142,9 @@ describe("analytics tagging", () => {
 });
 
 describe("readiness registry", () => {
-  it("drives the side panel: Saved stays hidden until its route exists", () => {
-    expect(navEntries().map((e) => e.id)).toEqual(["home", "profile", "discovery", "chat"]);
-    expect(isReady("saved")).toBe(false);
+  it("drives the side panel: Saved shows once its route exists (Phase 9, Item 119)", () => {
+    expect(navEntries().map((e) => e.id)).toEqual(["home", "profile", "discovery", "saved", "chat"]);
+    expect(isReady("saved")).toBe(true);
     expect(isReady("profile")).toBe(true);
     expect(isReady("chat")).toBe(true);
   });

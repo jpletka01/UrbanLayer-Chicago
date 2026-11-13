@@ -73,6 +73,7 @@ const PAGES: Array<{
   { id: "landing-next", path: "/?ui=next&landing=1", settle: 1500 },
   { id: "home-next", path: "/?ui=next", settle: 1500 },
   { id: "chat-next", path: "/chat?ui=next", settle: 1500 },
+  { id: "saved-next", path: "/saved?ui=next", settle: 1500 },
 ];
 
 const OUT_DIR = path.join(

@@ -46,12 +46,14 @@ class _UserWindow:
 
 _windows: dict[str, _UserWindow] = defaultdict(_UserWindow)
 _changes_windows: dict[str, _UserWindow] = defaultdict(_UserWindow)
+_saved_windows: dict[str, _UserWindow] = defaultdict(_UserWindow)
 
 
 def clear_rate_limits() -> None:
     """Clear all in-memory rate limit state. Used by tests."""
     _windows.clear()
     _changes_windows.clear()
+    _saved_windows.clear()
 
 
 # Peers allowed to tell us the client's address via X-Real-IP: loopback and the
@@ -203,6 +205,16 @@ async def check_daily_budget() -> None:
 def check_changes_limit(request: Request, limit: int = 20, window_s: int = 60) -> None:
     """Per-IP limit for the public "since then" endpoint (a shared link is open to anyone). Raises 429."""
     w = _changes_windows[_ip_bucket(client_ip(request))]
+    now = time.time()
+    if w.count_since(now - window_s) >= limit:
+        raise HTTPException(status_code=429, detail="Too many requests.", headers={"Retry-After": str(window_s)})
+    w.record()
+
+
+def check_saved_limit(user_id: str, bucket: str, limit: int, window_s: int = 60) -> None:
+    """Per-user limit for Saved (Item 119): writes, and the "what changed" checks that call the City and the
+    County. Keyed by the account, not the IP (every Saved route needs a signed-in user). Raises 429."""
+    w = _saved_windows[f"{bucket}:{user_id}"]
     now = time.time()
     if w.count_since(now - window_s) >= limit:
         raise HTTPException(status_code=429, detail="Too many requests.", headers={"Retry-After": str(window_s)})

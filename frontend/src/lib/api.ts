@@ -1609,3 +1609,107 @@ export async function fetchTransitStations(): Promise<import("./types").TransitS
     return _transitStationsCache!;
   } catch { return []; }
 }
+
+// ---------------------------------------------------------------------------
+// Saved (Phase 9, decision Item 119): the account's saved lots and Discovery searches
+// ---------------------------------------------------------------------------
+
+export interface SavedLotWire {
+  id: string;
+  key: string;
+  pin: string | null;
+  address: string;
+  lat: number;
+  lon: number;
+  zone: string | null;
+  area: string | null;
+  outline: Array<[number, number]> | null;
+  note: string;
+  saved_at: number;
+  watching_since: string | null;
+}
+
+export interface SavedLotInput {
+  pin: string | null;
+  address: string;
+  lat: number;
+  lon: number;
+  zone?: string | null;
+  area?: string | null;
+  outline?: Array<[number, number]> | null;
+  saved_at?: number;
+}
+
+export type SavedChange =
+  | { kind: "sale"; date: string; price: number | null }
+  | { kind: "permit"; date: string; permit: string | null; permit_type: string | null; description: string | null; cost: number | null }
+  | { kind: "violation"; date: string; code: string | null; description: string | null; status: string | null }
+  | { kind: "rezoning_filed"; date: string; record: string; title: string; url: string }
+  | { kind: "district"; date: string | null; old: string; new: string; record?: string | null; url?: string | null }
+  | { kind: "overlay"; date: string | null; change: "added" | "removed"; layer: string; name: string | null }
+  | { kind: "standards"; date: string | null; field: string; old: unknown; new: unknown; zone_class?: string }
+  | { kind: "map_amendment" | "designation"; date: string | null; record: string | null; url: string | null; name?: string | null };
+
+export interface SavedLotChanges {
+  since: string;
+  watching_since: string | null;
+  status: "changes" | "none" | "partial";
+  changes: SavedChange[];
+  unchecked: string[];
+}
+
+export interface SavedSearchWire {
+  id: string;
+  name: string;
+  draft: Record<string, unknown>;
+  cqs: Record<string, unknown>;
+  match_count: number;
+  saved_at: number;
+  seen_at: number;
+}
+
+export interface SavedSearchNew {
+  total: number;
+  new: number;
+  gone: number;
+  exact: boolean;
+  same_data: boolean;
+  since: string;
+}
+
+/** A Saved request that failed: the status (409 = the saved limit) for the page to word. */
+export class SavedError extends Error {
+  status: number;
+  constructor(status: number) {
+    super(`saved request failed: ${status}`);
+    this.status = status;
+  }
+}
+
+async function savedJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const resp = await authFetch(`${API_BASE}/api/saved${path}`, {
+    ...init,
+    headers: init.body ? { "Content-Type": "application/json" } : undefined,
+  });
+  if (!resp.ok) throw new SavedError(resp.status);
+  return (resp.status === 204 ? undefined : await resp.json()) as T;
+}
+
+export const savedApi = {
+  lots: () => savedJson<{ lots: SavedLotWire[]; max: number }>("/lots"),
+  save: (lot: SavedLotInput) => savedJson<SavedLotWire>("/lots", { method: "POST", body: JSON.stringify(lot) }),
+  merge: (lots: SavedLotInput[]) =>
+    savedJson<{ added: number; skipped: number; lots: SavedLotWire[]; max: number }>("/lots/merge", { method: "POST", body: JSON.stringify({ lots }) }),
+  note: (id: string, note: string) =>
+    savedJson<SavedLotWire>(`/lots/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ note }) }),
+  unsave: (id: string) => savedJson<void>(`/lots/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  changes: (id: string) => savedJson<SavedLotChanges>(`/lots/${encodeURIComponent(id)}/changes`),
+  searches: () => savedJson<{ searches: SavedSearchWire[]; max: number }>("/searches"),
+  saveSearch: (name: string, draft: unknown, request: unknown) =>
+    savedJson<SavedSearchWire>("/searches", { method: "POST", body: JSON.stringify({ name, draft, request }) }),
+  searchNew: (id: string) => savedJson<SavedSearchNew>(`/searches/${encodeURIComponent(id)}/new`),
+  searchSeen: (id: string) => savedJson<SavedSearchWire>(`/searches/${encodeURIComponent(id)}/seen`, { method: "POST" }),
+  renameSearch: (id: string, name: string) =>
+    savedJson<SavedSearchWire>(`/searches/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ name }) }),
+  deleteSearch: (id: string) => savedJson<void>(`/searches/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};

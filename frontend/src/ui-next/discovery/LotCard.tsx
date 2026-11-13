@@ -3,13 +3,15 @@
 // what's there now, room to build as the headline with built vs allowed as a bar, then chips for only what applies.
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, FileClock, Gift, Hammer, House, Landmark, Receipt, Ruler, Shovel, TrainFront, TriangleAlert, type LucideIcon } from "lucide-react";
+import { ArrowRight, Bookmark, FileClock, Gift, Hammer, House, Landmark, Receipt, Ruler, Shovel, TrainFront, TriangleAlert, type LucideIcon } from "lucide-react";
 import type { ResultRow } from "../../discovery/types";
 import { ZONING_COLORS } from "../map/mapStyle";
 import { STROKE } from "../icons";
 import { Pill, type PillTone } from "../ui/Blocks";
 import { contextPaths, fetchLotContext } from "./discoveryData";
 import { cardModel, measureSteps, type CardWarning } from "./discoveryModel";
+import { lotKey } from "../home/lotMemory";
+import type { SaveInput } from "../saved/savedStore";
 
 const ROOM_COLOR: Record<string, string> = Object.fromEntries(measureSteps("room").map((s) => [s.value, s.color]));
 const FAMILY_FROM_GROUP: Record<string, keyof typeof ZONING_COLORS> = {
@@ -52,10 +54,13 @@ function BlockSlice({ pin10, zoneTag, family }: { pin10: string; zoneTag: string
   );
 }
 
-export function LotCard({ row, hoodName, onOpen, moreInComplex = 0 }: {
+export function LotCard({ row, hoodName, onOpen, moreInComplex = 0, saved, onToggleSave }: {
   row: ResultRow; hoodName: string | null; onOpen: () => void;
   /** Other lots of the same multi-parcel complex in this list, folded into this card. */
   moreInComplex?: number;
+  /** Saved (Item 119): whether this lot is saved, and the bookmark's action. No bookmark without it. */
+  saved?: boolean;
+  onToggleSave?: (lot: SaveInput) => void;
 }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
@@ -98,8 +103,22 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0 }: {
   if (c.warning) chips.push({ tone: c.warning.kind === "nominal" ? "gray" : "yellow", icon: WARNING_ICON[c.warning.kind],
     text: t(`discovery.warning.${c.warning.kind}`, { date: c.warning.detail ?? "", name: c.warning.detail ?? "" }) });
 
+  const pin = row.pin.replace(/-/g, "");
+  const saveLot: SaveInput | null = onToggleSave && row.lat != null && row.lon != null ? {
+    key: lotKey(pin, ""), pin, address: c.title,
+    zone: row.zone_class ?? null, area: hoodName, outline: null, lat: row.lat, lon: row.lon,
+  } : null;
+
   return (
-    <li className="flex min-w-0">
+    <li className="relative flex min-w-0">
+      {saveLot && (
+        <button type="button" onClick={() => onToggleSave!(saveLot)} aria-pressed={!!saved}
+          aria-label={saved ? t("home.unsave", { address: saveLot.address }) : t("home.save", { address: saveLot.address })}
+          title={saved ? t("home.unsaveShort") : t("home.saveShort")} data-testid="lot-bookmark"
+          className={`absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-lg touch-icon ${saved ? "bg-nx-ink text-nx-on-ink hover:bg-nx-ink/80" : "bg-nx-page hover:bg-nx-ink/5"}`}>
+          <Bookmark aria-hidden className="h-4 w-4" strokeWidth={STROKE} fill={saved ? "currentColor" : "none"} />
+        </button>
+      )}
       <button type="button" onClick={onOpen} data-pin={row.pin}
         className="flex w-full flex-col overflow-hidden rounded-2xl bg-nx-block text-left hover:bg-nx-ink/5">
         <BlockSlice pin10={pin10} zoneTag={zoneTag} family={family} />

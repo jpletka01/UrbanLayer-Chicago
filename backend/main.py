@@ -197,6 +197,9 @@ app.include_router(discovery_router)
 app.include_router(discovery_text_preview_router)
 app.include_router(discovery_tiles_router)
 app.include_router(map_tiles_router)
+from backend.saved import router as saved_router  # noqa: E402  (Saved, decision Item 119)
+
+app.include_router(saved_router)
 
 
 @app.on_event("startup")
