@@ -128,6 +128,19 @@ describe("the full chat page", () => {
     expect(session.retry).toHaveBeenCalled();
   });
 
+  it("a new chat at the limit says so, offers sign-in signed out, and the box shows no typing example", () => {
+    session.atQuota = true;
+    session.questionsLeft = 0;
+    session.usagePlan = "anonymous";
+    session.quotaMessage = "You've used your 3 free questions. Sign in to keep asking: 50 a month, free.";
+    mount();
+    expect(screen.getByTestId("chat-limit-empty").textContent).toContain("3 free questions");
+    expect(within(screen.getByTestId("chat-limit-empty")).getByRole("button", { name: "Sign in" })).toBeTruthy();
+    expect(screen.queryByTestId("chat-example")).toBeNull();
+    expect((screen.getByTestId("chat-box") as HTMLTextAreaElement).disabled).toBe(true);
+    session.usagePlan = "free";
+  });
+
   it("says when the month's questions are used up, and shows the count only near the end (Item 120)", () => {
     session.messages = [{ role: "user", content: "Q" }, ANSWER];
     session.questionsLeft = 12;

@@ -218,6 +218,14 @@ export default function ChatNextPage() {
                       );
                     })}
                   </div>
+                ) : atQuota && quotaMessage ? (
+                  // The allowance is spent: say so where the visitor is looking, with sign-in for a signed-out visitor.
+                  <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-caption nx-muted" role="status" data-testid="chat-limit-empty">
+                    {quotaMessage}
+                    {usagePlan === "anonymous" && (
+                      <button type="button" onClick={signIn} className="font-semibold text-nx-ink underline underline-offset-2 touch-target">{t("next:frame.signIn")}</button>
+                    )}
+                  </p>
                 ) : (
                   <p className="text-center text-caption nx-muted">{t("next:chat.hint")}</p>
                 )}

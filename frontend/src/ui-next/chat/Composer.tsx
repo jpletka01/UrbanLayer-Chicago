@@ -77,7 +77,9 @@ export function Composer({
   const box = useRef<HTMLTextAreaElement | null>(null);
   const file = useRef<HTMLInputElement | null>(null);
   const [focused, setFocused] = useState(false);
-  const typed = useTypedExample(examples ?? [], !!examples?.length && !focused && !value);
+  // No example while the box can't be used (the allowance is spent): a disabled box can't take focus, so an example
+  // would keep typing over it and read as an input that ignores the visitor (owner, 2026-11-12).
+  const typed = useTypedExample(examples ?? [], !!examples?.length && !focused && !value && !disabled);
   const base = useRef("");
   const dictation = useDictation(i18n.language, (spoken) => onChange(base.current ? `${base.current} ${spoken}` : spoken));
 
@@ -87,9 +89,11 @@ export function Composer({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+    // Scroll only once the text is past the six-line cap; below it a sub-pixel gap let one line scroll.
+    el.style.overflowY = el.scrollHeight > 168 ? "auto" : "hidden";
   }, [value]);
 
-  const showExample = !!examples?.length && !focused && !value;
+  const showExample = !!examples?.length && !focused && !value && !disabled;
   const canSend = !disabled && !streaming && !!value.trim();
 
   return (
