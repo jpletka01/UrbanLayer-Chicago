@@ -29,6 +29,13 @@ async def test_db(tmp_path):
         await db.close_db()
 
 
+@pytest.fixture(autouse=True)
+def _no_address_lookup():
+    """`status` names the free lot's address (Item 124); the County lookup is mocked here."""
+    with patch("backend.retrieval.property.address_points.pin_to_address", AsyncMock(return_value="642 W BELDEN AVE")):
+        yield
+
+
 async def _sign_in(uid: str, provider: str = "google", subject: str | None = None) -> dict:
     user, _ = await db.sign_in_identity({"provider": provider, "subject": subject or f"s-{uid}"}, uid)
     return user
@@ -39,7 +46,7 @@ class TestClaim:
     async def test_one_free_lot_then_409_for_another(self, test_db):
         user = await _sign_in("u1")
         assert (await entitlements.status(user))["deep_analysis"] == {
-            "unlimited": False, "free_left": 1, "free_pin": None}
+            "unlimited": False, "free_left": 1, "free_pin": None, "free_address": None}
         assert (await entitlements.claim(user, LOT_A))["ok"] is True
         assert (await entitlements.claim(user, LOT_A))["ok"] is True  # the same lot again
         with pytest.raises(HTTPException) as e:
@@ -58,7 +65,7 @@ class TestClaim:
     @pytest.mark.asyncio
     async def test_twenty_claims_at_once_one_lot(self, test_db):
         user = await _sign_in("u1")
-        pins = [f"1433103011{i:04d}" for i in range(20)]
+        pins = [f"14{i:08d}0000" for i in range(20)]  # twenty different lots
         results = await asyncio.gather(*[entitlements.claim(user, p) for p in pins], return_exceptions=True)
         ok = [r for r in results if isinstance(r, dict)]
         assert len(ok) == 1
@@ -67,7 +74,7 @@ class TestClaim:
     @pytest.mark.asyncio
     async def test_signed_out_has_none(self, test_db):
         assert (await entitlements.status(None)) == {
-            "signed_in": False, "deep_analysis": {"unlimited": False, "free_left": 0, "free_pin": None}}
+            "signed_in": False, "deep_analysis": {"unlimited": False, "free_left": 0, "free_pin": None, "free_address": None}}
 
 
 class TestFollowsThePerson:
@@ -78,7 +85,7 @@ class TestFollowsThePerson:
         await db.delete_user_account("u1")
         again = await _sign_in("u2", subject="google-person")
         status = await entitlements.status(again)
-        assert status["deep_analysis"] == {"unlimited": False, "free_left": 0, "free_pin": LOT_A}
+        assert status["deep_analysis"] == {"unlimited": False, "free_left": 0, "free_pin": LOT_A, "free_address": "642 W BELDEN AVE"}
         assert await entitlements.opens_lot(again, LOT_A)  # the same lot stays open to the person
 
     @pytest.mark.asyncio

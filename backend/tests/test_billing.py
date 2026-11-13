@@ -525,7 +525,7 @@ class TestMigration:
             await db.close_db()
             await db.init_db()
             cur = await db._get_db().execute("SELECT version FROM schema_version")
-            assert (await cur.fetchone())[0] == 20
+            assert (await cur.fetchone())[0] == db._SCHEMA_VERSION  # later migrations run on top
             assert await db.get_user_by_id("u1") is not None
             await db.set_subscription_customer("u1", "cus_1")
             assert (await db.get_subscription("u1"))["stripe_customer_id"] == "cus_1"

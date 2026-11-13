@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 20
+_SCHEMA_VERSION = 21
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -607,6 +607,23 @@ CREATE TABLE IF NOT EXISTS entitlement_uses (
 """)
 
 
+async def _migrate_v21(db: aiosqlite.Connection) -> None:
+    """Deep analysis (Phase 9, decision Item 124). ``deep_projects``: one row per account and lot with the project
+    the builder last chose, their own numbers and the approval step they marked done. Deleted with the account (the
+    free-use record in ``entitlement_uses`` survives by design; the project details don't)."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS deep_projects (
+    user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pin           TEXT NOT NULL,
+    project_json  TEXT,
+    numbers_json  TEXT,
+    step          INTEGER NOT NULL DEFAULT 0,
+    updated_at    INTEGER NOT NULL,
+    PRIMARY KEY (user_id, pin)
+);
+""")
+
+
 async def init_db() -> None:
     """Open the database and create tables if needed."""
     global _db
@@ -644,6 +661,7 @@ async def init_db() -> None:
         await _migrate_v18(_db)
         await _migrate_v19(_db)
         await _migrate_v20(_db)
+        await _migrate_v21(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -705,6 +723,9 @@ async def init_db() -> None:
         if version < 20:
             await _migrate_v20(_db)
             version = 20
+        if version < 21:
+            await _migrate_v21(_db)
+            version = 21
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -1889,6 +1910,8 @@ async def delete_user_account(user_id: str) -> dict:
     await conn.execute("DELETE FROM usage_counters WHERE subject = ?", (f"user:{user_id}",))
     # The free Deep analysis stays recorded under the identities' HMACs (Item 123); the account's own row goes.
     await conn.execute("DELETE FROM entitlement_uses WHERE subject = ?", (f"user:{user_id}",))
+    # Deep analysis projects (Item 124): the FK cascades too, but say it here.
+    await conn.execute("DELETE FROM deep_projects WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM report_renders WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM events WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM request_logs WHERE user_id = ?", (user_id,))

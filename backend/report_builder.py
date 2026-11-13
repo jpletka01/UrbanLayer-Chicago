@@ -694,8 +694,13 @@ async def _fetch_report_data(
     pin: str | None = None,
     confidence: str | None = None,
     language: str = "en",
+    rasters: bool = True,
 ) -> "ReportData":
     """Fetch all data for a v2 development feasibility report.
+
+    ``rasters=False`` (the Deep analysis tab, Item 124) skips everything only the PDF draws: the Mapbox static
+    basemaps, the overlay and zoning map polygons, every matplotlib raster and the bulk-standards text search.
+    The data and the deterministic synthesis are identical either way.
 
     ``pin``/``confidence`` come from _resolve_location: ``pin`` keys the property
     domain by parcel identity; ``confidence`` drives the INV-5 disclosure on the
@@ -814,7 +819,7 @@ async def _fetch_report_data(
 
     # Step 6: Build bulk standards text fallback (for low-confidence extraction)
     bulk_standards_text = ""
-    if zone_class:
+    if zone_class and rasters:
         try:
             chunks = await _limited(
                 semantic_search(
@@ -864,7 +869,7 @@ async def _fetch_report_data(
     # Generate comparable sales chart + map
     comps_chart_b64 = None
     comps_map_b64 = None
-    if comps_summary and comps_summary.sales and len(comps_summary.sales) >= 2:
+    if rasters and comps_summary and comps_summary.sales and len(comps_summary.sales) >= 2:
         loop = asyncio.get_running_loop()
         try:
             comps_chart_b64 = await loop.run_in_executor(
@@ -876,7 +881,7 @@ async def _fetch_report_data(
     # Fetch basemaps for maps (zoom 15 for zoning, zoom 14 for construction)
     basemap_bytes = None
     basemap_wide_bytes = None
-    if mapbox_token:
+    if mapbox_token and rasters:
         try:
             async with httpx.AsyncClient(timeout=15) as map_client:
                 basemap_url = (
@@ -903,11 +908,12 @@ async def _fetch_report_data(
     # Fetch overlay GeoJSON for zoning map boundaries
     overlay_geojson = None
     _OVERLAY_MAP_LAYERS = [2, 5, 6, 8, 9, 23]  # PD, landmark, historic districts, nat'l register, special, SSA
-    try:
-        from backend.retrieval.regulatory.overlays import overlay_geojson_features
-        overlay_geojson = await _limited(overlay_geojson_features(resolved_lat, resolved_lon, _OVERLAY_MAP_LAYERS))
-    except Exception:
-        log.warning("Failed to fetch overlay GeoJSON for zoning map", exc_info=True)
+    if rasters:
+        try:
+            from backend.retrieval.regulatory.overlays import overlay_geojson_features
+            overlay_geojson = await _limited(overlay_geojson_features(resolved_lat, resolved_lon, _OVERLAY_MAP_LAYERS))
+        except Exception:
+            log.warning("Failed to fetch overlay GeoJSON for zoning map", exc_info=True)
 
     # Generate zoning map
     zoning_map_b64 = None
@@ -1075,8 +1081,13 @@ async def _fetch_report_data(
     report.ownership_interpretation = _ownership_interpretation(report)
     report.decision_box = _build_decision_box(report)
 
-    # Envelope map (CPU-bound matplotlib render)
-    if ctx.property and ctx.property.parcel_geometry and standards:
+    # Envelope map (CPU-bound matplotlib render). The tab computes the same footprint without drawing it
+    # (`envelope_geometry`).
+    if not rasters and ctx.property and ctx.property.parcel_geometry and standards:
+        env = envelope_geometry(ctx.property.parcel_geometry, standards)
+        if env and env.get("footprint_sqft"):
+            report.buildable_footprint_sqft = env["footprint_sqft"]
+    elif ctx.property and ctx.property.parcel_geometry and standards:
         try:
             loop = asyncio.get_running_loop()
             env_b64, env_sqft = await loop.run_in_executor(
@@ -1677,6 +1688,168 @@ def _compute_inset_polygon(
         return None
 
     return inner_pts, area_sqft
+
+
+def _outer_ring(parcel_geojson: dict) -> list[list[float]] | None:
+    """The first polygon's outer ring (the envelope code reads one ring, like `_generate_envelope_map`)."""
+    geom_type = parcel_geojson.get("type", "")
+    if geom_type == "Polygon":
+        rings = parcel_geojson.get("coordinates", [])
+        return rings[0] if rings else None
+    if geom_type == "MultiPolygon":
+        polys = parcel_geojson.get("coordinates", [])
+        return polys[0][0] if polys and polys[0] else None
+    return None
+
+
+def merge_collinear(coords: list[list[float]], tol_deg: float = 8.0) -> list[list[float]]:
+    """Drop the vertices PTAXSIM puts along a straight side (one every few metres), so a side is one edge.
+
+    A vertex is dropped when the two edges meeting there turn by less than ``tol_deg``. Without this, the edge
+    classifier can name a fragment of the rear line "the front" and the inset meets parallel offset lines and
+    gives up (measured in `eval/front_edge.py`, Item 124). The ring stays closed."""
+    import math
+
+    pts = [list(p) for p in coords]
+    if len(pts) > 1 and pts[0] == pts[-1]:
+        pts = pts[:-1]
+    if len(pts) < 4:
+        return coords
+    cos_lat = math.cos(math.radians(sum(p[1] for p in pts) / len(pts)))
+
+    def bearing(a, b):
+        return math.degrees(math.atan2((b[0] - a[0]) * cos_lat, b[1] - a[1]))
+
+    changed = True
+    while changed and len(pts) > 3:
+        changed = False
+        for i in range(len(pts)):
+            a, b, c = pts[i - 1], pts[i], pts[(i + 1) % len(pts)]
+            if a == b or b == c:
+                pts.pop(i)
+                changed = True
+                break
+            turn = abs((bearing(b, c) - bearing(a, b) + 180) % 360 - 180)
+            if turn < tol_deg:
+                pts.pop(i)
+                changed = True
+                break
+    return pts + [pts[0]]
+
+
+def grid_front(coords: list[list[float]], address: str | None, tol_deg: float = 20.0) -> int | None:
+    """The index of the edge facing the address's street, by Chicago's address grid, or None.
+
+    The direction letter says which way the street runs (an N or S address is on a north-south street, E or W on
+    an east-west one) and the parity which side of it the lot is on (even numbers on the north and west sides). The
+    front is then the lot edge parallel to the street on the street's side. Diagonal streets (no edge within
+    ``tol_deg`` of the grid) and addresses we can't parse give None."""
+    import math
+
+    if not address or not coords or len(coords) < 4:
+        return None
+    from backend.retrieval.buildings import parse_chicago_address
+
+    parsed = parse_chicago_address(address)
+    if not parsed or not parsed.get("direction") or not str(parsed.get("number") or "").isdigit():
+        return None
+    direction = parsed["direction"].upper()[:1]
+    even = int(parsed["number"]) % 2 == 0
+    cos_lat = math.cos(math.radians(sum(c[1] for c in coords) / len(coords)))
+    street_runs_ns = direction in ("N", "S")
+    candidates = []
+    for i in range(len(coords) - 1):
+        (x1, y1), (x2, y2) = coords[i][:2], coords[i + 1][:2]
+        b = math.degrees(math.atan2((x2 - x1) * cos_lat, y2 - y1)) % 180  # 0 = north-south, 90 = east-west
+        off = min(abs(b - (0 if street_runs_ns else 90)), 180 - abs(b - (0 if street_runs_ns else 90)))
+        length = math.hypot((x2 - x1) * cos_lat, y2 - y1)
+        if off <= tol_deg and length > 0:
+            candidates.append((i, (x1 + x2) / 2, (y1 + y2) / 2, length))
+    if len(candidates) < 2:
+        return None
+    if street_runs_ns:
+        # even = west side of the street, so the front is the lot's east edge; odd = east side, front is west
+        pick = max(candidates, key=lambda c: c[1]) if even else min(candidates, key=lambda c: c[1])
+    else:
+        # even = north side, front is the lot's south edge; odd = south side, front is north
+        pick = min(candidates, key=lambda c: c[2]) if even else max(candidates, key=lambda c: c[2])
+    return pick[0]
+
+
+def envelope_geometry(parcel_geojson: dict, standards: "ZoningStandards", address: str | None = None) -> dict | None:
+    """The setback footprint as data (Deep analysis, Item 124): the edges with their role and setback, the inset
+    footprint as a GeoJSON polygon and its area, and ``approximate`` when the classification is a guess.
+
+    Same method as the PDF's envelope map (`_classify_edges` + `_compute_inset_polygon`). ``approximate`` is
+    true when the lot isn't a plain four-sided lot (more or fewer main edges, or a MultiPolygon), when the
+    classifier fell back to one uniform setback, when the address grid can't name the front (or names a long
+    side), or when no footprint could be inset. Never invents a shape: no outline → None."""
+    coords = _outer_ring(parcel_geojson or {})
+    if not coords or len(coords) < 4:
+        return None
+    coords = merge_collinear(coords)
+    if len(coords) < 4:
+        return None
+    front_ft = standards.front_setback_ft or 0
+    side_ft = standards.side_setback_ft or 0
+    rear_ft = standards.rear_setback_ft or 0
+    edges = _classify_edges(coords, front_ft, side_ft, rear_ft)
+    if not edges:
+        return None
+    # Which of the narrow pair is the front: the address grid, not "the shorter one" (which on a rectangle picks
+    # between front and rear by a few inches: 3 of 4 hand-checked panel lots wrong, `eval/front_edge.py`).
+    method = "shorter_width_edge"
+    grid_on_long_side = False
+    g = grid_front(coords, address)
+    if g is not None and g < len(edges):
+        if edges[g].get("role") in ("front", "rear"):
+            method = "address_grid"
+            for e in edges:
+                if e.get("role") in ("front", "rear"):
+                    e["role"] = "front" if e["idx"] == g else "rear"
+                    e["setback_ft"] = front_ft if e["idx"] == g else rear_ft
+        else:
+            # The street side is a long side: a wide or corner lot, where the code's front is the shorter street
+            # line (17-17-02), which we can't see without the other street.
+            grid_on_long_side = True
+    inset = None
+    if front_ft or side_ft or rear_ft:
+        inset = _compute_inset_polygon(coords, edges)
+    roles = [e.get("role") for e in edges]
+    # Main edges: an edge under 3 ft is a digitizing jog, not a side of the lot.
+    main = [e for e in edges if e["length_ft"] >= 3]
+    approximate = (
+        (parcel_geojson or {}).get("type") == "MultiPolygon"
+        or len(main) != 4
+        or "uniform" in roles
+        or roles.count("front") != 1
+        or method != "address_grid"
+        or grid_on_long_side
+        or (bool(front_ft or side_ft or rear_ft) and inset is None)
+    )
+    footprint = None
+    footprint_sqft = None
+    if inset:
+        pts, footprint_sqft = inset
+        footprint = {"type": "Polygon", "coordinates": [[[round(x, 7), round(y, 7)] for x, y in pts]]}
+        footprint_sqft = round(footprint_sqft)
+    return {
+        "edges": [
+            {
+                "role": e.get("role"),
+                "setback_ft": e.get("setback_ft"),
+                "length_ft": round(e["length_ft"], 1),
+                "from": [round(e["p1"][0], 7), round(e["p1"][1], 7)],
+                "to": [round(e["p2"][0], 7), round(e["p2"][1], 7)],
+            }
+            for e in edges
+        ],
+        "footprint": footprint,
+        "footprint_sqft": footprint_sqft,
+        "setbacks_ft": {"front": front_ft or None, "side": side_ft or None, "rear": rear_ft or None},
+        "approximate": approximate,
+        "method": method,
+    }
 
 
 def _generate_envelope_map(
