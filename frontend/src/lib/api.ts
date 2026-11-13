@@ -1627,6 +1627,8 @@ export interface SavedLotWire {
   note: string;
   saved_at: number;
   watching_since: string | null;
+  /** The address is a neighbor's stand-in: shown as "Near …". */
+  approximate?: boolean;
 }
 
 export interface SavedLotInput {
@@ -1638,6 +1640,7 @@ export interface SavedLotInput {
   area?: string | null;
   outline?: Array<[number, number]> | null;
   saved_at?: number;
+  approximate?: boolean;
 }
 
 export type SavedChange =

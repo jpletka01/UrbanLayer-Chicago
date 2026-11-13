@@ -12,7 +12,7 @@ import type { Conversation } from "../../lib/types";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
-import { lotHref, type RememberedLot } from "./lotMemory";
+import { lotHref, shownAddress, type RememberedLot } from "./lotMemory";
 import { BlockSlice } from "../ui/BlockSlice";
 import { BOOKMARK_OFF, BOOKMARK_ON } from "../saved/bookmark";
 import { familyOf } from "../saved/savedModel";
@@ -198,7 +198,7 @@ function LotCard({ lot, meta, saved, onToggle }: { lot: RememberedLot; meta: str
         {/* The block around the lot, as Discovery's list draws it (owner, 2026-11-12). */}
         <BlockSlice pin10={lot.pin ? lot.pin.replace(/-/g, "").slice(0, 10) : null} zoneTag={lot.zone} family={familyOf(lot.zone)} outline={lot.outline} className="h-20" />
         <span className="flex flex-col gap-1 p-3.5 pt-2.5">
-          <span className="truncate font-semibold">{lot.address}</span>
+          <span className="truncate font-semibold">{shownAddress(lot, t)}</span>
           {meta && <span className="truncate text-caption nx-muted">{meta}</span>}
         </span>
       </Link>
@@ -206,7 +206,7 @@ function LotCard({ lot, meta, saved, onToggle }: { lot: RememberedLot; meta: str
         type="button"
         onClick={onToggle}
         aria-pressed={saved}
-        aria-label={saved ? t("home.unsave", { address: lot.address }) : t("home.save", { address: lot.address })}
+        aria-label={saved ? t("home.unsave", { address: shownAddress(lot, t) }) : t("home.save", { address: shownAddress(lot, t) })}
         title={saved ? t("home.unsaveShort") : t("home.saveShort")}
         // Saved reads as selected (owner, 2026-11-12): a filled bookmark in the palette's lavender; a click unsaves it.
         className={`absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg touch-icon ${saved ? BOOKMARK_ON : BOOKMARK_OFF}`}

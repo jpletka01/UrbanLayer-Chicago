@@ -13,6 +13,8 @@ vi.mock("../../contexts/ThemeContext", () => ({
 }));
 vi.mock("../../lib/tracking", () => ({ track: vi.fn() }));
 vi.mock("../../discovery/registryClient", () => ({ loadRegistry: vi.fn().mockResolvedValue(null) }));
+// The block slice asks Discovery for the lot's neighbors; here there are none to draw.
+vi.mock("../discovery/discoveryData", () => ({ fetchLotContext: vi.fn().mockResolvedValue(null), contextPaths: () => [] }));
 
 const wire = (n: number, extra: Record<string, unknown> = {}) => ({
   id: `L${n}`, key: `addr:${n} n milwaukee ave`, pin: null, address: `${n} N Milwaukee Ave`, lat: 41.91, lon: -87.68,
@@ -158,6 +160,16 @@ describe("the Saved page", () => {
     await waitFor(() => expect(screen.getByTestId("saved-note").textContent).toContain("Call the broker"));
     expect(api.note).toHaveBeenCalledWith("L1", "Call the broker");
     expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("a lot with no street address of its own says why, not 'couldn't check'", async () => {
+    auth.isAuthenticated = true;
+    api.lots.mockResolvedValue({ lots: [wire(9, { pin: "25044000900000", key: "pin:25044000900000", address: "9171 S Harvard Ave", approximate: true })], max: 200 });
+    api.changes.mockResolvedValue({ since: "2026-11-01", watching_since: null, status: "partial", changes: [], unchecked: ["no_address"] });
+    mount();
+    expect(await screen.findByTestId("saved-no-address")).toBeTruthy();
+    expect(screen.queryByTestId("saved-unchecked")).toBeNull();
+    expect(screen.getByText("Near 9171 S Harvard Ave")).toBeTruthy();
   });
 
   it("a failed check says so and can be retried, never 'nothing new'", async () => {

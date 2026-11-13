@@ -66,13 +66,14 @@ export function toInput(lot: SaveInput & { at?: number }): SavedLotInput | null 
     area: lot.area,
     outline: lot.outline && lot.outline.length >= 3 ? lot.outline.slice(0, 40) : null,
     ...(lot.at ? { saved_at: lot.at } : {}),
+    ...(lot.approximate ? { approximate: true } : {}),
   };
 }
 
 export function fromWire(w: SavedLotWire): SavedLot {
   return {
     id: w.id, key: w.key, address: w.address, pin: w.pin, zone: w.zone, area: w.area, outline: w.outline,
-    at: w.saved_at, lat: w.lat, lon: w.lon, note: w.note, watchingSince: w.watching_since,
+    at: w.saved_at, lat: w.lat, lon: w.lon, note: w.note, watchingSince: w.watching_since, approximate: !!w.approximate,
   };
 }
 

@@ -113,6 +113,9 @@ class LotIn(BaseModel):
     outline: list[list[float]] | None = None
     # Only a merge of the browser's saves carries this: when the lot was saved there (epoch ms).
     saved_at: int | None = None
+    # The address is a neighbor's stand-in (Discovery's "~", Item 109): shown as "Near …", never used to look up
+    # the City's records at an address, which would be the neighbor's.
+    approximate: bool = False
 
     @field_validator("pin")
     @classmethod
@@ -201,10 +204,18 @@ def _lot_out(row: Any) -> dict:
         "zone": display.get("zone"),
         "area": display.get("area"),
         "outline": display.get("outline"),
+        "approximate": bool(display.get("approximate")),
         "note": row["note"],
         "saved_at": row["saved_at"],
         "watching_since": _baseline_day(row["snapshot_json"]),
     }
+
+
+def _approximate(row: Any) -> bool:
+    try:
+        return bool(json.loads(row["display_json"] or "{}").get("approximate"))
+    except ValueError:
+        return False
 
 
 def _baseline_day(snapshot_json: str | None) -> str | None:
@@ -252,7 +263,7 @@ async def _insert_lots(uid: str, lots: list[LotIn], *, keep_times: bool) -> tupl
                 skipped += 1
                 continue
             saved_at = min(max(lot.saved_at, oldest), now) if keep_times and lot.saved_at else now
-            display = {"zone": lot.zone, "area": lot.area, "outline": lot.outline}
+            display = {"zone": lot.zone, "area": lot.area, "outline": lot.outline, "approximate": lot.approximate}
             await conn.execute(
                 "INSERT OR IGNORE INTO saved_lots (id, user_id, lot_key, pin, address, lat, lon, display_json, saved_at, updated_at)"
                 " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -324,8 +335,9 @@ async def unsave_lot(lot_id: str, user: dict = Depends(require_auth)) -> Respons
 
 # ── What changed on a saved lot ───────────────────────────────────────────────────────────────────────────────
 
-async def _records(pin: str | None, address: str) -> dict[str, Any]:
-    """Sales, permits and violations at the lot, each list or None when its lookup failed. Cached an hour."""
+async def _records(pin: str | None, address: str, approximate: bool = False) -> dict[str, Any]:
+    """Sales, permits and violations at the lot, each list or None when its lookup failed. Cached an hour. A lot whose
+    address is a neighbor's stand-in gets no address lookups (``no_address``): those records would be the neighbor's."""
     from backend.retrieval import buildings
     from backend.retrieval.property.sales import get_sales
 
@@ -336,6 +348,17 @@ async def _records(pin: str | None, address: str) -> dict[str, Any]:
 
     async def none() -> list:
         return []
+
+    if approximate:
+        try:
+            sales = list(await get_sales(pin)) if pin else []
+        except Exception:
+            log.warning("Saved: sales lookup failed")
+            sales = None
+        out_approx = {"sales": sales, "permits": [], "violations": [], "no_address": True}
+        if sales is not None:
+            _records_cache.set(key, out_approx)
+        return out_approx
 
     got = await asyncio.gather(
         get_sales(pin) if pin else none(),
@@ -377,6 +400,8 @@ def record_changes(records: dict[str, Any], since: str) -> tuple[list[dict], lis
         day = (s.get("sale_date") or "")[:10]
         if day > since:
             changes.append({"kind": "sale", "date": day, "price": _price(s.get("sale_price"))})
+    if records.get("no_address"):
+        unchecked.append("no_address")
     if records.get("permits") is None:
         unchecked.append("permits")
     for p in records.get("permits") or []:
@@ -408,7 +433,7 @@ def _rezoning_filed(row: Any, since: str) -> tuple[list[dict], bool]:
 
     s = summary_for(
         get_settings().pending_legislation_path, lat=row["lat"], lon=row["lon"], pin=row["pin"],
-        address=row["address"], authoritative_pin=bool(row["pin"]),
+        address=None if _approximate(row) else row["address"], authoritative_pin=bool(row["pin"]),
     )
     if s.status == "unavailable":
         return [], False
@@ -467,7 +492,7 @@ async def lot_changes(lot_id: str, user: dict = Depends(require_auth)) -> dict:
     since = _day(row["saved_at"])
     async with _slots():
         records, (zoning, z_unchecked, watching) = await asyncio.gather(
-            _records(row["pin"], row["address"]), _zoning_changes(uid, row),
+            _records(row["pin"], row["address"], _approximate(row)), _zoning_changes(uid, row),
         )
         try:
             filed, docket_ok = await asyncio.to_thread(_rezoning_filed, row, since)

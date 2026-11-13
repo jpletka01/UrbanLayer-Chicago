@@ -2185,6 +2185,8 @@
       "violations": "infracciones",
       "zoning": "zonificación y superposiciones",
       "rezoning": "solicitudes de rezonificación"
-    }
+    },
+    "noOutline": "Sin contorno del terreno en los registros",
+    "noAddress": "No se revisan los permisos ni las infracciones de la Ciudad: este terreno no tiene dirección propia."
   }
 }

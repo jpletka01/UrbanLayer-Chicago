@@ -1,14 +1,11 @@
-// The side panel (decision Items 73–74): the logo, one row per destination from the readiness registry
-// (Saved stays hidden until its route exists), a small past-chats menu beside Chat, and the account at the
-// bottom. A button inside the panel collapses it to a strip of icons; labels stay as tooltips and
+// The side panel (decision Items 73–74): the logo, one row per destination from the readiness registry, and the
+// account at the bottom. Chat is a plain link: past chats and New chat live in the chat page's own list (owner,
+// 2026-11-12: one place for them, not a second copy here). A button inside the panel collapses it to a strip of icons; labels stay as tooltips and
 // accessible names. On a phone the same content opens as a sheet from the top bar's menu button.
-import { useId, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronRight, LogIn, LogOut, Monitor, Moon, PanelLeftClose, PanelLeftOpen, Plus, Settings, Sun } from "lucide-react";
-import { listConversations } from "../../lib/api";
-import type { Conversation } from "../../lib/types";
+import { LogIn, LogOut, Monitor, Moon, PanelLeftClose, PanelLeftOpen, Settings, Sun } from "lucide-react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { navEntries } from "../readiness";
@@ -62,11 +59,9 @@ export function SidePanel({
           const nav = entry.nav!;
           const Icon = NAV_ICON[nav.icon];
           const label = t(nav.labelKey);
-          const active = entry.status === "ready" && pathname === entry.path;
+          // Chat is also "here" on a conversation (/c/:id).
+          const active = entry.status === "ready" && (pathname === entry.path || (nav.icon === "chat" && pathname.startsWith("/c/")));
           return (
-            nav.icon === "chat" && !collapsed ? (
-              <ChatFolder key={entry.id} label={label} onNavigate={onNavigate} />
-            ) : (
             <li key={entry.id} className="relative flex items-center">
               <Link
                 to={nav.to}
@@ -81,7 +76,6 @@ export function SidePanel({
                 {!collapsed && <span className="truncate">{label}</span>}
               </Link>
             </li>
-            )
           );
         })}
       </ul>
@@ -95,76 +89,6 @@ export function SidePanel({
         <AccountMenu collapsed={collapsed} />
       </div>
     </nav>
-  );
-}
-
-/** Chat as a folder (owner review 2026-11-07): the row opens and closes like a directory; inside, "New chat" first,
-    then a signed-in visitor's recent conversations, both on the new chat page (Phase 8). */
-function ChatFolder({ label, onNavigate }: { label: string; onNavigate?: () => void }) {
-  const { t } = useTranslation("next");
-  const { isAuthenticated, authRequired, signIn } = useAuthContext();
-  const canList = isAuthenticated || !authRequired;
-  const [open, setOpen] = useState(false);
-  const [chats, setChats] = useState<Conversation[] | null>(null);
-  const listId = useId();
-  const Icon = NAV_ICON.chat;
-  const { pathname } = useLocation();
-  const active = pathname === "/chat" || pathname.startsWith("/c/");
-
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    if (next && canList && chats === null) {
-      listConversations().then((c) => setChats(c.slice(0, 8))).catch(() => setChats([]));
-    }
-  };
-
-  const child = "flex h-8 items-center gap-2 rounded-lg pl-9 pr-2 text-caption hover:bg-nx-ink/5 touch-target";
-  return (
-    <li className="flex flex-col">
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={open}
-        aria-controls={listId}
-        className={`relative flex h-9 items-center gap-2 rounded-xl px-2 text-left touch-target ${active ? "bg-nx-ink/5 font-medium" : "hover:bg-nx-ink/5"}`}
-      >
-        {active && <span aria-hidden className="absolute left-0 top-2.5 h-4 w-1 rounded-sm bg-nx-ink" />}
-        <Icon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={STROKE} />
-        <span className="flex-1 truncate">{label}</span>
-        <ChevronRight aria-hidden className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} strokeWidth={STROKE} />
-      </button>
-      {open && (
-        <ul id={listId} role="list" className="mt-0.5 flex flex-col gap-0.5" data-testid="chat-folder">
-          <li>
-            <Link to="/chat" onClick={onNavigate} className={`${child} font-medium`}>
-              <Plus aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={STROKE} />
-              {t("frame.newChat")}
-            </Link>
-          </li>
-          {!canList ? (
-            <li>
-              <button type="button" onClick={signIn} className={`${child} w-full text-left nx-muted`}>
-                <LogIn aria-hidden className="h-3.5 w-3.5 shrink-0" strokeWidth={STROKE} />
-                {t("frame.signInForChats")}
-              </button>
-            </li>
-          ) : chats === null ? (
-            <li className="pl-9 text-caption nx-muted" role="status">{t("frame.loading")}</li>
-          ) : chats.length === 0 ? (
-            <li className="pl-9 text-caption nx-muted">{t("frame.noChats")}</li>
-          ) : (
-            chats.map((c) => (
-              <li key={c.id}>
-                <Link to={`/c/${c.id}`} onClick={onNavigate} className={child} title={c.title || undefined}>
-                  <span className="truncate">{c.title || t("frame.untitledChat")}</span>
-                </Link>
-              </li>
-            ))
-          )}
-        </ul>
-      )}
-    </li>
   );
 }
 

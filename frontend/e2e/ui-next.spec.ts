@@ -351,7 +351,7 @@ test("Phase 8: chat doors from / open the new chat page; the landing's bar stays
 
   // The home: a recent lot saved with its bookmark appears under Saved lots.
   await page.evaluate(() => localStorage.setItem("urbanlayer-next-recent-lots:v1", JSON.stringify([
-    { key: "addr:2541 n spaulding ave", address: "2541 N Spaulding Ave", pin: null, zone: "RS-3", area: "Logan Square", outline: null, at: Date.now(), lat: 41.9283, lon: -87.7106 },
+    { key: "pin:13264210060000", address: "2541 N Spaulding Ave", pin: "13264210060000", zone: "RS-3", area: "Logan Square", outline: null, at: Date.now(), lat: 41.92776, lon: -87.71049 },
   ])));
   await open(page, "/", "home");
   // Saved lives in the account now (Item 119, sign-in off locally): a lot saved by an earlier run is unsaved first.
@@ -372,7 +372,7 @@ test("Phase 9: Saved lists the lot saved on the home, keeps a note, and a Discov
   // Sign-in is off locally: the account is the development user's, so a lot saved on the home is in Saved.
   await page.goto("/?ui=next", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => localStorage.setItem("urbanlayer-next-recent-lots:v1", JSON.stringify([
-    { key: "addr:2611 n sawyer ave", address: "2611 N Sawyer Ave", pin: null, zone: "RS-3", area: "Logan Square", outline: null, at: Date.now(), lat: 41.9285, lon: -87.7090 },
+    { key: "pin:13264150210000", address: "2611 N Sawyer Ave", pin: "13264150210000", zone: "RS-3", area: "Logan Square", outline: null, at: Date.now(), lat: 41.92879, lon: -87.70916 },
   ])));
   await open(page, "/", "home");
   const save = page.getByTestId("home-recent").getByRole("button", { name: "Save 2611 N Sawyer Ave" });

@@ -74,7 +74,7 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0, saved, onTog
   const pin = row.pin.replace(/-/g, "");
   const saveLot: SaveInput | null = onToggleSave && row.lat != null && row.lon != null ? {
     // An approximate stand-in address keeps its "Near" (Item 109); the zoning keeps the card's own tag.
-    key: lotKey(pin, ""), pin, address: c.approx ? t("discovery.card.near", { address: c.title }) : c.title,
+    key: lotKey(pin, ""), pin, address: c.title, approximate: c.approx,
     zone: zoneTag, area: hoodName, outline: null, lat: row.lat, lon: row.lon,
   } : null;
 
@@ -82,7 +82,7 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0, saved, onTog
     <li className="relative flex min-w-0">
       {saveLot && (
         <button type="button" onClick={() => onToggleSave!(saveLot)} aria-pressed={!!saved}
-          aria-label={saved ? t("home.unsave", { address: saveLot.address }) : t("home.save", { address: saveLot.address })}
+          aria-label={saved ? t("home.unsave", { address: c.approx ? t("discovery.card.near", { address: c.title }) : c.title }) : t("home.save", { address: c.approx ? t("discovery.card.near", { address: c.title }) : c.title })}
           title={saved ? t("home.unsaveShort") : t("home.saveShort")} data-testid="lot-bookmark"
           className={`absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-lg touch-icon ${saved ? BOOKMARK_ON : BOOKMARK_OFF}`}>
           <Bookmark aria-hidden className="h-4 w-4" strokeWidth={STROKE} fill={saved ? "currentColor" : "none"} />

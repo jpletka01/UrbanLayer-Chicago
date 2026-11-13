@@ -2,6 +2,7 @@
 // their room-to-build color, this lot in its own with an ink outline, the zoning as a colored tag. A lot with no PIN
 // (the Profile found only an address) draws its own outline from the County record instead; nothing is invented.
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ZONING_COLORS } from "../map/mapStyle";
 import { contextPaths, fetchLotContext } from "../discovery/discoveryData";
 import { measureSteps } from "../discovery/discoveryModel";
@@ -20,6 +21,7 @@ export function BlockSlice({ pin10, zoneTag, family, outline = null, className =
   /** Height and rounding: the slice sits at the top of its card. */
   className?: string;
 }) {
+  const { t } = useTranslation("next");
   const [paths, setPaths] = useState<ReturnType<typeof contextPaths> | null>(null);
   useEffect(() => {
     if (!pin10) return;
@@ -40,6 +42,10 @@ export function BlockSlice({ pin10, zoneTag, family, outline = null, className =
         ))}
         {own && <path d={own} fill="rgb(var(--nx-ink) / 0.08)" stroke="rgb(var(--nx-lot))" strokeWidth={2.5} strokeLinejoin="round" />}
       </svg>
+      {/* Neither a PIN nor an outline: say so, never draw a stand-in shape. */}
+      {(!pin10 && !own) || (pin10 && paths !== null && paths.length === 0) ? (
+        <span className="absolute inset-0 grid place-items-center text-caption nx-muted" data-testid="block-slice-empty">{t("saved.noOutline")}</span>
+      ) : null}
       {zoneTag && (
         <span className="absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-[#1c1c1c]"
           style={{ background: tag ? tag[1] : "#C9CED6" }}>

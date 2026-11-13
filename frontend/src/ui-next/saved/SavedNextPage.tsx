@@ -17,7 +17,7 @@ import { track } from "../../lib/tracking";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
-import { lotHref } from "../home/lotMemory";
+import { lotHref, shownAddress } from "../home/lotMemory";
 import { BlockSlice } from "../ui/BlockSlice";
 import { BOOKMARK_ON } from "./bookmark";
 import { familyOf } from "./savedModel";
@@ -124,13 +124,13 @@ function SavedLotCard({ lot, onUnsave, account }: { lot: SavedLot; onUnsave: () 
       <Link to={lotHref(lot)} tabIndex={-1} aria-hidden className="block hover:opacity-90">
         <BlockSlice pin10={lot.pin ? lot.pin.slice(0, 10) : null} zoneTag={lot.zone} family={familyOf(lot.zone)} outline={lot.outline} />
       </Link>
-      <button type="button" onClick={onUnsave} aria-pressed aria-label={t("home.unsave", { address: lot.address })} title={t("home.unsaveShort")}
+      <button type="button" onClick={onUnsave} aria-pressed aria-label={t("home.unsave", { address: shownAddress(lot, t) })} title={t("home.unsaveShort")}
         className={`absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-lg touch-icon ${BOOKMARK_ON}`} data-testid="saved-unsave">
         <Bookmark aria-hidden className="h-4 w-4" strokeWidth={STROKE} fill="currentColor" />
       </button>
       <div className="flex flex-col gap-3 p-4">
       <Link to={lotHref(lot)} className="flex min-w-0 flex-col gap-0.5 rounded-xl hover:opacity-80">
-        <span className="font-semibold [overflow-wrap:anywhere]">{lot.address}</span>
+        <span className="font-semibold [overflow-wrap:anywhere]">{shownAddress(lot, t)}</span>
         <span className="text-caption nx-muted">{[lot.area, t("home.savedOn", { date: dateFmt.format(lot.at) })].filter(Boolean).join(" · ")}</span>
       </Link>
 
@@ -187,6 +187,8 @@ function ChangesBlock({ state, lot, day, money }: { state: ChangesState; lot: Sa
   }
   if (!data) return <p role="status" className="text-caption nx-muted">{t("saved.checking")}</p>;
   const lines = data.changes.map((c) => changeLine(c, lot, t, money));
+  // A lot with no street address of its own isn't a failed check: it gets its own line (Item 119).
+  const failedNow = data.unchecked.filter((k) => k !== "no_address");
   const shown = all ? lines : lines.slice(0, SHOWN_CHANGES);
   return (
     <div className="flex flex-col gap-2" data-testid="saved-changes">
@@ -218,8 +220,11 @@ function ChangesBlock({ state, lot, day, money }: { state: ChangesState; lot: Sa
           {all ? t("saved.fewer") : t("saved.more", { count: lines.length - SHOWN_CHANGES })}
         </button>
       )}
-      {data.unchecked.length > 0 && (
-        <p className="text-caption nx-muted" data-testid="saved-unchecked">{t("saved.couldntCheck", { what: uncheckedWords(data.unchecked, t) })}</p>
+      {failedNow.length > 0 && (
+        <p className="text-caption nx-muted" data-testid="saved-unchecked">{t("saved.couldntCheck", { what: uncheckedWords(failedNow, t) })}</p>
+      )}
+      {data.unchecked.includes("no_address") && (
+        <p className="text-caption nx-muted" data-testid="saved-no-address">{t("saved.noAddress")}</p>
       )}
       {data.watching_since && !data.unchecked.includes("zoning") && (
         <p className="text-caption nx-muted">{t("saved.watchingZoning", { date: day(data.watching_since) })}</p>

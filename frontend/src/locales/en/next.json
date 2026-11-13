@@ -2185,6 +2185,8 @@
       "violations": "violations",
       "zoning": "zoning and overlays",
       "rezoning": "rezoning filings"
-    }
+    },
+    "noOutline": "No lot outline on record",
+    "noAddress": "The City's permits and violations aren't checked: this lot has no street address of its own."
   }
 }

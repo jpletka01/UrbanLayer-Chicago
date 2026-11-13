@@ -221,9 +221,31 @@ class TestRecordChanges:
         assert [(c["kind"], c["date"]) for c in changes] == [("sale", "2026-11-03"), ("permit", "2026-11-05"), ("violation", "2026-11-06")]
         assert changes[0]["price"] == 450000.0
 
+    def test_an_approximate_address_says_why_not_failed(self):
+        changes, unchecked = saved.record_changes({"sales": [], "permits": [], "violations": [], "no_address": True}, "2026-11-01")
+        assert changes == [] and unchecked == ["no_address"]
+
     def test_a_failed_source_is_unchecked_not_none(self):
         changes, unchecked = saved.record_changes({"sales": None, "permits": [], "violations": None}, "2026-11-01")
         assert changes == [] and unchecked == ["sales", "violations"]
+
+
+class TestApproximate:
+    async def test_approximate_lot_never_asks_the_city_by_address(self, store, as_user):
+        c = as_user(A)
+        lot = _save(c, {**LOT, "approximate": True})
+        assert lot["approximate"] is True
+        permits, violations = AsyncMock(return_value={"projects": []}), AsyncMock(return_value={"violations": []})
+        today = {"zoning": {"zone_class": "RM-5"}, "overlays": [], "checked": {"zoning": True, "unchecked_overlays": []}}
+        with patch("backend.retrieval.buildings.permits_at_address", permits), \
+             patch("backend.retrieval.buildings.violations_at_address", violations), \
+             patch("backend.retrieval.property.sales.get_sales", AsyncMock(return_value=[])), \
+             patch("backend.data_health.diff.current_facts", AsyncMock(return_value=today)), \
+             patch("backend.legislation.upcoming.summary_for", return_value=SimpleNamespace(status="ready", subject_filings=[])) as docket:
+            r = c.get(f"/api/saved/lots/{lot['id']}/changes").json()
+        assert permits.await_count == 0 and violations.await_count == 0
+        assert r["unchecked"] == ["no_address"]
+        assert docket.call_args.kwargs["address"] is None
 
 
 class TestChangesEndpoint:

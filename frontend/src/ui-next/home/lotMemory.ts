@@ -19,6 +19,8 @@ export interface RememberedLot {
   /** The lot's point, for moving a browser save to the account (Saved, Item 119). Older entries have none. */
   lat?: number | null;
   lon?: number | null;
+  /** The address is a neighbor's stand-in (Discovery's "~"): shown as "Near …" (Item 119). */
+  approximate?: boolean;
 }
 
 export const RECENT_KEY = "urbanlayer-next-recent-lots:v1";
@@ -54,6 +56,11 @@ export function outlinePath(ring: Array<[number, number]>, w: number, h: number,
   return ring
     .map(([x, y], i) => `${i ? "L" : "M"}${(ox + (x - minX) * kx * s).toFixed(1)} ${(h - oy - (y - minY) * s).toFixed(1)}`)
     .join(" ") + " Z";
+}
+
+/** How a lot's address reads on a card: an approximate one says "Near". */
+export function shownAddress(lot: Pick<RememberedLot, "address" | "approximate">, t: (k: string, o?: Record<string, unknown>) => string): string {
+  return lot.approximate ? t("discovery.card.near", { address: lot.address }) : lot.address;
 }
 
 /** The Profile link for a remembered lot. */
