@@ -1,6 +1,7 @@
 // Pricing in the new UI (Item 123). Owner's look, 2026-11-13: three plans side by side under a centered heading
 // (Free, Pro monthly, Pro yearly), each with its own price and button, instead of a month/year switch in a corner;
-// the Pro cards wear a thin lavender rim with a slow light; no "paid by Stripe" note; the questions as a plain list.
+// the Pro cards wear a thin lavender rim with a slow light; no "paid by Stripe" note; the questions fold like the
+// landing's FAQ (`ui/Faq`).
 // The free plan is complete (nothing locked or blurred). While purchases are off, Pro says "Coming soon".
 // On a phone the Pro cards come first, since they carry the actions.
 import type { ReactNode } from "react";
@@ -13,6 +14,7 @@ import { usePayments } from "../../lib/usePayments";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
+import { Faq } from "../ui/Faq";
 import { localeOf, useProCheckout } from "./useProCheckout";
 import { PRICE_CENTS, dollars, yearlyPerMonthCents, yearlySavingsCents } from "./pricingModel";
 
@@ -142,19 +144,19 @@ export default function PricingNextPage() {
         {checkout.error && <p role="alert" className="rounded-xl bg-nx-pill-red-bg px-4 py-3 text-caption text-nx-pill-red">{t("pricing.checkoutFailed")}</p>}
         {purchasesOff && plan === "free" && <p className="text-center text-caption nx-muted">{t("pricing.comingSoonNote")}</p>}
 
-        <section aria-labelledby="pricing-qa" className="flex w-full flex-col">
-          <h2 id="pricing-qa" className="pb-3 text-body font-semibold">{t("pricing.qaTitle")}</h2>
-          <dl className="flex flex-col">
-            {(["cancel", "interval", "trial", "reports"] as const).map((k) => (
-              <div key={k} className="grid gap-1 border-t border-nx-ink/10 py-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-6">
-                <dt className="font-semibold">{t(`pricing.qa.${k}.q`)}</dt>
-                <dd className="nx-muted">{t(`pricing.qa.${k}.a`, {
-                  month: dollars(PRICE_CENTS.month, locale), year: dollars(PRICE_CENTS.year, locale),
-                })}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        <div className="pt-4">
+          <Faq
+            id="pricing-qa"
+            center
+            titleClassName="text-[1.5rem] font-semibold tracking-[-0.02em]"
+            title={t("pricing.qaTitle")}
+            items={(["cancel", "interval", "trial", "reports"] as const).map((k) => ({
+              key: k,
+              q: t(`pricing.qa.${k}.q`),
+              a: t(`pricing.qa.${k}.a`, { month: dollars(PRICE_CENTS.month, locale), year: dollars(PRICE_CENTS.year, locale) }),
+            }))}
+          />
+        </div>
       </div>
     </AppFrame>
   );
