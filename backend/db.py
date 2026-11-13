@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 18
+_SCHEMA_VERSION = 19
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -377,6 +377,87 @@ CREATE INDEX IF NOT EXISTS idx_llm_calls_user ON llm_calls(user_id, created_at);
 """)
 
 
+_USERS_COLUMNS = (
+    "id, email, name, picture_url, google_id, tier, created_at, updated_at, "
+    "stripe_customer_id, stripe_subscription_id, premium_until"
+)
+
+
+async def _migrate_v19(db: aiosqlite.Connection) -> None:
+    """Identity (Phase 9, decision Item 121): an account is reached only through a provider identity
+    ``(provider, subject)`` in ``identities``; email is never a key. ``users`` is rebuilt so ``email`` is
+    nullable and not unique (the same address from Google and Microsoft is two accounts unless the person links
+    them; Apple may give none) and ``google_id`` nullable (kept for old code paths). Every ``google_id`` becomes
+    a ``google`` identity. ``users.id`` never changes, so sessions, Saved, quotas and purchases are untouched.
+
+    SQLite can't drop a UNIQUE or NOT NULL, so the table is rebuilt in place with foreign keys off (a DROP with
+    them on would cascade-delete every child row), then checked."""
+    cur = await db.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'")
+    row = await cur.fetchone()
+    users_sql = (row[0] if row else "") or ""
+    await db.commit()
+    if "email       TEXT NOT NULL UNIQUE" in users_sql or "google_id   TEXT NOT NULL UNIQUE" in users_sql:
+        cur = await db.execute("PRAGMA table_info(users)")
+        cols = {r[1] for r in await cur.fetchall()}
+        for col in ("stripe_customer_id", "stripe_subscription_id", "premium_until"):
+            if col not in cols:
+                kind = "INTEGER" if col == "premium_until" else "TEXT"
+                await db.execute(f"ALTER TABLE users ADD COLUMN {col} {kind}")
+        await db.commit()
+        await db.execute("PRAGMA foreign_keys=OFF")
+        try:
+            await db.executescript(f"""\
+BEGIN;
+CREATE TABLE users_v19 (
+    id                      TEXT PRIMARY KEY,
+    email                   TEXT,
+    name                    TEXT NOT NULL DEFAULT '',
+    picture_url             TEXT,
+    google_id               TEXT UNIQUE,
+    tier                    TEXT NOT NULL DEFAULT 'free'
+        CHECK(tier IN ('free', 'premium', 'admin')),
+    created_at              INTEGER NOT NULL,
+    updated_at              INTEGER NOT NULL,
+    stripe_customer_id      TEXT,
+    stripe_subscription_id  TEXT,
+    premium_until           INTEGER
+);
+INSERT INTO users_v19 ({_USERS_COLUMNS}) SELECT {_USERS_COLUMNS} FROM users;
+DROP TABLE users;
+ALTER TABLE users_v19 RENAME TO users;
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+COMMIT;
+""")
+            cur = await db.execute("PRAGMA foreign_key_check")
+            broken = await cur.fetchall()
+            if broken:
+                raise RuntimeError(f"users rebuild left {len(broken)} broken foreign keys")
+        finally:
+            await db.execute("PRAGMA foreign_keys=ON")
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS identities (
+    provider        TEXT NOT NULL,
+    subject         TEXT NOT NULL,
+    user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tenant          TEXT,
+    email           TEXT,
+    email_verified  INTEGER NOT NULL DEFAULT 0,
+    private_email   INTEGER NOT NULL DEFAULT 0,
+    created_at      INTEGER NOT NULL,
+    last_used_at    INTEGER NOT NULL,
+    PRIMARY KEY (provider, subject),
+    UNIQUE (user_id, provider)
+);
+CREATE INDEX IF NOT EXISTS idx_identities_user ON identities(user_id);
+CREATE INDEX IF NOT EXISTS idx_identities_email ON identities(email);
+INSERT OR IGNORE INTO identities
+    (provider, subject, user_id, email, email_verified, private_email, created_at, last_used_at)
+    SELECT 'google', google_id, id, email, 0, 0, created_at, updated_at
+    FROM users WHERE google_id IS NOT NULL AND google_id != '';
+""")
+
+
 async def _migrate_v11(db: aiosqlite.Connection) -> None:
     """Add nullable pin column to report_purchases — entitlement keys on the
     parcel PIN when known. Legacy pin-less rows stay entitled via the
@@ -523,6 +604,7 @@ async def init_db() -> None:
         await _migrate_v16(_db)
         await _migrate_v17(_db)
         await _migrate_v18(_db)
+        await _migrate_v19(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -578,6 +660,9 @@ async def init_db() -> None:
         if version < 18:
             await _migrate_v18(_db)
             version = 18
+        if version < 19:
+            await _migrate_v19(_db)
+            version = 19
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -1322,10 +1407,151 @@ async def upsert_user(
         """,
         (user_id, email, name, picture_url, google_id, now, now, now),
     )
-    await db.commit()
     cur = await db.execute("SELECT * FROM users WHERE google_id = ?", (google_id,))
+    row = dict(await cur.fetchone())
+    await db.execute(
+        "INSERT OR IGNORE INTO identities (provider, subject, user_id, email, created_at, last_used_at) "
+        "VALUES ('google', ?, ?, ?, ?, ?)",
+        (google_id, row["id"], email, now, now),
+    )
+    await db.commit()
+    return row
+
+
+# ---------------------------------------------------------------------------
+# Identities (Phase 9, decision Item 121): an account is reached only through (provider, subject)
+# ---------------------------------------------------------------------------
+
+async def get_identity(provider: str, subject: str) -> dict | None:
+    cur = await _get_db().execute(
+        "SELECT * FROM identities WHERE provider = ? AND subject = ?", (provider, subject),
+    )
     row = await cur.fetchone()
-    return dict(row)
+    return dict(row) if row else None
+
+
+async def list_identities(user_id: str) -> list[dict]:
+    cur = await _get_db().execute(
+        "SELECT * FROM identities WHERE user_id = ? ORDER BY created_at", (user_id,),
+    )
+    return [dict(r) for r in await cur.fetchall()]
+
+
+async def _touch_identity(conn: aiosqlite.Connection, claims: dict, now: int) -> None:
+    await conn.execute(
+        "UPDATE identities SET email = COALESCE(?, email), email_verified = ?, private_email = ?, "
+        "tenant = COALESCE(?, tenant), last_used_at = ? WHERE provider = ? AND subject = ?",
+        (claims.get("email"), int(bool(claims.get("email_verified"))), int(bool(claims.get("private_email"))),
+         claims.get("tenant"), now, claims["provider"], claims["subject"]),
+    )
+
+
+async def sign_in_identity(claims: dict, new_user_id: str) -> tuple[dict, bool]:
+    """The account behind a provider identity, made on its first sign-in. Returns ``(user, created)``.
+
+    ``claims``: provider, subject, and optionally email, email_verified, private_email, tenant, name, picture_url.
+    Never looks anything up by email. Two first sign-ins at once for the same identity end on one account: the
+    loser's new user row is removed (nothing can reference it yet) and the winner's is returned. No explicit
+    transaction: the app shares one connection, and each statement here is atomic on its own."""
+    conn = _get_db()
+    now = _now_ms()
+    existing = await get_identity(claims["provider"], claims["subject"])
+    created = False
+    if existing is None:
+        await conn.execute(
+            "INSERT INTO users (id, email, name, picture_url, tier, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, 'free', ?, ?)",
+            (new_user_id, claims.get("email"), claims.get("name") or "", claims.get("picture_url"), now, now),
+        )
+        cur = await conn.execute(
+            "INSERT OR IGNORE INTO identities (provider, subject, user_id, tenant, email, email_verified, "
+            "private_email, created_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (claims["provider"], claims["subject"], new_user_id, claims.get("tenant"), claims.get("email"),
+             int(bool(claims.get("email_verified"))), int(bool(claims.get("private_email"))), now, now),
+        )
+        if cur.rowcount == 1:
+            created = True
+        else:
+            await conn.execute("DELETE FROM users WHERE id = ?", (new_user_id,))
+        existing = await get_identity(claims["provider"], claims["subject"])
+    if not created:
+        await _touch_identity(conn, claims, now)
+        # Keep the account's display fields fresh from the method used, but never blank them.
+        await conn.execute(
+            "UPDATE users SET email = COALESCE(?, email), name = CASE WHEN ? != '' THEN ? ELSE name END, "
+            "picture_url = COALESCE(?, picture_url), updated_at = ? WHERE id = ?",
+            (claims.get("email"), claims.get("name") or "", claims.get("name") or "", claims.get("picture_url"),
+             now, existing["user_id"]),
+        )
+    await conn.commit()
+    user = await get_user_by_id(existing["user_id"])
+    return user, created
+
+
+async def link_identity(user_id: str, claims: dict) -> str:
+    """Add an identity to a signed-in account. Returns ``linked``, ``already_yours``, ``taken`` (it signs in to
+    another account; nothing is merged) or ``provider_exists`` (this account already has one from that provider)."""
+    conn = _get_db()
+    now = _now_ms()
+    cur = await conn.execute(
+        "INSERT OR IGNORE INTO identities (provider, subject, user_id, tenant, email, email_verified, private_email, "
+        "created_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (claims["provider"], claims["subject"], user_id, claims.get("tenant"), claims.get("email"),
+         int(bool(claims.get("email_verified"))), int(bool(claims.get("private_email"))), now, now),
+    )
+    await conn.commit()
+    if cur.rowcount == 1:
+        return "linked"
+    owner = await get_identity(claims["provider"], claims["subject"])
+    if owner is not None:
+        if owner["user_id"] == user_id:
+            await _touch_identity(conn, claims, now)
+            await conn.commit()
+            return "already_yours"
+        return "taken"
+    return "provider_exists"
+
+
+async def remove_identity(user_id: str, provider: str) -> str:
+    """``removed``, ``last`` (refused: an account keeps at least one way in) or ``missing``. One statement, so two
+    removals at once can't both pass the count and leave the account with none."""
+    conn = _get_db()
+    cur = await conn.execute(
+        "DELETE FROM identities WHERE user_id = ? AND provider = ? "
+        "AND (SELECT COUNT(*) FROM identities WHERE user_id = ?) > 1",
+        (user_id, provider, user_id),
+    )
+    await conn.commit()
+    if cur.rowcount == 1:
+        return "removed"
+    cur = await conn.execute(
+        "SELECT 1 FROM identities WHERE user_id = ? AND provider = ?", (user_id, provider),
+    )
+    return "last" if await cur.fetchone() else "missing"
+
+
+async def verified_email_elsewhere(user_id: str, email: str | None) -> str | None:
+    """The provider of another account's identity that verified this same email, for the "you may already have
+    an account" hint (rule 5). Only provider-verified, non-relay addresses on both sides; Microsoft never counts."""
+    if not email:
+        return None
+    cur = await _get_db().execute(
+        "SELECT provider FROM identities WHERE lower(email) = lower(?) AND email_verified = 1 "
+        "AND private_email = 0 AND provider != 'microsoft' AND user_id != ? ORDER BY created_at LIMIT 1",
+        (email, user_id),
+    )
+    row = await cur.fetchone()
+    return row[0] if row else None
+
+
+async def users_by_email(email: str) -> list[dict]:
+    """Every account whose own email or one of whose identities' emails matches (case-insensitive)."""
+    cur = await _get_db().execute(
+        "SELECT * FROM users WHERE id IN (SELECT id FROM users WHERE lower(email) = lower(?) "
+        "UNION SELECT user_id FROM identities WHERE lower(email) = lower(?))",
+        (email, email),
+    )
+    return [dict(r) for r in await cur.fetchall()]
 
 
 async def get_user_by_id(user_id: str) -> dict | None:

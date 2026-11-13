@@ -201,7 +201,7 @@ async def test_a_v14_database_migrates_in_place_and_keeps_its_messages(tmp_path)
         await db.init_db()
         try:
             cur = await db._get_db().execute("SELECT version FROM schema_version")
-            assert (await cur.fetchone())[0] == db._SCHEMA_VERSION == 18
+            assert (await cur.fetchone())[0] == db._SCHEMA_VERSION
             cur = await db._get_db().execute("PRAGMA table_info(messages)")
             assert "facts_json" in {r[1] for r in await cur.fetchall()}
             cur = await db._get_db().execute("SELECT name FROM sqlite_master WHERE name IN ('report_renders', 'idx_rr_one_original')")

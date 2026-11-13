@@ -46,6 +46,9 @@ def as_user():
     """Run requests as a given user (None = anonymous), with CSRF off."""
     auth_settings = MagicMock()
     auth_settings.google_client_id = ""
+    auth_settings.microsoft_client_id = ""
+    auth_settings.apple_client_id = ""
+    auth_settings.auth_dev_login = False
 
     def _set(user: dict | None) -> TestClient:
         app.dependency_overrides[get_current_user] = lambda: user

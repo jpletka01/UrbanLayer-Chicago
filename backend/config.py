@@ -241,6 +241,21 @@ class Settings(BaseSettings):
     jwt_refresh_token_ttl: int = 604_800  # 7 days
     auth_cookie_secure: bool = False  # True in production (HTTPS)
     frontend_url: str = "http://localhost:5173"
+    # Microsoft and Apple sign-in (Phase 9, Item 121): a provider is offered only when its settings are all set.
+    # Values live in the server's .env only, never in the repo.
+    microsoft_client_id: str = ""
+    microsoft_client_secret: str = ""
+    apple_client_id: str = ""  # the Services ID
+    apple_team_id: str = ""
+    apple_key_id: str = ""
+    apple_private_key: str = ""  # the .p8 contents (PEM), or set apple_private_key_path
+    apple_private_key_path: str = ""
+    # Local review only: stand-in sign-in for any provider without settings ("Local test account"). Production
+    # refuses to start with it on, and it needs a localhost front-end URL.
+    auth_dev_login: bool = False
+    # Where providers send people back (…/api/auth/<provider>/callback). Empty = frontend_url, right for
+    # production (nginx serves /api on the site); local review sets the backend's own URL.
+    auth_callback_base: str = ""
 
     sentry_dsn: str = ""
 
@@ -328,6 +343,8 @@ def production_config_errors(s: Settings) -> list[str]:
         errors.append("AUTH_COOKIE_SECURE must be true")
     if not s.frontend_url.startswith("https://"):
         errors.append("FRONTEND_URL must be an https:// URL")
+    if s.auth_dev_login:
+        errors.append("AUTH_DEV_LOGIN must be false (it signs anyone in as a test account)")
     if s.stripe_secret_key and not s.stripe_webhook_secret:
         errors.append("STRIPE_WEBHOOK_SECRET must be set when STRIPE_SECRET_KEY is")
     return errors
