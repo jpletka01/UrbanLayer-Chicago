@@ -1154,7 +1154,6 @@
   "settings": {
     "title": "Configuración",
     "account": "Cuenta",
-    "signedInWith": "Sesión iniciada con Google",
     "appearance": "Apariencia",
     "theme": "Tema",
     "billing": "Facturación",

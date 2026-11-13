@@ -9,13 +9,12 @@
   "viewHistory": "View history",
   "chatHistory": "Chat history",
   "noConversations": "No conversations yet",
-  "signIn": "Sign in with Google",
   "signInShort": "Sign in",
   "signInToSave": "Sign in to save your research",
   "signInToSaveShort": "Sign in to save",
   "signInTitle": "Sign in to continue",
   "signInDescription": "Create an account to save your conversations and access all features.",
-  "signInFreeNote": "Free users get 25 queries per day",
+  "signInFreeNote": "Free accounts get 50 questions a month",
   "continueBrowsing": "Continue browsing",
   "signOut": "Sign out",
   "settings": "Settings",
@@ -238,5 +237,41 @@
     "left_other": "{{count}} free questions left",
     "leftMonth_one": "{{count}} question left this month",
     "leftMonth_other": "{{count}} questions left this month"
+  },
+  "auth": {
+    "continueWith": "Continue with {{provider}}",
+    "testAccount": "local test account",
+    "chooserTitle": "Sign in to UrbanLayer",
+    "chooserBody": "Free, with 50 questions a month. Sign in with Google, Apple or Microsoft; we never ask for a password.",
+    "close": "Close",
+    "notice": {
+      "error": {
+        "declined": "Sign-in was cancelled.",
+        "expired": "That sign-in took too long or was opened twice. Please try again.",
+        "failed": "We couldn't confirm that sign-in. Please try again.",
+        "unavailable": "The sign-in service didn't answer. Please try again in a minute.",
+        "session": "You were signed in as someone else when that finished, so nothing was added."
+      },
+      "hint": "You may already have an account that signs in with {{provider}}. This one is new and separate.",
+      "hintAction": "Sign in with {{provider}} instead",
+      "link": {
+        "linked": "{{provider}} now signs in to this account.",
+        "already_yours": "That {{provider}} account already signs in here.",
+        "taken": "That {{provider}} account signs in to a different UrbanLayer account, so it wasn't added. Nothing was merged.",
+        "provider_exists": "This account already has a {{provider}} sign-in. Remove it first to add a different one."
+      }
+    },
+    "methods": {
+      "title": "Sign-in methods",
+      "body": "The ways into this account. Accounts are never joined by email.",
+      "add": "Add {{provider}}",
+      "remove": "Remove",
+      "lastOne": "That's your only way in, so it can't be removed.",
+      "lastOneShort": "Only way in",
+      "hiddenEmail": "Email hidden by Apple",
+      "added": "Added {{date}}",
+      "removeConfirm": "Remove {{provider}}? You won't be able to sign in with it until you add it again.",
+      "error": "That didn't work. Please try again."
+    }
   }
 }

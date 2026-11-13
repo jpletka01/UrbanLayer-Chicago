@@ -23,6 +23,7 @@ import {
 import { formatDate } from "../lib/format";
 import PageHeader from "./PageHeader";
 import { PurchaseRow } from "./settings/PurchaseRow";
+import SignInMethods from "./settings/SignInMethods";
 import { Chip } from "./ui/Chip";
 import { Modal } from "./ui/Modal";
 import ThemeToggle from "./ThemeToggle";
@@ -173,6 +174,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 
 export default function SettingsPage() {
   const { t } = useTranslation("pages");
+  const { t: tc } = useTranslation("common");
   const { user, authRequired, checkAuth } = useAuthContext();
   const [purchases, setPurchases] = useState<ReportPurchase[] | null>(null);
   const [subscription, setSubscription] = useState<Awaited<
@@ -236,7 +238,7 @@ export default function SettingsPage() {
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-accent/80 flex items-center justify-center text-subtitle font-medium text-text-on-accent">
-                {(user.name || user.email)[0]?.toUpperCase() ?? "?"}
+                {(user.name || user.email || "?")[0]?.toUpperCase() ?? "?"}
               </div>
             )}
             <div className="min-w-0">
@@ -244,13 +246,16 @@ export default function SettingsPage() {
                 <p className="text-title text-text-primary truncate">{user.name}</p>
                 {isPro && <Chip tone="accent" size="sm">Pro</Chip>}
               </div>
-              <p className="text-body text-text-muted truncate">{user.email}</p>
-              <p className="text-caption text-text-muted mt-0.5">
-                {t("settings.signedInWith")}
-              </p>
+              {user.email && <p className="text-body text-text-muted truncate">{user.email}</p>}
             </div>
           </div>
         </Section>
+
+        {authRequired && (
+          <Section title={tc("auth.methods.title")}>
+            <SignInMethods />
+          </Section>
+        )}
 
         <Section title={t("settings.appearance")}>
           <SettingsRow label={t("settings.theme")}>

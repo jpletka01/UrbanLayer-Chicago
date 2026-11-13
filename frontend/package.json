@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint . --max-warnings 67",
+    "lint": "eslint . --max-warnings 65",
     "preview": "vite preview",
     "test": "vitest run",
     "test:mobile": "playwright test",

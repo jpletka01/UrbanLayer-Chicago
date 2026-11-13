@@ -1154,7 +1154,6 @@
   "settings": {
     "title": "Settings",
     "account": "Account",
-    "signedInWith": "Signed in with Google",
     "appearance": "Appearance",
     "theme": "Theme",
     "billing": "Billing",

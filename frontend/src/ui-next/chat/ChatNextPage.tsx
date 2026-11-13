@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as Dialog from "@radix-ui/react-dialog";
-import { FileDown, Map as MapIcon, Maximize2, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, LogIn, X } from "lucide-react";
+import { FileDown, Map as MapIcon, Maximize2, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, X } from "lucide-react";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
 import { RightDrawer } from "../ui/RightDrawer";
 import { FrameOutline } from "../frame/FrameOutline";
@@ -19,6 +19,8 @@ import { buildReportData, type ReportData } from "../../lib/reportBuilder";
 import { propertyStarterKeys } from "../../lib/scorecardContext";
 import { useChatSession } from "../../lib/useChatSession";
 import { useAuthContext } from "../../contexts/AuthContext";
+import ProviderButtons from "../../components/auth/ProviderButtons";
+import { NEXT_PROVIDER_BUTTON } from "../frame/signInLook";
 import type { Message } from "../../lib/types";
 import { ICON, STROKE } from "../icons";
 import { ChatList, ChatListStrip } from "./ChatList";
@@ -297,7 +299,7 @@ export default function ChatNextPage() {
           </div>
         ) : null}
 
-        {needsSignIn && <SignInCard onSignIn={signIn} onClose={() => { session.dismissAuth(); }} />}
+        {needsSignIn && <SignInCard onClose={() => { session.dismissAuth(); }} />}
       </div>
 
       {exportReport && <ExportReport report={exportReport} onClose={() => setExportReport(null)} />}
@@ -398,8 +400,9 @@ function EvidencePanel({ message, tab, source, show, onTab, onShowOnMap }: {
 }
 
 /** At the limit: the conversation frosts and a sign-in card comes forward (a bottom sheet on a phone). */
-function SignInCard({ onSignIn, onClose }: { onSignIn: () => void; onClose: () => void }) {
+function SignInCard({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("next");
+  const { providers, signInWith } = useAuthContext();
   return (
     <div className="absolute inset-0 z-30 flex items-end justify-center bg-nx-page/50 backdrop-blur-sm sm:items-center" data-testid="chat-signin">
       <div role="dialog" aria-modal="true" aria-labelledby="chat-signin-title" className="relative flex w-full flex-col gap-3 rounded-t-3xl bg-nx-page p-5 shadow-[0_-8px_32px_rgb(0_0_0/0.16)] sm:max-w-sm sm:rounded-3xl sm:shadow-[0_8px_40px_rgb(0_0_0/0.2)]">
@@ -408,10 +411,7 @@ function SignInCard({ onSignIn, onClose }: { onSignIn: () => void; onClose: () =
         </button>
         <h2 id="chat-signin-title" className="pr-8 text-[1.0625rem] font-semibold">{t("chat.signInTitle")}</h2>
         <p className="text-caption nx-muted">{t("chat.signInBody")}</p>
-        <button type="button" onClick={onSignIn} autoFocus className="inline-flex items-center justify-center gap-2 rounded-xl bg-nx-primary px-4 py-2.5 font-medium text-nx-primary-fg touch-target">
-          <LogIn aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-          {t("chat.signInGoogle")}
-        </button>
+        <ProviderButtons providers={providers} onChoose={(p) => signInWith(p)} buttonClassName={NEXT_PROVIDER_BUTTON} autoFocus />
       </div>
     </div>
   );

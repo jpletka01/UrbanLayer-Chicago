@@ -1802,7 +1802,6 @@
     },
     "signInTitle": "Inicie sesión para continuar",
     "signInBody": "Ya usó las preguntas gratuitas de hoy. Inicie sesión para hacer más; su conversación se queda aquí.",
-    "signInGoogle": "Continuar con Google",
     "signInClose": "Cerrar",
     "dataTitle": "Registros · {{place}}",
     "steps": {
