@@ -320,6 +320,9 @@ class Settings(BaseSettings):
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_id_pro_monthly: str = ""
+    # Pro is $19 a month or $199 a year (Item 119); the browser sends only "month"/"year" (Item 123).
+    stripe_price_id_pro_yearly: str = ""
+    # Retired with the $25 report (Item 123): no new report checkout is created; kept so old settings still load.
     stripe_price_id_report: str = ""
 
 
@@ -350,7 +353,21 @@ def production_config_errors(s: Settings) -> list[str]:
     return errors
 
 
+def stripe_key_is_live(key: str) -> bool:
+    return key.startswith(("sk_live_", "rk_live_"))
+
+
+def stripe_mode_errors(s: Settings) -> list[str]:
+    """Item 123: a live Stripe key outside production could charge real cards from a laptop; refuse to start."""
+    if s.environment != "production" and stripe_key_is_live(s.stripe_secret_key):
+        return ["STRIPE_SECRET_KEY is a live key; outside production only test keys (sk_test_) are allowed"]
+    return []
+
+
 def validate_production(s: Settings) -> None:
+    mode_errors = stripe_mode_errors(s)
+    if mode_errors:
+        raise RuntimeError("Refusing to start:\n  - " + "\n  - ".join(mode_errors))
     if s.environment != "production":
         return
     errors = production_config_errors(s)

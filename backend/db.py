@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 19
+_SCHEMA_VERSION = 20
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -569,6 +569,44 @@ async def _migrate_v3(db: aiosqlite.Connection) -> None:
         await db.execute("ALTER TABLE messages ADD COLUMN summary_json TEXT")
 
 
+async def _migrate_v20(db: aiosqlite.Connection) -> None:
+    """Billing (Phase 9, decision Item 123). ``subscriptions``: one row per account with its Stripe customer and the
+    subscription's state as Stripe last reported it (re-read from Stripe on every webhook, so event order doesn't
+    matter); Pro is derived from it at read time, and webhooks never write ``users.tier`` again (an admin who
+    subscribed used to become ``premium``, then ``free``). ``stripe_events``: every processed event id once
+    (replays do nothing). ``entitlement_uses``: the one free Deep analysis, under ``user:<id>`` and an HMAC of each
+    sign-in identity (``idh:``), so deleting the account or moving an identity doesn't hand out a second one."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS subscriptions (
+    user_id                 TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    stripe_customer_id      TEXT NOT NULL UNIQUE,
+    stripe_subscription_id  TEXT,
+    status                  TEXT,
+    price_interval          TEXT,
+    current_period_end      INTEGER,
+    cancel_at_period_end    INTEGER NOT NULL DEFAULT 0,
+    checkout_session_id     TEXT,
+    checkout_interval       TEXT,
+    checkout_expires_at     INTEGER,
+    synced_at               INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_sub ON subscriptions(stripe_subscription_id)
+    WHERE stripe_subscription_id IS NOT NULL;
+CREATE TABLE IF NOT EXISTS stripe_events (
+    event_id     TEXT PRIMARY KEY,
+    type         TEXT NOT NULL,
+    received_at  INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS entitlement_uses (
+    subject  TEXT NOT NULL,
+    kind     TEXT NOT NULL,
+    pin      TEXT NOT NULL,
+    used_at  INTEGER NOT NULL,
+    PRIMARY KEY (subject, kind)
+);
+""")
+
+
 async def init_db() -> None:
     """Open the database and create tables if needed."""
     global _db
@@ -605,6 +643,7 @@ async def init_db() -> None:
         await _migrate_v17(_db)
         await _migrate_v18(_db)
         await _migrate_v19(_db)
+        await _migrate_v20(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -663,6 +702,9 @@ async def init_db() -> None:
         if version < 19:
             await _migrate_v19(_db)
             version = 19
+        if version < 20:
+            await _migrate_v20(_db)
+            version = 20
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -1586,6 +1628,79 @@ async def get_user_by_email(email: str) -> dict | None:
     return dict(row) if row else None
 
 
+# ---------------------------------------------------------------------------
+# Subscriptions (Billing, Item 123): Stripe's state per account; Pro is derived from it in auth.
+# ---------------------------------------------------------------------------
+
+async def get_subscription(user_id: str) -> dict | None:
+    cur = await _get_db().execute("SELECT * FROM subscriptions WHERE user_id = ?", (user_id,))
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def get_subscription_by_customer(customer_id: str) -> dict | None:
+    cur = await _get_db().execute("SELECT * FROM subscriptions WHERE stripe_customer_id = ?", (customer_id,))
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def set_subscription_customer(user_id: str, customer_id: str) -> dict:
+    """Record the account's Stripe customer once; a second call keeps the first (returns the stored row)."""
+    conn = _get_db()
+    await conn.execute(
+        "INSERT INTO subscriptions (user_id, stripe_customer_id, synced_at) VALUES (?, ?, ?) "
+        "ON CONFLICT(user_id) DO NOTHING",
+        (user_id, customer_id, _now_ms()),
+    )
+    await conn.commit()
+    return await get_subscription(user_id)  # type: ignore[return-value]
+
+
+async def set_checkout_session(user_id: str, session_id: str, interval: str, expires_at: int) -> None:
+    conn = _get_db()
+    await conn.execute(
+        "UPDATE subscriptions SET checkout_session_id = ?, checkout_interval = ?, checkout_expires_at = ? "
+        "WHERE user_id = ?",
+        (session_id, interval, expires_at, user_id),
+    )
+    await conn.commit()
+
+
+async def write_subscription_state(
+    customer_id: str, *, subscription_id: str | None, status: str | None, interval: str | None,
+    current_period_end: int | None, cancel_at_period_end: bool,
+) -> bool:
+    """Store the subscription as Stripe reports it now. False when the customer isn't one of ours."""
+    conn = _get_db()
+    cur = await conn.execute(
+        "UPDATE subscriptions SET stripe_subscription_id = ?, status = ?, price_interval = ?, current_period_end = ?, "
+        "cancel_at_period_end = ?, checkout_session_id = NULL, checkout_interval = NULL, checkout_expires_at = NULL, "
+        "synced_at = ? WHERE stripe_customer_id = ?",
+        (subscription_id, status, interval, current_period_end, int(bool(cancel_at_period_end)), _now_ms(),
+         customer_id),
+    )
+    await conn.commit()
+    return cur.rowcount == 1
+
+
+async def record_stripe_event(event_id: str, event_type: str) -> bool:
+    """True the first time an event id is seen (process it), False for a replay."""
+    conn = _get_db()
+    cur = await conn.execute(
+        "INSERT OR IGNORE INTO stripe_events (event_id, type, received_at) VALUES (?, ?, ?)",
+        (event_id, event_type, _now_ms()),
+    )
+    await conn.commit()
+    return cur.rowcount == 1
+
+
+async def forget_stripe_event(event_id: str) -> None:
+    """Processing failed: let Stripe's retry run it again."""
+    conn = _get_db()
+    await conn.execute("DELETE FROM stripe_events WHERE event_id = ?", (event_id,))
+    await conn.commit()
+
+
 async def update_user_tier(user_id: str, tier: str) -> None:
     db = _get_db()
     await db.execute(
@@ -1772,6 +1887,8 @@ async def delete_user_account(user_id: str) -> dict:
     await conn.execute("DELETE FROM saved_searches WHERE user_id = ?", (user_id,))
     # Quota counters (Item 120): counts only, keyed by the account.
     await conn.execute("DELETE FROM usage_counters WHERE subject = ?", (f"user:{user_id}",))
+    # The free Deep analysis stays recorded under the identities' HMACs (Item 123); the account's own row goes.
+    await conn.execute("DELETE FROM entitlement_uses WHERE subject = ?", (f"user:{user_id}",))
     await conn.execute("DELETE FROM report_renders WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM events WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM request_logs WHERE user_id = ?", (user_id,))

@@ -746,7 +746,7 @@ async def test_v18_database_keeps_users_and_their_rows(tmp_path):
     with patch("backend.db.get_settings", return_value=s):
         await db.init_db()
         try:
-            assert await _count("SELECT version FROM schema_version") == db._SCHEMA_VERSION == 19
+            assert await _count("SELECT version FROM schema_version") == db._SCHEMA_VERSION >= 19
             u1 = await db.get_user_by_id("u1")
             assert u1["tier"] == "premium" and u1["stripe_customer_id"] == "cus_1"
             assert (await db.get_user_by_id("u2"))["premium_until"] == 99999999999999
