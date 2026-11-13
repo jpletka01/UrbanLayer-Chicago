@@ -530,3 +530,64 @@ test("Phase 10: a shared link opens read only", async ({ page }, testInfo) => {
   await expect(page).toHaveURL(/\/chat$/);
   expect(await axe(page), "axe unavailable").toEqual([]);
 });
+
+// Deep analysis (Item 124): the sixth tab, with the server's entitlement and analysis replies stubbed (the analysis
+// itself is the report's data path, slow cold; its rules are backend-tested). The free state offers one button and
+// claims nothing by opening; the open state leads with the most you can pay, the projects' rings and the stress grid;
+// the map is the same canvas; axe in both themes; nothing overflows at 360 px.
+test("Deep analysis tab: the free button, then the analysis, same map, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  const A = (value: number, low: number, high: number, source: string) => ({ value, low, high, unit: "x", source, as_of: "2026" });
+  const analysis = {
+    pin: "14331030110000", address: "1601 N MILWAUKEE AVE", approximate: false, envelope: null, partial_failures: [],
+    inputs: {
+      lot: { land_sqft: 3350, far: 2, max_height_ft: 45, units_allowed: 8, lot_area_per_unit: 400, footprint_sqft: null },
+      last_sale: { price: 1_207_000, date: "2023-05-01", deed_type: "WARRANTY" },
+      area_sales: { condo: { median: 605_000, n: 900, year: "2025" } },
+      rents: { census: { "2_bedrooms": { estimate: 3084, moe: 487, scope: "tract" } }, hud: null, acs_period: "2020–2024" },
+      tax: { effective_rate: 0.0201, tax_year: 2024, current_bill: 23024 },
+      assumptions: {
+        build_cost_sqft: A(250, 200, 275, "builders_reported"), soft_cost_pct: A(0.18, 0.15, 0.25, "terner_2024"),
+        loan_to_cost: A(0.65, 0.6, 0.75, "lenders_2026"), loan_rate: A(0.09, 0.0775, 0.1175, "lenders_2026"),
+        build_months: A(14, 10, 24, "lenders_2026"), selling_pct: A(0.06, 0.04, 0.08, "common_practice"),
+        profit_on_cost: A(0.2, 0.15, 0.25, "developer_rule"), vacancy_pct: A(0.05, 0.03, 0.08, "common_practice"),
+        opex_pct: A(0.3, 0.25, 0.4, "common_practice"), cap_rate: A(0.0625, 0.055, 0.07, "chicago_brokers_2026"),
+        target_yield: A(0.0775, 0.07, 0.09, "spread_rule"),
+      },
+      floor_ft: 11,
+    },
+  };
+  let unlimited = false;
+  let claimed = false;
+  await page.route("**/api/entitlements", (r) => r.fulfill({ json: {
+    signed_in: true, deep_analysis: { unlimited, free_left: claimed ? 0 : 1, free_pin: claimed ? analysis.pin : null, free_address: null } } }));
+  await page.route("**/api/entitlements/deep-analysis", (r) => { claimed = true; return r.fulfill({ json: { ok: true, pin: analysis.pin, unlimited: false } }); });
+  await page.route(/\/api\/deep-analysis\/project/, (r) => r.fulfill({ json: { pin: analysis.pin, project: null, numbers: null, step: 0 } }));
+  await page.route(/\/api\/deep-analysis\?/, (r) => r.fulfill({ json: analysis }));
+
+  await open(page, ROUTES[1].path, ROUTES[1].ready);
+  await page.evaluate(() => { const c = document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas'); if (c) c.dataset.probe = "overview"; });
+  await expect(page.locator('[data-tile="deep"]')).toContainText("1 free");
+  await page.getByRole("tab", { name: "Deep analysis" }).click();
+  const claim = page.getByTestId("deep-claim");
+  await expect(claim).toBeVisible();
+  expect(claimed, "opening the tab claims nothing").toBe(false);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(300);
+    expect(await axe(page), `axe ${scheme} (free)`).toEqual([]);
+  }
+  await claim.click();
+  await expect(page.getByTestId("deep-bid")).toHaveText("$1.75M");
+  expect(claimed).toBe(true);
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('[data-testid="map-band"] canvas')?.dataset.probe)).toBe("overview");
+  await expect(page.getByTestId("deep-stress").getByRole("cell")).toHaveCount(9);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(300);
+    expect(await axe(page), `axe ${scheme} (open)`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "deep analysis overflow").toBeLessThanOrEqual(1);
+  void unlimited;
+});

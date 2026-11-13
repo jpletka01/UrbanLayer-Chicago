@@ -132,6 +132,7 @@ def _dump(model: Any) -> Any:
 
 def build_payload(report: Any, *, pin: str) -> dict:
     """The tab's JSON from a ``ReportData`` built with ``rasters=False``. Pure (tests call it directly)."""
+    from backend.deep_inputs import build_inputs
     from backend.report_builder import envelope_geometry
 
     ctx = report.context
@@ -211,6 +212,7 @@ def build_payload(report: Any, *, pin: str) -> dict:
             "comp_valuation": report.comp_valuation,
         },
         "checklist": _checklist(report),
+        "inputs": build_inputs(report),
         "partial_failures": report.partial_failures,
     }
 
@@ -265,12 +267,24 @@ class ProjectIn(BaseModel):
 
 
 class NumbersIn(BaseModel):
+    """The builder's own numbers (every one optional: absent = the page's starting value). Bounded so a stored row
+    can't carry nonsense; the page's sliders stay well inside these."""
     model_config = ConfigDict(extra="forbid")
-    rent_month: float | None = Field(default=None, ge=0, le=100_000)
-    price: float | None = Field(default=None, ge=0, le=500_000_000)
+    land_price: float | None = Field(default=None, ge=0, le=500_000_000)
+    sale_price_unit: float | None = Field(default=None, ge=0, le=50_000_000)
+    rent_unit_month: float | None = Field(default=None, ge=0, le=100_000)
     build_cost_sqft: float | None = Field(default=None, ge=0, le=10_000)
-    taxes_year: float | None = Field(default=None, ge=0, le=50_000_000)
-    target_return_pct: float | None = Field(default=None, ge=0, le=100)
+    soft_cost_pct: float | None = Field(default=None, ge=0, le=1)
+    loan_to_cost: float | None = Field(default=None, ge=0, le=1)
+    loan_rate: float | None = Field(default=None, ge=0, le=0.5)
+    build_months: float | None = Field(default=None, ge=0, le=120)
+    selling_pct: float | None = Field(default=None, ge=0, le=0.5)
+    profit_on_cost: float | None = Field(default=None, ge=0, le=2)
+    vacancy_pct: float | None = Field(default=None, ge=0, le=1)
+    opex_pct: float | None = Field(default=None, ge=0, le=1)
+    cap_rate: float | None = Field(default=None, ge=0, le=0.5)
+    target_yield: float | None = Field(default=None, ge=0, le=0.5)
+    tax_rate: float | None = Field(default=None, ge=0, le=0.2)
 
 
 class ProjectBody(BaseModel):
@@ -278,6 +292,7 @@ class ProjectBody(BaseModel):
     pin: str = Field(pattern=r"^\d{14}$")
     project: ProjectIn | None = None
     numbers: NumbersIn | None = None
+    mode: Literal["sell", "rent"] = "sell"
     step: int = Field(default=0, ge=0, le=12)
 
 
@@ -318,7 +333,7 @@ async def put_project(body: ProjectBody, user: dict = Depends(require_auth)) -> 
              step = excluded.step, updated_at = excluded.updated_at""",
         (uid, body.pin[:10],
          json.dumps(body.project.model_dump()) if body.project else None,
-         json.dumps(body.numbers.model_dump()) if body.numbers else None,
+         json.dumps({**body.numbers.model_dump(exclude_none=True), "mode": body.mode}) if body.numbers else json.dumps({"mode": body.mode}),
          body.step, now),
     )
     await conn.commit()

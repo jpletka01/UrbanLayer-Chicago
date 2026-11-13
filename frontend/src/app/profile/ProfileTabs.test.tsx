@@ -10,6 +10,9 @@ import { BuildTab } from "./BuildTab";
 import { MoneyTab } from "./MoneyTab";
 import { AskContext } from "../ask/askContext";
 
+// The Overview's sixth tile reads the account's Deep analysis state (Item 124): signed out here.
+vi.mock("../../contexts/AuthContext", () => ({ useAuthContext: () => ({ isAuthenticated: false, authRequired: true, signIn: vi.fn() }) }));
+
 const tp = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: "pages", ...opts }) as string;
 
 afterEach(async () => { cleanup(); await i18n.changeLanguage("en"); });
@@ -37,12 +40,15 @@ describe("Overview", () => {
     expect(screen.queryByTestId("lot-in-use")).toBeNull();
   });
 
-  it("leads with the answer sentence, then four tiles with icon, label and figure", async () => {
+  it("leads with the answer sentence, then a tile per tab with icon, label and figure", async () => {
     const { container, onOpenTab } = renderOverview();
     expect(screen.getByTestId("answer-sentence").textContent).toMatch(/^B3-2 allows/);
     const tiles = within(screen.getByTestId("overview-tiles")).getAllByRole("listitem");
-    expect(tiles).toHaveLength(4);
-    expect(tiles.map((li) => li.getAttribute("data-tile"))).toEqual(["units", "tax", "walk", "lastSale"]);
+    expect(tiles).toHaveLength(5);
+    expect(tiles.map((li) => li.getAttribute("data-tile"))).toEqual(["units", "tax", "walk", "lastSale", "deep"]);
+    // Signed out, the Deep analysis tile offers the free one, with no price (Item 124).
+    expect(tiles[4].textContent).toMatch(/1 free/);
+    expect(tiles[4].textContent).not.toMatch(/\$/);
     for (const li of tiles) expect(li.querySelector("svg")).not.toBeNull();
     fireEvent.click(within(tiles[0]).getByRole("button"));
     expect(onOpenTab).toHaveBeenCalledWith("build");

@@ -24,7 +24,7 @@ import {
   GROUPS, buildStyle, lotPinImage, modeOpacity, themePaint, type GroupId, type LayerMode, type MapTiles, type Theme,
 } from "./mapStyle";
 import { MapKey, type GroupState } from "./MapKey";
-import { BEARING_STEP, LOT_BUILDING_LAYER, MASS_LAYER, MASS_SOURCE, VIEW_3D, can3d, ensure3dLayers, markLotBuildings, massData, nextPitch, repaint3d, set3d } from "./buildings3d";
+import { BEARING_STEP, LOT_BUILDING_LAYER, MASS_LAYER, MASS_SOURCE, OVER_LIMIT_COLOR, VIEW_3D, can3d, ensure3dLayers, markLotBuildings, massData, nextPitch, repaint3d, set3d } from "./buildings3d";
 import type { ZoningMass } from "../profile/profileModel";
 import { Toggletip } from "../../components/ui/Toggletip";
 import { useIsPhone } from "../../lib/useIsPhone";
@@ -68,6 +68,9 @@ export interface NextMapProps {
   expanded?: boolean;
   /** The illustrative zoning mass to raise over the lot in 3D (Build only, M6); never drawn when `approximate`. */
   mass?: ZoningMass | null;
+  /** A Deep analysis project (Item 124): its height on the lot, the part above the height limit in red, and a label.
+      Takes the place of `mass`; never drawn when `approximate`. */
+  project?: { heightFt: number; capFt: number | null; zoneClass: string | null; label: string } | null;
   className?: string;
 }
 
@@ -93,7 +96,7 @@ type Picked =
 
 export function NextMap({
   lat, lon, geometry, approximate, pin10, view, sales, salesState, onRetrySales,
-  building = null, buildingState = "absent", onRetryBuilding, focusBuilding = null, expanded = false, mass = null, className,
+  building = null, buildingState = "absent", onRetryBuilding, focusBuilding = null, expanded = false, mass = null, project = null, className,
 }: NextMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -276,13 +279,16 @@ export function NextMap({
     m.easeTo({ ...to, duration: reducedMotion() ? 0 : ms });
   };
   // The lot in 3D: today's building on it in the lot's color, and on Build the illustrative zoning mass over it.
-  const showMass = on3d && !!mass && !approximate && !!lotGeometry;
+  const showMass = on3d && (!!mass || !!project) && !approximate && !!lotGeometry;
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !map.getSource(MASS_SOURCE)) return;
-    (map.getSource(MASS_SOURCE) as GeoJSONSource).setData(massData(showMass ? lotGeometry : null, showMass ? mass!.heightFt : null, mass?.zoneClass ?? null));
+    const data = !showMass ? massData(null, null)
+      : project ? massData(lotGeometry, project.heightFt, project.zoneClass, project.capFt)
+      : massData(lotGeometry, mass!.heightFt, mass?.zoneClass ?? null);
+    (map.getSource(MASS_SOURCE) as GeoJSONSource).setData(data);
     for (const id of [MASS_LAYER, LOT_BUILDING_LAYER]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", showMass ? "visible" : "none");
-  }, [showMass, lotGeometry, mass, ready]);
+  }, [showMass, lotGeometry, mass, project, ready]);
   const lotIds = useRef<Set<string | number>>(new Set());
   useEffect(() => {
     const map = mapRef.current;
@@ -655,7 +661,16 @@ export function NextMap({
           </button>
         </div>
       )}
-      {ready && showMass && mass && (
+      {ready && showMass && project && (
+        <div className={`absolute left-3 z-10 flex items-center gap-2 rounded-lg bg-nx-page px-2 py-1 text-caption shadow-[0_1px_2px_rgb(0_0_0/0.12)] ${expanded ? "top-14" : "top-12"}`} data-testid="map-project-label">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm border border-nx-ink/60 bg-nx-ink/20" aria-hidden />
+          <span className="font-semibold">{project.label}</span>
+          {project.capFt != null && project.heightFt > project.capFt && (
+            <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: OVER_LIMIT_COLOR }} aria-hidden />{t("deep.map.over")}</span>
+          )}
+        </div>
+      )}
+      {ready && showMass && mass && !project && (
         <div className={`absolute left-3 z-10 flex items-center gap-1 rounded-lg bg-nx-page px-2 py-1 text-caption shadow-[0_1px_2px_rgb(0_0_0/0.12)] ${expanded ? "top-14" : "top-12"}`} data-testid="map-mass-label">
           <span className="inline-block h-2.5 w-2.5 rounded-sm border border-nx-ink/60 bg-nx-ink/20" aria-hidden />
           <span>{t("map.mass.label")}</span>

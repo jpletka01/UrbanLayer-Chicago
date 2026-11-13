@@ -240,12 +240,12 @@ export function ruleChips(data: ScorecardResponse, verdict: ScorecardVerdict): R
 // Build: units allowed vs built · Money: property tax · Neighborhood: walk score · History: last market sale.
 // The zoning district lives in the answer sentence and the map band, not in a tile.
 
-export type TabId = "build" | "money" | "neighborhood" | "history";
+export type TabId = "build" | "money" | "neighborhood" | "history" | "deep";
 /** The tabs built so far, which a tile can open. */
-export type TileTab = "build" | "money" | "neighborhood" | "history";
+export type TileTab = "build" | "money" | "neighborhood" | "history" | "deep";
 
 export interface Tile {
-  key: "units" | "tax" | "walk" | "lastSale";
+  key: "units" | "tax" | "walk" | "lastSale" | "deep";
   /** The tab this tile summarizes (its label names it). */
   tabOf: TabId;
   label: string;

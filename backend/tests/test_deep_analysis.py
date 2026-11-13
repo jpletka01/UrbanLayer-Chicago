@@ -202,7 +202,7 @@ class TestAntiScrape:
 
 
 PROJECT = {"kind": "three_flat", "units": 3, "stories": 3, "floor_area_sqft": 3750}
-NUMBERS = {"rent_month": 2100, "price": 450000, "build_cost_sqft": 300, "taxes_year": 9000, "target_return_pct": 7}
+NUMBERS = {"rent_unit_month": 2100, "land_price": 450000, "build_cost_sqft": 300, "profit_on_cost": 0.2, "target_yield": 0.075}
 
 
 class TestProject:
@@ -214,14 +214,15 @@ class TestProject:
         r = c.put("/api/deep-analysis/project", json={"pin": LOT_A, "project": PROJECT, "numbers": NUMBERS, "step": 2})
         assert r.status_code == 200
         got = c.get(f"/api/deep-analysis/project?pin={UNIT_A}").json()
-        assert got["project"] == PROJECT and got["step"] == 2 and got["numbers"]["rent_month"] == 2100
+        assert got["project"] == PROJECT and got["step"] == 2 and got["numbers"]["rent_unit_month"] == 2100 and got["numbers"]["mode"] == "sell"
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("body", [
         {"pin": LOT_A, "project": {**PROJECT, "units": -1}},
         {"pin": LOT_A, "project": {**PROJECT, "kind": "skyscraper"}},
         {"pin": LOT_A, "project": PROJECT, "user_id": "u2"},
-        {"pin": LOT_A, "numbers": {**NUMBERS, "target_return_pct": 500}},
+        {"pin": LOT_A, "numbers": {**NUMBERS, "target_yield": 5}},
+        {"pin": LOT_A, "mode": "flip"},
         {"pin": LOT_A, "step": 99},
         {"pin": "1433"},
     ])
@@ -344,3 +345,23 @@ class TestMigration:
             assert await cur.fetchone()
             await db.close_db()
         assert aiosqlite
+
+
+class TestInputs:
+    def test_last_sale_skips_nominal_transfers_and_assumptions_carry_sources(self):
+        from backend.models import SaleRecord
+        r = _report()
+        r.context.property.sales_history = [
+            SaleRecord(date="2023-05-01", price=1_207_000, deed_type="WARRANTY"),
+            SaleRecord(date="2024-02-01", price=1, deed_type="QUIT CLAIM"),
+            SaleRecord(date="2019-01-01", price=900_000),
+        ]
+        inp = deep_analysis.build_payload(r, pin=LOT_A)["inputs"]
+        assert inp["last_sale"] == {"price": 1_207_000, "date": "2023-05-01", "deed_type": "WARRANTY"}
+        for a in inp["assumptions"].values():
+            assert a["low"] <= a["value"] <= a["high"] and a["source"] and a["as_of"]
+        assert inp["lot"]["land_sqft"] == 3125 and inp["lot"]["far"] == 1.2
+
+    def test_no_sales_no_rent_is_none_not_zero(self):
+        inp = deep_analysis.build_payload(_report(), pin=LOT_A)["inputs"]
+        assert inp["last_sale"] is None and inp["area_sales"] == {} and inp["rents"]["census"] == {}

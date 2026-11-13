@@ -2,7 +2,7 @@
 // per tab with its key figure, a small visual and at most one warning. Tiles alternate SnowUI's two pale stat
 // colors and reflow from four to two to one.
 import { useTranslation } from "react-i18next";
-import { ArrowRight, SquareParking, Sprout, TriangleAlert } from "lucide-react";
+import { ArrowRight, Scale, SquareParking, Sprout, TriangleAlert } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict } from "../../lib/scorecardVerdict";
 import { answerSentence } from "../../lib/answerSentence";
@@ -12,8 +12,9 @@ import { ICON, STROKE } from "../icons";
 import { Pill } from "../ui/Blocks";
 import { overviewTiles, type LotInUse, type Tile, type TileTab } from "./profileModel";
 import { Term } from "../ui/Term";
+import { useDeepGate, type Gate } from "./deepGate";
 
-const TILE_ICON = { units: ICON.units, tax: ICON.tax, walk: ICON.walk, lastSale: ICON.sale } as const;
+const TILE_ICON = { units: ICON.units, tax: ICON.tax, walk: ICON.walk, lastSale: ICON.sale, deep: Scale } as const;
 
 export function OverviewTab({
   data,
@@ -39,7 +40,8 @@ export function OverviewTab({
 }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
-  const tiles = overviewTiles(data, verdict, t, i18n.language, { buildingPending });
+  const deepGate = useDeepGate(data.resolved_pin ?? null, identity === "exact");
+  const tiles = [...overviewTiles(data, verdict, t, i18n.language, { buildingPending }), deepTile(deepGate.gate, deepGate.ent?.deep_analysis.free_address ?? deepGate.ent?.deep_analysis.free_pin ?? null, t)];
   return (
     <div className="flex flex-col gap-7">
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
@@ -64,6 +66,19 @@ export function OverviewTab({
       </ul>
     </div>
   );
+}
+
+/** The sixth tile (Item 124): where this person stands with Deep analysis on this lot, in words, no price. */
+function deepTile(gate: Gate, freeWhere: string | null, t: (k: string, o?: Record<string, unknown>) => string): Tile {
+  const base = { key: "deep" as const, tabOf: "deep" as const, label: t("profile.tiles.deep"), state: null, tab: "deep" as const };
+  switch (gate) {
+    case "open": return { ...base, figure: t("deep.tile.open"), note: t("deep.tile.openNote") };
+    case "unused": return { ...base, figure: t("deep.tile.free"), note: t("deep.tile.freeNote") };
+    case "signed_out": return { ...base, figure: t("deep.tile.free"), note: t("deep.tile.signIn") };
+    case "elsewhere": return { ...base, figure: t("deep.tile.used"), note: freeWhere ? t("deep.tile.usedOn", { where: freeWhere }) : t("deep.tile.usedNote") };
+    case "approximate": return { ...base, figure: "—", note: t("deep.tile.approximate"), tab: null };
+    default: return { ...base, figure: "", note: t("deep.gate.checking"), checking: true };
+  }
 }
 
 export function TileCard({ tile, alt, onOpenTab }: { tile: Tile; alt: boolean; onOpenTab: (tab: TileTab) => void }) {
