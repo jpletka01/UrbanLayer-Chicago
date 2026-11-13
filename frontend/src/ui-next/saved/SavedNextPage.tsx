@@ -116,10 +116,10 @@ function SavedLotCard({ lot, onUnsave, account }: { lot: SavedLot; onUnsave: () 
   const dateFmt = useMemo(() => new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric" }), [locale]);
   const day = (iso: string) => dateFmt.format(new Date(`${iso}T12:00:00`));
   const money = (v: number) => `$${Math.round(v).toLocaleString(locale)}`;
-  const changes = useLotChanges(account ? lot.id : null);
+  const { observe, ...changes } = useLotChanges(account ? lot.id : null);
 
   return (
-    <li className="relative flex flex-col overflow-hidden rounded-2xl bg-nx-block" data-testid="saved-lot" ref={changes.observe}>
+    <li className="relative flex flex-col overflow-hidden rounded-2xl bg-nx-block" data-testid="saved-lot" ref={observe}>
       {/* The block around the lot, as Discovery's list draws it (owner, 2026-11-12). */}
       <Link to={lotHref(lot)} tabIndex={-1} aria-hidden className="block hover:opacity-90">
         <BlockSlice pin10={lot.pin ? lot.pin.slice(0, 10) : null} zoneTag={lot.zone} family={familyOf(lot.zone)} outline={lot.outline} />
@@ -145,10 +145,10 @@ function SavedLotCard({ lot, onUnsave, account }: { lot: SavedLot; onUnsave: () 
   );
 }
 
-type ChangesState = { observe: (el: HTMLElement | null) => void; data: SavedLotChanges | null; failed: boolean; retry: () => void };
+type ChangesState = { data: SavedLotChanges | null; failed: boolean; retry: () => void };
 
 /** Ask what changed on one saved lot once its card is near the screen (at most three checks run at once). */
-function useLotChanges(id: string | null): ChangesState {
+function useLotChanges(id: string | null): ChangesState & { observe: (el: HTMLElement | null) => void } {
   const [el, setEl] = useState<HTMLElement | null>(null);
   // Without IntersectionObserver (old browsers, tests) every card checks at once, still three at a time.
   const [visible, setVisible] = useState(() => typeof IntersectionObserver === "undefined");
