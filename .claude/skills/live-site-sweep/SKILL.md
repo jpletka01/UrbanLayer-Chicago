@@ -30,7 +30,7 @@ It was clean on production on 2026-09-28 (16/16).
 ## Related checks
 
 - `npm run test:mobile` (with `E2E_BASE_URL=https://urbanlayerchicago.com` for prod) runs the
-  deeper phone-layout audit: 15 routes × 5 devices, and it names the element that overflows.
+  deeper phone-layout audit: 14 routes × 5 devices, and it names the element that overflows.
 - Lighthouse (performance/accessibility) isn't automated; mobile performance was 29–56 in
   September (single 4 MB bundle), a known next step.
 - When adding a page, add it to `ROUTES` here and to `PAGES` in `e2e/mobile-overflow.spec.ts`.

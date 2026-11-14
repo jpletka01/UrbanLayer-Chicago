@@ -81,7 +81,7 @@ The SnowUI frame and Coastal charts (decision Items 73–77): `src/ui-next/ui-ne
 npm run dev          # dev server on :5173
 npx tsc --noEmit     # quick type check — weaker than the build; NOT what CI gates on
 npm test             # vitest (699 across 78 files). RUNS IN CI — a failure blocks the deploy.
-npm run test:mobile  # Playwright horizontal-overflow audit: 15 routes × 5 phone profiles; also runs e2e/ui-next.spec.ts (needs dev stack up;
+npm run test:mobile  # Playwright horizontal-overflow audit: 14 routes × 5 phone profiles; also runs e2e/ui-next.spec.ts (needs dev stack up;
                      # E2E_BASE_URL=https://urbanlayerchicago.com audits prod). Run after layout work on any
                      # page surface. npm run test:mobile:report prints the device×page matrix + offenders.
 npm run build        # ⚠️ CI-PARITY GATE — run before pushing to main. = tsc -b (noUnusedLocals etc.) + vite build.
