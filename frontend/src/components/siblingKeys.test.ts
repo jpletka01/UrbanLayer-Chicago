@@ -62,7 +62,7 @@ function duplicateSiblingKeys(file: string): string[] {
 
 describe("sibling JSX keys", () => {
   it("finds the component files", () => {
-    expect(FILES).toContain("components/ScorecardPage.tsx");
+    expect(FILES).toContain("ui-next/profile/ProfileNextPage.tsx");
   });
 
   it.each(FILES)("%s has no two siblings with the same key", (file) => {

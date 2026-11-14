@@ -1965,7 +1965,17 @@
         "week": "Previous 7 days",
         "month": "Previous 30 days",
         "older": "Older"
-      }
+      },
+      "delete": "Delete",
+      "deleteOne": "Delete {{title}}",
+      "deleteAsk": "Delete this chat?",
+      "cancel": "Cancel",
+      "deleteFailed": "That chat couldn't be deleted. Try again."
+    },
+    "shared": {
+      "crumb": "Shared chat",
+      "note": "A shared conversation, read only.",
+      "startOwn": "Start your own chat"
     }
   },
   "landing": {
@@ -2219,7 +2229,7 @@
       "compBody": "Early access: Pro, {{limit}} questions a month, until {{date}}.",
       "manageBilling": "Manage billing",
       "adminBody": "Admin: questions are counted, never refused.",
-      "proWhat": "{{limit}} questions a month, Deep analysis on every lot",
+      "proWhat": "{{limit}} questions a month",
       "getPro": "Get Pro",
       "seePricing": "See pricing",
       "billedMonthly": "{{price}} a month",
@@ -2259,7 +2269,11 @@
     "things": {
       "lots": "Saved lots",
       "searches": "Saved searches",
-      "chats": "Chats"
+      "chats": "Chats",
+      "deleteChats": "Delete all chats",
+      "deleteChatsAsk": "Delete every chat? This can't be undone.",
+      "deleteChatsConfirm": "Delete all",
+      "deleteChatsFailed": "Your chats couldn't be deleted. Try again."
     },
     "reports": {
       "body": "Feasibility reports bought before the subscription. Each keeps its original copy."
@@ -2280,7 +2294,7 @@
   "pricing": {
     "title": "Pricing",
     "heading": "Plans",
-    "lead": "Every lot's Property Profile, Discovery and the map are free. Pro adds more questions and a Deep analysis of any lot.",
+    "lead": "Every lot's Property Profile, Discovery and the map are free. Pro adds more questions to the analyst.",
     "billing": "Billing",
     "monthly": "Monthly",
     "yearly": "Yearly",
@@ -2297,13 +2311,11 @@
       "Every Property Profile tab, on every lot",
       "Discovery across all 77 community areas",
       "50 questions a month to the analyst",
-      "One Deep analysis, free, on the lot you choose",
       "Saved lots and searches"
     ],
     "proFeatures": [
       "Everything in Free",
       "200 questions a month",
-      "Deep analysis on every lot, with its PDF",
       "Pro lasts to the end of the period you paid for"
     ],
     "signedOutNote": "Signed out, you can ask 3 questions before signing in.",
@@ -2326,7 +2338,7 @@
       },
       "trial": {
         "q": "Is there a trial?",
-        "a": "The free plan is the trial: every tab, 50 questions a month and one Deep analysis, with no card."
+        "a": "The free plan is the trial: every tab and 50 questions a month, with no card."
       },
       "reports": {
         "q": "Reports I bought before?",
@@ -2345,5 +2357,26 @@
       "Two months less than paying monthly",
       "Switch or cancel from Settings"
     ]
+  },
+  "notFound": {
+    "crumb": "Not found",
+    "title": "Page not found",
+    "body": "There's nothing at this address. Look up a Chicago lot or explore Discovery instead.",
+    "lookup": "Look up an address",
+    "discover": "Open Discovery"
+  },
+  "segment": {
+    "question": "What best describes you?",
+    "hint": "One tap — it helps us build for the right people.",
+    "skip": "Skip",
+    "options": {
+      "developer": "Developer",
+      "architect": "Architect",
+      "attorney": "Attorney",
+      "broker": "Broker / Appraiser",
+      "investor": "Investor",
+      "homeowner": "Homeowner",
+      "curious": "Just curious"
+    }
   }
 }

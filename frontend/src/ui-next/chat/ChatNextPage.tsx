@@ -7,6 +7,7 @@
 // storing, limits and errors are shared, not forked.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FileDown, Map as MapIcon, Maximize2, Minimize2, Plus, RotateCcw, Share2, SquareArrowOutUpRight, BookText, MapPin, X } from "lucide-react";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
@@ -102,7 +103,11 @@ export default function ChatNextPage() {
   const needsSignIn = (rateLimited && !session.canPersist) || session.showAuthModal;
 
   const startNew = () => { setDraft(""); session.newChat(); };
-  const tools = (
+  const shared = session.isSharedView;
+  const onDeleted = (id: string) => { if (id === session.conversationId) startNew(); };
+  const tools = shared ? (
+    <ToolButton label={t("next:chat.shared.startOwn")} icon={Plus} onClick={startNew} testId="chat-shared-new" />
+  ) : (
     <>
       <span className="lg:hidden">
         <ToolButton label={t("next:chat.list.show")} icon={ICON.chats} onClick={() => setListSheet(true)} testId="chat-list-show" />
@@ -173,9 +178,10 @@ export default function ChatNextPage() {
 
   return (
     <AppFrame
-      crumbs={[t("next:nav.chat"), title ?? t("next:frame.newChat")]} tools={tools} fill drawer={drawer}
-      secondary={listShown
-        ? <ChatList activeId={session.conversationId} refreshKey={session.conversationId} onNewChat={startNew} onHide={() => showList(false)} />
+      crumbs={[shared ? t("next:chat.shared.crumb") : t("next:nav.chat"), title ?? t("next:frame.newChat")]} tools={tools} fill drawer={drawer}
+      // A shared conversation (/s/:token) is someone else's: no chat list beside it (Phase 10).
+      secondary={shared ? undefined : listShown
+        ? <ChatList activeId={session.conversationId} refreshKey={session.conversationId} onNewChat={startNew} onHide={() => showList(false)} onDeleted={onDeleted} />
         : <ChatListStrip onShow={() => showList(true)} onNewChat={startNew} />}
     >
       <Dialog.Root open={listSheet} onOpenChange={setListSheet}>
@@ -188,7 +194,7 @@ export default function ChatNextPage() {
               <Dialog.Close className="absolute right-3 top-4 grid h-8 w-8 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon" aria-label={t("next:chat.list.hide")}>
                 <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
               </Dialog.Close>
-              <ChatList activeId={session.conversationId} refreshKey={session.conversationId} onNewChat={startNew} onNavigate={() => setListSheet(false)} />
+              <ChatList activeId={session.conversationId} refreshKey={session.conversationId} onNewChat={startNew} onNavigate={() => setListSheet(false)} onDeleted={onDeleted} />
             </Dialog.Content>
           </div>
         </Dialog.Portal>
@@ -234,6 +240,12 @@ export default function ChatNextPage() {
               </div>
             ) : (
               <div className="mx-auto flex max-w-[760px] flex-col gap-5 py-6" aria-live="polite">
+                {shared && (
+                  <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-nx-block px-3 py-2 text-caption" role="note" data-testid="chat-shared-note">
+                    <span className="nx-muted">{t("next:chat.shared.note")}</span>
+                    <Link to="/chat" className="font-semibold text-nx-ink underline underline-offset-2 touch-target">{t("next:chat.shared.startOwn")}</Link>
+                  </p>
+                )}
                 {messages.map((m, i) => {
                   const streamingThis = m.role === "assistant" && i === messages.length - 1 && streaming;
                   const previews = streamingThis ? [] : previewsFor(m);
@@ -283,7 +295,7 @@ export default function ChatNextPage() {
           </div>
         )}
 
-        {!empty ? (
+        {!empty && !shared ? (
           <div className="px-4 pb-4 pt-2 sm:px-7">
             <div className="mx-auto flex max-w-[760px] flex-col gap-1.5">
               {composer}
@@ -294,7 +306,7 @@ export default function ChatNextPage() {
                 <p className="px-2 text-caption nx-muted" role="status" data-testid="chat-left">
                   {usagePlan === "anonymous" ? t("common:quota.left", { count: questionsLeft }) : t("common:quota.leftMonth", { count: questionsLeft })}
                 </p>
-              ) : null}
+              ) : <p className="px-2 text-caption nx-muted" data-testid="chat-legal">{t("next:landing.legal")}</p>}
             </div>
           </div>
         ) : null}

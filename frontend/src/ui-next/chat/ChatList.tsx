@@ -5,8 +5,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LogIn, PanelLeftClose, PanelLeftOpen, Plus, Search } from "lucide-react";
-import { listConversations } from "../../lib/api";
+import { LogIn, PanelLeftClose, PanelLeftOpen, Plus, Search, Trash2 } from "lucide-react";
+import { deleteConversationAPI, listConversations } from "../../lib/api";
 import type { Conversation } from "../../lib/types";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { ICON, STROKE } from "../icons";
@@ -18,6 +18,7 @@ export function ChatList({
   onNewChat,
   onHide,
   onNavigate,
+  onDeleted,
 }: {
   activeId: string | null;
   /** Changes when the list should be read again (a new conversation was saved). */
@@ -26,6 +27,8 @@ export function ChatList({
   /** Absent in the phone sheet, which has its own close button. */
   onHide?: () => void;
   onNavigate?: () => void;
+  /** A chat was deleted (Phase 10): the page leaves it if it was the open one. */
+  onDeleted?: (id: string) => void;
 }) {
   const { t } = useTranslation("next");
   const { isAuthenticated, authRequired, signIn } = useAuthContext();
@@ -33,6 +36,21 @@ export function ChatList({
   const [chats, setChats] = useState<Conversation[] | null>(null);
   const [query, setQuery] = useState("");
   const [now] = useState(() => Date.now());
+  // Delete is two steps in the row itself (Phase 10): the bin, then "Delete" or "Cancel" in its place.
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [deleteFailed, setDeleteFailed] = useState(false);
+
+  const remove = async (id: string) => {
+    setDeleteFailed(false);
+    try {
+      await deleteConversationAPI(id);
+      setChats((c) => (c ? c.filter((x) => x.id !== id) : c));
+      setConfirming(null);
+      onDeleted?.(id);
+    } catch {
+      setDeleteFailed(true);
+    }
+  };
 
   useEffect(() => {
     if (!canList) return;
@@ -65,6 +83,7 @@ export function ChatList({
         </label>
       )}
       <div className="-mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1">
+        {deleteFailed && <p role="alert" className="mb-2 px-2.5 text-caption text-nx-pill-red">{t("chat.list.deleteFailed")}</p>}
         {!canList ? (
           <button type="button" onClick={signIn} className={`${row} w-full text-left text-caption nx-muted hover:bg-nx-ink/5`}>
             <LogIn aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
@@ -84,11 +103,33 @@ export function ChatList({
                 {g.chats.map((c) => {
                   const active = c.id === activeId;
                   return (
-                    <li key={c.id}>
-                      <Link to={`/c/${c.id}`} onClick={onNavigate} aria-current={active ? "page" : undefined} title={c.title || undefined}
-                        className={`${row} text-caption ${active ? "bg-nx-ink/[0.07] font-medium" : "hover:bg-nx-ink/5"}`}>
-                        <span className="min-w-0 truncate">{c.title || t("frame.untitledChat")}</span>
-                      </Link>
+                    <li key={c.id} className="group relative" data-testid="chat-list-row">
+                      {confirming === c.id ? (
+                        <div className={`${row} justify-between bg-nx-pill-red-bg text-caption`} role="group" aria-label={t("chat.list.deleteAsk", { title: c.title || t("frame.untitledChat") })}>
+                          <span className="min-w-0 truncate text-nx-pill-red">{t("chat.list.deleteAsk", { title: c.title || t("frame.untitledChat") })}</span>
+                          <span className="flex shrink-0 gap-1">
+                            <button type="button" onClick={() => remove(c.id)} className="rounded-lg px-1.5 font-semibold text-nx-pill-red hover:underline touch-target" data-testid="chat-delete-confirm">{t("chat.list.delete")}</button>
+                            <button type="button" onClick={() => setConfirming(null)} className="rounded-lg px-1.5 hover:underline touch-target" autoFocus>{t("chat.list.cancel")}</button>
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <Link to={`/c/${c.id}`} onClick={onNavigate} aria-current={active ? "page" : undefined} title={c.title || undefined}
+                            className={`${row} pr-9 text-caption ${active ? "bg-nx-ink/[0.07] font-medium" : "hover:bg-nx-ink/5"}`}>
+                            <span className="min-w-0 truncate">{c.title || t("frame.untitledChat")}</span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => { setDeleteFailed(false); setConfirming(c.id); }}
+                            aria-label={t("chat.list.deleteOne", { title: c.title || t("frame.untitledChat") })}
+                            title={t("chat.list.delete")}
+                            className="absolute right-1 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg opacity-100 hover:bg-nx-ink/10 focus-visible:opacity-100 touch-icon lg:opacity-0 lg:group-hover:opacity-100"
+                            data-testid="chat-delete"
+                          >
+                            <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
+                          </button>
+                        </>
+                      )}
                     </li>
                   );
                 })}

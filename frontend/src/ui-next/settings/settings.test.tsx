@@ -101,7 +101,8 @@ describe("the page", () => {
     expect(usage.textContent).toContain("Dec 1");
     expect(within(usage).getByRole("img", { name: "12 of 50 questions used" })).toBeTruthy();
     const offer = await screen.findByTestId("settings-pro-offer");
-    expect(offer.textContent).toContain("200 questions a month, Deep analysis on every lot");
+    expect(offer.textContent).toContain("200 questions a month");
+    expect(offer.textContent).not.toContain("Deep analysis");
     expect(offer.textContent).toContain("Coming soon");
     expect(within(offer).getByRole("link", { name: "See pricing" }).getAttribute("href")).toBe("/pricing");
     expect(screen.queryByTestId("settings-get-pro")).toBeNull();

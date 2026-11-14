@@ -13,7 +13,7 @@ import {
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import {
-  deleteAccount, fetchMyPurchases, getSubscription, getUsage, listConversations, redeemVoucher,
+  clearAllConversations, deleteAccount, fetchMyPurchases, getSubscription, getUsage, listConversations, redeemVoucher,
   savedApi, type BillingInterval, type ReportPurchase, type SubscriptionStatus, type Usage,
 } from "../../lib/api";
 import { PROVIDER_NAMES } from "../../lib/authNotice";
@@ -498,7 +498,48 @@ function ThingsSection() {
           </li>
         ))}
       </ul>
+      {(counts.chats ?? 0) > 0 && <DeleteAllChats onDone={() => setCounts((c) => ({ ...c, chats: 0 }))} />}
     </Block>
+  );
+}
+
+/** "Delete all chats" (Phase 10, from today's chat history): two steps, the second says it can't be undone. */
+function DeleteAllChats({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation("next");
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  async function go() {
+    setBusy(true);
+    setFailed(false);
+    try {
+      await clearAllConversations();
+      setAsking(false);
+      onDone();
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const btn = "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-caption touch-target";
+  return (
+    <div className="flex flex-col gap-2 border-t border-nx-ink/10 pt-3" data-testid="settings-delete-chats">
+      {!asking ? (
+        <button type="button" onClick={() => setAsking(true)} className={`${btn} self-start ring-1 ring-inset ring-nx-ink/20 hover:bg-nx-ink/5`}>
+          <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{t("settings.things.deleteChats")}
+        </button>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("settings.things.deleteChatsAsk")}>
+          <span className="text-caption">{t("settings.things.deleteChatsAsk")}</span>
+          <button type="button" onClick={go} disabled={busy} className={`${btn} bg-nx-pill-red-bg font-semibold text-nx-pill-red disabled:opacity-50`} data-testid="settings-delete-chats-confirm">
+            {t("settings.things.deleteChatsConfirm")}
+          </button>
+          <button type="button" onClick={() => setAsking(false)} className={`${btn} hover:bg-nx-ink/5`} autoFocus>{t("chat.list.cancel")}</button>
+        </div>
+      )}
+      {failed && <p role="alert" className="text-caption text-nx-pill-red">{t("settings.things.deleteChatsFailed")}</p>}
+    </div>
   );
 }
 

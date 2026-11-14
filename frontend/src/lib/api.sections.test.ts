@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchCodeSubsection, fetchSection, isNotCodified } from "./api";
+import { fetchSection, isNotCodified } from "./api";
 
 // The 404 for a section an amendment added (17-3-0600) carries a body, not just a status:
 // the viewers show it instead of "unavailable". Other failures stay null.
@@ -20,18 +20,17 @@ const detail = {
 };
 
 describe("section fetchers", () => {
-  it("a 404 with not_in_published_code resolves to the notice (both endpoints)", async () => {
+  it("a 404 with not_in_published_code resolves to the notice ", async () => {
     respond(404, { detail });
     const a = await fetchSection("17-3-0600");
     expect(isNotCodified(a)).toBe(true);
-    expect(isNotCodified(await fetchCodeSubsection("17-3-0600"))).toBe(true);
   });
 
   it("a plain 404 or a server error is still null", async () => {
     respond(404, { detail: "Section 99-9-9999 not found" });
     expect(await fetchSection("99-9-9999")).toBeNull();
     respond(500, { detail: "boom" });
-    expect(await fetchCodeSubsection("17-9-9999")).toBeNull();
+    expect(await fetchSection("17-9-9998")).toBeNull();
   });
 
   it("a normal section carries amended_since through", async () => {

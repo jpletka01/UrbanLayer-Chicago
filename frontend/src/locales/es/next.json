@@ -1965,7 +1965,17 @@
         "week": "Últimos 7 días",
         "month": "Últimos 30 días",
         "older": "Anteriores"
-      }
+      },
+      "delete": "Eliminar",
+      "deleteOne": "Eliminar {{title}}",
+      "deleteAsk": "¿Eliminar esta conversación?",
+      "cancel": "Cancelar",
+      "deleteFailed": "No se pudo eliminar la conversación. Inténtelo de nuevo."
+    },
+    "shared": {
+      "crumb": "Conversación compartida",
+      "note": "Una conversación compartida, solo de lectura.",
+      "startOwn": "Inicie su propia conversación"
     }
   },
   "landing": {
@@ -2219,7 +2229,7 @@
       "compBody": "Acceso anticipado: Pro, {{limit}} preguntas al mes, hasta el {{date}}.",
       "manageBilling": "Administrar facturación",
       "adminBody": "Admin: las preguntas se cuentan, pero nunca se rechazan.",
-      "proWhat": "{{limit}} preguntas al mes, Análisis a fondo de cualquier terreno",
+      "proWhat": "{{limit}} preguntas al mes",
       "getPro": "Obtener Pro",
       "seePricing": "Ver precios",
       "billedMonthly": "{{price}} al mes",
@@ -2259,7 +2269,11 @@
     "things": {
       "lots": "Lotes guardados",
       "searches": "Búsquedas guardadas",
-      "chats": "Chats"
+      "chats": "Chats",
+      "deleteChats": "Eliminar todas las conversaciones",
+      "deleteChatsAsk": "¿Eliminar todas las conversaciones? No se puede deshacer.",
+      "deleteChatsConfirm": "Eliminar todo",
+      "deleteChatsFailed": "No se pudieron eliminar sus conversaciones. Inténtelo de nuevo."
     },
     "reports": {
       "body": "Reportes de factibilidad comprados antes de la suscripción. Cada uno conserva su copia original."
@@ -2280,7 +2294,7 @@
   "pricing": {
     "title": "Precios",
     "heading": "Planes",
-    "lead": "La Ficha de cada terreno, Descubrir y el mapa son gratuitos. Pro agrega más preguntas y un Análisis a fondo de cualquier terreno.",
+    "lead": "La Ficha de cada terreno, Descubrir y el mapa son gratuitos. Pro agrega más preguntas al analista.",
     "billing": "Facturación",
     "monthly": "Mensual",
     "yearly": "Anual",
@@ -2297,13 +2311,11 @@
       "Todas las pestañas de la Ficha, en cada terreno",
       "Descubrir en las 77 áreas comunitarias",
       "50 preguntas al mes al analista",
-      "Un Análisis a fondo gratis, en el terreno que usted elija",
       "Terrenos y búsquedas guardados"
     ],
     "proFeatures": [
       "Todo lo del plan gratuito",
       "200 preguntas al mes",
-      "Análisis a fondo de cualquier terreno, con su PDF",
       "Pro dura hasta el final del periodo que pagó"
     ],
     "signedOutNote": "Sin iniciar sesión, puede hacer 3 preguntas.",
@@ -2326,7 +2338,7 @@
       },
       "trial": {
         "q": "¿Hay periodo de prueba?",
-        "a": "El plan gratuito es la prueba: todas las pestañas, 50 preguntas al mes y un Análisis a fondo, sin tarjeta."
+        "a": "El plan gratuito es la prueba: todas las pestañas y 50 preguntas al mes, sin tarjeta."
       },
       "reports": {
         "q": "¿Y los informes que ya compré?",
@@ -2345,5 +2357,26 @@
       "Dos meses menos que pagar mensualmente",
       "Cambie o cancele desde Configuración"
     ]
+  },
+  "notFound": {
+    "crumb": "No encontrada",
+    "title": "Página no encontrada",
+    "body": "No hay nada en esta dirección. Busque un predio de Chicago o explore Descubrir.",
+    "lookup": "Buscar una dirección",
+    "discover": "Abrir Descubrir"
+  },
+  "segment": {
+    "question": "¿Cuál describe mejor su situación?",
+    "hint": "Un toque — nos ayuda a construir para las personas correctas.",
+    "skip": "Omitir",
+    "options": {
+      "developer": "Desarrollador",
+      "architect": "Arquitecto",
+      "attorney": "Abogado",
+      "broker": "Corredor / Tasador",
+      "investor": "Inversionista",
+      "homeowner": "Propietario",
+      "curious": "Solo curiosidad"
+    }
   }
 }

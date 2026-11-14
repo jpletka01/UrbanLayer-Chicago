@@ -24,7 +24,6 @@ import { humanizeShoutyCase } from "../../lib/format";
 import { AddressInput } from "../../components/AddressInput";
 import { NextMap, type LateState, type MapView } from "../map/NextMap";
 import { AppFrame, ToolButton } from "../frame/AppFrame";
-import { useUiVersion } from "../uiVersionContext";
 import { AskDrawer } from "../ask/AskDrawer";
 import { AskContext, type AskHandoff } from "../ask/askContext";
 import { ICON } from "../icons";
@@ -272,7 +271,6 @@ function ProfileScreen({
 }) {
   const { t, i18n } = useTranslation("next");
   const { t: tp } = useTranslation("pages");
-  const previewOn = useUiVersion().version === "next";
   const verdict = useMemo(() => (data ? computeVerdict(data, tp) : null), [data, tp]);
   // The illustrative zoning mass Build raises in 3D (M6); the map withholds it when the lot is approximate.
   const mass = useMemo(() => (data && verdict ? zoningMass(data, verdict, false) : null), [data, verdict]);
@@ -592,7 +590,7 @@ function ProfileScreen({
         {/* "Look up another address", pinned to the bottom of the screen on every tab (owner, Item 89). It leaves room
             for the preview badge below it; the expanded map covers it; suggestions open upward. */}
         <div
-          className={`sticky bottom-0 z-20 border-t border-nx-ink/10 bg-nx-page/95 px-4 pt-3 backdrop-blur sm:px-7 ${previewOn ? "pb-[calc(env(safe-area-inset-bottom)+4.25rem)]" : "pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"}`}
+          className={`sticky bottom-0 z-20 border-t border-nx-ink/10 bg-nx-page/95 px-4 pt-3 backdrop-blur sm:px-7 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]`}
           data-testid="search-again"
         >
           <div className="max-w-xl">

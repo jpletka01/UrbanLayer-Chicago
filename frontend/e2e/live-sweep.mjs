@@ -11,8 +11,13 @@ import { chromium, devices } from "@playwright/test";
 const BASE = (process.env.SWEEP_BASE_URL ?? "https://urbanlayerchicago.com").replace(/\/$/, "");
 const ROUTES = [
   "/",
+  "/?landing=1",
+  "/scorecard",
   "/scorecard?address=1601%20N%20Milwaukee%20Ave",
   "/discovery",
+  "/chat",
+  "/saved",
+  "/settings",
   "/pricing",
   "/about",
   "/privacy",
