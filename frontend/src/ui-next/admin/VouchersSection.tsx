@@ -192,7 +192,7 @@ export function VouchersSection() {
           No codes minted yet
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="text-micro nx-muted uppercase tracking-wide">

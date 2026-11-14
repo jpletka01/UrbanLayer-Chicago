@@ -9,7 +9,7 @@ import { track } from "../../lib/tracking";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { STROKE } from "../icons";
 
-export const SEGMENTS = ["developer", "architect", "attorney", "broker", "investor", "homeowner", "curious"] as const;
+const SEGMENTS = ["developer", "architect", "attorney", "broker", "investor", "homeowner", "curious"] as const;
 
 const STORAGE_KEY = "ul_segment";
 const DUE_KEY = "ul_segment_due";

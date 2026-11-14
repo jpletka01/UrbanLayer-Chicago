@@ -66,7 +66,8 @@ function P({ children }: { children: ReactNode }) {
 
 function Code({ children }: { children: ReactNode }) {
   return (
-    <pre className="mb-4 overflow-x-auto rounded-xl bg-nx-block p-4 font-mono text-caption leading-relaxed">
+    // Focusable so a keyboard can scroll it (axe: scrollable-region-focusable).
+    <pre tabIndex={0} className="mb-4 overflow-x-auto rounded-xl bg-nx-block p-4 font-mono text-caption leading-relaxed">
       {children}
     </pre>
   );
@@ -82,7 +83,7 @@ function Mono({ children }: { children: ReactNode }) {
 
 function TableShell({ headers, rows, wide }: { headers: string[]; rows: string[][]; wide: boolean }) {
   return (
-    <div className="mb-4 overflow-x-auto rounded-xl ring-1 ring-inset ring-nx-ink/10">
+    <div tabIndex={0} role="region" aria-label={headers.join(", ")} className="mb-4 overflow-x-auto rounded-xl ring-1 ring-inset ring-nx-ink/10">
       <table className="w-full text-caption">
         <thead className="bg-nx-block">
           <tr>

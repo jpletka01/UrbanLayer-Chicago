@@ -10,6 +10,8 @@ import { NEXT_PROVIDER_BUTTON } from "./signInLook";
 export default function AuthOverlaysNext({ notice, onDismiss }: { notice: AuthNotice | null; onDismiss: () => void }) {
   const { t } = useTranslation("common");
   const { chooserOpen, closeChooser, providers, signInWith, signOut } = useAuthContext();
+  // Nothing to show: no wrapper either, so the page's own `.ui-next` root is the first one in the document.
+  if (!chooserOpen && !notice) return null;
   return (
     <div className="ui-next">
       {chooserOpen && (

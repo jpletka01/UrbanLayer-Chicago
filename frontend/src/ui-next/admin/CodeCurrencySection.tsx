@@ -100,7 +100,7 @@ export function CodeCurrencySection() {
         </dl>
       )}
       {amendments.length > 0 && (
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full text-caption border-collapse" data-testid="code-amendments-table">
             <thead>
               <tr className="text-left nx-muted">
