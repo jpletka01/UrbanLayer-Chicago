@@ -34,7 +34,9 @@ const ROUTES = [
 async function open(page: Page, path: string, ready?: string) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
   if (ready) await page.getByTestId(ready).waitFor({ timeout: 90_000 });
-  else await page.locator(".ui-next").first().waitFor();
+  // The first `.ui-next` can be the sign-in overlay's empty wrapper (Item 121), zero height on a phone: wait for a
+  // visible one.
+  else await page.locator(".ui-next:visible").first().waitFor();
   await page.waitForTimeout(800);
 }
 
