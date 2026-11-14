@@ -1,4 +1,4 @@
-// The side panel (decision Items 73–74): the logo, one row per destination from the readiness registry, and the
+// The side panel (decision Items 73–74): the logo, one row per destination from the destinations list, and the
 // account at the bottom. Chat is a plain link: past chats and New chat live in the chat page's own list (owner,
 // 2026-11-12: one place for them, not a second copy here). A button inside the panel collapses it to a strip of icons; labels stay as tooltips and
 // accessible names. On a phone the same content opens as a sheet from the top bar's menu button.
@@ -8,7 +8,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { LogIn, LogOut, Monitor, Moon, PanelLeftClose, PanelLeftOpen, Settings, Sun } from "lucide-react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useThemeContext } from "../../contexts/ThemeContext";
-import { navEntries } from "../readiness";
+import { navEntries } from "../destinations";
 import { ICON, NAV_ICON, STROKE } from "../icons";
 
 const MENU = "z-[70] min-w-[220px] rounded-2xl bg-nx-page p-1.5 text-body text-nx-ink shadow-[0_8px_32px_rgb(0_0_0/0.14)] ring-1 ring-nx-ink/10";
@@ -60,7 +60,7 @@ export function SidePanel({
           const Icon = NAV_ICON[nav.icon];
           const label = t(nav.labelKey);
           // Chat is also "here" on a conversation (/c/:id).
-          const active = entry.status === "ready" && (pathname === entry.path || (nav.icon === "chat" && pathname.startsWith("/c/")));
+          const active = pathname === entry.path || (nav.icon === "chat" && pathname.startsWith("/c/"));
           return (
             <li key={entry.id} className="relative flex items-center">
               <Link

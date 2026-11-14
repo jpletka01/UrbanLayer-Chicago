@@ -4,19 +4,14 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // Bento Pro type — Inter body/UI, Inter Tight display (hero/section headings),
-        // JetBrains Mono for data/PINs/code (IBM Plex Mono kept as fallback).
+        // Inter for text, JetBrains Mono for data/PINs/code (IBM Plex Mono kept as fallback).
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['"Inter Tight"', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', '"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
-        // §2 — single neutral ramp, now CSS-var-backed for light/dark theming (2026-06-29,
-        // see guides/light-dark-theming.md). Class names are UNCHANGED (`bg-dark-surface`,
-        // `text-text-primary`, …) — only the backing flips. Each var holds an RGB channel
-        // triplet so Tailwind's `<alpha-value>` opacity utilities (`bg-dark-surface/80`) keep
-        // working. Values live in src/index.css (:root = dark default, [data-theme=light]).
-        // The `dark-*` key names are now a slight misnomer in light mode (internal only).
+        // The role classes (`bg-dark-surface`, `text-text-primary`, …) used by the shared components. Each var holds
+        // an RGB channel triplet so `<alpha-value>` works; the values are SnowUI's, set in src/ui-next/ui-next.css
+        // (Phase 10 retired the Bento Pro values). The `dark-*` names are historical.
         dark: {
           bg: 'rgb(var(--bg) / <alpha-value>)',                          // app/page background
           surface: 'rgb(var(--surface) / <alpha-value>)',               // default card/panel surface
@@ -46,28 +41,12 @@ export default {
           fg: 'rgb(var(--text-on-accent) / <alpha-value>)',            // text-action-fg (white)
         },
         link: 'rgb(var(--accent-text) / <alpha-value>)',               // text-link (= accent-text)
-        // Terracotta premium highlight — the only warm in the chrome; reserved for the paid report.
-        highlight: {
-          DEFAULT: 'rgb(var(--highlight) / <alpha-value>)',            // text/icon
-          fill: 'rgb(var(--highlight-fill) / <alpha-value>)',          // badge fill
-          fg: 'rgb(var(--highlight-fg) / <alpha-value>)',              // white on fill
-        },
         text: {
           primary: 'rgb(var(--text-primary) / <alpha-value>)',
           secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
           muted: 'rgb(var(--text-muted) / <alpha-value>)',
           'on-accent': 'rgb(var(--text-on-accent) / <alpha-value>)',    // text/icon on accent fills
           disabled: 'rgb(var(--text-disabled) / <alpha-value>)',
-        },
-        // ── Semantic role layer (decision Item 49) ─────────────────────────────────────────
-        // Components pick a ROLE: `action` (orange: clickable only, ≤1 solid per viewport),
-        // `premium` (violet: costs money only), `status-*` (genuine state). A test fails on raw
-        // palette classes (amber-400, …) in the Profile's components. `subtle` = the tinted fill a
-        // StatusLabel sits on; DEFAULT = its text/glyph.
-        premium: {
-          DEFAULT: 'rgb(var(--highlight) / <alpha-value>)',
-          fill: 'rgb(var(--highlight-fill) / <alpha-value>)',
-          fg: 'rgb(var(--highlight-fg) / <alpha-value>)',
         },
         status: {
           success: { DEFAULT: 'rgb(var(--status-success) / <alpha-value>)', subtle: 'rgb(var(--status-success) / 0.12)' },
@@ -76,9 +55,7 @@ export default {
           info: { DEFAULT: 'rgb(var(--status-info) / <alpha-value>)', subtle: 'rgb(var(--status-info) / 0.12)' },
           neutral: { DEFAULT: 'rgb(var(--status-neutral) / <alpha-value>)', subtle: 'rgb(var(--status-neutral) / 0.12)' },
         },
-        // ── The new UI (decision Items 74, 76): defined ONLY inside `.ui-next` (src/ui-next/ui-next.css),
-        // so an `nx-*` class outside the preview resolves to nothing. Used only under src/ui-next/
-        // (the isolation test checks both).
+        // ── The SnowUI frame and Coastal charts (decision Items 74, 76), defined in src/ui-next/ui-next.css.
         nx: {
           page: 'rgb(var(--nx-page) / <alpha-value>)',
           block: 'rgb(var(--nx-block) / <alpha-value>)',
@@ -127,11 +104,6 @@ export default {
         bento: '1.75rem',       // 28px — big bento tiles
         'bento-sm': '1.25rem',  // 20px — compact/mobile tiles
       },
-      backgroundImage: {
-        // Brand CTA gradient (buttons.md) — warm orange blend, dark label on top.
-        'brand-gradient': 'linear-gradient(135deg, #f9a474 0%, #f7b38e 55%, #fcd2b7 100%)',
-        'brand-gradient-hover': 'linear-gradient(135deg, #f39a67 0%, #f9a474 55%, #f7b38e 100%)',
-      },
       // §1 — named type scale (size · line-height · weight · tracking). Additive: the stock
       // Tailwind sizes remain until pages are migrated (Phase 2). Responsive steps use
       // clamp() so one token spans the spec's mobile→desktop range. `overline` pairs with
@@ -163,22 +135,18 @@ export default {
           '0%': { backgroundPosition: '100% 0' },
           '100%': { backgroundPosition: '-100% 0' },
         },
+        // Pricing's Pro cards (Item 123): a slow lavender light running round the rim.
+        'nx-rim': {
+          '0%': { backgroundPosition: '0% 50%' },
+          '100%': { backgroundPosition: '300% 50%' },
+        },
         'block-glow': {
           '0%, 40%, 60%, 100%': { filter: 'none' },
           '50%': { filter: 'brightness(1.35) saturate(1.25)' },
         },
-        'fade-in': {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
         'blink': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0' },
-        },
-        'flash': {
-          '0%': { boxShadow: '0 0 0 0 rgb(var(--accent) / 0.7)' },
-          '70%': { boxShadow: '0 0 0 8px rgb(var(--accent) / 0)' },
-          '100%': { boxShadow: '0 0 0 0 rgb(var(--accent) / 0)' },
         },
         'dot-bounce': {
           '0%, 80%, 100%': { transform: 'translateY(0)' },
@@ -187,14 +155,6 @@ export default {
         'text-glow': {
           '0%, 100%': { color: 'rgb(var(--text-primary))' },
           '50%': { color: 'rgb(var(--text-muted))' },
-        },
-        'trace-in': {
-          '0%': { opacity: '0', transform: 'translateY(-3px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        'slide-up': {
-          '0%': { opacity: '0', transform: 'translateY(100%)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         // Idle search field: gently breathe from the resting shadow to the accent
         // glow (same box-shadow the field holds on hover), so it draws the eye but
@@ -209,13 +169,10 @@ export default {
         'scene-drift': 'scene-drift 26s ease-in-out infinite',
         'block-glow': 'block-glow 9s ease-in-out infinite',
         'text-shimmer': 'text-shimmer 2.2s linear infinite',
-        'fade-in': 'fade-in 2s ease-in-out forwards',
+        'nx-rim': 'nx-rim 8s linear infinite',
         'blink': 'blink 1s step-end infinite',
-        'flash': 'flash 0.8s ease-out',
         'dot-bounce': 'dot-bounce 1.4s ease-in-out infinite',
         'text-glow': 'text-glow 2s ease-in-out infinite',
-        'trace-in': 'trace-in 0.2s ease-out both',
-        'slide-up': 'slide-up 0.3s ease-out forwards',
         'search-pulse': 'search-pulse 2.6s ease-in-out infinite',
       },
     },

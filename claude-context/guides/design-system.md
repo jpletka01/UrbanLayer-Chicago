@@ -1,3 +1,6 @@
+
+> **History (2026-11-14, decision Item 125):** this describes the old UI, deleted in Phase 10 when the new UI became the only one. Kept as the record; for current work read `guides/frontend-redesign-vision.md` and `decisions/2026-11_frontend-rewrite.md`.
+
 > **⚠️ HISTORICAL — superseded by "Bento Pro" (2026-06-30, branch `feat/bento-pro`).**
 > The palette/fonts described below (azure "Cyanotype on Vellum", Space Grotesk, terracotta
 > premium) are RETIRED. Canonical design docs: `bento-pro-redesign.md` (token system + landing)

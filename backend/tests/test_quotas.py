@@ -191,7 +191,7 @@ class TestChatEndpoint:
         app.dependency_overrides.clear()
 
     async def _ask(self, user, kind, cookies=None):
-        auth_settings = MagicMock(google_client_id="", jwt_secret="test-secret")
+        auth_settings = MagicMock(google_client_id="", microsoft_client_id="", apple_client_id="", auth_dev_login=False, jwt_secret="test-secret")
         with patch("backend.main._event_stream", self._stub(kind)), \
              patch("backend.rate_limit.get_current_user", return_value=user), \
              patch("backend.auth.get_settings", return_value=auth_settings):
@@ -297,4 +297,4 @@ def test_v17_llm_calls_with_check_is_rebuilt(tmp_path):
             await db.close_db()
         return rows, ver, has_usage
     rows, ver, has_usage = asyncio.run(run())
-    assert rows == [("old", "router"), ("new", "translation")] and ver == 18 and has_usage
+    assert rows == [("old", "router"), ("new", "translation")] and ver >= 18 and has_usage

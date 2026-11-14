@@ -446,9 +446,6 @@ def test_code_section_endpoint_lists_the_amendments_since(client):
 
     _write_snapshot()
     with patch.object(main, "get_full_section", new=AsyncMock(return_value=_ped_chunk())):
-        d = client.get("/api/code/section/17-3-0503-D").json()
-    assert {a["record"] for a in d["amended_since"]} == {"O2026-0025463", "O2026-0025464", "O2026-0026042"}
-    with patch.object(main, "get_full_section", new=AsyncMock(return_value=_ped_chunk())):
         d = client.get("/section/17-3-0500").json()
     assert len(d["amended_since"]) == 3
 
@@ -457,7 +454,7 @@ def test_a_section_added_after_the_text_explains_itself_instead_of_a_bare_404(cl
     from backend import main
 
     with patch.object(main, "get_full_section", new=AsyncMock(return_value=None)):
-        for path in ("/section/17-3-0600", "/api/code/section/17-3-0600"):
+        for path in ("/section/17-3-0600",):
             r = client.get(path)
             assert r.status_code == 404
             detail = r.json()["detail"]

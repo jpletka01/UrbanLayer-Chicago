@@ -45,35 +45,26 @@ const PAGES: Array<{
   /** extra settle time after load, ms */
   settle?: number;
 }> = [
-  { id: "home", path: "/" },
-  { id: "workspace-ask", path: "/?ask=1" },
+  // Every route of the site (the new UI is the only one since Phase 10). Sign-in is off locally, so "/" is the home.
+  { id: "landing", path: "/?landing=1", settle: 1500 },
+  { id: "home", path: "/", settle: 1500 },
+  { id: "chat", path: "/chat", settle: 1500 },
+  { id: "chat-door", path: "/?ask=1", settle: 1500 },
+  { id: "profile-search", path: "/scorecard", settle: 1500 },
   {
-    id: "scorecard",
+    id: "profile",
     path: "/scorecard?address=1601%20N%20Milwaukee%20Ave",
-    awaitApi: "/api/scorecard",
-    settle: 3000,
-  },
-  // The Start panel (nothing runs on arrival): audited on its own, then again after one search.
-  { id: "discovery-start", path: "/discovery", settle: 1500 },
-  { id: "discovery", path: "/discovery", awaitApi: "/search", settle: 3000 },
-  { id: "pricing", path: "/pricing" },
-  { id: "about", path: "/about" },
-  { id: "settings", path: "/settings" },
-  { id: "privacy", path: "/privacy" },
-  // The new UI's preview routes (decision Item 76): ?ui=next turns the preview on for this page load.
-  { id: "profile-next-search", path: "/scorecard?ui=next", settle: 1500 },
-  {
-    id: "profile-next",
-    path: "/scorecard?address=1601%20N%20Milwaukee%20Ave&ui=next",
     awaitApi: "/api/profile/overview",
     settle: 3000,
   },
-  { id: "discovery-next", path: "/discovery?ui=next", settle: 1500 },
-  // Phase 8: the landing, the signed-in home and the full chat page.
-  { id: "landing-next", path: "/?ui=next&landing=1", settle: 1500 },
-  { id: "home-next", path: "/?ui=next", settle: 1500 },
-  { id: "chat-next", path: "/chat?ui=next", settle: 1500 },
-  { id: "saved-next", path: "/saved?ui=next", settle: 1500 },
+  { id: "discovery", path: "/discovery", settle: 1500 },
+  { id: "saved", path: "/saved", settle: 1500 },
+  { id: "settings", path: "/settings", settle: 1500 },
+  { id: "settings-plan", path: "/settings/plan", settle: 1500 },
+  { id: "pricing", path: "/pricing", settle: 1500 },
+  { id: "about", path: "/about", settle: 1500 },
+  { id: "privacy", path: "/privacy", settle: 1500 },
+  { id: "not-found", path: "/no-such-page", settle: 1500 },
 ];
 
 const OUT_DIR = path.join(
@@ -239,75 +230,15 @@ for (const pageDef of PAGES) {
       : Promise.resolve(null);
 
     await page.goto(pageDef.path, { waitUntil: "domcontentloaded" });
-    // Discovery opens on the Start panel; "discovery" audits the page after one explicit search.
-    if (pageDef.id === "discovery") {
-      await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
-    }
     await page.waitForLoadState("load").catch(() => {});
     await apiWait;
     await page.evaluate(() => document.fonts.ready).catch(() => {});
     await page.waitForTimeout(pageDef.settle ?? 1200);
 
-    // Discovery keeps one Mapbox instance mounted behind the List tab. Reveal it
-    // before auditing so the phone gate catches the hidden-init 400×300 fallback.
-    if (pageDef.id === "discovery") {
-      await page.getByRole("button", { name: "Map", exact: true }).click();
-      const mapPane = page.getByTestId("discovery-map-pane");
-      const mapContainer = page.getByTestId("discovery-map-container");
-      const canvas = mapPane.locator("canvas.mapboxgl-canvas");
-      await expect(mapPane).toBeVisible();
-      await expect(canvas).toBeVisible();
-      await expect.poll(async () => {
-        const containerBox = await mapContainer.boundingBox();
-        const canvasBox = await canvas.boundingBox();
-        if (!containerBox || !canvasBox) return false;
-        const backingStoreMatches = await canvas.evaluate((element) => {
-          const pixelRatio = window.devicePixelRatio;
-          const rect = element.getBoundingClientRect();
-          return (
-            Math.abs(element.width - Math.ceil(rect.width) * pixelRatio) <= pixelRatio &&
-            Math.abs(element.height - Math.ceil(rect.height) * pixelRatio) <= pixelRatio
-          );
-        });
-        return backingStoreMatches && (
-          Math.abs(containerBox.width - canvasBox.width) <= 1 &&
-          Math.abs(containerBox.height - canvasBox.height) <= 1
-        );
-      }, { message: "Discovery Mapbox canvas and backing store must fill its revealed container" }).toBe(true);
-
-      const keyButton = page.getByTestId("discovery-map-key-button");
-      await expect(keyButton).toBeVisible();
-      await keyButton.click();
-      const keyPanel = page.getByTestId("discovery-map-legend");
-      await expect(keyPanel).toBeVisible();
-      const keyBox = await keyPanel.boundingBox();
-      expect(keyBox).not.toBeNull();
-      expect(keyBox!.x).toBeGreaterThanOrEqual(0);
-      expect(keyBox!.x + keyBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
-      expect(keyBox!.y).toBeGreaterThanOrEqual(0);
-      expect(keyBox!.y + keyBox!.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
-
-      const controls = [
-        mapPane.locator(".mapboxgl-ctrl-bottom-left"),
-        mapPane.locator(".mapboxgl-ctrl-bottom-right"),
-      ];
-      for (const control of controls) {
-        const controlBox = await control.boundingBox();
-        if (!controlBox) continue;
-        const overlapsControl = !(
-          keyBox!.x + keyBox!.width <= controlBox.x
-          || controlBox.x + controlBox.width <= keyBox!.x
-          || keyBox!.y + keyBox!.height <= controlBox.y
-          || controlBox.y + controlBox.height <= keyBox!.y
-        );
-        expect(overlapsControl, "Discovery Map key must not cover Mapbox controls").toBe(false);
-      }
-    }
-
     let topAudit = await auditOverflow(page);
 
-    // The preview Profile: audit the Build tab too, and the Ask drawer opened over the page.
-    if (pageDef.id === "profile-next") {
+    // The Profile: audit the Build tab too, and the Ask drawer opened over the page.
+    if (pageDef.id === "profile") {
       await page.getByRole("tab", { name: "Build" }).click();
       await page.waitForTimeout(300);
       topAudit = mergeAudits(topAudit, await auditOverflow(page));
@@ -316,47 +247,13 @@ for (const pageDef of PAGES) {
       topAudit = mergeAudits(topAudit, await auditOverflow(page));
       await page.getByRole("button", { name: "Close" }).first().click();
     }
-    // The preview Discovery: one goal search, then audit the result cards.
-    if (pageDef.id === "discovery-next") {
+    // Discovery: one goal search, then audit the result cards.
+    if (pageDef.id === "discovery") {
       // Since Item 104 the goals sit in the phone sheet over the map (the old "Try:" row is the Profile's search page).
       await page.getByTestId("phone-sheet").getByRole("button", { name: "Show more of the list" }).click();
       await page.getByTestId("goals").getByRole("button").first().click();
       await page.getByTestId("next-results").waitFor({ timeout: 60_000 }).catch(() => {});
       topAudit = mergeAudits(topAudit, await auditOverflow(page));
-    }
-
-    // The Profile's sections start collapsed (decision Item 51) and a phone opens one at a time (Item 56):
-    // open each in turn, check the others closed, and audit it scrolled through, so the audit still covers
-    // everything that can render. The last one opened is Build, for the map checks below.
-    if (pageDef.id === "scorecard") {
-      const ids = await page.locator("[data-module-open]").evaluateAll((els) => els.map((e) => e.id));
-      const order = [...ids.filter((id) => id !== "module-build"), ...ids.filter((id) => id === "module-build")];
-      for (const id of order) {
-        await page.locator(`#${id} > button`).click();
-        await page.waitForTimeout(150);
-        expect(
-          await page.locator('[data-module-open="true"]').evaluateAll((els) => els.map((e) => e.id)),
-          "a phone opens one section at a time",
-        ).toEqual([id]);
-        await page.evaluate(async (sel) => {
-          const el = document.querySelector(sel);
-          if (!el) return;
-          const end = el.getBoundingClientRect().bottom + window.scrollY;
-          for (let y = el.getBoundingClientRect().top + window.scrollY; y < end; y += window.innerHeight * 0.8) {
-            window.scrollTo(0, y);
-            await new Promise((r) => setTimeout(r, 120));
-          }
-        }, `#${id}`);
-        topAudit = mergeAudits(topAudit, await auditOverflow(page));
-      }
-      // The bottom action bar is the Profile's one sticky band on a phone (decision Items 50, 56); the site
-      // nav is the only other element that stays on screen.
-      const stuck = await page.evaluate(() => [...document.querySelectorAll("body *")].filter((e) => {
-        const p = getComputedStyle(e).position;
-        const r = e.getBoundingClientRect();
-        return (p === "sticky" || p === "fixed") && r.width > 0 && r.height > 0 && !e.closest("header, nav, [role=dialog], .mapboxgl-map") && !e.querySelector("nav");
-      }).map((e) => e.getAttribute("data-testid") ?? e.className.toString().slice(0, 60)));
-      expect(stuck.filter((x) => x !== "phone-action-bar"), "no sticky element on a phone Profile but the action bar").toEqual([]);
     }
 
     // Sticky strips and lazy sections can introduce overflow further down.
@@ -375,61 +272,11 @@ for (const pageDef of PAGES) {
     });
     await page.waitForTimeout(800);
     const bottomAudit = await auditOverflow(page);
-    let popoverAudit: AuditResult | null = null;
 
-    // M3 parcel-map control: audit the responsive Layers surface while it is
-    // actually open, including the Mapbox-owned bottom-left attribution area.
-    if (pageDef.id === "scorecard") {
-      // The zoning layer mounts when the analysis map nears the viewport and its layers have loaded.
-      await page.getByTestId("analysis-map").scrollIntoViewIfNeeded();
-      const layersButton = page.getByTestId("parcel-map-layers-button").first();
-      await expect(layersButton).toBeVisible({ timeout: 30_000 });
-      await layersButton.scrollIntoViewIfNeeded();
-      await layersButton.click();
-      const popover = page.getByTestId("parcel-map-controls-mobile").first();
-      await expect(popover).toBeVisible();
-      const popoverBox = await popover.boundingBox();
-      expect(popoverBox).not.toBeNull();
-      expect(popoverBox!.x).toBeGreaterThanOrEqual(0);
-      expect(popoverBox!.x + popoverBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
-
-      const attributionBox = await layersButton.locator("xpath=..").locator(".mapboxgl-ctrl-bottom-left").boundingBox();
-      if (attributionBox) {
-        const overlapsAttribution = !(
-          popoverBox!.x + popoverBox!.width <= attributionBox.x
-          || attributionBox.x + attributionBox.width <= popoverBox!.x
-          || popoverBox!.y + popoverBox!.height <= attributionBox.y
-          || attributionBox.y + attributionBox.height <= popoverBox!.y
-        );
-        expect(overlapsAttribution, "Layers popover must not cover Mapbox attribution").toBe(false);
-      }
-      popoverAudit = await auditOverflow(page);
-
-      // WS8 capacity map: the panel and its phone key disclosure must sit inside the viewport.
-      // After the full scroll (re-renders included) each Build card exists once: same-keyed
-      // siblings once stacked the what-if card 7-13 times (2026-10-31).
-      expect(await page.getByTestId("what-if").count(), "one what-if card").toBeLessThanOrEqual(1);
-
-      // Built vs allowed is a layer of the one analysis map (decision Item 55): switch to it first.
-      expect(await page.getByTestId("analysis-map").count(), "one analysis map").toBe(1);
-      await page.getByTestId("analysis-layer-capacity").click();
-      const capacity = page.getByTestId("capacity-map");
-      await capacity.scrollIntoViewIfNeeded();
-      await expect(page.getByTestId("capacity-coverage").or(page.getByTestId("capacity-unchecked")).first()).toBeVisible({ timeout: 30_000 });
-      const keyToggle = capacity.locator("details summary").first();
-      if (await keyToggle.isVisible()) await keyToggle.click();
-      const capBox = await capacity.boundingBox();
-      expect(capBox).not.toBeNull();
-      expect(capBox!.x).toBeGreaterThanOrEqual(0);
-      expect(capBox!.x + capBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
-      popoverAudit = mergeAudits(popoverAudit, await auditOverflow(page));
-    }
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(400);
 
-    const result = popoverAudit
-      ? mergeAudits(mergeAudits(topAudit, bottomAudit), popoverAudit)
-      : mergeAudits(topAudit, bottomAudit);
+    const result = mergeAudits(topAudit, bottomAudit);
     await saveArtifacts(page, testInfo, pageDef.id, result);
 
     const scrollingOffenders = result.offenders.filter((o) => !o.fixed);

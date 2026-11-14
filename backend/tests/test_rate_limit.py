@@ -30,6 +30,9 @@ def _anon_request(ip: str = "203.0.113.7") -> MagicMock:
 def _auth_disabled():
     settings = MagicMock()
     settings.google_client_id = ""
+    settings.microsoft_client_id = ""
+    settings.apple_client_id = ""
+    settings.auth_dev_login = False
     settings.jwt_secret = ""
     with patch("backend.auth.get_settings", return_value=settings):
         yield settings

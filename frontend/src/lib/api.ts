@@ -25,7 +25,6 @@ import type {
   EngagementMetrics,
   JudgeResults,
   LatencyPercentiles,
-  MapData,
   Message,
   RequestLogEntry,
   SelectedParcel,
@@ -33,7 +32,6 @@ import type {
   TimeseriesBucket,
   UploadMeta,
 } from "./types";
-import type { ParcelMapLayers } from "./parcelMap";
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
 
@@ -119,6 +117,7 @@ async function authFetch(url: string, options: RequestInit = {}): Promise<Respon
 
 export interface AuthUser {
   id: string;
+  /** Empty when no sign-in method gave one (Apple may not). */
   email: string;
   name: string;
   picture_url: string | null;
@@ -165,41 +164,123 @@ export async function logout(): Promise<void> {
   await authFetch(`${API_BASE}/api/auth/logout`, { method: "POST" });
 }
 
-export function getSignInUrl(): string {
-  return `${API_BASE}/api/auth/google`;
+// Sign-in methods (Phase 9, Item 121): Google, Apple, Microsoft; never email.
+export type SignInProviderId = "google" | "apple" | "microsoft";
+
+export interface SignInProvider {
+  id: SignInProviderId;
+  /** A local review stack's stand-in ("Local test account"), never in production. */
+  test: boolean;
+}
+
+/** Where to start signing in with a provider; ``next`` is the page to come back to (a path on this site). */
+export function getSignInUrl(provider: SignInProviderId = "google", next?: string): string {
+  const q = next ? `?${new URLSearchParams({ next })}` : "";
+  return `${API_BASE}/api/auth/${provider}${q}`;
+}
+
+export async function getSignInProviders(): Promise<SignInProvider[]> {
+  const resp = await fetch(`${API_BASE}/api/auth/providers`, { credentials: "include" });
+  if (!resp.ok) throw new Error(`providers ${resp.status}`);
+  const data: { providers: SignInProvider[] } = await resp.json();
+  return data.providers;
+}
+
+export interface SignInIdentity {
+  provider: SignInProviderId;
+  /** Masked ("p••••@example.com"), or null when the provider gave none or hid it. */
+  email: string | null;
+  private_email: boolean;
+  added_at: number;
+  last_used_at: number;
+}
+
+export async function getSignInIdentities(): Promise<{ identities: SignInIdentity[]; available: SignInProvider[] }> {
+  const resp = await authFetch(`${API_BASE}/api/auth/identities`);
+  if (!resp.ok) throw new Error(`identities ${resp.status}`);
+  return resp.json();
+}
+
+/** Start adding a provider to the signed-in account; resolves to the provider URL to go to. */
+export async function startLinkProvider(provider: SignInProviderId, next: string): Promise<string> {
+  const resp = await authFetch(`${API_BASE}/api/auth/link/${provider}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ next }),
+  });
+  if (!resp.ok) throw new Error(`link ${resp.status}`);
+  const data: { url: string } = await resp.json();
+  return data.url;
+}
+
+/** Remove a sign-in method; "last" when it is the account's only way in (refused). */
+export async function removeSignInIdentity(provider: SignInProviderId): Promise<"removed" | "last"> {
+  const resp = await authFetch(`${API_BASE}/api/auth/identities/${provider}`, { method: "DELETE" });
+  if (resp.status === 409) return "last";
+  if (!resp.ok) throw new Error(`remove ${resp.status}`);
+  return "removed";
 }
 
 // ---------------------------------------------------------------------------
 // Payments API
 // ---------------------------------------------------------------------------
 
-export async function subscribeNewsletter(email: string, source: string): Promise<void> {
-  const resp = await fetch(`${API_BASE}/api/newsletter`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, source }),
-  });
-  if (!resp.ok) throw new Error("Failed to subscribe");
+export type BillingInterval = "month" | "year";
+
+/** Pro checkout (Item 123): the server picks the price from the interval; the page then goes to Stripe.
+    Throws `CheckoutError` with the server's reason (`already_subscribed`, `purchases_off`, …). */
+export class CheckoutError extends Error {
+  reason: string;
+  constructor(reason: string) { super(reason); this.reason = reason; }
 }
 
-export async function createCheckoutSession(): Promise<{ url: string }> {
-  track("checkout_started", { type: "subscription" });
+export async function createCheckoutSession(
+  interval: BillingInterval = "month",
+  origin: "settings" | "pricing" = "settings",
+): Promise<{ url: string }> {
+  track("checkout_started", { type: "subscription", interval });
   flush(); // the page is about to redirect to Stripe
-  const resp = await authFetch(`${API_BASE}/api/checkout`, {
+  const resp = await authFetch(`${API_BASE}/api/billing/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ visitor_id: getVisitorId() }),
+    // Stripe's page in the reader's language (Spanish → Latin American, server side).
+    body: JSON.stringify({ interval, origin, language: i18n.language?.startsWith("es") ? "es" : "en", visitor_id: getVisitorId() }),
   });
-  if (!resp.ok) throw new Error("Failed to create checkout session");
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => null);
+    throw new CheckoutError(body?.detail?.error ?? "error");
+  }
   return resp.json();
 }
 
-export async function getSubscription(): Promise<{
+/** The plan as Settings → Plan shows it (`/api/subscription`, Item 123). Dates are Chicago days (YYYY-MM-DD). */
+export interface SubscriptionStatus {
   tier: string;
-  stripe_customer_id: string | null;
+  plan: "free" | "pro" | "admin";
+  source: "stripe" | "voucher" | null;
+  status: string | null;
+  interval: BillingInterval | null;
+  renews_on: string | null;
+  ends_on: string | null;
+  past_due: boolean;
   subscription_active: boolean;
+  can_manage: boolean;
   comp_until: number | null;
-}> {
+  purchases_enabled: boolean;
+}
+
+export interface Entitlements {
+  signed_in: boolean;
+  deep_analysis: { unlimited: boolean; free_left: number; free_pin: string | null };
+}
+
+export async function getEntitlements(): Promise<Entitlements> {
+  const resp = await authFetch(`${API_BASE}/api/entitlements`);
+  if (!resp.ok) throw new Error("Failed to get entitlements");
+  return resp.json();
+}
+
+export async function getSubscription(): Promise<SubscriptionStatus> {
   const resp = await authFetch(`${API_BASE}/api/subscription`);
   if (!resp.ok) throw new Error("Failed to get subscription");
   return resp.json();
@@ -328,7 +409,8 @@ export async function deleteAccount(): Promise<void> {
 }
 
 export async function createBillingPortal(): Promise<{ url: string }> {
-  const resp = await authFetch(`${API_BASE}/api/billing/portal`, { method: "POST" });
+  const language = i18n.language?.startsWith("es") ? "es" : "en";
+  const resp = await authFetch(`${API_BASE}/api/billing/portal?language=${language}`, { method: "POST" });
   if (!resp.ok) throw new Error("Failed to create billing portal session");
   return resp.json();
 }
@@ -388,27 +470,6 @@ export async function getAutocomplete(query: string): Promise<AddressSuggestion[
     return await resp.json();
   } catch {
     return [];
-  }
-}
-
-export async function fetchMapData(params: {
-  community_area: number;
-  time_range_days: number;
-  sources?: string[];
-  address_lat?: number;
-  address_lon?: number;
-  address_label?: string;
-}): Promise<MapData | null> {
-  try {
-    const resp = await authFetch(`${API_BASE}/api/map-data`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
-    if (!resp.ok) return null;
-    return (await resp.json()) as MapData;
-  } catch {
-    return null;
   }
 }
 
@@ -565,22 +626,6 @@ export async function saveMessages(
     },
   );
   if (!resp.ok) throw new Error(`Failed to save messages: ${resp.status}`);
-}
-
-export async function updateMessageMapData(
-  conversationId: string,
-  position: number,
-  mapData: MapData,
-): Promise<void> {
-  const resp = await authFetch(
-    `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/messages/${position}`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ map_data: mapData, map_fetched_at: Date.now() }),
-    },
-  );
-  if (!resp.ok) throw new Error(`Failed to update map data: ${resp.status}`);
 }
 
 export async function importConversations(
@@ -1370,26 +1415,6 @@ export interface CodeSubsection {
   amended_since?: Amendment[];
 }
 
-const subsectionCache = new Map<string, Promise<CodeSubsection | SectionNotCodified | null>>();
-
-export function fetchCodeSubsection(sectionId: string): Promise<CodeSubsection | SectionNotCodified | null> {
-  const key = sectionId.trim();
-  const hit = subsectionCache.get(key);
-  if (hit) return hit;
-  const p = (async () => {
-    try {
-      const resp = await authFetch(`${API_BASE}/api/code/section/${encodeURIComponent(key)}`);
-      return resp.ok ? ((await resp.json()) as CodeSubsection) : await notCodifiedFrom(resp);
-    } catch {
-      return null;
-    }
-  })();
-  subsectionCache.set(key, p);
-  p.then((r) => {
-    if (r === null) subsectionCache.delete(key);
-  });
-  return p;
-}
 
 /** The PDF report. ``copy`` picks which: "original" is the first report this purchase rendered, kept as sold;
     "updated" (and the default) is a live render with today's data, labeled once an original exists. A purchase's
@@ -1540,64 +1565,6 @@ export interface TypicalLot {
   p75_lot_sqft: number;
 }
 
-/** Community-area benchmark aggregates for the Property Profile KPI band.
-    All-null stats when the Discovery index is absent — callers render no
-    benchmark line. */
-export async function fetchAreaStats(ca: number, zoneClass?: string | null): Promise<{
-  community_area: number;
-  n_parcels: number;
-  median_assessed: number | null;
-  n_assessed: number;
-  median_mv_per_land_sqft: number | null;
-  n_mv_psf: number;
-  /** Typical lot per exact district (WS5 PR3, Item 66); only districts with enough lots. */
-  lot_size_by_zone_class?: Record<string, TypicalLot>;
-  /** The benchmark's own entry (n, coverage, index build date): absent when there is no median. */
-  provenance?: Record<string, Provenance>;
-} | null> {
-  try {
-    const zc = zoneClass ? `&zone_class=${encodeURIComponent(zoneClass)}` : "";
-    const resp = await authFetch(`${API_BASE}/api/area-stats?ca=${ca}${zc}`);
-    if (!resp.ok) return null;
-    return await resp.json();
-  } catch {
-    return null;
-  }
-}
-
-/** Geometry layers for the Property Profile module maps (zoning quilt +
-    overlay/TIF/EZ boundaries). Every layer degrades to null. */
-export async function fetchParcelMapLayers(
-  lat: number,
-  lon: number,
-): Promise<ParcelMapLayers | null> {
-  try {
-    const resp = await authFetch(`${API_BASE}/api/parcel-map?lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`);
-    if (!resp.ok) return null;
-    return await resp.json();
-  } catch {
-    return null;
-  }
-}
-
-/** The Profile's block capacity map (`/api/capacity-map`). `pin` locates the subject in the Discovery index;
- * lat/lon are the fallback for a withheld PIN. Null on a network or HTTP failure (the component says so). */
-export async function fetchCapacityMap(
-  pin: string | null | undefined,
-  lat: number,
-  lon: number,
-): Promise<import("../components/scorecard/capacityMapModel").CapacityMapResponse | null> {
-  const params = new URLSearchParams({ lat: lat.toFixed(6), lon: lon.toFixed(6) });
-  if (pin) params.set("pin", pin);
-  try {
-    const resp = await authFetch(`${API_BASE}/api/capacity-map?${params}`);
-    if (!resp.ok) return null;
-    return await resp.json();
-  } catch {
-    return null;
-  }
-}
-
 export interface WhatIfFigures {
   zone_class: string;
   name: string;
@@ -1616,27 +1583,6 @@ export interface WhatIfResponse {
   lot_sqft?: number | null;
   current?: WhatIfFigures | null;
   target?: WhatIfFigures;
-}
-
-/** "What if this were rezoned?" (`/api/what-if`, WS5 PR2): table arithmetic for the parcel's district and a
- * chosen one. Without `district` it returns only the choice lists. Null on failure (the card says so). */
-export async function fetchWhatIf(
-  current: string,
-  district?: string | null,
-  lotSqft?: number | null,
-  in606?: boolean | null,
-): Promise<WhatIfResponse | null> {
-  const params = new URLSearchParams({ current });
-  if (district) params.set("district", district);
-  if (lotSqft) params.set("lot_sqft", String(Math.round(lotSqft)));
-  if (in606 != null) params.set("in_606", String(in606));
-  try {
-    const resp = await authFetch(`${API_BASE}/api/what-if?${params}`);
-    if (!resp.ok) return null;
-    return await resp.json();
-  } catch {
-    return null;
-  }
 }
 
 // --- Transit Stations ---

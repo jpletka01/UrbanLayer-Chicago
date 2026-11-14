@@ -1,293 +1,399 @@
-"""Stripe payment integration — checkout, webhooks, billing portal."""
+"""Stripe billing: Pro checkout, the webhook, the billing portal (Phase 9 epic 4, decision Item 123).
+
+Rules:
+- Pro is $19 a month or $199 a year. The browser sends only ``interval`` ("month" | "year"); the price ids live in
+  the server's settings.
+- The subscription's state is Stripe's, never the browser's. Every webhook is signature-checked (in every
+  environment), recorded once by event id (a replay does nothing), and answered by **re-reading the subscription
+  from Stripe** and storing that, so the order events arrive in doesn't matter. Pro is derived from the stored
+  state in ``auth`` (``PRO_STATUSES``); nothing here writes ``users.tier``.
+- One customer per account, created by this server with the account id in its metadata; a checkout carries
+  ``client_reference_id``. Nothing the browser sends back names an account.
+- At most one subscription: checkout is refused while one is live, an open checkout session is reused, and a
+  second subscription that still gets through is canceled and refunded.
+- Purchases are on only when the secret key, the webhook secret and both prices are set (``purchases_enabled``).
+- The $25 report purchase is retired: no new checkout; a late webhook for an old session is still recorded.
+"""
 
 from __future__ import annotations
 
+import asyncio
 import logging
-from urllib.parse import quote_plus
+import time
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import stripe
 from fastapi import HTTPException, Request
 
 from backend import db
-from backend.config import get_settings
+from backend.config import get_settings, stripe_key_is_live
 
 log = logging.getLogger(__name__)
 
+CHICAGO = ZoneInfo("America/Chicago")
+INTERVALS = ("month", "year")
+CHECKOUT_TTL_S = 30 * 60  # Stripe's shortest allowed expiry
+_RETURN_PATHS = {"settings": "/settings/plan", "pricing": "/pricing"}
+# Stripe's pages in the reader's language: Spanish is Latin American (es-419), the closest to the app's es-MX.
+_STRIPE_LOCALES = {"en": "en", "es": "es-419"}
+_user_locks: dict[str, asyncio.Lock] = {}
+
 
 def _configure_stripe() -> None:
+    stripe.api_key = get_settings().stripe_secret_key
+
+
+def purchases_enabled() -> bool:
     s = get_settings()
-    stripe.api_key = s.stripe_secret_key
+    return bool(
+        s.stripe_secret_key and s.stripe_webhook_secret
+        and s.stripe_price_id_pro_monthly and s.stripe_price_id_pro_yearly
+    )
 
 
-async def create_checkout_session(user: dict, visitor_id: str | None = None) -> str:
-    """Create a Stripe Checkout session and return the URL.
+def _price_for(interval: str) -> str:
+    s = get_settings()
+    return {"month": s.stripe_price_id_pro_monthly, "year": s.stripe_price_id_pro_yearly}[interval]
 
-    ``visitor_id`` (analytics) rides the session metadata so the webhook can
-    attribute the completed purchase to the originating visitor's funnel.
-    """
+
+def _lock(user_id: str) -> asyncio.Lock:
+    lock = _user_locks.get(user_id)
+    if lock is None:
+        lock = _user_locks[user_id] = asyncio.Lock()
+    return lock
+
+
+def _get(obj, key, default=None):
+    """Read a field from a Stripe object or a plain dict."""
+    try:
+        value = obj.get(key, default) if hasattr(obj, "get") else getattr(obj, key, default)
+    except Exception:  # noqa: BLE001
+        return default
+    return default if value is None else value
+
+
+def _id(value) -> str | None:
+    """A Stripe reference is an id string, or the expanded object."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return _get(value, "id")
+
+
+def is_pro_status(status: str | None) -> bool:
+    from backend.auth import PRO_STATUSES
+    return status in PRO_STATUSES
+
+
+# ── Checkout ──────────────────────────────────────────────────────────────────────────────────────────────────
+
+async def _ensure_customer(user: dict) -> dict:
+    """The account's one Stripe customer, created once (an idempotency key per account covers two requests racing
+    across processes; the per-account lock covers this one). Email is optional (Apple and Microsoft may give none):
+    Checkout asks for a receipt address."""
+    sub = await db.get_subscription(user["id"])
+    if sub:
+        return sub
+    params: dict = {"metadata": {"user_id": user["id"]}}
+    if user.get("email"):
+        params["email"] = user["email"]
+    if user.get("name"):
+        params["name"] = user["name"]
+    customer = stripe.Customer.create(**params, idempotency_key=f"ul-customer-{user['id']}")
+    return await db.set_subscription_customer(user["id"], customer["id"])
+
+
+async def create_checkout_session(user: dict, interval: str, origin: str = "settings", language: str = "en") -> str:
+    """Start (or reuse) a Pro checkout and return its URL."""
+    if interval not in INTERVALS:
+        raise HTTPException(status_code=400, detail={"error": "bad_interval"})
+    if not purchases_enabled():
+        raise HTTPException(status_code=503, detail={"error": "purchases_off"})
+    if user.get("tier") == "admin":
+        raise HTTPException(status_code=409, detail={"error": "admin_account"})
     _configure_stripe()
     s = get_settings()
+    return_path = _RETURN_PATHS.get(origin, _RETURN_PATHS["settings"])
+    base = s.frontend_url.rstrip("/")
 
-    if not s.stripe_price_id_pro_monthly:
-        raise HTTPException(status_code=503, detail="Payment not configured")
+    async with _lock(user["id"]):
+        sub = await _ensure_customer(user)
+        if is_pro_status(sub.get("status")):
+            raise HTTPException(status_code=409, detail={"error": "already_subscribed"})
 
-    params: dict = {
-        "mode": "subscription",
-        "line_items": [{"price": s.stripe_price_id_pro_monthly, "quantity": 1}],
-        "success_url": f"{s.frontend_url}/?checkout=success",
-        "cancel_url": f"{s.frontend_url}/pricing",
-        "metadata": {
-            "user_id": user["id"],
-            **({"visitor_id": visitor_id} if visitor_id else {}),
-        },
-    }
+        now = int(time.time())
+        if (
+            sub.get("checkout_session_id")
+            and sub.get("checkout_interval") == interval
+            and (sub.get("checkout_expires_at") or 0) > now + 60
+        ):
+            try:
+                existing = stripe.checkout.Session.retrieve(sub["checkout_session_id"])
+                if _get(existing, "status") == "open" and _get(existing, "url"):
+                    return existing["url"]
+            except stripe.StripeError:
+                pass  # make a new one
 
-    if user.get("stripe_customer_id"):
-        params["customer"] = user["stripe_customer_id"]
-    else:
-        params["customer_email"] = user["email"]
-        params["customer_creation"] = "always"
+        expires_at = now + CHECKOUT_TTL_S
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            customer=sub["stripe_customer_id"],
+            client_reference_id=user["id"],
+            line_items=[{"price": _price_for(interval), "quantity": 1}],
+            success_url=f"{base}/settings/plan?checkout=done",
+            cancel_url=f"{base}{return_path}",
+            expires_at=expires_at,
+            locale=_STRIPE_LOCALES.get(language, "auto"),
+            metadata={"user_id": user["id"], "interval": interval},
+            subscription_data={"metadata": {"user_id": user["id"]}},
+        )
+        await db.set_checkout_session(user["id"], session["id"], interval, expires_at)
+        log.info("checkout created user=%s interval=%s", user["id"], interval)
+        return session["url"]
 
-    session = stripe.checkout.Session.create(**params)
-    return session.url
 
-
-async def create_billing_portal_session(user: dict) -> str:
-    """Create a Stripe Customer Portal session and return the URL."""
+async def create_billing_portal_session(user: dict, language: str = "en") -> str:
+    """Stripe's Portal: cancel, card, invoices, month <-> year. Back to Settings → Plan."""
+    sub = await db.get_subscription(user["id"])
+    if not sub or not sub.get("stripe_subscription_id"):
+        raise HTTPException(status_code=400, detail={"error": "no_subscription"})
     _configure_stripe()
     s = get_settings()
-
-    if not user.get("stripe_customer_id"):
-        raise HTTPException(status_code=400, detail="No active subscription")
-
     session = stripe.billing_portal.Session.create(
-        customer=user["stripe_customer_id"],
-        return_url=f"{s.frontend_url}/pricing",
+        customer=sub["stripe_customer_id"],
+        return_url=f"{s.frontend_url.rstrip('/')}/settings/plan",
+        locale=_STRIPE_LOCALES.get(language, "auto"),
     )
     return session.url
 
 
-async def create_report_checkout_session(
-    user: dict, address: str | None, lat: float, lon: float,
-    pin: str | None = None, visitor_id: str | None = None,
-) -> str:
-    """Create a one-time Stripe Checkout session for a single report ($25).
+async def create_report_checkout_session(*_args, **_kwargs) -> str:
+    """Retired with the $25 report (Item 123): Pro and the free Deep analysis replace it."""
+    raise HTTPException(status_code=410, detail={"error": "report_purchase_retired"})
 
-    ``pin`` keys the purchase to the parcel when known; the address/coord
-    fields remain for display and for legacy coordinate-matched entitlement.
-    """
-    _configure_stripe()
-    s = get_settings()
 
-    if not s.stripe_price_id_report:
-        raise HTTPException(status_code=503, detail="Report purchase not configured")
+# ── Webhook ───────────────────────────────────────────────────────────────────────────────────────────────────
 
-    if pin:
-        return_query = f"pin={quote_plus(pin)}"
-    else:
-        return_query = f"address={quote_plus(address or '')}"
-    params: dict = {
-        "mode": "payment",
-        "line_items": [{"price": s.stripe_price_id_report, "quantity": 1}],
-        "success_url": f"{s.frontend_url}/scorecard?{return_query}&report_purchased=1",
-        "cancel_url": f"{s.frontend_url}/scorecard?{return_query}",
-        "metadata": {
-            "user_id": user["id"],
-            "purchase_type": "report",
-            "address": address or "",
-            "lat": str(round(lat, 4)),
-            "lon": str(round(lon, 4)),
-            **({"pin": pin} if pin else {}),
-            **({"visitor_id": visitor_id} if visitor_id else {}),
-        },
-    }
-
-    if user.get("stripe_customer_id"):
-        params["customer"] = user["stripe_customer_id"]
-    else:
-        params["customer_email"] = user["email"]
-        params["customer_creation"] = "always"
-
-    session = stripe.checkout.Session.create(**params)
-
-    await db.save_report_purchase(
-        user_id=user["id"],
-        stripe_session_id=session.id,
-        address=address,
-        lat=lat,
-        lon=lon,
-        pin=pin,
-    )
-
-    return session.url
+_SUBSCRIPTION_EVENTS = {
+    "customer.subscription.created",
+    "customer.subscription.updated",
+    "customer.subscription.deleted",
+    "customer.subscription.paused",
+    "customer.subscription.resumed",
+}
+_INVOICE_EVENTS = {"invoice.paid", "invoice.payment_failed", "invoice.payment_succeeded"}
 
 
 async def handle_webhook(request: Request) -> dict:
-    """Process a Stripe webhook event."""
-    _configure_stripe()
+    """Verify, record once, and sync from Stripe. Never trusts the event body for state."""
     s = get_settings()
+    if not s.stripe_webhook_secret:
+        # Item 123: no unsigned events anywhere (locally, `stripe listen` gives a secret).
+        log.error("Stripe webhook secret not configured; rejecting webhook")
+        raise HTTPException(status_code=503, detail="Webhook not configured")
+    _configure_stripe()
 
     body = await request.body()
     sig = request.headers.get("stripe-signature", "")
+    try:
+        event = stripe.Webhook.construct_event(body, sig, s.stripe_webhook_secret)
+    except (stripe.SignatureVerificationError, ValueError):
+        log.warning("stripe webhook refused reason=signature")
+        raise HTTPException(status_code=400, detail="Invalid signature")
 
-    if not s.stripe_webhook_secret:
-        if s.environment == "production":
-            # Never trust an unsigned event in production: it could grant premium
-            # or a report purchase to any user id the sender chooses.
-            log.error("Stripe webhook secret not configured; rejecting webhook")
-            raise HTTPException(status_code=503, detail="Webhook not configured")
-        log.warning("Stripe webhook secret not configured, skipping verification")
-        import json
-        event = stripe.Event.construct_from(json.loads(body), stripe.api_key)
-    else:
-        try:
-            event = stripe.Webhook.construct_event(body, sig, s.stripe_webhook_secret)
-        except stripe.SignatureVerificationError:
-            raise HTTPException(status_code=400, detail="Invalid signature")
+    if bool(_get(event, "livemode", False)) != stripe_key_is_live(s.stripe_secret_key):
+        log.warning("stripe webhook refused reason=mode event=%s", _get(event, "id"))
+        raise HTTPException(status_code=400, detail="Event mode does not match this server")
 
-    event_type = event["type"]
-    data = event["data"]["object"]
+    event_id = _get(event, "id")
+    event_type = _get(event, "type")
+    if not await db.record_stripe_event(event_id, event_type):
+        log.info("stripe webhook duplicate event=%s type=%s", event_id, event_type)
+        return {"received": True, "duplicate": True}
 
-    if event_type == "checkout.session.completed":
-        await _handle_checkout_completed(data)
-    elif event_type == "customer.subscription.updated":
-        await _handle_subscription_updated(data)
-    elif event_type == "customer.subscription.deleted":
-        await _handle_subscription_deleted(data)
-    else:
-        log.debug("Unhandled Stripe event: %s", event_type)
-
+    try:
+        await _dispatch(event_type, event["data"]["object"])
+    except Exception:
+        await db.forget_stripe_event(event_id)  # Stripe retries; the retry runs it again
+        log.exception("stripe webhook failed event=%s type=%s", event_id, event_type)
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
+    log.info("stripe webhook processed event=%s type=%s", event_id, event_type)
     return {"received": True}
 
 
-async def _handle_checkout_completed(session: dict) -> None:
-    mode = session.get("mode")
-    if mode == "payment":
-        await _handle_report_purchase_completed(session)
+async def _dispatch(event_type: str, obj) -> None:
+    if event_type == "checkout.session.completed":
+        if _get(obj, "mode") == "payment":
+            await _handle_report_purchase_completed(obj)
+            return
+        await _handle_subscription_checkout(obj)
+    elif event_type in _SUBSCRIPTION_EVENTS:
+        await sync_subscription(_get(obj, "id"))
+    elif event_type in _INVOICE_EVENTS:
+        sub_id = _invoice_subscription(obj)
+        if sub_id:
+            await sync_subscription(sub_id)
     else:
-        await _handle_subscription_checkout_completed(session)
+        log.debug("Unhandled Stripe event: %s", event_type)
 
 
-async def _handle_subscription_checkout_completed(session: dict) -> None:
-    user_id = session.get("metadata", {}).get("user_id")
-    if not user_id:
-        log.error("Checkout session missing user_id metadata")
+def _invoice_subscription(invoice) -> str | None:
+    """An invoice's subscription: ``subscription`` on older API versions, ``parent.subscription_details`` on newer."""
+    sub = _id(_get(invoice, "subscription"))
+    if sub:
+        return sub
+    details = _get(_get(invoice, "parent") or {}, "subscription_details") or {}
+    return _id(_get(details, "subscription"))
+
+
+async def _handle_subscription_checkout(session) -> None:
+    user_id = _get(session, "client_reference_id")
+    customer_id = _id(_get(session, "customer"))
+    sub_id = _id(_get(session, "subscription"))
+    if not (user_id and customer_id and sub_id):
+        log.error("subscription checkout missing reference session=%s", _get(session, "id"))
+        return
+    ours = await db.get_subscription(user_id)
+    if not ours or ours["stripe_customer_id"] != customer_id:
+        # The customer is created by this server for this account; anything else is not ours to credit.
+        log.error("subscription checkout customer mismatch session=%s user=%s", _get(session, "id"), user_id)
+        return
+    await sync_subscription(sub_id)
+    await _save_money_event("subscription_started", session, user_id)
+
+
+def _period_end(sub) -> int | None:
+    end = _get(sub, "current_period_end")
+    if end:
+        return int(end)
+    items = _get(_get(sub, "items") or {}, "data") or []
+    ends = [int(_get(i, "current_period_end")) for i in items if _get(i, "current_period_end")]
+    return max(ends) if ends else None
+
+
+def _interval(sub) -> str | None:
+    items = _get(_get(sub, "items") or {}, "data") or []
+    for item in items:
+        recurring = _get(_get(item, "price") or {}, "recurring") or {}
+        if _get(recurring, "interval"):
+            return _get(recurring, "interval")
+    return None
+
+
+async def sync_subscription(sub_id: str | None) -> None:
+    """Re-read a subscription from Stripe and store it on its customer's account."""
+    if not sub_id:
+        return
+    sub = stripe.Subscription.retrieve(sub_id)
+    customer_id = _id(_get(sub, "customer"))
+    ours = await db.get_subscription_by_customer(customer_id) if customer_id else None
+    if not ours:
+        log.warning("subscription for a customer that isn't ours sub=%s", sub_id)
         return
 
-    customer_id = session.get("customer")
-    subscription_id = session.get("subscription")
+    status = _get(sub, "status")
+    current = ours.get("stripe_subscription_id")
+    if current and current != sub_id and is_pro_status(ours.get("status")) and is_pro_status(status):
+        # A second live subscription on one account (two checkouts from before the guard): keep the first,
+        # cancel and refund the newer one.
+        older_created = 0
+        try:
+            older_created = int(_get(stripe.Subscription.retrieve(current), "created", 0))
+        except stripe.StripeError:
+            pass
+        newer = sub_id if int(_get(sub, "created", 0)) >= older_created else current
+        await _cancel_and_refund(newer)
+        if newer == sub_id:
+            log.error("second subscription canceled and refunded user=%s sub=%s", ours["user_id"], sub_id)
+            return
+        sub = stripe.Subscription.retrieve(sub_id)
+        status = _get(sub, "status")
 
-    user = await db.get_user_by_id(user_id)
-    if subscription_id and user and user.get("stripe_subscription_id") == subscription_id:
-        # Stripe retries webhooks; this subscription is already recorded.
-        log.info("Duplicate subscription webhook for %s ignored", subscription_id)
+    if current and current != sub_id and is_pro_status(ours.get("status")) and not is_pro_status(status):
+        # An old or abandoned subscription changed while the live one stays: nothing to store.
         return
 
-    await db.update_user_stripe(user_id, customer_id, subscription_id)
-    await db.update_user_tier(user_id, "premium")
-    log.info("User %s upgraded to premium (customer=%s)", user_id, customer_id)
-    await _save_money_event("subscription_started", session)
+    cancel_at_end = bool(_get(sub, "cancel_at_period_end", False)) or bool(_get(sub, "cancel_at"))
+    await db.write_subscription_state(
+        customer_id,
+        subscription_id=sub_id,
+        status=status,
+        interval=_interval(sub),
+        current_period_end=_period_end(sub),
+        cancel_at_period_end=cancel_at_end,
+    )
+    log.info("subscription synced user=%s status=%s", ours["user_id"], status)
 
 
-async def _handle_report_purchase_completed(session: dict) -> None:
-    metadata = session.get("metadata", {})
-    user_id = metadata.get("user_id")
+async def _cancel_and_refund(sub_id: str) -> None:
+    sub = stripe.Subscription.retrieve(sub_id, expand=["latest_invoice"])
+    stripe.Subscription.cancel(sub_id)
+    invoice = _get(sub, "latest_invoice")
+    invoice_id = _id(invoice)
+    intent = _id(_get(invoice, "payment_intent")) if not isinstance(invoice, str) else None
+    if not intent and invoice_id:
+        try:
+            payments = stripe.InvoicePayment.list(invoice=invoice_id)
+            for p in _get(payments, "data") or []:
+                intent = _id(_get(_get(p, "payment") or {}, "payment_intent"))
+                if intent:
+                    break
+        except (stripe.StripeError, AttributeError):
+            intent = None
+    if intent:
+        stripe.Refund.create(payment_intent=intent)
+    else:
+        log.error("second subscription canceled but no payment found to refund sub=%s", sub_id)
+
+
+async def _handle_report_purchase_completed(session) -> None:
+    """A report checkout started before the retirement may still complete; record it as before."""
+    metadata = _get(session, "metadata") or {}
+    user_id = _get(metadata, "user_id")
     if not user_id:
         log.error("Report purchase session missing user_id metadata")
         return
-
-    session_id = session.get("id")
-    payment_intent = session.get("payment_intent")
-    customer_id = session.get("customer")
-
-    purchase = await db.complete_report_purchase(session_id, payment_intent)
+    purchase = await db.complete_report_purchase(_get(session, "id"), _get(session, "payment_intent"))
     if purchase is None:
-        log.error("Report purchase webhook for unknown session %s", session_id)
+        log.error("Report purchase webhook for unknown session %s", _get(session, "id"))
         return
     if not purchase["newly_completed"]:
-        # Stripe retries webhooks; the purchase is already recorded and counted.
-        log.info("Duplicate report purchase webhook for session %s ignored", session_id)
         return
-
-    if customer_id and user_id:
-        user = await db.get_user_by_id(user_id)
-        if user and not user.get("stripe_customer_id"):
-            await db.update_user_stripe(user_id, customer_id, None)
-
-    address = metadata.get("address", "unknown")
-    log.info(
-        "Report purchased: user=%s address=%s session=%s",
-        user_id, address, session_id,
-    )
-    await _save_money_event("purchase_completed", session)
+    await _save_money_event("purchase_completed", session, user_id)
 
 
-async def _save_money_event(event_name: str, session: dict) -> None:
-    """Write a server-side analytics event for a completed Stripe purchase.
-
-    Money events are never accepted from the browser (main.py allowlist
-    excludes them) — the webhook is the only writer, so the funnel's
-    purchase step can't be spoofed. save_events never raises.
-    """
-    metadata = session.get("metadata", {})
+async def _save_money_event(event_name: str, session, user_id: str) -> None:
+    """The funnel's money step is written only here (main.py's allowlist excludes it from the browser)."""
+    metadata = _get(session, "metadata") or {}
     await db.save_events([{
-        "session_id": session.get("id") or "stripe",
-        "visitor_id": metadata.get("visitor_id"),
-        "user_id": metadata.get("user_id"),
+        "session_id": _get(session, "id") or "stripe",
+        "visitor_id": _get(metadata, "visitor_id"),
+        "user_id": user_id,
         "event_name": event_name,
         "event_data": {
-            "purchase_type": metadata.get("purchase_type", "subscription"),
-            "amount_total": session.get("amount_total"),
-            **({"pin": metadata["pin"]} if metadata.get("pin") else {}),
+            "purchase_type": _get(metadata, "purchase_type", "subscription"),
+            "interval": _get(metadata, "interval"),
+            "amount_total": _get(session, "amount_total"),
         },
         "page": None,
-        "address": metadata.get("address") or None,
+        "address": None,
     }])
 
 
-async def _handle_subscription_updated(subscription: dict) -> None:
-    customer_id = subscription.get("customer")
-    if not customer_id:
-        return
-
-    user = await db.get_user_by_stripe_customer(customer_id)
-    if not user:
-        log.warning("Subscription update for unknown customer: %s", customer_id)
-        return
-
-    status = subscription.get("status")
-    if status in ("active", "trialing"):
-        await db.update_user_tier(user["id"], "premium")
-    elif status in ("past_due", "unpaid", "canceled", "incomplete_expired"):
-        await db.update_user_tier(user["id"], "free")
-        await db.update_user_stripe(user["id"], customer_id, None)
-
-
-async def _handle_subscription_deleted(subscription: dict) -> None:
-    customer_id = subscription.get("customer")
-    if not customer_id:
-        return
-
-    user = await db.get_user_by_stripe_customer(customer_id)
-    if not user:
-        log.warning("Subscription deleted for unknown customer: %s", customer_id)
-        return
-
-    await db.update_user_tier(user["id"], "free")
-    await db.update_user_stripe(user["id"], customer_id, None)
-    log.info("User %s downgraded to free (subscription canceled)", user["id"])
-
+# ── Account deletion and status ───────────────────────────────────────────────────────────────────────────────
 
 async def cancel_user_subscription(user: dict) -> None:
-    """Cancel the user's active Stripe subscription immediately.
+    """Cancel the account's live subscription now, before the account is deleted.
 
-    Raises HTTPException(502) when Stripe rejects the cancellation — the
-    caller (account deletion) must abort rather than orphan a live
-    subscription behind a deleted account. An already-canceled/missing
-    subscription counts as success.
-    """
-    sub_id = user.get("stripe_subscription_id")
+    Raises HTTPException(502) when Stripe refuses: a live subscription must never be orphaned behind a deleted
+    account. An already-canceled or missing one counts as success."""
+    sub = await db.get_subscription(user["id"])
+    sub_id = (sub or {}).get("stripe_subscription_id") or user.get("stripe_subscription_id")
     if not sub_id:
+        return
+    if sub and sub.get("status") in ("canceled", "incomplete_expired"):
         return
     _configure_stripe()
     try:
@@ -307,15 +413,39 @@ async def cancel_user_subscription(user: dict) -> None:
         log.info("Canceled subscription %s for user %s", sub_id, user["id"])
 
 
+def _chicago_date(epoch_s: int | None) -> str | None:
+    if not epoch_s:
+        return None
+    return datetime.fromtimestamp(epoch_s, tz=timezone.utc).astimezone(CHICAGO).date().isoformat()
+
+
 async def get_subscription_status(user: dict) -> dict:
-    """Return current subscription status for the user."""
+    """What Settings → Plan shows. ``plan`` is the effective one (admin / pro / free); ``source`` says why."""
+    sub = user.get("subscription")
+    if sub is None and user.get("id"):
+        try:
+            sub = await db.get_subscription(user["id"])
+        except Exception:  # noqa: BLE001
+            sub = None
+    paid = bool(sub and is_pro_status(sub.get("status")))
     comp = bool(user.get("comp_premium"))
-    result = {
-        "tier": user["tier"],
-        "stripe_customer_id": user.get("stripe_customer_id"),
-        # Comp (voucher) premium is not a Stripe subscription — the billing
-        # portal would 500 for these users, so the UI must not offer it.
-        "subscription_active": user["tier"] in ("premium", "admin") and not comp,
+    tier = user.get("tier")
+    plan = "admin" if tier == "admin" else ("pro" if tier == "premium" else "free")
+    source = "stripe" if paid else ("voucher" if comp else None)
+    period_end = _chicago_date(sub.get("current_period_end")) if paid else None
+    ending = bool(paid and sub.get("cancel_at_period_end"))
+    return {
+        "tier": tier,
+        "plan": plan,
+        "source": source,
+        "status": sub.get("status") if sub else None,
+        "interval": sub.get("price_interval") if paid else None,
+        "renews_on": None if ending else period_end,
+        "ends_on": period_end if ending else None,
+        "past_due": bool(paid and sub.get("status") == "past_due"),
+        # Manage billing (Stripe's Portal) only for a Stripe subscription: a voucher has nothing to manage there.
+        "subscription_active": paid,
+        "can_manage": bool(sub and sub.get("stripe_subscription_id")),
         "comp_until": user.get("premium_until") if comp else None,
+        "purchases_enabled": purchases_enabled(),
     }
-    return result

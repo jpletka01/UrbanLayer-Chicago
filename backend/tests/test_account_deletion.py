@@ -41,6 +41,9 @@ async def test_db(tmp_path):
 def _auth_enabled():
     settings = MagicMock()
     settings.google_client_id = "test-client-id"
+    settings.microsoft_client_id = ""
+    settings.apple_client_id = ""
+    settings.auth_dev_login = False
     settings.google_client_secret = "test-secret"
     settings.jwt_secret = "test-jwt-secret-key-for-testing"
     settings.jwt_access_token_ttl = 900
@@ -55,6 +58,9 @@ def _auth_enabled():
 def _auth_disabled():
     settings = MagicMock()
     settings.google_client_id = ""
+    settings.microsoft_client_id = ""
+    settings.apple_client_id = ""
+    settings.auth_dev_login = False
     settings.jwt_secret = ""
     settings.jwt_access_token_ttl = 900
     settings.jwt_refresh_token_ttl = 604800
@@ -214,13 +220,13 @@ class TestDeleteUserAccountDb:
 
 class TestCancelUserSubscription:
     @pytest.mark.asyncio
-    async def test_no_subscription_is_noop(self):
+    async def test_no_subscription_is_noop(self, test_db):
         with patch("backend.payments.stripe.Subscription.cancel") as cancel:
             await cancel_user_subscription({"id": "u1", "stripe_subscription_id": None})
         cancel.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_cancels_active_subscription(self):
+    async def test_cancels_active_subscription(self, test_db):
         with patch("backend.payments.stripe.Subscription.cancel") as cancel:
             await cancel_user_subscription(
                 {"id": "u1", "stripe_subscription_id": "sub_1"}
@@ -228,7 +234,7 @@ class TestCancelUserSubscription:
         cancel.assert_called_once_with("sub_1")
 
     @pytest.mark.asyncio
-    async def test_already_canceled_counts_as_success(self):
+    async def test_already_canceled_counts_as_success(self, test_db):
         err = stripe.InvalidRequestError("No such subscription", param=None)
         with patch("backend.payments.stripe.Subscription.cancel", side_effect=err):
             await cancel_user_subscription(
@@ -236,7 +242,7 @@ class TestCancelUserSubscription:
             )  # must not raise
 
     @pytest.mark.asyncio
-    async def test_stripe_failure_raises_502(self):
+    async def test_stripe_failure_raises_502(self, test_db):
         from fastapi import HTTPException
         err = stripe.APIConnectionError("stripe down")
         with patch("backend.payments.stripe.Subscription.cancel", side_effect=err):

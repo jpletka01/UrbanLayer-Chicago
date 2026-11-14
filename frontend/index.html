@@ -4,11 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1c1c" media="(prefers-color-scheme: dark)" />
     <title>UrbanLayer — Site Feasibility for Any Chicago Address</title>
     <meta
       name="description"
-      content="Type any Chicago address and get its zoning, what you can build, tax projection, incentives, and regulatory overlays in seconds — free, no account. Ask follow-ups with cited municipal code and download a $25 Development Feasibility Report."
+      content="Type any Chicago address and get its zoning, what you can build, tax projection, incentives, and regulatory overlays in seconds — free, no account. Ask follow-ups answered with cited municipal code."
     />
     <link rel="canonical" href="https://urbanlayerchicago.com/" />
     <meta property="og:type" content="website" />
@@ -28,10 +29,10 @@
     />
     <meta name="twitter:image" content="https://urbanlayerchicago.com/sample-report-thumb.png" />
     <!-- Pre-paint theme resolution (no FOUC): set data-theme before the bundle loads, and
-         paint the correct background via a pre-resolved var. See guides/light-dark-theming.md. -->
+         paint the correct background (SnowUI page white / #1C1C1C) via a pre-resolved var. -->
     <style>
-      html { --_pp: #0a0a0a; }
-      html[data-theme="light"] { --_pp: #fafaf9; }
+      html { --_pp: #ffffff; }
+      html[data-theme="dark"] { --_pp: #1c1c1c; }
       html, body { background: var(--_pp); }
     </style>
     <script>
@@ -47,7 +48,7 @@
       })();
     </script>
   </head>
-  <body class="bg-dark-bg">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

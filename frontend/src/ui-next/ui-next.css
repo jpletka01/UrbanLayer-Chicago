@@ -1,13 +1,12 @@
 /* ── The new UI's tokens (decision Items 74, 76) ─────────────────────────────────────────────────────
-   EVERY rule in this file is scoped to `.ui-next` (the isolation test parses this file and fails on any
-   selector that isn't), so nothing here can reach today's pages. Two layers:
+   Since Phase 10 the new UI is the only UI: the token blocks below apply to :root as well as to every `.ui-next`
+   root (portals and dialogs keep the class), and the other rules stay scoped to `.ui-next`. Two layers:
 
    1. `--nx-*`: the SnowUI frame (page, blocks, stat cards, ink and its steps, main button, this lot,
       analyst gradient, status pills) and the Coastal chart palette. Tailwind exposes them as `nx-*`.
-   2. Overrides of today's role variables (`--bg`, `--text-*`, `--status-*`, ...) INSIDE `.ui-next` only,
-      so shared components reused by the new UI (StatusLabel, ConfidenceState, Toggletip, AddressInput,
-      MessageBubble, the parcel map's controls) take the SnowUI look without a new variant. Outside
-      `.ui-next` those variables keep their Bento Pro values.
+   2. The role variables (`--bg`, `--text-*`, `--status-*`, ...) behind the Tailwind role classes, set to SnowUI
+      values, so the shared components (StatusLabel, ConfidenceState, Toggletip, AddressInput, MessageBubble,
+      ShareModal) and the restyled About/Admin pages take the SnowUI look.
 
    Channel triplets ("R G B") so Tailwind's `<alpha-value>` works. Deliberate departures from the sampled
    SnowUI values, for WCAG AA (4.5:1 for small text), measured 2026-11-07:
@@ -16,6 +15,7 @@
    - light pill words are darker than SnowUI's (its #8A8CD9 on #EDEEFC is 2.7:1; ours are 4.8–6.0);
    - the analyst's Send button keeps SnowUI's gradient with a dark label (white on it is 2.5:1). */
 
+:root,
 .ui-next {
   color-scheme: light;
   --nx-page: 255 255 255;          /* SnowUI Background 1 */
@@ -90,6 +90,7 @@
      beat a utility on the same element (the frame sets `bg-nx-page text-nx-ink` itself). */
 }
 
+[data-theme="dark"],
 [data-theme="dark"] .ui-next,
 .ui-next[data-theme="dark"] {
   color-scheme: dark;
@@ -257,4 +258,17 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ui-next .nx-shimmer { background: none; color: rgb(var(--nx-ink) / 0.7); }
+}
+
+/* Pricing's Pro cards (Item 123, owner 2026-11-13): a thin lavender rim, the analyst's own colors, with a slow light
+   running round it (`animate-nx-rim`); still under reduced motion. The card inside keeps the block fill. */
+.ui-next .nx-pro-rim {
+  padding: 1.5px;
+  border-radius: calc(1rem + 1.5px);
+  background-image: linear-gradient(110deg, rgb(var(--nx-ai-a)), rgb(var(--nx-send-a)), rgb(var(--nx-ai-b)), rgb(var(--nx-send-b)), rgb(var(--nx-ai-a)));
+  background-size: 300% 100%;
+  box-shadow: 0 10px 32px -18px rgb(var(--nx-send-a) / 0.7);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-next .nx-pro-rim { animation: none; }
 }

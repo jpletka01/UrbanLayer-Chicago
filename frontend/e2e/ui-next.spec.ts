@@ -2,8 +2,8 @@ import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 /**
- * The new UI's local release gates (decision Items 75–76), beside the overflow audit:
- *   - Playwright axe (WCAG 2 A/AA, color contrast included) on every preview route, light and dark;
+ * The site's local release gates (decision Items 75–76; the only UI since Phase 10), beside the overflow audit:
+ *   - Playwright axe (WCAG 2 A/AA, color contrast included) on every route, light and dark;
  *   - Spanish at 360 px: no horizontal overflow and the Spanish strings on screen;
  *   - a keyboard walkthrough: Tab reaches the side panel, the tools, the tabs; the Ask drawer opens and
  *     closes from the keyboard and focus returns to Ask.
@@ -11,15 +11,24 @@ import AxeBuilder from "@axe-core/playwright";
  */
 
 const ROUTES = [
-  { id: "search", path: "/scorecard?ui=next" },
-  { id: "profile", path: "/scorecard?address=1601%20N%20Milwaukee%20Ave&ui=next", ready: "answer-sentence" },
-  { id: "discovery", path: "/discovery?ui=next" },
+  { id: "search", path: "/scorecard" },
+  { id: "profile", path: "/scorecard?address=1601%20N%20Milwaukee%20Ave", ready: "answer-sentence" },
+  { id: "discovery", path: "/discovery" },
   // Phase 8: the landing, the signed-in home (sign-in is off locally, so "/" is the home), the full chat page.
-  { id: "landing", path: "/?ui=next&landing=1", ready: "landing" },
-  { id: "home", path: "/?ui=next", ready: "home" },
-  { id: "chat", path: "/chat?ui=next", ready: "chat-page" },
+  { id: "landing", path: "/?landing=1", ready: "landing" },
+  { id: "home", path: "/", ready: "home" },
+  { id: "chat", path: "/chat", ready: "chat-page" },
   // Phase 9: Saved (sign-in is off locally, so these are the account's lots).
-  { id: "saved", path: "/saved?ui=next", ready: "saved" },
+  { id: "saved", path: "/saved", ready: "saved" },
+  // Settings (design B): two sections, with sign-in off locally (no sign-in methods or delete there).
+  { id: "settings-plan", path: "/settings/plan", ready: "settings-plan" },
+  { id: "settings-preferences", path: "/settings/preferences", ready: "settings-preferences" },
+  // Billing (Item 123): the new Pricing page.
+  { id: "pricing", path: "/pricing", ready: "pricing" },
+  // Phase 10: the pages that were old-UI only.
+  { id: "about", path: "/about", ready: "about" },
+  { id: "privacy", path: "/privacy", ready: "privacy" },
+  { id: "not-found", path: "/no-such-page", ready: "not-found" },
 ];
 
 async function open(page: Page, path: string, ready?: string) {
@@ -63,7 +72,7 @@ test("Spanish at 360 px: no overflow, Spanish on screen", async ({ page }, testI
     await open(page, route.path, route.ready);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `${route.id} overflow`).toBeLessThanOrEqual(1);
-    await expect(page.getByText("Vista previa", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Abrir menú" }).first()).toBeVisible();
     if (route.id === "profile") {
       await page.getByRole("tab", { name: "Construir" }).click();
       await page.waitForTimeout(300);
@@ -73,7 +82,7 @@ test("Spanish at 360 px: no overflow, Spanish on screen", async ({ page }, testI
   }
 });
 
-test("keyboard walkthrough of the preview Profile", async ({ page }, testInfo) => {
+test("keyboard walkthrough of the Profile", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "Pixel 3", "once");
   await page.setViewportSize({ width: 1280, height: 800 });
   await open(page, ROUTES[1].path, ROUTES[1].ready);
@@ -91,7 +100,7 @@ test("keyboard walkthrough of the preview Profile", async ({ page }, testInfo) =
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("tab", { name: "Build" })).toHaveAttribute("aria-selected", "true");
   // Tab from the top of a fresh load reaches the side panel's destinations before the page.
-  await open(page, "/scorecard?ui=next");
+  await open(page, "/scorecard");
   const seen: string[] = [];
   for (let i = 0; i < 8; i++) {
     await page.keyboard.press("Tab");
@@ -338,7 +347,7 @@ test("3D: phone band flat, expanded map 3D with turn, tilt and reset, axe light 
 test("Phase 8: chat doors from / open the new chat page; the landing's bar stays pinned; the home saves a lot", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
   // A chat door keeps its parameters on the way to /chat. No question is sent.
-  await open(page, "/?ui=next&ask=1", "chat-page");
+  await open(page, "/?ask=1", "chat-page");
   expect(new URL(page.url()).pathname).toBe("/chat");
   await expect(page.getByRole("heading", { name: "What do you want to know?" })).toBeVisible();
 
@@ -370,7 +379,7 @@ test("Phase 8: chat doors from / open the new chat page; the landing's bar stays
 test("Phase 9: Saved lists the lot saved on the home, keeps a note, and a Discovery search saves and reopens", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
   // Sign-in is off locally: the account is the development user's, so a lot saved on the home is in Saved.
-  await page.goto("/?ui=next", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => localStorage.setItem("urbanlayer-next-recent-lots:v1", JSON.stringify([
     { key: "pin:13264150210000", address: "2611 N Sawyer Ave", pin: "13264150210000", zone: "RS-3", area: "Logan Square", outline: null, at: Date.now(), lat: 41.92879, lon: -87.70916 },
   ])));
@@ -414,7 +423,7 @@ test("Phase 9 quotas: the count near the end, and the refusal's words, with the 
   await page.route("**/chat", (r) => r.request().method() === "POST"
     ? r.fulfill({ status: 429, json: { detail: { error: "quota", plan: "free", limit: 50, used: 50, resets_on: "2026-12-01", pro_limit: 200 } } })
     : r.continue());
-  await open(page, "/chat?ui=next", "chat-page");
+  await open(page, "/chat", "chat-page");
   const box = page.getByTestId("chat-box");
   await box.fill("Can I build a 3-flat at 2541 N Spaulding Ave?");
   await box.press("Enter");
@@ -424,4 +433,94 @@ test("Phase 9 quotas: the count near the end, and the refusal's words, with the 
   await expect(page.getByText("Can I build a 3-flat at 2541 N Spaulding Ave?")).toHaveCount(0);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
+});
+
+// Phase 9 identity (Item 121): the chooser offers Google, Apple and Microsoft with their own marks, passes axe in
+// both themes and fits a phone; a round trip's result shows once and leaves the address bar. The server's replies
+// about who is signed in and which methods exist are stubbed, so this runs on any local stack.
+test("Phase 9 identity: the sign-in chooser and the result notice, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
+  await page.route("**/api/auth/me", (r) => r.fulfill({ json: { authenticated: false, auth_required: true, user: null, can_refresh: false } }));
+  await page.route("**/api/auth/providers", (r) => r.fulfill({ json: { providers: [
+    { id: "google", test: false }, { id: "apple", test: false }, { id: "microsoft", test: false }] } }));
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await open(page, "/saved", "saved");
+    await page.getByTestId("saved").getByRole("button", { name: "Sign in" }).first().click();
+    const chooser = page.getByRole("dialog", { name: "Sign in to UrbanLayer" });
+    await expect(chooser).toBeVisible();
+    await expect(chooser.getByRole("button", { name: /^Continue with / })).toHaveText([
+      "Continue with Google", "Continue with Apple", "Continue with Microsoft"]);
+    expect(await axe(page), `axe ${scheme}, chooser`).toEqual([]);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    await page.keyboard.press("Escape");
+    await expect(chooser).toHaveCount(0);
+  }
+  await page.goto("/?landing=1&link=taken&provider=apple", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("auth-notice")).toContainText("signs in to a different UrbanLayer account");
+  await expect.poll(() => new URL(page.url()).search).not.toContain("link=");
+  expect(await axe(page), "axe, notice").toEqual([]);
+});
+
+// Phase 9 billing (Item 123): Pricing's yearly choice goes to checkout with only the interval, and Settings → Plan's
+// paid states read Stripe's stored state. The server's replies are stubbed (no Stripe call), so this runs anywhere.
+test("Phase 9 billing: Pricing yearly checkout, the Plan's Pro states, axe light and dark, no overflow", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "runs once, on one device");
+  const base = {
+    tier: "premium", plan: "pro", source: "stripe", status: "active", interval: "year", renews_on: "2027-11-13", ends_on: null,
+    past_due: false, subscription_active: true, can_manage: true, comp_until: null, purchases_enabled: true,
+  };
+  let sub: Record<string, unknown> = base;
+  let checkoutBody: unknown = null;
+  await page.route("**/api/payments/status", (r) => r.fulfill({ json: { reports: false, subscriptions: true } }));
+  await page.route("**/api/subscription", (r) => r.fulfill({ json: sub }));
+  await page.route("**/api/billing/checkout", (r) => {
+    checkoutBody = r.request().postDataJSON();
+    return r.fulfill({ json: { url: "/pricing?stubbed=stripe" } });
+  });
+
+  await open(page, "/pricing", "pricing");
+  await expect(page.getByTestId("pricing-year-price")).toHaveText("$199");
+  const getPro = page.getByTestId("pricing-get-pro-year");
+  if (await getPro.count()) {  // sign-in off locally: the stand-in account is an admin, which has no checkout
+    await getPro.click();
+    await expect.poll(() => page.url()).toContain("stubbed=stripe");
+    expect(checkoutBody).toMatchObject({ interval: "year", origin: "pricing" });
+  }
+
+  for (const [label, state] of [["renewing", base], ["ending", { ...base, renews_on: null, ends_on: "2026-12-13" }],
+    ["past due", { ...base, status: "past_due", past_due: true }]] as const) {
+    sub = state;
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await open(page, "/settings/plan", "settings-plan");
+      await expect(page.getByTestId("settings-plan")).toContainText(label === "renewing" ? "Manage billing" : label === "ending" ? "Keep Pro" : "Update your card");
+      expect(await axe(page), `axe ${scheme}, ${label}`).toEqual([]);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+    }
+  }
+});
+
+// Phase 10: a shared conversation (/s/:token) opens read only on the chat page: no composer, no chat list, the
+// "Start your own" door; axe light and dark. The share is stubbed: no question is sent.
+test("Phase 10: a shared link opens read only", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Pixel 3", "once");
+  await page.route(/\/api\/share\/tok123\/changes/, (r) => r.fulfill({ json: {} }));
+  await page.route(/\/api\/share\/tok123$/, (r) => r.fulfill({ json: {
+    id: "c1", title: "RT-4 on a standard lot", created_at: 1794312000000, updated_at: 1794312005000,
+    messages: [
+      { role: "user", content: "How many units does RT-4 allow on a 25 by 125 lot?", created_at: 1794312000000 },
+      { role: "assistant", content: "RT-4 allows one unit per 1,000 square feet of lot area, so a 3,125 square foot lot holds 3 units.", created_at: 1794312005000 },
+    ],
+  } }));
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await open(page, "/s/tok123", "chat-shared-note");
+    await expect(page.getByText("A shared conversation, read only.")).toBeVisible();
+    await expect(page.getByTestId("chat-list")).toHaveCount(0);
+    await expect(page.getByLabel("Ask a follow-up")).toHaveCount(0);
+    expect(await axe(page), `axe ${scheme}`).toEqual([]);
+  }
 });

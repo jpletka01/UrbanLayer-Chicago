@@ -1,112 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Theme tokens — "Bento Pro" (dark-first, light adapted) ─────────────────────────────
-   A premium, ultra-dark canvas: near-black surfaces separated by hairline borders, a warm
-   ORANGE brand/CTA accent (#F9A474), and a VIOLET premium accent (#c3a3ff) reserved for the
-   paid report ("costs money"). Channel triplets (space-separated RGB) so Tailwind's
-   `<alpha-value>` opacity utilities keep working (`bg-dark-surface/80`). :root = DARK default,
-   [data-theme="light"] flips. Pre-paint script in index.html sets data-theme before first paint
-   (no FOUC). Action hierarchy reads by FORM (fill/outline/text), never by shade.
-   Data-encoding colors (mapColors.ts, DataPill, upsideColor.ts, map layers) are EXEMPT.        */
-/* `:root` is the dark default; `[data-theme="dark"]` repeats the dark values so any element
-   can opt back into dark as a self-contained island — used to mode-lock over-image sections
-   (hero, StorySection, Footer) so their token text stays light over a dark photo even in light mode. */
-:root,
-[data-theme="dark"] {
-  color-scheme: dark;
-  /* near-black canvas; surfaces step up in near-imperceptible increments, borders do the work */
-  --bg: 10 10 10;                /* #0a0a0a base canvas */
-  --surface: 15 15 15;           /* #0f0f0f default card/panel */
-  --elevated: 23 23 23;          /* #171717 raised: inputs, nested rows */
-  --hover: 33 33 33;             /* #212121 interactive hover fill */
-  --border-subtle: 26 26 26;     /* #1a1a1a internal dividers */
-  --border: 38 38 38;            /* #262626 default hairline (~10% white on black) */
-  --border-strong: 64 64 64;     /* #404040 emphasis/hover/selected (~20% white) */
-  --text-primary: 255 255 255;   /* #ffffff */
-  --text-secondary: 161 161 170; /* #a1a1aa */
-  --text-muted: 113 113 122;     /* #71717a — AA-large/UI only */
-  --text-on-accent: 26 18 13;    /* #1a120d — DARK text on the light-orange brand fill (AA) */
-  /* warm orange accent (brand / outline / focus / selected / link). Bright on near-black, so
-     one tone serves both fill markers and text/links (contrast on #0a0a0a ≈ 9:1). The filled
-     button darkens slightly on hover for correct feedback. */
-  --accent: 249 164 116;         /* #f9a474 — brand orange; as text/outline on canvas ≈ 9:1 */
-  --accent-text: 249 164 116;    /* #f9a474 — link/tertiary on dark (same bright orange) */
-  --accent-hover: 251 182 142;   /* #fbb68e — hover on accent surfaces (lighter) */
-  --accent-muted-a: 0.14;        /* selected-fill alpha (orange tint) */
-  --action-primary: 249 164 116; /* #f9a474 — button FILL (light orange), DARK label on top */
-  --action-primary-hover: 243 154 103; /* #f39a67 — fill hover (deeper orange) */
-  /* violet premium — the ONLY cool accent; reserved for the paid report badge/CTA ("costs money") */
-  --highlight: 195 163 255;      /* #c3a3ff — text/icon on dark */
-  --highlight-fill: 109 74 239;  /* #6d4aef — badge/button fill, white-on ≈ 4.7 */
-  --highlight-fg: 255 255 255;   /* #ffffff */
-  /* semantic state (bright -400 tuned for near-black; map/zoning convention unchanged) */
-  --state-positive: 52 211 153;  /* emerald-400 */
-  --state-negative: 251 113 133; /* rose-400 */
-  --state-warning: 251 191 36;   /* amber-400 */
-  /* Semantic roles (redesign foundation, decision Item 49): components pick a ROLE, never a hue.
-     status-* carry genuine state only; amber = act on it, red = a blocker, neutral = information
-     (a verdict category is information, never amber). success/warning/danger reuse state-*. */
-  --text-disabled: 82 82 91;     /* #52525b */
-  --status-success: 52 211 153;  /* = state-positive */
-  --status-warning: 251 191 36;  /* = state-warning */
-  --status-danger: 251 113 133;  /* = state-negative */
-  --status-info: 125 211 252;    /* sky-300: passive information, used sparingly */
-  --status-neutral: 161 161 170; /* = text-secondary */
-  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.03), 0 2px 12px -2px rgb(0 0 0 / 0.5);
-  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.7);
-  --glow-accent: 0 0 0 1px rgb(249 164 116 / 0.20), 0 0 28px -4px rgb(249 164 116 / 0.22);
-}
-
-[data-theme="light"] {
-  color-scheme: light;
-  /* clean warm-neutral light: near-white paper, deep-orange accent for AA, soft real shadows */
-  --bg: 250 250 249;             /* #fafaf9 */
-  --surface: 255 255 255;        /* #ffffff */
-  --elevated: 245 245 244;       /* #f5f5f4 */
-  --hover: 236 236 235;          /* #ececeb */
-  --border-subtle: 240 240 239;  /* #f0f0ef */
-  --border: 228 228 227;         /* #e4e4e3 */
-  --border-strong: 208 208 206;  /* #d0d0ce */
-  --text-primary: 26 26 26;      /* #1a1a1a */
-  --text-secondary: 82 82 91;    /* #52525b */
-  --text-muted: 113 113 122;     /* #71717a — AA-large/UI only */
-  --text-on-accent: 26 18 13;    /* #1a120d — DARK label on the bright-orange fill (matches dark) */
-  /* Same bright orange as dark mode (per preference). Fills take a dark label; link TEXT keeps a
-     deeper orange so small orange type stays legible on white (bright peach on white is ~1.9:1). */
-  --accent: 249 164 116;         /* #f9a474 — same bright brand orange as dark */
-  --accent-text: 194 65 12;      /* #c2410c — link text, deep enough to read on white (AA) */
-  --accent-hover: 251 182 142;   /* #fbb68e */
-  --accent-muted-a: 0.14;
-  --action-primary: 249 164 116; /* #f9a474 — button FILL, dark label (matches dark mode) */
-  --action-primary-hover: 243 154 103;  /* #f39a67 — fill hover (deeper) */
-  --highlight: 109 74 239;       /* #6d4aef — violet text/icon on white ≈ 5 */
-  --highlight-fill: 109 74 239;  /* #6d4aef */
-  --highlight-fg: 255 255 255;   /* #ffffff */
-  --state-positive: 4 120 87;    /* emerald-700 */
-  --state-negative: 190 18 60;   /* rose-700 */
-  --state-warning: 180 83 9;     /* amber-700 */
-  --text-disabled: 161 161 170;  /* #a1a1aa */
-  --status-success: 4 120 87;    /* = state-positive */
-  --status-warning: 180 83 9;    /* = state-warning */
-  --status-danger: 190 18 60;    /* = state-negative */
-  --status-info: 3 105 161;      /* sky-700 */
-  --status-neutral: 82 82 91;    /* = text-secondary */
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
-  --shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --glow-accent: 0 0 0 1px rgb(234 88 12 / 0.18), 0 0 24px -6px rgb(234 88 12 / 0.18);
-}
-
-/* Bento display face (Inter Tight) applies to the two largest type steps — hero
-   (text-display) and section/page headings (text-section). Unlayered so it wins the
-   cascade over Tailwind's layered utilities (which only set size/weight). */
-.text-display,
-.text-section {
-  font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
-}
+/* The site's tokens live in ui-next/ui-next.css (SnowUI frame, Coastal charts): defined on :root and on every
+   `.ui-next` root, light by default, dark under [data-theme="dark"]. The Bento Pro palette was retired with the old
+   UI (Phase 10). */
 
 html {
   scroll-behavior: smooth;
@@ -117,27 +17,8 @@ html, body, #root {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: rgb(var(--bg));
-  color: rgb(var(--text-primary));
-}
-
-/* Ambient canvas (Bento layout.md): two low-opacity radial blooms in opposite corners break
-   up the flat background — warm orange top-left, violet bottom-right. Fixed + non-interactive
-   so it sits behind all content site-wide. Softened further in light mode. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(60rem 60rem at 0% 0%, rgb(var(--accent) / 0.05), transparent 60%),
-    radial-gradient(55rem 55rem at 100% 100%, rgb(var(--highlight) / 0.045), transparent 60%);
-}
-[data-theme="light"] body::before {
-  background:
-    radial-gradient(60rem 60rem at 0% 0%, rgb(var(--accent) / 0.04), transparent 60%),
-    radial-gradient(55rem 55rem at 100% 100%, rgb(var(--highlight) / 0.035), transparent 60%);
+  background: rgb(var(--nx-page));
+  color: rgb(var(--nx-ink));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -145,50 +26,8 @@ body::before {
 }
 
 @media print {
-  body::before { display: none !important; }
   body > #root > *:not(.export-report) { display: none !important; }
   .export-report { display: block !important; }
-}
-
-/* ── Density scope ──────────────────────────────────────────────────────────
-   The sidebar data cards are rail-density (text-micro reading surfaces) — right
-   at ~340px on desktop, too small when the SAME cards render full-phone-width in
-   the mobile bottom sheet. `data-density="comfortable"` on a wrapper bumps the
-   reading surfaces one step (micro → ~caption, sm stat values → ~body) without
-   forking the card components — the type-axis sibling of the `[data-theme]`
-   island idiom. Applied by MobileSidebarSheet's Data pane. */
-[data-density="comfortable"] .text-micro {
-  font-size: 0.8125rem;
-  line-height: 1.45;
-}
-[data-density="comfortable"] .text-sm {
-  font-size: 0.9375rem;
-  line-height: 1.5;
-}
-
-/* Hero dot-matrix backdrop.
-
-   Two jobs, split by breakpoint:
-
-   - Below xl the backdrop is a BAND whose height is the asset's own aspect
-     (55vw), so it fills itself exactly and nothing is cropped. Its only mask is
-     a soft bottom edge, so the image dissolves into the page instead of ending
-     at a rule — and because there is no canvas below it, there is no field that
-     can read as unrendered. That was the whole defect in the letterboxed
-     version: the subject was 100% intact and the hero still looked broken.
-
-   - At xl+ the backdrop is full-bleed, and the radial mask dims the left text
-     column so the headline is not sitting on live texture. */
-.hero-dots {
-  -webkit-mask-image: linear-gradient(to bottom, black 58%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 58%, transparent 100%);
-}
-
-@media (min-width: 1280px) {
-  .hero-dots {
-    -webkit-mask-image: radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%);
-    mask-image: radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%);
-  }
 }
 
 /* Low-confidence fills (WS0 M4). A diagonal stripe drawn from --text-muted, so it flips with

@@ -1,11 +1,9 @@
-import { StrictMode, useEffect } from 'react'
+import { StrictMode, Suspense, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
-import 'mapbox-gl/dist/mapbox-gl.css'
 import './lib/i18n'
 import './index.css'
-// The new UI's tokens: every rule is scoped to .ui-next, so this changes nothing on today's pages.
 import './ui-next/ui-next.css'
 import { initTracking, track } from './lib/tracking'
 
@@ -38,83 +36,75 @@ if (import.meta.env.VITE_CLARITY_ID) {
   first.parentNode?.insertBefore(s, first);
 }
 
-import { App } from './App.tsx'
-import { AboutPage } from './components/AboutPage.tsx'
-import { AdminDashboard } from './components/AdminDashboard.tsx'
-import PricingPage from './components/PricingPage.tsx'
-import SettingsPage from './components/SettingsPage.tsx'
-import ScorecardPage from './components/ScorecardPage.tsx'
-import { PrivacyPage } from './components/PrivacyPage.tsx'
-import { NotFoundPage } from './components/NotFoundPage.tsx'
-import DiscoveryPage from './discovery/DiscoveryPage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
-import ProtectedRoute from './components/ProtectedRoute.tsx'
-import { SegmentPrompt } from './components/SegmentPrompt.tsx'
-import { UiVersionProvider } from './ui-next/UiVersionProvider.tsx'
-import { useUiVersion } from './ui-next/uiVersionContext.ts'
-import { VersionedRoute } from './ui-next/VersionedRoute.tsx'
-import { PreviewBadge } from './ui-next/PreviewBadge.tsx'
-import { entryForPath, isReady } from './ui-next/readiness.ts'
+import AuthOverlays from './ui-next/frame/AuthOverlays.tsx'
+import { SegmentQuestion } from './ui-next/frame/SegmentQuestion.tsx'
+import { FrameOutline } from './ui-next/frame/FrameOutline.tsx'
+import { PAGES } from './ui-next/pages.ts'
+import { pageNameFor } from './ui-next/destinations.ts'
+import { isChatDoor } from './ui-next/chatDoor.ts'
 
 function TrackPageView() {
   const { pathname } = useLocation();
-  const { version } = useUiVersion();
   useEffect(() => {
-    // In the preview, page_view names the page from the readiness registry (tracking adds ui_version).
-    const entry = version === "next" ? entryForPath(pathname) : undefined;
-    track("page_view", entry && isReady(entry.id) ? { page_name: entry.analytics } : undefined);
-  }, [pathname, version]);
+    track("page_view", { page_name: pageNameFor(pathname) });
+  }, [pathname]);
   return null;
+}
+
+/** One page, loaded on demand. /chat, /c/:id and /s/:token all render <Page id="chat">, so a conversation that gets
+    its id mid-answer (/chat → /c/:id) keeps the same component and keeps streaming (Item 113). */
+function Page({ id }: { id: keyof typeof PAGES }) {
+  const P = PAGES[id];
+  return (
+    <Suspense fallback={<FrameOutline />}>
+      <P />
+    </Suspense>
+  );
+}
+
+/** "/": the landing or the home, except a chat door (?q=, ?pin=, ?handoff=, ?ask=1) goes to /chat with its parameters. */
+function Root() {
+  const { search } = useLocation();
+  if (isChatDoor(search)) return <Navigate to={`/chat${search}`} replace />;
+  return <Page id="home" />;
 }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <UiVersionProvider>
       <ThemeProvider>
         <AuthProvider>
           <SelectedParcelProvider>
           <TrackPageView />
-          {/* Post-sign-in "what best describes you" — renders nothing unless
-              a sign-in just completed and no segment is stored. */}
-          <SegmentPrompt />
-          <PreviewBadge />
+          {/* Right after a sign-in: "what best describes you", asked once. */}
+          <SegmentQuestion />
+          {/* The sign-in chooser and the sign-in/link result notice, once for the whole app (Item 121). */}
+          <AuthOverlays />
           <Routes>
-            {/* "/" in the preview: the landing, or the home when signed in; its chat doors (?q=, ?pin=, ?handoff=,
-                ?ask=1) go to the new chat page at /chat. /c/:id and /chat share one VersionedRoute shape, so a conversation that gets its id
-                mid-answer keeps streaming (Phase 8). */}
-            <Route path="/" element={<VersionedRoute id="home" old={<App />} door />} />
-            <Route path="/c/:id" element={<VersionedRoute id="chat" old={<App />} />} />
-            <Route path="/chat" element={<VersionedRoute id="chat" old={<Navigate to="/?ask=1" replace />} />} />
-            <Route path="/s/:shareToken" element={<App />} />
-            {/* Versioned routes: today's page unless ?ui=next is on and the readiness registry says ready. */}
-            <Route path="/scorecard" element={<VersionedRoute id="profile" old={<ScorecardPage />} />} />
-            {/* /explore retired 2026-06-14 — Discovery is a strict superset. Redirect legacy links. */}
+            <Route path="/" element={<Root />} />
+            <Route path="/chat" element={<Page id="chat" />} />
+            <Route path="/c/:id" element={<Page id="chat" />} />
+            {/* A shared conversation, read only, on the chat page (Phase 10). */}
+            <Route path="/s/:shareToken" element={<Page id="chat" />} />
+            <Route path="/scorecard" element={<Page id="profile" />} />
+            {/* /explore retired 2026-06-14: Discovery is a strict superset. Old links redirect. */}
             <Route path="/explore" element={<Navigate to="/discovery" replace />} />
-            <Route path="/discovery" element={<VersionedRoute id="discovery" old={<DiscoveryPage />} />} />
-            {/* Saved exists only in the new UI (Phase 9, Item 119): today's UI goes home. */}
-            <Route path="/saved" element={<VersionedRoute id="saved" old={<Navigate to="/" replace />} />} />
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/admin" element={
-              <ProtectedRoute tier="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFoundPage />} />
+            <Route path="/discovery" element={<Page id="discovery" />} />
+            <Route path="/saved" element={<Page id="saved" />} />
+            <Route path="/pricing" element={<Page id="pricing" />} />
+            <Route path="/settings" element={<Page id="settings" />} />
+            <Route path="/settings/:section" element={<Page id="settings" />} />
+            <Route path="/about" element={<Page id="about" />} />
+            <Route path="/privacy" element={<Page id="privacy" />} />
+            <Route path="/admin" element={<Page id="admin" />} />
+            <Route path="*" element={<Page id="notFound" />} />
           </Routes>
           </SelectedParcelProvider>
         </AuthProvider>
       </ThemeProvider>
-      </UiVersionProvider>
     </BrowserRouter>
   </StrictMode>,
 )

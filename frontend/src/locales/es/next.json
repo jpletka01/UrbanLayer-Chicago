@@ -1802,7 +1802,6 @@
     },
     "signInTitle": "Inicie sesión para continuar",
     "signInBody": "Ya usó las preguntas gratuitas de hoy. Inicie sesión para hacer más; su conversación se queda aquí.",
-    "signInGoogle": "Continuar con Google",
     "signInClose": "Cerrar",
     "dataTitle": "Registros · {{place}}",
     "steps": {
@@ -1966,7 +1965,17 @@
         "week": "Últimos 7 días",
         "month": "Últimos 30 días",
         "older": "Anteriores"
-      }
+      },
+      "delete": "Eliminar",
+      "deleteOne": "Eliminar {{title}}",
+      "deleteAsk": "¿Eliminar esta conversación?",
+      "cancel": "Cancelar",
+      "deleteFailed": "No se pudo eliminar la conversación. Inténtelo de nuevo."
+    },
+    "shared": {
+      "crumb": "Conversación compartida",
+      "note": "Una conversación compartida, solo de lectura.",
+      "startOwn": "Inicie su propia conversación"
     }
   },
   "landing": {
@@ -2185,5 +2194,189 @@
     },
     "noOutline": "Sin contorno del terreno en los registros",
     "noAddress": "No se revisan los permisos ni las infracciones de la Ciudad: este terreno no tiene dirección propia."
+  },
+  "settings": {
+    "title": "Configuración",
+    "sectionsLabel": "Secciones de la configuración",
+    "signedOut": "Inicie sesión para ver su plan, sus formas de iniciar sesión y lo que ha guardado. Las preferencias funcionan sin sesión.",
+    "sections": {
+      "account": "Cuenta",
+      "plan": "Plan y preguntas",
+      "signin": "Formas de iniciar sesión",
+      "preferences": "Preferencias",
+      "things": "Lo que ha guardado",
+      "reports": "Reportes comprados",
+      "delete": "Eliminar cuenta"
+    },
+    "plan": {
+      "free": "Gratis",
+      "pro": "Pro",
+      "admin": "Admin"
+    },
+    "account": {
+      "fromSignIn": "Su nombre y su foto vienen de su inicio de sesión; se cambian ahí."
+    },
+    "planSection": {
+      "used": "Preguntas este mes",
+      "ofLimit": "de {{limit}}",
+      "usedAria": "{{used}} de {{limit}} preguntas usadas",
+      "back": "Se renuevan",
+      "everyMonth": "Hora de Chicago, cada mes",
+      "yourPlan": "Su plan",
+      "freeBody": "{{limit}} preguntas al mes. Las fichas, Discovery y lo guardado no cuentan.",
+      "comingSoon": "Próximamente",
+      "proBody": "{{limit}} preguntas al mes.",
+      "compBody": "Acceso anticipado: Pro, {{limit}} preguntas al mes, hasta el {{date}}.",
+      "manageBilling": "Administrar facturación",
+      "adminBody": "Admin: las preguntas se cuentan, pero nunca se rechazan.",
+      "proWhat": "{{limit}} preguntas al mes",
+      "getPro": "Obtener Pro",
+      "seePricing": "Ver precios",
+      "billedMonthly": "{{price}} al mes",
+      "billedYearly": "{{price}} al año",
+      "renews": "Se renueva",
+      "ends": "Pro termina",
+      "thenFree": "Después, el plan gratuito",
+      "proUntil": "Pro hasta el {{date}}",
+      "pastDuePill": "Pago rechazado",
+      "confirming": "Confirmando su pago con Stripe…",
+      "confirmingLong": "Seguimos esperando a Stripe. Puede tardar un minuto; esta página se actualiza sola.",
+      "confirmingBody": "Pro empieza en cuanto Stripe lo confirma, normalmente en unos segundos.",
+      "manageNote": "Cancele, cambie su tarjeta, pase de mensual a anual o vea sus facturas, en Stripe.",
+      "endingBody": "Usted canceló. Conserva Pro hasta el {{date}} y no se cobra nada más. Sus terrenos guardados y chats se quedan.",
+      "keepPro": "Conservar Pro",
+      "pastDueBody": "Su tarjeta fue rechazada y Stripe lo está reintentando. Mientras tanto conserva Pro ({{limit}} preguntas al mes); actualice su tarjeta para conservarlo después.",
+      "updateCard": "Actualizar su tarjeta",
+      "portalFailed": "No se pudo abrir la página de facturación de Stripe. Intente de nuevo en un momento."
+    },
+    "code": {
+      "title": "Código de acceso",
+      "body": "Un código de acceso anticipado le da Pro por un tiempo.",
+      "apply": "Aplicar",
+      "applying": "Aplicando…",
+      "success": "El acceso anticipado está activo hasta el {{date}}.",
+      "invalid": "Ese código no es válido.",
+      "already_redeemed": "Ya usó este código.",
+      "exhausted": "Este código ya se agotó.",
+      "error": "No funcionó. Inténtelo de nuevo."
+    },
+    "signin": {
+      "ways": "Formas de entrar a esta cuenta",
+      "body": "Inicie sesión con cualquiera de estas. Las cuentas nunca se unen por correo electrónico: una forma se agrega solo desde aquí.",
+      "add": "Agregar otra",
+      "addNote": "Iniciará sesión con ese proveedor y volverá aquí. Si esa cuenta ya abre otra cuenta de UrbanLayer, no se agregará."
+    },
+    "things": {
+      "lots": "Lotes guardados",
+      "searches": "Búsquedas guardadas",
+      "chats": "Chats",
+      "deleteChats": "Eliminar todas las conversaciones",
+      "deleteChatsAsk": "¿Eliminar todas las conversaciones? No se puede deshacer.",
+      "deleteChatsConfirm": "Eliminar todo",
+      "deleteChatsFailed": "No se pudieron eliminar sus conversaciones. Inténtelo de nuevo."
+    },
+    "reports": {
+      "body": "Reportes de factibilidad comprados antes de la suscripción. Cada uno conserva su copia original."
+    },
+    "delete": {
+      "body": "Elimina sus chats, lotes guardados, notas y búsquedas guardadas. Un plan Pro se cancela primero. No se puede deshacer.",
+      "open": "Eliminar cuenta…",
+      "title": "¿Eliminar su cuenta?",
+      "dialogBody": "Sus chats, lotes guardados, notas y búsquedas guardadas se borran para siempre. Un plan Pro se cancela primero.",
+      "word": "eliminar",
+      "typeWord": "Escriba “{{word}}” para confirmar",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar cuenta",
+      "deleting": "Eliminando…",
+      "failed": "Su cuenta no se eliminó. Inténtelo de nuevo."
+    }
+  },
+  "pricing": {
+    "title": "Precios",
+    "heading": "Planes",
+    "lead": "La Ficha de cada terreno, Descubrir y el mapa son gratuitos. Pro agrega más preguntas al analista.",
+    "billing": "Facturación",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+    "save": "Ahorre {{amount}}",
+    "perMonthPrice": "{{price}} al mes",
+    "perYearPrice": "{{price}} al año",
+    "free": "Gratis",
+    "pro": "Pro",
+    "yourPlan": "Su plan",
+    "aMonth": "al mes",
+    "aYear": "al año",
+    "perMonthBilledYearly": "{{price}} al mes, con cobro anual",
+    "freeFeatures": [
+      "Todas las pestañas de la Ficha, en cada terreno",
+      "Descubrir en las 77 áreas comunitarias",
+      "50 preguntas al mes al analista",
+      "Terrenos y búsquedas guardados"
+    ],
+    "proFeatures": [
+      "Todo lo del plan gratuito",
+      "200 preguntas al mes",
+      "Pro dura hasta el final del periodo que pagó"
+    ],
+    "signedOutNote": "Sin iniciar sesión, puede hacer 3 preguntas.",
+    "signInFree": "Iniciar sesión, gratis",
+    "toStripe": "Abriendo Stripe…",
+    "signInForPro": "Inicie sesión para obtener Pro",
+    "comingSoonNote": "Las compras abren pronto. Todo lo gratuito ya funciona.",
+    "seeYourPlan": "Ver su plan",
+    "adminNote": "Las cuentas de administrador tienen todo lo de Pro.",
+    "checkoutFailed": "No se pudo conectar con Stripe, así que no se cobró nada. Intente de nuevo en un momento.",
+    "qaTitle": "Preguntas sobre el pago",
+    "qa": {
+      "cancel": {
+        "q": "¿Puedo cancelar?",
+        "a": "Sí, en Configuración → Plan → Administrar facturación. Conserva Pro hasta la fecha que aparece ahí."
+      },
+      "interval": {
+        "q": "¿Mensual o anual?",
+        "a": "{{month}} al mes, o {{year}} al año, que es dos meses menos que pagar 12 meses. Puede cambiar en Administrar facturación."
+      },
+      "trial": {
+        "q": "¿Hay periodo de prueba?",
+        "a": "El plan gratuito es la prueba: todas las pestañas y 50 preguntas al mes, sin tarjeta."
+      },
+      "reports": {
+        "q": "¿Y los informes que ya compré?",
+        "a": "Siguen en Configuración → Informes comprados, el original y una copia actualizada."
+      }
+    },
+    "proMonthly": "Pro mensual",
+    "proYearly": "Pro anual",
+    "freeNote": "Sin tarjeta, sin límite de tiempo",
+    "monthNote": "Cancele cuando quiera",
+    "getProMonthly": "Obtener Pro mensual",
+    "getProYearly": "Obtener Pro anual",
+    "yearFeatures": [
+      "Todo lo de Pro mensual",
+      "Un solo pago al año",
+      "Dos meses menos que pagar mensualmente",
+      "Cambie o cancele desde Configuración"
+    ]
+  },
+  "notFound": {
+    "crumb": "No encontrada",
+    "title": "Página no encontrada",
+    "body": "No hay nada en esta dirección. Busque un predio de Chicago o explore Descubrir.",
+    "lookup": "Buscar una dirección",
+    "discover": "Abrir Descubrir"
+  },
+  "segment": {
+    "question": "¿Cuál describe mejor su situación?",
+    "hint": "Un toque — nos ayuda a construir para las personas correctas.",
+    "skip": "Omitir",
+    "options": {
+      "developer": "Desarrollador",
+      "architect": "Arquitecto",
+      "attorney": "Abogado",
+      "broker": "Corredor / Tasador",
+      "investor": "Inversionista",
+      "homeowner": "Propietario",
+      "curious": "Solo curiosidad"
+    }
   }
 }

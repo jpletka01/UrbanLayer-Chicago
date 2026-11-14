@@ -1,6 +1,7 @@
 """The Profile's block capacity map: how much of the allowed floor area is built, parcel by parcel (WS8 Phase 1).
 
-``GET /api/capacity-map`` calls ``build_capacity_map``.  No model, and no per-parcel network call:
+``build_capacity_map`` builds the block capacity map (its route, ``GET /api/capacity-map``, was retired with the old UI
+in Phase 10; ``eval/capacity_map_panel.py`` still uses this module).  No model, and no per-parcel network call:
 
 * **Neighbors** come from the in-memory Discovery index (``parcel_source``), grouped by PIN10 (one map polygon per
   base parcel; a condo building's unit PINs share it).  A spatial grid is built once per index version.
@@ -407,6 +408,14 @@ def _provenance(summary: dict, artifact_year: str | None, index_built: str | Non
                                      "universe": "parcels within the map radius"},
     )
     return {"capacity.utilization": entry}
+
+
+def normalize_pin(pin: str) -> str:
+    """A PIN14 or PIN10, any punctuation, as the dashed PIN14 the index keys on; ValueError otherwise."""
+    digits = pin.replace("-", "")
+    if not digits.isdigit() or len(digits) not in (10, 14):
+        raise ValueError("pin must be a 10- or 14-digit PIN")
+    return "-".join((digits[:2], digits[2:4], digits[4:7], digits[7:10], (digits[10:] or "0000")))
 
 
 async def build_capacity_map(*, pin: str | None, lat: float | None, lon: float | None,

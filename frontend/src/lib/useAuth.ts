@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type AuthStatus,
   type AuthUser,
+  type SignInProvider,
+  type SignInProviderId,
   getAuthStatus,
+  getSignInProviders,
   getSignInUrl,
   logout as apiLogout,
   refreshAuthToken,
@@ -14,7 +17,14 @@ export interface UseAuth {
   isAuthenticated: boolean;
   authRequired: boolean;
   loading: boolean;
+  /** Sign in: straight to the provider when only one is offered, else opens the chooser. */
   signIn: () => void;
+  /** Go to a provider's sign-in, coming back to ``next`` (default: this page). */
+  signInWith: (provider: SignInProviderId, next?: string) => void;
+  /** The sign-in methods this server offers (Google, Apple, Microsoft), in order. */
+  providers: SignInProvider[];
+  chooserOpen: boolean;
+  closeChooser: () => void;
   signOut: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -24,6 +34,8 @@ export function useAuth(): UseAuth {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authRequired, setAuthRequired] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [providers, setProviders] = useState<SignInProvider[]>([{ id: "google", test: false }]);
+  const [chooserOpen, setChooserOpen] = useState(false);
   const checkedRef = useRef(false);
 
   const applyStatus = useCallback((status: AuthStatus) => {
@@ -75,16 +87,28 @@ export function useAuth(): UseAuth {
     if (checkedRef.current) return;
     checkedRef.current = true;
     checkAuth();
+    // Which methods are set up; until it answers (or if it fails) Google alone, as before Item 121.
+    getSignInProviders()
+      .then((list) => { if (list.length) setProviders(list); })
+      .catch(() => {});
   }, [checkAuth]);
 
-  const signIn = useCallback(() => {
+  const signInWith = useCallback((provider: SignInProviderId, next?: string) => {
     try {
       sessionStorage.setItem("ul_signin_pending", "1");
     } catch {
       // never let tracking break auth
     }
-    window.location.href = getSignInUrl();
+    const here = `${window.location.pathname}${window.location.search}`;
+    window.location.href = getSignInUrl(provider, next ?? here);
   }, []);
+
+  const signIn = useCallback(() => {
+    if (providers.length === 1) signInWith(providers[0].id);
+    else setChooserOpen(true);
+  }, [providers, signInWith]);
+
+  const closeChooser = useCallback(() => setChooserOpen(false), []);
 
   const signOut = useCallback(async () => {
     await apiLogout();
@@ -92,5 +116,8 @@ export function useAuth(): UseAuth {
     setIsAuthenticated(false);
   }, []);
 
-  return { user, isAuthenticated, authRequired, loading, signIn, signOut, checkAuth };
+  return {
+    user, isAuthenticated, authRequired, loading, signIn, signInWith, providers, chooserOpen, closeChooser,
+    signOut, checkAuth,
+  };
 }

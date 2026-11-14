@@ -1,12 +1,13 @@
-"""GET /api/capacity-map (WS8 Phase 1, decision Item 39): neighbors from a fixture index, polygons from a fixture
+"""The block capacity map (WS8 Phase 1, decision Item 39; its route was retired in Phase 10, the module is kept for
+the eval panel): neighbors from a fixture index, polygons from a fixture
 ptaxsim, a fixture zoning quilt and a fixture Commercial Valuation artifact.  No network."""
 
 from __future__ import annotations
 
+import asyncio
 import sqlite3
 
 import pytest
-from fastapi.testclient import TestClient
 from shapely.geometry import box
 
 from backend import capacity_map as cm
@@ -14,7 +15,6 @@ from backend.config import get_settings
 from backend.discovery import parcel_source
 from backend.discovery.parcel import default_source
 from backend.discovery.parcel_index import IndexedParcel, IndexMeta
-from backend.main import app
 from backend.retrieval.property import commercial_artifact as ca
 from ingestion import build_commercial_bldg_artifact as builder
 
@@ -115,7 +115,7 @@ def env(tmp_path, monkeypatch):
         return _zoning()
 
     monkeypatch.setattr("backend.retrieval.zoning.zoning_polygons_near", fake_zoning)
-    yield {"client": TestClient(app), "calls": calls, "art": art}
+    yield {"calls": calls, "art": art}
     parcel_source._current_version = None
     parcel_source._current_meta = None
     default_source.clear()
@@ -128,10 +128,10 @@ def _get(env, **params):
     params.setdefault("lat", LAT + 0.0001)
     params.setdefault("lon", LON + 4 * STEP)
     params.setdefault("radius_mi", 0.25)
-    params = {k: v for k, v in params.items() if v is not None}
-    r = env["client"].get("/api/capacity-map", params=params)
-    assert r.status_code == 200, r.text
-    return r.json()
+    pin = params.get("pin")
+    return asyncio.run(cm.build_capacity_map(
+        pin=cm.normalize_pin(pin) if pin else None, lat=params.get("lat"), lon=params.get("lon"), radius_mi=params.get("radius_mi"),
+    ))
 
 
 def _by_pin(body):
@@ -271,10 +271,10 @@ def test_withheld_view_carries_no_utilization():
     assert any(f["properties"]["state"] == "computable" for f in fc["features"])
 
 
-def test_request_validation(env):
-    c = env["client"]
-    assert c.get("/api/capacity-map").status_code == 422
-    assert c.get("/api/capacity-map", params={"pin": "12-34"}).status_code == 422
+def test_pin_validation():
+    with pytest.raises(ValueError):
+        cm.normalize_pin("12-34")
+    assert cm.normalize_pin("1709100004") == "17-09-100-004-0000"
 
 
 def test_open_space_district_is_not_outside_zoning():

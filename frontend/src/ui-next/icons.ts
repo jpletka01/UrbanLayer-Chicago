@@ -4,7 +4,7 @@ import {
   ArrowUpToLine, BadgeDollarSign, House, BookOpen, Bookmark, Building2, ChartColumn, HandCoins, KeyRound, CircleUser, Download, FileClock, LandPlot, Layers,
   Footprints, GraduationCap, Hammer, History, ListChecks, LocateFixed, Map as MapIcon, Scale, Megaphone, Shield, Users, MessageCircle, MessageCircleQuestion, Receipt, Ruler, Search, Square, type LucideIcon,
 } from "lucide-react";
-import type { NavIcon } from "./readiness";
+import type { NavIcon } from "./destinations";
 
 export const ICON = {
   // destinations

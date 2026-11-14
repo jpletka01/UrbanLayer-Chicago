@@ -14,6 +14,7 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { PanelMenuButton } from "../frame/AppFrame";
 import { STROKE } from "../icons";
 import { CountUp } from "../../components/CountUp";
+import { Faq } from "../ui/Faq";
 
 const EXAMPLE_ADDRESS = "1601 N Milwaukee Ave";
 
@@ -84,15 +85,13 @@ export default function LandingNextPage() {
           <AnalystVisual />
         </Band>
 
-        <section className="mx-auto flex max-w-[760px] flex-col gap-3 px-4 py-14" aria-labelledby="landing-faq">
-          <h2 id="landing-faq" className="mb-2 text-[2rem] font-bold tracking-[-0.02em]">{t("landing.faq.title")}</h2>
-          {(["free", "data", "coverage"] as const).map((k) => (
-            <details key={k} className="rounded-2xl bg-nx-block px-5 py-4">
-              <summary className="cursor-pointer font-semibold">{t(`landing.faq.${k}.q`)}</summary>
-              <p className="mt-2 nx-muted">{t(`landing.faq.${k}.a`)}</p>
-            </details>
-          ))}
-        </section>
+        <div className="px-4 py-14">
+          <Faq
+            id="landing-faq"
+            title={t("landing.faq.title")}
+            items={(["free", "data", "coverage"] as const).map((k) => ({ key: k, q: t(`landing.faq.${k}.q`), a: t(`landing.faq.${k}.a`) }))}
+          />
+        </div>
       </main>
 
       <footer className="flex flex-wrap gap-x-10 gap-y-4 border-t border-nx-ink/10 px-4 pb-28 pt-7 text-caption nx-muted sm:px-8">
