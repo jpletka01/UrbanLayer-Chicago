@@ -44,7 +44,6 @@ services:
       context: frontend
       dockerfile: Dockerfile
       args:
-        VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN}
         VITE_API_BASE: ""
         VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
     ports:

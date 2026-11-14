@@ -5,14 +5,11 @@ the index's own format (paragraphs, then ``[TABLE]`` blocks) from the ingested J
 import asyncio
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
-from fastapi.testclient import TestClient
 
-from backend import main
 from backend.code_sections import SECTION_ID_RE, TABLE_HINTS, article_id, extract_subsection, set_indexed_sections
-from backend.models import CodeChunk
 from backend.provenance import BULK_SECTIONS
 
 SECTIONS = Path(__file__).resolve().parents[2] / "ingestion" / "data" / "sections"
@@ -130,66 +127,6 @@ def test_table_hints_match_the_codes_real_column_headers():
 
 
 # --- the endpoint -------------------------------------------------------------------------------
-
-def _client():
-    from unittest.mock import MagicMock
-    with patch("backend.main.get_settings") as s, patch("backend.main.db") as db, \
-            patch("backend.retrieval.vector_search._get_known_sections", new=AsyncMock(return_value=frozenset())):
-        s.return_value = MagicMock(anthropic_api_key="k", socrata_app_token="t", qdrant_url="http://localhost:6333",
-                                   router_model="m", synthesizer_model="m", message_limit=10)
-        db.init_db = AsyncMock()
-        db.close_db = AsyncMock()
-        db.count_user_messages = AsyncMock(return_value=0)
-        yield TestClient(main.app)
-
-
-@pytest.fixture
-def client():
-    yield from _client()
-
-
-def _chunk(file: str) -> CodeChunk:
-    return CodeChunk(text=_article(file), source_document="x", section=file, section_title="Bulk and density standards",
-                     subsection=None, score=1.0, cross_references=[])
-
-
-def test_endpoint_returns_the_subsection_with_the_codes_vintage(client):
-    with patch.object(main, "get_full_section", new=AsyncMock(return_value=_chunk("17-2-0300"))) as fetch:
-        r = client.get("/api/code/section/17-2-0304-A")
-    assert r.status_code == 200
-    d = r.json()
-    fetch.assert_awaited_once_with("17-2-0300")  # asks for the article, not the subsection
-    assert d["section_id"] == "17-2-0304-A" and d["article"] == "17-2-0300" and d["heading"] == "Standards"
-    assert d["current_through"] == "2026-06-17" and d["vintage_label"] == "Council Journal of June 17, 2026"
-    assert d["tables"] and "RS2" in d["tables"][0]
-
-
-def test_endpoint_errors(client):
-    assert client.get("/api/code/section/not-a-section").status_code == 422
-    with patch.object(main, "get_full_section", new=AsyncMock(return_value=None)):
-        assert client.get("/api/code/section/17-2-0304-A").status_code == 404
-    with patch.object(main, "get_full_section", new=AsyncMock(return_value=_chunk("17-2-0300"))):
-        assert client.get("/api/code/section/17-2-0399-Z").status_code == 404
-
-
-@pytest.mark.parametrize("sec,article,heading", [
-    ("17-7-0574", "17-7-0570", "Areas and Limitations"),
-    ("17-7-0591", "17-7-0590", "Boundaries"),
-    ("17-2-0304-A", "17-2-0300", "Standards"),
-])
-def test_endpoint_opens_the_article_the_index_holds_the_section_in(client, indexed_code, sec, article, heading):
-    """The endpoint loads the index before resolving (a cold process has none registered):
-    17-7-0574 was a 404 ("not found in 17-7-0500") while the Profile cited it."""
-    set_indexed_sections(())
-    load_index = AsyncMock(side_effect=lambda: set_indexed_sections(indexed_code) or frozenset(indexed_code))
-    with patch("backend.retrieval.vector_search._get_known_sections", new=load_index), \
-            patch.object(main, "get_full_section", new=AsyncMock(side_effect=lambda a: _chunk(a))) as fetch:
-        r = client.get(f"/api/code/section/{sec}")
-    assert r.status_code == 200, r.json()
-    fetch.assert_awaited_once_with(article)
-    d = r.json()
-    assert d["article"] == article and d["heading"] == heading and d["paragraphs"][0].startswith(sec + " ")
-
 
 def test_a_table_the_index_split_into_row_batches_is_put_back_together():
     text = (

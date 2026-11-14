@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -81,46 +80,6 @@ class TestPermitsForMap:
             assert result[0]["estimated_cost"] == 450000.0
             assert "reported_cost" not in result[0]
             assert result[1]["estimated_cost"] == 0
-
-
-class TestMapDataEndpoint:
-    @pytest.fixture
-    def client(self, mock_map_settings):
-        with patch("backend.config.get_settings", return_value=mock_map_settings), \
-             patch("backend.main.get_settings", return_value=mock_map_settings), \
-             patch("backend.main.crimes_for_map", new_callable=AsyncMock) as mock_crime, \
-             patch("backend.main.requests_311_for_map", new_callable=AsyncMock) as mock_311, \
-             patch("backend.main.permits_for_map", new_callable=AsyncMock) as mock_permits:
-            mock_crime.return_value = [{"latitude": 41.9, "longitude": -87.7, "primary_type": "THEFT"}]
-            mock_311.return_value = [{"latitude": 41.92, "longitude": -87.71, "sr_type": "Pothole"}]
-            mock_permits.return_value = [{"latitude": 41.93, "longitude": -87.72, "estimated_cost": 100000}]
-            from backend.main import app
-            yield TestClient(app)
-
-    def test_returns_correct_shape(self, client):
-        resp = client.post("/api/map-data", json={"community_area": 24})
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "crimes" in data
-        assert "requests_311" in data
-        assert "building_permits" in data
-        assert len(data["crimes"]) == 1
-        assert data["zoning"] is None
-
-    def test_includes_queried_address(self, client):
-        resp = client.post("/api/map-data", json={
-            "community_area": 24,
-            "address_lat": 41.925,
-            "address_lon": -87.712,
-            "address_label": "2400 N Milwaukee Ave",
-        })
-        data = resp.json()
-        assert data["queried_address"]["latitude"] == 41.925
-        assert data["queried_address"]["label"] == "2400 N Milwaukee Ave"
-
-    def test_no_address_returns_null(self, client):
-        resp = client.post("/api/map-data", json={"community_area": 24})
-        assert resp.json()["queried_address"] is None
 
 
 class TestZoningForMap:

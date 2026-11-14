@@ -5,10 +5,8 @@ from __future__ import annotations
 
 import copy
 import json
-import re
 import sqlite3
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -180,12 +178,6 @@ def test_the_class_norm_states_the_tax_year_its_constant_came_from():
     assert (n["period"], n["as_of"]) == (f"tax year {CLASS_NORM_TAX_YEAR}", "2023-12-31")
     assert n["method_params"] == {"rate_per_assessment_level": 0.21, "tax_year": 2023} and "0.2009" in n["note"]
     assert "old_source" in n["confidence_reasons"]
-
-
-def test_the_backend_class_norm_equals_the_frontends():
-    tsx = (Path(__file__).resolve().parents[2] / "frontend" / "src" / "components" / "ScorecardPage.tsx").read_text()
-    m = re.search(r"EFF_RATE_PER_ASSESSMENT_LEVEL\s*=\s*([0-9.]+)", tsx)
-    assert m and float(m.group(1)) == CLASS_NORM_RATE_PER_LEVEL
 
 
 # --- comps ------------------------------------------------------------------------------------------------

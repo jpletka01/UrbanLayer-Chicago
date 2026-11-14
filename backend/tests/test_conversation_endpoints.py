@@ -90,7 +90,6 @@ class TestAnonymousRejected:
             ("GET", "/api/conversations/c1", {}),
             ("DELETE", "/api/conversations/c1", {}),
             ("PUT", "/api/conversations/c1/messages", {"json": {"messages": []}}),
-            ("PATCH", "/api/conversations/c1/messages/0", {"json": {"map_data": {}}}),
             ("POST", "/api/conversations/import", {"json": {"conversations": []}}),
             ("DELETE", "/api/conversations", {}),
             ("GET", "/api/conversations/c1/share", {}),
@@ -135,13 +134,6 @@ class TestOwnership:
             client_b.delete("/api/conversations/conv_a", headers=CSRF_HEADERS).status_code
             == 404
         )
-        # PATCH ownership check (previously missing entirely)
-        resp = client_b.patch(
-            "/api/conversations/conv_a/messages/0",
-            json={"map_data": {}},
-            headers=CSRF_HEADERS,
-        )
-        assert resp.status_code == 404
 
     async def test_list_is_scoped(self, _auth_enabled, test_db):
         client_a, client_b = await self._two_users()
@@ -154,28 +146,6 @@ class TestOwnership:
         assert "conv_a" not in ids_b
         ids_a = [c["id"] for c in client_a.get("/api/conversations").json()]
         assert "conv_a" in ids_a
-
-    async def test_owner_can_patch_own(self, _auth_enabled, test_db):
-        client_a, _ = await self._two_users()
-        client_a.post(
-            "/api/conversations",
-            json={"id": "conv_a", "title": "A"},
-            headers=CSRF_HEADERS,
-        )
-        client_a.put(
-            "/api/conversations/conv_a/messages",
-            json={"messages": [
-                {"role": "user", "content": "q"},
-                {"role": "assistant", "content": "a"},
-            ]},
-            headers=CSRF_HEADERS,
-        )
-        resp = client_a.patch(
-            "/api/conversations/conv_a/messages/1",
-            json={"map_data": {"crime": []}},
-            headers=CSRF_HEADERS,
-        )
-        assert resp.status_code == 200
 
 
 class TestRejectedTurnIsLogged:

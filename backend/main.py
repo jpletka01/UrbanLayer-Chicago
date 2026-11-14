@@ -53,7 +53,6 @@ from backend.models import (
     ContextObject,
     EventBatch,
     ImportRequest,
-    MapDataRequest,
     MapDataResponse,
     NeighborhoodSummary,
     RetrievalPlan,
@@ -485,102 +484,6 @@ def _section_not_found(section_id: str, detail: str | None = None) -> HTTPExcept
     })
 
 
-@app.get("/api/code/section/{section_id}")
-async def code_subsection(section_id: str) -> dict:
-    """One Municipal Code subsection (and the table it cites), with how current the
-    code text is. Backs the Profile's "see the source" on a standard (V2): a Profile
-    number cites ``17-2-0304-A``; the index holds the whole article ``17-2-0300``
-    (and ``17-7-0574`` lives in ``17-7-0570``)."""
-    from backend.code_sections import SECTION_ID_RE, article_id, extract_subsection
-    from backend.code_vintage import get_code_vintage
-    from backend.legislation.currency import amendments_touching, public
-    from backend.retrieval.vector_search import _get_known_sections
-
-    if not SECTION_ID_RE.match(section_id):
-        raise HTTPException(status_code=422, detail="Not a Municipal Code section id.")
-    # Registers the index's article ids (cached after the first call), which article_id
-    # needs: 17-7-0574 lives in the indexed article 17-7-0570, not 17-7-0500.
-    await _get_known_sections()
-    chunk = await get_full_section(article_id(section_id))
-    if chunk is None:
-        raise _section_not_found(section_id)
-    sub = extract_subsection(chunk.text, section_id)
-    if sub is None:
-        raise _section_not_found(section_id, f"Subsection {section_id} not found in {chunk.section}")
-    vintage = get_code_vintage() or {}
-    return {
-        "amended_since": [public(a) for a in amendments_touching(section_id)],
-        "section_id": section_id,
-        "article": chunk.section,
-        "article_title": chunk.section_title,
-        **sub,
-        "current_through": vintage.get("current_through"),
-        "vintage_label": vintage.get("label"),
-        "source": vintage.get("source"),
-    }
-
-
-@app.post("/api/map-data")
-async def map_data(req: MapDataRequest) -> MapDataResponse:
-    settings = get_settings()
-    tasks: dict[str, asyncio.Task] = {}
-
-    if "crime_api" in req.sources:
-        tasks["crimes"] = asyncio.create_task(
-            crimes_for_map(req.community_area, days=req.time_range_days)
-        )
-    if "311_api" in req.sources:
-        tasks["requests_311"] = asyncio.create_task(
-            requests_311_for_map(req.community_area)
-        )
-    if "permits_api" in req.sources:
-        tasks["building_permits"] = asyncio.create_task(
-            permits_for_map(req.community_area, days=req.time_range_days)
-        )
-    if settings.enable_zoning_layer:
-        tasks["zoning"] = asyncio.create_task(
-            zoning_for_map(req.community_area)
-        )
-
-    results: dict[str, Any] = {}
-    done = await asyncio.gather(*tasks.values(), return_exceptions=True)
-    for key, value in zip(tasks.keys(), done):
-        if isinstance(value, Exception):
-            log.warning("Map data %s failed: %s", key, value)
-            results[key] = [] if key != "zoning" else {"type": "FeatureCollection", "features": []}
-        else:
-            results[key] = value
-
-    queried_address = None
-    if req.address_lat is not None and req.address_lon is not None:
-        queried_address = {
-            "latitude": req.address_lat,
-            "longitude": req.address_lon,
-            "label": req.address_label or "",
-        }
-
-    crimes = results.get("crimes", [])
-    requests_311 = results.get("requests_311", [])
-    building_permits = results.get("building_permits", [])
-
-    capped: dict[str, bool] = {}
-    if "crimes" in results:
-        capped["crimes"] = len(crimes) >= settings.limit_map_crime
-    if "requests_311" in results:
-        capped["requests_311"] = len(requests_311) >= settings.limit_map_311
-    if "building_permits" in results:
-        capped["building_permits"] = len(building_permits) >= settings.limit_map_permits
-
-    return MapDataResponse(
-        crimes=crimes,
-        requests_311=requests_311,
-        building_permits=building_permits,
-        zoning=results.get("zoning") if settings.enable_zoning_layer else None,
-        queried_address=queried_address,
-        capped=capped,
-    )
-
-
 # ---------------------------------------------------------------------------
 # Conversation CRUD
 # ---------------------------------------------------------------------------
@@ -648,21 +551,6 @@ async def append_messages(
         raise HTTPException(status_code=404, detail="Conversation not found")
     messages = [m.model_dump(exclude_none=True) for m in req.messages]
     await db.save_messages(conv_id, messages)
-    return {"ok": True}
-
-
-@app.patch("/api/conversations/{conv_id}/messages/{position}")
-async def update_message(
-    conv_id: str, position: int, body: dict,
-    user: dict = Depends(require_auth),
-) -> dict:
-    conv = await db.get_conversation(conv_id, _user_id(user))
-    if conv is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    if "map_data" in body:
-        await db.update_message_map_data(
-            conv_id, position, body["map_data"], body.get("map_fetched_at"),
-        )
     return {"ok": True}
 
 
@@ -2343,135 +2231,6 @@ async def _fetch_scorecard_data(
         ctx.block_face = bf
     data["failed_sources"] = failures.failed_detail(data["partial_failures"])
     return data
-
-
-@app.get("/api/area-stats")
-async def area_stats(ca: int, zone_class: str | None = None) -> dict:
-    """Community-area benchmark aggregates for the Property Profile KPI band.
-    Served from a daily in-process scan of the Discovery index; every stat is
-    None/empty when the index is absent — the UI then renders no benchmark."""
-    from backend.retrieval.area_stats import get_area_stats
-
-    stats = await get_area_stats(ca)
-    if not stats:
-        return {
-            "community_area": ca,
-            "n_parcels": 0,
-            "median_assessed": None,
-            "n_assessed": 0,
-            "median_mv_per_land_sqft": None,
-            "n_mv_psf": 0,
-            "by_land_use": {},
-            "lot_size_by_zone_class": {},
-        }
-    from backend.provenance_figures import area_benchmark_entry, typical_lot_entry
-
-    entry = area_benchmark_entry(stats)
-    provenance = {"area.benchmarks.market_value_per_land_sqft": entry} if entry else {}
-    # The typical lot for the parcel's own district (WS5 PR3, Item 66), with its own entry.
-    lot_entry = typical_lot_entry(stats, zone_class) if zone_class else None
-    if lot_entry:
-        provenance["area.benchmarks.typical_lot_sqft"] = lot_entry
-    return {**stats, "provenance": provenance}
-
-
-_parcel_map_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="parcel_map")
-
-
-@app.get("/api/parcel-map")
-async def parcel_map(lat: float, lon: float) -> dict:
-    """Geometry layers for the Property Profile's module maps: the zoning quilt
-    around the parcel (Build module) and the overlay/TIF/EZ boundaries that hit
-    the point (Regulatory/Incentives module). Availability distinguishes a
-    successful empty lookup from a source that could not be checked."""
-    key = f"{lat:.4f},{lon:.4f}"
-    cached = _parcel_map_cache.get(key)
-    if cached is not None:
-        return cached
-
-    from backend.retrieval.zoning import zoning_polygons_near
-    from backend.retrieval.incentives.tif import tif_geojson_feature
-    from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
-
-    results = await asyncio.gather(
-        _limited(zoning_polygons_near(lat, lon)),
-        _limited(_fetch_overlay_geojson(lat, lon)),
-        _limited(tif_geojson_feature(lat, lon)),
-        _limited(ez_geojson_feature(lat, lon)),
-        return_exceptions=True,
-    )
-    layer_names = ("zoning", "overlays", "tif", "ez")
-    for name, result in zip(layer_names, results):
-        if isinstance(result, Exception):
-            log.warning("Parcel-map %s lookup failed: %s", name, result)
-    availability = {
-        name: "unavailable" if isinstance(result, Exception) else "available"
-        for name, result in zip(layer_names, results)
-    }
-    values = [None if isinstance(result, Exception) else result for result in results]
-    zoning_fc, overlays_fc, tif_feat, ez_feat = values
-
-    from backend.map_geometry import prepare_parcel_zoning, zoning_label_points
-
-    prepared_zoning = prepare_parcel_zoning(zoning_fc, lat=lat, lon=lon)
-    payload = {
-        "zoning": prepared_zoning,
-        "zoning_labels": zoning_label_points(prepared_zoning),
-        "overlays": _simplify_geojson(overlays_fc),
-        "tif": tif_feat,
-        "ez": ez_feat,
-        "availability": availability,
-    }
-    # A complete successful empty response is definitive and may be cached.
-    # Any failed source keeps the whole response out of this aggregate cache so
-    # its unavailable state cannot mask a recovery for an hour.
-    if all(state == "available" for state in availability.values()):
-        _parcel_map_cache.set(key, payload)
-    return payload
-
-
-@app.get("/api/capacity-map")
-async def capacity_map(
-    pin: str | None = None,
-    lat: float | None = None,
-    lon: float | None = None,
-    radius_mi: float | None = None,
-) -> dict:
-    """The Profile's block capacity map (WS8 Phase 1): for each parcel near the subject, how much of the allowed
-    floor area is built, or the state that says why it cannot be told. Free and anonymous like the Profile.
-    ``pin`` (a PIN14 or PIN10) locates the subject in the Discovery index; ``lat``/``lon`` are the fallback when
-    the PIN is withheld or not indexed. ``radius_mi`` is clamped to 0.05-0.25 (default 0.1)."""
-    if not pin and (lat is None or lon is None):
-        raise HTTPException(status_code=422, detail="pin or lat/lon is required")
-    if pin is not None:
-        digits = pin.replace("-", "")
-        if not digits.isdigit() or len(digits) not in (10, 14):
-            raise HTTPException(status_code=422, detail="pin must be a 10- or 14-digit PIN")
-        pin = "-".join((digits[:2], digits[2:4], digits[4:7], digits[7:10], (digits[10:] or "0000")))
-    from backend.capacity_map import build_capacity_map
-
-    return await _limited(build_capacity_map(pin=pin, lat=lat, lon=lon, radius_mi=radius_mi))
-
-
-@app.get("/api/what-if")
-async def what_if(
-    current: str,
-    district: str | None = None,
-    lot_sqft: float | None = None,
-    in_606: bool | None = None,
-) -> dict:
-    """"What if this were rezoned?" for the Property Profile (WS5 PR2): the district table's FAR, floor area,
-    height and units by lot area for the parcel's district beside a chosen one. Pure table arithmetic on the lot
-    area the Profile already resolved; no fetch, no model, free. Without ``district`` it returns only the choice
-    lists. A planned development or an unknown class is a 422 with the reason."""
-    from backend.what_if import WhatIfError, comparable_districts, compare, suggestions
-
-    if district is None:
-        return {"suggestions": suggestions(current), "districts": comparable_districts()}
-    try:
-        return {**compare(current, district, lot_sqft, in_606=in_606), "districts": comparable_districts()}
-    except WhatIfError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/api/scorecard")
