@@ -3058,7 +3058,11 @@ Consumers → Property Profile (renders pin + confidence badge)
             entry point marked everything nothing imported: 149 files, their tests, the Mapbox and deck.gl
             dependencies and seven backend routes only the old pages called, about 32,000 lines. The new pages
             (this one included) were restyled into the new frame rather than redesigned, and every URL was kept
-            (Item 125).
+            (Item 125). The sweep run right after the deploy found two bugs no local check could: production&apos;s
+            nginx served the map&apos;s module worker (<Mono>.mjs</Mono>, a type its MIME table lacks) as a binary
+            file, so the browser refused it and no map drew, and a page load of <Mono>/chat</Mono> went to the
+            backend&apos;s POST-only chat endpoint. The dev server handles both itself, so they surfaced only behind
+            the real server; both were fixed within the hour, checked in an nginx container first.
           </P>
 
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
