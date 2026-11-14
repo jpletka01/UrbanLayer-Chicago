@@ -11,7 +11,7 @@ Parcel feasibility engine for Chicago real-estate professionals, built on RAG ov
 | Vector DB | Qdrant v1.9.0 (Docker), BAAI/bge-base-en-v1.5 embeddings (768-dim, local) |
 | Reranker | bge-reranker-v2-m3, 20% weight blended with dense+keyword scores |
 | Frontend | React + TypeScript + Vite + Tailwind v3 |
-| Map | Mapbox GL JS (dark-v11) + deck.gl |
+| Map | MapLibre GL over our own vector tiles (the City's streets, zoning, County lots, LiDAR buildings); no Mapbox, no satellite |
 | Persistence | SQLite via aiosqlite (WAL mode) |
 | Streaming | SSE (text/event-stream) |
 | Geocoding | Census Geocoder (free) + shapely point-in-polygon |
@@ -31,14 +31,14 @@ kill $(lsof -ti:5173) 2>/dev/null; cd frontend && npm run dev
 make setup / make test / make lint / make check     # see Makefile; `make test` = backend + eval scorers + vitest
 python -m pytest backend/tests/ -q                # ~2,490 tests (66 integration); a conftest guard fails unit tests that touch the network
 cd frontend && npx tsc --noEmit                   # quick type check — NOT the CI gate
-cd frontend && npm run test                       # vitest (816 tests / 68 files). Runs in CI;
+cd frontend && npm run test                       # vitest (699 tests / 78 files). Runs in CI;
                                                   # a failure here blocks the deploy, same as the build.
 cd frontend && npm run build                      # ⚠️ CI-PARITY GATE (run before pushing to main): tsc -b + vite build.
                                                   # CI's `test` job runs this; deploy has `needs: test`, so a build
                                                   # failure here SILENTLY SKIPS the deploy (prod stays on the old image).
                                                   # `tsc -b` enforces noUnusedLocals etc. that `tsc --noEmit` MISSES —
                                                   # an unused import passes --noEmit but fails the build/deploy (hit 2026-06-30).
-cd frontend && npm run test:mobile                # phone-layout gate: Playwright overflow audit, 8 routes × 5 devices
+cd frontend && npm run test:mobile                # phone-layout gate: Playwright overflow audit, 15 routes × 5 devices
                                                   # (360–430w). Run after layout work. `npm run test:mobile:report` = matrix.
                                                   # E2E_BASE_URL=https://urbanlayerchicago.com audits prod post-deploy.
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
@@ -67,10 +67,9 @@ cd frontend && npm run sweep:live                 # after a deploy: console erro
 - Domain orchestrators (`property/`, `regulatory/`, `incentives/`, `neighborhood/`) run sub-queries in parallel via `asyncio.gather` with graceful degradation.
 - TTLCache used for all external API queries. Clear caches between tests via autouse fixture in `conftest.py`.
 - Frontend state: `useChat` hook owns SSE consumption. `App.tsx` is the state machine. Per-message context architecture (each assistant message stores its own context/plan/mapData).
-- **Front-end rewrite in progress (2026-11-07): two UIs.** New UI work lives in `frontend/src/ui-next/` behind `?ui=next` and follows `claude-context/guides/frontend-redesign-vision.md` + decisions Items 73+ in `claude-context/decisions/2026-11_frontend-rewrite.md` (runbook: `guides/frontend-rewrite-runbook.md`): SnowUI frame, Coastal chart palette, black for this lot, **no satellite map anywhere**, and **the Cities: Skylines map style is required** (Item 80: our own tiles and styled roads over a dimmed base; technology may change; no route flips without it). The Bento Pro guides, `page-design.md` and older layout docs below describe today's live UI only; never carry their colors, components or map choices into `ui-next`.
-- Theming (today's live UI): light/dark themeable (CSS-var-backed Tailwind tokens; `system` default; `ThemeProvider`/`useTheme`). **Live-site design language = "Bento Pro"** (orange action accent + violet premium on near-black/warm-white neutrals). The earlier "Cyanotype on Vellum" palette is retired. See `claude-context/guides/bento-pro-redesign.md` + `bento-pro-phase3-app-surfaces.md` + `frontend/CLAUDE.md` before any color/token work; `design-system.md`/`light-dark-theming.md` are historical (theming *mechanics* still valid).
+- **One UI (since Phase 10, 2026-11-14, decision Item 125).** The front end is `frontend/src/ui-next/` (the folder name is history; there is no `?ui=` flag and no old UI). It follows `claude-context/guides/frontend-redesign-vision.md` + decisions Items 73+ in `claude-context/decisions/2026-11_frontend-rewrite.md` (runbook: `guides/frontend-rewrite-runbook.md`): SnowUI frame, Coastal chart palette, black for this lot, **no satellite map anywhere**, and **the Cities: Skylines map style is required** (Item 80). Light/dark/system themes (`ThemeProvider`/`useTheme`); the tokens live in `ui-next/ui-next.css` on `:root` and every `.ui-next` root. The Bento Pro guides, `page-design.md`, `design-system.md` and `light-dark-theming.md` are history.
 - Tests: mock external APIs, mark real-API tests with `@pytest.mark.integration`.
-- Env vars: `.env` (ANTHROPIC_API_KEY, SOCRATA_APP_TOKEN, WALKSCORE_API_KEY), `frontend/.env` (VITE_MAPBOX_TOKEN).
+- Env vars: `.env` (ANTHROPIC_API_KEY, SOCRATA_APP_TOKEN, WALKSCORE_API_KEY), `frontend/.env` (VITE_API_BASE, optional VITE_SENTRY_DSN / VITE_CLARITY_ID).
 
 ## Known Issues
 

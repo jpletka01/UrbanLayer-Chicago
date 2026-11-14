@@ -3046,6 +3046,20 @@ Consumers → Property Profile (renders pin + confidence badge)
             with a live key anywhere but production (Item 123).
           </P>
 
+          <Sub>Deleting the old UI in the same move as the switch</Sub>
+          <P>
+            The rewrite ran for a week behind a preview flag, page by page, beside the live site. The owner chose a
+            one-way switch: no fallback flag and no period with both, because two UIs meant every fix twice and a
+            reason to never finish. Before any code, an audit listed everything the old UI did that the new one
+            didn&apos;t, and each item got a build, redirect or drop decision. It found a real gap (the new chat page
+            couldn&apos;t delete a conversation) and one false alarm (share and export were already there). Then the
+            flag, the badge, the preview tag and the per-route switch came out, and a reachability pass from the new
+            entry point marked everything nothing imported: 149 files, their tests, the Mapbox and deck.gl
+            dependencies and seven backend routes only the old pages called, about 32,000 lines. The new pages
+            (this one included) were restyled into the new frame rather than redesigned, and every URL was kept
+            (Item 125).
+          </P>
+
           <SectionHeading id="decisions">Design Decisions</SectionHeading>
           <WideTable
             headers={["Decision", "Alternatives Considered", "Why This Choice", "Tradeoff"]}
