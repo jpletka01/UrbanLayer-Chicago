@@ -64,6 +64,16 @@ function P({ children }: { children: ReactNode }) {
   return <p className="mb-4 leading-relaxed nx-muted">{children}</p>;
 }
 
+/** A dated note where a later change replaced what the section above describes. The section's own text stays as the
+    project's record; the note says what replaced it and when (owner 2026-11-15). */
+function SinceReplaced({ date, children }: { date: string; children: ReactNode }) {
+  return (
+    <p className="mb-4 rounded-xl bg-nx-block px-4 py-3 text-caption leading-relaxed" role="note">
+      <span className="font-semibold text-nx-ink">Since replaced ({date}):</span> <span className="nx-muted">{children}</span>
+    </p>
+  );
+}
+
 function Code({ children }: { children: ReactNode }) {
   return (
     // Focusable so a keyboard can scroll it (axe: scrollable-region-focusable).
@@ -196,6 +206,11 @@ export default function AboutNextPage() {
             interrogate it via chat with cited municipal code; and buy a $25
             PDF <Accent>Development Feasibility Report</Accent>. Live at <Mono>urbanlayerchicago.com</Mono>.
           </P>
+          <SinceReplaced date="November 14, 2026">
+            The $25 report purchase is retired: Pro ($19 a month or $199 a year) opens the report on every lot, and a free
+            account on one (decision Item 123). The Scorecard and the old UI this page describes in places were replaced too;
+            each such section carries its own note.
+          </SinceReplaced>
           <P>
             Under the hood it is a retrieval-augmented generation (RAG) system combining <Accent>25+ live
             datasets</Accent> across 5 APIs (Chicago Socrata, Cook County Socrata, ArcGIS, Census, and external
@@ -295,13 +310,13 @@ export default function AboutNextPage() {
               ["Vector DB", "Qdrant v1.9.0 (Docker)", "Free, fast, metadata filtering, payload search"],
               ["Embeddings", "BAAI/bge-base-en-v1.5 (768-dim)", "Better legal text discrimination than bge-small"],
               ["Reranker", "BAAI/bge-reranker-v2-m3 (disabled in prod)", "Same family as embeddings; too slow on prod vCPUs — report now uses a precomputed zoning cache instead"],
-              ["Payments", "Stripe (Checkout + webhooks)", "One-time $25 report + $99/mo Pro subscription; no PCI surface"],
+              ["Payments", "Stripe (Checkout, Billing portal, signed webhooks)", "Pro at $19/mo or $199/yr, read from Stripe's own subscription state; no PCI surface (off until production keys)"],
               ["Streaming", "SSE (text/event-stream)", "Synthesis is 3-8s; streaming TTFT is better UX"],
-              ["Persistence", "SQLite via aiosqlite (WAL), schema v14", "Single user, single writer — simplest correct solution"],
-              ["Auth", "Google OAuth2 + self-rolled JWT", "One-click sign-in; httpOnly cookies + CSRF double-submit"],
-              ["Frontend", "React + TypeScript + Vite + Tailwind v3", "Type-safe, light/dark/system themes; Inter / Inter Tight / JetBrains Mono"],
+              ["Persistence", "SQLite via aiosqlite (WAL), schema v20", "Single user, single writer — simplest correct solution"],
+              ["Auth", "Google, Apple or Microsoft (OpenID Connect) + self-rolled JWT", "One-click sign-in, an account reached only by its sign-in identity; httpOnly cookies + CSRF double-submit"],
+              ["Frontend", "React + TypeScript + Vite + Tailwind v3", "Type-safe, light/dark/system themes; the SnowUI frame, Coastal charts; Inter / JetBrains Mono"],
               ["PDF Reports", "WeasyPrint + Jinja + matplotlib", "HTML/CSS → PDF; rendered in an isolated child process"],
-              ["Map", "Mapbox GL JS + deck.gl", "WebGL handles 1000s of points, declarative layers"],
+              ["Map", "MapLibre GL over our own vector tiles", "Open source, no map token; our own base, zoning and lot tiles in the city-builder style, 3D buildings"],
               ["Geocoding", "Census Geocoder + Shapely + Cook County Address Points", "Free, deterministic; authoritative address→PIN resolution"],
               ["Hosting", "Hetzner CX32 (Nuremberg)", "4 vCPU, 8GB RAM + 8GB swap (upgraded from CX22/4GB)"],
               ["DNS/TLS", "Cloudflare Full (Strict)", "Zero-maintenance Origin Certificate (expires 2041)"],
@@ -863,6 +878,12 @@ NEIGHBORHOOD-WIDE (community area name):
 
           {/* ── The Property Profile ── */}
           <SectionHeading id="scorecard">The Property Profile</SectionHeading>
+          <SinceReplaced date="July 7 and November 14, 2026">
+            The Scorecard was renamed the Property Profile on July 7, 2026 (the route stays <Mono>/scorecard</Mono>). On
+            November 14, 2026 the page described here (<Mono>ScorecardPage.tsx</Mono>, its hero and report offer) was
+            replaced by the new UI's Profile: Overview, Build, Money, Neighborhood and History tabs over one map, loaded in
+            parts so the first screen paints before the slow sources answer (decision Items 89 and 125).
+          </SinceReplaced>
           <P>
             The Property Profile is the product's hook: type an address, get the parcel's complete structured assessment:
             about a second once an address is cached, 15–40 seconds for a first lookup while 25+ sources respond. It is <Accent>free, anonymous, and zero LLM cost</Accent> — <Mono>GET /api/scorecard</Mono> reads
@@ -1368,6 +1389,10 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           {/* ── Feasibility Report (PDF) ── */}
           <SectionHeading id="report">Development Feasibility Report (PDF)</SectionHeading>
+          <SinceReplaced date="November 14, 2026">
+            The $25 per-lot purchase is retired (decision Item 123). The PDF itself remains: Pro opens it on every lot, a
+            signed-in free account on one lot, and earlier purchases keep their reports.
+          </SinceReplaced>
           <P>
             The $25 PDF report is the revenue wedge — the moment a professional needs a deliverable for a client,
             lender, or partner. It's priced per-unit (no subscription threshold), it demonstrates every underlying
@@ -1456,6 +1481,11 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           {/* ── Payments & Monetization ── */}
           <SectionHeading id="payments">Payments &amp; Monetization</SectionHeading>
+          <SinceReplaced date="November 14, 2026">
+            One plan replaced both price points: Pro at $19 a month or $199 a year, read from Stripe's own subscription
+            state through signed, idempotent webhooks, with a Billing portal for the card, invoices and canceling (decision
+            Item 123). The $25 report and the $99 price are retired. Payments stay off until production Stripe keys are set.
+          </SinceReplaced>
           <P>
             Two price points, both through <Accent>Stripe</Accent> (<Mono>backend/payments.py</Mono>): a one-time{" "}
             <Accent>$25 Development Feasibility Report</Accent> and a <Accent>$99/mo Pro</Accent> subscription
@@ -1514,6 +1544,11 @@ Consumers → Property Profile (renders pin + confidence badge)
             otherwise the valid list remains visible and the map says it could not be checked. A 5,000-point display cap,
             missing-coordinate count and true result total are reported separately, so "not plotted" never means "not found."
           </P>
+          <SinceReplaced date="November 14, 2026">
+            Discovery's map is now MapLibre over our own lot tiles, with no Mapbox and no deck.gl: every lot filled by the
+            chosen measure, matches outlined, a block grid when zoomed out (decision Items 90–91, 104 and 125). The paragraph
+            below describes the map it replaced.
+          </SinceReplaced>
           <P>
             The map key is derived from the exact points passed to deck.gl: free users get named Property Use counts and
             view-only dots; Pro users get Redevelopment Upside bins plus hover and click. Row hover or keyboard focus marks the
@@ -1796,6 +1831,11 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           {/* ── 12. Map & Geo ── */}
           <SectionHeading id="map">Map & Geo Visualization</SectionHeading>
+          <SinceReplaced date="November 14, 2026">
+            Mapbox GL JS and deck.gl were replaced by MapLibre GL over our own vector tiles (base, zoning, lots, buildings),
+            drawn in a city-builder style with no satellite imagery and no map token; both libraries were deleted with the
+            old UI (decision Items 80, 90–91 and 125). The sections below describe the maps they drew.
+          </SinceReplaced>
 
           <Sub>Mapbox + deck.gl Over Leaflet</Sub>
           <P>
@@ -2461,6 +2501,10 @@ Consumers → Property Profile (renders pin + confidence badge)
             HTTP → HTTPS redirect on port 80, SSL termination on port 443, HSTS headers, and a Content Security
             Policy tuned for Mapbox GL JS, deck.gl, Google Fonts, Google avatars, Cloudflare Insights, and Sentry.
           </P>
+          <SinceReplaced date="November 14, 2026">
+            With Mapbox and deck.gl gone, the policy serves MapLibre's worker from our own origin (<Mono>worker-src
+            'self'</Mono>) and loads no map provider (decision Item 125).
+          </SinceReplaced>
 
           <Sub>CI/CD Pipeline</Sub>
           <P>
@@ -2542,6 +2586,11 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           {/* ── 19. Frontend Architecture ── */}
           <SectionHeading id="frontend">Frontend Architecture</SectionHeading>
+          <SinceReplaced date="November 14, 2026">
+            The UI described in this section (<Mono>App.tsx</Mono>'s splash and workspace, the sidebar, the bottom sheet)
+            was replaced by the new UI, now the only one: one frame with a side panel, each page its own lazily loaded chunk,
+            in <Mono>frontend/src/app/</Mono> (decision Items 73–76, 125 and 126).
+          </SinceReplaced>
 
           <Sub>State Machine</Sub>
           <P>
@@ -2613,6 +2662,10 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           {/* ── Design System ── */}
           <SectionHeading id="design-system">Design System</SectionHeading>
+          <SinceReplaced date="November 14, 2026">
+            Bento Pro (the orange and violet look below) was replaced by the SnowUI frame and Coastal chart colors: black for
+            the lot in question, no satellite map, the token mechanics kept (decision Items 74–77 and 125).
+          </SinceReplaced>
           <P>
             As the surface area grew (Property Profile, Report, Discovery, chat, landing), arbitrary <Mono>text-[Npx]</Mono>{" "}
             sizes, ad-hoc <Mono>white/opacity</Mono> chrome, and off-palette hues had crept in. A unification pass
@@ -3122,6 +3175,11 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["Keep the first render of a purchased report as its original", "Re-rendering on every download; back-filling old purchases", "What was sold stays what was sold; an altered file is never served as the original", "About 2 MB per purchase on the same disk as the database"],
             ]}
           />
+          <SinceReplaced date="November 14, 2026">
+            Two rows above were later replaced: Deck.gl + Mapbox by MapLibre over our own tiles (decision Items 90–91), and
+            Google-only sign-in by Google, Apple or Microsoft, an account reached only by its sign-in identity (decision
+            Item 121).
+          </SinceReplaced>
 
           {/* ── 22. At Scale ── */}
           <SectionHeading id="scale">At Scale</SectionHeading>
@@ -3151,9 +3209,9 @@ Consumers → Property Profile (renders pin + confidence badge)
           <div className="mt-16 pt-8 border-t border-nx-ink/5">
             <p className="nx-muted text-body">
               ~2,340 backend tests, 620 frontend tests. 16,584 code chunks indexed (current through June 17, 2026). ~949k parcels in the discovery index.
-              25+ live datasets. 4 domain orchestrators. Property Profile + cited chat + $25 PDF report + discovery,
+              25+ live datasets. 4 domain orchestrators. Property Profile + cited chat + discovery,
               scored on a 12-parcel public benchmark.
-              Built with FastAPI, Claude, Qdrant, React, Mapbox, deck.gl, WeasyPrint, and Stripe.
+              Built with FastAPI, Claude, Qdrant, React, MapLibre, WeasyPrint, and Stripe.
               Live at urbanlayerchicago.com.
             </p>
           </div>

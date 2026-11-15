@@ -1975,7 +1975,8 @@
     "shared": {
       "crumb": "Conversación compartida",
       "note": "Una conversación compartida, solo de lectura.",
-      "startOwn": "Inicie su propia conversación"
+      "startOwn": "Inicie su propia conversación",
+      "unavailable": "Esta conversación compartida no está disponible."
     }
   },
   "landing": {

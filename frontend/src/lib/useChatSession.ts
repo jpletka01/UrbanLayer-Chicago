@@ -78,6 +78,8 @@ export function useChatSession(options: ChatSessionOptions = {}) {
   // no messages yet. Set by newChat; cleared on exit-to-start and on the first send.
   const [composing, setComposing] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
+  // A share link whose token the server doesn't know: say so on the fresh chat it lands on (Phase 11).
+  const [shareUnavailable, setShareUnavailable] = useState(false);
   // "Since then" notes for a reopened or shared conversation, by message index (WS6 M9).
   const [sinceThen, setSinceThen] = useState<Record<string, SinceThenResult>>({});
   const conversationIdRef = useRef<string | null>(null);
@@ -154,6 +156,7 @@ export function useChatSession(options: ChatSessionOptions = {}) {
     (async () => {
       const detail = await getSharedConversation(shareTokenFromUrl).catch(() => null);
       if (!detail) {
+        setShareUnavailable(true);
         go(startPath);
         setLoadingConversation(false);
         return;
@@ -163,6 +166,7 @@ export function useChatSession(options: ChatSessionOptions = {}) {
       setSinceThen({});
       void getSharedChanges(shareTokenFromUrl).then(setSinceThen);
       setIsSharedView(true);
+      setShareUnavailable(false);
       clearTurnState();
       cb.current.onLoaded?.(loaded);
       setLoadingConversation(false);
@@ -362,6 +366,7 @@ export function useChatSession(options: ChatSessionOptions = {}) {
     setConversationId(null);
     conversationIdRef.current = null;
     setLoadError(null);
+    setShareUnavailable(false);
     cb.current.onCleared?.();
   }
 
@@ -426,6 +431,7 @@ export function useChatSession(options: ChatSessionOptions = {}) {
     loadError,
     setLoadError,
     isSharedView,
+    shareUnavailable,
     sinceThen,
     composing,
     active: messages.length > 0 || streaming || composing,

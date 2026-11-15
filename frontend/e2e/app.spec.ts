@@ -523,4 +523,10 @@ test("Phase 10: a shared link opens read only", async ({ page }, testInfo) => {
     await expect(page.getByLabel("Ask a follow-up")).toHaveCount(0);
     expect(await axe(page), `axe ${scheme}`).toEqual([]);
   }
+  // A token the server doesn't know: the fresh chat says so instead of opening silently (Phase 11).
+  await page.route(/\/api\/share\/nosuch$/, (r) => r.fulfill({ status: 404, json: { detail: "Not found" } }));
+  await open(page, "/s/nosuch", "chat-share-unavailable");
+  await expect(page.getByText("This shared chat isn't available.")).toBeVisible();
+  await expect(page).toHaveURL(/\/chat$/);
+  expect(await axe(page), "axe unavailable").toEqual([]);
 });

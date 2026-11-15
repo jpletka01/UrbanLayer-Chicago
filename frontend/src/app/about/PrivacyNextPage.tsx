@@ -25,7 +25,7 @@ export default function PrivacyNextPage() {
     <AppFrame crumbs={["Privacy"]}>
       <article className="mx-auto w-full max-w-[760px] px-4 pb-32 pt-10 sm:px-7" data-testid="privacy">
         <h1 className="mb-2 text-[1.875rem] font-semibold tracking-[-0.02em]">Privacy Policy</h1>
-        <p className="text-caption nx-muted mb-10">Last updated: July 5, 2026</p>
+        <p className="text-caption nx-muted mb-10">Last updated: November 15, 2026</p>
 
         <Section title="The short version">
           <P>
@@ -63,8 +63,9 @@ export default function PrivacyNextPage() {
             </Li>
             <Li>
               <strong className="text-nx-ink">Account details.</strong> If you sign in with
-              Google, we store your name, email address, and profile picture URL. Signing in is
-              optional — the Scorecard works anonymously.
+              Google, Apple or Microsoft, we store the name and email address it shares with us and,
+              from Google, your profile picture URL. Signing in is optional — the Property Profile
+              works anonymously.
             </Li>
             <Li>
               <strong className="text-nx-ink">Payments.</strong> Purchases are processed by{" "}
@@ -101,7 +102,7 @@ export default function PrivacyNextPage() {
           <ul className="list-disc pl-5 space-y-2">
             <Li>We don't sell your personal data, and we don't share it with advertisers or data brokers.</Li>
             <Li>We don't run third-party advertising trackers.</Li>
-            <Li>We don't require an account to use the free Scorecard.</Li>
+            <Li>We don't require an account to use the free Property Profile.</Li>
             <Li>
               The property data we show (zoning, assessments, permits, sales) is public record
               published by the City of Chicago, Cook County, and federal agencies — it's about
@@ -129,7 +130,7 @@ export default function PrivacyNextPage() {
         <Section title="Where data lives">
           <P>
             The application and its database run on a server in Germany (Hetzner). Stripe, Google,
-            Microsoft Clarity, Sentry, and Cloudflare process data in their own regions under
+            Apple, Microsoft (sign-in and Clarity), Sentry, and Cloudflare process data in their own regions under
             their own policies.
           </P>
         </Section>
