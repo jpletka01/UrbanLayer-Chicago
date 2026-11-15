@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* The site's tokens live in ui-next/ui-next.css (SnowUI frame, Coastal charts): defined on :root and on every
+/* The site's tokens live in app/app.css (SnowUI frame, Coastal charts): defined on :root and on every
    `.ui-next` root, light by default, dark under [data-theme="dark"]. The Bento Pro palette was retired with the old
    UI (Phase 10). */
 

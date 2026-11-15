@@ -5,7 +5,7 @@ description: UrbanLayer's rules for what a page shows and how — one answer fir
 
 # Page design rules
 
-> **One UI since Phase 10 (2026-11-14, decision Item 125):** the new UI (`frontend/src/ui-next/`) is the only UI. It follows `guides/frontend-redesign-vision.md` and decisions Items 73+ (`decisions/2026-11_frontend-rewrite.md`): SnowUI frame, Coastal charts, black for this lot, **no satellite map**. Sections 1, 3, 5 and 6 (what a block shows, evidence behind tools, words not color alone, Lucide only, links in new tabs, budgets) still apply to every page. Section 2's Bento Pro colors (orange action, violet premium) and the old component names are **history**: use the SnowUI roles in `ui-next/ui-next.css` (ink, the lavender primary in dark, the pill tones) and the pieces in `ui-next/ui/` and `ui-next/frame/`.
+> **One UI since Phase 10 (2026-11-14, decision Item 125):** the new UI (`frontend/src/app/`) is the only UI. It follows `guides/frontend-redesign-vision.md` and decisions Items 73+ (`decisions/2026-11_frontend-rewrite.md`): SnowUI frame, Coastal charts, black for this lot, **no satellite map**. Sections 1, 3, 5 and 6 (what a block shows, evidence behind tools, words not color alone, Lucide only, links in new tabs, budgets) still apply to every page. Section 2's Bento Pro colors (orange action, violet premium) and the old component names are **history**: use the SnowUI roles in `app/app.css` (ink, the lavender primary in dark, the pill tones) and the pieces in `app/ui/` and `app/frame/`.
 
 The Profile once grew to ~3,000 words at equal weight because every PR added one correct sentence
 ("additive honesty"). These rules exist so that never happens again. They come from Jack's reviews

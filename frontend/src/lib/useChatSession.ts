@@ -1,5 +1,5 @@
 // One chat session's lifecycle, shared by today's chat workspace (App.tsx) and the new UI's full chat page
-// (ui-next/chat, Phase 8): a conversation loaded from /c/:id or a share link, stored after each answer, created on
+// (app/chat, Phase 8): a conversation loaded from /c/:id or a share link, stored after each answer, created on
 // the first question, and the doors into chat from other pages (?q= autosend, ?pin= grounding, ?handoff= from the
 // Profile's quick chat, ?ask=1). Lifted out of App.tsx unchanged in behavior so the two UIs never fork the chat
 // path; what each page shows beside the conversation (today's data rail, the new UI's previews) stays in the page,

@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import * as Sentry from '@sentry/react'
 import './lib/i18n'
 import './index.css'
-import './ui-next/ui-next.css'
+import './app/app.css'
 import { initTracking, track } from './lib/tracking'
 
 if (import.meta.env.VITE_SENTRY_DSN) {
@@ -39,12 +39,12 @@ if (import.meta.env.VITE_CLARITY_ID) {
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
-import AuthOverlays from './ui-next/frame/AuthOverlays.tsx'
-import { SegmentQuestion } from './ui-next/frame/SegmentQuestion.tsx'
-import { FrameOutline } from './ui-next/frame/FrameOutline.tsx'
-import { PAGES } from './ui-next/pages.ts'
-import { pageNameFor } from './ui-next/destinations.ts'
-import { isChatDoor } from './ui-next/chatDoor.ts'
+import AuthOverlays from './app/frame/AuthOverlays.tsx'
+import { SegmentQuestion } from './app/frame/SegmentQuestion.tsx'
+import { FrameOutline } from './app/frame/FrameOutline.tsx'
+import { PAGES } from './app/pages.ts'
+import { pageNameFor } from './app/destinations.ts'
+import { isChatDoor } from './app/chatDoor.ts'
 
 function TrackPageView() {
   const { pathname } = useLocation();

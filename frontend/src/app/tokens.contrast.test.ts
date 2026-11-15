@@ -1,12 +1,12 @@
 // Contrast of every text and pill pairing in the new UI's tokens, both themes (Item 74 left this "to check when
-// the tokens are built"). Read from ui-next.css itself, so a token change re-runs the check. WCAG 2 AA: 4.5:1
+// the tokens are built"). Read from app.css itself, so a token change re-runs the check. WCAG 2 AA: 4.5:1
 // for small text; 3:1 for the lot's outline and chart marks against their surface is not asserted here (charts
 // carry labels, Item 74).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const CSS = readFileSync(join(__dirname, "ui-next.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+const CSS = readFileSync(join(__dirname, "app.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
 
 function block(selectorStart: string): Record<string, string> {
   const i = CSS.indexOf(selectorStart);
