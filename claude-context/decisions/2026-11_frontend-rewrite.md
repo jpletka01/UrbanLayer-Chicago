@@ -1305,6 +1305,8 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 
 *Revisit if* the owner lines up builders earlier: the test can run at any phase boundary, and earlier is cheaper.
 
+**Update (owner, 2026-11-15): waived.** The old UI was deleted in Phase 10 (Item 125) with no builders lined up, so the test no longer guards anything a fallback could catch. The owner waived it: the site will be tested with real users once there are some. The kit stays in `research/16-builder-test-kit/` (local) for that.
+
 ## Item 112: Phase 7 M5 step 1, land in use: three sources measured, surface parking first (2026-11-12)
 
 **Status: measured, and the owner's blind panel labeled (86 of 86, 2026-11-12). Nothing live changes and no UI is built** until the owner answers the questions at the end. Eval code: `eval/land_use.py` (fetch + measure), `eval/land_use_label.py` + `eval/land_use_label_page.html` (blind check), panel `eval/land_use_panel.json`, counts in `eval/results/2026-11-12-land-use/summary.json`. Read-only, offline after the fetch, no model calls. Tests: `eval/tests/test_land_use.py`.
