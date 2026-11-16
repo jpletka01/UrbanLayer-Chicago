@@ -34,7 +34,7 @@ export interface MapTiles { base: TileSet | null; parcels: TileSet | null; zonin
 interface Palette {
   outside: string; land: string; water: string; park: string;
   highway: string; major: string; minor: string; local: string; ramp: string; casing: string;
-  rail: string; railTie: string; railMetra: string; railShared: string; railLandFill: number; stationFill: string;
+  rail: string; railMetra: string; railShared: string; railLand: string; railLandFill: number;
   label: string; halo: string;
   parcelLine: string; parcelLineOpacity: number; parcelHit: string;
   lot: string; lotEdge: string; lotFill: number;
@@ -47,7 +47,7 @@ export const PALETTES: Record<Theme, Palette> = {
   light: {
     outside: "#E4E7EB", land: "#EEF0F3", water: "#C6D9E3", park: "#D6E8D8",
     highway: "#EE9580", major: "#F3C58C", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F2AE9C", casing: "#D3D8DE",
-    rail: "#3E2470", railTie: "#FFFFFF", railMetra: "#1D4F91", railShared: "#565A5C", railLandFill: 0.12, stationFill: "#FFFFFF",
+    rail: "#8A9097", railMetra: "#005DAA", railShared: "#565A5C", railLand: "#8A9097", railLandFill: 0.14,
     label: "#3C4249", halo: "#F4F6F8",
     parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
     lot: "#1C1C1C", lotEdge: "#FFFFFF", lotFill: 0.30,
@@ -56,7 +56,7 @@ export const PALETTES: Record<Theme, Palette> = {
   dark: {
     outside: "#141516", land: "#1E2023", water: "#18252D", park: "#1B2620",
     highway: "#E8806F", major: "#D9AE73", minor: "#8A9097", local: "#6B7178", ramp: "#B56F62", casing: "#141516",
-    rail: "#9C82D9", railTie: "#1E2023", railMetra: "#6F9BE0", railShared: "#A8ADB3", railLandFill: 0.16, stationFill: "#1E2023",
+    rail: "#7A8088", railMetra: "#4A90D9", railShared: "#A8ADB3", railLand: "#7A8088", railLandFill: 0.16,
     label: "#C9CDD2", halo: "#1E2023",
     parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
     lot: "#FFFFFF", lotEdge: "#1C1C1C", lotFill: 0.32,
@@ -126,72 +126,82 @@ const roadLayer = (kind: keyof typeof ROAD_METERS, minzoom: number, lowZoomPx: n
   }),
 });
 
-/** Rail widths in metres (Item 128): an L structure or a two-track line; yards and spurs thinner. */
-export const RAIL_METERS = { cta: 9, metra: 8, amtrak: 8, freight: 7, yard: 4, spur: 3 } as const;
-/** One zoom curve (MapLibre allows only one per expression), the kind picked inside each stop: a readable minimum at
-    zoom 10, the real width from 14 up, as `roadWidth` does for streets. */
-const railWidth = (scale: number) => {
-  const at = (z: number, low: (k: string) => number) => ["match", ["get", "kind"],
-    ...Object.entries(RAIL_METERS).flatMap(([k, m]) => [k, Math.max(low(k), (m * scale) / metersPerPixel(z))]), low("")];
-  const low = (k: string) => (k === "yard" || k === "spur" ? 1.2 : 2.4) * scale;
-  return ["interpolate", ["exponential", 2], ["zoom"],
-    10, at(10, low), 14, at(14, low), 20, at(20, () => 0)] as unknown as number;
-};
-
-/** The CTA's own line colors, by the City's legend code (``line`` in the base tiles); ML = several lines share the
-    track (the Loop, the north trunk), drawn in a neutral gray. */
+/** The CTA's own line colors (its GTFS feed), by line code (``line`` in the base tiles). A segment several lines share
+    arrives as one feature per line with ``o``, its place side by side. */
 export const CTA_COLORS: Record<string, string> = {
   RD: "#C60C30", BL: "#00A1DE", BR: "#62361B", GR: "#009B3A", OR: "#F9461C", PK: "#E27EA6", PR: "#522398", YL: "#F9E300",
 };
-const railColor = (t: Theme) => ["match", ["get", "kind"],
-  "cta", ["match", ["get", "line"], ...Object.entries(CTA_COLORS).flat(), PALETTES[t].railShared],
-  "metra", PALETTES[t].railMetra,
-  PALETTES[t].rail] as unknown as string;
-const stationColor = (t: Theme) => ["match", ["get", "kind"], "metra", PALETTES[t].railMetra, PALETTES[t].railShared] as unknown as string;
+/** Transit line width in px: thin zoomed out, Google-like close in. */
+const transitWidth = zoomWidth([[10, 1.4], [13, 2.4], [16, 4.5], [18, 6]]);
+/** The thin edge: the same curve, 2 px wider (one zoom curve per expression, MapLibre's rule). */
+const transitCasingWidth = zoomWidth([[10, 3.4], [13, 4.4], [16, 6.5], [18, 8]]);
+/** Shared track: each line moved sideways by its place (``o``) times a little more than its width. */
+const transitOffset = ["interpolate", ["linear"], ["zoom"],
+  10, ["*", ["to-number", ["get", "o"], 0], 1.6], 13, ["*", ["to-number", ["get", "o"], 0], 2.8],
+  16, ["*", ["to-number", ["get", "o"], 0], 5], 18, ["*", ["to-number", ["get", "o"], 0], 6.6]] as unknown as number;
+const TRANSIT = ["match", ["get", "kind"], ["cta", "cta_subway", "metra"], true, false] as never;
+const transitColor = (t: Theme) => ["match", ["get", "kind"],
+  "metra", ["case", ["!=", ["get", "color"], ""], ["get", "color"], PALETTES[t].railMetra],
+  ["match", ["get", "line"], ...Object.entries(CTA_COLORS).flat(), PALETTES[t].railShared]] as unknown as string;
 
-/** Rail in the Cities: Skylines manner (Item 80) and the map convention for railroads: a band with dashes along it from
-    zoom 12, over the streets so the elevated L reads above them. Colors by role (owner's map review, 2026-11-16): each L
-    line in the CTA's color, Metra in one navy, everything else (freight, Amtrak, yards, spurs) in a dark purple; rail
-    land (CMAP's right-of-way and yards) a faint area under the lots, so it reads where the County has no lot; stations
-    as white dots ringed in their line's color. Its own group, "Rail and transit", on by default. */
+/** Rail like Google Maps' transit layer (owner's map review, 2026-11-16): each L line in the CTA's color and each
+    Metra line in Metra's, solid with a thin edge, side by side where they share track (the Loop), subway included;
+    freight, Amtrak, yards and spurs as a thin gray line with cross-ticks; rail land (CMAP's right-of-way and yards) a
+    faint gray area under the lots, so it reads where the County has no lot; stations as small icons (a train for the
+    L, an "M" for Metra), named close in. Its own group, "Rail and transit", on by default. */
 const railLayers: LayerDef[] = [
   {
     group: "rail", needs: "base", opacity: ["fill-opacity"],
     spec: (t) => ({ id: "rail-land", type: "fill", source: "base", "source-layer": "rail_land", minzoom: 12,
-      paint: { "fill-color": PALETTES[t].rail, "fill-opacity": PALETTES[t].railLandFill } }),
+      paint: { "fill-color": PALETTES[t].railLand, "fill-opacity": PALETTES[t].railLandFill } }),
   },
   {
     group: "rail", needs: "base", opacity: ["line-opacity"],
     spec: (t) => ({ id: "rail", type: "line", source: "base", "source-layer": "rail",
+      filter: ["!", TRANSIT],
       layout: { "line-cap": "butt", "line-join": "round" },
-      paint: { "line-color": railColor(t), "line-width": railWidth(1), "line-opacity": 1 } }),
+      paint: { "line-color": PALETTES[t].rail, "line-width": zoomWidth([[10, 0.8], [14, 1.4], [18, 2]]), "line-opacity": 1 } }),
   },
   {
     group: "rail", needs: "base", opacity: ["line-opacity"],
-    spec: (t) => ({ id: "rail-ties", type: "line", source: "base", "source-layer": "rail", minzoom: 12,
-      filter: ["match", ["get", "kind"], ["yard", "spur"], false, true],
+    spec: (t) => ({ id: "rail-ties", type: "line", source: "base", "source-layer": "rail", minzoom: 13,
+      filter: ["all", ["!", TRANSIT], ["!=", ["get", "kind"], "spur"]],
       layout: { "line-cap": "butt", "line-join": "round" },
-      paint: { "line-color": PALETTES[t].railTie, "line-width": railWidth(0.45), "line-dasharray": [2, 2], "line-opacity": 1 } }),
+      paint: { "line-color": PALETTES[t].rail, "line-width": zoomWidth([[13, 4], [18, 7]]), "line-dasharray": [0.15, 2.4],
+        "line-opacity": 1 } }),
   },
   {
-    group: "rail", needs: "base", opacity: ["circle-opacity", "circle-stroke-opacity"],
-    spec: (t) => ({ id: "station", type: "circle", source: "base", "source-layer": "station", minzoom: 12,
-      paint: { "circle-radius": zoomWidth([[12, 2.5], [16, 5.5]]), "circle-color": PALETTES[t].stationFill,
-        "circle-stroke-color": stationColor(t), "circle-stroke-width": zoomWidth([[12, 1.5], [16, 2.5]]),
-        "circle-opacity": 1, "circle-stroke-opacity": 1 } }),
+    group: "rail", needs: "base", opacity: ["line-opacity"],
+    spec: (t) => ({ id: "transit-casing", type: "line", source: "base", "source-layer": "rail", filter: TRANSIT,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": PALETTES[t].halo, "line-width": transitCasingWidth,
+        "line-offset": transitOffset, "line-opacity": 1 } }),
+  },
+  {
+    group: "rail", needs: "base", opacity: ["line-opacity"],
+    spec: (t) => ({ id: "transit-line", type: "line", source: "base", "source-layer": "rail", filter: TRANSIT,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": transitColor(t), "line-width": transitWidth, "line-offset": transitOffset, "line-opacity": 1 } }),
+  },
+  {
+    group: "rail", needs: "base", opacity: ["icon-opacity"],
+    spec: () => ({ id: "station", type: "symbol", source: "base", "source-layer": "station", minzoom: 12,
+      layout: { "icon-image": ["match", ["get", "kind"], "metra", "station-metra", "station-cta"] as unknown as string,
+        "icon-size": zoomWidth([[12, 0.7], [15, 1], [18, 1.2]]), "icon-allow-overlap": true, "icon-ignore-placement": true },
+      paint: { "icon-opacity": 1 } }),
   },
   {
     group: "rail", needs: "base", opacity: ["text-opacity"],
     spec: (t) => ({ id: "rail-label", type: "symbol", source: "base", "source-layer": "rail", minzoom: STREET_LABEL_MIN_ZOOM,
-      filter: ["all", ["==", ["get", "kind"], "cta"], ["!=", ["get", "name"], ""]],
+      filter: ["all", TRANSIT, ["!=", ["get", "name"], ""], ["==", ["to-number", ["get", "o"], 0], 0]],
       layout: { "symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"],
         "text-size": zoomWidth([[15, 10], [18, 12]]), "symbol-spacing": 420, "text-max-angle": 30, "text-padding": 4 },
       paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
   },
   {
     group: "rail", needs: "base", opacity: ["text-opacity"],
-    spec: (t) => ({ id: "station-label", type: "symbol", source: "base", "source-layer": "station", minzoom: 14,
-      layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": zoomWidth([[14, 10], [17, 12]]),
+    spec: (t) => ({ id: "station-label", type: "symbol", source: "base", "source-layer": "station", minzoom: 15,
+      layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": zoomWidth([[15, 10], [17, 12]]),
         "text-offset": [0, 1.1], "text-anchor": "top", "text-padding": 4, "text-optional": true },
       paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
   },
@@ -261,6 +271,7 @@ export const LAYERS: LayerDef[] = [
   railLayers[1],
   railLayers[2],
   railLayers[3],
+  railLayers[4],
   // This lot stands out (owner's review, Item 96): a fill in "this lot" ink over the zoning, a wider edge, a 3 px line.
   {
     group: null, needs: "lot", opacity: [],
@@ -287,8 +298,9 @@ export const LAYERS: LayerDef[] = [
         "text-size": zoomWidth([[15, 10.5], [18, 13]]), "symbol-spacing": 320, "text-max-angle": 30, "text-padding": 4 },
       paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
   },
-  railLayers[4],
   railLayers[5],
+  railLayers[6],
+  railLayers[7],
   {
     group: "zoning", needs: "zoning", opacity: ["text-opacity"],
     spec: (t) => ({ id: "zoning-label", type: "symbol", source: "zoning", "source-layer": "zoning_label",

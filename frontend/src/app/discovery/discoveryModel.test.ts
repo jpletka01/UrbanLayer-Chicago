@@ -3,7 +3,7 @@ import type { ResultRow } from "../../discovery/types";
 import { shapePath } from "./discoveryData";
 import {
   areaSuggestions, cardModel, foldComplexes, clampMiles, classifyQuery, measureColorExpr, measureSteps, measureTexture, unknownMeasureFilter, milesBetween, placeRegion, placeSuggestions, quickFromPanel,
-  quickPanel, ringMiles, ringPolygon, ringRegion, NOT_WATER,
+  quickPanel, ringMiles, ringPolygon, ringRegion, NOT_WATER, formatAt, parseAt,
 } from "./discoveryModel";
 
 const AREAS = { 22: "Logan Square", 24: "West Town", 7: "Lincoln Park" };
@@ -28,7 +28,7 @@ describe("quick filters compile to a panel the server evaluates", () => {
 
 describe("the map's measure", () => {
   it("has a key step per tile band and colors unknown as transparent (the hatch layer draws it)", () => {
-    expect(measureSteps("room").map((s) => s.value)).toEqual(["0", "1", "2", "3", "4", "x", "p", "t"]);
+    expect(measureSteps("room").map((s) => s.value)).toEqual(["0", "1", "2", "3", "4", "x", "p", "t", "i"]);
     const expr = measureColorExpr("room") as unknown[];
     expect(expr.slice(0, 2)).toEqual(["match", ["get", "r"]]);
     expect(expr[expr.length - 1]).toBe("rgba(0,0,0,0)");
@@ -149,5 +149,15 @@ describe("water lots (Item 128)", () => {
   it("are left off the unknown dots in every measure, so the river reads as water", () => {
     for (const m of ["room", "lot", "sale", "use"] as const) expect(JSON.stringify(unknownMeasureFilter(m))).toContain('["!=",["get","r"],"w"]');
     expect(NOT_WATER).toEqual(["!=", ["get", "r"], "w"]);
+  });
+});
+
+describe("the map's place in the URL (owner's map review)", () => {
+  it("writes and reads lat,lng,zoom like Google Maps and refuses anything outside Chicago", () => {
+    const at = formatAt([-87.68873, 41.96601], 16.2);
+    expect(at).toBe("41.96601,-87.68873,16.20z");
+    expect(parseAt(at)).toEqual({ center: [-87.68873, 41.96601], zoom: 16.2 });
+    expect(parseAt("41.9,-87.6,14")).toEqual({ center: [-87.6, 41.9], zoom: 14 });
+    for (const bad of [null, "", "abc", "40.7,-74.0,12z", "41.9,-87.6,3z"]) expect(parseAt(bad)).toBeNull();
   });
 });

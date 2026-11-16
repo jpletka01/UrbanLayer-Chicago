@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 # Keys this pass owns: cleared before each fill so a rerun never keeps a stale answer.
 OWNED = ("hood", "lot_width_ft", "narrow_strip", "bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
          "warn_landmark", "surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source",
-         "open_land", "open_land_source")
+         "open_land", "open_land_source", "institution")
 
 
 def lot_outlines(ptaxsim: Path, pin10s: Iterable[str]) -> dict[str, Any]:

@@ -203,9 +203,12 @@ def derive_capacity(attrs: dict[str, Any]) -> None:
         scope = no_far_scope(attrs)
         if scope:
             attrs["room_scope"] = scope
+    if "room_sqft" not in attrs and "room_scope" not in attrs and attrs.get("institution"):
+        # Exempt institution with no building area to count: named, never dotted "not known" (Item 128).
+        attrs["room_scope"] = "institution"
 
 
-NO_BASE_FAR = ("own_rules", "open_space", "transport", "right_of_way", "water")
+NO_BASE_FAR = ("own_rules", "open_space", "transport", "right_of_way", "water", "institution")
 
 
 def no_far_scope(attrs: dict[str, Any]) -> str | None:
@@ -369,7 +372,10 @@ CTA_MIN_FT = 25.0  # a CTA line runs at least this far through the lot
 # Right-of-way kinds: hidden by default (``index_build.unusual_rule``) and never given room to build.
 RIGHT_OF_WAY = ("road", "rail", "road_rail")
 OPEN_LAND_MIN_SHARE = 0.5  # a park, the water or CMAP's cemetery covers at least half the lot
-OPEN_LAND_NOT_ON = ("residential", "side_yard")  # a home inside a park's outline stays a home (6 of 3,609 lots)
+OPEN_LAND_NOT_ON = ("residential", "side_yard")
+# CMAP's institutional codes, cemetery (1360) left out: medical, K-12, higher education, government, prison, religious,
+# other, national laboratory.
+INSTITUTION_CODES = ("1310", "1321", "1322", "1330", "1340", "1350", "1370", "1380")  # a home inside a park's outline stays a home (6 of 3,609 lots)
 
 
 def mark_open_land(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple[str, float] | None) -> bool:
@@ -406,7 +412,7 @@ def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
     from backend.discovery.cmap_land_use import CMAP_INTERMODAL, CMAP_RAIL, CMAP_ROAD
 
     for k in ("surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source", "open_land",
-              "open_land_source"):
+              "open_land_source", "institution"):
         attrs.pop(k, None)
     if attrs.get("land_kind") == "parking" and attrs.get("structure") in NO_BUILDING:
         attrs["surface_parking"] = True
@@ -427,6 +433,10 @@ def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
         return
     if not cm:
         return
+    if cm[0] in INSTITUTION_CODES and cm[1] >= OPEN_LAND_MIN_SHARE and attrs.get("land_kind") in ("exempt", "city_owned"):
+        # A school, church, hospital or government site on tax-exempt land (owner's map review: 2851 N Seminary, a
+        # school, read "not known"). Only names the lot when room to build can't be computed (``derive_capacity``).
+        attrs["institution"] = True
     if cm[0] == CMAP_ROAD and cm[1] >= ROAD_MIN_SHARE and attrs.get("land_kind") == "exempt" \
             and attrs.get("empty_land"):
         cta = (src.rail_on_lot or {}).get(pin10, 0.0)
@@ -480,7 +490,7 @@ def measure_bands(attrs: dict[str, Any]) -> dict[str, str]:
         out["r"] = str(0 if room <= 0 else 1 + sum(room >= e for e in ROOM_BANDS[1:]))
     elif attrs.get("room_scope") in NO_BASE_FAR:
         out["r"] = {"own_rules": "x", "open_space": "p", "transport": "t",
-                    "right_of_way": "t", "water": "w"}[attrs["room_scope"]]  # drawn with transportation zones: one key line
+                    "right_of_way": "t", "water": "w", "institution": "i"}[attrs["room_scope"]]  # drawn with transportation zones: one key line
     lot = attrs.get("land_sqft")
     if lot:
         out["s"] = str(sum(lot >= e for e in LOT_BANDS))

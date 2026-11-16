@@ -10,18 +10,18 @@ import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MLMap } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { ArrowRight, LoaderCircle, MapPinOff, SquareArrowOutUpRight, X } from "lucide-react";
+import { ArrowRight, LoaderCircle, MapPinOff, MapPinned, PersonStanding, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { profileAddress } from "../../discovery/rowFigures";
 import { discoveryOutlineRow, fetchTransitStations, type DiscoveryOutlineLookup } from "../../lib/api";
-import { apiOrigin, loadMapInfo, streetViewUrl } from "../map/mapInfo";
+import { apiOrigin, googleMapsUrl, loadMapInfo, streetViewUrl } from "../map/mapInfo";
 import { loadedRoads, streetOfAddress, viewpointFor, type RoadLine } from "../map/streetView";
 import { addPinImages } from "../map/pins";
 import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
 import { PALETTES, ZONING_COLORS, buildStyle, groupLayerIds, themePaint, versionedTiles, type MapTiles, type Theme } from "../map/mapStyle";
 import { STROKE } from "../icons";
 import {
-  LOTS_MIN_ZOOM, NOT_WATER, cardModel, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
+  LOTS_MIN_ZOOM, NOT_WATER, cardModel, formatAt, parseAt, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
 } from "./discoveryModel";
 import { foldAttribution } from "../map/attribution";
 
@@ -193,6 +193,7 @@ export function ExploreMap({
   useEffect(() => {
     let cancelled = false;
     let map: MLMap | null = null;
+    const startAt = parseAt(new URLSearchParams(window.location.search).get("at"));
     loadMapInfo().then((info) => {
       if (cancelled || !box.current) return;
       setTiles(info);
@@ -201,7 +202,8 @@ export function ExploreMap({
         m = new maplibregl.Map({
           container: box.current,
           style: buildStyle({ theme: live.current.theme, apiOrigin: apiOrigin(), glyphsBase: new URL("/map/fonts", window.location.href).href, tiles: info }),
-          center: CHICAGO, zoom: CITY_ZOOM, minZoom: 10, maxBounds: [[-88.3, 41.5], [-87.2, 42.2]],
+          // A view named in the URL (`at`, owner's map review) wins over the whole city.
+          center: startAt?.center ?? CHICAGO, zoom: startAt?.zoom ?? CITY_ZOOM, minZoom: 10, maxBounds: [[-88.3, 41.5], [-87.2, 42.2]],
           attributionControl: false, dragRotate: false, pitchWithRotate: false, fadeDuration: 0,
         });
       } catch (err) {
@@ -245,6 +247,10 @@ export function ExploreMap({
         const b = mm.getBounds();
         const c = mm.getCenter();
         live.current.onView({ bbox: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], zoom: mm.getZoom(), center: [c.lng, c.lat] });
+        // Keep the place in the URL without a new history entry, so Back from a lot's Profile returns here.
+        const url = new URL(window.location.href);
+        url.searchParams.set("at", formatAt([c.lng, c.lat], mm.getZoom()));
+        window.history.replaceState(window.history.state, "", url.toString());
       };
       m.on("moveend", () => report(m));
       m.on("click", (e) => {
@@ -533,9 +539,20 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
               {t("discovery.card.open")}<ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
             </button>
           )}
-          <a href={streetViewUrl(sv.lat, sv.lon, sv.heading)} target="_blank" rel="noopener noreferrer" data-testid="lot-card-street-view" className="inline-flex items-center gap-1 nx-muted underline underline-offset-2">
-            {t("map.streetView")}<SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
-          </a>
+          {/* Two buttons, not a link (owner's map review): Street View standing on the lot's street, and Google Maps at
+              the lot. Both open in a new tab. */}
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            <a href={streetViewUrl(sv.lat, sv.lon, sv.heading)} target="_blank" rel="noopener noreferrer" data-testid="lot-card-street-view"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-nx-ink/5 px-2.5 font-medium hover:bg-nx-ink/10 touch-target">
+              <PersonStanding aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t("map.streetView.button")}
+              <span className="sr-only">{t("profile.opensInNewTab")}</span>
+            </a>
+            <a href={googleMapsUrl(picked.ll[1], picked.ll[0])} target="_blank" rel="noopener noreferrer" data-testid="lot-card-google-maps"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-nx-ink/5 px-2.5 font-medium hover:bg-nx-ink/10 touch-target">
+              <MapPinned aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t("map.googleMaps")}
+              <span className="sr-only">{t("profile.opensInNewTab")}</span>
+            </a>
+          </div>
         </div>
       )}
     </div>

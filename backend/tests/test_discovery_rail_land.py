@@ -202,14 +202,14 @@ def test_base_tiles_cut_rail_to_the_city_and_set_zooms(tmp_path):
     city = box(-87.95, 41.64, -87.52, 42.03)
     feats, outside = base_tiles.rail_features(lines, city)
     kinds = [f.props["kind"] for f in feats]
-    assert "cta_subway" not in kinds and kinds.count("metra") == 2
+    assert "cta_subway" in kinds and kinds.count("metra") == 2  # the subway is drawn too (owner: the Blue Line "just stopped")
     zoom = {f.props["kind"]: f.minzoom for f in feats}
     assert zoom["cta"] == 10 and zoom["yard"] == 13 and zoom["spur"] == 14
     assert outside == 0
     # a line wholly outside the City is left out; one crossing its edge is cut at it
     small = box(-87.6900, 41.95, -87.60, 41.97)
     feats, outside = base_tiles.rail_features(lines, small)
-    assert [f.props["kind"] for f in feats] == ["cta"] and outside == 6
+    assert [f.props["kind"] for f in feats] == ["cta"] and outside == 7
     assert feats[0].props["name"] == "Brown, Purple (Express)"
     whole = shapely.length(LineString([(-87.6905, 41.96), (-87.6895, 41.96)]))
     assert feats[0].geom is not None and whole > 0
@@ -313,3 +313,73 @@ def test_islands_in_the_citys_hydro_layer_are_land():
         {"the_geom": {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]}, "display": "2"}]}
     feats, left_out = base_tiles.build_features(rows)
     assert sum(f.layer == "water" for f in feats) == 1 and left_out["water_islands"] == 1
+
+
+def test_shared_l_track_splits_into_one_line_per_color_side_by_side(tmp_path):
+    folder = _rail_folder(tmp_path)  # one segment carries "Brown, Purple (Exp)"
+    per = [p for k, _g, p in rail_lines.load(folder, per_line=True) if k == "cta"]
+    assert [(p["line"], p["o"]) for p in per] == [("BR", "-0.5"), ("PR", "0.5")]
+    assert [p["line"] for k, _g, p in rail_lines.load(folder) if k == "cta"] == [""]  # the lot measure: one track
+    assert rail_lines.cta_lines_of("Brown, Green, Orange, Pink, Purple (Exp)") == ["BR", "GR", "OR", "PK", "PR"]
+    assert rail_lines.cta_lines_of("Red Line") == ["RD"]
+
+
+def test_metra_from_its_gtfs_replaces_the_federal_commuter_segments(tmp_path):
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("routes.txt", "route_id, route_long_name, route_color\n" + "".join(
+            f"R{i}, Line {i}, 29C233\n" for i in range(8)))
+        z.writestr("trips.txt", "route_id,shape_id\n" + "".join(f"R{i},S{i}\n" for i in range(8)))
+        z.writestr("shapes.txt", "shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\n" + "".join(
+            f"S{i},41.8{i},-87.7,1\nS{i},41.8{i},-87.69,2\n" for i in range(8)))
+    fc = rail_lines.metra_from_gtfs(buf.getvalue())
+    assert len(fc["features"]) == 8 and fc["features"][0]["properties"]["color"] == "#29C233"
+    folder = _rail_folder(tmp_path)
+    (folder / rail_lines.METRA_FILE).write_text(json.dumps(fc))
+    kinds = [(k, p.get("line")) for k, _g, p in rail_lines.load(folder, per_line=True) if k == "metra"]
+    assert kinds == [("metra", f"R{i}") for i in range(8)]  # the two federal commuter segments are gone
+    with pytest.raises(RuntimeError, match="Metra GTFS"):
+        rail_lines.metra_from_gtfs(_one_route_zip())
+
+
+def _one_route_zip():
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("routes.txt", "route_id,route_long_name,route_color\nR0,Line,29C233\n")
+        z.writestr("trips.txt", "route_id,shape_id\nR0,S0\n")
+        z.writestr("shapes.txt", "shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\nS0,41.8,-87.7,1\nS0,41.81,-87.7,2\n")
+    return buf.getvalue()
+
+
+def test_stations_outside_the_city_are_left_off():
+    st = [{"name": "Western", "lat": 41.966, "lon": -87.688, "type": "cta_rail"},
+          {"name": "South Boulevard", "lat": 42.027, "lon": -87.678, "type": "cta_rail"}]
+    city = box(-87.94, 41.64, -87.52, 42.02)
+    assert [f.props["name"] for f in base_tiles.station_features(st, city)] == ["Western"]
+
+
+@pytest.mark.parametrize("code, kind, attrs, want", [
+    ("1321", "exempt", {}, "institution"),  # 2851 N Seminary: a school with no story count
+    ("1350", "city_owned", {}, "institution"),
+    ("1321", "exempt", {"zoning_group": "planned_development"}, "own_rules"),  # its own ordinance says more
+    ("1321", "commercial", {}, None),  # a taxed lot isn't named
+    ("1215", "exempt", {}, None),
+])
+def test_an_exempt_institution_with_no_area_is_named_not_unknown(code, kind, attrs, want):
+    a = {"land_kind": kind, "structure": "built", "land_sqft": 70_000.0, "density_band": 1.2} | attrs
+    if "zoning_group" in attrs:
+        a.pop("density_band")
+    mark_land_use(a, PIN10, _src({PIN10: (code, 0.98)}))
+    derive_capacity(a)
+    assert a.get("room_scope") == want and "room_sqft" not in a
+    a2 = {"land_kind": "exempt", "structure": "built", "land_sqft": 70_000.0, "density_band": 1.2, "bldg_sqft": 50_000.0}
+    mark_land_use(a2, PIN10, _src({PIN10: ("1321", 0.98)}))
+    derive_capacity(a2)
+    assert a2["room_sqft"] == 34_000.0 and "room_scope" not in a2  # a computable room is never replaced
+    assert measure_bands({"room_scope": "institution"})["r"] == "i"

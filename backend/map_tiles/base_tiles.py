@@ -135,7 +135,8 @@ def load_sources(cache_dir: Path, *, offline: bool) -> dict[str, list[dict]]:
     return out
 
 
-RAIL_MINZOOM = {"cta": MIN_ZOOM, "metra": MIN_ZOOM, "amtrak": MIN_ZOOM, "freight": MIN_ZOOM, "yard": 13, "spur": 14}
+RAIL_MINZOOM = {"cta": MIN_ZOOM, "cta_subway": MIN_ZOOM, "metra": MIN_ZOOM, "amtrak": MIN_ZOOM, "freight": MIN_ZOOM,
+                "yard": 13, "spur": 14}
 
 
 def rail_features(lines: list[tuple[str, object, dict]], city) -> tuple[list[Feature], int]:
@@ -155,7 +156,8 @@ def rail_features(lines: list[tuple[str, object, dict]], city) -> tuple[list[Fea
             outside += 1
             continue
         feats.append(Feature("rail", to_mercator(part),
-                             {"kind": kind, "name": props.get("name") or "", "line": props.get("line") or ""},
+                             {"kind": kind, "name": props.get("name") or "", "line": props.get("line") or "",
+                              "o": props.get("o") or "0", "color": props.get("color") or ""},
                              RAIL_MINZOOM[kind]))
     return feats, outside
 
@@ -192,12 +194,17 @@ def rail_land_features(cmap: Path, city) -> list[Feature]:
     return out
 
 
-def station_features(stations: list[dict]) -> list[Feature]:
+def station_features(stations: list[dict], city=None) -> list[Feature]:
+    """Stations inside the City only (187 of 384 are in the suburbs: South Boulevard, Dempster, Oak Park...)."""
     from shapely.geometry import Point
+    from shapely.prepared import prep
 
+    inside = prep(city) if city is not None else None
     out = []
     for s in stations:
         if s.get("lat") is None or s.get("lon") is None:
+            continue
+        if inside is not None and not inside.contains(Point(s["lon"], s["lat"])):
             continue
         kind = "cta" if s.get("type") == "cta_rail" else "metra" if s.get("type") == "metra" else None
         if kind:
@@ -220,7 +227,7 @@ def build_features(sources: dict[str, list[dict]], rail: list | None = None) -> 
         if sources.get("_cmap"):
             feats += rail_land_features(sources["_cmap"], city)
         if sources.get("_stations"):
-            feats += station_features(sources["_stations"])
+            feats += station_features(sources["_stations"], city)
     for row in sources["city"]:
         if row.get("the_geom"):
             feats.append(Feature("city", to_mercator(shape(row["the_geom"])), {}, MIN_ZOOM))
@@ -277,12 +284,12 @@ def build_file(out: Path, *, offline: bool = False, minzoom: int = MIN_ZOOM, max
     sources["_stations"] = json.loads(stations.read_text()) if stations.exists() else []
     if not sources["_stations"]:
         log.warning("base tiles: no transit stations at %s; the station layer is left out", stations)
-    feats, left_out = build_features(sources, rail_lines.load(cache))
+    feats, left_out = build_features(sources, rail_lines.load(cache, per_line=True))
     counts = {k: sum(1 for f in feats if f.layer == k) for k in LAYERS}
     stats = write_mbtiles(
         out, feats, name="map_base", minzoom=minzoom, maxzoom=maxzoom, layer_order=LAYERS,
         fields={"city": {}, "water": {"name": "String"}, "park": {"name": "String"},
-                "road": {"kind": "String", "name": "String"}, "rail": {"kind": "String", "name": "String", "line": "String"},
+                "road": {"kind": "String", "name": "String"}, "rail": {"kind": "String", "name": "String", "line": "String", "o": "String", "color": "String"},
                 "rail_land": {"kind": "String"}, "station": {"kind": "String", "name": "String", "lines": "String"}},
         extra_meta={"built_at": date.today().isoformat(), "counts": json.dumps(counts),
                     "left_out": json.dumps(left_out),

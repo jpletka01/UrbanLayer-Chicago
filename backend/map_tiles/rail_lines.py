@@ -39,6 +39,12 @@ NARN_ACTIVE = {"M": "main", "O": "main", "S": "main", "Y": "yard", "I": "industr
 CHICAGO_BBOX = (-87.94, 41.64, -87.52, 42.03)
 MIN_CTA, MIN_NARN = 100, 1_500  # 153 and 2,203 on 2026-11-13: fewer is a partial read
 CTA_FILE, NARN_FILE, META_FILE = "cta_lines.json", "narn_lines.geojson", "rail_meta.json"
+METRA_FILE = "metra_lines.geojson"
+METRA_GTFS_URL = "https://schedules.metrarail.com/gtfs/schedule.zip"
+MIN_METRA_ROUTES = 8  # 11 lines on 2026-11-16
+# The L's lines in the order they sit side by side where several share a track (the Loop, the north trunk).
+CTA_LINES = (("Red", "RD"), ("Blue", "BL"), ("Brown", "BR"), ("Green", "GR"), ("Orange", "OR"), ("Pink", "PK"),
+             ("Purple", "PR"), ("Yellow", "YL"))
 METRA = ("NIRC", "METX", "NICD")  # Metra's own lines and the South Shore (NICTD)
 
 # A local flat projection in feet (Chicago is small: under 0.1% error), for line lengths inside lots.
@@ -89,14 +95,57 @@ def fetch(out: Path, *, token: str = "") -> dict:
                 break
         if len(feats) < MIN_NARN:
             raise RuntimeError(f"NARN lines: only {len(feats)} in Chicago's box")
+        metra = metra_from_gtfs(_get(c, METRA_GTFS_URL, {}).content)
     meta = {"fetched": time.strftime("%Y-%m-%d"), "cta_rows": len(cta), "narn_rows": len(feats),
-            "cta_dataset": CTA_DATASET, "narn_url": NARN_URL}
+            "metra_routes": len({f["properties"]["route"] for f in metra["features"]}),
+            "cta_dataset": CTA_DATASET, "narn_url": NARN_URL, "metra_gtfs": METRA_GTFS_URL}
     for name, body in ((CTA_FILE, cta), (NARN_FILE, {"type": "FeatureCollection", "features": feats}),
-                       (META_FILE, meta)):
+                       (METRA_FILE, metra), (META_FILE, meta)):
         tmp = out / f".{name}.part"
         tmp.write_text(json.dumps(body))
         tmp.replace(out / name)
     return meta
+
+
+def metra_from_gtfs(zip_bytes: bytes) -> dict:
+    """Metra's route shapes, one feature per shape with its route id, name and color (Metra's GTFS feed; the map draws
+    each line in Metra's own color, as Google Maps' transit layer does). Measured against the federal network: a
+    median 9.5 ft apart inside the City, 98.3% within 50 ft. Only the three text tables are read."""
+    import csv
+    import io
+    import zipfile
+
+    zf = zipfile.ZipFile(io.BytesIO(zip_bytes))
+
+    def table(name: str) -> list[dict]:
+        text = zf.read(name).decode("utf-8-sig")
+        return [{(k or "").strip(): (v or "").strip() for k, v in r.items()} for r in csv.DictReader(io.StringIO(text))]
+
+    routes = {r["route_id"]: r for r in table("routes.txt")}
+    shape_route = {t["shape_id"]: t["route_id"] for t in table("trips.txt") if t.get("shape_id")}
+    pts: dict[str, list[tuple[int, float, float]]] = {}
+    for r in table("shapes.txt"):
+        if r["shape_id"] in shape_route:
+            pts.setdefault(r["shape_id"], []).append((int(r["shape_pt_sequence"]), float(r["shape_pt_lon"]),
+                                                      float(r["shape_pt_lat"])))
+    feats = []
+    for sid, v in pts.items():
+        if len(v) < 2:
+            continue
+        rid = shape_route[sid]
+        rt = routes.get(rid, {})
+        feats.append({"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[x, y] for _, x, y in sorted(v)]},
+                      "properties": {"route": rid, "name": rt.get("route_long_name") or rid,
+                                     "color": "#" + (rt.get("route_color") or "005DAA").lstrip("#")}})
+    if len({f["properties"]["route"] for f in feats}) < MIN_METRA_ROUTES:
+        raise RuntimeError(f"Metra GTFS: only {len(feats)} shapes")
+    return {"type": "FeatureCollection", "features": feats}
+
+
+def cta_lines_of(text: str | None) -> list[str]:
+    """'Brown, Orange, Pink, Purple (Exp)' → ['BR', 'OR', 'PK', 'PR'], in side-by-side order."""
+    t = (text or "").lower()
+    return [code for word, code in CTA_LINES if word.lower() in t]
 
 
 def present(folder: Path) -> bool:
@@ -126,22 +175,41 @@ def narn_kind(p: dict) -> str | None:
     return "freight"
 
 
-def load(folder: Path) -> list[tuple[str, object, dict]]:
+def load(folder: Path, *, per_line: bool = False) -> list[tuple[str, object, dict]]:
     """Every drawn line: (kind, lon/lat geometry, props). Kinds: cta (elevated or at grade), cta_subway, metra,
-    amtrak, freight, yard, spur. ``props`` has ``name`` for CTA lines."""
+    amtrak, freight, yard, spur. ``props`` has ``name`` and ``line`` (the City's legend code) for CTA lines.
+
+    ``per_line`` (the map): a CTA segment several lines share becomes one feature per line with ``o``, its place
+    side by side (-1.5, -0.5, 0.5, 1.5 for four), so the Loop draws every color next to each other as Google Maps does;
+    and Metra comes from Metra's own feed (``metra_lines.geojson``, the line's color in ``color``) instead of the
+    federal network's commuter segments, when that copy is there. The lot measurement keeps one feature per track."""
     out: list[tuple[str, object, dict]] = []
     for r in json.loads((folder / CTA_FILE).read_text()):
         if not r.get("the_geom"):
             continue
         sub = (r.get("type") or "").lower().startswith("subway")
-        # ``line``: the City's legend code (RD, BL, BR, GR, OR, PK, PR, YL; ML = several lines share the track), so the
-        # map draws each L line in its own color (owner's map review).
-        out.append(("cta_subway" if sub else "cta", shape(r["the_geom"]),
-                    {"name": cta_name(r.get("lines")), "line": (r.get("legend") or "").strip().upper()}))
+        kind = "cta_subway" if sub else "cta"
+        g = shape(r["the_geom"])
+        legend = (r.get("legend") or "").strip().upper()
+        codes = cta_lines_of(r.get("lines")) if per_line else []
+        if len(codes) > 1:
+            n = len(codes)
+            for i, code in enumerate(codes):
+                out.append((kind, g, {"name": cta_name(r.get("lines")), "line": code, "o": str(i - (n - 1) / 2)}))
+        else:
+            out.append((kind, g, {"name": cta_name(r.get("lines")), "line": codes[0] if codes else legend}))
+    metra_own = per_line and (folder / METRA_FILE).exists()
     for f in json.loads((folder / NARN_FILE).read_text())["features"]:
         kind = narn_kind(f.get("properties") or {})
+        if kind == "metra" and metra_own:
+            continue
         if kind and f.get("geometry"):
             out.append((kind, shape(f["geometry"]), {}))
+    if metra_own:
+        for f in json.loads((folder / METRA_FILE).read_text())["features"]:
+            p = f["properties"]
+            out.append(("metra", shape(f["geometry"]), {"name": p.get("name") or "", "line": p.get("route") or "",
+                                                        "color": p.get("color") or ""}))
     return out
 
 

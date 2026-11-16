@@ -1212,7 +1212,8 @@
         "open_space": "Parque, cementerio o espacio abierto",
         "transport": "Terreno ferroviario o de transporte",
         "right_of_way": "Derecho de vía de calle o ferrocarril: no es un sitio para construir",
-        "water": "Agua: no es un sitio para construir"
+        "water": "Agua: no es un sitio para construir",
+        "institution": "Institución exenta (escuela, iglesia, hospital o gobierno): no se calcula el espacio"
       },
       "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
       "now": {
@@ -1315,7 +1316,8 @@
         "4": "10,000 pies² o más",
         "own": "Lo fija su propia ordenanza (PD)",
         "park": "Parque, cementerio o espacio abierto",
-        "transport": "Terreno ferroviario, de transporte o de calle"
+        "transport": "Terreno ferroviario, de transporte o de calle",
+        "institution": "Escuela, iglesia, hospital o gobierno exentos"
       },
       "lot": {
         "name": "Tamaño del terreno",
@@ -1732,8 +1734,10 @@
     },
     "back": "Volver a la propiedad",
     "streetView": {
-      "link": "Street View (Google)"
+      "link": "Street View (Google)",
+      "button": "Street View"
     },
+    "googleMaps": "Google Maps",
     "families": {
       "residential": "Residencial",
       "business": "Comercial y de negocios",

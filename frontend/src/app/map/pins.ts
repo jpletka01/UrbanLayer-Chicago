@@ -92,12 +92,66 @@ export function drawPin(kind: PinKind): { width: number; height: number; data: U
   return { width: w, height: h, data: img.data };
 }
 
+// Station icons (owner's map review, Item 128): like Google Maps' transit layer, a small rounded square: the CTA's a
+// white square with a dark train, Metra's a blue square with a white "M". Drawn at 2x.
+export const STATION_IMAGE = { cta: "station-cta", metra: "station-metra" } as const;
+export const STATION_SIZE = 16;
+export const METRA_BLUE = "#005DAA";
+
+export function drawStation(kind: keyof typeof STATION_IMAGE): { width: number; height: number; data: Uint8ClampedArray } | null {
+  if (typeof document === "undefined") return null;
+  const n = STATION_SIZE * RATIO;
+  const canvas = document.createElement("canvas");
+  canvas.width = n;
+  canvas.height = n;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.scale(RATIO, RATIO);
+  const box = () => {
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") ctx.roundRect(1, 1, STATION_SIZE - 2, STATION_SIZE - 2, 3.5);
+    else ctx.rect(1, 1, STATION_SIZE - 2, STATION_SIZE - 2);
+  };
+  box();
+  ctx.fillStyle = kind === "metra" ? METRA_BLUE : "#FFFFFF";
+  ctx.fill();
+  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = kind === "metra" ? "#FFFFFF" : "#1C1C1C";
+  ctx.stroke();
+  if (kind === "metra") {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 11px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("M", STATION_SIZE / 2, STATION_SIZE / 2 + 0.5);
+  } else if (typeof Path2D !== "undefined") {
+    ctx.save();
+    const sc = 11 / 24;
+    ctx.translate(STATION_SIZE / 2 - 5.5, STATION_SIZE / 2 - 5.5);
+    ctx.scale(sc, sc);
+    ctx.strokeStyle = "#1C1C1C";
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (const d of ICONS.transit) ctx.stroke(new Path2D(d));
+    ctx.restore();
+  }
+  const img = ctx.getImageData(0, 0, n, n);
+  return { width: n, height: n, data: img.data };
+}
+
 /** Add every pin image to a map once (idempotent); MapLibre draws them at the 2x pixel ratio. */
 export function addPinImages(map: { hasImage(id: string): boolean; addImage(id: string, img: { width: number; height: number; data: Uint8ClampedArray }, opts: { pixelRatio: number }): void }): void {
   for (const kind of Object.keys(PIN_IMAGE) as PinKind[]) {
     const id = PIN_IMAGE[kind];
     if (map.hasImage(id)) continue;
     const img = drawPin(kind);
+    if (img) map.addImage(id, img, { pixelRatio: RATIO });
+  }
+  for (const kind of ["cta", "metra"] as const) {
+    const id = STATION_IMAGE[kind];
+    if (map.hasImage(id)) continue;
+    const img = drawStation(kind);
     if (img) map.addImage(id, img, { pixelRatio: RATIO });
   }
 }

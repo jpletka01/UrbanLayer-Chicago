@@ -57,7 +57,7 @@ const SEQ = ["#DCEDEB", "#A9D2CE", "#72B0AB", "#4A867E", "#2C4F4A"];
 // Last sale: recent is darkest (where the market is moving).
 const SALE = [SEQ[4], SEQ[3], SEQ[2], SEQ[1], SEQ[0]];
 // The named "room" states: planned development gray (the zoning map's PD gray), park green, transportation peach.
-const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4" };
+const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4", institution: "#C9CED6" };
 // Land in use (Item 112), in the tiles' `l` order (`lot_facts.LAND_IN_USE`): empty land, surface parking, homes,
 // apartments, business, industrial, tax-exempt, road or railroad land. Coastal's colors and a gray, each named in the
 // key; surface parking (lavender) and road land (peach) also carry marks, so neither relies on color alone.
@@ -85,6 +85,8 @@ export function measureSteps(m: MeasureId): MeasureStep[] {
       { value: "x", color: NAMED.own, key: "room.own" },
       { value: "p", color: NAMED.park, key: "room.park" },
       { value: "t", color: NAMED.transport, key: "room.transport" },
+      // An exempt school, church, hospital or government site with no building area to count (Item 128).
+      { value: "i", color: NAMED.institution, key: "room.institution" },
     ];
     case "lot": return SEQ.map((color, i) => ({ value: String(i), color, key: `lot.${i}` }));
     case "sale": return SALE.map((color, i) => ({ value: String(i), color, key: `sale.${i}` }));
@@ -145,7 +147,7 @@ export interface CardModel {
   roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | null;
   /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation, or road
       or rail right-of-way (Items 112, 128). */
-  roomNamed: "own_rules" | "open_space" | "transport" | "right_of_way" | "water" | null;
+  roomNamed: "own_rules" | "open_space" | "transport" | "right_of_way" | "water" | "institution" | null;
   /** A strip under 16 ft wide (hidden by default), with its width in feet. */
   narrowFt: number | null;
   /** The room is the multi-parcel site's (this many lots), not the lot's alone. */
@@ -162,7 +164,7 @@ export function cardModel(row: ResultRow): CardModel {
   const src = row.bldg_sqft_source;
   const basis = src === "commercial_valuation" || src === "footprint" || src === "city_land_inventory" ? src : null;
   const named = row.room_scope === "own_rules" || row.room_scope === "open_space" || row.room_scope === "transport"
-    || row.room_scope === "right_of_way" || row.room_scope === "water" ? row.room_scope : null;
+    || row.room_scope === "right_of_way" || row.room_scope === "water" || row.room_scope === "institution" ? row.room_scope : null;
   const room = row.room_sqft ?? null;
   return {
     title,
@@ -299,3 +301,21 @@ export function milesBetween(aLat: number, aLon: number, bLat: number, bLon: num
 }
 
 export const clampMiles = (mi: number) => Math.min(RING_MAX_MI, Math.max(RING_MIN_MI, Math.round(mi * 20) / 20));
+
+
+// ---------------------------------------------------------------- where the map is, in the URL (owner's map review)
+
+/** The map's place as `at=41.96600,-87.68870,16.20z` (Google Maps' "@lat,lng,zoom"), so Back, a reload or a shared
+    link returns to the same view instead of the whole city. */
+export function formatAt(center: [number, number], zoom: number): string {
+  return `${center[1].toFixed(5)},${center[0].toFixed(5)},${zoom.toFixed(2)}z`;
+}
+
+/** The view an `at` value names, or null when it is missing, malformed or outside Chicago's area. */
+export function parseAt(value: string | null): { center: [number, number]; zoom: number } | null {
+  const m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)z?$/.exec((value ?? "").trim());
+  if (!m) return null;
+  const lat = Number(m[1]), lon = Number(m[2]), zoom = Number(m[3]);
+  if (lat < 41.5 || lat > 42.2 || lon < -88.3 || lon > -87.2 || zoom < 10 || zoom > 20) return null;
+  return { center: [lon, lat], zoom };
+}

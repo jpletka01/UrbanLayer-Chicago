@@ -1212,7 +1212,8 @@
         "open_space": "Park, cemetery or open space",
         "transport": "Railroad or transit land",
         "right_of_way": "Road or rail right-of-way: not a building site",
-        "water": "Water: not a building site"
+        "water": "Water: not a building site",
+        "institution": "Exempt institution (school, church, hospital or government): room not counted"
       },
       "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone",
       "now": {
@@ -1315,7 +1316,8 @@
         "4": "10,000 sq ft or more",
         "own": "Set by its own ordinance (PD)",
         "park": "Park, cemetery or open space",
-        "transport": "Rail, transit or road land"
+        "transport": "Rail, transit or road land",
+        "institution": "Exempt school, church, hospital or government"
       },
       "lot": {
         "name": "Lot size",
@@ -1732,8 +1734,10 @@
     },
     "back": "Back to the property",
     "streetView": {
-      "link": "Street View (Google)"
+      "link": "Street View (Google)",
+      "button": "Street View"
     },
+    "googleMaps": "Google Maps",
     "families": {
       "residential": "Residential",
       "business": "Business and commercial",
