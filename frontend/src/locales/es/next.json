@@ -2461,12 +2461,13 @@
       "floors": "Pisos",
       "floorArea": "Superficie",
       "own": "El suyo",
-      "ownNote": "Parta del proyecto {{name}} y cambie unidades, pisos o superficie",
+      "ownNote": "Copie {{name}} y cambie unidades, pisos o superficie",
       "kind": {
         "largest": "El más grande · {{units}} unidades",
         "three_flat": "Un edificio de 3 departamentos",
         "townhouses": "Casas adosadas",
-        "own": "El suyo · {{units}} unidades"
+        "own": "El suyo · {{units}} unidades",
+        "ownN": "Su proyecto {{n}} · {{units}} unidades"
       },
       "size": "{{area}} pies² · {{floors}} pisos",
       "ring": {
@@ -2480,13 +2481,16 @@
       "more": "Más: {{what}}",
       "atSale": "si cada una se vende en {{price}}",
       "atRent": "a {{price}} al mes cada una",
-      "remove": "Quitar su propio proyecto",
+      "remove": "Quitar su proyecto {{n}}",
       "name": {
-        "largest": "más grande",
-        "three_flat": "de 3 departamentos",
-        "townhouses": "de casas adosadas",
-        "own": "propio"
-      }
+        "largest": "el proyecto más grande",
+        "three_flat": "el edificio de 3 departamentos",
+        "townhouses": "las casas adosadas",
+        "own": "su proyecto",
+        "ownN": "su proyecto {{n}}"
+      },
+      "ownFull": "Hasta {{n}} propios; quite uno para agregar otro",
+      "yours": "Sus proyectos"
     },
     "numbers": {
       "title": "Sus cifras",

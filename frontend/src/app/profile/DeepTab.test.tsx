@@ -144,21 +144,34 @@ describe("the analysis", () => {
     expect(onProject).toHaveBeenLastCalledWith(expect.objectContaining({ heightFt: 55, capFt: 45 }));
   });
 
-  it("Your own: copies the selected card, keeps its changes when another card is picked, and its × removes it", async () => {
+  it("your own projects: each a copy of the card in focus, below the three, focus follows the click, × removes", async () => {
     show();
     await screen.findByTestId("deep-bid");
     fireEvent.click(screen.getByTestId("deep-project-three_flat"));
     expect(screen.getByTestId("deep-project-own-add").textContent).toMatch(/Start from the 3-flat/);
     fireEvent.click(screen.getByTestId("deep-project-own-add"));
     fireEvent.click(screen.getByRole("button", { name: "More: Units" }));
-    expect(screen.getByTestId("deep-project-own").textContent).toMatch(/Your own · 4 units/);
     fireEvent.click(screen.getByTestId("deep-project-largest"));
+    fireEvent.click(screen.getByTestId("deep-project-own-add"));
+    const cards = within(screen.getByTestId("deep-own-list")).getAllByTestId("deep-project-own");
+    expect(cards.map((c) => c.textContent?.match(/Your project \d · \d+ units/)?.[0])).toEqual(["Your project 1 · 4 units", "Your project 2 · 8 units"]);
+    expect(cards[1].getAttribute("data-selected")).toBe("true"); // the new one is in focus
+    expect(screen.getByTestId("deep-project-largest").getAttribute("data-selected")).toBeNull();
+    fireEvent.click(within(cards[0]).getByRole("button", { pressed: false }));
+    expect(cards[0].getAttribute("data-selected")).toBe("true");
+    expect(screen.getByTestId("deep-answer").textContent).toMatch(/Selling 4 units/);
+    fireEvent.click(screen.getByRole("button", { name: "Remove your project 1" }));
+    expect(within(screen.getByTestId("deep-own-list")).getAllByTestId("deep-project-own")).toHaveLength(1);
     expect(screen.getByTestId("deep-project-largest").getAttribute("data-selected")).toBe("true");
-    expect(screen.getByTestId("deep-project-own").textContent).toMatch(/Your own · 4 units/);
-    fireEvent.click(screen.getByRole("button", { name: "Remove your own project" }));
-    expect(screen.queryByTestId("deep-project-own")).toBeNull();
-    expect(screen.getByTestId("deep-project-own-add")).toBeTruthy();
-    expect(screen.getByTestId("deep-project-largest").getAttribute("data-selected")).toBe("true");
+  });
+
+  it("a sale price belongs to its card: changing it on one leaves the others", async () => {
+    show();
+    await screen.findByTestId("deep-bid");
+    const before = screen.getByTestId("deep-project-three_flat").textContent;
+    fireEvent.change(screen.getByLabelText("Sale price"), { target: { value: "600000" } });
+    expect(screen.getByTestId("deep-project-largest").textContent).toMatch(/if each sells for \$600k/);
+    expect(screen.getByTestId("deep-project-three_flat").textContent).toBe(before);
   });
 
   it("the land and sale sliders keep a fixed range while dragged (three times the starting figure)", async () => {

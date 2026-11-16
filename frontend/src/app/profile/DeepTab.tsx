@@ -193,6 +193,56 @@ function DeepAnalysisOpen({ pin, freeHere, onProject }: { pin: string; freeHere:
   return <Analysis pin={pin} data={state.data} saved={saved} freeHere={freeHere} onProject={onProject} />;
 }
 
+type CardKey = string; // "largest" | "three_flat" | "townhouses" | `own:${id}`
+type OwnProject = Project & { id: string };
+type CardPrice = Partial<Pick<Numbers, "salePriceUnit" | "rentUnitMonth">>;
+type Saved = Awaited<ReturnType<typeof getDeepProject>> | null;
+/** The builder's own projects on one lot (the server allows the same). */
+export const MAX_OWN = 6;
+/** The numbers that belong to a card (they depend on its unit size); the rest are shared. */
+const CARD_NUMBERS: (keyof Numbers)[] = ["salePriceUnit", "rentUnitMonth"];
+const TO_SNAKE: Record<keyof Numbers, string> = {
+  landPrice: "land_price", salePriceUnit: "sale_price_unit", rentUnitMonth: "rent_unit_month", buildCostSqft: "build_cost_sqft",
+  softCostPct: "soft_cost_pct", loanToCost: "loan_to_cost", loanRate: "loan_rate", buildMonths: "build_months",
+  sellingPct: "selling_pct", profitOnCost: "profit_on_cost", vacancyPct: "vacancy_pct", opexPct: "opex_pct",
+  capRate: "cap_rate", targetYield: "target_yield", taxRate: "tax_rate",
+};
+const FROM_SNAKE = Object.fromEntries(Object.entries(TO_SNAKE).map(([k, v]) => [v, k])) as Record<string, keyof Numbers>;
+
+function newOwnId(owns: OwnProject[]): string {
+  let id = "";
+  do id = Math.random().toString(36).slice(2, 8); while (owns.some((o) => o.id === id));
+  return id;
+}
+
+function ownsFrom(saved: Saved): OwnProject[] {
+  const list = (saved?.own ?? []).map((o) => ({ kind: "own" as const, id: o.id, units: o.units, floors: o.stories, floorAreaSqft: o.floor_area_sqft }));
+  // A row saved before the list: its one "own" project becomes the first of the builder's own.
+  const p = saved?.project;
+  if (!list.length && p?.kind === "own") list.push({ kind: "own", id: "own1", units: p.units, floors: p.stories, floorAreaSqft: p.floor_area_sqft });
+  return list.slice(0, MAX_OWN);
+}
+
+function focusFrom(saved: Saved, starts: Project[]): CardKey {
+  if (saved?.focus) return saved.focus;
+  const p = saved?.project;
+  if (p?.kind === "own") return `own:${ownsFrom(saved)[0]?.id ?? "own1"}`;
+  return p?.kind ?? starts[0]?.kind ?? "largest";
+}
+
+function pricesFrom(saved: Saved, focus: CardKey): Record<string, CardPrice> {
+  const out: Record<string, CardPrice> = {};
+  for (const [k, v] of Object.entries(saved?.prices ?? {})) {
+    out[k] = { ...(v.sale_price_unit != null && { salePriceUnit: v.sale_price_unit }), ...(v.rent_unit_month != null && { rentUnitMonth: v.rent_unit_month }) };
+  }
+  // A row saved before per-card prices: its one sale price or rent was the focused card's.
+  const n = saved?.numbers ?? {};
+  if (!saved?.prices && (typeof n.sale_price_unit === "number" || typeof n.rent_unit_month === "number")) {
+    out[focus] = { ...(typeof n.sale_price_unit === "number" && { salePriceUnit: n.sale_price_unit }), ...(typeof n.rent_unit_month === "number" && { rentUnitMonth: n.rent_unit_month }) };
+  }
+  return out;
+}
+
 function Analysis({ pin, data, saved, freeHere, onProject }: {
   pin: string;
   data: DeepAnalysis;
@@ -205,31 +255,44 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
   const inputs = data.inputs;
   const starts = useMemo(() => startingProjects(inputs), [inputs]);
 
-  const [project, setProject] = useState<Project | null>(() => {
-    const s = saved?.project;
-    if (s) return { kind: s.kind, units: s.units, floors: s.stories, floorAreaSqft: s.floor_area_sqft };
-    return starts[0] ?? null;
-  });
-  // "Your own": a copy of a ready-made project the builder changes with − / +; kept while another card is picked,
-  // removed only by its ×.
-  const [own, setOwn] = useState<Project | null>(() => (project?.kind === "own" ? project : null));
-  const changeOwn = (next: Project) => { setOwn(next); setProject(next); };
-  const removeOwn = () => { setOwn(null); setProject((cur) => (cur?.kind === "own" ? starts[0] ?? null : cur)); };
+  // The cards: the ready-made projects, and the builder's own (changed copies, up to MAX_OWN), one of them in focus
+  // (a purple outline; the numbers, the answer and the map follow it). Sale price and rent belong to each card (they
+  // depend on its unit size); the other numbers are shared assumptions.
+  const [owns, setOwns] = useState<OwnProject[]>(() => ownsFrom(saved));
+  const [focus, setFocus] = useState<CardKey>(() => focusFrom(saved, starts));
+  const [prices, setPrices] = useState<Record<string, CardPrice>>(() => pricesFrom(saved, focusFrom(saved, starts)));
+  const cardOf = (k: CardKey): Project | null =>
+    k.startsWith("own:") ? owns.find((o) => `own:${o.id}` === k) ?? null : starts.find((p) => p.kind === k) ?? null;
+  const project = cardOf(focus) ?? starts[0] ?? null;
+  const focusKey: CardKey = cardOf(focus) ? focus : (starts[0]?.kind ?? "largest");
   const [mode, setMode] = useState<Mode>(() => (saved?.numbers?.mode === "rent" ? "rent" : "sell"));
   const base = useMemo(() => (project ? startingNumbers(inputs, project) : null), [inputs, project]);
   const [edits, setEdits] = useState<Partial<Numbers>>(() => {
-    const n = saved?.numbers ?? {};
     const out: Partial<Numbers> = {};
-    const map: Record<string, keyof Numbers> = {
-      land_price: "landPrice", sale_price_unit: "salePriceUnit", rent_unit_month: "rentUnitMonth", build_cost_sqft: "buildCostSqft",
-      soft_cost_pct: "softCostPct", loan_to_cost: "loanToCost", loan_rate: "loanRate", build_months: "buildMonths",
-      selling_pct: "sellingPct", profit_on_cost: "profitOnCost", vacancy_pct: "vacancyPct", opex_pct: "opexPct",
-      cap_rate: "capRate", target_yield: "targetYield", tax_rate: "taxRate",
-    };
-    for (const [k, v] of Object.entries(n)) if (map[k] && typeof v === "number") (out as Record<string, number>)[map[k]] = v;
+    for (const [k, v] of Object.entries(saved?.numbers ?? {})) {
+      const key = FROM_SNAKE[k];
+      if (key && !CARD_NUMBERS.includes(key) && typeof v === "number") (out as Record<string, number>)[key] = v;
+    }
     return out;
   });
-  const numbers: Numbers | null = base ? { ...base.numbers, ...edits } : null;
+  const numbers: Numbers | null = base ? { ...base.numbers, ...edits, ...prices[focusKey] } : null;
+
+  const addOwn = () => {
+    if (!project || owns.length >= MAX_OWN) return;
+    const id = newOwnId(owns);
+    setOwns((o) => [...o, { kind: "own", id, units: project.units, floors: project.floors, floorAreaSqft: project.floorAreaSqft }]);
+    if (prices[focusKey]) setPrices((pr) => ({ ...pr, [`own:${id}`]: { ...pr[focusKey] } }));
+    setFocus(`own:${id}`);
+  };
+  const changeOwn = (id: string, next: Project) => {
+    setOwns((o) => o.map((x) => (x.id === id ? { ...next, kind: "own", id } : x)));
+    setFocus(`own:${id}`);
+  };
+  const removeOwn = (id: string) => {
+    setOwns((o) => o.filter((x) => x.id !== id));
+    setPrices((pr) => { const { [`own:${id}`]: _gone, ...rest } = pr; void _gone; return rest; });
+    if (focus === `own:${id}`) setFocus(starts[0]?.kind ?? "largest");
+  };
 
   // The project on the map.
   useEffect(() => {
@@ -246,20 +309,21 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
     if (!project) return;
     const id = window.setTimeout(() => {
       const snake: Record<string, number> = {};
-      const back: Record<keyof Numbers, string> = {
-        landPrice: "land_price", salePriceUnit: "sale_price_unit", rentUnitMonth: "rent_unit_month", buildCostSqft: "build_cost_sqft",
-        softCostPct: "soft_cost_pct", loanToCost: "loan_to_cost", loanRate: "loan_rate", buildMonths: "build_months",
-        sellingPct: "selling_pct", profitOnCost: "profit_on_cost", vacancyPct: "vacancy_pct", opexPct: "opex_pct",
-        capRate: "cap_rate", targetYield: "target_yield", taxRate: "tax_rate",
-      };
-      for (const [k, v] of Object.entries(edits)) if (typeof v === "number") snake[back[k as keyof Numbers]] = v;
+      for (const [k, v] of Object.entries(edits)) if (typeof v === "number") snake[TO_SNAKE[k as keyof Numbers]] = v;
+      const cardPrices: Record<string, { sale_price_unit?: number; rent_unit_month?: number }> = {};
+      for (const [k, v] of Object.entries(prices)) {
+        if (k.startsWith("own:") && !owns.some((o) => `own:${o.id}` === k)) continue;
+        cardPrices[k] = { ...(v.salePriceUnit != null && { sale_price_unit: v.salePriceUnit }), ...(v.rentUnitMonth != null && { rent_unit_month: v.rentUnitMonth }) };
+      }
       putDeepProject(pin, {
         project: { kind: project.kind, units: project.units, stories: project.floors, floor_area_sqft: project.floorAreaSqft },
         numbers: snake, mode, step: saved?.step ?? 0,
+        own: owns.map((o) => ({ id: o.id, units: o.units, stories: o.floors, floor_area_sqft: o.floorAreaSqft })),
+        focus: focusKey, prices: cardPrices,
       }).catch(() => { /* a failed save keeps the page as it is; the next change tries again */ });
     }, 800);
     return () => window.clearTimeout(id);
-  }, [pin, project, edits, mode, saved?.step]);
+  }, [pin, project, edits, prices, owns, focusKey, mode, saved?.step]);
 
   if (!project || !numbers || !base) {
     return (
@@ -279,7 +343,9 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
     : sale
       ? t(mode === "sell" ? "deep.answer.sell" : "deep.answer.rent", { units: project.units, bid: money(bid, lng), sale: money(sale.price, lng) })
       : t(mode === "sell" ? "deep.answer.sellNoSale" : "deep.answer.rentNoSale", { units: project.units, bid: money(bid, lng) });
-  const set = (k: keyof Numbers, v: number) => setEdits((e) => ({ ...e, [k]: v }));
+  const set = (k: keyof Numbers, v: number) => (CARD_NUMBERS.includes(k)
+    ? setPrices((pr) => ({ ...pr, [focusKey]: { ...pr[focusKey], [k]: v } }))
+    : setEdits((e) => ({ ...e, [k]: v })));
   // The land and sale sliders' ranges come from the starting figures (three times them), never from the value being
   // dragged: a range that grew with the value ran away under the thumb.
   const roundUp = (v: number, to: number) => Math.ceil(v / to) * to;
@@ -324,23 +390,36 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
         </div>
       </section>
 
-      {/* 2 · the projects, with their limits as rings */}
-      <section className="flex flex-col gap-3" aria-label={t("deep.projects.label")}>
-        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-3">
+      {/* 2 · the projects, with their limits as rings: the ready-made ones and the "+" on one row of equal cards, the
+          builder's own on the row below; the card in focus has the purple outline */}
+      <section className="flex flex-col gap-4" aria-label={t("deep.projects.label")}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {starts.map((p) => (
-            <ProjectCard key={p.kind} p={p} inputs={inputs} numbers={startingNumbers(inputs, p).numbers} edits={edits} mode={mode}
-              selected={project.kind === p.kind} onPick={() => setProject(p)} />
+            <ProjectCard key={p.kind} p={p} inputs={inputs} numbers={startingNumbers(inputs, p).numbers} edits={{ ...edits, ...prices[p.kind] }} mode={mode}
+              selected={focusKey === p.kind} onPick={() => setFocus(p.kind)} />
           ))}
-          {own
-            ? <OwnCard p={own} inputs={inputs} numbers={startingNumbers(inputs, own).numbers} edits={edits} mode={mode}
-                selected={project.kind === "own"} onPick={() => setProject(own)} onChange={changeOwn} onRemove={removeOwn} />
-            : <button type="button" onClick={() => changeOwn({ ...project, kind: "own" })}
-                className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-nx-card-ink/30 bg-nx-stat-a p-5 text-nx-card-ink touch-target" data-testid="deep-project-own-add">
-                <Plus aria-hidden className="h-6 w-6" strokeWidth={1.75} />
-                <b className="font-semibold">{t("deep.projects.own")}</b>
-                <span className="text-center text-caption opacity-70">{t("deep.projects.ownNote", { name: t(`deep.projects.name.${project.kind}`) })}</span>
-              </button>}
+          <button type="button" onClick={addOwn} disabled={owns.length >= MAX_OWN}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-nx-card-ink/30 bg-nx-stat-a p-5 text-nx-card-ink touch-target enabled:hover:border-nx-pill-purple disabled:opacity-60" data-testid="deep-project-own-add">
+            <Plus aria-hidden className="h-6 w-6" strokeWidth={1.75} />
+            <b className="font-semibold">{t("deep.projects.own")}</b>
+            <span className="text-center text-caption opacity-70">{owns.length >= MAX_OWN
+              ? t("deep.projects.ownFull", { n: MAX_OWN })
+              : t("deep.projects.ownNote", { name: focusKey.startsWith("own:")
+                ? t("deep.projects.name.ownN", { n: owns.findIndex((o) => `own:${o.id}` === focusKey) + 1 })
+                : t(`deep.projects.name.${focusKey}`) })}</span>
+          </button>
         </div>
+        {owns.length > 0 && (
+          <div className="flex flex-col gap-2" data-testid="deep-own-list">
+            <h4 className="nx-muted text-center text-caption font-normal">{t("deep.projects.yours")}</h4>
+            <div className="flex flex-wrap justify-center gap-4">
+              {owns.map((o, i) => (
+                <OwnCard key={o.id} p={o} n={i + 1} inputs={inputs} numbers={startingNumbers(inputs, o).numbers} edits={{ ...edits, ...prices[`own:${o.id}`] }} mode={mode}
+                  selected={focusKey === `own:${o.id}`} onPick={() => setFocus(`own:${o.id}`)} onChange={(next) => changeOwn(o.id, next)} onRemove={() => removeOwn(o.id)} />
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 3 · your numbers, sourced; and if things move */}
@@ -376,8 +455,8 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
               <Slider label={t("deep.numbers.tax")} value={numbers.taxRate} min={0.005} max={0.05} stepBy={0.0005} show={pct(numbers.taxRate, lng, 2)} source={base.sources.taxRate} onChange={(v) => set("taxRate", v)} />
             </div>
           </details>
-          {Object.keys(edits).length > 0 && (
-            <button type="button" onClick={() => setEdits({})} className="nx-muted self-center text-caption underline touch-target">{t("deep.numbers.reset")}</button>
+          {(Object.keys(edits).length > 0 || Object.keys(prices).length > 0) && (
+            <button type="button" onClick={() => { setEdits({}); setPrices({}); }} className="nx-muted self-center text-caption underline touch-target">{t("deep.numbers.reset")}</button>
           )}
         </div>
         <StressGrid grid={grid} sale={sale?.price ?? null} lng={lng} mode={mode} />
@@ -425,7 +504,7 @@ function ProjectCard(props: CardProps) {
   const { p, selected, onPick } = props;
   return (
     <button type="button" aria-pressed={selected} onClick={onPick}
-      className={`nx-on-card flex flex-col gap-3 rounded-2xl p-5 text-left text-nx-card-ink touch-target ${p.kind === "three_flat" ? "bg-nx-stat-b" : "bg-nx-stat-a"} ${selected ? "ring-2 ring-nx-card-ink" : ""}`}
+      className={`nx-on-card flex flex-col gap-3 rounded-2xl p-5 text-left text-nx-card-ink touch-target ${p.kind === "three_flat" ? "bg-nx-stat-b" : "bg-nx-stat-a"} ${selected ? FOCUS_RING : ""}`}
       data-testid={`deep-project-${p.kind}`} data-selected={selected || undefined}>
       <CardBody {...props} />
     </button>
@@ -433,19 +512,24 @@ function ProjectCard(props: CardProps) {
 }
 
 /** "Your own": the same figures, its − / + inside the card, and an × that removes it. */
-function OwnCard({ onChange, onRemove, ...props }: CardProps & { onChange: (p: Project) => void; onRemove: () => void }) {
+/** The card in focus: the lavender of Pro and Saved (owner, 2026-11-16), offset from the card so it reads on both themes. */
+const FOCUS_RING = "ring-[3px] ring-nx-pill-purple ring-offset-2 ring-offset-nx-page";
+
+/** One of the builder's own projects: the same figures, its − / + inside the card, and an × that removes it. Sized as
+    a third of the row, like the ready-made cards above it. */
+function OwnCard({ onChange, onRemove, n, ...props }: CardProps & { n: number; onChange: (p: Project) => void; onRemove: () => void }) {
   const { t, i18n } = useTranslation("next");
   const { p, selected, onPick } = props;
   const loc = i18n.language.startsWith("es") ? "es-MX" : "en-US";
   return (
-    <div className={`nx-on-card relative flex flex-col gap-3 rounded-2xl bg-nx-stat-a p-5 text-nx-card-ink ${selected ? "ring-2 ring-nx-card-ink" : ""}`}
+    <div className={`nx-on-card relative flex w-full flex-col gap-3 rounded-2xl bg-nx-stat-a p-5 text-nx-card-ink md:w-[calc((100%-2rem)/3)] ${selected ? FOCUS_RING : ""}`}
       data-testid="deep-project-own" data-selected={selected || undefined}>
-      <button type="button" aria-label={t("deep.projects.remove")} onClick={onRemove}
+      <button type="button" aria-label={t("deep.projects.remove", { n })} onClick={onRemove}
         className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full hover:bg-nx-card-ink/10 touch-icon" data-testid="deep-own-remove">
         <X aria-hidden className="h-4 w-4" />
       </button>
       <button type="button" aria-pressed={selected} onClick={onPick} className="flex flex-col gap-3 pr-7 text-left touch-target">
-        <CardBody {...props} />
+        <CardBody {...props} label={t("deep.projects.kind.ownN", { n, units: p.units })} />
       </button>
       <div className="flex flex-col gap-2 border-t border-nx-card-ink/15 pt-3" data-testid="deep-steppers">
         <Stepper label={t("deep.projects.units")} value={String(p.units)} onStep={(d) => onChange(step(p, "units", d))} />
@@ -456,7 +540,7 @@ function OwnCard({ onChange, onRemove, ...props }: CardProps & { onChange: (p: P
   );
 }
 
-function CardBody({ p: proj, inputs, numbers, edits, mode }: CardProps) {
+function CardBody({ p: proj, inputs, numbers, edits, mode, label }: CardProps & { label?: string }) {
   const { t, i18n } = useTranslation("next");
   const lng = i18n.language;
   const n = { ...numbers, ...edits };
@@ -472,7 +556,7 @@ function CardBody({ p: proj, inputs, numbers, edits, mode }: CardProps) {
   return (
     <>
       <div className="flex items-baseline justify-between gap-2">
-        <b className="font-semibold">{t(`deep.projects.kind.${proj.kind}`, { units: proj.units })}</b>
+        <b className="font-semibold">{label ?? t(`deep.projects.kind.${proj.kind}`, { units: proj.units })}</b>
         <span className="text-caption opacity-70">{t("deep.projects.size", { area: proj.floorAreaSqft.toLocaleString(lng.startsWith("es") ? "es-MX" : "en-US"), floors: proj.floors })}</span>
       </div>
       <div className="flex items-center justify-between gap-2">

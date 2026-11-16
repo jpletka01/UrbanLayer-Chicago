@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -240,6 +241,33 @@ class TestProject:
         assert got["project"] == PROJECT and got["step"] == 2 and got["numbers"]["rent_unit_month"] == 2100 and got["numbers"]["mode"] == "sell"
 
     @pytest.mark.asyncio
+    async def test_own_projects_focus_and_card_prices_round_trip(self, store, as_user):
+        user = await _user("u1", "premium")
+        c = as_user(user)
+        empty = c.get(f"/api/deep-analysis/project?pin={LOT_A}").json()
+        assert empty["own"] == [] and empty["focus"] is None and empty["prices"] == {}
+        own = [{"id": "a1", "units": 4, "stories": 3, "floor_area_sqft": 4500},
+               {"id": "b2", "units": 6, "stories": 4, "floor_area_sqft": 6000}]
+        body = {"pin": LOT_A, "project": {**PROJECT, "kind": "own", "units": 6}, "own": own, "focus": "own:b2",
+                "prices": {"own:b2": {"sale_price_unit": 410000}, "three_flat": {"rent_unit_month": 3900}}}
+        assert c.put("/api/deep-analysis/project", json=body).status_code == 200
+        got = c.get(f"/api/deep-analysis/project?pin={UNIT_A}").json()
+        assert got["own"] == own and got["focus"] == "own:b2" and got["project"]["units"] == 6
+        assert got["prices"] == {"own:b2": {"sale_price_unit": 410000}, "three_flat": {"rent_unit_month": 3900}}
+
+    @pytest.mark.asyncio
+    async def test_a_row_saved_before_the_own_list_still_reads(self, store, as_user):
+        user = await _user("u1", "premium")
+        c = as_user(user)
+        c.get(f"/api/deep-analysis/project?pin={LOT_A}")
+        await db._get_db().execute(
+            "INSERT INTO deep_projects (user_id, pin, project_json, numbers_json, step, updated_at) VALUES (?, ?, ?, ?, 0, 0)",
+            ("u1", LOT_A[:10], json.dumps(PROJECT), json.dumps({"mode": "sell"})))
+        await db._get_db().commit()
+        got = c.get(f"/api/deep-analysis/project?pin={LOT_A}").json()
+        assert got["project"] == PROJECT and got["own"] == [] and got["focus"] is None and got["prices"] == {}
+
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("body", [
         {"pin": LOT_A, "project": {**PROJECT, "units": -1}},
         {"pin": LOT_A, "project": {**PROJECT, "kind": "skyscraper"}},
@@ -248,6 +276,11 @@ class TestProject:
         {"pin": LOT_A, "mode": "flip"},
         {"pin": LOT_A, "step": 99},
         {"pin": "1433"},
+        {"pin": LOT_A, "own": [{"id": f"p{i}", "units": 3, "stories": 3, "floor_area_sqft": 3000} for i in range(7)]},
+        {"pin": LOT_A, "own": [{"id": "Bad Id!", "units": 3, "stories": 3, "floor_area_sqft": 3000}]},
+        {"pin": LOT_A, "focus": "skyscraper"},
+        {"pin": LOT_A, "prices": {"own:x": {"sale_price_unit": -5}}},
+        {"pin": LOT_A, "prices": {"<script>": {"sale_price_unit": 5}}},
     ])
     async def test_tampered_bodies_are_422(self, store, as_user, body):
         user = await _user("u1", "premium")

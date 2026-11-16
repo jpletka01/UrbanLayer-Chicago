@@ -23,11 +23,11 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from backend import db, entitlements, inflight
 from backend.auth import _auth_enabled, require_auth
@@ -290,6 +290,26 @@ class NumbersIn(BaseModel):
     tax_rate: float | None = Field(default=None, ge=0, le=0.2)
 
 
+class OwnIn(BaseModel):
+    """One of the builder's own projects on this lot (a changed copy of a ready-made one)."""
+    model_config = ConfigDict(extra="forbid")
+    id: str = Field(pattern=r"^[a-z0-9]{1,12}$")
+    units: int = Field(ge=0, le=2000)
+    stories: int = Field(ge=0, le=120)
+    floor_area_sqft: int = Field(ge=0, le=5_000_000)
+
+
+class PriceIn(BaseModel):
+    """A card's own sale price or rent: they depend on its unit size, so each project keeps its own."""
+    model_config = ConfigDict(extra="forbid")
+    sale_price_unit: float | None = Field(default=None, ge=0, le=50_000_000)
+    rent_unit_month: float | None = Field(default=None, ge=0, le=100_000)
+
+
+CARD_KEY = r"^(largest|three_flat|townhouses|own:[a-z0-9]{1,12})$"
+MAX_OWN = 6
+
+
 class ProjectBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     pin: str = Field(pattern=r"^\d{14}$")
@@ -297,6 +317,19 @@ class ProjectBody(BaseModel):
     numbers: NumbersIn | None = None
     mode: Literal["sell", "rent"] = "sell"
     step: int = Field(default=0, ge=0, le=12)
+    # The builder's own projects, the card in focus, and each card's own price (Item 124, owner 2026-11-16).
+    own: list[OwnIn] = Field(default_factory=list, max_length=MAX_OWN)
+    focus: str | None = Field(default=None, pattern=CARD_KEY)
+    prices: dict[Annotated[str, StringConstraints(pattern=CARD_KEY)], PriceIn] = Field(
+        default_factory=dict, max_length=MAX_OWN + 3)
+
+
+def _stored_project(raw: str | None) -> dict:
+    """The stored project row's parts; a row from before the own-project list holds the project alone."""
+    data = json.loads(raw) if raw else None
+    if isinstance(data, dict) and "cards" in data:
+        return {"project": data.get("project"), **data["cards"]}
+    return {"project": data, "own": [], "focus": None, "prices": {}}
 
 
 @router.get("/project")
@@ -310,10 +343,11 @@ async def get_project(pin: str = Query(...), user: dict = Depends(require_auth))
     )
     row = await cur.fetchone()
     if not row:
-        return {"pin": pin, "project": None, "numbers": None, "step": 0, "updated_at": None}
+        return {"pin": pin, "project": None, "numbers": None, "step": 0, "updated_at": None,
+                "own": [], "focus": None, "prices": {}}
     return {
         "pin": pin,
-        "project": json.loads(row["project_json"]) if row["project_json"] else None,
+        **_stored_project(row["project_json"]),
         "numbers": json.loads(row["numbers_json"]) if row["numbers_json"] else None,
         "step": row["step"],
         "updated_at": row["updated_at"],
@@ -335,7 +369,11 @@ async def put_project(body: ProjectBody, user: dict = Depends(require_auth)) -> 
              project_json = excluded.project_json, numbers_json = excluded.numbers_json,
              step = excluded.step, updated_at = excluded.updated_at""",
         (uid, body.pin[:10],
-         json.dumps(body.project.model_dump()) if body.project else None,
+         json.dumps({
+             "project": body.project.model_dump() if body.project else None,
+             "cards": {"own": [o.model_dump() for o in body.own], "focus": body.focus,
+                       "prices": {k: v.model_dump(exclude_none=True) for k, v in body.prices.items()}},
+         }),
          json.dumps({**body.numbers.model_dump(exclude_none=True), "mode": body.mode}) if body.numbers else json.dumps({"mode": body.mode}),
          body.step, now),
     )

@@ -2461,12 +2461,13 @@
       "floors": "Floors",
       "floorArea": "Floor area",
       "own": "Your own",
-      "ownNote": "Start from the {{name}}, then change units, floors or floor area",
+      "ownNote": "Start from {{name}}, then change units, floors or floor area",
       "kind": {
         "largest": "Largest · {{units}} units",
         "three_flat": "A 3-flat",
         "townhouses": "Townhouses",
-        "own": "Your own · {{units}} units"
+        "own": "Your own · {{units}} units",
+        "ownN": "Your project {{n}} · {{units}} units"
       },
       "size": "{{area}} sq ft · {{floors}} floors",
       "ring": {
@@ -2480,13 +2481,16 @@
       "more": "More: {{what}}",
       "atSale": "if each sells for {{price}}",
       "atRent": "at {{price}} a month each",
-      "remove": "Remove your own project",
+      "remove": "Remove your project {{n}}",
       "name": {
-        "largest": "largest",
-        "three_flat": "3-flat",
-        "townhouses": "townhouses",
-        "own": "your own"
-      }
+        "largest": "the largest",
+        "three_flat": "the 3-flat",
+        "townhouses": "the townhouses",
+        "own": "your own",
+        "ownN": "your project {{n}}"
+      },
+      "ownFull": "Up to {{n}} of your own; remove one to add another",
+      "yours": "Your projects"
     },
     "numbers": {
       "title": "Your numbers",
