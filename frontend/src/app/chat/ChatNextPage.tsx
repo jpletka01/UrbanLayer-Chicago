@@ -211,6 +211,9 @@ export default function ChatNextPage() {
                 {session.loadError && (
                   <p className="rounded-xl bg-nx-pill-red-bg px-3 py-2 text-caption text-nx-pill-red" role="alert" data-testid="chat-load-error">{session.loadError}</p>
                 )}
+                {session.shareUnavailable && (
+                  <p className="rounded-xl bg-nx-block px-3 py-2 text-center text-caption" role="status" data-testid="chat-share-unavailable">{t("next:chat.shared.unavailable")}</p>
+                )}
                 <h1 className="text-center text-[1.75rem] font-semibold leading-tight tracking-[-0.02em]">
                   {grounded ? t("next:chat.headingAt", { address: grounded.address }) : t("next:chat.heading")}
                 </h1>

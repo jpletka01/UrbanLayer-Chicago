@@ -2,7 +2,7 @@
 
 Version 3.1 · 2026-11-07 · Owner: Jack · **Status: Phase 1 prototype built behind `?ui=next` (decision Items 76–78).**
 
-**This brief and the decisions file govern the new UI (`frontend/src/ui-next/`).** The Bento Pro guides, `guides/page-design.md` and the older layout docs describe today's live UI; where they disagree with this brief, this brief wins for new work. **No satellite map anywhere in the new UI** (Item 78).
+**This brief and the decisions file govern the new UI (`frontend/src/app/`).** The Bento Pro guides, `guides/page-design.md` and the older layout docs describe today's live UI; where they disagree with this brief, this brief wins for new work. **No satellite map anywhere in the new UI** (Item 78).
 
 The reference for UrbanLayer's front-end rewrite: what it is for, how the pages fit together, and the
 rules every page follows. Visual design and the build are checked against it. Labels: **Approved** =

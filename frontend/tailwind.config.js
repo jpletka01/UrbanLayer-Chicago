@@ -10,7 +10,7 @@ export default {
       },
       colors: {
         // The role classes (`bg-dark-surface`, `text-text-primary`, …) used by the shared components. Each var holds
-        // an RGB channel triplet so `<alpha-value>` works; the values are SnowUI's, set in src/ui-next/ui-next.css
+        // an RGB channel triplet so `<alpha-value>` works; the values are SnowUI's, set in src/app/app.css
         // (Phase 10 retired the Bento Pro values). The `dark-*` names are historical.
         dark: {
           bg: 'rgb(var(--bg) / <alpha-value>)',                          // app/page background
@@ -55,7 +55,7 @@ export default {
           info: { DEFAULT: 'rgb(var(--status-info) / <alpha-value>)', subtle: 'rgb(var(--status-info) / 0.12)' },
           neutral: { DEFAULT: 'rgb(var(--status-neutral) / <alpha-value>)', subtle: 'rgb(var(--status-neutral) / 0.12)' },
         },
-        // ── The SnowUI frame and Coastal charts (decision Items 74, 76), defined in src/ui-next/ui-next.css.
+        // ── The SnowUI frame and Coastal charts (decision Items 74, 76), defined in src/app/app.css.
         nx: {
           page: 'rgb(var(--nx-page) / <alpha-value>)',
           block: 'rgb(var(--nx-block) / <alpha-value>)',

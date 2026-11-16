@@ -30,7 +30,7 @@ Since Phase 10 (Item 125) the new UI is the only UI: there is no `?ui=next`, and
 
 ## Working rules (from Item 75)
 - Branch from current `main` in a worktree. Open PRs freely once the local gates pass; **never merge** without green CI, verification and the owner's go (merge = deploy). Batch ready work into few merges.
-- CI gates: `npm run build`, `npm run test`, `npm run lint`, backend `pytest -m "not integration"`. Local release gates: the mobile matrix, Playwright axe light and dark (`e2e/ui-next.spec.ts`), a keyboard walkthrough.
+- CI gates: `npm run build`, `npm run test`, `npm run lint`, backend `pytest -m "not integration"`. Local release gates: the mobile matrix, Playwright axe light and dark (`e2e/app.spec.ts`), a keyboard walkthrough.
 - No production model calls in automated development or tests; human prototype testing only within the budget the owner approves ($2 for Phase 3). Test chat only when a change updates or fixes chat (Item 83).
 - Docs: the brief and the decisions file govern every page; the Bento Pro guides and `page-design.md` are history (Item 125). No satellite map anywhere; every map keeps the Cities: Skylines look (Item 80).
 - Every new screen: icons beside visible labels, reuse without leaking into old pages, light and dark, English and Mexican Spanish (usted) in the same PR, accessible.

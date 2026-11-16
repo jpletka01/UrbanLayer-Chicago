@@ -1975,7 +1975,8 @@
     "shared": {
       "crumb": "Shared chat",
       "note": "A shared conversation, read only.",
-      "startOwn": "Start your own chat"
+      "startOwn": "Start your own chat",
+      "unavailable": "This shared chat isn't available."
     }
   },
   "landing": {

@@ -27,7 +27,7 @@ and the definitive architecture + design-decision + war-story archive is the web
 | **Parcel resolution / address→PIN / geocoding** | `guides/parcel-resolution-truth-model.md` → `core/known-issues.md` (Cook County GIS) → `archive/2026-06-21_pin-resolution-seam.md` |
 | **Lot facts / property retrieval / tax / provenance** | `archive/2026-07-03_lot-info-robustness.md` → `guides/ptaxsim-prod-seeding.md` → gate with `eval/lot_coverage.py` |
 | **Property Discovery** (filters, search, index) | `property-discovery/10-implementation-status.md` → `property-discovery/` spec `00`–`09` → `frontend/CLAUDE.md` (`src/discovery/`) |
-| **New UI (front-end rewrite, `frontend/src/ui-next/`, `?ui=next`)** | `guides/frontend-rewrite-runbook.md` → `guides/frontend-redesign-vision.md` → `decisions/2026-11_frontend-rewrite.md` (Items 73+) → `frontend/CLAUDE.md` (`src/ui-next/` row). **Never** the Bento Pro guides or `page-design.md` for this work; no satellite map. |
+| **New UI (front-end rewrite, `frontend/src/app/`, formerly `ui-next/`)** | `guides/frontend-rewrite-runbook.md` → `guides/frontend-redesign-vision.md` → `decisions/2026-11_frontend-rewrite.md` (Items 73+) → `frontend/CLAUDE.md` (`src/app/` row). **Never** the Bento Pro guides or `page-design.md` for this work; no satellite map. |
 | **Design / CSS / tokens / component chrome (today's live UI)** | `guides/bento-pro-redesign.md` → `guides/bento-pro-phase3-app-surfaces.md` → `frontend/CLAUDE.md` (Design Tokens) |
 | **Hero backdrop / dot-matrix / canvas viz** | `guides/dot-matrix.md` |
 | **Theming mechanics** (CSS-var tokens, dark/light, FOUC) | `guides/light-dark-theming.md` (mechanics only — palette is retired; Bento Pro is the live UI's, the rewrite has its own) |

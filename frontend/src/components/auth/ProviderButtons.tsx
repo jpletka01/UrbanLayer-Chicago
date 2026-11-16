@@ -37,7 +37,7 @@ export function ProviderMark({ provider, className = "h-5 w-5" }: { provider: Si
 interface Props {
   providers: SignInProvider[];
   onChoose: (provider: SignInProviderId) => void;
-  /** The button look: each UI passes its own tokens (the new UI's live only in src/ui-next). */
+  /** The button look: each UI passes its own tokens (the site's live in src/app). */
   buttonClassName?: string;
   /** Focus the first button (a dialog that opens on it). */
   autoFocus?: boolean;

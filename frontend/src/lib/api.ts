@@ -1274,9 +1274,9 @@ export interface NextUiData {
   /** The History tab (Item 103): the City's permits and violations at the address, every year on record; null when
       the address can't be searched by street fields. */
   permits_at_address?: { years: number; projects: AddressPermit[]; capped: boolean } | null;
-  violations_at_address?: { years: number; violations: import("../ui-next/profile/historyModel").ViolationRow[]; capped: boolean } | null;
+  violations_at_address?: { years: number; violations: import("../app/profile/historyModel").ViolationRow[]; capped: boolean } | null;
   /** Every source's value per building fact; null for vacant land. */
-  building_records?: import("../ui-next/profile/historyModel").BuildingRecords | null;
+  building_records?: import("../app/profile/historyModel").BuildingRecords | null;
   failed?: Array<"schools" | "construction_within" | "area_311" | "area_demographics" | "permits_at_address" | "violations_at_address" | "building_records">;
 }
 
