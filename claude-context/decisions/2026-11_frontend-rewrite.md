@@ -1672,6 +1672,7 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - **Alternatives:** `src/site/` or `src/pages/` (rejected: `app` is the usual name for a Vite app's own code and nothing in `src/` is called that; there is no `App.tsx` since Phase 10, so no `./App` vs `./app` clash on a case-insensitive disk); rename everything at once, namespace and tokens included (rejected by the owner: a much larger diff for names nobody outside the code sees, and many more conflicts for #233).
 - **Evidence:** `git mv` only (history follows with `git log --follow`); `npm run build`, `npm run test`, `npm run lint`, `make test` and the local e2e suite green.
 - **Revisit if:** the `next` namespace or `nx-*` tokens start confusing new work (rename them in one PR of their own).
+- **Rollout:** #237, shipped inside #238's merge (`a1f466e`, 2026-11-15, one deploy with Item 127); CI green, deploy job succeeded.
 
 ## Item 127: Phase 11, About's "since replaced" notes, Privacy's sign-in lines, and a shared link that isn't there (2026-11-15)
 
@@ -1681,3 +1682,4 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - **Alternatives:** rewrite the superseded sections (rejected: the page is the owner's project record); stay on `/s/<token>` with an empty read-only page (rejected: a dead end; the fresh chat is the useful next step).
 - **Evidence:** `npm run build`, `npm run test`, `npm run lint`; e2e `app.spec.ts` "Phase 10: a shared link opens read only" now also stubs a 404 token and checks the message, the `/chat` address and axe; About/Privacy axe and overflow routes pass.
 - **Revisit if:** Deep analysis ships (the report and payments notes then name it); production Apple or Microsoft sign-in starts sending a picture.
+- **Rollout:** #238 merged on the owner's go (`a1f466e`, 2026-11-15, with #237). Verified live: the served `AboutNextPage` and `PrivacyNextPage` chunks carry the notes and the approved words, `index` carries the shared-link string; `/s/no-such-token-check` on production lands on `/chat` with "This shared chat isn't available."; `npm run sweep:live` clean on all 26 runs; the phone overflow audit 70/70 on production. A real shared link (made from a signed-in account) is still not checked live.
