@@ -134,7 +134,10 @@ def load(folder: Path) -> list[tuple[str, object, dict]]:
         if not r.get("the_geom"):
             continue
         sub = (r.get("type") or "").lower().startswith("subway")
-        out.append(("cta_subway" if sub else "cta", shape(r["the_geom"]), {"name": cta_name(r.get("lines"))}))
+        # ``line``: the City's legend code (RD, BL, BR, GR, OR, PK, PR, YL; ML = several lines share the track), so the
+        # map draws each L line in its own color (owner's map review).
+        out.append(("cta_subway" if sub else "cta", shape(r["the_geom"]),
+                    {"name": cta_name(r.get("lines")), "line": (r.get("legend") or "").strip().upper()}))
     for f in json.loads((folder / NARN_FILE).read_text())["features"]:
         kind = narn_kind(f.get("properties") or {})
         if kind and f.get("geometry"):

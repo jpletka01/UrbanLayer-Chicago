@@ -87,6 +87,7 @@ export default function DiscoveryNextPage() {
   }, [registry]);
   const [measure, setMeasure] = useState<MeasureId>(DEFAULT_MEASURE);
   const [showZoning, setShowZoning] = useState(false);
+  const [showRail, setShowRail] = useState(true);
   const [view, setView] = useState<ViewBox | null>(null);
   const [camera, setCamera] = useState<{ bbox?: [number, number, number, number]; center?: [number, number]; zoom?: number; seq: number } | null>(null);
   const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
@@ -276,6 +277,7 @@ export default function DiscoveryNextPage() {
       focus={camera}
       fit={fit}
       showZoning={showZoning}
+      showRail={showRail}
       walkMiles={walkPreview}
       highlight={highlight}
       onView={setView}
@@ -397,7 +399,8 @@ export default function DiscoveryNextPage() {
                   onPick={(topic) => { search.pickRecipe(topic); setFocus("list"); }} />
               )}
             </div>
-            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} showZoning={showZoning} onZoning={setShowZoning} compact={phone}
+            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} showZoning={showZoning} onZoning={setShowZoning}
+              showRail={showRail} onRail={setShowRail} compact={phone}
               foldSignal={mapTouches} />
           </div>
           {place && <PlaceCard place={place} ring={ring} onRing={(miles) => { const r = { lat: place.lat, lon: place.lon, miles }; setRing(r); }}
@@ -613,8 +616,9 @@ function QuickFilters({ on, onToggle, loading }: { on: ReadonlySet<QuickId>; onT
   );
 }
 
-function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact, foldSignal = 0 }: {
-  measure: MeasureId; onMeasure: (m: MeasureId) => void; showZoning: boolean; onZoning: (b: boolean) => void; compact: boolean;
+function MeasureKey({ measure, onMeasure, showZoning, onZoning, showRail, onRail, compact, foldSignal = 0 }: {
+  measure: MeasureId; onMeasure: (m: MeasureId) => void; showZoning: boolean; onZoning: (b: boolean) => void;
+  showRail: boolean; onRail: (b: boolean) => void; compact: boolean;
   /** Changes when the map is touched: a phone's open key folds. */
   foldSignal?: number;
 }) {
@@ -666,6 +670,10 @@ function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact, foldSig
           <label className="mt-1 flex items-center gap-2">
             <input type="checkbox" checked={showZoning} onChange={(e) => onZoning(e.target.checked)} className="h-4 w-4" />
             {t("discovery.measure.showZoning")}
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={showRail} onChange={(e) => onRail(e.target.checked)} className="h-4 w-4" />
+            {t("discovery.measure.showRail")}
           </label>
           {!compact && <p className="nx-muted">{t("discovery.measure.zoomHint")}</p>}
         </div>

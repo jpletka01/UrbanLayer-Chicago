@@ -21,7 +21,7 @@ import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
 import { PALETTES, ZONING_COLORS, buildStyle, groupLayerIds, themePaint, versionedTiles, type MapTiles, type Theme } from "../map/mapStyle";
 import { STROKE } from "../icons";
 import {
-  LOTS_MIN_ZOOM, cardModel, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
+  LOTS_MIN_ZOOM, NOT_WATER, cardModel, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
 } from "./discoveryModel";
 import { foldAttribution } from "../map/attribution";
 
@@ -49,6 +49,8 @@ export interface ExploreMapProps {
   /** Frame a new search's matches once (`key` changes per search). */
   fit?: { bbox: [number, number, number, number]; key: unknown } | null;
   showZoning: boolean;
+  /** Rail lines, rail land and stations (Item 128); on by default. */
+  showRail?: boolean;
   /** The places the search is limited to, outlined (a neighborhood's outline, or a community area by number). */
   highlight?: Array<{ kind: "hood"; geometry: GeoJSON.Geometry | null } | { kind: "area"; id: number }> | null;
   /** The Transit panel's walk, in miles: a ring of that size around every L stop (null = none). */
@@ -123,7 +125,8 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
     // A lot whose measure is unknown is hatched (dots), never colored as if it were low.
     map.addLayer({ id: "lot-unknown", type: "fill", source: "parcels", "source-layer": "parcels",
       filter: unknownFilter(measure), paint: { "fill-pattern": PATTERN_IMAGE("dots", theme), "fill-opacity": dim ? 0.35 : 1 } }, map.getLayer("parcel-line") ? "parcel-line" : before);
-    map.addLayer({ id: "lot-measure", type: "fill", source: "parcels", "source-layer": "parcels", paint: paint["lot-measure"] as never }, map.getLayer("parcel-line") ? "parcel-line" : before);
+    map.addLayer({ id: "lot-measure", type: "fill", source: "parcels", "source-layer": "parcels", filter: NOT_WATER as never,
+      paint: paint["lot-measure"] as never }, map.getLayer("parcel-line") ? "parcel-line" : before);
     // Marks over some measure colors (land in use: "P" on surface parking, "+" on road land), so color isn't alone.
     const tex = measureTexture(measure, theme);
     map.addLayer({ id: "lot-texture", type: "fill", source: "parcels", "source-layer": "parcels",
@@ -171,7 +174,7 @@ const NONE = ["==", ["get", "__none__"], "__never__"];
 export interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; roads: RoadLine[]; lookup: DiscoveryOutlineLookup | null }
 
 export function ExploreMap({
-  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
+  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
 }: ExploreMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -329,6 +332,12 @@ export function ExploreMap({
     if (!map || !ready) return;
     for (const id of groupLayerIds("zoning")) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", showZoning ? "visible" : "none");
   }, [showZoning, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    for (const id of groupLayerIds("rail")) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", showRail ? "visible" : "none");
+  }, [showRail, ready]);
 
   // Matches as outlines (feature state on the lot tiles).
   const marked = useRef<Set<string>>(new Set());

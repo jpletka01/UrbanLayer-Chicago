@@ -346,10 +346,16 @@ RAIL_TABLES = """
     CREATE TABLE rail_on_lot (pin10 TEXT PRIMARY KEY, cta_ft REAL NOT NULL);
 """
 MIN_CMAP_LOTS = 500_000  # 589,574 of Chicago's lots matched on 2026-11-12: fewer means a partial copy
+OPEN_LAND_TABLES = """
+    DROP TABLE IF EXISTS open_land_on_lot;
+    CREATE TABLE open_land_on_lot (pin10 TEXT PRIMARY KEY, park REAL NOT NULL, water REAL NOT NULL);
+"""
+MIN_OPEN_LAND_LOTS = 2_000  # lots a park or water touches (about 9,000 on 2026-11-16)
 MIN_RAIL_LOTS = 1_000  # lots a CTA elevated or at-grade line runs through (about 3,000 on 2026-11-13)
 
 
-def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path, rail_rows: list[tuple] | None = None) -> dict:
+def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path, rail_rows: list[tuple] | None = None,
+                    open_rows: list[tuple] | None = None) -> dict:
     from backend.discovery.cmap_land_use import read_meta
 
     if len(rows) < MIN_CMAP_LOTS:
@@ -364,22 +370,37 @@ def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path, rail_
         db.executescript(RAIL_TABLES)
         db.executemany("INSERT INTO rail_on_lot VALUES (?, ?)", rail_rows)
         out["cta_line_lots"] = len(rail_rows)
+    if open_rows is not None:
+        if len(open_rows) < MIN_OPEN_LAND_LOTS:
+            raise RuntimeError(f"parks and water touched only {len(open_rows)} lots: refusing to write")
+        db.executescript(OPEN_LAND_TABLES)
+        db.executemany("INSERT INTO open_land_on_lot VALUES (?, ?, ?)", open_rows)
+        out["open_land_lots"] = len(open_rows)
     return out
 
 
-def _land_use_rows(cmap: Path, ptaxsim: Path, rail: Path) -> tuple[list[tuple], list[tuple] | None]:
-    """CMAP's code on every lot, and the CTA line's feet on the lots it crosses (Item 128; None without the rail copy,
-    with a warning: road land crossed by the L is then just road land)."""
+def _land_use_rows(cmap: Path, ptaxsim: Path, rail: Path) -> tuple[list[tuple], list[tuple] | None, list[tuple] | None]:
+    """CMAP's code on every lot; the CTA line's feet on the lots it crosses; parks and water on the lots they touch
+    (Item 128). A missing copy gives None for its table, with a warning: road land crossed by the L is then just road
+    land, and no lot is called a park or water."""
+    from backend.discovery import open_land
     from backend.discovery.cmap_land_use import codes_on_lots, lot_outlines_in_box
     from backend.map_tiles import rail_lines
 
     outlines = lot_outlines_in_box(ptaxsim)
     rows = codes_on_lots(cmap, ptaxsim, outlines)
-    if not rail_lines.present(rail):
+    rail_rows = open_rows = None
+    if rail_lines.present(rail):
+        rail_rows = rail_lines.cta_on_lots(rail, *outlines)
+    else:
         log.warning("lot sources: no rail lines in %s (python -m backend.map_tiles.rail_lines); rail_on_lot not written",
                     rail)
-        return rows, None
-    return rows, rail_lines.cta_on_lots(rail, *outlines)
+    if open_land.present(rail):
+        open_rows = open_land.open_land_on_lots(rail, *outlines)
+    else:
+        log.warning("lot sources: no parks/water copy in %s (python -m backend.map_tiles.base_tiles writes it); "
+                    "open_land_on_lot not written", rail)
+    return rows, rail_rows, open_rows
 
 
 def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsim: Path | None = None) -> dict:
@@ -393,11 +414,11 @@ def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsi
         if not need.exists() or need.stat().st_size == 0:
             raise FileNotFoundError(f"{need} missing")
     t0 = time.monotonic()
-    rows, rail_rows = _land_use_rows(cmap, ptaxsim, cmap.parent)
+    rows, rail_rows, open_rows = _land_use_rows(cmap, ptaxsim, cmap.parent)
     db = sqlite3.connect(out)
     try:
         with db:
-            summary = _write_land_use(db, rows, cmap, rail_rows)
+            summary = _write_land_use(db, rows, cmap, rail_rows, open_rows)
             db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
     finally:
         db.close()
@@ -508,8 +529,8 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
         log.warning("lot sources: %s or %s missing; the Item 110 structure tables are not written", lidar, ptaxsim)
     cmap = out.parent / "map_sources" / "cmap_lui_2023.db"
     if cmap.exists() and cmap.stat().st_size and ptaxsim.exists():
-        rows, rail_rows = _land_use_rows(cmap, ptaxsim, cmap.parent)
-        address_summary.update(_write_land_use(db, rows, cmap, rail_rows))
+        rows, rail_rows, open_rows = _land_use_rows(cmap, ptaxsim, cmap.parent)
+        address_summary.update(_write_land_use(db, rows, cmap, rail_rows, open_rows))
     else:  # the build then marks no lot road land (Item 112), with a warning
         log.warning("lot sources: %s missing; the Item 112 land-use table is not written", cmap)
     summary = {

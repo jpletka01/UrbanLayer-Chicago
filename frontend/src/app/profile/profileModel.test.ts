@@ -178,3 +178,16 @@ describe("what the lot is used for today (Item 112)", () => {
     }
   });
 });
+
+describe("parks, cemeteries and water on the Overview (Item 128)", () => {
+  it("names each, and right-of-way still comes first", () => {
+    expect(lotInUse({ empty_land: true, land_kind: "city_owned", open_land: "park" }, t)).toEqual({ kind: "park", words: "Park: not a building site" });
+    expect(lotInUse({ open_land: "cemetery" }, t)?.words).toBe("Cemetery: not a building site");
+    expect(lotInUse({ open_land: "water" }, t)?.kind).toBe("water");
+    expect(lotInUse({ infrastructure: "rail", open_land: "park" }, t)?.kind).toBe("rail");
+    for (const k of ["park", "cemetery", "water"]) {
+      expect(i18n.exists(`profile.lotInUse.define.${k}`, { ns: "next" })).toBe(true);
+      expect(i18n.exists(`profile.lotInUse.ask.${k}`, { ns: "next" })).toBe(true);
+    }
+  });
+});

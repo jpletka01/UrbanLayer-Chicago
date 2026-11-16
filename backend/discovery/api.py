@@ -106,6 +106,7 @@ class ResultRow(BaseModel):
     # Land in use (Item 112): a parking lot with no building (the Assessor's 5-90/5-80), and road right-of-way (CMAP).
     surface_parking: bool | None = None
     infrastructure: str | None = None
+    open_land: str | None = None  # park / cemetery / water (Item 128)
     community_area: int | None = None
     land_use: str | None = None
     parcel_class: str | None = Field(default=None, alias="class")
@@ -297,6 +298,7 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         structure=g("structure"),
         surface_parking=g("surface_parking"),
         infrastructure=g("infrastructure"),
+        open_land=g("open_land"),
         community_area=g("community_area") or _community_area_of(parcel),
         land_use=g("land_use_class"),
         # Display reads the REAL assessed value (exempt/$0 included); only the sort key

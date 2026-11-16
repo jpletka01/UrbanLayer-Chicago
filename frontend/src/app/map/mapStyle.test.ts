@@ -44,12 +44,15 @@ describe("the style document", () => {
     expect(at("lot-pin")).toBe(ids.length - 1);
   });
 
-  it("draws rail over the streets, in the Streets group, with ties and L names only zoomed in (Item 128)", () => {
+  it("draws rail over the streets in its own Rail and transit group, with ties and L names only zoomed in (Item 128)", () => {
     const ids = LAYER_IDS;
     expect(ids.indexOf("rail")).toBeGreaterThan(ids.indexOf("road-highway"));
     expect(ids.indexOf("rail-ties")).toBeGreaterThan(ids.indexOf("rail"));
     expect(ids.indexOf("rail")).toBeLessThan(ids.indexOf("lot-fill"));
-    expect(groupLayerIds("streets")).toEqual(expect.arrayContaining(["rail", "rail-ties", "rail-label"]));
+    expect(groupLayerIds("rail")).toEqual(["rail-land", "rail", "rail-ties", "station", "rail-label", "station-label"]);
+    expect(groupLayerIds("streets")).not.toContain("rail");
+    // rail land sits under the lots, so a lot paints over it and right-of-way with no lot still reads as rail land
+    expect(ids.indexOf("rail-land")).toBeLessThan(ids.indexOf("parcel-line"));
     const s = buildStyle(input());
     const ties = s.layers.find((l) => l.id === "rail-ties") as { minzoom?: number };
     const label = s.layers.find((l) => l.id === "rail-label") as { minzoom?: number; filter?: unknown };

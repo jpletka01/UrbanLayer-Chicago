@@ -214,6 +214,8 @@ export interface ResultRow {
   surface_parking?: boolean | null;
   /** "road": road right-of-way per CMAP 2023, on empty exempt land; hidden by default as unusual (Item 112). */
   infrastructure?: string | null;
+  /** park / cemetery / water (Item 128). */
+  open_land?: string | null;
   community_area: number | null;
   land_use: string | null;
   class: string | null;

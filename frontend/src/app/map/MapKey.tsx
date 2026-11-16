@@ -24,7 +24,7 @@ const MODES: LayerMode[] = ["on", "off"];
 
 function swatch(id: GroupId): string {
   return {
-    zoning: "#CDB7F6", parcels: "transparent", sales: PIN_COLORS.sale, building: PIN_COLORS.build, transit: PIN_COLORS.transit, streets: "#F6CF9E",
+    zoning: "#CDB7F6", parcels: "transparent", sales: PIN_COLORS.sale, building: PIN_COLORS.build, transit: PIN_COLORS.transit, rail: "#3E2470", streets: "#F6CF9E",
   }[id];
 }
 
@@ -81,7 +81,7 @@ export function MapKey({ groups, families, onMode, onRetry, onShow, defaultOpen,
                         <button type="button" onClick={() => onShow(g.id)} className="ml-1 underline underline-offset-2" data-testid={`key-show-${g.id}`}>{t("map.show")}</button>
                       )}
                     </span>
-                  ) : g.count != null && g.id !== "streets" ? (
+                  ) : g.count != null && g.id !== "streets" && g.id !== "rail" ? (
                     <span className="nx-muted tabular-nums">{t(`map.count.${g.id}`, { count: g.count })}</span>
                   ) : null}
                 </span>

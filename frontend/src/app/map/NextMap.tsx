@@ -558,7 +558,7 @@ export function NextMap({
   const groups: GroupState[] = GROUPS.flatMap((g): GroupState[] => {
     if (g === "zoning" && !tiles?.zoning) return [];
     if (g === "parcels" && !tiles?.parcels) return [];
-    if (g === "streets" && !tiles?.base) return [];
+    if ((g === "streets" || g === "rail") && !tiles?.base) return [];
     if (g === "sales" && salesState === "absent") return [];
     if (g === "building" && buildingState === "absent") return [];
     if (g === "transit" && stations.length === 0) return [];

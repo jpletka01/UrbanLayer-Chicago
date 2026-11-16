@@ -273,14 +273,20 @@ const money = (n: number, lng: string) =>
 // ── What the lot is used for today (Item 112) ─────────────────────────────────────────────────────────
 
 export type RightOfWay = "rail" | "road" | "road_rail";
-export interface LotInUse { kind: "parking" | "empty" | RightOfWay; words: string }
+export type OpenLand = "park" | "cemetery" | "water";
+export interface LotInUse { kind: "parking" | "empty" | RightOfWay | OpenLand; words: string }
+const OPEN_LAND: readonly string[] = ["park", "cemetery", "water"];
 const RIGHT_OF_WAY: readonly string[] = ["rail", "road", "road_rail"];
 
 /** The Overview's line from Discovery's row: surface parking or empty land, in the list card's own words; else null. */
-export function lotInUse(row: { surface_parking?: boolean | null; empty_land?: boolean | null; land_kind?: string | null; structure?: string | null; infrastructure?: string | null } | null, t: TFunc): LotInUse | null {
+export function lotInUse(row: { surface_parking?: boolean | null; empty_land?: boolean | null; land_kind?: string | null; structure?: string | null; infrastructure?: string | null; open_land?: string | null } | null, t: TFunc): LotInUse | null {
   // Right-of-way wins (Item 128): rail land under the L is often "empty" too, and it is not a building site.
   if (row?.infrastructure && RIGHT_OF_WAY.includes(row.infrastructure)) {
     const kind = row.infrastructure as RightOfWay;
+    return { kind, words: t(`profile.lotInUse.words.${kind}`) };
+  }
+  if (row?.open_land && OPEN_LAND.includes(row.open_land)) {
+    const kind = row.open_land as OpenLand;
     return { kind, words: t(`profile.lotInUse.words.${kind}`) };
   }
   if (!row?.empty_land && !row?.surface_parking) return null;

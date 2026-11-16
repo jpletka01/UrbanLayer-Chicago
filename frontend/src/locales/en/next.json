@@ -81,19 +81,28 @@
         "empty": "Nothing stands on it in the City's building footprints or the County's 2022 LiDAR, after demolition and new-construction permits, except at most a garage or shed. Shown for vacant, City-owned, parking and tax-exempt land only.",
         "rail": "The Assessor classes this lot as railroad property (class RR), or CMAP's 2023 Land Use Inventory (from spring 2023 aerial photos and the Assessor's files) codes most of it as rail right-of-way or a rail yard. A hand check of 34 lots CMAP codes as rail right-of-way found 33 were rail land: tracks, an elevated L structure or an embankment. Discovery hides these lots by default and gives them no room to build.",
         "road": "CMAP's 2023 Land Use Inventory codes most of this tax-exempt lot as road right-of-way, and nothing stands on it. A hand check of 27 such lots found every one was road or rail land. Discovery hides these lots by default and gives them no room to build.",
-        "road_rail": "CMAP's 2023 Land Use Inventory codes most of this lot as road right-of-way, and the CTA's L line runs through it (the City's CTA lines). A hand check of 6 such lots found all were rail and expressway land. Discovery hides these lots by default and gives them no room to build."
+        "road_rail": "CMAP's 2023 Land Use Inventory codes most of this lot as road right-of-way, and the CTA's L line runs through it (the City's CTA lines). A hand check of 6 such lots found all were rail and expressway land. Discovery hides these lots by default and gives them no room to build.",
+        "park": "At least half of this lot is inside a Chicago Park District park (the Park District's own boundaries). Discovery hides these lots by default and gives them no room to build.",
+        "cemetery": "CMAP's 2023 Land Use Inventory codes most of this lot as a cemetery. Discovery hides these lots by default and gives them no room to build.",
+        "water": "At least half of this lot is under water on the City's map of lakes and rivers (the County's lot outlines run into the river in places). Discovery hides these lots by default and gives them no room to build."
       },
       "words": {
         "rail": "Rail right-of-way: not a building site",
         "road": "Road right-of-way: not a building site",
-        "road_rail": "Road and L right-of-way: not a building site"
+        "road_rail": "Road and L right-of-way: not a building site",
+        "park": "Park: not a building site",
+        "cemetery": "Cemetery: not a building site",
+        "water": "Water: not a building site"
       },
       "ask": {
         "parking": "What could be built on the surface parking lot at {{address}}?",
         "empty": "What could be built on the empty lot at {{address}}?",
         "rail": "Who owns the rail right-of-way at {{address}}, and can it ever be built on?",
         "road": "Who owns the road right-of-way at {{address}}, and can it ever be built on?",
-        "road_rail": "Who owns the road and L right-of-way at {{address}}, and can it ever be built on?"
+        "road_rail": "Who owns the road and L right-of-way at {{address}}, and can it ever be built on?",
+        "park": "What is the park at {{address}}, and who runs it?",
+        "cemetery": "What is the cemetery at {{address}}, and can any of it ever be built on?",
+        "water": "Why does the lot at {{address}} sit in the water, and who owns it?"
       }
     },
     "approximate": "Approximate match",
@@ -1200,9 +1209,10 @@
       },
       "named": {
         "own_rules": "Set by its own ordinance",
-        "open_space": "Open space",
+        "open_space": "Park, cemetery or open space",
         "transport": "Railroad or transit land",
-        "right_of_way": "Road or rail right-of-way: not a building site"
+        "right_of_way": "Road or rail right-of-way: not a building site",
+        "water": "Water: not a building site"
       },
       "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone",
       "now": {
@@ -1293,6 +1303,7 @@
       "unknown": "Not known (dotted)",
       "match": "Matches the search",
       "showZoning": "Show zoning districts",
+      "showRail": "Show rail and transit",
       "zoomHint": "Lots appear as you zoom in; the city view shows neighborhoods.",
       "room": {
         "name": "Room to build",
@@ -1303,7 +1314,7 @@
         "3": "5,000–10,000 sq ft",
         "4": "10,000 sq ft or more",
         "own": "Set by its own ordinance (PD)",
-        "park": "Park or open space",
+        "park": "Park, cemetery or open space",
         "transport": "Rail, transit or road land"
       },
       "lot": {
@@ -1332,7 +1343,8 @@
         "4": "Business",
         "5": "Industrial",
         "6": "Tax-exempt",
-        "7": "Road or railroad land"
+        "7": "Road or railroad land",
+        "8": "Park or cemetery"
       },
       "zoning": {
         "name": "Zoning family",
@@ -1681,7 +1693,8 @@
       "parcels": "Lots",
       "sales": "Recent sales",
       "transit": "Transit",
-      "streets": "Streets and rail",
+      "streets": "Streets",
+      "rail": "Rail and transit",
       "building": "Construction"
     },
     "count": {

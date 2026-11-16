@@ -213,3 +213,103 @@ def test_base_tiles_cut_rail_to_the_city_and_set_zooms(tmp_path):
     assert feats[0].props["name"] == "Brown, Purple (Express)"
     whole = shapely.length(LineString([(-87.6905, 41.96), (-87.6895, 41.96)]))
     assert feats[0].geom is not None and whole > 0
+
+
+# --- parks, cemeteries and water (the owner's map review, 2026-11-16) ---------------------------------------------
+
+def _open(park=0.0, water=0.0, cmap=None):
+    return dataclasses.replace(_sources([], []), cmap_on_lot={PIN10: cmap} if cmap else {},
+                               open_land_on_lot={PIN10: (park, water)})
+
+
+@pytest.mark.parametrize("attrs, src, want", [
+    ({"land_kind": "city_owned", "structure": "built"}, _open(park=0.999), ("park", "park_district")),  # 7059 S South Shore
+    ({"land_kind": "exempt"}, _open(cmap=("1360", 0.998)), ("cemetery", "cmap_2023")),  # Graceland
+    ({"land_kind": "commercial"}, _open(cmap=("1360", 0.99)), ("cemetery", "cmap_2023")),  # Rosehill, taxed
+    ({"land_kind": "exempt"}, _open(water=0.84, cmap=("5000", 0.99)), ("water", "city_water")),  # North Branch bed
+    ({"land_kind": "exempt"}, _open(cmap=("5000", 0.9)), ("water", "cmap_2023")),
+    ({"land_kind": "exempt"}, _open(park=0.9, water=0.6), ("water", "city_water")),  # a lagoon inside a park
+    ({"land_kind": "residential"}, _open(park=0.72), None),  # a home inside a park's outline stays a home
+    ({"land_kind": "exempt"}, _open(park=0.49), None),
+])
+def test_open_land(attrs, src, want):
+    mark_land_use(attrs, PIN10, src)
+    assert (attrs.get("open_land"), attrs.get("open_land_source")) == (want or (None, None))
+
+
+def test_rail_wins_over_open_land_and_open_land_over_road():
+    attrs = {"land_kind": "railroad"}
+    mark_land_use(attrs, PIN10, _open(park=0.9))
+    assert attrs["infrastructure"] == "rail" and "open_land" not in attrs
+    attrs = {"land_kind": "exempt", "empty_land": True}
+    mark_land_use(attrs, PIN10, _open(water=0.7, cmap=("1512", 0.9)))
+    assert attrs["open_land"] == "water" and "infrastructure" not in attrs
+
+
+@pytest.mark.parametrize("kind, scope, band, use", [("park", "open_space", "p", "park"),
+                                                     ("cemetery", "open_space", "p", "park"),
+                                                     ("water", "water", "w", "water")])
+def test_open_land_has_no_room_is_hidden_and_draws_as_itself(kind, scope, band, use):
+    attrs = {"open_land": kind, "density_band": 2.0, "land_sqft": 9_000.0, "bldg_sqft": 0.0, "empty_land": True}
+    derive_capacity(attrs)
+    assert "room_sqft" not in attrs and attrs["room_scope"] == scope
+    assert unusual_rule(attrs) is True
+    b = measure_bands(attrs)
+    assert b["r"] == band and b["l"] == str(LAND_IN_USE.index(use))
+
+
+def test_open_land_table_is_read_or_none(tmp_path):
+    _minimal(tmp_path / "a.db")
+    db = sqlite3.connect(tmp_path / "a.db")
+    db.executescript(lot_sources.OPEN_LAND_TABLES)
+    db.execute("INSERT INTO open_land_on_lot VALUES (?, ?, ?)", (PIN10, 0.95, 0.0))
+    db.commit()
+    db.close()
+    _minimal(tmp_path / "b.db")
+    assert LotSources.load(tmp_path / "a.db").open_land_on_lot == {PIN10: (0.95, 0.0)}
+    assert LotSources.load(tmp_path / "b.db").open_land_on_lot is None
+
+
+def test_open_land_shares_from_the_base_maps_copies(tmp_path):
+    from backend.discovery import open_land
+
+    sq = lambda x0, y0, x1, y1: {"type": "Polygon", "coordinates": [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]}  # noqa: E731
+    (tmp_path / open_land.PARKS_FILE).write_text(json.dumps([{"the_geom": sq(0, 0, 10, 10)}]))
+    (tmp_path / open_land.WATER_FILE).write_text(json.dumps([{"the_geom": sq(10, 0, 20, 10)}]))
+    lots = [box(1, 1, 3, 3), box(9, 1, 11, 3), box(30, 30, 31, 31)]
+    got = {p: (pk, w) for p, pk, w in open_land.open_land_on_lots(tmp_path, ["in_park", "edge", "away"], lots)}
+    assert got == {"in_park": (1.0, 0.0), "edge": (0.5, 0.5)}
+
+
+def test_base_tiles_carry_the_l_line_rail_land_and_stations(tmp_path):
+    lines = rail_lines.load(_rail_folder(tmp_path))
+    feats, _ = base_tiles.rail_features(lines, box(-87.95, 41.64, -87.52, 42.03))
+    assert feats[0].props["line"] == "" and feats[0].props["kind"] == "cta"  # the fixture has no legend
+    st = base_tiles.station_features([
+        {"name": "Western", "lat": 41.966, "lon": -87.688, "type": "cta_rail", "lines": ["Brown Line"]},
+        {"name": "Ravenswood", "lat": 41.968, "lon": -87.674, "type": "metra", "lines": ["UP-N"]},
+        {"name": "Bus", "lat": 41.9, "lon": -87.6, "type": "bus"}, {"name": "No point", "type": "metra"}])
+    assert [(f.props["kind"], f.props["name"], f.props["lines"]) for f in st] == [
+        ("cta", "Western", "Brown Line"), ("metra", "Ravenswood", "UP-N")]
+    assert {f.minzoom for f in st} == {12}
+    cmap = tmp_path / "cmap.db"
+    db = sqlite3.connect(cmap)
+    db.execute("CREATE TABLE lui (oid INTEGER PRIMARY KEY, landuse TEXT, landuse2 TEXT, modifier TEXT, os_mgmt TEXT, wkb BLOB)")
+    for code, g in (("1511", box(-87.70, 41.90, -87.69, 41.91)), ("1570", box(-87.65, 41.80, -87.64, 41.81)),
+                    ("1111", box(-87.60, 41.80, -87.59, 41.81)), ("1511", box(-88.5, 41.0, -88.4, 41.1))):
+        db.execute("INSERT INTO lui (landuse, wkb) VALUES (?, ?)", (code, shapely.to_wkb(g)))
+    db.commit()
+    db.close()
+    land = base_tiles.rail_land_features(cmap, box(-87.95, 41.64, -87.52, 42.03))
+    assert sorted(f.props["kind"] for f in land) == ["row", "yard"]  # homes and the polygon outside the City left out
+
+
+def test_islands_in_the_citys_hydro_layer_are_land():
+    # display 2 = islands in lagoons (Wooded Island in Jackson Park drew as water: owner's map review)
+    assert base_tiles.is_island({"display": "2"}) and base_tiles.is_island({"display": 2})
+    assert not any(base_tiles.is_island({"display": d}) for d in ("0", "1", "4", None))
+    rows = {"city": [], "park": [], "road": [], "water": [
+        {"the_geom": {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]}, "display": "0"},
+        {"the_geom": {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]}, "display": "2"}]}
+    feats, left_out = base_tiles.build_features(rows)
+    assert sum(f.layer == "water" for f in feats) == 1 and left_out["water_islands"] == 1

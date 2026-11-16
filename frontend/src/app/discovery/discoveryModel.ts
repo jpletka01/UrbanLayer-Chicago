@@ -61,7 +61,12 @@ const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4" };
 // Land in use (Item 112), in the tiles' `l` order (`lot_facts.LAND_IN_USE`): empty land, surface parking, homes,
 // apartments, business, industrial, tax-exempt, road or railroad land. Coastal's colors and a gray, each named in the
 // key; surface parking (lavender) and road land (peach) also carry marks, so neither relies on color alone.
-export const USE_COLORS = ["#B89D47", "#9184C4", "#DCEDEB", "#A9D2CE", "#FE9179", "#355E58", "#B4B4B4", "#FDC1B4"];
+// Item 128 adds park (8; parks and cemeteries, the park green). Water (9) is never drawn as a lot: see NOT_WATER.
+export const USE_COLORS = ["#B89D47", "#9184C4", "#DCEDEB", "#A9D2CE", "#FE9179", "#355E58", "#B4B4B4", "#FDC1B4", "#A7E2B2"];
+
+/** Lots mostly under the City's water (the North Branch's riverbed parcels; their room band is "w", Item 128) are
+    left off the lot layers in every measure, so the river reads as water, not as lots (owner's map review). */
+export const NOT_WATER = ["!=", ["get", "r"], "w"] as const;
 /** The marks over a land-in-use color: "P" on surface parking, "+" on road or railroad land (as transportation zoning). */
 export const USE_TEXTURE: Record<string, "p" | "plus"> = { "1": "p", "7": "plus" };
 // A tile file built before Item 112 (`u` only): its tax-class bands, mapped to the same colors. Its "vacant" is the tax
@@ -109,8 +114,8 @@ export function measureColorExpr(m: MeasureId, zoningFamily?: Record<string, str
 
 /** Lots with no band for the measure: drawn dotted ("not known"). Land in use also reads an older file's `u`. */
 export function unknownMeasureFilter(m: MeasureId): unknown {
-  if (m === "use") return ["all", ["!", ["has", "l"]], ["!", ["in", ["get", "u"], ["literal", Object.keys(U_TO_L)]]]];
-  return ["!", ["has", MEASURE_PROP[m]]];
+  if (m === "use") return ["all", NOT_WATER, ["!", ["has", "l"]], ["!", ["in", ["get", "u"], ["literal", Object.keys(U_TO_L)]]]];
+  return ["all", NOT_WATER, ["!", ["has", MEASURE_PROP[m]]]];
 }
 
 /** The texture layer's filter and pattern for a measure (only land in use has marks); null = no texture layer content. */
@@ -140,7 +145,7 @@ export interface CardModel {
   roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | null;
   /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation, or road
       or rail right-of-way (Items 112, 128). */
-  roomNamed: "own_rules" | "open_space" | "transport" | "right_of_way" | null;
+  roomNamed: "own_rules" | "open_space" | "transport" | "right_of_way" | "water" | null;
   /** A strip under 16 ft wide (hidden by default), with its width in feet. */
   narrowFt: number | null;
   /** The room is the multi-parcel site's (this many lots), not the lot's alone. */
@@ -157,7 +162,7 @@ export function cardModel(row: ResultRow): CardModel {
   const src = row.bldg_sqft_source;
   const basis = src === "commercial_valuation" || src === "footprint" || src === "city_land_inventory" ? src : null;
   const named = row.room_scope === "own_rules" || row.room_scope === "open_space" || row.room_scope === "transport"
-    || row.room_scope === "right_of_way" ? row.room_scope : null;
+    || row.room_scope === "right_of_way" || row.room_scope === "water" ? row.room_scope : null;
   const room = row.room_sqft ?? null;
   return {
     title,

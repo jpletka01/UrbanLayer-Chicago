@@ -11,7 +11,13 @@ Layers (zooms 10-16; the map overzooms past 16):
 - ``rail`` (decision Item 128): the CTA's L lines (City ``xbyr-jnvx``, elevated or at grade; the subway is not drawn) and
   the federal rail network (FRA/BTS NARN: Metra, Amtrak, freight, yards and spurs), cut to the City boundary, as
   ``kind`` cta / metra / amtrak / freight / yard / spur with a ``name`` on the L ("Brown Line"). Lines from zoom 10,
-  yards from 13, spurs from 14. Read by ``rail_lines`` into the same folder.
+  yards from 13, spurs from 14. Read by ``rail_lines`` into the same folder. The L carries ``line``, the City's legend
+  code, for its color.
+- ``rail_land`` (Item 128, the owner's map review): CMAP 2023's rail right-of-way and intermodal yards (1511, 1570) as
+  areas, from zoom 12, so rail land reads even where the County has no lot (the Kimball yard, the L north of
+  Division are right-of-way without a PIN). From ``map_sources/cmap_lui_2023.db``; without it the layer is left out.
+- ``station``: CTA rail and Metra stations (the committed ``ingestion/data/transit_stations.json``, from the CTA and
+  Metra GTFS feeds) as points with ``kind`` cta / metra, ``name`` and ``lines``, from zoom 12.
 
 The sources are read once per build and kept in ``backend/data/map_sources/`` so a rebuild can run offline::
 
@@ -35,7 +41,7 @@ from backend.map_tiles.tiler import Feature, to_mercator, write_mbtiles
 log = logging.getLogger(__name__)
 
 MIN_ZOOM, MAX_ZOOM = 10, 16
-LAYERS = ["city", "water", "park", "rail", "road"]
+LAYERS = ["city", "water", "park", "rail_land", "rail", "station", "road"]
 
 DATASETS = {
     "road": "pr57-gg9e",
@@ -45,7 +51,7 @@ DATASETS = {
 }
 SELECT = {
     "road": "the_geom,class,status,pre_dir,street_nam,street_typ",
-    "water": "the_geom,name",
+    "water": "the_geom,name,display",
     "park": "the_geom,park,label",
     "city": "the_geom",
 }
@@ -68,6 +74,13 @@ _TYPES = {
     "AVE": "Ave", "ST": "St", "BLVD": "Blvd", "DR": "Dr", "RD": "Rd", "PL": "Pl", "CT": "Ct", "PKWY": "Pkwy",
     "EXPY": "Expy", "TER": "Ter", "HWY": "Hwy", "LN": "Ln", "WAY": "Way", "SQ": "Sq", "PLZ": "Plz", "CIR": "Cir",
 }
+
+
+def is_island(row: dict) -> bool:
+    """The City's hydro layer codes islands as ``display`` 2 (28 polygons, 43 acres, 95% inside parks, every one in a
+    lagoon: Wooded Island, Humboldt Park's island); drawn as water they covered the land (owner's map review, Item 128).
+    0 = water, 1 = narrow river edges, 4 = Lake Michigan."""
+    return str(row.get("display") or "").strip() == "2"
 
 
 def street_name(pre_dir: str | None, name: str | None, typ: str | None) -> str:
@@ -141,9 +154,57 @@ def rail_features(lines: list[tuple[str, object, dict]], city) -> tuple[list[Fea
         if part.is_empty or part.length == 0:
             outside += 1
             continue
-        feats.append(Feature("rail", to_mercator(part), {"kind": kind, "name": props.get("name") or ""},
+        feats.append(Feature("rail", to_mercator(part),
+                             {"kind": kind, "name": props.get("name") or "", "line": props.get("line") or ""},
                              RAIL_MINZOOM[kind]))
     return feats, outside
+
+
+RAIL_LAND_MINZOOM = STATION_MINZOOM = 12
+
+
+def rail_land_features(cmap: Path, city) -> list[Feature]:
+    """CMAP's rail right-of-way and intermodal yards inside the City, as areas."""
+    import sqlite3
+
+    from backend.discovery.cmap_land_use import CMAP_INTERMODAL, CMAP_RAIL
+
+    db = sqlite3.connect(f"file:{cmap}?mode=ro", uri=True)
+    try:
+        rows = db.execute("SELECT landuse, wkb FROM lui WHERE landuse IN (?, ?)", (CMAP_RAIL, CMAP_INTERMODAL)).fetchall()
+    finally:
+        db.close()
+    from shapely import from_wkb, make_valid
+    from shapely.prepared import prep
+
+    inside = prep(city)
+    out = []
+    for code, wkb in rows:
+        g = from_wkb(wkb)
+        g = g if g.is_valid else make_valid(g)
+        if not inside.intersects(g):
+            continue
+        part = g if inside.contains(g) else g.intersection(city)
+        if part.is_empty or part.area == 0:
+            continue
+        out.append(Feature("rail_land", to_mercator(part), {"kind": "yard" if code == CMAP_INTERMODAL else "row"},
+                           RAIL_LAND_MINZOOM))
+    return out
+
+
+def station_features(stations: list[dict]) -> list[Feature]:
+    from shapely.geometry import Point
+
+    out = []
+    for s in stations:
+        if s.get("lat") is None or s.get("lon") is None:
+            continue
+        kind = "cta" if s.get("type") == "cta_rail" else "metra" if s.get("type") == "metra" else None
+        if kind:
+            out.append(Feature("station", to_mercator(Point(s["lon"], s["lat"])),
+                               {"kind": kind, "name": s.get("name") or "", "lines": ", ".join(s.get("lines") or [])},
+                               STATION_MINZOOM))
+    return out
 
 
 def build_features(sources: dict[str, list[dict]], rail: list | None = None) -> tuple[list[Feature], dict[str, int]]:
@@ -156,12 +217,20 @@ def build_features(sources: dict[str, list[dict]], rail: list | None = None) -> 
         city = unary_union([shape(r["the_geom"]) for r in sources["city"] if r.get("the_geom")])
         rail_feats, left_out["rail_outside_city"] = rail_features(rail, city)
         feats += rail_feats
+        if sources.get("_cmap"):
+            feats += rail_land_features(sources["_cmap"], city)
+        if sources.get("_stations"):
+            feats += station_features(sources["_stations"])
     for row in sources["city"]:
         if row.get("the_geom"):
             feats.append(Feature("city", to_mercator(shape(row["the_geom"])), {}, MIN_ZOOM))
+    left_out["water_islands"] = 0
     for row in sources["water"]:
         if not row.get("the_geom"):
             left_out["no_geometry"] += 1
+            continue
+        if is_island(row):
+            left_out["water_islands"] += 1
             continue
         feats.append(Feature("water", to_mercator(shape(row["the_geom"])), {"name": (row.get("name") or "").title()},
                              MIN_ZOOM))
@@ -199,12 +268,22 @@ def build_file(out: Path, *, offline: bool = False, minzoom: int = MIN_ZOOM, max
         rail_lines.fetch(cache, token=get_settings().socrata_app_token)
     elif not rail_lines.present(cache):
         raise RuntimeError(f"no rail lines in {cache}: run python -m backend.map_tiles.rail_lines first")
+    cmap = cache / "cmap_lui_2023.db"
+    if cmap.exists() and cmap.stat().st_size:
+        sources["_cmap"] = cmap
+    else:
+        log.warning("base tiles: %s missing; the rail_land layer is left out", cmap)
+    stations = get_settings().data_dir / "transit_stations.json"
+    sources["_stations"] = json.loads(stations.read_text()) if stations.exists() else []
+    if not sources["_stations"]:
+        log.warning("base tiles: no transit stations at %s; the station layer is left out", stations)
     feats, left_out = build_features(sources, rail_lines.load(cache))
     counts = {k: sum(1 for f in feats if f.layer == k) for k in LAYERS}
     stats = write_mbtiles(
         out, feats, name="map_base", minzoom=minzoom, maxzoom=maxzoom, layer_order=LAYERS,
         fields={"city": {}, "water": {"name": "String"}, "park": {"name": "String"},
-                "road": {"kind": "String", "name": "String"}, "rail": {"kind": "String", "name": "String"}},
+                "road": {"kind": "String", "name": "String"}, "rail": {"kind": "String", "name": "String", "line": "String"},
+                "rail_land": {"kind": "String"}, "station": {"kind": "String", "name": "String", "lines": "String"}},
         extra_meta={"built_at": date.today().isoformat(), "counts": json.dumps(counts),
                     "left_out": json.dumps(left_out),
                     "sources": json.dumps(DATASETS | {"rail": "xbyr-jnvx + FRA/BTS NARN"})},

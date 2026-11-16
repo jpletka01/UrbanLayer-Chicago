@@ -398,7 +398,9 @@ def unusual_rule(attrs: dict[str, Any]) -> bool:
     railroad = (str(attrs.get("class") or "").strip().upper() == "RR") or attrs.get("land_kind") == "railroad"
     # Items 112, 128: road and rail right-of-way per CMAP 2023 (27 of 27 and 33 of 34 in the owner's blind checks).
     road = attrs.get("infrastructure") in ("road", "rail", "road_rail")
-    return bool(attrs.get("narrow_strip")) or railroad or road or (
+    # Item 128 (owner's map review): parks, cemeteries and water.
+    open_land = bool(attrs.get("open_land"))
+    return bool(attrs.get("narrow_strip")) or railroad or road or open_land or (
         bool(attrs.get("is_vacant")) and bool(attrs.get("shared_outline")))
 
 

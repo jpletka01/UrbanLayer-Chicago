@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { ResultRow } from "../../discovery/types";
 import { fetchParcelRow } from "../../discovery/searchClient";
 
-export type LotInUseRow = Pick<ResultRow, "surface_parking" | "empty_land" | "land_kind" | "structure" | "infrastructure">;
+export type LotInUseRow = Pick<ResultRow, "surface_parking" | "empty_land" | "land_kind" | "structure" | "infrastructure" | "open_land">;
 
 export function useLotInUse(pin10: string | null): LotInUseRow | null {
   const [row, setRow] = useState<{ pin10: string; row: LotInUseRow | null } | null>(null);

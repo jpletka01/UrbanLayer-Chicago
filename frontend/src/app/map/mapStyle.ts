@@ -14,8 +14,8 @@ export type Theme = "light" | "dark";
 export type LayerMode = "on" | "off";
 
 /** The groups a visitor can turn On / Off, in the key's order. The base land and water are not a group. */
-export type GroupId = "zoning" | "parcels" | "streets" | "sales" | "building" | "transit";
-export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "building", "transit", "streets"];
+export type GroupId = "zoning" | "parcels" | "streets" | "sales" | "building" | "transit" | "rail";
+export const GROUPS: GroupId[] = ["zoning", "parcels", "sales", "building", "transit", "rail", "streets"];
 
 /** Street names appear from this zoom (brief: names only when zoomed in). */
 export const STREET_LABEL_MIN_ZOOM = 15;
@@ -34,7 +34,7 @@ export interface MapTiles { base: TileSet | null; parcels: TileSet | null; zonin
 interface Palette {
   outside: string; land: string; water: string; park: string;
   highway: string; major: string; minor: string; local: string; ramp: string; casing: string;
-  rail: string; railTie: string;
+  rail: string; railTie: string; railMetra: string; railShared: string; railLandFill: number; stationFill: string;
   label: string; halo: string;
   parcelLine: string; parcelLineOpacity: number; parcelHit: string;
   lot: string; lotEdge: string; lotFill: number;
@@ -47,7 +47,7 @@ export const PALETTES: Record<Theme, Palette> = {
   light: {
     outside: "#E4E7EB", land: "#EEF0F3", water: "#C6D9E3", park: "#D6E8D8",
     highway: "#EE9580", major: "#F3C58C", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F2AE9C", casing: "#D3D8DE",
-    rail: "#5B3FA6", railTie: "#FFFFFF",
+    rail: "#3E2470", railTie: "#FFFFFF", railMetra: "#1D4F91", railShared: "#565A5C", railLandFill: 0.12, stationFill: "#FFFFFF",
     label: "#3C4249", halo: "#F4F6F8",
     parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
     lot: "#1C1C1C", lotEdge: "#FFFFFF", lotFill: 0.30,
@@ -56,7 +56,7 @@ export const PALETTES: Record<Theme, Palette> = {
   dark: {
     outside: "#141516", land: "#1E2023", water: "#18252D", park: "#1B2620",
     highway: "#E8806F", major: "#D9AE73", minor: "#8A9097", local: "#6B7178", ramp: "#B56F62", casing: "#141516",
-    rail: "#A08BEA", railTie: "#1E2023",
+    rail: "#9C82D9", railTie: "#1E2023", railMetra: "#6F9BE0", railShared: "#A8ADB3", railLandFill: 0.16, stationFill: "#1E2023",
     label: "#C9CDD2", halo: "#1E2023",
     parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
     lot: "#FFFFFF", lotEdge: "#1C1C1C", lotFill: 0.32,
@@ -138,30 +138,61 @@ const railWidth = (scale: number) => {
     10, at(10, low), 14, at(14, low), 20, at(20, () => 0)] as unknown as number;
 };
 
+/** The CTA's own line colors, by the City's legend code (``line`` in the base tiles); ML = several lines share the
+    track (the Loop, the north trunk), drawn in a neutral gray. */
+export const CTA_COLORS: Record<string, string> = {
+  RD: "#C60C30", BL: "#00A1DE", BR: "#62361B", GR: "#009B3A", OR: "#F9461C", PK: "#E27EA6", PR: "#522398", YL: "#F9E300",
+};
+const railColor = (t: Theme) => ["match", ["get", "kind"],
+  "cta", ["match", ["get", "line"], ...Object.entries(CTA_COLORS).flat(), PALETTES[t].railShared],
+  "metra", PALETTES[t].railMetra,
+  PALETTES[t].rail] as unknown as string;
+const stationColor = (t: Theme) => ["match", ["get", "kind"], "metra", PALETTES[t].railMetra, PALETTES[t].railShared] as unknown as string;
+
 /** Rail in the Cities: Skylines manner (Item 80) and the map convention for railroads: a band with dashes along it from
-    zoom 12, in its own violet (no road or zoning color is near it) and at least 2.4 px wide, so it stands out beside the
-    bright arterials and never reads as a street (owner's looks, 2026-11-16: gray, then dark, both blended in), drawn
-    over the streets so the elevated L reads above them. Part of the Streets group (the key says "Streets and rail"). */
+    zoom 12, over the streets so the elevated L reads above them. Colors by role (owner's map review, 2026-11-16): each L
+    line in the CTA's color, Metra in one navy, everything else (freight, Amtrak, yards, spurs) in a dark purple; rail
+    land (CMAP's right-of-way and yards) a faint area under the lots, so it reads where the County has no lot; stations
+    as white dots ringed in their line's color. Its own group, "Rail and transit", on by default. */
 const railLayers: LayerDef[] = [
   {
-    group: "streets", needs: "base", opacity: ["line-opacity"],
-    spec: (t) => ({ id: "rail", type: "line", source: "base", "source-layer": "rail",
-      layout: { "line-cap": "butt", "line-join": "round" },
-      paint: { "line-color": PALETTES[t].rail, "line-width": railWidth(1), "line-opacity": 1 } }),
+    group: "rail", needs: "base", opacity: ["fill-opacity"],
+    spec: (t) => ({ id: "rail-land", type: "fill", source: "base", "source-layer": "rail_land", minzoom: 12,
+      paint: { "fill-color": PALETTES[t].rail, "fill-opacity": PALETTES[t].railLandFill } }),
   },
   {
-    group: "streets", needs: "base", opacity: ["line-opacity"],
+    group: "rail", needs: "base", opacity: ["line-opacity"],
+    spec: (t) => ({ id: "rail", type: "line", source: "base", "source-layer": "rail",
+      layout: { "line-cap": "butt", "line-join": "round" },
+      paint: { "line-color": railColor(t), "line-width": railWidth(1), "line-opacity": 1 } }),
+  },
+  {
+    group: "rail", needs: "base", opacity: ["line-opacity"],
     spec: (t) => ({ id: "rail-ties", type: "line", source: "base", "source-layer": "rail", minzoom: 12,
       filter: ["match", ["get", "kind"], ["yard", "spur"], false, true],
       layout: { "line-cap": "butt", "line-join": "round" },
       paint: { "line-color": PALETTES[t].railTie, "line-width": railWidth(0.45), "line-dasharray": [2, 2], "line-opacity": 1 } }),
   },
   {
-    group: "streets", needs: "base", opacity: ["text-opacity"],
+    group: "rail", needs: "base", opacity: ["circle-opacity", "circle-stroke-opacity"],
+    spec: (t) => ({ id: "station", type: "circle", source: "base", "source-layer": "station", minzoom: 12,
+      paint: { "circle-radius": zoomWidth([[12, 2.5], [16, 5.5]]), "circle-color": PALETTES[t].stationFill,
+        "circle-stroke-color": stationColor(t), "circle-stroke-width": zoomWidth([[12, 1.5], [16, 2.5]]),
+        "circle-opacity": 1, "circle-stroke-opacity": 1 } }),
+  },
+  {
+    group: "rail", needs: "base", opacity: ["text-opacity"],
     spec: (t) => ({ id: "rail-label", type: "symbol", source: "base", "source-layer": "rail", minzoom: STREET_LABEL_MIN_ZOOM,
       filter: ["all", ["==", ["get", "kind"], "cta"], ["!=", ["get", "name"], ""]],
       layout: { "symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"],
         "text-size": zoomWidth([[15, 10], [18, 12]]), "symbol-spacing": 420, "text-max-angle": 30, "text-padding": 4 },
+      paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
+  },
+  {
+    group: "rail", needs: "base", opacity: ["text-opacity"],
+    spec: (t) => ({ id: "station-label", type: "symbol", source: "base", "source-layer": "station", minzoom: 14,
+      layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": zoomWidth([[14, 10], [17, 12]]),
+        "text-offset": [0, 1.1], "text-anchor": "top", "text-padding": 4, "text-optional": true },
       paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
   },
 ];
@@ -200,6 +231,7 @@ export const LAYERS: LayerDef[] = [
   // Water draws over the zoning fill (owner's review): the City zones lagoons with their parks (POS), and the
   // zoning fill covered the water.
   { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "water", type: "fill", source: "base", "source-layer": "water", paint: { "fill-color": PALETTES[t].water } }) },
+  railLayers[0],
   {
     group: "parcels", needs: "parcels", opacity: ["fill-opacity"],
     // Invisible except where a lot is marked (a search match or a sale): fill only under feature-state.
@@ -215,7 +247,8 @@ export const LAYERS: LayerDef[] = [
   },
   {
     group: "parcels", needs: "parcels", opacity: ["line-opacity"],
-    spec: (t) => ({ id: "parcel-line", type: "line", source: "parcels", "source-layer": "parcels",
+    // Lots under the City's water (room band "w", Item 128) aren't outlined: the river reads as water.
+    spec: (t) => ({ id: "parcel-line", type: "line", source: "parcels", "source-layer": "parcels", filter: ["!=", ["get", "r"], "w"],
       paint: { "line-color": PALETTES[t].parcelLine, "line-opacity": PALETTES[t].parcelLineOpacity,
         "line-width": zoomWidth([[14, 0.3], [16, 0.7], [19, 1.4]]) } }),
   },
@@ -225,8 +258,9 @@ export const LAYERS: LayerDef[] = [
   roadLayer("ramp", 12, 0.6, "ramp"),
   roadLayer("major", 10, 1.0, "major"),
   roadLayer("highway", 10, 1.6, "highway"),
-  railLayers[0],
   railLayers[1],
+  railLayers[2],
+  railLayers[3],
   // This lot stands out (owner's review, Item 96): a fill in "this lot" ink over the zoning, a wider edge, a 3 px line.
   {
     group: null, needs: "lot", opacity: [],
@@ -253,7 +287,8 @@ export const LAYERS: LayerDef[] = [
         "text-size": zoomWidth([[15, 10.5], [18, 13]]), "symbol-spacing": 320, "text-max-angle": 30, "text-padding": 4 },
       paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
   },
-  railLayers[2],
+  railLayers[4],
+  railLayers[5],
   {
     group: "zoning", needs: "zoning", opacity: ["text-opacity"],
     spec: (t) => ({ id: "zoning-label", type: "symbol", source: "zoning", "source-layer": "zoning_label",
