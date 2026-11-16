@@ -324,7 +324,7 @@ class TestEnvelope:
     def test_split_sides_are_merged(self):
         # PTAXSIM puts a vertex every few metres along a side; the footprint must still inset.
         ring = _rect(-87.6447, 41.9237, 25, 125)["coordinates"][0]
-        (x0, y0), (x1, y1) = ring[1], ring[2]
+        (x0, y0), (_x1, y1) = ring[1], ring[2]
         split = ring[:2] + [[x0, y0 + (y1 - y0) * f] for f in (0.25, 0.5, 0.75)] + ring[2:]
         env = envelope_geometry({"type": "Polygon", "coordinates": [split]}, self.STD, "642 W Belden Ave")
         assert len(env["edges"]) == 4 and env["footprint"] and env["approximate"] is False
