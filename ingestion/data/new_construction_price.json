@@ -1,0 +1,885 @@
+{
+ "community_areas": {
+  "1": {
+   "areas": null,
+   "high": 231,
+   "level": 159,
+   "low": 159,
+   "n": 518,
+   "new_sales": 0,
+   "value": 185
+  },
+  "10": {
+   "areas": null,
+   "high": 235,
+   "level": 162,
+   "low": 162,
+   "n": 64,
+   "new_sales": 0,
+   "value": 188
+  },
+  "11": {
+   "areas": null,
+   "high": 246,
+   "level": 169,
+   "low": 169,
+   "n": 122,
+   "new_sales": 0,
+   "value": 196
+  },
+  "12": {
+   "areas": [
+    "12",
+    "11"
+   ],
+   "high": 246,
+   "level": 169,
+   "low": 169,
+   "n": 130,
+   "new_sales": 0,
+   "value": 196
+  },
+  "13": {
+   "areas": null,
+   "high": 240,
+   "level": 165,
+   "low": 165,
+   "n": 56,
+   "new_sales": 0,
+   "value": 192
+  },
+  "14": {
+   "areas": null,
+   "high": 275,
+   "level": 189,
+   "low": 189,
+   "n": 253,
+   "new_sales": 1,
+   "value": 219
+  },
+  "15": {
+   "areas": null,
+   "high": 235,
+   "level": 162,
+   "low": 162,
+   "n": 124,
+   "new_sales": 0,
+   "value": 188
+  },
+  "16": {
+   "areas": null,
+   "high": 289,
+   "level": 199,
+   "low": 199,
+   "n": 338,
+   "new_sales": 0,
+   "value": 231
+  },
+  "17": {
+   "areas": null,
+   "high": 227,
+   "level": 156,
+   "low": 156,
+   "n": 78,
+   "new_sales": 0,
+   "value": 181
+  },
+  "18": {
+   "areas": null,
+   "high": 244,
+   "level": 168,
+   "low": 168,
+   "n": 31,
+   "new_sales": 0,
+   "value": 195
+  },
+  "19": {
+   "areas": null,
+   "high": 174,
+   "level": 120,
+   "low": 120,
+   "n": 74,
+   "new_sales": 0,
+   "value": 139
+  },
+  "2": {
+   "areas": null,
+   "high": 209,
+   "level": 144,
+   "low": 144,
+   "n": 467,
+   "new_sales": 0,
+   "value": 167
+  },
+  "20": {
+   "areas": [
+    "20",
+    "23"
+   ],
+   "high": 228,
+   "level": 157,
+   "low": 157,
+   "n": 58,
+   "new_sales": 0,
+   "value": 182
+  },
+  "21": {
+   "areas": null,
+   "high": 363,
+   "level": 250,
+   "low": 250,
+   "n": 204,
+   "new_sales": 0,
+   "value": 290
+  },
+  "22": {
+   "areas": null,
+   "high": 431,
+   "level": 297,
+   "low": 297,
+   "n": 751,
+   "new_sales": 9,
+   "value": 345
+  },
+  "23": {
+   "areas": null,
+   "high": 228,
+   "level": 157,
+   "low": 157,
+   "n": 48,
+   "new_sales": 1,
+   "value": 182
+  },
+  "24": {
+   "areas": null,
+   "high": 465,
+   "level": 320,
+   "low": 320,
+   "n": 2160,
+   "new_sales": 29,
+   "value": 372
+  },
+  "25": {
+   "areas": null,
+   "high": 222,
+   "level": 153,
+   "low": 153,
+   "n": 34,
+   "new_sales": 0,
+   "value": 178
+  },
+  "26": {
+   "areas": [
+    "26",
+    "29",
+    "27"
+   ],
+   "high": 193,
+   "level": 133,
+   "low": 133,
+   "n": 89,
+   "new_sales": 0,
+   "value": 154
+  },
+  "27": {
+   "areas": null,
+   "high": 193,
+   "level": 133,
+   "low": 133,
+   "n": 66,
+   "new_sales": 0,
+   "value": 154
+  },
+  "28": {
+   "areas": null,
+   "high": 362,
+   "level": 249,
+   "low": 249,
+   "n": 368,
+   "new_sales": 1,
+   "value": 289
+  },
+  "29": {
+   "areas": [
+    "29",
+    "26",
+    "27"
+   ],
+   "high": 193,
+   "level": 133,
+   "low": 133,
+   "n": 89,
+   "new_sales": 0,
+   "value": 154
+  },
+  "3": {
+   "areas": null,
+   "high": 354,
+   "level": 244,
+   "low": 244,
+   "n": 686,
+   "new_sales": 6,
+   "value": 283
+  },
+  "30": {
+   "areas": [
+    "30",
+    "58",
+    "29",
+    "57",
+    "59",
+    "31"
+   ],
+   "high": 378,
+   "level": 260,
+   "low": 260,
+   "n": 96,
+   "new_sales": 0,
+   "value": 302
+  },
+  "31": {
+   "areas": null,
+   "high": 378,
+   "level": 260,
+   "low": 260,
+   "n": 67,
+   "new_sales": 4,
+   "value": 302
+  },
+  "32": {
+   "areas": [
+    "32",
+    "8"
+   ],
+   "high": 471,
+   "level": 324,
+   "low": 324,
+   "n": 309,
+   "new_sales": 0,
+   "value": 376
+  },
+  "33": {
+   "areas": [
+    "33",
+    "35"
+   ],
+   "high": 227,
+   "level": 156,
+   "low": 156,
+   "n": 56,
+   "new_sales": 0,
+   "value": 181
+  },
+  "34": {
+   "areas": null,
+   "high": 272,
+   "level": 187,
+   "low": 187,
+   "n": 33,
+   "new_sales": 0,
+   "value": 217
+  },
+  "35": {
+   "areas": null,
+   "high": 227,
+   "level": 156,
+   "low": 156,
+   "n": 33,
+   "new_sales": 0,
+   "value": 181
+  },
+  "36": {
+   "areas": null,
+   "high": 260,
+   "level": 179,
+   "low": 179,
+   "n": 49,
+   "new_sales": 0,
+   "value": 208
+  },
+  "37": {
+   "areas": [
+    "37",
+    "38"
+   ],
+   "high": 202,
+   "level": 139,
+   "low": 139,
+   "n": 214,
+   "new_sales": 0,
+   "value": 161
+  },
+  "38": {
+   "areas": null,
+   "high": 202,
+   "level": 139,
+   "low": 139,
+   "n": 211,
+   "new_sales": 0,
+   "value": 161
+  },
+  "39": {
+   "areas": null,
+   "high": 224,
+   "level": 154,
+   "low": 154,
+   "n": 118,
+   "new_sales": 0,
+   "value": 179
+  },
+  "4": {
+   "areas": null,
+   "high": 318,
+   "level": 219,
+   "low": 219,
+   "n": 484,
+   "new_sales": 4,
+   "value": 254
+  },
+  "40": {
+   "areas": null,
+   "high": 142,
+   "level": 98,
+   "low": 98,
+   "n": 46,
+   "new_sales": 0,
+   "value": 114
+  },
+  "41": {
+   "areas": null,
+   "high": 211,
+   "level": 145,
+   "low": 145,
+   "n": 179,
+   "new_sales": 0,
+   "value": 168
+  },
+  "42": {
+   "areas": null,
+   "high": 208,
+   "level": 143,
+   "low": 143,
+   "n": 108,
+   "new_sales": 1,
+   "value": 166
+  },
+  "43": {
+   "areas": null,
+   "high": 123,
+   "level": 85,
+   "low": 85,
+   "n": 74,
+   "new_sales": 0,
+   "value": 99
+  },
+  "44": {
+   "areas": [
+    "44",
+    "49",
+    "73",
+    "68",
+    "42"
+   ],
+   "high": 208,
+   "level": 143,
+   "low": 143,
+   "n": 121,
+   "new_sales": 0,
+   "value": 166
+  },
+  "45": {
+   "areas": [
+    "44",
+    "43"
+   ],
+   "high": 123,
+   "level": 85,
+   "low": 85,
+   "n": 79,
+   "new_sales": 0,
+   "value": 99
+  },
+  "46": {
+   "areas": [
+    "46",
+    "43"
+   ],
+   "high": 123,
+   "level": 85,
+   "low": 85,
+   "n": 81,
+   "new_sales": 0,
+   "value": 99
+  },
+  "47": {
+   "areas": [
+    "44",
+    "49",
+    "73",
+    "43"
+   ],
+   "high": 123,
+   "level": 85,
+   "low": 85,
+   "n": 83,
+   "new_sales": 0,
+   "value": 99
+  },
+  "48": {
+   "areas": [
+    "46",
+    "44",
+    "43"
+   ],
+   "high": 123,
+   "level": 85,
+   "low": 85,
+   "n": 86,
+   "new_sales": 0,
+   "value": 99
+  },
+  "49": {
+   "areas": [
+    "49",
+    "73",
+    "44",
+    "75",
+    "72"
+   ],
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 48,
+   "new_sales": 0,
+   "value": 159
+  },
+  "5": {
+   "areas": null,
+   "high": 440,
+   "level": 303,
+   "low": 303,
+   "n": 508,
+   "new_sales": 3,
+   "value": 352
+  },
+  "50": {
+   "areas": [
+    "49",
+    "44",
+    "73",
+    "75",
+    "55",
+    "46",
+    "72"
+   ],
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 60,
+   "new_sales": 0,
+   "value": 159
+  },
+  "51": {
+   "areas": [
+    "55",
+    "49",
+    "44",
+    "46",
+    "73",
+    "43"
+   ],
+   "high": 123,
+   "level": 85,
+   "low": 85,
+   "n": 95,
+   "new_sales": 0,
+   "value": 99
+  },
+  "52": {
+   "areas": [
+    "46",
+    "55",
+    "43"
+   ],
+   "high": 123,
+   "level": 85,
+   "low": 85,
+   "n": 86,
+   "new_sales": 0,
+   "value": 99
+  },
+  "53": {
+   "areas": [
+    "75",
+    "49",
+    "73",
+    "72"
+   ],
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 43,
+   "new_sales": 0,
+   "value": 159
+  },
+  "54": {
+   "areas": [
+    "55",
+    "49",
+    "75",
+    "73",
+    "72"
+   ],
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 48,
+   "new_sales": 0,
+   "value": 159
+  },
+  "55": {
+   "areas": [
+    "55",
+    "49",
+    "46",
+    "44",
+    "75",
+    "73",
+    "43"
+   ],
+   "high": 123,
+   "level": 85,
+   "low": 85,
+   "n": 101,
+   "new_sales": 0,
+   "value": 99
+  },
+  "56": {
+   "areas": null,
+   "high": 228,
+   "level": 157,
+   "low": 157,
+   "n": 37,
+   "new_sales": 0,
+   "value": 182
+  },
+  "57": {
+   "areas": [
+    "57",
+    "62",
+    "58",
+    "63",
+    "30",
+    "56"
+   ],
+   "high": 228,
+   "level": 157,
+   "low": 157,
+   "n": 56,
+   "new_sales": 0,
+   "value": 182
+  },
+  "58": {
+   "areas": [
+    "58",
+    "59",
+    "63",
+    "30",
+    "57",
+    "62",
+    "31"
+   ],
+   "high": 378,
+   "level": 260,
+   "low": 260,
+   "n": 95,
+   "new_sales": 0,
+   "value": 302
+  },
+  "59": {
+   "areas": [
+    "59",
+    "58",
+    "60"
+   ],
+   "high": 277,
+   "level": 191,
+   "low": 191,
+   "n": 39,
+   "new_sales": 0,
+   "value": 222
+  },
+  "6": {
+   "areas": null,
+   "high": 494,
+   "level": 340,
+   "low": 340,
+   "n": 1673,
+   "new_sales": 4,
+   "value": 395
+  },
+  "60": {
+   "areas": [
+    "60",
+    "34"
+   ],
+   "high": 272,
+   "level": 187,
+   "low": 187,
+   "n": 59,
+   "new_sales": 1,
+   "value": 217
+  },
+  "61": {
+   "areas": [
+    "37",
+    "59",
+    "58",
+    "60"
+   ],
+   "high": 277,
+   "level": 191,
+   "low": 191,
+   "n": 42,
+   "new_sales": 0,
+   "value": 222
+  },
+  "62": {
+   "areas": [
+    "62",
+    "57",
+    "63",
+    "65",
+    "58",
+    "56"
+   ],
+   "high": 228,
+   "level": 157,
+   "low": 157,
+   "n": 65,
+   "new_sales": 0,
+   "value": 182
+  },
+  "63": {
+   "areas": [
+    "63",
+    "62",
+    "58",
+    "57",
+    "65",
+    "59"
+   ],
+   "high": 186,
+   "level": 128,
+   "low": 128,
+   "n": 37,
+   "new_sales": 0,
+   "value": 149
+  },
+  "64": {
+   "areas": null,
+   "high": 222,
+   "level": 153,
+   "low": 153,
+   "n": 116,
+   "new_sales": 0,
+   "value": 178
+  },
+  "65": {
+   "areas": [
+    "65",
+    "62",
+    "70"
+   ],
+   "high": 186,
+   "level": 128,
+   "low": 128,
+   "n": 38,
+   "new_sales": 0,
+   "value": 149
+  },
+  "66": {
+   "areas": [
+    "65",
+    "63",
+    "62",
+    "70"
+   ],
+   "high": 186,
+   "level": 128,
+   "low": 128,
+   "n": 39,
+   "new_sales": 0,
+   "value": 149
+  },
+  "67": {
+   "areas": [
+    "68",
+    "63",
+    "40"
+   ],
+   "high": 142,
+   "level": 98,
+   "low": 98,
+   "n": 51,
+   "new_sales": 0,
+   "value": 114
+  },
+  "68": {
+   "areas": [
+    "68",
+    "40"
+   ],
+   "high": 142,
+   "level": 98,
+   "low": 98,
+   "n": 50,
+   "new_sales": 0,
+   "value": 114
+  },
+  "69": {
+   "areas": [
+    "68",
+    "40"
+   ],
+   "high": 142,
+   "level": 98,
+   "low": 98,
+   "n": 50,
+   "new_sales": 0,
+   "value": 114
+  },
+  "7": {
+   "areas": null,
+   "high": 578,
+   "level": 398,
+   "low": 398,
+   "n": 1254,
+   "new_sales": 8,
+   "value": 462
+  },
+  "70": {
+   "areas": [
+    "70",
+    "65"
+   ],
+   "high": 150,
+   "level": 103,
+   "low": 103,
+   "n": 31,
+   "new_sales": 0,
+   "value": 120
+  },
+  "71": {
+   "areas": [
+    "73",
+    "44",
+    "68",
+    "72"
+   ],
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 44,
+   "new_sales": 0,
+   "value": 159
+  },
+  "72": {
+   "areas": null,
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 33,
+   "new_sales": 0,
+   "value": 159
+  },
+  "73": {
+   "areas": [
+    "73",
+    "49",
+    "72"
+   ],
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 37,
+   "new_sales": 0,
+   "value": 159
+  },
+  "74": {
+   "areas": [
+    "74",
+    "72"
+   ],
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 51,
+   "new_sales": 0,
+   "value": 159
+  },
+  "75": {
+   "areas": [
+    "75",
+    "72"
+   ],
+   "high": 199,
+   "level": 137,
+   "low": 137,
+   "n": 39,
+   "new_sales": 0,
+   "value": 159
+  },
+  "76": {
+   "areas": null,
+   "high": 237,
+   "level": 163,
+   "low": 163,
+   "n": 83,
+   "new_sales": 0,
+   "value": 189
+  },
+  "77": {
+   "areas": null,
+   "high": 331,
+   "level": 228,
+   "low": 228,
+   "n": 458,
+   "new_sales": 0,
+   "value": 265
+  },
+  "8": {
+   "areas": null,
+   "high": 471,
+   "level": 324,
+   "low": 324,
+   "n": 304,
+   "new_sales": 0,
+   "value": 376
+  },
+  "9": {
+   "areas": null,
+   "high": 259,
+   "level": 178,
+   "low": 178,
+   "n": 71,
+   "new_sales": 0,
+   "value": 207
+  }
+ },
+ "max_age": 2,
+ "method": "area condo median per gross sq ft (any age) x the citywide new-construction premium; gross sq ft = building sq ft x the unit's ownership share",
+ "min_n": 30,
+ "premium": {
+  "median": 1.161,
+  "n": 71,
+  "p25": 0.999,
+  "p75": 1.453
+ },
+ "source": "Cook County Assessor sales wvhk-k5uv + condo characteristics 3r7i-mrz4 + Parcel Universe pabr-t5kh",
+ "unit": "usd_per_gross_sqft",
+ "years": [
+  "2023",
+  "2025"
+ ]
+}

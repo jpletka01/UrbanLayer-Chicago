@@ -5,6 +5,9 @@ Every number the tab starts from carries where it came from, its range when ther
 * **The lot's own figures**, read from the Profile's data: its last recorded sale, the area's sale prices by building
   type (Assessor sales by community area and year), rents by bedroom (the Census tract, HUD's ZIP-level voucher
   standard), and the effective tax rate (the parcel's tax code, as the Profile shows it).
+* **What a new condo sells for per gross sq ft here** (the committed ``new_construction_price.json``: the area's
+  condo median per gross sq ft x the citywide new-construction premium, with its band). The sale price starts here;
+  the page multiplies it by the project's floor area.
 * **Assumptions with no public source for this lot** (build cost, soft costs, loans, selling costs, operating costs,
   cap rates, a profit target): defaults from the research behind Item 124, each with its range and source named, and
   always editable on the page. Build cost is the one the answer rests on; its range is what builders report (2025),
@@ -15,7 +18,12 @@ Nothing here calls a model or the network; the lot's figures come from the repor
 
 from __future__ import annotations
 
+import json
+import logging
+import threading
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 # Assumptions: (default, low, high, source, as_of). Research: research/reports/Developer pencil math needs.md (local).
 ASSUMPTIONS: dict[str, dict[str, Any]] = {
@@ -33,6 +41,53 @@ ASSUMPTIONS: dict[str, dict[str, Any]] = {
     "cap_rate": {"value": 0.0625, "low": 0.055, "high": 0.07, "unit": "rate", "source": "chicago_brokers_2026", "as_of": "2026"},
     "target_yield": {"value": 0.0775, "low": 0.07, "high": 0.09, "unit": "rate", "source": "spread_rule", "as_of": "2026"},
 }
+
+NEW_CONSTRUCTION_FILENAME = "new_construction_price.json"
+_new_construction: dict | None = None
+_nc_lock = threading.Lock()
+
+
+class NewConstructionArtifactError(RuntimeError):
+    """The committed new-construction artifact is missing or unreadable (a failure, never 'no figure here')."""
+
+
+def load_new_construction() -> dict:
+    global _new_construction
+    with _nc_lock:
+        if _new_construction is None:
+            from pathlib import Path
+            path = Path(__file__).resolve().parent.parent / "ingestion" / "data" / NEW_CONSTRUCTION_FILENAME
+            try:
+                data = json.loads(path.read_text())
+                if not isinstance(data.get("community_areas"), dict) or "premium" not in data:
+                    raise ValueError("missing community_areas / premium")
+            except (OSError, ValueError) as exc:
+                raise NewConstructionArtifactError(f"{NEW_CONSTRUCTION_FILENAME} is unreadable: {exc}") from exc
+            _new_construction = data
+        return _new_construction
+
+
+def reset_new_construction() -> None:
+    global _new_construction
+    with _nc_lock:
+        _new_construction = None
+
+
+def _new_construction_for(community_area: int | None) -> dict | None:
+    """The area's new-condo price per gross sq ft with its band, how it was reached, and the premium behind it.
+    None when the lot has no community area; a missing artifact raises."""
+    if community_area is None:
+        return None
+    art = load_new_construction()
+    row = art["community_areas"].get(str(community_area))
+    if not row:
+        return None
+    return {
+        "value": row["value"], "low": row["low"], "high": row["high"], "level": row["level"], "n": row["n"],
+        "pooled_areas": row.get("areas"), "new_sales": row.get("new_sales", 0),
+        "years": art["years"], "premium": art["premium"]["median"], "premium_n": art["premium"]["n"],
+    }
+
 
 # A floor is about 11 ft (a residential story with its structure); the page says so where it counts floors.
 FLOOR_FT = 11
@@ -86,6 +141,12 @@ def build_inputs(report: Any) -> dict:
     rent = getattr(nbr, "rent", None) if nbr else None
     zoning = report.zoning_standards
     unit_yield = report.unit_yield or {}
+    unchecked: list[str] = []
+    try:
+        new_construction = _new_construction_for(getattr(ctx, "community_area", None))
+    except NewConstructionArtifactError as exc:
+        log.warning("Deep analysis: %s", exc)
+        new_construction, unchecked = None, ["new_construction"]
     return {
         "lot": {
             "land_sqft": prop.land_sqft if prop else None,
@@ -97,6 +158,7 @@ def build_inputs(report: Any) -> dict:
         },
         "last_sale": _last_sale(prop) if prop else None,
         "area_sales": _area_sales(rent),
+        "new_construction": new_construction,
         "rents": _rents(rent, getattr(prop, "zip_code", None) if prop else None),
         "tax": {
             # The parcel's effective rate on market value (assessment level × equalizer × its tax code's rate), the
@@ -107,4 +169,5 @@ def build_inputs(report: Any) -> dict:
         },
         "assumptions": ASSUMPTIONS,
         "floor_ft": FLOOR_FT,
+        "unchecked": unchecked,
     }

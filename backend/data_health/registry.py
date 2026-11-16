@@ -679,6 +679,19 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "revision.",
     ),
     SourceSpec(
+        id="artifact.new_construction_price", name="New-construction condo price per sq ft by community area (committed)",
+        publisher="UrbanLayer from Cook County Assessor sales and condominium characteristics",
+        tier="official_estimate", kind="artifact", locator="ingestion/data/new_construction_price.json",
+        probe="artifact_sidecar",
+        owner_modules=("backend/deep_inputs.py", "ingestion/build_new_construction_artifact.py",
+                       "eval/new_construction_price.py"),
+        surfaces=("profile",), fact_keys=(),
+        cadence_days=365, warn_days=400, alarm_days=730,
+        note="The Deep analysis tab's starting sale price: each area's condo median per gross sq ft (any age, three "
+             "years of sales) x the citywide premium new condos sold for (decision Item 124). Rebuild with each new "
+             "sales year.",
+    ),
+    SourceSpec(
         id="artifact.rent_trend_by_area", name="Rent and sale-price trends by community area (committed)",
         publisher="UrbanLayer from US Census Bureau ACS, BLS CPI-U and Cook County Assessor sales",
         tier="official_estimate", kind="artifact", locator="ingestion/data/rent_trend_by_area.json", probe="artifact_sidecar",

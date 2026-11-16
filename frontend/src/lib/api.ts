@@ -306,11 +306,20 @@ export interface DeepInputs {
     lot_area_per_unit: number | null; footprint_sqft: number | null };
   last_sale: { price: number; date: string; deed_type: string | null } | null;
   area_sales: Partial<Record<"condo" | "two_to_six" | "single_family", { median: number; n: number; year: string }>>;
+  /** What a new condo sells for per GROSS sq ft here (Item 124): the area's condo median per gross sq ft (any age;
+      nearby areas pooled when thin) x the citywide new-construction premium, with its band. Optional: an analysis
+      cached before the field existed has none. */
+  new_construction?: DeepNewConstruction | null;
+  unchecked?: string[];
   rents: { census: Record<string, { estimate: number; moe: number | null; scope: string }>;
     hud: { by_bedroom: Record<string, number>; fy: number; zip: string } | null; acs_period: string | null };
   tax: { effective_rate: number | null; tax_year: number | null; current_bill: number | null };
   assumptions: Record<string, DeepAssumption>;
   floor_ft: number;
+}
+export interface DeepNewConstruction {
+  value: number; low: number; high: number; level: number; n: number;
+  pooled_areas: string[] | null; new_sales: number; years: [string, string]; premium: number; premium_n: number;
 }
 export interface DeepEnvelope {
   footprint: GeoJSON.Polygon | null; footprint_sqft: number | null; approximate: boolean; method: string;

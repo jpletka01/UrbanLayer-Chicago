@@ -388,3 +388,48 @@ class TestInputs:
     def test_no_sales_no_rent_is_none_not_zero(self):
         inp = deep_analysis.build_payload(_report(), pin=LOT_A)["inputs"]
         assert inp["last_sale"] is None and inp["area_sales"] == {} and inp["rents"]["census"] == {}
+
+    def test_new_construction_price_comes_from_the_committed_artifact(self):
+        r = _report()
+        r.context.community_area = 7  # Lincoln Park: enough condo sales of its own
+        nc = deep_analysis.build_payload(r, pin=LOT_A)["inputs"]["new_construction"]
+        assert nc["low"] <= nc["value"] <= nc["high"] and abs(nc["value"] - nc["level"] * nc["premium"]) <= 1
+        assert nc["pooled_areas"] is None and nc["n"] >= 30 and nc["premium_n"] > 0 and len(nc["years"]) == 2
+
+    def test_a_thin_area_borrows_its_neighbors_and_says_so(self):
+        from backend.deep_inputs import load_new_construction
+        thin = next(ca for ca, row in load_new_construction()["community_areas"].items() if row["areas"])
+        r = _report()
+        r.context.community_area = int(thin)
+        nc = deep_analysis.build_payload(r, pin=LOT_A)["inputs"]["new_construction"]
+        assert nc["pooled_areas"] and len(nc["pooled_areas"]) >= 2 and nc["n"] >= 30
+
+    def test_no_community_area_is_none_and_a_missing_artifact_is_unchecked(self, monkeypatch):
+        from backend import deep_inputs
+        r = _report()
+        r.context.community_area = None
+        inp = deep_analysis.build_payload(r, pin=LOT_A)["inputs"]
+        assert inp["new_construction"] is None and inp["unchecked"] == []
+
+        def boom():
+            raise deep_inputs.NewConstructionArtifactError("gone")
+        monkeypatch.setattr(deep_inputs, "load_new_construction", boom)
+        r.context.community_area = 7
+        inp = deep_analysis.build_payload(r, pin=LOT_A)["inputs"]
+        assert inp["new_construction"] is None and inp["unchecked"] == ["new_construction"]
+
+
+def test_new_construction_builder_pools_to_min_n_and_bands_by_the_premium():
+    from ingestion.build_new_construction_artifact import MIN_N, build
+    res = {
+        "years": [2023, 2025], "max_age": 2,
+        "community_areas": {"1": {"condo_any_age": {"per_sqft": {"n": 40, "median": 300}}},
+                            "2": {"condo_any_age": {"per_sqft": {"n": 5, "median": 200}}}},
+        "records": [["1", "condo", 2024, v] for v in (300, 330, 360, 420)],
+    }
+    art, meta = build(res)
+    a1, a2 = art["community_areas"]["1"], art["community_areas"]["2"]
+    assert art["premium"]["n"] == 4 and a1["areas"] is None and a1["new_sales"] == 4
+    assert a1["low"] <= a1["value"] <= a1["high"]
+    assert a2["areas"][0] == "2" and "1" in a2["areas"] and a2["n"] >= MIN_N and a2["new_sales"] == 0
+    assert meta["with_new_sales"] == 1

@@ -40,6 +40,8 @@ export interface Numbers {
 export type NumberSource =
   | { kind: "lot_sale"; date: string }
   | { kind: "area_sales"; group: string; year: string; n: number }
+  | { kind: "new_construction"; perSqft: number; low: number; high: number; unitSqft: number; n: number;
+      pooled: boolean; newSales: number; years: [string, string]; premium: number; premiumN: number }
   | { kind: "census_rent"; bedrooms: string; scope: string; period: string | null; moe: number | null }
   | { kind: "hud_rent"; bedrooms: string; fy: number }
   | { kind: "tax_rate"; year: number | null }
@@ -124,10 +126,22 @@ export function startingNumbers(inputs: DeepInputs, p: Project): { numbers: Numb
   const sale = inputs.last_sale;
   sources.landPrice = sale ? { kind: "lot_sale", date: sale.date } : { kind: "none" };
 
-  const condo = inputs.area_sales.condo;
-  sources.salePriceUnit = condo ? { kind: "area_sales", group: "condo", year: condo.year, n: condo.n } : { kind: "none" };
-
+  // The sale price per unit: what a new condo sells for per gross sq ft here x this project's gross area per unit
+  // (the zoning floor area, common space included, which is the basis the figure was measured on). Without it, the
+  // area's median condo of any size or age, per unit, as before (and labeled so).
   const unitSize = p.units > 0 ? p.floorAreaSqft / p.units : 0;
+  const nc = inputs.new_construction;
+  const condo = inputs.area_sales.condo;
+  let salePriceUnit = 0;
+  if (nc && unitSize > 0) {
+    salePriceUnit = Math.round((nc.value * unitSize) / 1000) * 1000;
+    sources.salePriceUnit = { kind: "new_construction", perSqft: nc.value, low: nc.low, high: nc.high, unitSqft: Math.round(unitSize),
+      n: nc.n, pooled: !!nc.pooled_areas, newSales: nc.new_sales, years: nc.years, premium: nc.premium, premiumN: nc.premium_n };
+  } else if (condo) {
+    salePriceUnit = condo.median;
+    sources.salePriceUnit = { kind: "area_sales", group: "condo", year: condo.year, n: condo.n };
+  } else sources.salePriceUnit = { kind: "none" };
+
   const bed = unitSize <= TWO_BED_MAX_SQFT ? "2_bedrooms" : "3_bedrooms";
   const census = inputs.rents.census[bed];
   const hudKey = bed === "2_bedrooms" ? "2" : "3";
@@ -146,7 +160,7 @@ export function startingNumbers(inputs: DeepInputs, p: Project): { numbers: Numb
 
   const numbers: Numbers = {
     landPrice: sale?.price ?? null,
-    salePriceUnit: condo?.median ?? 0,
+    salePriceUnit,
     rentUnitMonth: rent,
     buildCostSqft: pick("buildCostSqft", "build_cost_sqft", 250),
     softCostPct: pick("softCostPct", "soft_cost_pct", 0.18),

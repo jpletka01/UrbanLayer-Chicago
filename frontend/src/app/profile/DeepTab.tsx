@@ -478,7 +478,8 @@ function Slider({ label, value, min, max, stepBy, show, source, hint, onChange }
 }) {
   const id = useId();
   const band = source.kind === "assumption" ? [source.low, source.high]
-    : source.kind === "census_rent" && source.moe ? [value - source.moe, value + source.moe] : null;
+    : source.kind === "census_rent" && source.moe ? [value - source.moe, value + source.moe]
+    : source.kind === "new_construction" ? [source.low * source.unitSqft, source.high * source.unitSqft] : null;
   const at = (v: number) => `${Math.max(0, Math.min(100, ((v - min) / (max - min)) * 100))}%`;
   return (
     <div className="flex flex-col gap-1">
@@ -504,6 +505,14 @@ function SourceLine({ source, hint }: { source: NumberSource; hint?: string }) {
   let text: string;
   switch (source.kind) {
     case "lot_sale": text = t("deep.src.lotSale", { date: source.date.slice(0, 4) }); break;
+    case "new_construction": {
+      const loc = lng.startsWith("es") ? "es-MX" : "en-US";
+      text = t("deep.src.newConstruction", { perSqft: money(source.perSqft, lng, { short: false }), unitSqft: source.unitSqft.toLocaleString(loc),
+        years: source.years.join("–"), n: source.n.toLocaleString(loc), premium: source.premium.toLocaleString(loc, { maximumFractionDigits: 2 }) });
+      if (source.pooled) text += t("deep.src.newConstructionPooled");
+      if (!source.newSales) text += t("deep.src.newConstructionCarried");
+      break;
+    }
     case "area_sales": text = t(`deep.src.areaSales.${source.group}`, { year: source.year, n: source.n.toLocaleString(lng.startsWith("es") ? "es-MX" : "en-US") }); break;
     case "census_rent": text = t("deep.src.census", { beds: t(`deep.beds.${source.bedrooms}`), scope: t(`deep.scope.${source.scope}`), period: source.period ?? "", moe: source.moe ? money(source.moe, lng, { short: false }) : "—" }); break;
     case "hud_rent": text = t("deep.src.hud", { beds: t(`deep.beds.${source.bedrooms}`), fy: source.fy }); break;

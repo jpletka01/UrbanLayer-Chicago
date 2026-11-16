@@ -2510,6 +2510,9 @@
       "reset": "Back to the starting numbers"
     },
     "src": {
+      "newConstruction": "A new condo here: {{perSqft}} a sq ft × {{unitSqft}} sq ft a unit · the area's condo sales {{years}} ({{n}}) × {{premium}}, the new-build premium · Assessor",
+      "newConstructionPooled": " · with nearby areas",
+      "newConstructionCarried": " · no new condos sold here, so the premium comes from other areas",
       "lotSale": "This lot's last sale, {{date}}",
       "areaSales": {
         "condo": "The area's condo median, {{year}}, any size or age · {{n}} sales · Assessor",

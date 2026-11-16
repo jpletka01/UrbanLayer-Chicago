@@ -150,6 +150,15 @@ describe("the analysis", () => {
     expect(screen.getByTestId("deep-answer").textContent).toMatch(/doesn't meet your target/);
   });
 
+  it("the sale price starts from what new condos sell for here, and says how it got there", async () => {
+    api.getDeepAnalysis.mockResolvedValue({ ...ANALYSIS, inputs: { ...ANALYSIS.inputs, new_construction: {
+      value: 462, low: 398, high: 578, level: 398, n: 1254, pooled_areas: ["7", "6"], new_sales: 0,
+      years: ["2023", "2025"], premium: 1.161, premium_n: 71 } } });
+    show();
+    await screen.findByTestId("deep-bid");
+    expect(screen.getByText(/A new condo here: \$462 a sq ft × 838 sq ft a unit .* 1\.16, the new-build premium .* with nearby areas .* no new condos sold here/)).toBeTruthy();
+  });
+
   it("too many lots today: says so, no retry", async () => {
     api.getDeepAnalysis.mockRejectedValue(new api.DeepAnalysisError(429));
     show();

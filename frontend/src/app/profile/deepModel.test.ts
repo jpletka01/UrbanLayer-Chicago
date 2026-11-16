@@ -116,3 +116,37 @@ describe("money", () => {
     expect(money(-121_000, "en")).toBe("−$121k");
   });
 });
+
+describe("the sale price from new construction (Item 124's measured band)", () => {
+  // Lincoln Park in the committed artifact: condos $398 a gross sq ft (any age), × 1.161 new-build premium.
+  const NC = { value: 462, low: 398, high: 578, level: 398, n: 1254, pooled_areas: null, new_sales: 8,
+    years: ["2023", "2025"] as [string, string], premium: 1.161, premium_n: 71 };
+  const inputs: DeepInputs = { ...INPUTS, new_construction: NC };
+
+  it("prices each project's gross area per unit, not the area's median condo", () => {
+    const [largest, flat] = startingProjects(inputs);
+    const a = startingNumbers(inputs, largest);
+    expect(a.numbers.salePriceUnit).toBe(387_000); // 6,700 sq ft / 8 = 838 sq ft × $462
+    expect(a.sources.salePriceUnit).toMatchObject({ kind: "new_construction", perSqft: 462, low: 398, high: 578, unitSqft: 838, pooled: false });
+    const b = startingNumbers(inputs, flat);
+    expect(b.numbers.salePriceUnit).toBe(693_000); // 1,500 sq ft × $462
+  });
+
+  it("the 3-flat's land bid now reads its own size, not a median condo", () => {
+    const [, flat] = startingProjects(inputs);
+    const before = compute(flat, startingNumbers(INPUTS, flat).numbers, "sell").landBid;
+    const after = compute(flat, startingNumbers(inputs, flat).numbers, "sell").landBid;
+    expect(after).toBeGreaterThan(before);
+  });
+
+  it("a pooled area and one with no new sales say so", () => {
+    const [largest] = startingProjects(inputs);
+    const s = startingNumbers({ ...inputs, new_construction: { ...NC, pooled_areas: ["32", "8"], new_sales: 0 } }, largest).sources.salePriceUnit;
+    expect(s).toMatchObject({ kind: "new_construction", pooled: true, newSales: 0 });
+  });
+
+  it("no artifact figure: back to the area's condo median, labeled as such", () => {
+    const [largest] = startingProjects(INPUTS);
+    expect(startingNumbers({ ...INPUTS, new_construction: null }, largest).sources.salePriceUnit).toMatchObject({ kind: "area_sales", group: "condo" });
+  });
+});

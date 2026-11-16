@@ -2510,6 +2510,9 @@
       "reset": "Volver a las cifras de partida"
     },
     "src": {
+      "newConstruction": "Un condominio nuevo aquí: {{perSqft}} por pie² × {{unitSqft}} pies² por unidad · ventas de condominios del área {{years}} ({{n}}) × {{premium}}, la prima por obra nueva · Assessor",
+      "newConstructionPooled": " · con áreas cercanas",
+      "newConstructionCarried": " · aquí no se vendieron condominios nuevos, así que la prima viene de otras áreas",
       "lotSale": "Última venta de este terreno, {{date}}",
       "areaSales": {
         "condo": "Mediana de condominios del área, {{year}}, de cualquier tamaño o edad · {{n}} ventas · Asesor",

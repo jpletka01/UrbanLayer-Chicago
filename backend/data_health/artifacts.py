@@ -14,6 +14,7 @@ Checked here (all from files in the repo, no network):
 - ``ingestion/data/transit_stations.json``: build date from its ``.meta.json`` sidecar (180 / 365 days);
 - ``ingestion/data/rent_by_area.json``: build date from its ``.meta.json`` sidecar (400 / 730 days);
 - ``ingestion/data/rent_trend_by_area.json``: build date from its sidecar (400 / 730 days, as the rent artifact);
+- ``ingestion/data/new_construction_price.json``: build date from its sidecar (400 / 730 days, as the rent artifact);
 - ``ingestion/data/hud_safmr.json``: HUD's fiscal year from its sidecar; warns once the next year's FMRs take effect
   (October 1), alarms 180 days later;
 - ``ingestion/data/assessor_model_by_area.json``: build date from its sidecar (1095 / 1460 days) and the Assessor's
@@ -163,6 +164,18 @@ def check_rent_trend(today: date, root: Path = REPO) -> Check:
                  f"rent and sale-price trends built {built} (sales {years[0]}-{years[-1]}; {age} days old; warn after {RENT_DAYS[0]})", age)
 
 
+def check_new_construction(today: date, root: Path = REPO) -> Check:
+    path = "ingestion/data/new_construction_price.json"
+    side = _read(root / "ingestion/data/new_construction_price.meta.json")
+    built = _iso(side.get("built_at")) if side else None
+    if built is None:
+        return Check("new-construction price", path, "warn", "no new_construction_price.meta.json sidecar with a built_at date")
+    age = _age(built, today)
+    years = side.get("years") or ["?", "?"]
+    return Check("new-construction price", path, _grade(age, RENT_DAYS),
+                 f"new-construction price built {built} (sales {years[0]}-{years[-1]}; {age} days old; warn after {RENT_DAYS[0]})", age)
+
+
 def check_hud_safmr(today: date, root: Path = REPO) -> Check:
     """HUD's FMRs are set per federal fiscal year (from October 1 of the year before): once the next year's are in
     force, the committed table is out of date, whatever its build date."""
@@ -245,7 +258,7 @@ def check_hand_table(today: date, root: Path = REPO) -> Check:
 
 def run_checks(today: date | None = None, root: Path = REPO) -> list[Check]:
     today = today or date.today()
-    return [f(today, root) for f in (check_code_vintage, check_zoning_cache, check_transit, check_rent, check_rent_trend, check_hud_safmr, check_assessor_model, check_commercial_bldg, check_kit_key, check_benchmark, check_hand_table)]
+    return [f(today, root) for f in (check_code_vintage, check_zoning_cache, check_transit, check_rent, check_rent_trend, check_new_construction, check_hud_safmr, check_assessor_model, check_commercial_bldg, check_kit_key, check_benchmark, check_hand_table)]
 
 
 def annotation(c: Check) -> str:
