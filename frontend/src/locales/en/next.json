@@ -1213,7 +1213,8 @@
         "transport": "Railroad or transit land",
         "right_of_way": "Road or rail right-of-way: not a building site",
         "water": "Water: not a building site",
-        "institution": "Exempt institution (school, church, hospital or government): room not counted"
+        "institution": "Exempt institution (school, church, hospital or government): room not counted",
+        "condo": "Condo building: room not counted (only its units are on file)"
       },
       "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone",
       "now": {
@@ -1317,7 +1318,8 @@
         "own": "Set by its own ordinance (PD)",
         "park": "Park, cemetery or open space",
         "transport": "Rail, transit or road land",
-        "institution": "Exempt school, church, hospital or government"
+        "institution": "Exempt school, church, hospital or government",
+        "condo": "Condo building (room not counted)"
       },
       "lot": {
         "name": "Lot size",

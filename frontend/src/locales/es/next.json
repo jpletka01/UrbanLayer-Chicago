@@ -1213,7 +1213,8 @@
         "transport": "Terreno ferroviario o de transporte",
         "right_of_way": "Derecho de vía de calle o ferrocarril: no es un sitio para construir",
         "water": "Agua: no es un sitio para construir",
-        "institution": "Institución exenta (escuela, iglesia, hospital o gobierno): no se calcula el espacio"
+        "institution": "Institución exenta (escuela, iglesia, hospital o gobierno): no se calcula el espacio",
+        "condo": "Edificio de condominios: no se calcula el espacio (solo sus unidades están registradas)"
       },
       "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
       "now": {
@@ -1317,7 +1318,8 @@
         "own": "Lo fija su propia ordenanza (PD)",
         "park": "Parque, cementerio o espacio abierto",
         "transport": "Terreno ferroviario, de transporte o de calle",
-        "institution": "Escuela, iglesia, hospital o gobierno exentos"
+        "institution": "Escuela, iglesia, hospital o gobierno exentos",
+        "condo": "Edificio de condominios (no se calcula el espacio)"
       },
       "lot": {
         "name": "Tamaño del terreno",
