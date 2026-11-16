@@ -52,7 +52,11 @@ export function OverviewTab({
           <p className="flex w-full items-center gap-2 text-caption" data-testid="lot-in-use">
             {lotInUse.kind === "parking"
               ? <SquareParking aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
-              : <Sprout aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />}
+              : lotInUse.kind === "empty"
+                ? <Sprout aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
+                : lotInUse.kind === "road"
+                  ? <Route aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
+                  : <TrainTrack aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />}
             <Term label={lotInUse.words} definition={t(`profile.lotInUse.define.${lotInUse.kind}`)}
               question={t(`profile.lotInUse.ask.${lotInUse.kind}`, { address })} />
           </p>

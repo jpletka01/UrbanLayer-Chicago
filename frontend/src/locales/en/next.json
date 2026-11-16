@@ -1190,7 +1190,8 @@
       "named": {
         "own_rules": "Set by its own ordinance",
         "open_space": "Open space",
-        "transport": "Railroad or transit land"
+        "transport": "Railroad or transit land",
+        "right_of_way": "Road or rail right-of-way: not a building site"
       },
       "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone",
       "now": {
@@ -1292,7 +1293,7 @@
         "4": "10,000 sq ft or more",
         "own": "Set by its own ordinance (PD)",
         "park": "Park or open space",
-        "transport": "Railroad or transit land"
+        "transport": "Rail, transit or road land"
       },
       "lot": {
         "name": "Lot size",

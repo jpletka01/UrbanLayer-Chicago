@@ -27,65 +27,17 @@ from __future__ import annotations
 import argparse
 import collections
 import json
-import math
 import sqlite3
-import time
 from pathlib import Path
 
-import httpx
 import numpy as np
 import shapely
 from shapely.geometry import shape
 from shapely.strtree import STRtree
 
-from backend.discovery.cmap_land_use import CHICAGO_BBOX, _get
+from backend.map_tiles.rail_lines import _FT_PER_DEG_LON, NARN_ACTIVE, fetch, to_feet  # noqa: F401 (re-exported)
 
-CTA_DATASET = "xbyr-jnvx"
-NARN_URL = ("https://services.arcgis.com/xOi1kZaI0eWDREZv/arcgis/rest/services/"
-            "NTAD_North_American_Rail_Network_Lines/FeatureServer/0/query")
-NARN_FIELDS = "FRAARCID,RROWNER1,RROWNER2,TRKRGHTS1,TRKRGHTS2,TRKRGHTS3,PASSNGR,NET,TRACKS,YARDNAME,SUBDIV"
-NARN_ACTIVE = {"M": "main", "O": "main", "S": "main", "Y": "yard", "I": "industry"}
 CMAP_RAIL = "1511"  # TCU_ROW_RAIL: rail right-of-way
-
-# Local flat projection in feet (Chicago is small; error under 0.1%).
-_LAT0 = 41.85
-_FT_PER_DEG_LAT = 364_000.0
-_FT_PER_DEG_LON = _FT_PER_DEG_LAT * math.cos(math.radians(_LAT0))
-
-
-def to_feet(g):
-    return shapely.transform(g, lambda xy: np.column_stack([(xy[:, 0] + 87.65) * _FT_PER_DEG_LON,
-                                                            (xy[:, 1] - _LAT0) * _FT_PER_DEG_LAT]))
-
-
-# --- fetch -------------------------------------------------------------------------------------------------------
-
-def fetch(out: Path) -> dict:
-    out.mkdir(parents=True, exist_ok=True)
-    with httpx.Client(timeout=120, headers={"User-Agent": "rail-land-eval/1.0"}) as c:
-        cta = _get(c, f"https://data.cityofchicago.org/resource/{CTA_DATASET}.json",
-                   params={"$limit": 5000}).json()
-        if len(cta) < 100:
-            raise RuntimeError(f"CTA lines: only {len(cta)} rows")
-        (out / "cta_lines.json").write_text(json.dumps(cta))
-        feats: list[dict] = []
-        while True:
-            page = _get(c, NARN_URL, params={
-                "where": "1=1", "geometry": ",".join(map(str, CHICAGO_BBOX)), "geometryType": "esriGeometryEnvelope",
-                "inSR": 4326, "outSR": 4326, "outFields": NARN_FIELDS, "resultOffset": len(feats),
-                "resultRecordCount": 2000, "f": "geojson"}).json()
-            batch = page.get("features")
-            if batch is None:
-                raise RuntimeError(f"NARN answered without features: {str(page)[:200]}")
-            feats += batch
-            if len(batch) < 2000:
-                break
-        if len(feats) < 1500:
-            raise RuntimeError(f"NARN lines: only {len(feats)} in Chicago's box")
-        (out / "narn_lines.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}))
-    meta = {"fetched": time.strftime("%Y-%m-%d"), "cta_rows": len(cta), "narn_rows": len(feats)}
-    (out / "rail_meta.json").write_text(json.dumps(meta))
-    return meta
 
 
 def load_lines(rail: Path) -> dict[str, list[tuple[shapely.Geometry, dict]]]:

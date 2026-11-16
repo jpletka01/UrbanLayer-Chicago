@@ -75,7 +75,8 @@ export function measureSteps(m: MeasureId): MeasureStep[] {
   switch (m) {
     case "room": return [
       ...SEQ.map((color, i) => ({ value: String(i), color, key: `room.${i}` })),
-      // No base FAR is named, not unknown (owner's review): its own ordinance, open space, a transportation zone.
+      // No base FAR is named, not unknown (owner's review): its own ordinance, open space, a transportation zone (with
+      // road and rail right-of-way, Item 121: one key line).
       { value: "x", color: NAMED.own, key: "room.own" },
       { value: "p", color: NAMED.park, key: "room.park" },
       { value: "t", color: NAMED.transport, key: "room.transport" },
@@ -137,8 +138,9 @@ export interface CardModel {
   roomSqft: number | null;
   /** Where the building area behind "room to build" came from, when it isn't the Assessor's own record. */
   roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | null;
-  /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation. */
-  roomNamed: "own_rules" | "open_space" | "transport" | null;
+  /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation, or road
+      or rail right-of-way (Items 112, 121). */
+  roomNamed: "own_rules" | "open_space" | "transport" | "right_of_way" | null;
   /** A strip under 16 ft wide (hidden by default), with its width in feet. */
   narrowFt: number | null;
   /** The room is the multi-parcel site's (this many lots), not the lot's alone. */
@@ -154,7 +156,8 @@ export function cardModel(row: ResultRow): CardModel {
   const { title, approx } = rowTitle(row);
   const src = row.bldg_sqft_source;
   const basis = src === "commercial_valuation" || src === "footprint" || src === "city_land_inventory" ? src : null;
-  const named = row.room_scope === "own_rules" || row.room_scope === "open_space" || row.room_scope === "transport" ? row.room_scope : null;
+  const named = row.room_scope === "own_rules" || row.room_scope === "open_space" || row.room_scope === "transport"
+    || row.room_scope === "right_of_way" ? row.room_scope : null;
   const room = row.room_sqft ?? null;
   return {
     title,

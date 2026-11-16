@@ -21,6 +21,9 @@ multifamily lots (the Assessor's characteristics are residential only). This mod
   covering the most of each lot's PTAXSIM outline and that share, measured once from the local copy
   ``map_sources/cmap_lui_2023.db`` (``cmap_land_use.fetch``, run on the Mac and installed). Without the copy the
   table is not written and no lot is marked road land.
+* **The CTA L on each lot** (decision Item 121): ``rail_on_lot``, the feet of CTA elevated or at-grade line inside each
+  lot it crosses, from ``map_sources/cta_lines.json`` (``backend.map_tiles.rail_lines``). It only tells rail from road
+  where CMAP calls an L right-of-way "road"; rail land itself is CMAP's rail code.
 
 The fetch refuses to write a copy that looks partial (row floors below), so "could not read" never becomes "no
 building" or "no case". The copy is read only by the index build and ``index_backfill``; the live Profile is unchanged.
@@ -29,7 +32,7 @@ building" or "no case". The copy is read only by the index build and ``index_bac
 
 ``--addresses-only`` adds (or replaces) just the address tables in an existing copy; ``--structures-only`` just the
 Item 110 tables (needs ``map_sources/county_buildings_2022.db`` and PTAXSIM beside the copy, or ``--lidar``/``--ptaxsim``);
-``--land-use-only`` just ``cmap_on_lot`` (needs ``map_sources/cmap_lui_2023.db`` and PTAXSIM, or ``--cmap``/``--ptaxsim``).
+``--land-use-only`` just ``cmap_on_lot`` and ``rail_on_lot`` (needs ``map_sources/cmap_lui_2023.db`` and PTAXSIM, or ``--cmap``/``--ptaxsim``).
 """
 
 from __future__ import annotations
@@ -338,24 +341,50 @@ LAND_USE_TABLES = """
     DROP TABLE IF EXISTS cmap_on_lot;
     CREATE TABLE cmap_on_lot (pin10 TEXT PRIMARY KEY, code TEXT NOT NULL, share REAL NOT NULL);
 """
+RAIL_TABLES = """
+    DROP TABLE IF EXISTS rail_on_lot;
+    CREATE TABLE rail_on_lot (pin10 TEXT PRIMARY KEY, cta_ft REAL NOT NULL);
+"""
 MIN_CMAP_LOTS = 500_000  # 589,574 of Chicago's lots matched on 2026-11-12: fewer means a partial copy
+MIN_RAIL_LOTS = 1_000  # lots a CTA elevated or at-grade line runs through (about 3,000 on 2026-11-13)
 
 
-def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path) -> dict:
+def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path, rail_rows: list[tuple] | None = None) -> dict:
     from backend.discovery.cmap_land_use import read_meta
 
     if len(rows) < MIN_CMAP_LOTS:
         raise RuntimeError(f"CMAP matched only {len(rows)} lots: refusing to write")
+    if rail_rows is not None and len(rail_rows) < MIN_RAIL_LOTS:
+        raise RuntimeError(f"the CTA lines crossed only {len(rail_rows)} lots: refusing to write")
     db.executescript(LAND_USE_TABLES)
     db.executemany("INSERT INTO cmap_on_lot VALUES (?, ?, ?)", rows)
     meta = read_meta(cmap)
-    return {"cmap_lots": len(rows), "cmap_vintage": meta.get("vintage"), "cmap_fetched": meta.get("fetched")}
+    out = {"cmap_lots": len(rows), "cmap_vintage": meta.get("vintage"), "cmap_fetched": meta.get("fetched")}
+    if rail_rows is not None:
+        db.executescript(RAIL_TABLES)
+        db.executemany("INSERT INTO rail_on_lot VALUES (?, ?)", rail_rows)
+        out["cta_line_lots"] = len(rail_rows)
+    return out
+
+
+def _land_use_rows(cmap: Path, ptaxsim: Path, rail: Path) -> tuple[list[tuple], list[tuple] | None]:
+    """CMAP's code on every lot, and the CTA line's feet on the lots it crosses (Item 121; None without the rail copy,
+    with a warning: road land crossed by the L is then just road land)."""
+    from backend.discovery.cmap_land_use import codes_on_lots, lot_outlines_in_box
+    from backend.map_tiles import rail_lines
+
+    outlines = lot_outlines_in_box(ptaxsim)
+    rows = codes_on_lots(cmap, ptaxsim, outlines)
+    if not rail_lines.present(rail):
+        log.warning("lot sources: no rail lines in %s (python -m backend.map_tiles.rail_lines); rail_on_lot not written",
+                    rail)
+        return rows, None
+    return rows, rail_lines.cta_on_lots(rail, *outlines)
 
 
 def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsim: Path | None = None) -> dict:
-    """Add (or replace) only ``cmap_on_lot`` in an existing copy, in one transaction (Item 112)."""
-    from backend.discovery.cmap_land_use import codes_on_lots
-
+    """Add (or replace) only ``cmap_on_lot`` and ``rail_on_lot`` in an existing copy, in one transaction (Items 112,
+    121)."""
     if not out.exists():
         raise FileNotFoundError(f"{out} missing: run without --land-use-only first")
     cmap = cmap or out.parent / "map_sources" / "cmap_lui_2023.db"
@@ -364,11 +393,11 @@ def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsi
         if not need.exists() or need.stat().st_size == 0:
             raise FileNotFoundError(f"{need} missing")
     t0 = time.monotonic()
-    rows = codes_on_lots(cmap, ptaxsim)
+    rows, rail_rows = _land_use_rows(cmap, ptaxsim, cmap.parent)
     db = sqlite3.connect(out)
     try:
         with db:
-            summary = _write_land_use(db, rows, cmap)
+            summary = _write_land_use(db, rows, cmap, rail_rows)
             db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
     finally:
         db.close()
@@ -479,8 +508,8 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
         log.warning("lot sources: %s or %s missing; the Item 110 structure tables are not written", lidar, ptaxsim)
     cmap = out.parent / "map_sources" / "cmap_lui_2023.db"
     if cmap.exists() and cmap.stat().st_size and ptaxsim.exists():
-        from backend.discovery.cmap_land_use import codes_on_lots
-        address_summary.update(_write_land_use(db, codes_on_lots(cmap, ptaxsim), cmap))
+        rows, rail_rows = _land_use_rows(cmap, ptaxsim, cmap.parent)
+        address_summary.update(_write_land_use(db, rows, cmap, rail_rows))
     else:  # the build then marks no lot road land (Item 112), with a warning
         log.warning("lot sources: %s missing; the Item 112 land-use table is not written", cmap)
     summary = {
@@ -502,7 +531,7 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=DEFAULT_PATH)
     ap.add_argument("--addresses-only", action="store_true", help="add or replace only the address tables (Item 109)")
     ap.add_argument("--structures-only", action="store_true", help="add or replace only the Item 110 tables")
-    ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 table")
+    ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 and 121 tables")
     ap.add_argument("--cmap", type=Path, default=None, help="default: map_sources/cmap_lui_2023.db beside --out")
     ap.add_argument("--lidar", type=Path, default=None, help="default: map_sources/county_buildings_2022.db beside --out")
     ap.add_argument("--ptaxsim", type=Path, default=None, help="default: ptaxsim.db beside --out")

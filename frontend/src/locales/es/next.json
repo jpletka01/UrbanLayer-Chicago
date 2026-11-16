@@ -1190,7 +1190,8 @@
       "named": {
         "own_rules": "Lo fija su propia ordenanza",
         "open_space": "Espacio abierto",
-        "transport": "Terreno ferroviario o de transporte"
+        "transport": "Terreno ferroviario o de transporte",
+        "right_of_way": "Derecho de vía de calle o ferrocarril: no es un sitio para construir"
       },
       "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
       "now": {
@@ -1292,7 +1293,7 @@
         "4": "10,000 pies² o más",
         "own": "Lo fija su propia ordenanza (PD)",
         "park": "Parque o espacio abierto",
-        "transport": "Terreno ferroviario o de transporte"
+        "transport": "Terreno ferroviario, de transporte o de calle"
       },
       "lot": {
         "name": "Tamaño del terreno",

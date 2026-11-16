@@ -61,6 +61,8 @@ class LotSources:
     # PIN10 -> (CMAP 2023 code covering the most of the lot, that share) (Item 112); None when the copy predates the
     # table, so no lot is marked road land.
     cmap_on_lot: dict[str, tuple[str, float]] | None = None
+    # PIN10 -> feet of CTA elevated or at-grade line inside the lot (Item 121); None when the copy predates the table.
+    rail_on_lot: dict[str, float] | None = None
 
     @classmethod
     def load(cls, path: Path) -> "LotSources":
@@ -87,6 +89,10 @@ class LotSources:
                 cmap = {r[0]: (r[1], r[2]) for r in db.execute("SELECT pin10, code, share FROM cmap_on_lot")}
             except sqlite3.OperationalError:  # a copy made before Item 112
                 cmap = None
+            try:
+                rail = {r[0]: r[1] for r in db.execute("SELECT pin10, cta_ft FROM rail_on_lot")}
+            except sqlite3.OperationalError:  # a copy made before Item 121
+                rail = None
         finally:
             db.close()
         reps = shapely.point_on_surface(geoms)
@@ -96,7 +102,7 @@ class LotSources:
             fp_stories=[r[0] for r in fps], fp_area=[r[1] for r in fps],
             pt_tree={k: (STRtree(g), d) for k, (g, d) in pts.items()},
             area_tree=(STRtree(area_geoms), [a[1] or "" for a in areas]) if areas else None,
-            meta=meta, city_land=city_land, lidar_on_lot=lidar, cmap_on_lot=cmap,
+            meta=meta, city_land=city_land, lidar_on_lot=lidar, cmap_on_lot=cmap, rail_on_lot=rail,
         )
 
 
@@ -175,6 +181,10 @@ def derive_capacity(attrs: dict[str, Any]) -> None:
     attrs.pop("room_sqft", None)
     if attrs.get("room_scope") in NO_BASE_FAR:
         attrs.pop("room_scope")
+    if attrs.get("infrastructure") in RIGHT_OF_WAY:
+        # Road and rail right-of-way is not a building site, whatever its zoning says (Items 112, 121).
+        attrs["room_scope"] = "right_of_way"
+        return
     if far and lsf and lsf > 0 and bsf is not None:
         attrs["room_sqft"] = float(max(0.0, round(far * lsf - bsf)))
     elif not far:
@@ -185,7 +195,7 @@ def derive_capacity(attrs: dict[str, Any]) -> None:
             attrs["room_scope"] = scope
 
 
-NO_BASE_FAR = ("own_rules", "open_space", "transport")
+NO_BASE_FAR = ("own_rules", "open_space", "transport", "right_of_way")
 
 
 def no_far_scope(attrs: dict[str, Any]) -> str | None:
@@ -337,14 +347,21 @@ def mark_empty_land(attrs: dict[str, Any], lot, pin10: str, src: LotSources) -> 
 # nothing standing on the lot was 23 of 23 (all source combinations together 39 of 42); CMAP's road right-of-way on
 # exempt land the Item 110 rule calls empty was 27 of 27 road or rail land. OSM parking (22 of 23) waits for a
 # licensing review, CMAP's parking code alone (4 of 6), its parks (2 of 6) and garages (0 of 4) are not used.
+# Item 121: CMAP's rail right-of-way over half of any lot was 33 of 34 rail land (whatever stands on it: the L's own
+# structure reads as a building in the LiDAR); the CTA line alone 3 of 8 and the federal line alone 2 of 5, so a line
+# never marks a lot on its own. Road land a CTA line crosses was 6 of 6 "rail and highway" (the L in an expressway).
 NO_BUILDING = ("empty", "accessory")
 ROAD_MIN_SHARE = 0.5  # CMAP's road polygon covers at least half the lot
+RAIL_MIN_SHARE = 0.5  # CMAP's rail polygon covers at least half the lot
+CTA_MIN_FT = 25.0  # a CTA line runs at least this far through the lot
+# Right-of-way kinds: hidden by default (``index_build.unusual_rule``) and never given room to build.
+RIGHT_OF_WAY = ("road", "rail", "road_rail")
 
 
 def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
-    """``surface_parking`` and ``infrastructure`` on one base lot, in place, from the fields ``mark_empty_land`` just
-    set; each with its source. Reruns clear them first."""
-    from backend.discovery.cmap_land_use import CMAP_ROAD
+    """``surface_parking`` and ``infrastructure`` (road, rail, road_rail) on one base lot, in place, from the fields
+    ``mark_empty_land`` just set; each with its source. Reruns clear them first."""
+    from backend.discovery.cmap_land_use import CMAP_RAIL, CMAP_ROAD
 
     for k in ("surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source"):
         attrs.pop(k, None)
@@ -352,10 +369,19 @@ def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
         attrs["surface_parking"] = True
         attrs["surface_parking_source"] = "assessor_class"
     cm = src.cmap_on_lot.get(pin10) if src.cmap_on_lot is not None else None
-    if cm and cm[0] == CMAP_ROAD and cm[1] >= ROAD_MIN_SHARE and attrs.get("land_kind") == "exempt" \
-            and attrs.get("empty_land"):
-        attrs["infrastructure"] = "road"
+    if not cm:
+        return
+    if cm[0] == CMAP_RAIL and cm[1] >= RAIL_MIN_SHARE and attrs.get("land_kind") != "railroad":
+        # Railroad-class land is hidden already (Item 60) and named by its class.
+        attrs["infrastructure"] = "rail"
         attrs["infrastructure_source"] = "cmap_2023"
+        attrs.pop("surface_parking", None)  # parking under the tracks is rail land (owner's labels)
+        attrs.pop("surface_parking_source", None)
+    elif cm[0] == CMAP_ROAD and cm[1] >= ROAD_MIN_SHARE and attrs.get("land_kind") == "exempt" \
+            and attrs.get("empty_land"):
+        cta = (src.rail_on_lot or {}).get(pin10, 0.0)
+        attrs["infrastructure"] = "road_rail" if cta >= CTA_MIN_FT else "road"
+        attrs["infrastructure_source"] = "cmap_2023+cta" if cta >= CTA_MIN_FT else "cmap_2023"
 
 
 __all__ = [
@@ -383,7 +409,7 @@ def land_in_use(attrs: dict[str, Any]) -> str | None:
         return "parking"
     if attrs.get("empty_land"):
         return "empty"
-    if attrs.get("infrastructure") == "road" or attrs.get("land_kind") == "railroad":
+    if attrs.get("infrastructure") in RIGHT_OF_WAY or attrs.get("land_kind") == "railroad":
         return "road_rail"
     use = attrs.get("land_use_class") or ("exempt" if str(attrs.get("class") or "").upper().startswith("EX") else None)
     return _IN_USE_FROM_CLASS.get(use)
@@ -397,7 +423,8 @@ def measure_bands(attrs: dict[str, Any]) -> dict[str, str]:
     if room is not None:
         out["r"] = str(0 if room <= 0 else 1 + sum(room >= e for e in ROOM_BANDS[1:]))
     elif attrs.get("room_scope") in NO_BASE_FAR:
-        out["r"] = {"own_rules": "x", "open_space": "p", "transport": "t"}[attrs["room_scope"]]
+        out["r"] = {"own_rules": "x", "open_space": "p", "transport": "t",
+                    "right_of_way": "t"}[attrs["room_scope"]]  # drawn with transportation zones: one key line
     lot = attrs.get("land_sqft")
     if lot:
         out["s"] = str(sum(lot >= e for e in LOT_BANDS))
