@@ -1,32 +1,32 @@
 {
  "lots": 590174,
  "room_band": {
-  "1": 341580,
-  "2": 80843,
-  "0": 42221,
-  "4": 27121,
-  "x": 26735,
-  "none": 25763,
-  "3": 22858,
+  "1": 341571,
+  "2": 80832,
+  "0": 42220,
+  "4": 27101,
+  "x": 26626,
+  "none": 25408,
+  "3": 22598,
   "t": 10867,
   "i": 8274,
-  "p": 3344,
+  "p": 4109,
   "w": 568
  },
  "unknown": {
-  "lots": 25763,
+  "lots": 25408,
   "why_no_room": {
-   "no_footprint": 18857,
-   "stories_missing": 6134,
-   "other": 528,
+   "no_footprint": 18608,
+   "stories_missing": 6080,
+   "other": 476,
    "spans_lots": 244
   },
   "by_class": {
    "2-": 12274,
-   "EX": 6550,
-   "5-": 5212,
+   "EX": 6226,
+   "5-": 5210,
    "3-": 1477,
-   "1-": 174,
+   "1-": 145,
    "9-": 59,
    "4-": 11,
    "6-": 5,
@@ -93,121 +93,23 @@
   "examples": []
  },
  "unknown_cmap_open_space": {
-  "lots": 585,
-  "shown": 572,
+  "lots": 230,
+  "shown": 223,
   "by_class": {
-   "EX": 541,
-   "1-": 30,
-   "5-": 12,
+   "EX": 217,
+   "5-": 10,
+   "1-": 1,
    "2-": 1,
    "4-": 1
   },
   "by_zoning": {
-   "none": 270,
-   "residential": 231,
-   "commercial": 38,
-   "business": 31,
-   "manufacturing": 15
+   "residential": 163,
+   "commercial": 32,
+   "business": 22,
+   "none": 8,
+   "manufacturing": 5
   },
   "examples": [
-   {
-    "pin": "12-22-200-004-0000",
-    "address": "~3560 RIVER RD",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "empty",
-    "cmap": "3300",
-    "cmap_share": 0.999,
-    "r": null,
-    "zone": null,
-    "park_share": null,
-    "water_share": 0.056,
-    "land_sqft": 8816346.0
-   },
-   {
-    "pin": "12-10-200-002-0000",
-    "address": "~8759 W SUMMERDALE AVE",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "built",
-    "cmap": "3300",
-    "cmap_share": 0.999,
-    "r": null,
-    "zone": null,
-    "park_share": null,
-    "water_share": 0.001,
-    "land_sqft": 6279838.0
-   },
-   {
-    "pin": "12-23-300-001-0000",
-    "address": "~8800 W BELMONT AVE",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "built",
-    "cmap": "3200",
-    "cmap_share": 0.999,
-    "r": null,
-    "zone": null,
-    "park_share": null,
-    "water_share": 0.049,
-    "land_sqft": 6134342.0
-   },
-   {
-    "pin": "25-35-400-004-0000",
-    "address": "~1465 E 130TH ST",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "disagree",
-    "cmap": "3300",
-    "cmap_share": 0.999,
-    "r": null,
-    "zone": null,
-    "park_share": null,
-    "water_share": 0.156,
-    "land_sqft": 5575897.0
-   },
-   {
-    "pin": "12-15-200-012-0000",
-    "address": "~8766 W LELAND AVE",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "built",
-    "cmap": "3300",
-    "cmap_share": 0.999,
-    "r": null,
-    "zone": null,
-    "park_share": null,
-    "water_share": 0.069,
-    "land_sqft": 5182222.0
-   },
-   {
-    "pin": "13-10-100-003-0000",
-    "address": "~5600 N KNOX AVE",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "built",
-    "cmap": "3300",
-    "cmap_share": 0.997,
-    "r": null,
-    "zone": null,
-    "park_share": 0.0,
-    "water_share": 0.02,
-    "land_sqft": 5042926.0
-   },
-   {
-    "pin": "12-15-400-001-0000",
-    "address": "~4470 N FOREST VIEW AVE",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "built",
-    "cmap": "3300",
-    "cmap_share": 1.0,
-    "r": null,
-    "zone": null,
-    "park_share": null,
-    "water_share": 0.066,
-    "land_sqft": 5039698.0
-   },
    {
     "pin": "24-13-116-001-0000",
     "address": "10522 S CALIFORNIA AVE",
@@ -221,6 +123,104 @@
     "park_share": null,
     "water_share": 0.017,
     "land_sqft": 3478510.0
+   },
+   {
+    "pin": "19-36-402-001-0000",
+    "address": "~8529 S ROCKWELL ST",
+    "class": "5-35",
+    "land_kind": "commercial",
+    "structure": "built",
+    "cmap": "3200",
+    "cmap_share": 0.998,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 3151871.0
+   },
+   {
+    "pin": "24-13-218-001-0000",
+    "address": "~10600 S FAIRFIELD AVE",
+    "class": "5-35",
+    "land_kind": "commercial",
+    "structure": "built",
+    "cmap": "3200",
+    "cmap_share": 0.994,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 446534.0
+   },
+   {
+    "pin": "20-35-501-001-0000",
+    "address": "~8500 S UNIVERSITY AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "3300",
+    "cmap_share": 0.988,
+    "r": null,
+    "zone": null,
+    "park_share": 0.0,
+    "water_share": null,
+    "land_sqft": 443808.0
+   },
+   {
+    "pin": "24-13-209-001-0000",
+    "address": "10401 S CALIFORNIA AVE",
+    "class": "5-35",
+    "land_kind": "commercial",
+    "structure": "built",
+    "cmap": "3200",
+    "cmap_share": 0.997,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 439672.0
+   },
+   {
+    "pin": "21-31-124-001-0000",
+    "address": "2430 E 82ND ST",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "built",
+    "cmap": "3100",
+    "cmap_share": 0.992,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 355620.0
+   },
+   {
+    "pin": "13-36-127-002-0000",
+    "address": "~2063 N HUMBOLDT BLVD",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "3500",
+    "cmap_share": 0.99,
+    "r": null,
+    "zone": null,
+    "park_share": 0.055,
+    "water_share": null,
+    "land_sqft": 278839.0
+   },
+   {
+    "pin": "13-36-332-002-0000",
+    "address": "~1758 N HUMBOLDT BLVD",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "new_construction",
+    "cmap": "3500",
+    "cmap_share": 0.977,
+    "r": null,
+    "zone": null,
+    "park_share": 0.012,
+    "water_share": null,
+    "land_sqft": 154378.0
    }
   ]
  },
@@ -374,17 +374,17 @@
  "line_through_unmarked": {
   "lots": 502,
   "by_r": {
-   "x": 189,
+   "x": 185,
    "4": 121,
-   "none": 106,
+   "none": 102,
    "2": 25,
    "3": 21,
+   "p": 13,
    "t": 13,
    "i": 6,
    "1": 6,
    "0": 5,
-   "w": 5,
-   "p": 5
+   "w": 5
   },
   "by_cmap": {
    "other_linear": 76,
@@ -418,10 +418,10 @@
   }
  },
  "line_through_unknown": {
-  "lots": 106,
-  "shown": 106,
+  "lots": 102,
+  "shown": 102,
   "by_class": {
-   "EX": 90,
+   "EX": 86,
    "5-": 15,
    "3-": 1
   },
@@ -430,24 +430,10 @@
    "manufacturing": 25,
    "residential": 24,
    "business": 14,
-   "none": 10,
+   "none": 6,
    "commercial": 5
   },
   "examples": [
-   {
-    "pin": "12-03-402-001-0000",
-    "address": "~7325 W TALCOTT AVE",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "accessory",
-    "cmap": "3300",
-    "cmap_share": 1.0,
-    "r": null,
-    "zone": null,
-    "park_share": null,
-    "water_share": 0.032,
-    "land_sqft": 2484353.0
-   },
    {
     "pin": "25-02-419-012-0000",
     "address": "~1050 E 95TH ST",
@@ -491,20 +477,6 @@
     "land_sqft": 701098.0
    },
    {
-    "pin": "12-03-402-002-0000",
-    "address": "~8770 W BRYN MAWR AVE",
-    "class": "EX",
-    "land_kind": "exempt",
-    "structure": "empty",
-    "cmap": "3300",
-    "cmap_share": 0.997,
-    "r": null,
-    "zone": null,
-    "park_share": null,
-    "water_share": null,
-    "land_sqft": 555738.0
-   },
-   {
     "pin": "16-34-302-023-0000",
     "address": "~3600 S KOSTNER AVE",
     "class": "5-80",
@@ -545,6 +517,34 @@
     "park_share": null,
     "water_share": null,
     "land_sqft": 377262.0
+   },
+   {
+    "pin": "25-22-401-037-0000",
+    "address": "~11900 S COTTAGE GROVE AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "built",
+    "cmap": "1420",
+    "cmap_share": 0.993,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 364245.0
+   },
+   {
+    "pin": "25-22-400-026-0000",
+    "address": "~11740 S CALUMET AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "1420",
+    "cmap_share": 0.991,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 228849.0
    }
   ]
  },
