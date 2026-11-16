@@ -72,7 +72,8 @@
       "build": "Construir",
       "money": "Dinero",
       "neighborhood": "Vecindario",
-      "history": "Historial"
+      "history": "Historial",
+      "deep": "Análisis a fondo"
     },
     "lotInUse": {
       "define": {
@@ -123,7 +124,8 @@
       "laterTransfer": "Una transferencia de {{year}} no cuenta como venta",
       "onlyTransfers_one": "{{count}} transferencia registrada, no es venta de mercado",
       "onlyTransfers_other": "{{count}} transferencias registradas, ninguna es venta de mercado",
-      "noSaleOnRecord": "No hay ventas registradas"
+      "noSaleOnRecord": "No hay ventas registradas",
+      "deep": "Revisar un proyecto"
     },
     "build": {
       "allowedVsBuilt": "Permitido vs construido",
@@ -2230,7 +2232,7 @@
       "compBody": "Acceso anticipado: Pro, {{limit}} preguntas al mes, hasta el {{date}}.",
       "manageBilling": "Administrar facturación",
       "adminBody": "Admin: las preguntas se cuentan, pero nunca se rechazan.",
-      "proWhat": "{{limit}} preguntas al mes",
+      "proWhat": "{{limit}} preguntas al mes, Análisis a fondo de cualquier terreno",
       "getPro": "Obtener Pro",
       "seePricing": "Ver precios",
       "billedMonthly": "{{price}} al mes",
@@ -2248,7 +2250,10 @@
       "keepPro": "Conservar Pro",
       "pastDueBody": "Su tarjeta fue rechazada y Stripe lo está reintentando. Mientras tanto conserva Pro ({{limit}} preguntas al mes); actualice su tarjeta para conservarlo después.",
       "updateCard": "Actualizar su tarjeta",
-      "portalFailed": "No se pudo abrir la página de facturación de Stripe. Intente de nuevo en un momento."
+      "portalFailed": "No se pudo abrir la página de facturación de Stripe. Intente de nuevo en un momento.",
+      "freeDeep": "Un Análisis a fondo gratis",
+      "freeDeepUsed": "usado en",
+      "freeDeepUnused": "sin usar · elija cualquier terreno"
     },
     "code": {
       "title": "Código de acceso",
@@ -2295,7 +2300,7 @@
   "pricing": {
     "title": "Precios",
     "heading": "Planes",
-    "lead": "La Ficha de cada terreno, Descubrir y el mapa son gratuitos. Pro agrega más preguntas al analista.",
+    "lead": "La Ficha de cada terreno, Descubrir y el mapa son gratuitos. Pro agrega más preguntas y un Análisis a fondo de cualquier terreno.",
     "billing": "Facturación",
     "monthly": "Mensual",
     "yearly": "Anual",
@@ -2312,11 +2317,13 @@
       "Todas las pestañas de la Ficha, en cada terreno",
       "Descubrir en las 77 áreas comunitarias",
       "50 preguntas al mes al analista",
+      "Un Análisis a fondo gratis, en el terreno que usted elija",
       "Terrenos y búsquedas guardados"
     ],
     "proFeatures": [
       "Todo lo del plan gratuito",
       "200 preguntas al mes",
+      "Análisis a fondo de cualquier terreno, con su PDF",
       "Pro dura hasta el final del periodo que pagó"
     ],
     "signedOutNote": "Sin iniciar sesión, puede hacer 3 preguntas.",
@@ -2339,7 +2346,7 @@
       },
       "trial": {
         "q": "¿Hay periodo de prueba?",
-        "a": "El plan gratuito es la prueba: todas las pestañas y 50 preguntas al mes, sin tarjeta."
+        "a": "El plan gratuito es la prueba: todas las pestañas, 50 preguntas al mes y un Análisis a fondo, sin tarjeta."
       },
       "reports": {
         "q": "¿Y los informes que ya compré?",
@@ -2378,6 +2385,208 @@
       "investor": "Inversionista",
       "homeowner": "Propietario",
       "curious": "Solo curiosidad"
+    }
+  },
+  "deep": {
+    "gate": {
+      "approximate": "El Análisis a fondo necesita un terreno exacto y no pudimos confirmar a qué terreno corresponde esta dirección.",
+      "approximateNote": "No se usa nada. Elija el terreno en el mapa o búsquelo por su PIN.",
+      "pickOnMap": "Elegirlo en el mapa",
+      "lead": "Lo máximo que puede pagar por este terreno para el proyecto que usted elija, con cada cifra a la vista y su fuente.",
+      "checking": "Revisando su plan…",
+      "failed": "No pudimos revisar su plan en este momento. Vuelva a cargar la página para intentarlo de nuevo.",
+      "signIn": "Inicie sesión para un Análisis a fondo gratis.",
+      "signInButton": "Iniciar sesión",
+      "claim": "Usar mi Análisis a fondo gratis en este terreno",
+      "claimNote": "Un terreno, para siempre. Las otras cinco pestañas siguen gratis en todos los terrenos.",
+      "yourFree": "Su Análisis a fondo gratis",
+      "wentTo": "se usó en",
+      "proTitle": "Pro: Análisis a fondo en todos los terrenos",
+      "proNote": "$19 al mes o $199 al año · 200 preguntas al mes · el PDF",
+      "seePro": "Ver Pro"
+    },
+    "outline": {
+      "bid": "Lo máximo que puede pagar",
+      "bidNote": "Por el terreno, si vende las unidades o las renta",
+      "projects": "Proyectos lado a lado",
+      "projectsNote": "El más grande según las cifras, un edificio de 3 departamentos, el suyo; cada uno en 3D sobre el terreno",
+      "numbers": "Sus cifras, con fuente",
+      "numbersNote": "Precios de venta, rentas, impuestos y costos, cada uno con su rango y su fuente",
+      "stress": "Si las cosas cambian",
+      "stressNote": "La respuesta con precios y costos de construcción 10% arriba o abajo"
+    },
+    "loading": "Leyendo los registros de la Ciudad y del Condado para este terreno. La primera vez puede tardar medio minuto.",
+    "tooMany": "Son muchos terrenos para un solo día. El Análisis a fondo vuelve a abrir mañana.",
+    "failed": "No pudimos armar el análisis en este momento.",
+    "noNumbers": "No tenemos el área de este terreno ni el límite de superficie de su distrito, así que no hay un proyecto de partida.",
+    "noNumbersNote": "Un desarrollo planificado fija sus propios límites, y algunos terrenos no tienen área registrada.",
+    "freeHere": "Su Análisis a fondo gratis, para siempre",
+    "disclaimer": "Sus supuestos, solo aritmética: no es un avalúo, una oferta ni una asesoría. Use las cifras de su contratista y de su prestamista antes de ofertar.",
+    "answer": {
+      "sell": "Vender {{units}} unidades aquí permite pagar hasta unos {{bid}} por este terreno; su última venta fue de {{sale}}.",
+      "rent": "Rentar {{units}} unidades aquí permite pagar hasta unos {{bid}} por este terreno; su última venta fue de {{sale}}.",
+      "sellNoSale": "Vender {{units}} unidades aquí permite pagar hasta unos {{bid}} por este terreno.",
+      "rentNoSale": "Rentar {{units}} unidades aquí permite pagar hasta unos {{bid}} por este terreno.",
+      "sellNoLand": "Con estas cifras, vender {{units}} unidades aquí no cubre el costo de construirlas, ni con el terreno gratis.",
+      "rentNoLand": "Con estas cifras, rentar {{units}} unidades aquí no alcanza su meta, ni con el terreno gratis."
+    },
+    "mode": {
+      "label": "Vender o rentar",
+      "sell": "Vender las unidades",
+      "rent": "Rentarlas"
+    },
+    "bid": {
+      "label": "Lo máximo que puede pagar por este terreno",
+      "none": "Ningún precio del terreno alcanza",
+      "atProfit": "con una ganancia de {{pct}} sobre el costo",
+      "atYield": "con un rendimiento de {{pct}} sobre el costo",
+      "barLabel": "Lo máximo que puede pagar, {{bid}}, frente a la última venta del terreno, {{sale}}",
+      "lastSale": "última venta {{sale}}",
+      "ceiling": "máximo a pagar {{bid}}"
+    },
+    "out": {
+      "breakEvenSale": "Venta de equilibrio",
+      "breakEvenRent": "Renta de equilibrio",
+      "perUnit": "por unidad",
+      "perUnitMonth": "por unidad al mes",
+      "noSale": "necesita un precio del terreno",
+      "taxes": "Impuestos ya construido",
+      "perYear": "al año",
+      "taxesToday": "hoy {{bill}}",
+      "cash": "Efectivo que usted pone",
+      "atPrice": "al precio de {{price}}",
+      "atBid": "al máximo a pagar"
+    },
+    "projects": {
+      "label": "Proyectos",
+      "units": "Unidades",
+      "floors": "Pisos",
+      "floorArea": "Superficie",
+      "kind": {
+        "largest": "El más grande · {{units}} unidades",
+        "three_flat": "Un edificio de 3 departamentos",
+        "townhouses": "Casas adosadas",
+        "own": "El suyo · {{units}} unidades",
+        "ownN": "Su proyecto {{n}} · {{units}} unidades"
+      },
+      "size": "{{area}} pies² · {{floors}} pisos",
+      "ring": {
+        "floorArea": "Superficie: {{v}}% del límite",
+        "height": "Altura: {{v}}% del límite",
+        "units": "Unidades: {{v}}% del límite"
+      },
+      "rings": "% de cada límite",
+      "over": "Pasa un límite",
+      "fits": "Cabe en las cifras",
+      "less": "Menos: {{what}}",
+      "more": "Más: {{what}}",
+      "atSale": "si cada una se vende en {{price}}",
+      "atRent": "a {{price}} al mes cada una",
+      "remove": "Quitar su proyecto {{n}}",
+      "name": {
+        "largest": "el proyecto más grande",
+        "three_flat": "el edificio de 3 departamentos",
+        "townhouses": "las casas adosadas",
+        "own": "su proyecto",
+        "ownN": "su proyecto {{n}}"
+      },
+      "ownFull": "Hasta {{n}} propios; quite uno para agregar otro",
+      "yours": "Sus proyectos",
+      "title": "Proyecto",
+      "choose": "Proyecto: {{name}}. Elija otro",
+      "save": "Guardar como proyecto nuevo",
+      "back": "Volver a {{name}}",
+      "ringShort": {
+        "floorArea": "superficie",
+        "units": "unidades",
+        "height": "altura"
+      }
+    },
+    "numbers": {
+      "title": "Sus cifras",
+      "land": "Terreno",
+      "sale": "Precio de venta",
+      "perUnit": "{{v}} por unidad",
+      "rent": "Renta",
+      "perUnitMonth": "{{v}} por unidad al mes",
+      "build": "Costo de construcción",
+      "perSqft": "{{v}} por pie²",
+      "buildHint": "use la cifra de su contratista",
+      "soft": "Costos indirectos",
+      "ofBuild": "{{v}} de la construcción",
+      "loanRate": "Préstamo",
+      "loan": "{{ltc}} al {{rate}}",
+      "profit": "Su ganancia",
+      "onCost": "{{v}} sobre el costo",
+      "yield": "Su meta de rendimiento",
+      "more": "Más cifras",
+      "ltc": "Préstamo, parte del costo",
+      "months": "Tiempo de obra",
+      "monthsV": "{{v}} meses",
+      "selling": "Costos de venta",
+      "opex": "Gastos de operación",
+      "vacancy": "Desocupación",
+      "cap": "Tasa de capitalización aquí",
+      "tax": "Tasa del impuesto predial",
+      "reset": "Volver a las cifras de partida"
+    },
+    "src": {
+      "newConstruction": "Un condominio nuevo aquí: {{perSqft}} por pie² × {{unitSqft}} pies² por unidad · ventas de condominios del área {{years}} ({{n}}) × {{premium}}, la prima por obra nueva · Assessor",
+      "newConstructionPooled": " · con áreas cercanas",
+      "newConstructionCarried": " · aquí no se vendieron condominios nuevos, así que la prima viene de otras áreas",
+      "lotSale": "Última venta de este terreno, {{date}}",
+      "areaSales": {
+        "condo": "Mediana de condominios del área, {{year}}, de cualquier tamaño o edad · {{n}} ventas · Asesor",
+        "two_to_six": "Mediana de edificios de 2 a 6 unidades del área, {{year}} · {{n}} ventas · Asesor",
+        "single_family": "Mediana de casas del área, {{year}} · {{n}} ventas · Asesor"
+      },
+      "census": "Renta de {{beds}} en este {{scope}}, {{period}} · ±{{moe}} · Censo",
+      "hud": "Renta de vales de HUD para {{beds}} en este código postal, año fiscal {{fy}}",
+      "taxRate": "La tasa de este terreno sobre el valor de mercado, {{year}}",
+      "chicagoTax": "La tasa 2024 de Chicago sobre el valor de mercado (no hay registro de la del terreno)",
+      "assumption": {
+        "builders_reported": "Lo que reportan constructores de Chicago, {{asOf}}; la banda es su rango",
+        "terner_2024": "Estudio de edificios pequeños del Terner Center, {{asOf}}",
+        "lenders_2026": "Condiciones publicadas por prestamistas de construcción, {{asOf}}",
+        "common_practice": "Una cifra de partida común; cámbiela por la suya",
+        "developer_rule": "Una meta común de desarrolladores, {{asOf}}",
+        "chicago_brokers_2026": "Tasas de capitalización de corredores de Chicago para edificios pequeños, {{asOf}}",
+        "spread_rule": "La tasa de capitalización de aquí más 1.5 puntos, una meta común"
+      },
+      "none": "Sin registro; anote la suya"
+    },
+    "beds": {
+      "1_bedroom": "1 recámara",
+      "2_bedrooms": "2 recámaras",
+      "3_bedrooms": "3 recámaras"
+    },
+    "scope": {
+      "tract": "sector censal",
+      "puma": "área más amplia"
+    },
+    "stress": {
+      "title": "Si las cosas cambian: lo máximo a pagar",
+      "caption": "Lo máximo que puede pagar con el precio de venta o la renta (filas) y el costo de construcción (columnas) 10% abajo, como está y 10% arriba",
+      "asSet": "como está",
+      "axesSell": "precio de venta ↓ · costo de obra →",
+      "axesRent": "renta ↓ · costo de obra →",
+      "legend": "rojo = por debajo de los {{sale}} de su última venta",
+      "legendNoSale": "rojo = ningún precio del terreno alcanza"
+    },
+    "map": {
+      "label": "{{name}} · {{floors}} pisos",
+      "over": "pasa el límite de altura"
+    },
+    "tile": {
+      "open": "Abierto",
+      "openNote": "Lo máximo que puede pagar, vendiendo o rentando",
+      "free": "1 gratis",
+      "freeNote": "Un Análisis a fondo, en el terreno que usted elija",
+      "signIn": "Inicie sesión para un Análisis a fondo gratis",
+      "used": "Usado",
+      "usedOn": "Su análisis gratis se usó en {{where}}",
+      "usedNote": "Su análisis gratis se usó en otro terreno",
+      "approximate": "Necesita un terreno exacto"
     }
   }
 }

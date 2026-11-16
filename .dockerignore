@@ -14,6 +14,8 @@ ingestion/data/
 !ingestion/data/rent_by_area.meta.json
 !ingestion/data/rent_trend_by_area.json
 !ingestion/data/rent_trend_by_area.meta.json
+!ingestion/data/new_construction_price.json
+!ingestion/data/new_construction_price.meta.json
 !ingestion/data/hud_safmr.json
 !ingestion/data/hud_safmr.meta.json
 !ingestion/data/cps_schools.json

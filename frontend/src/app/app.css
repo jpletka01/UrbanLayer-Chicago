@@ -155,6 +155,10 @@
   --status-danger: 180 40 40;
   --status-success: 30 122 82;
   --status-info: 33 112 155;
+  /* Pills on a pale stat card keep their light colors in dark too (the card is pale in both themes). */
+  --nx-pill-green-bg: 234 247 241; --nx-pill-green: 30 122 82;
+  --nx-pill-red-bg: 253 236 236;   --nx-pill-red: 180 40 40;
+  --nx-pill-yellow-bg: 255 246 219; --nx-pill-yellow: 122 89 0;
 }
 .ui-next .nx-card-muted {
   color: rgb(var(--nx-card-ink) / 0.68);

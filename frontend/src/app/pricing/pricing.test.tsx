@@ -69,8 +69,9 @@ describe("the page", () => {
     const { container } = page();
     const free = screen.getByTestId("pricing-free");
     expect(free.textContent).toContain("$0");
-    // Deep analysis is parked (Item 124), so no plan promises it (Phase 10).
-    expect(container.textContent).not.toContain("Deep analysis");
+    // Deep analysis ships (Item 124): one free on the lot you choose, every lot with Pro.
+    expect(free.textContent).toContain("One Deep analysis, free");
+    expect(screen.getByTestId("pricing-month").textContent).toContain("Deep analysis on every lot");
     expect(within(free).getByText("Your plan")).toBeTruthy();
     expect(screen.getByTestId("pricing-month-price").textContent).toBe("$19");
     expect(screen.getByTestId("pricing-year-price").textContent).toBe("$199");

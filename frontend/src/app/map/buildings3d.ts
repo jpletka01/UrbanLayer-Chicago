@@ -114,7 +114,7 @@ export function massLayer(theme: Theme): FillExtrusionLayerSpecification {
     paint: {
       "fill-extrusion-color": ["get", "c"] as never,
       "fill-extrusion-height": ["get", "m"] as never,
-      "fill-extrusion-base": 0,
+      "fill-extrusion-base": ["coalesce", ["get", "b"], 0] as never,
       "fill-extrusion-opacity": theme === "light" ? 0.85 : 0.9,
     },
   };
@@ -135,13 +135,24 @@ export function lotBuildingLayer(theme: Theme): FillExtrusionLayerSpecification 
   };
 }
 
-/** The mass as GeoJSON: the lot's outline raised to the mass height (feet → metres). */
-export function massData(lot: GeoJSON.Geometry | null, heightFt: number | null, zoneClass: string | null = null): GeoJSON.FeatureCollection {
+/** Over a limit: the part of a project above the height limit (Deep analysis, Item 124), the status red. */
+export const OVER_LIMIT_COLOR = "#e5484d";
+
+/** The mass as GeoJSON: the lot's outline raised to the mass height (feet → metres). With `capFt` (a Deep analysis
+    project), the part above the limit is a second, red piece standing on the first. */
+export function massData(lot: GeoJSON.Geometry | null, heightFt: number | null, zoneClass: string | null = null, capFt: number | null = null): GeoJSON.FeatureCollection {
   if (!lot || heightFt == null || !(heightFt > 0) || (lot.type !== "Polygon" && lot.type !== "MultiPolygon")) {
     return { type: "FeatureCollection", features: [] };
   }
   const steps = ZONING_COLORS[zoningFamily(zoneClass)] ?? ZONING_COLORS.other;
-  return { type: "FeatureCollection", features: [{ type: "Feature", geometry: lot, properties: { m: heightFt * FEET_TO_METERS, c: steps[3] } }] };
+  const m = (ft: number) => ft * FEET_TO_METERS;
+  if (capFt != null && capFt > 0 && heightFt > capFt) {
+    return { type: "FeatureCollection", features: [
+      { type: "Feature", geometry: lot, properties: { m: m(capFt), b: 0, c: steps[3] } },
+      { type: "Feature", geometry: lot, properties: { m: m(heightFt), b: m(capFt), c: OVER_LIMIT_COLOR, over: true } },
+    ] };
+  }
+  return { type: "FeatureCollection", features: [{ type: "Feature", geometry: lot, properties: { m: m(heightFt), c: steps[3] } }] };
 }
 
 type Ring = number[][];

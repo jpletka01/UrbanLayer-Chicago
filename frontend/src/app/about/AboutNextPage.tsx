@@ -206,9 +206,11 @@ export default function AboutNextPage() {
             interrogate it via chat with cited municipal code; and buy a $25
             PDF <Accent>Development Feasibility Report</Accent>. Live at <Mono>urbanlayerchicago.com</Mono>.
           </P>
-          <SinceReplaced date="November 14, 2026">
+          <SinceReplaced date="November 14 and 16, 2026">
             The $25 report purchase is retired: Pro ($19 a month or $199 a year) opens the report on every lot, and a free
-            account on one (decision Item 123). The Scorecard and the old UI this page describes in places were replaced too;
+            account on one (decision Item 123). Since November 16, 2026 that same lot opens the Profile&rsquo;s Deep analysis
+            tab: the most a builder can pay for the land, for a project they choose, from a measured new-construction sale
+            price (decision Item 124). The Scorecard and the old UI this page describes in places were replaced too;
             each such section carries its own note.
           </SinceReplaced>
           <P>
@@ -1389,9 +1391,11 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           {/* ── Feasibility Report (PDF) ── */}
           <SectionHeading id="report">Development Feasibility Report (PDF)</SectionHeading>
-          <SinceReplaced date="November 14, 2026">
+          <SinceReplaced date="November 14 and 16, 2026">
             The $25 per-lot purchase is retired (decision Item 123). The PDF itself remains: Pro opens it on every lot, a
-            signed-in free account on one lot, and earlier purchases keep their reports.
+            signed-in free account on one lot, and earlier purchases keep their reports. Since November 16, 2026 it is the
+            Deep analysis tab&rsquo;s export: the tab is the report&rsquo;s numbers worked as a land bid, with the
+            builder&rsquo;s own projects and assumptions (decision Item 124).
           </SinceReplaced>
           <P>
             The $25 PDF report is the revenue wedge — the moment a professional needs a deliverable for a client,
@@ -1481,10 +1485,12 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           {/* ── Payments & Monetization ── */}
           <SectionHeading id="payments">Payments &amp; Monetization</SectionHeading>
-          <SinceReplaced date="November 14, 2026">
+          <SinceReplaced date="November 14 and 16, 2026">
             One plan replaced both price points: Pro at $19 a month or $199 a year, read from Stripe's own subscription
             state through signed, idempotent webhooks, with a Billing portal for the card, invoices and canceling (decision
             Item 123). The $25 report and the $99 price are retired. Payments stay off until production Stripe keys are set.
+            Since November 16, 2026 Pro also opens the Deep analysis on every lot, and the free plan on one lot (decision
+            Item 124).
           </SinceReplaced>
           <P>
             Two price points, both through <Accent>Stripe</Accent> (<Mono>backend/payments.py</Mono>): a one-time{" "}

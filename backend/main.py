@@ -202,6 +202,9 @@ app.include_router(map_tiles_router)
 from backend.saved import router as saved_router  # noqa: E402  (Saved, decision Item 119)
 
 app.include_router(saved_router)
+from backend.deep_analysis import router as deep_analysis_router  # noqa: E402  (Deep analysis, decision Item 124)
+
+app.include_router(deep_analysis_router)
 
 
 @app.on_event("startup")

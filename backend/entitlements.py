@@ -28,6 +28,25 @@ def _unlimited(user: dict | None) -> bool:
     return bool(user) and user.get("tier") in ("premium", "admin")
 
 
+def same_lot(a: str | None, b: str | None) -> bool:
+    """Two PINs are the same lot when their first ten digits match: the last four number a condo unit or a
+    leasehold on that lot (Item 124), so the free analysis claimed through one unit opens the lot through any."""
+    return bool(a) and bool(b) and a[:10] == b[:10]
+
+
+async def free_address(pin: str | None) -> str | None:
+    """The free lot's address for Settings and the tab ("went to <address>"). Display only; None when the County
+    has none or the lookup fails (the page then shows the PIN)."""
+    if not pin:
+        return None
+    try:
+        from backend.retrieval.property.address_points import pin_to_address
+        return await pin_to_address(pin)
+    except Exception:
+        log.warning("free deep analysis address lookup failed", exc_info=True)
+        return None
+
+
 def _user_subject(user_id: str) -> str:
     return f"user:{user_id}"
 
@@ -54,7 +73,8 @@ async def free_pin(user_id: str) -> str | None:
 async def status(user: dict | None) -> dict:
     """``GET /api/entitlements``."""
     if not user:
-        return {"signed_in": False, "deep_analysis": {"unlimited": False, "free_left": 0, "free_pin": None}}
+        return {"signed_in": False, "deep_analysis": {
+            "unlimited": False, "free_left": 0, "free_pin": None, "free_address": None}}
     pin = await free_pin(user["id"])
     return {
         "signed_in": True,
@@ -62,6 +82,7 @@ async def status(user: dict | None) -> dict:
             "unlimited": _unlimited(user),
             "free_left": 0 if pin else 1,
             "free_pin": pin,
+            "free_address": await free_address(pin),
         },
     }
 
@@ -73,8 +94,8 @@ async def claim(user: dict, pin: str) -> dict:
         return {"ok": True, "pin": pin, "unlimited": True}
     used = await free_pin(user["id"])
     if used:
-        if used == pin:
-            return {"ok": True, "pin": pin, "unlimited": False}
+        if same_lot(used, pin):
+            return {"ok": True, "pin": used, "unlimited": False}
         raise HTTPException(status_code=409, detail={"error": "free_used", "free_pin": used})
 
     conn = db._get_db()
@@ -86,8 +107,8 @@ async def claim(user: dict, pin: str) -> dict:
     await conn.commit()
     if cur.rowcount != 1:
         used = await free_pin(user["id"])
-        if used == pin:
-            return {"ok": True, "pin": pin, "unlimited": False}
+        if same_lot(used, pin):
+            return {"ok": True, "pin": used, "unlimited": False}
         raise HTTPException(status_code=409, detail={"error": "free_used", "free_pin": used})
     for subject in (await _subjects(user["id"]))[1:]:
         await conn.execute(
@@ -116,4 +137,4 @@ async def opens_lot(user: dict, pin: str | None) -> bool:
     """True when this lot's Deep analysis (and PDF) is open to the account: Pro/admin, or its free lot."""
     if _unlimited(user):
         return True
-    return bool(pin) and await free_pin(user["id"]) == pin
+    return bool(pin) and same_lot(await free_pin(user["id"]), pin)

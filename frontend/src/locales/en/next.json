@@ -72,7 +72,8 @@
       "build": "Build",
       "money": "Money",
       "neighborhood": "Neighborhood",
-      "history": "History"
+      "history": "History",
+      "deep": "Deep analysis"
     },
     "lotInUse": {
       "define": {
@@ -123,7 +124,8 @@
       "laterTransfer": "A {{year}} transfer isn't counted as a sale",
       "onlyTransfers_one": "{{count}} transfer on record, not a market sale",
       "onlyTransfers_other": "{{count}} transfers on record, none a market sale",
-      "noSaleOnRecord": "No sale on record"
+      "noSaleOnRecord": "No sale on record",
+      "deep": "Check a project"
     },
     "build": {
       "allowedVsBuilt": "Allowed vs built",
@@ -2230,7 +2232,7 @@
       "compBody": "Early access: Pro, {{limit}} questions a month, until {{date}}.",
       "manageBilling": "Manage billing",
       "adminBody": "Admin: questions are counted, never refused.",
-      "proWhat": "{{limit}} questions a month",
+      "proWhat": "{{limit}} questions a month, Deep analysis on every lot",
       "getPro": "Get Pro",
       "seePricing": "See pricing",
       "billedMonthly": "{{price}} a month",
@@ -2248,7 +2250,10 @@
       "keepPro": "Keep Pro",
       "pastDueBody": "Your card was declined and Stripe is retrying it. You keep Pro ({{limit}} questions a month) while it does; update your card to keep it after.",
       "updateCard": "Update your card",
-      "portalFailed": "Stripe's billing page couldn't be opened. Please try again in a moment."
+      "portalFailed": "Stripe's billing page couldn't be opened. Please try again in a moment.",
+      "freeDeep": "One free Deep analysis",
+      "freeDeepUsed": "used on",
+      "freeDeepUnused": "not used yet · pick any lot"
     },
     "code": {
       "title": "Access code",
@@ -2295,7 +2300,7 @@
   "pricing": {
     "title": "Pricing",
     "heading": "Plans",
-    "lead": "Every lot's Property Profile, Discovery and the map are free. Pro adds more questions to the analyst.",
+    "lead": "Every lot's Property Profile, Discovery and the map are free. Pro adds more questions and a Deep analysis of any lot.",
     "billing": "Billing",
     "monthly": "Monthly",
     "yearly": "Yearly",
@@ -2312,11 +2317,13 @@
       "Every Property Profile tab, on every lot",
       "Discovery across all 77 community areas",
       "50 questions a month to the analyst",
+      "One Deep analysis, free, on the lot you choose",
       "Saved lots and searches"
     ],
     "proFeatures": [
       "Everything in Free",
       "200 questions a month",
+      "Deep analysis on every lot, with its PDF",
       "Pro lasts to the end of the period you paid for"
     ],
     "signedOutNote": "Signed out, you can ask 3 questions before signing in.",
@@ -2339,7 +2346,7 @@
       },
       "trial": {
         "q": "Is there a trial?",
-        "a": "The free plan is the trial: every tab and 50 questions a month, with no card."
+        "a": "The free plan is the trial: every tab, 50 questions a month and one Deep analysis, with no card."
       },
       "reports": {
         "q": "Reports I bought before?",
@@ -2378,6 +2385,208 @@
       "investor": "Investor",
       "homeowner": "Homeowner",
       "curious": "Just curious"
+    }
+  },
+  "deep": {
+    "gate": {
+      "approximate": "Deep analysis needs an exact lot, and we couldn't confirm which lot this address is.",
+      "approximateNote": "Nothing is used up. Pick the lot on the map, or search for it by its PIN.",
+      "pickOnMap": "Pick it on the map",
+      "lead": "The most you can pay for this lot, for a project you choose, with every number shown and its source.",
+      "checking": "Checking your plan…",
+      "failed": "We couldn't check your plan just now. Reload the page to try again.",
+      "signIn": "Sign in for one free Deep analysis.",
+      "signInButton": "Sign in",
+      "claim": "Use my free Deep analysis on this lot",
+      "claimNote": "One lot, kept for good. The other five tabs stay free on every lot.",
+      "yourFree": "Your free Deep analysis",
+      "wentTo": "went to",
+      "proTitle": "Pro: Deep analysis on every lot",
+      "proNote": "$19 a month or $199 a year · 200 questions a month · the PDF",
+      "seePro": "See Pro"
+    },
+    "outline": {
+      "bid": "The most you can pay",
+      "bidNote": "For the land, if you sell the units or rent them out",
+      "projects": "Projects side by side",
+      "projectsNote": "Largest by the numbers, a 3-flat, your own, each on the lot in 3D",
+      "numbers": "Your numbers, sourced",
+      "numbersNote": "Sale prices, rents, taxes and costs, each with its range and source",
+      "stress": "If things move",
+      "stressNote": "The answer with prices and build costs 10% either way"
+    },
+    "loading": "Reading the City's and the County's records for this lot. A first look can take half a minute.",
+    "tooMany": "That's a lot of lots for one day. Deep analysis opens again tomorrow.",
+    "failed": "We couldn't put the analysis together just now.",
+    "noNumbers": "We don't have this lot's area or its district's floor-area limit, so there's no project to start from.",
+    "noNumbersNote": "A planned development sets its own limits, and some lots have no area on record.",
+    "freeHere": "Your free Deep analysis, kept for good",
+    "disclaimer": "Your assumptions, arithmetic only: not an appraisal, a bid or advice. Use your contractor's and lender's own numbers before an offer.",
+    "answer": {
+      "sell": "Selling {{units}} units here supports paying up to about {{bid}} for this lot; it last sold for {{sale}}.",
+      "rent": "Renting {{units}} units here supports paying up to about {{bid}} for this lot; it last sold for {{sale}}.",
+      "sellNoSale": "Selling {{units}} units here supports paying up to about {{bid}} for this lot.",
+      "rentNoSale": "Renting {{units}} units here supports paying up to about {{bid}} for this lot.",
+      "sellNoLand": "Selling {{units}} units here doesn't cover the cost to build them at these numbers, even with free land.",
+      "rentNoLand": "Renting {{units}} units here doesn't meet your target at these numbers, even with free land."
+    },
+    "mode": {
+      "label": "Sell or rent",
+      "sell": "Sell the units",
+      "rent": "Rent them out"
+    },
+    "bid": {
+      "label": "Most you can pay for this lot",
+      "none": "No land price works",
+      "atProfit": "at a {{pct}} profit on cost",
+      "atYield": "at a {{pct}} return on cost",
+      "barLabel": "The most you can pay, {{bid}}, against the lot's last sale, {{sale}}",
+      "lastSale": "last sale {{sale}}",
+      "ceiling": "most you can pay {{bid}}"
+    },
+    "out": {
+      "breakEvenSale": "Break-even sale",
+      "breakEvenRent": "Break-even rent",
+      "perUnit": "a unit",
+      "perUnitMonth": "a unit a month",
+      "noSale": "needs a land price",
+      "taxes": "Taxes once built",
+      "perYear": "a year",
+      "taxesToday": "today {{bill}}",
+      "cash": "Cash you bring",
+      "atPrice": "at the {{price}} price",
+      "atBid": "at the most you can pay"
+    },
+    "projects": {
+      "label": "Projects",
+      "units": "Units",
+      "floors": "Floors",
+      "floorArea": "Floor area",
+      "kind": {
+        "largest": "Largest · {{units}} units",
+        "three_flat": "A 3-flat",
+        "townhouses": "Townhouses",
+        "own": "Your own · {{units}} units",
+        "ownN": "Your project {{n}} · {{units}} units"
+      },
+      "size": "{{area}} sq ft · {{floors}} floors",
+      "ring": {
+        "floorArea": "Floor area: {{v}}% of the limit",
+        "height": "Height: {{v}}% of the limit",
+        "units": "Units: {{v}}% of the limit"
+      },
+      "rings": "% of each limit",
+      "over": "Over a limit",
+      "fits": "Fits the numbers",
+      "less": "Less: {{what}}",
+      "more": "More: {{what}}",
+      "atSale": "if each sells for {{price}}",
+      "atRent": "at {{price}} a month each",
+      "remove": "Remove your project {{n}}",
+      "name": {
+        "largest": "the largest",
+        "three_flat": "the 3-flat",
+        "townhouses": "the townhouses",
+        "own": "your own",
+        "ownN": "your project {{n}}"
+      },
+      "ownFull": "Up to {{n}} of your own; remove one to add another",
+      "yours": "Your projects",
+      "title": "Project",
+      "choose": "Project: {{name}}. Choose another",
+      "save": "Save as a new project",
+      "back": "Back to {{name}}",
+      "ringShort": {
+        "floorArea": "floor area",
+        "units": "units",
+        "height": "height"
+      }
+    },
+    "numbers": {
+      "title": "Your numbers",
+      "land": "Land",
+      "sale": "Sale price",
+      "perUnit": "{{v}} a unit",
+      "rent": "Rent",
+      "perUnitMonth": "{{v}} a unit a month",
+      "build": "Build cost",
+      "perSqft": "{{v}} a sq ft",
+      "buildHint": "use your contractor's number",
+      "soft": "Soft costs",
+      "ofBuild": "{{v}} of build",
+      "loanRate": "Loan",
+      "loan": "{{ltc}} at {{rate}}",
+      "profit": "Your profit",
+      "onCost": "{{v}} on cost",
+      "yield": "Your target return",
+      "more": "More numbers",
+      "ltc": "Loan, share of cost",
+      "months": "Time to build",
+      "monthsV": "{{v}} months",
+      "selling": "Selling costs",
+      "opex": "Operating costs",
+      "vacancy": "Vacancy",
+      "cap": "Cap rate here",
+      "tax": "Property tax rate",
+      "reset": "Back to the starting numbers"
+    },
+    "src": {
+      "newConstruction": "A new condo here: {{perSqft}} a sq ft × {{unitSqft}} sq ft a unit · the area's condo sales {{years}} ({{n}}) × {{premium}}, the new-build premium · Assessor",
+      "newConstructionPooled": " · with nearby areas",
+      "newConstructionCarried": " · no new condos sold here, so the premium comes from other areas",
+      "lotSale": "This lot's last sale, {{date}}",
+      "areaSales": {
+        "condo": "The area's condo median, {{year}}, any size or age · {{n}} sales · Assessor",
+        "two_to_six": "The area's 2–6 unit building median, {{year}} · {{n}} sales · Assessor",
+        "single_family": "The area's house median, {{year}} · {{n}} sales · Assessor"
+      },
+      "census": "{{beds}} rent in this {{scope}}, {{period}} · ±{{moe}} · Census",
+      "hud": "HUD's {{beds}} voucher rent for this ZIP, FY {{fy}}",
+      "taxRate": "This lot's tax rate on market value, {{year}}",
+      "chicagoTax": "Chicago's 2024 rate on market value (the lot's own isn't on record)",
+      "assumption": {
+        "builders_reported": "What Chicago builders report, {{asOf}}; the band is their range",
+        "terner_2024": "Terner Center's small-building study, {{asOf}}",
+        "lenders_2026": "Construction lenders' published terms, {{asOf}}",
+        "common_practice": "A common starting figure; change it to yours",
+        "developer_rule": "A common developer target, {{asOf}}",
+        "chicago_brokers_2026": "Chicago brokers' small multifamily cap rates, {{asOf}}",
+        "spread_rule": "The cap rate here plus a 1.5-point margin, a common target"
+      },
+      "none": "Not on record; enter yours"
+    },
+    "beds": {
+      "1_bedroom": "1-bedroom",
+      "2_bedrooms": "2-bedroom",
+      "3_bedrooms": "3-bedroom"
+    },
+    "scope": {
+      "tract": "tract",
+      "puma": "wider area"
+    },
+    "stress": {
+      "title": "If things move: most you can pay",
+      "caption": "The most you can pay with the sale price or rent (rows) and the build cost (columns) 10% lower, as set, and 10% higher",
+      "asSet": "as set",
+      "axesSell": "sale price ↓ · build cost →",
+      "axesRent": "rent ↓ · build cost →",
+      "legend": "red = below the {{sale}} it last sold for",
+      "legendNoSale": "red = no land price works"
+    },
+    "map": {
+      "label": "{{name}} · {{floors}} floors",
+      "over": "over the height limit"
+    },
+    "tile": {
+      "open": "Open",
+      "openNote": "The most you can pay, sold or rented",
+      "free": "1 free",
+      "freeNote": "One Deep analysis, on a lot you choose",
+      "signIn": "Sign in for one free Deep analysis",
+      "used": "Used",
+      "usedOn": "Your free one went to {{where}}",
+      "usedNote": "Your free one went to another lot",
+      "approximate": "Needs an exact lot"
     }
   }
 }

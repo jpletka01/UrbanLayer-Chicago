@@ -8,7 +8,7 @@
 // component, same key, so the map stays mounted), and the late parts fill in after it, each named while it waits
 // (`PartsStatus`). Ask, Sources and Export read the whole Profile, so they turn on once every part has answered.
 // A failed Overview keeps the first screen with Retry.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -36,6 +36,7 @@ import { BuildTab } from "./BuildTab";
 import { MoneyTab } from "./MoneyTab";
 import { NeighborhoodTab } from "./NeighborhoodTab";
 import { HistoryTab } from "./HistoryTab";
+import { DeepTab, type DeepProjectOnMap } from "./DeepTab";
 import { RecordsPanel } from "./RecordsPanel";
 import type { BuildingFact } from "./historyModel";
 import { PermitPanel } from "./PermitPanel";
@@ -53,7 +54,7 @@ import { useProfileParts, type PartStatus } from "./useProfileParts";
 import { lotKey, outlineRing, rememberRecent } from "../home/lotMemory";
 import { useSaved, type SaveInput } from "../saved/savedStore";
 
-type TabId = "overview" | "build" | "money" | "neighborhood" | "history";
+type TabId = "overview" | "build" | "money" | "neighborhood" | "history" | "deep";
 
 /** Each tab's camera and layers on the one map (map track M1): the Overview looks at the lot among its neighbors and
     recent sales; Build pulls back to the districts around it. Zoning is on in both (owner's review: it reads best
@@ -69,8 +70,10 @@ const MAP_VIEWS: Record<TabId, MapView> = {
   neighborhood: { id: "neighborhood", zoom: 14.6, fit: "building", modes: { zoning: "off", parcels: "on", sales: "off", building: "on", transit: "on", streets: "on" } },
   // History: the lot alone (owner, Item 103), zoning on so its district (and a rezoning's) reads.
   history: { id: "history", zoom: 17.2, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "off", streets: "on" } },
+  // Deep analysis (Item 124): close on the lot in 3D, so the chosen project reads against its neighbors.
+  deep: { id: "deep", zoom: 17.6, threeD: true, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "off", streets: "on" } },
 };
-const TABS: TabId[] = ["overview", "build", "money", "neighborhood", "history"];
+const TABS: TabId[] = ["overview", "build", "money", "neighborhood", "history", "deep"];
 
 function queryFrom(params: URLSearchParams): ParcelQuery | null {
   const pin = params.get("pin");
@@ -277,8 +280,11 @@ function ProfileScreen({
   // A link may open a tab (Saved's change lines open History or Build: `?tab=`).
   const [tab, setTab] = useState<TabId>(() => {
     const want = new URLSearchParams(window.location.search).get("tab");
-    return want === "build" || want === "money" || want === "neighborhood" || want === "history" ? want : "overview";
+    return want === "build" || want === "money" || want === "neighborhood" || want === "history" || want === "deep" ? want : "overview";
   });
+  // The Deep analysis tab's chosen project, drawn on the map in 3D (Item 124).
+  const [deepProject, setDeepProject] = useState<DeepProjectOnMap | null>(null);
+  const onDeepProject = useCallback((p: DeepProjectOnMap | null) => setDeepProject(p), []);
   // The right panel: the analyst or a program's page, one at a time (Item 99). Closing slides it out first, so the
   // last panel stays mounted (`shownPanel`) for the slide; `seq` remounts it for a new question or program, and
   // `instant` skips the slide when the panel was already open.
@@ -486,6 +492,7 @@ function ProfileScreen({
                 focusBuilding={mapFocus}
                 expanded={mapFocused}
                 mass={tab === "build" ? mass : null}
+                project={tab === "deep" && deepProject ? { ...deepProject, zoneClass: data?.context?.parcel_zoning?.zone_class ?? null } : null}
                 className="h-full"
               />
               <h1 className="pointer-events-none absolute left-3 top-3 max-w-[calc(100%-6rem)] truncate rounded-xl bg-nx-page px-3 py-1.5 text-body font-semibold shadow-[0_1px_2px_rgb(0_0_0/0.08)]">
@@ -580,6 +587,12 @@ function ProfileScreen({
                 timedOutHistory={timedOut.history ?? []}
                 onRetry={() => onRetryParts(["history"])}
               />
+            </Tabs.Content>
+          )}
+
+          {data && verdict && (
+            <Tabs.Content value="deep" className="focus:outline-none">
+              <DeepTab pin={resolvedPin} exact={identity === "exact"} onProject={onDeepProject} />
             </Tabs.Content>
           )}
 

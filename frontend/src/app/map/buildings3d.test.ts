@@ -1,7 +1,7 @@
 // The 3D mode (M6, Items 105-106): measured heights in feet drawn in metres, tinted by zoning family, unmeasured
 // pieces apart, the 2D/3D rules for phones, and the tilt steps.
 import { describe, expect, it } from "vitest";
-import { buildingsLayer, buildingsSource, can3d, massData, measuredFilter, mix, nextPitch, PITCH_MAX, pointInLot, ringMiddle, tintedColors, unmeasuredLayer, zoningFamily } from "./buildings3d";
+import { buildingsLayer, buildingsSource, can3d, massData, OVER_LIMIT_COLOR, measuredFilter, mix, nextPitch, PITCH_MAX, pointInLot, ringMiddle, tintedColors, unmeasuredLayer, zoningFamily } from "./buildings3d";
 
 describe("buildings3d", () => {
   it("reads our own building tiles from an absolute URL", () => {
@@ -75,5 +75,20 @@ describe("buildings3d", () => {
     expect(pointInLot(5, 5, lot)).toBe(false);
     expect(pointInLot(12, 2, lot)).toBe(false);
     expect(ringMiddle({ type: "Polygon", coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]] })).toEqual([1, 1]);
+  });
+});
+
+describe("a Deep analysis project over the height limit (Item 124)", () => {
+  const lot: GeoJSON.Polygon = { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]] };
+  it("stands a red piece on the part above the limit", () => {
+    const fc = massData(lot, 55, "RM-5", 45);
+    expect(fc.features).toHaveLength(2);
+    const [under, over] = fc.features.map((f) => f.properties!);
+    expect(under.m).toBeCloseTo(45 * 0.3048);
+    expect(over).toMatchObject({ b: under.m, c: OVER_LIMIT_COLOR, over: true });
+    expect(over.m).toBeCloseTo(55 * 0.3048);
+  });
+  it("within the limit, one piece", () => {
+    expect(massData(lot, 44, "RM-5", 45).features).toHaveLength(1);
   });
 });

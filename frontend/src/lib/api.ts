@@ -271,13 +271,101 @@ export interface SubscriptionStatus {
 
 export interface Entitlements {
   signed_in: boolean;
-  deep_analysis: { unlimited: boolean; free_left: number; free_pin: string | null };
+  deep_analysis: { unlimited: boolean; free_left: number; free_pin: string | null; free_address?: string | null };
 }
 
 export async function getEntitlements(): Promise<Entitlements> {
   const resp = await authFetch(`${API_BASE}/api/entitlements`);
   if (!resp.ok) throw new Error("Failed to get entitlements");
   return resp.json();
+}
+
+// ── Deep analysis (decision Item 124) ──────────────────────────────────────────────────────────────────
+
+/** Uses the one free Deep analysis on this lot. 409 `free_used` = it went to another lot (its PIN in the detail). */
+export class DeepClaimError extends Error {
+  status: number;
+  freePin: string | null;
+  constructor(status: number, freePin: string | null) { super("deep_claim_failed"); this.status = status; this.freePin = freePin; }
+}
+export async function claimDeepAnalysis(pin: string): Promise<{ ok: boolean; pin: string; unlimited: boolean }> {
+  const resp = await authFetch(`${API_BASE}/api/entitlements/deep-analysis`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin }),
+  });
+  if (!resp.ok) {
+    let freePin: string | null = null;
+    try { freePin = (await resp.json())?.detail?.free_pin ?? null; } catch { /* no body */ }
+    throw new DeepClaimError(resp.status, freePin);
+  }
+  return resp.json();
+}
+
+export interface DeepAssumption { value: number; low: number; high: number; unit: string; source: string; as_of: string }
+export interface DeepInputs {
+  lot: { land_sqft: number | null; far: number | null; max_height_ft: number | null; units_allowed: number | null;
+    lot_area_per_unit: number | null; footprint_sqft: number | null };
+  last_sale: { price: number; date: string; deed_type: string | null } | null;
+  area_sales: Partial<Record<"condo" | "two_to_six" | "single_family", { median: number; n: number; year: string }>>;
+  /** What a new condo sells for per GROSS sq ft here (Item 124): the area's condo median per gross sq ft (any age;
+      nearby areas pooled when thin) x the citywide new-construction premium, with its band. Optional: an analysis
+      cached before the field existed has none. */
+  new_construction?: DeepNewConstruction | null;
+  unchecked?: string[];
+  rents: { census: Record<string, { estimate: number; moe: number | null; scope: string }>;
+    hud: { by_bedroom: Record<string, number>; fy: number; zip: string } | null; acs_period: string | null };
+  tax: { effective_rate: number | null; tax_year: number | null; current_bill: number | null };
+  assumptions: Record<string, DeepAssumption>;
+  floor_ft: number;
+}
+export interface DeepNewConstruction {
+  value: number; low: number; high: number; level: number; n: number;
+  pooled_areas: string[] | null; new_sales: number; years: [string, string]; premium: number; premium_n: number;
+}
+export interface DeepEnvelope {
+  footprint: GeoJSON.Polygon | null; footprint_sqft: number | null; approximate: boolean; method: string;
+  setbacks_ft: { front: number | null; side: number | null; rear: number | null };
+}
+export interface DeepAnalysis {
+  pin: string;
+  address: string | null;
+  approximate: boolean;
+  envelope: DeepEnvelope | null;
+  inputs: DeepInputs;
+  partial_failures: string[];
+}
+
+/** 403 `deep_analysis_locked` = not open to this account; 429 = too many lots today. */
+export class DeepAnalysisError extends Error {
+  status: number;
+  constructor(status: number) { super("deep_analysis_failed"); this.status = status; }
+}
+export async function getDeepAnalysis(pin: string, language: string, signal?: AbortSignal): Promise<DeepAnalysis> {
+  const resp = await authFetch(`${API_BASE}/api/deep-analysis?pin=${encodeURIComponent(pin)}&language=${encodeURIComponent(language)}`, { signal });
+  if (!resp.ok) throw new DeepAnalysisError(resp.status);
+  return resp.json();
+}
+
+export interface DeepProjectState {
+  project: { kind: "largest" | "three_flat" | "townhouses" | "own"; units: number; stories: number; floor_area_sqft: number } | null;
+  numbers: Record<string, number | string | null> | null;
+  mode?: "sell" | "rent";
+  step: number;
+  /** The builder's own projects on this lot, the card in focus ("largest", "three_flat" or "own:<id>") and each
+      card's own sale price or rent (Item 124). Absent on rows saved before them. */
+  own?: { id: string; units: number; stories: number; floor_area_sqft: number; based_on?: "largest" | "three_flat" | "townhouses" }[];
+  focus?: string | null;
+  prices?: Record<string, { sale_price_unit?: number; rent_unit_month?: number }>;
+}
+export async function getDeepProject(pin: string): Promise<DeepProjectState> {
+  const resp = await authFetch(`${API_BASE}/api/deep-analysis/project?pin=${encodeURIComponent(pin)}`);
+  if (!resp.ok) throw new DeepAnalysisError(resp.status);
+  return resp.json();
+}
+export async function putDeepProject(pin: string, state: DeepProjectState): Promise<void> {
+  const resp = await authFetch(`${API_BASE}/api/deep-analysis/project`, {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin, ...state }),
+  });
+  if (!resp.ok) throw new DeepAnalysisError(resp.status);
 }
 
 export async function getSubscription(): Promise<SubscriptionStatus> {

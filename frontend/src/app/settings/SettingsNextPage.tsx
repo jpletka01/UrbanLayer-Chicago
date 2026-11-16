@@ -13,8 +13,9 @@ import {
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import {
-  clearAllConversations, deleteAccount, fetchMyPurchases, getSubscription, getUsage, listConversations, redeemVoucher,
-  savedApi, type BillingInterval, type ReportPurchase, type SubscriptionStatus, type Usage,
+  clearAllConversations, deleteAccount, fetchMyPurchases, getEntitlements, getSubscription, getUsage, listConversations,
+  redeemVoucher, savedApi, type BillingInterval, type Entitlements, type ReportPurchase, type SubscriptionStatus,
+  type Usage,
 } from "../../lib/api";
 import { PROVIDER_NAMES } from "../../lib/authNotice";
 import { formatDate } from "../../lib/format";
@@ -196,6 +197,7 @@ function PlanSection() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [usage, setUsage] = useState<Usage | null>(null);
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
+  const [ent, setEnt] = useState<Entitlements | null>(null);
   const [interval, setBilling] = useState<BillingInterval>("month");
   const [waitedLong, setWaitedLong] = useState(false);
   const checkout = useProCheckout("settings");
@@ -206,6 +208,7 @@ function PlanSection() {
     let alive = true;
     getUsage().then((u) => { if (alive) setUsage(u); });
     getSubscription().then((s) => { if (alive) setSub(s); }, () => {});
+    getEntitlements().then((e) => { if (alive) setEnt(e); }, () => {});
     return () => { alive = false; };
   }, []);
 
@@ -295,6 +298,19 @@ function PlanSection() {
         {state === "free" && (
           <>
             <p>{t("settings.planSection.freeBody", { limit: usage?.limit ?? 50 })}</p>
+            {ent && (
+              // The one free Deep analysis (Item 124): not used yet, or the lot it went to.
+              <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-nx-ink/10 pt-4" data-testid="settings-free-deep">
+                <span>{t("settings.planSection.freeDeep")}</span>
+                {ent.deep_analysis.free_pin ? (
+                  <span>{t("settings.planSection.freeDeepUsed")}{" "}
+                    <Link to={`/scorecard?pin=${ent.deep_analysis.free_pin}`} className="font-semibold underline underline-offset-2">
+                      {ent.deep_analysis.free_address ?? ent.deep_analysis.free_pin}
+                    </Link>
+                  </span>
+                ) : <span className="nx-muted">{t("settings.planSection.freeDeepUnused")}</span>}
+              </p>
+            )}
             <div className="flex flex-col gap-3 border-t border-nx-ink/10 pt-4" data-testid="settings-pro-offer">
               <span><span className="font-semibold">{t("settings.plan.pro")}</span> <span className="nx-muted">· {t("settings.planSection.proWhat", { limit: proLimit })}</span></span>
               {purchasesOff ? (

@@ -16,7 +16,7 @@ vi.mock("../../contexts/ThemeContext", () => ({
 const api = vi.hoisted(() => ({
   fetchMyPurchases: vi.fn(), getSubscription: vi.fn(), getUsage: vi.fn(), listConversations: vi.fn(), redeemVoucher: vi.fn(),
   createBillingPortal: vi.fn(), deleteAccount: vi.fn(), getSignInIdentities: vi.fn(), removeSignInIdentity: vi.fn(),
-  startLinkProvider: vi.fn(), createCheckoutSession: vi.fn(),
+  startLinkProvider: vi.fn(), createCheckoutSession: vi.fn(), getEntitlements: vi.fn(),
   CheckoutError: class CheckoutError extends Error { reason: string; constructor(r: string) { super(r); this.reason = r; } },
   savedApi: { lots: vi.fn(), searches: vi.fn() },
 }));
@@ -55,6 +55,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   auth = signedIn();
   api.fetchMyPurchases.mockResolvedValue([]);
+  api.getEntitlements.mockResolvedValue({ signed_in: true, deep_analysis: { unlimited: false, free_left: 1, free_pin: null, free_address: null } });
   api.getSubscription.mockResolvedValue(sub());
   api.getUsage.mockResolvedValue({ plan: "free", used: 12, limit: 50, resets_on: "2026-12-01", pro_limit: 200 });
   api.listConversations.mockResolvedValue([{ id: "c1" }, { id: "c2" }]);
@@ -102,7 +103,7 @@ describe("the page", () => {
     expect(within(usage).getByRole("img", { name: "12 of 50 questions used" })).toBeTruthy();
     const offer = await screen.findByTestId("settings-pro-offer");
     expect(offer.textContent).toContain("200 questions a month");
-    expect(offer.textContent).not.toContain("Deep analysis");
+    expect(offer.textContent).toContain("Deep analysis on every lot");
     expect(offer.textContent).toContain("Coming soon");
     expect(within(offer).getByRole("link", { name: "See pricing" }).getAttribute("href")).toBe("/pricing");
     expect(screen.queryByTestId("settings-get-pro")).toBeNull();
@@ -250,5 +251,17 @@ describe("the page", () => {
     expect(screen.getByTestId("settings-preferences")).toBeTruthy();
     expect(screen.queryByTestId("settings-usage")).toBeNull();
     expect(api.fetchMyPurchases).not.toHaveBeenCalled();
+  });
+});
+
+describe("the free Deep analysis line (Item 124)", () => {
+  it("says not used yet, then names the lot it went to with a link to it", async () => {
+    render(<MemoryRouter initialEntries={["/settings/plan"]}><Routes><Route path="/settings/:section" element={<SettingsNextPage />} /></Routes></MemoryRouter>);
+    expect((await screen.findByTestId("settings-free-deep")).textContent).toMatch(/not used yet/);
+    cleanup();
+    api.getEntitlements.mockResolvedValue({ signed_in: true, deep_analysis: { unlimited: false, free_left: 0, free_pin: "14331030110000", free_address: "642 W BELDEN AVE" } });
+    render(<MemoryRouter initialEntries={["/settings/plan"]}><Routes><Route path="/settings/:section" element={<SettingsNextPage />} /></Routes></MemoryRouter>);
+    const line = await screen.findByTestId("settings-free-deep");
+    expect(within(line).getByRole("link", { name: "642 W BELDEN AVE" }).getAttribute("href")).toBe("/scorecard?pin=14331030110000");
   });
 });
