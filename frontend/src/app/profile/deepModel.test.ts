@@ -126,10 +126,10 @@ describe("the sale price from new construction (Item 124's measured band)", () =
   it("prices each project's gross area per unit, not the area's median condo", () => {
     const [largest, flat] = startingProjects(inputs);
     const a = startingNumbers(inputs, largest);
-    expect(a.numbers.salePriceUnit).toBe(387_000); // 6,700 sq ft / 8 = 838 sq ft × $462
+    expect(a.numbers.salePriceUnit).toBe(385_000); // 6,700 sq ft / 8 = 838 sq ft × $462, to the slider's $5k step
     expect(a.sources.salePriceUnit).toMatchObject({ kind: "new_construction", perSqft: 462, low: 398, high: 578, unitSqft: 838, pooled: false });
     const b = startingNumbers(inputs, flat);
-    expect(b.numbers.salePriceUnit).toBe(693_000); // 1,500 sq ft × $462
+    expect(b.numbers.salePriceUnit).toBe(695_000); // 1,500 sq ft × $462
   });
 
   it("the 3-flat's land bid now reads its own size, not a median condo", () => {

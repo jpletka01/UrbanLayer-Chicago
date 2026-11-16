@@ -2461,7 +2461,7 @@
       "floors": "Floors",
       "floorArea": "Floor area",
       "own": "Your own",
-      "ownNote": "Change units, floors or floor area",
+      "ownNote": "Start from the {{name}}, then change units, floors or floor area",
       "kind": {
         "largest": "Largest · {{units}} units",
         "three_flat": "A 3-flat",
@@ -2479,7 +2479,14 @@
       "less": "Less: {{what}}",
       "more": "More: {{what}}",
       "atSale": "if each sells for {{price}}",
-      "atRent": "at {{price}} a month each"
+      "atRent": "at {{price}} a month each",
+      "remove": "Remove your own project",
+      "name": {
+        "largest": "largest",
+        "three_flat": "3-flat",
+        "townhouses": "townhouses",
+        "own": "your own"
+      }
     },
     "numbers": {
       "title": "Your numbers",

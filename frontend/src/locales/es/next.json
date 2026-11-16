@@ -2461,7 +2461,7 @@
       "floors": "Pisos",
       "floorArea": "Superficie",
       "own": "El suyo",
-      "ownNote": "Cambie unidades, pisos o superficie",
+      "ownNote": "Parta del proyecto {{name}} y cambie unidades, pisos o superficie",
       "kind": {
         "largest": "El más grande · {{units}} unidades",
         "three_flat": "Un edificio de 3 departamentos",
@@ -2479,7 +2479,14 @@
       "less": "Menos: {{what}}",
       "more": "Más: {{what}}",
       "atSale": "si cada una se vende en {{price}}",
-      "atRent": "a {{price}} al mes cada una"
+      "atRent": "a {{price}} al mes cada una",
+      "remove": "Quitar su propio proyecto",
+      "name": {
+        "largest": "más grande",
+        "three_flat": "de 3 departamentos",
+        "townhouses": "de casas adosadas",
+        "own": "propio"
+      }
     },
     "numbers": {
       "title": "Sus cifras",

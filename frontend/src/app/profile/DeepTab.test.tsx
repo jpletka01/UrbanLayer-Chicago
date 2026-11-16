@@ -135,11 +135,43 @@ describe("the analysis", () => {
   it("a floor over the height limit turns the project red and says so", async () => {
     const { onProject } = show();
     await screen.findByTestId("deep-bid");
+    expect(screen.queryByRole("button", { name: "More: Floors" })).toBeNull(); // − / + live in Your own only
+    fireEvent.click(screen.getByTestId("deep-project-own-add"));
     fireEvent.click(screen.getByRole("button", { name: "More: Floors" }));
     const own = screen.getByTestId("deep-project-own");
     expect(own.getAttribute("data-selected")).toBe("true");
     expect(own.textContent).toMatch(/Over a limit/);
     expect(onProject).toHaveBeenLastCalledWith(expect.objectContaining({ heightFt: 55, capFt: 45 }));
+  });
+
+  it("Your own: copies the selected card, keeps its changes when another card is picked, and its × removes it", async () => {
+    show();
+    await screen.findByTestId("deep-bid");
+    fireEvent.click(screen.getByTestId("deep-project-three_flat"));
+    expect(screen.getByTestId("deep-project-own-add").textContent).toMatch(/Start from the 3-flat/);
+    fireEvent.click(screen.getByTestId("deep-project-own-add"));
+    fireEvent.click(screen.getByRole("button", { name: "More: Units" }));
+    expect(screen.getByTestId("deep-project-own").textContent).toMatch(/Your own · 4 units/);
+    fireEvent.click(screen.getByTestId("deep-project-largest"));
+    expect(screen.getByTestId("deep-project-largest").getAttribute("data-selected")).toBe("true");
+    expect(screen.getByTestId("deep-project-own").textContent).toMatch(/Your own · 4 units/);
+    fireEvent.click(screen.getByRole("button", { name: "Remove your own project" }));
+    expect(screen.queryByTestId("deep-project-own")).toBeNull();
+    expect(screen.getByTestId("deep-project-own-add")).toBeTruthy();
+    expect(screen.getByTestId("deep-project-largest").getAttribute("data-selected")).toBe("true");
+  });
+
+  it("the land and sale sliders keep a fixed range while dragged (three times the starting figure)", async () => {
+    show();
+    await screen.findByTestId("deep-bid");
+    const sale = screen.getByLabelText("Sale price") as HTMLInputElement;
+    const land = screen.getByLabelText("Land") as HTMLInputElement;
+    const saleMax = sale.max, landMax = land.max;
+    fireEvent.change(sale, { target: { value: sale.max } });
+    fireEvent.change(land, { target: { value: land.max } });
+    expect(sale.max).toBe(saleMax);
+    expect(land.max).toBe(landMax);
+    expect(Number(land.max)).toBe(3_700_000); // $1,207,000 × 3, rounded up to $100k
   });
 
   it("renting: no land price works here, said in words, never a negative price", async () => {

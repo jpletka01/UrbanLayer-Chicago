@@ -134,7 +134,7 @@ export function startingNumbers(inputs: DeepInputs, p: Project): { numbers: Numb
   const condo = inputs.area_sales.condo;
   let salePriceUnit = 0;
   if (nc && unitSize > 0) {
-    salePriceUnit = Math.round((nc.value * unitSize) / 1000) * 1000;
+    salePriceUnit = Math.round((nc.value * unitSize) / 5000) * 5000; // the sale slider's own step
     sources.salePriceUnit = { kind: "new_construction", perSqft: nc.value, low: nc.low, high: nc.high, unitSqft: Math.round(unitSize),
       n: nc.n, pooled: !!nc.pooled_areas, newSales: nc.new_sales, years: nc.years, premium: nc.premium, premiumN: nc.premium_n };
   } else if (condo) {
