@@ -1817,6 +1817,42 @@ Run: `PYTHONPATH=. python -m eval.rail_land_label serve` (localhost:8035), then 
 - *Rail blended in at a distance:* now a violet band (no road or zoning color is near it) with white dashes from zoom 12, at least 2.4 px wide.
 - *Counts on the local copy:* rail land 1,512 → 4,328, road-and-L 580, road 5,983, right-of-way with no room 10,882; hidden 18,259 → 18,301 (42 yard lots that were shown).
 
+**The owner's second and third map reviews (2026-11-16): a citywide audit, then the fixes.** He listed spots drawn "not known" or buildable that plainly aren't (parks, cemeteries, the river, rail yards, a school) and asked for a systemic way to find the rest. `eval/map_audit.py` (read-only, no model calls) measures every lot against the base map's own parks and water, CMAP's codes and every drawn rail line, and sorts the disagreements; counts in `eval/results/2026-11-16-map-audit/` (`before.json`, `after.json`).
+
+| Finding | Before | After |
+|---|---|---|
+| Lots drawn "not known" | 37,606 | 25,763 |
+| ... at least half in a Park District park | 3,419 | 1 |
+| ... cemetery (CMAP 1360) | 87 | 1 |
+| ... at least half under the City's water | 410 | 0 |
+| Park lots showing room to build | 36 | 0 |
+| Cemetery lots showing room to build (Rosehill, St Boniface's corner) | 4 | 0 |
+
+- **Parks** (`open_land: park`, source `park_district`): at least half the lot inside a Chicago Park District park (`ejsh-fztr`, the base map's copy), any land kind but homes and side yards (6 homes sit inside park outlines). 3,609 such lots; CMAP calls 92% open space and 99% are tax-exempt. Warren Park, Humboldt Park, the South Shore Cultural Center, Northerly Island (zoned PD: the park wins).
+- **Cemeteries** (`cemetery`, `cmap_2023`): CMAP 1360 over half the lot, whatever the tax class (Rosehill is taxed 5-17). 92 lots; Graceland, St Boniface, Rosehill, Oak Woods. Shown with parks (the owner: "treat it as parkland").
+- **Water** (`water`, `city_water` or `cmap_2023`): at least half the lot under the City's water, or CMAP 5000. 573 lots: the County's outlines run into the North Branch (tax-exempt riverbed parcels CMAP itself codes as water) and the Calumet basins. Never drawn as lots (no fill, no outline), so the river reads as water.
+- All three: hidden by default with the count, no room to build (`room_scope` open_space / water), the Profile's Overview says "Park / Cemetery / Water: not a building site". Precedence: rail, water, park, cemetery, road.
+- **Islands:** the City's hydro layer codes islands as `display` 2 (28 polygons, 43 acres, 95% inside parks: Wooded Island in Jackson Park, Humboldt Park's island); drawn as water they covered the land. Left out of the water layer and the water measure.
+- **Exempt institutions** (2851 N Seminary, a school): a tax-exempt or City-owned lot CMAP codes as a school, church, hospital or government site (13xx but 1360) whose room can't be computed (a footprint without stories) is named "Exempt institution" (`room_scope: institution`, band `i`), never dotted "not known"; a PD's own-ordinance label and any computed room win. 8,274 lots. Not hidden.
+- **Rail land as an area:** CMAP's 1511 and 1570 polygons are a base layer (`rail_land`, 1,423 areas), so right-of-way the County has no lot for still reads as rail (the Kimball yard; the L north of Division, CMAP "non-parcel").
+- **Not changed, and why:** the diagonal strip at 1127A W Cornelia, 1140 W Newport, 1240 W Melrose and 1248 W Belmont is built homes and shops (PD townhomes, new construction) on what looks like an old rail line; 4123 W Wrightwood is taxed as parking and coded industrial by CMAP, nothing says rail; Wrigley Field's two lots (14-20-227-003/004) have no outline in PTAXSIM or the County's 2021 copy (re-divided since), so nothing is drawn there (420 lots citywide; 123 could be drawn from the 2021 copy, a follow-up); CMAP's "other linear" code (1520) stays out (17% have an active line: expressway land, air rights over tracks downtown).
+- **Still "not known": 25,763 lots,** a different gap: building area unknown (no footprint 18,857, footprint without stories 6,134) on homes (12,274), shops (5,212) and exempt land (6,550). A follow-up on building-area fills, measured as Item 104 did.
+
+**Transit drawn like Google Maps' transit layer (the owner's ask).**
+- Each L line in the CTA's own color (its GTFS route colors), each Metra line in Metra's (Metra's GTFS: 11 lines, shapes a median 9.5 ft from the federal network, 98.3% within 50 ft; it replaces NARN's commuter segments on the map). Solid, with a 1 px edge (white in light, dark in dark), not dashed.
+- Shared track (the Loop, the north trunk) splits into one line per color side by side (`o`, the line's place; `line-offset` by zoom), from the City's `lines` text ("Brown, Green, Orange, Pink, Purple (Exp)").
+- The subway is drawn too (the Blue Line "just stopped" at California).
+- Freight, Amtrak, yards and spurs: a thin gray line with cross-ticks.
+- Stations: icons, a white square with a train for the L, Metra's blue square with an "M"; names from zoom 15; stations outside the City (187 of 384: South Boulevard, Dempster...) left out.
+- Its own layer, "Rail and transit" (es "Trenes y transporte"), on by default: a group on the Profile's map key, a checkbox in Discovery's key.
+- The CTA's and Metra's GTFS licences limit use to helping riders and promoting public transit (the CTA's says "for the sole purpose of"); the app already used both feeds for stations. The owner's call.
+
+**Map behavior and the lot card.**
+- Discovery keeps the map's place in the URL (`?at=41.96601,-87.68873,16.20z`, Google's lat, lng, zoom), replaced on every move without a new history entry, so Back from a Profile, a reload or a shared link returns to the same view.
+- The lot card's Street View link is two buttons, Street View and Google Maps (a pinned Maps link, no key); this also fixes the card's "key returned an object" label (`map.streetView` is a group of keys).
+
+**Asked, not built:** a satellite layer (Item 78 and the project rules ban satellite from the product's maps; the owner's call to revisit), a Street View coverage layer (Google's coverage tiles need its Maps API and terms), and not drawing right-of-way lots at all (the owner's idea; rail land now shows under them as an area).
+
 *Alternatives rejected:* the City's 2010 Railroads and 2011 Metra shapefiles (superseded by NARN); OpenStreetMap railways (ODbL review still open); a line-through-the-lot rule (3 of 8, 2 of 5); a buffer around the lines (the approximate CTA line clips homes beside the tracks); hiding RR-class land again under "rail" (already hidden as railroad since Item 60).
 
 *Revisit if:* CMAP publishes a newer inventory; the CTA opens the Red Line Extension (re-fetch the lines, rail land follows CMAP's next inventory); a future hand check of CMAP rail falls under 90%.

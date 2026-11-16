@@ -150,8 +150,8 @@ def summarize(recs: list[dict]) -> dict:
     finding("unknown_water", [r for r in unk if water(r)])
     finding("unknown_cmap_open_space", [r for r in unk if CMAP_NAMES.get(r["cmap"]) == "open_space"
                                         and r["cmap_share"] >= HALF and not park(r)])
-    finding("room_on_park", [r for r in recs if r["r"] not in (None, "p", "t", "x") and park(r)])
-    finding("room_on_cemetery", [r for r in recs if r["r"] not in (None, "p", "t", "x") and cem(r)])
+    finding("room_on_park", [r for r in recs if r["r"] not in (None, "p", "t", "x", "w", "i") and park(r)])
+    finding("room_on_cemetery", [r for r in recs if r["r"] not in (None, "p", "t", "x", "w", "i") and cem(r)])
     finding("lots_over_water", [r for r in recs if water(r)])
     crossed = [r for r in recs if _line_ft(r) >= LINE_MIN_FT and r.get("infrastructure") not in ("rail", "road_rail")]
     out["line_through_unmarked"] = {
