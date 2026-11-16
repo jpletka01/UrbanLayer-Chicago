@@ -78,11 +78,22 @@
     "lotInUse": {
       "define": {
         "parking": "The Assessor taxes it as a minor improvement (class 5-90 or 5-80), and nothing stands on it in the City's building footprints or the County's 2022 LiDAR, except at most a garage or shed. A hand check of 23 such lots found every one was surface parking.",
-        "empty": "Nothing stands on it in the City's building footprints or the County's 2022 LiDAR, after demolition and new-construction permits, except at most a garage or shed. Shown for vacant, City-owned, parking and tax-exempt land only."
+        "empty": "Nothing stands on it in the City's building footprints or the County's 2022 LiDAR, after demolition and new-construction permits, except at most a garage or shed. Shown for vacant, City-owned, parking and tax-exempt land only.",
+        "rail": "CMAP's 2023 Land Use Inventory (from spring 2023 aerial photos and the Assessor's files) codes most of this lot as rail right-of-way. A hand check of 34 such lots in Street View found 33 were rail land: tracks, an elevated L structure or an embankment. Discovery hides these lots by default and gives them no room to build.",
+        "road": "CMAP's 2023 Land Use Inventory codes most of this tax-exempt lot as road right-of-way, and nothing stands on it. A hand check of 27 such lots found every one was road or rail land. Discovery hides these lots by default and gives them no room to build.",
+        "road_rail": "CMAP's 2023 Land Use Inventory codes most of this lot as road right-of-way, and the CTA's L line runs through it (the City's CTA lines). A hand check of 6 such lots found all were rail and expressway land. Discovery hides these lots by default and gives them no room to build."
+      },
+      "words": {
+        "rail": "Rail right-of-way: not a building site",
+        "road": "Road right-of-way: not a building site",
+        "road_rail": "Road and L right-of-way: not a building site"
       },
       "ask": {
         "parking": "What could be built on the surface parking lot at {{address}}?",
-        "empty": "What could be built on the empty lot at {{address}}?"
+        "empty": "What could be built on the empty lot at {{address}}?",
+        "rail": "Who owns the rail right-of-way at {{address}}, and can it ever be built on?",
+        "road": "Who owns the road right-of-way at {{address}}, and can it ever be built on?",
+        "road_rail": "Who owns the road and L right-of-way at {{address}}, and can it ever be built on?"
       }
     },
     "approximate": "Approximate match",
@@ -1670,7 +1681,7 @@
       "parcels": "Lots",
       "sales": "Recent sales",
       "transit": "Transit",
-      "streets": "Streets",
+      "streets": "Streets and rail",
       "building": "Construction"
     },
     "count": {

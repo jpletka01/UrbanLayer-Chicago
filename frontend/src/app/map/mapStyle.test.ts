@@ -43,6 +43,27 @@ describe("the style document", () => {
     expect(at("lot-pin")).toBe(ids.length - 1);
   });
 
+  it("draws rail over the streets, in the Streets group, with ties and L names only zoomed in (Item 128)", () => {
+    const ids = LAYER_IDS;
+    expect(ids.indexOf("rail")).toBeGreaterThan(ids.indexOf("road-highway"));
+    expect(ids.indexOf("rail-ties")).toBeGreaterThan(ids.indexOf("rail"));
+    expect(ids.indexOf("rail")).toBeLessThan(ids.indexOf("lot-fill"));
+    expect(groupLayerIds("streets")).toEqual(expect.arrayContaining(["rail", "rail-ties", "rail-label"]));
+    const s = buildStyle(input());
+    const ties = s.layers.find((l) => l.id === "rail-ties") as { minzoom?: number };
+    const label = s.layers.find((l) => l.id === "rail-label") as { minzoom?: number; filter?: unknown };
+    expect(ties.minzoom).toBe(14);
+    expect(label.minzoom).toBe(STREET_LABEL_MIN_ZOOM);
+    expect(JSON.stringify(label.filter)).toContain("cta");
+    // no rail without the base tiles
+    expect(buildStyle(input({ ...ALL, base: null })).layers.some((l) => l.id === "rail")).toBe(false);
+  });
+
+  it("puts the base file's version in its tile URL too, so the rebuilt base with rail shows at once (Item 128)", () => {
+    const s = buildStyle(input({ ...ALL, base: { minZoom: 10, maxZoom: 16, version: "1800000001" } }));
+    expect((s.sources.base as { tiles: string[] }).tiles).toEqual(["https://urbanlayerchicago.com/api/map/tiles/base/{z}/{x}/{y}.mvt?v=1800000001"]);
+  });
+
   it("names streets only zoomed in", () => {
     const label = buildStyle(input()).layers.find((l) => l.id === "road-label")!;
     expect(label.minzoom).toBe(STREET_LABEL_MIN_ZOOM);

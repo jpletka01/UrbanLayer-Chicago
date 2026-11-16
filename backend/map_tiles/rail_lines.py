@@ -1,4 +1,4 @@
-"""Chicago's rail lines (decision Item 121): drawn on the new UI's base map, and measured once against every lot.
+"""Chicago's rail lines (decision Item 128): drawn on the new UI's base map, and measured once against every lot.
 
 Two government sources, kept side by side in ``backend/data/map_sources/``:
 

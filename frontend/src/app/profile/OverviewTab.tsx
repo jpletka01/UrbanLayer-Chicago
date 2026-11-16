@@ -2,7 +2,7 @@
 // per tab with its key figure, a small visual and at most one warning. Tiles alternate SnowUI's two pale stat
 // colors and reflow from four to two to one.
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Scale, SquareParking, Sprout, TriangleAlert } from "lucide-react";
+import { ArrowRight, Route, Scale, SquareParking, Sprout, TrainTrack, TriangleAlert } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict } from "../../lib/scorecardVerdict";
 import { answerSentence } from "../../lib/answerSentence";

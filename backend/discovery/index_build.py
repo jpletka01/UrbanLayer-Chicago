@@ -389,14 +389,14 @@ def assemble_parcel(
 
 def unusual_rule(attrs: dict[str, Any]) -> bool:
     """Hidden from Discovery by default, by what the land is, never by whether it has an address (Items 60, 104, 110):
-    railroad land (class RR); road and rail right-of-way (``infrastructure``, Items 112, 121); VACANT land on a development's
+    railroad land (class RR); road and rail right-of-way (``infrastructure``, Items 112, 128); VACANT land on a development's
     shared outline (a common area); ANY lot narrower than 16 ft (``narrow_strip``, set by ``lot_facts``).
 
     Item 110 dropped "vacant over an acre with no address of its own": those 531 lots were not rail or utility strips
     (median 188 ft wide, about 2 acres, mostly manufacturing or planned-development zoning; 373 physically empty), so the
     rule hid the large sites a developer looks for. Railroad parcels were visible before (2,623 of 2,771)."""
     railroad = (str(attrs.get("class") or "").strip().upper() == "RR") or attrs.get("land_kind") == "railroad"
-    # Items 112, 121: road and rail right-of-way per CMAP 2023 (27 of 27 and 33 of 34 in the owner's blind checks).
+    # Items 112, 128: road and rail right-of-way per CMAP 2023 (27 of 27 and 33 of 34 in the owner's blind checks).
     road = attrs.get("infrastructure") in ("road", "rail", "road_rail")
     return bool(attrs.get("narrow_strip")) or railroad or road or (
         bool(attrs.get("is_vacant")) and bool(attrs.get("shared_outline")))

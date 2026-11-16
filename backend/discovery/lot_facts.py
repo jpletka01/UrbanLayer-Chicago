@@ -61,7 +61,7 @@ class LotSources:
     # PIN10 -> (CMAP 2023 code covering the most of the lot, that share) (Item 112); None when the copy predates the
     # table, so no lot is marked road land.
     cmap_on_lot: dict[str, tuple[str, float]] | None = None
-    # PIN10 -> feet of CTA elevated or at-grade line inside the lot (Item 121); None when the copy predates the table.
+    # PIN10 -> feet of CTA elevated or at-grade line inside the lot (Item 128); None when the copy predates the table.
     rail_on_lot: dict[str, float] | None = None
 
     @classmethod
@@ -91,7 +91,7 @@ class LotSources:
                 cmap = None
             try:
                 rail = {r[0]: r[1] for r in db.execute("SELECT pin10, cta_ft FROM rail_on_lot")}
-            except sqlite3.OperationalError:  # a copy made before Item 121
+            except sqlite3.OperationalError:  # a copy made before Item 128
                 rail = None
         finally:
             db.close()
@@ -182,7 +182,7 @@ def derive_capacity(attrs: dict[str, Any]) -> None:
     if attrs.get("room_scope") in NO_BASE_FAR:
         attrs.pop("room_scope")
     if attrs.get("infrastructure") in RIGHT_OF_WAY:
-        # Road and rail right-of-way is not a building site, whatever its zoning says (Items 112, 121).
+        # Road and rail right-of-way is not a building site, whatever its zoning says (Items 112, 128).
         attrs["room_scope"] = "right_of_way"
         return
     if far and lsf and lsf > 0 and bsf is not None:
@@ -347,7 +347,7 @@ def mark_empty_land(attrs: dict[str, Any], lot, pin10: str, src: LotSources) -> 
 # nothing standing on the lot was 23 of 23 (all source combinations together 39 of 42); CMAP's road right-of-way on
 # exempt land the Item 110 rule calls empty was 27 of 27 road or rail land. OSM parking (22 of 23) waits for a
 # licensing review, CMAP's parking code alone (4 of 6), its parks (2 of 6) and garages (0 of 4) are not used.
-# Item 121: CMAP's rail right-of-way over half of any lot was 33 of 34 rail land (whatever stands on it: the L's own
+# Item 128: CMAP's rail right-of-way over half of any lot was 33 of 34 rail land (whatever stands on it: the L's own
 # structure reads as a building in the LiDAR); the CTA line alone 3 of 8 and the federal line alone 2 of 5, so a line
 # never marks a lot on its own. Road land a CTA line crosses was 6 of 6 "rail and highway" (the L in an expressway).
 NO_BUILDING = ("empty", "accessory")

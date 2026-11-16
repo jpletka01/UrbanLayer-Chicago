@@ -21,7 +21,7 @@ multifamily lots (the Assessor's characteristics are residential only). This mod
   covering the most of each lot's PTAXSIM outline and that share, measured once from the local copy
   ``map_sources/cmap_lui_2023.db`` (``cmap_land_use.fetch``, run on the Mac and installed). Without the copy the
   table is not written and no lot is marked road land.
-* **The CTA L on each lot** (decision Item 121): ``rail_on_lot``, the feet of CTA elevated or at-grade line inside each
+* **The CTA L on each lot** (decision Item 128): ``rail_on_lot``, the feet of CTA elevated or at-grade line inside each
   lot it crosses, from ``map_sources/cta_lines.json`` (``backend.map_tiles.rail_lines``). It only tells rail from road
   where CMAP calls an L right-of-way "road"; rail land itself is CMAP's rail code.
 
@@ -368,7 +368,7 @@ def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path, rail_
 
 
 def _land_use_rows(cmap: Path, ptaxsim: Path, rail: Path) -> tuple[list[tuple], list[tuple] | None]:
-    """CMAP's code on every lot, and the CTA line's feet on the lots it crosses (Item 121; None without the rail copy,
+    """CMAP's code on every lot, and the CTA line's feet on the lots it crosses (Item 128; None without the rail copy,
     with a warning: road land crossed by the L is then just road land)."""
     from backend.discovery.cmap_land_use import codes_on_lots, lot_outlines_in_box
     from backend.map_tiles import rail_lines
@@ -384,7 +384,7 @@ def _land_use_rows(cmap: Path, ptaxsim: Path, rail: Path) -> tuple[list[tuple], 
 
 def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsim: Path | None = None) -> dict:
     """Add (or replace) only ``cmap_on_lot`` and ``rail_on_lot`` in an existing copy, in one transaction (Items 112,
-    121)."""
+    128)."""
     if not out.exists():
         raise FileNotFoundError(f"{out} missing: run without --land-use-only first")
     cmap = cmap or out.parent / "map_sources" / "cmap_lui_2023.db"
@@ -531,7 +531,7 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=DEFAULT_PATH)
     ap.add_argument("--addresses-only", action="store_true", help="add or replace only the address tables (Item 109)")
     ap.add_argument("--structures-only", action="store_true", help="add or replace only the Item 110 tables")
-    ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 and 121 tables")
+    ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 and 128 tables")
     ap.add_argument("--cmap", type=Path, default=None, help="default: map_sources/cmap_lui_2023.db beside --out")
     ap.add_argument("--lidar", type=Path, default=None, help="default: map_sources/county_buildings_2022.db beside --out")
     ap.add_argument("--ptaxsim", type=Path, default=None, help="default: ptaxsim.db beside --out")

@@ -1,4 +1,4 @@
-"""Blind owner check for rail land (decision Item 121). No model calls; localhost only.
+"""Blind owner check for rail land (decision Item 128). No model calls; localhost only.
 
     PYTHONPATH=. python -m eval.rail_land_label draw --lots <lots.json from eval.rail_land measure --lots-out> \\
         --rail <folder from eval.rail_land fetch> [--exclude eval/land_use_panel.json ...]
@@ -31,7 +31,7 @@ from eval.rail_land import LINE_MIN_FT, combo, load_lines, to_feet
 PANEL = Path("eval/rail_land_panel.json")
 PAGE = Path(__file__).with_name("rail_land_label_page.html")
 LABELS = Path("eval/results/2026-11-13-rail-land/labels.json")
-SEED = 121
+SEED = 121  # the panel was drawn before the Item was renumbered to 128
 NEAR_FT = 60.0
 
 STRATA = (

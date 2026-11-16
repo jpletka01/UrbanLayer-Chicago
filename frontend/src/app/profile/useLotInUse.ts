@@ -1,4 +1,4 @@
-// What the lot is used for today, from Discovery's own row for it (decision Items 112, 121): road or rail right-of-way,
+// What the lot is used for today, from Discovery's own row for it (decision Items 112, 128): road or rail right-of-way,
 // surface parking or empty land, measured from what stands on the lot. Asked only for an exact match (a nearest parcel may be a neighbor's); a
 // failed or missing row shows nothing, never "not parking".
 import { useEffect, useState } from "react";

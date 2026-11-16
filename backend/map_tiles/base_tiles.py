@@ -8,6 +8,10 @@ Layers (zooms 10-16; the map overzooms past 16):
   ``name`` for labels. Class 1 (expressways and Lake Shore Drive) and 2 (arterials) from zoom 10, 3 and ramps
   from 12, local streets from 13. Lower-level streets (class 7), river lines, runways and proposed, vacated
   or closed segments are left out.
+- ``rail`` (decision Item 128): the CTA's L lines (City ``xbyr-jnvx``, elevated or at grade; the subway is not drawn) and
+  the federal rail network (FRA/BTS NARN: Metra, Amtrak, freight, yards and spurs), cut to the City boundary, as
+  ``kind`` cta / metra / amtrak / freight / yard / spur with a ``name`` on the L ("Brown Line"). Lines from zoom 10,
+  yards from 13, spurs from 14. Read by ``rail_lines`` into the same folder.
 
 The sources are read once per build and kept in ``backend/data/map_sources/`` so a rebuild can run offline::
 
@@ -31,7 +35,7 @@ from backend.map_tiles.tiler import Feature, to_mercator, write_mbtiles
 log = logging.getLogger(__name__)
 
 MIN_ZOOM, MAX_ZOOM = 10, 16
-LAYERS = ["city", "water", "park", "road"]
+LAYERS = ["city", "water", "park", "rail", "road"]
 
 DATASETS = {
     "road": "pr57-gg9e",
@@ -118,10 +122,40 @@ def load_sources(cache_dir: Path, *, offline: bool) -> dict[str, list[dict]]:
     return out
 
 
-def build_features(sources: dict[str, list[dict]]) -> tuple[list[Feature], dict[str, int]]:
+RAIL_MINZOOM = {"cta": MIN_ZOOM, "metra": MIN_ZOOM, "amtrak": MIN_ZOOM, "freight": MIN_ZOOM, "yard": 13, "spur": 14}
+
+
+def rail_features(lines: list[tuple[str, object, dict]], city) -> tuple[list[Feature], int]:
+    """The drawn rail lines inside the City (``city`` = its boundary, lon/lat), and how many fell wholly outside."""
+    from shapely.prepared import prep
+
+    inside = prep(city)
+    feats, outside = [], 0
+    for kind, g, props in lines:
+        if kind not in RAIL_MINZOOM:
+            continue
+        if not inside.intersects(g):
+            outside += 1
+            continue
+        part = g if inside.contains(g) else g.intersection(city)
+        if part.is_empty or part.length == 0:
+            outside += 1
+            continue
+        feats.append(Feature("rail", to_mercator(part), {"kind": kind, "name": props.get("name") or ""},
+                             RAIL_MINZOOM[kind]))
+    return feats, outside
+
+
+def build_features(sources: dict[str, list[dict]], rail: list | None = None) -> tuple[list[Feature], dict[str, int]]:
     """Source rows → tile features, and what was left out by reason."""
     feats: list[Feature] = []
     left_out: dict[str, int] = {"road_class": 0, "road_status": 0, "no_geometry": 0}
+    if rail is not None:
+        from shapely.ops import unary_union
+
+        city = unary_union([shape(r["the_geom"]) for r in sources["city"] if r.get("the_geom")])
+        rail_feats, left_out["rail_outside_city"] = rail_features(rail, city)
+        feats += rail_feats
     for row in sources["city"]:
         if row.get("the_geom"):
             feats.append(Feature("city", to_mercator(shape(row["the_geom"])), {}, MIN_ZOOM))
@@ -156,16 +190,24 @@ def build_features(sources: dict[str, list[dict]]) -> tuple[list[Feature], dict[
 
 def build_file(out: Path, *, offline: bool = False, minzoom: int = MIN_ZOOM, maxzoom: int = MAX_ZOOM) -> dict:
     t0 = time.monotonic()
-    sources = load_sources(out.parent / "map_sources", offline=offline)
-    feats, left_out = build_features(sources)
+    from backend.config import get_settings
+    from backend.map_tiles import rail_lines
+
+    cache = out.parent / "map_sources"
+    sources = load_sources(cache, offline=offline)
+    if not offline:
+        rail_lines.fetch(cache, token=get_settings().socrata_app_token)
+    elif not rail_lines.present(cache):
+        raise RuntimeError(f"no rail lines in {cache}: run python -m backend.map_tiles.rail_lines first")
+    feats, left_out = build_features(sources, rail_lines.load(cache))
     counts = {k: sum(1 for f in feats if f.layer == k) for k in LAYERS}
     stats = write_mbtiles(
         out, feats, name="map_base", minzoom=minzoom, maxzoom=maxzoom, layer_order=LAYERS,
         fields={"city": {}, "water": {"name": "String"}, "park": {"name": "String"},
-                "road": {"kind": "String", "name": "String"}},
+                "road": {"kind": "String", "name": "String"}, "rail": {"kind": "String", "name": "String"}},
         extra_meta={"built_at": date.today().isoformat(), "counts": json.dumps(counts),
                     "left_out": json.dumps(left_out),
-                    "sources": json.dumps(DATASETS)},
+                    "sources": json.dumps(DATASETS | {"rail": "xbyr-jnvx + FRA/BTS NARN"})},
         log=log,
     )
     summary = {

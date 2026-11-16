@@ -34,6 +34,7 @@ export interface MapTiles { base: TileSet | null; parcels: TileSet | null; zonin
 interface Palette {
   outside: string; land: string; water: string; park: string;
   highway: string; major: string; minor: string; local: string; ramp: string; casing: string;
+  rail: string; railTie: string;
   label: string; halo: string;
   parcelLine: string; parcelLineOpacity: number; parcelHit: string;
   lot: string; lotEdge: string; lotFill: number;
@@ -46,6 +47,7 @@ export const PALETTES: Record<Theme, Palette> = {
   light: {
     outside: "#E4E7EB", land: "#EEF0F3", water: "#C6D9E3", park: "#D6E8D8",
     highway: "#EE9580", major: "#F3C58C", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F2AE9C", casing: "#D3D8DE",
+    rail: "#9AA1AA", railTie: "#E4E7EB",
     label: "#3C4249", halo: "#F4F6F8",
     parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
     lot: "#1C1C1C", lotEdge: "#FFFFFF", lotFill: 0.30,
@@ -54,6 +56,7 @@ export const PALETTES: Record<Theme, Palette> = {
   dark: {
     outside: "#141516", land: "#1E2023", water: "#18252D", park: "#1B2620",
     highway: "#E8806F", major: "#D9AE73", minor: "#8A9097", local: "#6B7178", ramp: "#B56F62", casing: "#141516",
+    rail: "#5A6068", railTie: "#2A2D31",
     label: "#C9CDD2", halo: "#1E2023",
     parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
     lot: "#FFFFFF", lotEdge: "#1C1C1C", lotFill: 0.32,
@@ -123,6 +126,38 @@ const roadLayer = (kind: keyof typeof ROAD_METERS, minzoom: number, lowZoomPx: n
   }),
 });
 
+/** Rail widths in metres (Item 128): an L structure or a two-track line; yards and spurs thinner. */
+export const RAIL_METERS = { cta: 9, metra: 8, amtrak: 8, freight: 7, yard: 4, spur: 3 } as const;
+const railWidth = (scale: number) => ["match", ["get", "kind"],
+  ...Object.entries(RAIL_METERS).flatMap(([k, m]) => [k, roadWidth(m * scale, k === "yard" || k === "spur" ? 0.5 : 1)]),
+  roadWidth(7 * scale, 1)] as unknown as number;
+
+/** Rail in the Cities: Skylines manner (Item 80): a quiet gray band with lighter cross-ties once zoomed in, drawn over
+    the streets so the elevated L reads above them. Part of the Streets group (the key says "Streets and rail"). */
+const railLayers: LayerDef[] = [
+  {
+    group: "streets", needs: "base", opacity: ["line-opacity"],
+    spec: (t) => ({ id: "rail", type: "line", source: "base", "source-layer": "rail",
+      layout: { "line-cap": "butt", "line-join": "round" },
+      paint: { "line-color": PALETTES[t].rail, "line-width": railWidth(1), "line-opacity": 1 } }),
+  },
+  {
+    group: "streets", needs: "base", opacity: ["line-opacity"],
+    spec: (t) => ({ id: "rail-ties", type: "line", source: "base", "source-layer": "rail", minzoom: 14,
+      filter: ["match", ["get", "kind"], ["yard", "spur"], false, true],
+      layout: { "line-cap": "butt", "line-join": "round" },
+      paint: { "line-color": PALETTES[t].railTie, "line-width": railWidth(0.6), "line-dasharray": [0.25, 1.1], "line-opacity": 1 } }),
+  },
+  {
+    group: "streets", needs: "base", opacity: ["text-opacity"],
+    spec: (t) => ({ id: "rail-label", type: "symbol", source: "base", "source-layer": "rail", minzoom: STREET_LABEL_MIN_ZOOM,
+      filter: ["all", ["==", ["get", "kind"], "cta"], ["!=", ["get", "name"], ""]],
+      layout: { "symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"],
+        "text-size": zoomWidth([[15, 10], [18, 12]]), "symbol-spacing": 420, "text-max-angle": 30, "text-padding": 4 },
+      paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
+  },
+];
+
 export const LAYERS: LayerDef[] = [
   { group: null, needs: null, opacity: [], spec: (t) => ({ id: "background", type: "background", paint: { "background-color": PALETTES[t].outside } }) },
   { group: null, needs: "base", opacity: [], spec: (t) => ({ id: "city", type: "fill", source: "base", "source-layer": "city", paint: { "fill-color": PALETTES[t].land } }) },
@@ -182,6 +217,8 @@ export const LAYERS: LayerDef[] = [
   roadLayer("ramp", 12, 0.6, "ramp"),
   roadLayer("major", 10, 1.0, "major"),
   roadLayer("highway", 10, 1.6, "highway"),
+  railLayers[0],
+  railLayers[1],
   // This lot stands out (owner's review, Item 96): a fill in "this lot" ink over the zoning, a wider edge, a 3 px line.
   {
     group: null, needs: "lot", opacity: [],
@@ -208,6 +245,7 @@ export const LAYERS: LayerDef[] = [
         "text-size": zoomWidth([[15, 10.5], [18, 13]]), "symbol-spacing": 320, "text-max-angle": 30, "text-padding": 4 },
       paint: { "text-color": PALETTES[t].label, "text-halo-color": PALETTES[t].halo, "text-halo-width": 1.4, "text-opacity": 1 } }),
   },
+  railLayers[2],
   {
     group: "zoning", needs: "zoning", opacity: ["text-opacity"],
     spec: (t) => ({ id: "zoning-label", type: "symbol", source: "zoning", "source-layer": "zoning_label",
@@ -281,7 +319,7 @@ export function buildStyle({ theme, apiOrigin, glyphsBase, tiles }: StyleInput):
     building: { type: "geojson", data: EMPTY as never },
     transit: { type: "geojson", data: EMPTY as never },
   };
-  if (tiles.base) sources.base = { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/base/{z}/{x}/{y}.mvt`], minzoom: tiles.base.minZoom, maxzoom: tiles.base.maxZoom };
+  if (tiles.base) sources.base = { type: "vector", tiles: [versionedTiles(`${apiOrigin}/api/map/tiles/base/{z}/{x}/{y}.mvt`, tiles.base)], minzoom: tiles.base.minZoom, maxzoom: tiles.base.maxZoom };
   if (tiles.zoning) sources.zoning = { type: "vector", tiles: [`${apiOrigin}/api/map/tiles/zoning/{z}/{x}/{y}.mvt`], minzoom: tiles.zoning.minZoom, maxzoom: tiles.zoning.maxZoom };
   if (tiles.parcels) sources.parcels = { type: "vector", tiles: [versionedTiles(`${apiOrigin}/api/discovery/tiles/{z}/{x}/{y}.mvt`, tiles.parcels)], minzoom: tiles.parcels.minZoom, maxzoom: tiles.parcels.maxZoom, promoteId: undefined };
   const layers = LAYERS.filter((l) => l.needs === null || l.needs === "lot" || l.needs === "sales" || l.needs === "building" || l.needs === "transit" || tiles[l.needs] != null)

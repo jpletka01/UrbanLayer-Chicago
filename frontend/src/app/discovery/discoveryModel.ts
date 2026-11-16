@@ -76,7 +76,7 @@ export function measureSteps(m: MeasureId): MeasureStep[] {
     case "room": return [
       ...SEQ.map((color, i) => ({ value: String(i), color, key: `room.${i}` })),
       // No base FAR is named, not unknown (owner's review): its own ordinance, open space, a transportation zone (with
-      // road and rail right-of-way, Item 121: one key line).
+      // road and rail right-of-way, Item 128: one key line).
       { value: "x", color: NAMED.own, key: "room.own" },
       { value: "p", color: NAMED.park, key: "room.park" },
       { value: "t", color: NAMED.transport, key: "room.transport" },
@@ -139,7 +139,7 @@ export interface CardModel {
   /** Where the building area behind "room to build" came from, when it isn't the Assessor's own record. */
   roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | null;
   /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation, or road
-      or rail right-of-way (Items 112, 121). */
+      or rail right-of-way (Items 112, 128). */
   roomNamed: "own_rules" | "open_space" | "transport" | "right_of_way" | null;
   /** A strip under 16 ft wide (hidden by default), with its width in feet. */
   narrowFt: number | null;

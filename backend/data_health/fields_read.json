@@ -74,6 +74,11 @@
   "primary_type",
   "year"
  ],
+ "chi.cta_rail_lines": [
+  "lines",
+  "the_geom",
+  "type"
+ ],
  "chi.divvy": [
   "docks_in_service",
   "latitude",

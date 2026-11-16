@@ -83,9 +83,11 @@ def map_info() -> dict:
             "minZoom": int(m.get("minzoom", 0)), "maxZoom": int(m.get("maxzoom", 16)),
             "builtAt": m.get("built_at"),
         }
-    # Tiles are cached for a day: the building heights' URL carries the file's version so a rebuild shows at once.
-    if out.get("buildings"):
-        out["buildings"].update(_version(_path("buildings")))
+    # Tiles are cached for a day: the building heights' and the base's URLs carry the file's version so a rebuild shows
+    # at once (the base gained rail in Item 128).
+    for name in ("buildings", "base"):
+        if out.get(name):
+            out[name].update(_version(_path(name)))
     return out
 
 

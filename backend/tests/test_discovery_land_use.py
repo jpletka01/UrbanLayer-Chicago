@@ -43,7 +43,7 @@ def test_surface_parking_is_the_assessor_class_with_no_building(attrs, parking):
     ({"land_kind": "exempt", "empty_land": True}, ("1512", 0.5), True),
     ({"land_kind": "exempt", "empty_land": True}, ("1512", 0.49), False),  # under half the lot
     ({"land_kind": "exempt", "empty_land": True}, ("3100", 0.9), False),  # a park: 2 of 6, not used
-    ({"land_kind": "exempt", "empty_land": True}, ("1511", 0.9), False),  # rail: not measured
+    ({"land_kind": "exempt", "empty_land": True}, ("1511", 0.9), False),  # rail land, not road (Item 128)
     ({"land_kind": "exempt"}, ("1512", 0.9), False),  # something stands on it
     ({"land_kind": "vacant", "empty_land": True}, ("1512", 0.9), False),  # only exempt land was measured
     ({"land_kind": "exempt", "empty_land": True}, None, False),
@@ -51,7 +51,8 @@ def test_surface_parking_is_the_assessor_class_with_no_building(attrs, parking):
 def test_road_land_is_cmap_road_on_empty_exempt_land(attrs, cmap, road):
     mark_land_use(attrs, PIN10, _src({PIN10: cmap} if cmap else {}))
     assert (attrs.get("infrastructure") == "road") is road
-    assert attrs.get("infrastructure_source") == ("cmap_2023" if road else None)
+    if road:
+        assert attrs["infrastructure_source"] == "cmap_2023"
 
 
 def test_a_copy_without_the_table_marks_no_road_and_a_rerun_clears():

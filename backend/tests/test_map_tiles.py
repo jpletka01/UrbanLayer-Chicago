@@ -198,6 +198,7 @@ def test_tiles_404_when_not_installed_then_serve(client, tmp_path):
     assert client.get("/api/map/tiles/base/16/1/1.mvt").status_code == 204
     assert client.get("/api/map/tiles/base/30/1/1.mvt").status_code == 400
     info = client.get("/api/map/info").json()
+    assert info["base"].pop("version").isdigit()  # the file's version in the tile URL (Item 128)
     assert info["base"] == {"minZoom": 15, "maxZoom": 16, "builtAt": "2026-11-08"}
     assert info["zoning"] is None
 

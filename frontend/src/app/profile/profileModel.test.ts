@@ -164,4 +164,17 @@ describe("what the lot is used for today (Item 112)", () => {
     expect(lotInUse({ empty_land: false, land_kind: "residential", structure: "built" }, t)).toBeNull();
     expect(lotInUse(null, t)).toBeNull();
   });
+
+  it("says road or rail right-of-way first, even on land that is also empty (Item 128)", () => {
+    expect(lotInUse({ empty_land: true, land_kind: "exempt", structure: "empty", infrastructure: "rail" }, t))
+      .toEqual({ kind: "rail", words: "Rail right-of-way: not a building site" });
+    expect(lotInUse({ empty_land: true, land_kind: "exempt", structure: "empty", infrastructure: "road" }, t)?.kind).toBe("road");
+    expect(lotInUse({ empty_land: false, land_kind: "exempt", structure: "disagree", infrastructure: "road_rail" }, t)?.words)
+      .toBe("Road and L right-of-way: not a building site");
+    expect(lotInUse({ empty_land: true, land_kind: "exempt", structure: "empty", infrastructure: "pipeline" }, t)?.kind).toBe("empty");
+    for (const k of ["rail", "road", "road_rail"]) {
+      expect(i18n.exists(`profile.lotInUse.define.${k}`, { ns: "next" })).toBe(true);
+      expect(i18n.exists(`profile.lotInUse.ask.${k}`, { ns: "next" })).toBe(true);
+    }
+  });
 });

@@ -10,7 +10,7 @@ CMAP draws parcels *dissolved on a common use* (57 codes), so a lot is matched b
   that share. ``lot_sources --land-use-only`` writes it as ``cmap_on_lot``; ``lot_facts.mark_land_use`` reads it.
 
 Two CMAP codes reach the page: **1512, road right-of-way**, on exempt land the Item 110 rule calls empty (the owner's
-blind checks: 27 of 27 road or rail land), and **1511, rail right-of-way**, over half of any lot (Item 121: 33 of 34
+blind checks: 27 of 27 road or rail land), and **1511, rail right-of-way**, over half of any lot (Item 128: 33 of 34
 rail). Both are hidden by default and never show room to build.
 
     PYTHONPATH=. python -m backend.discovery.cmap_land_use --out backend/data/map_sources/cmap_lui_2023.db
@@ -32,7 +32,7 @@ from shapely.strtree import STRtree
 CMAP_URL = "https://services5.arcgis.com/LcMXE3TFhi1BSaCY/arcgis/rest/services/LUI_2023_view/FeatureServer/1/query"
 CMAP_VINTAGE = "2023 (Spring 2023 aerials; published 2026-03-25)"
 CMAP_ROAD = "1512"  # TCU_ROW_ROAD: road right-of-way
-CMAP_RAIL = "1511"  # TCU_ROW_RAIL: rail right-of-way (Item 121)
+CMAP_RAIL = "1511"  # TCU_ROW_RAIL: rail right-of-way (Item 128)
 CHICAGO_BBOX = (-87.94, 41.64, -87.52, 42.03)
 MIN_POLYGONS = 200_000  # Chicago's box held 231,348 on 2026-11-12: a short read is refused
 

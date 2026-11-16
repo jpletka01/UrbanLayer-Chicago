@@ -78,11 +78,22 @@
     "lotInUse": {
       "define": {
         "parking": "El Tasador lo grava como mejora menor (clase 5-90 o 5-80), y no hay nada construido en las huellas de edificios de la Ciudad ni en el LiDAR 2022 del Condado, salvo a lo más una cochera o un cobertizo. Una revisión a mano de 23 lotes así encontró que todos eran estacionamiento en superficie.",
-        "empty": "No hay nada construido en las huellas de edificios de la Ciudad ni en el LiDAR 2022 del Condado, tras los permisos de demolición y de obra nueva, salvo a lo más una cochera o un cobertizo. Solo se muestra en terrenos baldíos, de la Ciudad, de estacionamiento y exentos de impuestos."
+        "empty": "No hay nada construido en las huellas de edificios de la Ciudad ni en el LiDAR 2022 del Condado, tras los permisos de demolición y de obra nueva, salvo a lo más una cochera o un cobertizo. Solo se muestra en terrenos baldíos, de la Ciudad, de estacionamiento y exentos de impuestos.",
+        "rail": "El Inventario de Uso de Suelo 2023 de CMAP (hecho con fotos aéreas de la primavera de 2023 y los archivos del Tasador) clasifica la mayor parte de este terreno como derecho de vía ferroviario. Una revisión a mano de 34 terrenos así en Street View encontró que 33 eran terreno ferroviario: vías, la estructura elevada del L o un terraplén. Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir.",
+        "road": "El Inventario de Uso de Suelo 2023 de CMAP clasifica la mayor parte de este terreno exento de impuestos como derecho de vía de calle, y no hay nada construido. Una revisión a mano de 27 terrenos así encontró que todos eran terreno de calle o ferroviario. Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir.",
+        "road_rail": "El Inventario de Uso de Suelo 2023 de CMAP clasifica la mayor parte de este terreno como derecho de vía de calle, y la línea del L de la CTA lo atraviesa (las líneas de la CTA de la Ciudad). Una revisión a mano de 6 terrenos así encontró que todos eran terreno ferroviario y de autopista. Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir."
+      },
+      "words": {
+        "rail": "Derecho de vía ferroviario: no es un sitio para construir",
+        "road": "Derecho de vía de calle: no es un sitio para construir",
+        "road_rail": "Derecho de vía de calle y del L: no es un sitio para construir"
       },
       "ask": {
         "parking": "¿Qué se podría construir en el estacionamiento en superficie de {{address}}?",
-        "empty": "¿Qué se podría construir en el terreno vacío de {{address}}?"
+        "empty": "¿Qué se podría construir en el terreno vacío de {{address}}?",
+        "rail": "¿Quién es dueño del derecho de vía ferroviario en {{address}}, y se podrá construir ahí algún día?",
+        "road": "¿Quién es dueño del derecho de vía de calle en {{address}}, y se podrá construir ahí algún día?",
+        "road_rail": "¿Quién es dueño del derecho de vía de calle y del L en {{address}}, y se podrá construir ahí algún día?"
       }
     },
     "approximate": "Coincidencia aproximada",
@@ -1670,7 +1681,7 @@
       "parcels": "Terrenos",
       "sales": "Ventas recientes",
       "transit": "Transporte",
-      "streets": "Calles",
+      "streets": "Calles y vías férreas",
       "building": "Obras"
     },
     "count": {

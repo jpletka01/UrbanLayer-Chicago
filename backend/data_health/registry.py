@@ -419,6 +419,22 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "2026-09-15 when copied 2026-11-11). A newer data edit means re-fetch. New inventories come every 3-5 years.",
     ),
     _socrata(
+        CITY, "xbyr-jnvx", "chi.cta_rail_lines", "CTA - 'L' (Rail) Lines", "Chicago Transit Authority",
+        "backend/map_tiles/rail_lines.py", surfaces=("discovery", "map"), fact_keys=(),
+        cadence_days=730, warn_days=1095, alarm_days=1825,
+        note="Item 128. The L on the base map, and which road right-of-way the L crosses (rail_on_lot). Read from a "
+             "local copy (map_sources/cta_lines.json); a new line or extension means re-fetch. Updated 2024-07-23.",
+    ),
+    _layer(
+        "https://services.arcgis.com/xOi1kZaI0eWDREZv/arcgis/rest/services/NTAD_North_American_Rail_Network_Lines/FeatureServer/0",
+        "fed.ntad.rail_lines", "North American Rail Network Lines", "FRA / USDOT BTS (NTAD)",
+        "backend/map_tiles/rail_lines.py", surfaces=("map",), fact_keys=(),
+        contract=Contract(layer_name="North American Rail Network Lines"),
+        cadence_days=365, warn_days=730, alarm_days=1095,
+        note="Item 128. Metra, Amtrak and freight on the base map; never marks a lot on its own (2 of 5 in the "
+             "owner's check). Public domain. Read from a local copy (map_sources/narn_lines.geojson).",
+    ),
+    _socrata(
         CITY, "igwz-8jzy", "chi.community_areas", "Boundaries - Community Areas", "City of Chicago",
         "backend/config.py", surfaces=("profile", "chat"), fact_keys=("geo.community_area",),
         frozen=Frozen("2025-04-22", "community area boundaries"),

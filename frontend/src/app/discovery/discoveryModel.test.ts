@@ -66,6 +66,11 @@ describe("a card", () => {
     expect(c.roomBasis).toBe("commercial_valuation");
     expect(cardModel(row({ room_sqft: null, bldg_sqft_source: "footprint" })).roomBasis).toBeNull();
   });
+  it("names road and rail right-of-way instead of a room figure (Item 128)", () => {
+    const c = cardModel(row({ room_sqft: null, room_scope: "right_of_way" }));
+    expect(c.roomNamed).toBe("right_of_way");
+    expect(c.roomSqft).toBeNull();
+  });
   it("shows the server's one warning, else nominal", () => {
     expect(cardModel(row({ warning: { kind: "landmark", detail: "Wicker Park" } })).warning?.kind).toBe("landmark");
     expect(cardModel(row({ nominal_assessment: true })).warning?.kind).toBe("nominal");
