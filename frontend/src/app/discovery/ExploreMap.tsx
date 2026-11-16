@@ -18,7 +18,11 @@ import { apiOrigin, googleMapsUrl, loadMapInfo, streetViewUrl } from "../map/map
 import { loadedRoads, streetOfAddress, viewpointFor, type RoadLine } from "../map/streetView";
 import { addPinImages } from "../map/pins";
 import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
-import { PALETTES, ZONING_COLORS, buildStyle, groupLayerIds, themePaint, versionedTiles, type MapTiles, type Theme } from "../map/mapStyle";
+import {
+  PALETTES, SATELLITE_BEFORE, SATELLITE_LAYER, ZONING_COLORS, buildStyle, groupLayerIds, satelliteSource, themePaint, versionedTiles,
+  type MapTiles, type Theme,
+} from "../map/mapStyle";
+import type { Basemap } from "../map/LayersControl";
 import { STROKE } from "../icons";
 import {
   LOTS_MIN_ZOOM, NOT_DRAWN, cardModel, formatAt, parseAt, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
@@ -51,6 +55,8 @@ export interface ExploreMapProps {
   showZoning: boolean;
   /** Rail lines, rail land and stations (Item 128); on by default. */
   showRail?: boolean;
+  /** Standard (our style) or Satellite (Cook County's photos, opt-in from the Layers button, Item 128). */
+  basemap?: Basemap;
   /** The places the search is limited to, outlined (a neighborhood's outline, or a community area by number). */
   highlight?: Array<{ kind: "hood"; geometry: GeoJSON.Geometry | null } | { kind: "area"; id: number }> | null;
   /** The Transit panel's walk, in miles: a ring of that size around every L stop (null = none). */
@@ -71,8 +77,10 @@ const ZONING_FAMILY_FILL: Record<string, string> = {
   park: ZONING_COLORS.park[0], transport: ZONING_COLORS.transport[0],
 };
 
-/** A width only where the lot matches (feature state), inside a zoom interpolation (zoom must be outermost). */
-const matchW = (w: number) => ["case", ["boolean", ["feature-state", "match"], false], w, 0];
+/** A width only where the lot matches a search or is the lot the visitor clicked (feature state; the click outline
+    is the owner's ask, Item 128), inside a zoom interpolation (zoom must be outermost). */
+const matchW = (w: number) => ["case", ["any", ["boolean", ["feature-state", "match"], false],
+  ["boolean", ["feature-state", "picked"], false]], w, 0];
 
 function ownPaint(theme: Theme, measure: MeasureId, dim: boolean) {
   const p = PALETTES[theme];
@@ -174,7 +182,7 @@ const NONE = ["==", ["get", "__none__"], "__never__"];
 export interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; roads: RoadLine[]; lookup: DiscoveryOutlineLookup | null }
 
 export function ExploreMap({
-  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
+  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, basemap = "standard", walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
 }: ExploreMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -185,6 +193,17 @@ export function ExploreMap({
   const [error, setError] = useState(false);
   const [tiles, setTiles] = useState<MapTiles | null>(null);
   const [picked, setPicked] = useState<Picked | null>(null);
+  // The clicked lot is outlined like a match while its card is open; a click elsewhere or closing the card clears it.
+  const pickedId = useRef<number | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !map.getSource("parcels")) return;
+    const next = picked ? Number(picked.pin10) : null;
+    if (pickedId.current === next) return;
+    if (pickedId.current != null) map.setFeatureState({ source: "parcels", sourceLayer: "parcels", id: pickedId.current }, { picked: false });
+    if (next != null) map.setFeatureState({ source: "parcels", sourceLayer: "parcels", id: next }, { picked: true });
+    pickedId.current = next;
+  }, [picked, ready]);
   const [areas, setAreas] = useState<GeoJSON.FeatureCollection | null>(null);
   const live = useRef({ theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring });
   useEffect(() => { live.current = { theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring }; });
@@ -344,6 +363,22 @@ export function ExploreMap({
     if (!map || !ready) return;
     for (const id of groupLayerIds("rail")) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", showRail ? "visible" : "none");
   }, [showRail, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    if (basemap === "satellite") {
+      if (!map.getSource(SATELLITE_LAYER)) map.addSource(SATELLITE_LAYER, satelliteSource(t("map.layers.satelliteCredit")) as never);
+      if (!map.getLayer(SATELLITE_LAYER)) {
+        const before = map.getLayer(SATELLITE_BEFORE) ? SATELLITE_BEFORE : undefined;
+        map.addLayer({ id: SATELLITE_LAYER, type: "raster", source: SATELLITE_LAYER, paint: { "raster-fade-duration": 0 } }, before);
+      }
+    } else {
+      if (map.getLayer(SATELLITE_LAYER)) map.removeLayer(SATELLITE_LAYER);
+      if (map.getSource(SATELLITE_LAYER)) map.removeSource(SATELLITE_LAYER);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basemap, ready]);
 
   // Matches as outlines (feature state on the lot tiles).
   const marked = useRef<Set<string>>(new Set());

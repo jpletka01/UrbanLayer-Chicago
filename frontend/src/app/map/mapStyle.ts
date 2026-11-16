@@ -172,9 +172,10 @@ const railLayers: LayerDef[] = [
   },
   {
     group: "rail", needs: "base", opacity: ["line-opacity"],
-    spec: (t) => ({ id: "transit-casing", type: "line", source: "base", "source-layer": "rail", filter: TRANSIT,
+    spec: () => ({ id: "transit-casing", type: "line", source: "base", "source-layer": "rail", filter: TRANSIT,
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": PALETTES[t].halo, "line-width": transitCasingWidth,
+      // White in both themes (owner's review: a dark edge read as a black outline in dark mode).
+      paint: { "line-color": "#FFFFFF", "line-width": transitCasingWidth,
         "line-offset": transitOffset, "line-opacity": 1 } }),
   },
   {
@@ -351,6 +352,20 @@ export const LAYER_IDS = LAYERS.map((l) => l.spec("light").id);
 export function groupLayerIds(group: GroupId): string[] {
   return LAYERS.filter((l) => l.group === group).map((l) => l.spec("light").id);
 }
+
+// ---------------------------------------------------------------- satellite, opt-in (Item 128)
+
+/** Cook County's 2025 orthophotos (6-inch, the County's public image server; CORS open, cached a day), asked per tile
+    by the map's own bounding box. Only added when the visitor picks Satellite in the Layers button: the default style
+    stays the Cities: Skylines look (Item 80). */
+export const SATELLITE_URL = "https://gis.cookcountyil.gov/imagery/rest/services/CookOrtho2025/ImageServer/exportImage"
+  + "?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=jpg&f=image";
+export const SATELLITE_LAYER = "satellite";
+export const satelliteSource = (attribution: string) =>
+  ({ type: "raster", tiles: [SATELLITE_URL], tileSize: 256, minzoom: 10, maxzoom: 20, attribution }) as const;
+/** Drawn right under the lot outlines: above the base land, zoning and the lots' measure colors (a photo shows what is
+    there), below the outlines, streets, rail, stations and labels. */
+export const SATELLITE_BEFORE = "parcel-line";
 
 // ---------------------------------------------------------------- the document
 

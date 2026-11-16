@@ -166,6 +166,41 @@ def rail_features(lines: list[tuple[str, object, dict]], city) -> tuple[list[Fea
 RAIL_LAND_MINZOOM = STATION_MINZOOM = 12
 
 
+def snap_l_lines(rail: list, cmap: Path) -> list:
+    """The elevated / at-grade L moved onto CMAP's rail right-of-way where the City's approximate line runs beside it
+    (``rail_lines.snap_to_row``; measured on the local copy: elevated L on rail land 46.8% -> 51.5%, built homes the
+    line crosses for 25 ft or more 21 -> 5). The subway, Metra and freight are left as they are."""
+    import sqlite3
+
+    import numpy as np
+    from shapely import from_wkb, make_valid
+    from shapely.strtree import STRtree
+
+    from backend.discovery.cmap_land_use import CMAP_INTERMODAL, CMAP_RAIL
+    from backend.map_tiles import rail_lines
+
+    db = sqlite3.connect(f"file:{cmap}?mode=ro", uri=True)
+    try:
+        rows = db.execute("SELECT wkb FROM lui WHERE landuse IN (?, ?)", (CMAP_RAIL, CMAP_INTERMODAL)).fetchall()
+    finally:
+        db.close()
+    polys = []
+    for (wkb,) in rows:
+        g = from_wkb(wkb)
+        polys.append(rail_lines.to_feet(g if g.is_valid else make_valid(g)))
+    tree = STRtree(np.array(polys, dtype=object))
+    cache: dict[int, object] = {}  # one CTA segment can arrive as several per-line features: snap it once
+    out = []
+    for kind, g, props in rail:
+        if kind == "cta":
+            key = id(g)
+            if key not in cache:
+                cache[key] = rail_lines.snap_to_row(g, polys, tree)
+            g = cache[key]
+        out.append((kind, g, props))
+    return out
+
+
 def cemetery_features(cmap: Path, city) -> list[Feature]:
     """CMAP 2023's cemeteries (1360) inside the City, drawn in the ``park`` layer (owner's map review: cemeteries read
     as parkland, and their lots are not drawn, so the base map must show them: Graceland, Rosehill, Oak Woods...)."""
@@ -314,7 +349,10 @@ def build_file(out: Path, *, offline: bool = False, minzoom: int = MIN_ZOOM, max
     sources["_stations"] = json.loads(stations.read_text()) if stations.exists() else []
     if not sources["_stations"]:
         log.warning("base tiles: no transit stations at %s; the station layer is left out", stations)
-    feats, left_out = build_features(sources, rail_lines.load(cache, per_line=True))
+    rail = rail_lines.load(cache, per_line=True)
+    if sources.get("_cmap"):
+        rail = snap_l_lines(rail, sources["_cmap"])
+    feats, left_out = build_features(sources, rail)
     counts = {k: sum(1 for f in feats if f.layer == k) for k in LAYERS}
     stats = write_mbtiles(
         out, feats, name="map_base", minzoom=minzoom, maxzoom=maxzoom, layer_order=LAYERS,

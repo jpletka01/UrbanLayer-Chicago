@@ -49,9 +49,36 @@ def shares(lots: np.ndarray, polys: np.ndarray) -> dict[int, float]:
     return {k: min(v, 1.0) for k, v in acc.items()}
 
 
-def open_land_on_lots(folder: Path, pins: list[str], lots: list) -> list[tuple[str, float, float]]:
-    """(pin10, park share, water share) for every lot a park or water touches."""
+# CMAP's open space (3xxx) managed by a public body (its OS_MGMT field): MUNI = a city park district, CNTY = the
+# Forest Preserves, STA, FED. It finds the public open space the Park District's own boundaries leave out (the North
+# Branch's river corridor, City-run parks); XXXX (private or unknown) is left out (CMAP's open space alone was 2 of 6
+# parks in the Item 112 blind check).
+PUBLIC_MANAGERS = ("MUNI", "CNTY", "STA", "FED")
+CMAP_FILE = "cmap_lui_2023.db"
+
+
+def public_open_space(cmap: Path) -> np.ndarray:
+    import sqlite3
+
+    db = sqlite3.connect(f"file:{cmap}?mode=ro", uri=True)
+    try:
+        rows = db.execute("SELECT os_mgmt, wkb FROM lui WHERE landuse LIKE '3%'").fetchall()
+    finally:
+        db.close()
+    out = []
+    for mgmt, wkb in rows:
+        if (mgmt or "").strip() in PUBLIC_MANAGERS:
+            g = shapely.from_wkb(wkb)
+            out.append(g if g.is_valid else shapely.make_valid(g))
+    return np.array(out, dtype=object)
+
+
+def open_land_on_lots(folder: Path, pins: list[str], lots: list) -> list[tuple[str, float, float, float]]:
+    """(pin10, park share, water share, public open space share) for every lot one of them touches."""
     arr = np.array(lots, dtype=object)
     park = shares(arr, polygons(folder / PARKS_FILE))
     water = shares(arr, polygons(folder / WATER_FILE))
-    return [(pins[i], round(park.get(i, 0.0), 3), round(water.get(i, 0.0), 3)) for i in sorted(set(park) | set(water))]
+    cmap = folder / CMAP_FILE
+    pos = shares(arr, public_open_space(cmap)) if cmap.exists() else {}
+    return [(pins[i], round(park.get(i, 0.0), 3), round(water.get(i, 0.0), 3), round(pos.get(i, 0.0), 3))
+            for i in sorted(set(park) | set(water) | set(pos))]

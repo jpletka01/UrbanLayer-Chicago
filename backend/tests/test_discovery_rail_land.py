@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import sqlite3
+from pathlib import Path
 
 import pytest
 import shapely
@@ -262,11 +263,11 @@ def test_open_land_table_is_read_or_none(tmp_path):
     _minimal(tmp_path / "a.db")
     db = sqlite3.connect(tmp_path / "a.db")
     db.executescript(lot_sources.OPEN_LAND_TABLES)
-    db.execute("INSERT INTO open_land_on_lot VALUES (?, ?, ?)", (PIN10, 0.95, 0.0))
+    db.execute("INSERT INTO open_land_on_lot VALUES (?, ?, ?, ?)", (PIN10, 0.95, 0.0, 0.0))
     db.commit()
     db.close()
     _minimal(tmp_path / "b.db")
-    assert LotSources.load(tmp_path / "a.db").open_land_on_lot == {PIN10: (0.95, 0.0)}
+    assert LotSources.load(tmp_path / "a.db").open_land_on_lot == {PIN10: (0.95, 0.0, 0.0)}
     assert LotSources.load(tmp_path / "b.db").open_land_on_lot is None
 
 
@@ -277,7 +278,7 @@ def test_open_land_shares_from_the_base_maps_copies(tmp_path):
     (tmp_path / open_land.PARKS_FILE).write_text(json.dumps([{"the_geom": sq(0, 0, 10, 10)}]))
     (tmp_path / open_land.WATER_FILE).write_text(json.dumps([{"the_geom": sq(10, 0, 20, 10)}]))
     lots = [box(1, 1, 3, 3), box(9, 1, 11, 3), box(30, 30, 31, 31)]
-    got = {p: (pk, w) for p, pk, w in open_land.open_land_on_lots(tmp_path, ["in_park", "edge", "away"], lots)}
+    got = {p: (pk, w) for p, pk, w, _pos in open_land.open_land_on_lots(tmp_path, ["in_park", "edge", "away"], lots)}
     assert got == {"in_park": (1.0, 0.0), "edge": (0.5, 0.5)}
 
 
@@ -395,3 +396,65 @@ def test_cemeteries_join_the_park_layer(tmp_path):
     db.close()
     feats = base_tiles.cemetery_features(cmap, box(-87.95, 41.64, -87.52, 42.03))
     assert [(f.layer, f.minzoom) for f in feats] == [("park", 11)]
+
+
+def test_public_open_space_and_the_owners_list_are_parks(monkeypatch):
+    from backend.discovery import lot_facts
+
+    attrs = {"land_kind": "exempt"}
+    src = dataclasses.replace(_sources([], []), cmap_on_lot={PIN10: ("3100", 1.0)},
+                              open_land_on_lot={PIN10: (0.24, 0.3, 0.9)})  # the North Branch's river corridor
+    mark_land_use(attrs, PIN10, src)
+    assert (attrs["open_land"], attrs["open_land_source"]) == ("park", "cmap_2023_public")
+    monkeypatch.setattr(lot_facts, "OPEN_LAND_OVERRIDES", {PIN10: "park"})
+    attrs = {"land_kind": "commercial"}
+    mark_land_use(attrs, PIN10, _src({PIN10: ("1240", 0.9)}))
+    assert (attrs["open_land"], attrs["open_land_source"]) == ("park", "owner_review")
+
+
+def test_the_committed_overrides_file_is_well_formed():
+    from backend.discovery import lot_facts
+
+    raw = json.loads((Path(lot_facts.__file__).with_name("open_land_overrides.json")).read_text())
+    for pin10, v in raw.items():
+        if pin10.startswith("_"):
+            continue
+        assert len(pin10) == 10 and pin10.isdigit() and v["open_land"] in ("park", "cemetery", "water") and v["what"]
+
+
+def test_lots_with_no_base_row_get_a_stand_in():
+    from backend.discovery.index_backfill import stand_in_pins
+
+    pins = ["17151120118001", "17151120118002", "14201000101001", "14201000101002", "14201000150000", "14201000151001"]
+    assert stand_in_pins(pins) == {"17151120118001", "14201000101001"}
+
+
+@pytest.mark.parametrize("pin14, src_kw, want", [
+    ("14201000101001", {}, ("condo", None)),  # a condo building: named, not "not known"
+    ("17151120118001", {"open_land_on_lot": {"1715112011": (0.9, 0.0, 0.0)}}, ("open_space", "park")),  # Grant Park
+    ("17151129998001", {}, (None, None)),  # not on the owner's list, no source: left alone
+])
+def test_a_stand_in_row_speaks_for_its_lot(pin14, src_kw, want):
+    from backend.discovery.index_backfill import _enrich_stand_in
+
+    attrs = {"class": "EX" if pin14.startswith("1715") else "2-99"}
+    src = dataclasses.replace(_sources([], []), **src_kw)
+    _enrich_stand_in(attrs, pin14, box(-87.62, 41.87, -87.61, 41.88), src)
+    assert (attrs.get("room_scope"), attrs.get("open_land")) == want and attrs["lot_stand_in"] is True
+
+
+def test_the_l_line_moves_onto_the_right_of_way_only_when_it_runs_close_beside_it():
+    import numpy as np
+    from shapely.strtree import STRtree
+
+    # a right-of-way strip 40 ft wide along y = 0..40 ft; the City's line 30 ft north of it (through the back yards)
+    to_ll = lambda x, y: (x / rail_lines._FT_PER_DEG_LON - 87.65, y / rail_lines._FT_PER_DEG_LAT + rail_lines._LAT0)  # noqa: E731
+    row_ft = [box(0, 0, 1000, 40)]
+    tree = STRtree(np.array(row_ft, dtype=object))
+    beside = LineString([to_ll(0, 70), to_ll(1000, 70)])
+    snapped = rail_lines.to_feet(rail_lines.snap_to_row(beside, row_ft, tree))
+    assert row_ft[0].buffer(0.5).contains(snapped)  # now on the right-of-way
+    far = LineString([to_ll(0, 200), to_ll(1000, 200)])  # 160 ft away: an L over a street stays put
+    assert rail_lines.to_feet(rail_lines.snap_to_row(far, row_ft, tree)).distance(row_ft[0]) > 150
+    on = LineString([to_ll(10, 20), to_ll(990, 20)])  # already on it
+    assert rail_lines.to_feet(rail_lines.snap_to_row(on, row_ft, tree)).hausdorff_distance(rail_lines.to_feet(on)) < 1

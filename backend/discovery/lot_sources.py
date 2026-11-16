@@ -348,7 +348,8 @@ RAIL_TABLES = """
 MIN_CMAP_LOTS = 500_000  # 589,574 of Chicago's lots matched on 2026-11-12: fewer means a partial copy
 OPEN_LAND_TABLES = """
     DROP TABLE IF EXISTS open_land_on_lot;
-    CREATE TABLE open_land_on_lot (pin10 TEXT PRIMARY KEY, park REAL NOT NULL, water REAL NOT NULL);
+    CREATE TABLE open_land_on_lot (pin10 TEXT PRIMARY KEY, park REAL NOT NULL, water REAL NOT NULL,
+                                   public_os REAL NOT NULL DEFAULT 0);
 """
 MIN_OPEN_LAND_LOTS = 2_000  # lots a park or water touches (about 9,000 on 2026-11-16)
 MIN_RAIL_LOTS = 1_000  # lots a CTA elevated or at-grade line runs through (about 3,000 on 2026-11-13)
@@ -374,7 +375,7 @@ def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path, rail_
         if len(open_rows) < MIN_OPEN_LAND_LOTS:
             raise RuntimeError(f"parks and water touched only {len(open_rows)} lots: refusing to write")
         db.executescript(OPEN_LAND_TABLES)
-        db.executemany("INSERT INTO open_land_on_lot VALUES (?, ?, ?)", open_rows)
+        db.executemany("INSERT INTO open_land_on_lot VALUES (?, ?, ?, ?)", open_rows)
         out["open_land_lots"] = len(open_rows)
     return out
 

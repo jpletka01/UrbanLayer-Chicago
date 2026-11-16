@@ -32,6 +32,7 @@ import { track } from "../../lib/tracking";
 import { useIsPhone } from "../../lib/useIsPhone";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
+import { LayersControl, type LayersState } from "../map/LayersControl";
 import { Pill } from "../ui/Blocks";
 import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
@@ -86,8 +87,8 @@ export default function DiscoveryNextPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registry]);
   const [measure, setMeasure] = useState<MeasureId>(DEFAULT_MEASURE);
-  const [showZoning, setShowZoning] = useState(false);
-  const [showRail, setShowRail] = useState(true);
+  // The Layers button's choices (Item 128): Standard or Satellite, Transit and Zoning districts on or off.
+  const [layers, setLayers] = useState<LayersState>({ basemap: "standard", transit: true, zoning: false });
   const [view, setView] = useState<ViewBox | null>(null);
   const [camera, setCamera] = useState<{ bbox?: [number, number, number, number]; center?: [number, number]; zoom?: number; seq: number } | null>(null);
   const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
@@ -276,8 +277,9 @@ export default function DiscoveryNextPage() {
       place={place}
       focus={camera}
       fit={fit}
-      showZoning={showZoning}
-      showRail={showRail}
+      showZoning={layers.zoning}
+      showRail={layers.transit}
+      basemap={layers.basemap}
       walkMiles={walkPreview}
       highlight={highlight}
       onView={setView}
@@ -390,6 +392,10 @@ export default function DiscoveryNextPage() {
           if (!(e.target as HTMLElement).closest("[data-testid=measure-key]")) setMapTouches((n) => n + 1);
         } : undefined}>
           {map}
+          {/* Google Maps' Layers button (Item 128): bottom left above the map credit on a desktop; on a phone at the
+              top left, below the filters, opening downward (the sheet covers the bottom). */}
+          <LayersControl value={layers} onChange={setLayers} dropDown={phone}
+            className={`absolute z-30 ${phone ? "left-3 top-16" : "bottom-10 left-3"}`} />
           {/* On a phone the key sits on its own line below the quick filters at the right, never over them (owner's review). */}
           <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-end" : "items-start justify-between"}`}>
             <div className={`flex min-w-0 flex-col items-start gap-2 ${phone ? "w-full" : ""}`}>
@@ -399,8 +405,7 @@ export default function DiscoveryNextPage() {
                   onPick={(topic) => { search.pickRecipe(topic); setFocus("list"); }} />
               )}
             </div>
-            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} showZoning={showZoning} onZoning={setShowZoning}
-              showRail={showRail} onRail={setShowRail} compact={phone}
+            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} compact={phone}
               foldSignal={mapTouches} />
           </div>
           {place && <PlaceCard place={place} ring={ring} onRing={(miles) => { const r = { lat: place.lat, lon: place.lon, miles }; setRing(r); }}
@@ -616,9 +621,8 @@ function QuickFilters({ on, onToggle, loading }: { on: ReadonlySet<QuickId>; onT
   );
 }
 
-function MeasureKey({ measure, onMeasure, showZoning, onZoning, showRail, onRail, compact, foldSignal = 0 }: {
-  measure: MeasureId; onMeasure: (m: MeasureId) => void; showZoning: boolean; onZoning: (b: boolean) => void;
-  showRail: boolean; onRail: (b: boolean) => void; compact: boolean;
+function MeasureKey({ measure, onMeasure, compact, foldSignal = 0 }: {
+  measure: MeasureId; onMeasure: (m: MeasureId) => void; compact: boolean;
   /** Changes when the map is touched: a phone's open key folds. */
   foldSignal?: number;
 }) {
@@ -667,14 +671,6 @@ function MeasureKey({ measure, onMeasure, showZoning, onZoning, showRail, onRail
           </ul>
           {!compact && measure === "room" && <p className="nx-muted">{t("discovery.measure.room.note")}</p>}
           {!compact && measure === "use" && <p className="nx-muted">{t("discovery.measure.use.note")}</p>}
-          <label className="mt-1 flex items-center gap-2">
-            <input type="checkbox" checked={showZoning} onChange={(e) => onZoning(e.target.checked)} className="h-4 w-4" />
-            {t("discovery.measure.showZoning")}
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={showRail} onChange={(e) => onRail(e.target.checked)} className="h-4 w-4" />
-            {t("discovery.measure.showRail")}
-          </label>
           {!compact && <p className="nx-muted">{t("discovery.measure.zoomHint")}</p>}
         </div>
       )}

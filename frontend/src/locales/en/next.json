@@ -1738,6 +1738,19 @@
       "button": "Street View"
     },
     "googleMaps": "Google Maps",
+    "layers": {
+      "button": "Layers",
+      "title": "Map layers",
+      "close": "Close map layers",
+      "map": "Map",
+      "standard": "Standard",
+      "satellite": "Satellite",
+      "show": "Show",
+      "transit": "Transit",
+      "zoning": "Zoning districts",
+      "satelliteNote": "Cook County's 2025 aerial photos. Lot colors are hidden under the photo; outlines and searches still show.",
+      "satelliteCredit": "Imagery: Cook County GIS, 2025"
+    },
     "families": {
       "residential": "Residential",
       "business": "Business and commercial",

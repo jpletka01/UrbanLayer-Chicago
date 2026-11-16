@@ -92,8 +92,8 @@ export function drawPin(kind: PinKind): { width: number; height: number; data: U
   return { width: w, height: h, data: img.data };
 }
 
-// Station icons (owner's map review, Item 128): like Google Maps' transit layer, a small rounded square: the CTA's a
-// white square with a dark train, Metra's a blue square with a white "M". Drawn at 2x.
+// Station icons (owner's map reviews, Item 128): like Google Maps' transit layer, a small rounded square: the L (a metro)
+// is a white square with a dark "M"; Metra (heavy rail) is Metra's blue square with a white train. Drawn at 2x.
 export const STATION_IMAGE = { cta: "station-cta", metra: "station-metra" } as const;
 export const STATION_SIZE = 16;
 export const METRA_BLUE = "#005DAA";
@@ -118,8 +118,8 @@ export function drawStation(kind: keyof typeof STATION_IMAGE): { width: number; 
   ctx.lineWidth = 1.2;
   ctx.strokeStyle = kind === "metra" ? "#FFFFFF" : "#1C1C1C";
   ctx.stroke();
-  if (kind === "metra") {
-    ctx.fillStyle = "#FFFFFF";
+  if (kind === "cta") {
+    ctx.fillStyle = "#1C1C1C";
     ctx.font = "bold 11px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -129,7 +129,7 @@ export function drawStation(kind: keyof typeof STATION_IMAGE): { width: number; 
     const sc = 11 / 24;
     ctx.translate(STATION_SIZE / 2 - 5.5, STATION_SIZE / 2 - 5.5);
     ctx.scale(sc, sc);
-    ctx.strokeStyle = "#1C1C1C";
+    ctx.strokeStyle = "#FFFFFF";
     ctx.lineWidth = 2.6;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";

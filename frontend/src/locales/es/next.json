@@ -1738,6 +1738,19 @@
       "button": "Street View"
     },
     "googleMaps": "Google Maps",
+    "layers": {
+      "button": "Capas",
+      "title": "Capas del mapa",
+      "close": "Cerrar capas del mapa",
+      "map": "Mapa",
+      "standard": "Estándar",
+      "satellite": "Satélite",
+      "show": "Mostrar",
+      "transit": "Transporte",
+      "zoning": "Distritos de zonificación",
+      "satelliteNote": "Fotos aéreas 2025 del Condado de Cook. Los colores de los terrenos quedan bajo la foto; los contornos y las búsquedas se siguen viendo.",
+      "satelliteCredit": "Imágenes: SIG del Condado de Cook, 2025"
+    },
     "families": {
       "residential": "Residencial",
       "business": "Comercial y de negocios",

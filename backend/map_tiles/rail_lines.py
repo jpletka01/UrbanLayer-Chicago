@@ -213,6 +213,55 @@ def load(folder: Path, *, per_line: bool = False) -> list[tuple[str, object, dic
     return out
 
 
+SNAP_MAX_FT = 45.0  # move a stretch of L line onto CMAP's rail right-of-way only when it lies this close
+SNAP_INSET_FT = 12.0  # how far inside the right-of-way a moved point lands
+SNAP_STEP_FT = 15.0
+
+
+def snap_to_row(line, row_ft: list, tree=None):
+    """The L line moved onto CMAP's rail right-of-way where the City's "approximate" drawing runs beside it (the owner's
+    map reviews: through the back yards at Dakin and Seminary, south of the Sheridan station). Works in feet
+    (``to_feet``): points every 15 ft; a point already on rail land stays; one within 45 ft of it moves 12 ft inside;
+    farther (the Loop's L over streets) stays. ``line`` and the result are lon/lat."""
+    from shapely.ops import nearest_points
+
+    if tree is None:
+        tree = STRtree(np.array(row_ft, dtype=object))
+    g = to_feet(line)
+    out_parts = []
+    for part in shapely.get_parts(g):
+        n = max(2, int(part.length // SNAP_STEP_FT) + 1)
+        pts = [part.interpolate(i * part.length / (n - 1)) for i in range(n)]
+        moved = []
+        for p in pts:
+            hit = tree.query(p, predicate="within")
+            if len(hit):
+                moved.append((p.x, p.y))
+                continue
+            near = tree.query_nearest(p, max_distance=SNAP_MAX_FT)
+            if not len(near):
+                moved.append((p.x, p.y))
+                continue
+            poly = row_ft[int(near[0])]
+            b = nearest_points(poly.boundary, p)[0]
+            dx, dy = b.x - p.x, b.y - p.y
+            d = (dx * dx + dy * dy) ** 0.5 or 1.0
+            q = shapely.Point(b.x + dx / d * SNAP_INSET_FT, b.y + dy / d * SNAP_INSET_FT)
+            moved.append((q.x, q.y) if poly.contains(q) else (b.x, b.y))
+        # A moving average over 5 points (75 ft) takes out the zigzag where moved and kept stretches meet (owner's look);
+        # the ends stay where they were, so segments still join.
+        xy = np.array(moved)
+        if len(xy) >= 5:
+            k = np.ones(5) / 5
+            sm = np.column_stack([np.convolve(np.pad(xy[:, i], 2, mode="edge"), k, mode="valid") for i in (0, 1)])
+            sm[0], sm[-1] = xy[0], xy[-1]
+            xy = sm
+        out_parts.append(shapely.LineString(xy).simplify(3.0))
+    merged = out_parts[0] if len(out_parts) == 1 else shapely.MultiLineString(out_parts)
+    return shapely.transform(merged, lambda xy: np.column_stack([xy[:, 0] / _FT_PER_DEG_LON - 87.65,
+                                                                 xy[:, 1] / _FT_PER_DEG_LAT + _LAT0]))
+
+
 def cta_on_lots(folder: Path, pins: list[str], lots: list) -> list[tuple[str, float]]:
     """(pin10, feet of CTA elevated / at-grade line inside the lot) for every lot a line runs through."""
     gs = np.array([to_feet(g) for kind, g, _ in load(folder) if kind == "cta"], dtype=object)

@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 # Keys this pass owns: cleared before each fill so a rerun never keeps a stale answer.
 OWNED = ("hood", "lot_width_ft", "narrow_strip", "bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
          "warn_landmark", "surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source",
-         "open_land", "open_land_source", "institution")
+         "open_land", "open_land_source", "institution", "lot_stand_in")
 
 
 def lot_outlines(ptaxsim: Path, pin10s: Iterable[str]) -> dict[str, Any]:
@@ -70,9 +70,15 @@ def lot_outlines(ptaxsim: Path, pin10s: Iterable[str]) -> dict[str, Any]:
     return out
 
 
-def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set[str]) -> None:
+def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set[str], stand_in: bool = False) -> None:
     """One parcel, in place. Base parcels (suffix 0000) only get building areas and room to build: a condo unit
-    PIN would claim the whole building's area as its own."""
+    PIN would claim the whole building's area as its own.
+
+    ``stand_in`` (Item 128, the owner's map review): a lot with no base row in the index (condo buildings whose units
+    alone are on file, 14,482; leasehold and divided lots, -8xxx/-6xxx/-4xxx, 418: Grant Park around Buckingham
+    Fountain) drew with a unit's data and no room band ("not known"). Its first row speaks for the lot: the land kinds
+    (rail, park, water) apply as on a base lot, and a condo building is named, never given a room figure from one
+    unit's floor area."""
     from backend.discovery.index_build import _commercial_area, derive_from_building
 
     for k in OWNED:
@@ -83,6 +89,8 @@ def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set
     elif pin10 in pending:
         attrs["warn_pending_rezoning"] = True
     if pin14[10:] != "0000":
+        if stand_in and lot is not None:
+            _enrich_stand_in(attrs, pin14, lot, src)
         return
     if lot is not None:
         width = lot_width_ft(lot)
@@ -109,6 +117,34 @@ def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set
     derive_capacity(attrs)
 
 
+CONDO_SUFFIX = "1"  # condominium unit PINs run -1001, -1002 ...
+
+
+def _enrich_stand_in(attrs: dict[str, Any], pin14: str, lot, src: LotSources) -> None:
+    from backend.discovery.index_build import unusual_rule
+
+    attrs["lot_stand_in"] = True
+    pin10 = pin14[:10]
+    mark_empty_land(attrs, lot, pin10, src)
+    mark_land_use(attrs, pin10, src)
+    if attrs.get("infrastructure") or attrs.get("open_land"):
+        derive_capacity(attrs)  # right-of-way or open land: named, no room figure
+        attrs["unusual"] = unusual_rule(attrs)
+    elif pin14[10] == CONDO_SUFFIX:
+        attrs["room_scope"] = "condo"
+
+
+def stand_in_pins(pins) -> set[str]:
+    """The first PIN (14 digits, no dashes) of every PIN10 with no base row: the row that speaks for the lot."""
+    have_base, first = set(), {}
+    for p in pins:
+        if p.endswith("0000"):
+            have_base.add(p[:10])
+        elif p[:10] not in first or p < first[p[:10]]:
+            first[p[:10]] = p
+    return {p for p10, p in first.items() if p10 not in have_base}
+
+
 def enrich_rows(rows: list[tuple], *, ptaxsim: Path, sources: Path = SOURCES_PATH,
                 pending_db: Path | None = None) -> None:
     """Apply ``enrich`` to builder rows ``(pin, lat, lon, attrs, regions)`` in place; a no-op without the copy."""
@@ -121,9 +157,10 @@ def enrich_rows(rows: list[tuple], *, ptaxsim: Path, sources: Path = SOURCES_PAT
     from backend.discovery.neighborhoods import neighborhood_of
 
     apply_assessor_addresses(rows, lots, sources)
+    stand_ins = stand_in_pins(r[0].replace("-", "") for r in rows)
     for pin, lat, lon, attrs, _regions in rows:
         p = pin.replace("-", "")
-        enrich(attrs, p, lots.get(p[:10]), src, pending)
+        enrich(attrs, p, lots.get(p[:10]), src, pending, stand_in=p in stand_ins)
         hood = neighborhood_of(lat, lon)  # the City's named neighborhood (Item 104)
         if hood:
             attrs["hood"] = hood

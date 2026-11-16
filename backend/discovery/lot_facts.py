@@ -63,8 +63,9 @@ class LotSources:
     cmap_on_lot: dict[str, tuple[str, float]] | None = None
     # PIN10 -> feet of CTA elevated or at-grade line inside the lot (Item 128); None when the copy predates the table.
     rail_on_lot: dict[str, float] | None = None
-    # PIN10 -> (share under a Park District park, share under the City's water) (Item 128); None before the table.
-    open_land_on_lot: dict[str, tuple[float, float]] | None = None
+    # PIN10 -> (share under a Park District park, share under the City's water, share of CMAP open space with a public
+    # manager) (Item 128); None before the table.
+    open_land_on_lot: dict[str, tuple[float, ...]] | None = None
 
     @classmethod
     def load(cls, path: Path) -> "LotSources":
@@ -96,9 +97,13 @@ class LotSources:
             except sqlite3.OperationalError:  # a copy made before Item 128
                 rail = None
             try:
-                open_land = {r[0]: (r[1], r[2]) for r in db.execute("SELECT pin10, park, water FROM open_land_on_lot")}
-            except sqlite3.OperationalError:  # a copy made before the owner's map review (Item 128)
-                open_land = None
+                open_land = {r[0]: (r[1], r[2], r[3]) for r in db.execute(
+                    "SELECT pin10, park, water, public_os FROM open_land_on_lot")}
+            except sqlite3.OperationalError:
+                try:  # the first version had no public open space column
+                    open_land = {r[0]: (r[1], r[2], 0.0) for r in db.execute("SELECT pin10, park, water FROM open_land_on_lot")}
+                except sqlite3.OperationalError:  # a copy made before the owner's map review (Item 128)
+                    open_land = None
         finally:
             db.close()
         reps = shapely.point_on_surface(geoms)
@@ -208,7 +213,7 @@ def derive_capacity(attrs: dict[str, Any]) -> None:
         attrs["room_scope"] = "institution"
 
 
-NO_BASE_FAR = ("own_rules", "open_space", "transport", "right_of_way", "water", "institution")
+NO_BASE_FAR = ("own_rules", "open_space", "transport", "right_of_way", "water", "institution", "condo")
 
 
 def no_far_scope(attrs: dict[str, Any]) -> str | None:
@@ -373,6 +378,18 @@ CTA_MIN_FT = 25.0  # a CTA line runs at least this far through the lot
 RIGHT_OF_WAY = ("road", "rail", "road_rail")
 OPEN_LAND_MIN_SHARE = 0.5  # a park, the water or CMAP's cemetery covers at least half the lot
 OPEN_LAND_NOT_ON = ("residential", "side_yard")
+
+
+def _load_overrides() -> dict[str, str]:
+    """PIN10 -> park / cemetery / water, from the committed, owner-reviewed list (spots no source can tell apart, e.g. a
+    park the City rather than the Park District runs, coded "cultural" like a museum)."""
+    p = Path(__file__).with_name("open_land_overrides.json")
+    if not p.exists():
+        return {}
+    return {pin10: v["open_land"] for pin10, v in json.loads(p.read_text()).items() if not pin10.startswith("_")}
+
+
+OPEN_LAND_OVERRIDES = _load_overrides()
 # CMAP's institutional codes, cemetery (1360) left out: medical, K-12, higher education, government, prison, religious,
 # other, national laboratory.
 INSTITUTION_CODES = ("1310", "1321", "1322", "1330", "1340", "1350", "1370", "1380")  # a home inside a park's outline stays a home (6 of 3,609 lots)
@@ -385,10 +402,15 @@ def mark_open_land(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple
     cemetery lots; nearly all drew "not known", and a few showed room to build (Rosehill, St Boniface's corner)."""
     from backend.discovery.cmap_land_use import CMAP_CEMETERY, CMAP_WATER
 
-    park, water = (src.open_land_on_lot or {}).get(pin10, (0.0, 0.0))
+    shares = (src.open_land_on_lot or {}).get(pin10) or (0.0, 0.0, 0.0)
+    park, water = shares[0], shares[1]
+    public_os = shares[2] if len(shares) > 2 else 0.0
     code, share = cm or (None, 0.0)
     found = None
-    if water >= OPEN_LAND_MIN_SHARE:
+    override = OPEN_LAND_OVERRIDES.get(pin10)
+    if override:
+        found = (override, "owner_review")
+    elif water >= OPEN_LAND_MIN_SHARE:
         found = ("water", "city_water")
     elif code == CMAP_WATER and share >= OPEN_LAND_MIN_SHARE:
         found = ("water", "cmap_2023")
@@ -396,6 +418,8 @@ def mark_open_land(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple
         return False
     elif park >= OPEN_LAND_MIN_SHARE:
         found = ("park", "park_district")
+    elif public_os >= OPEN_LAND_MIN_SHARE:
+        found = ("park", "cmap_2023_public")
     elif code == CMAP_CEMETERY and share >= OPEN_LAND_MIN_SHARE:
         found = ("cemetery", "cmap_2023")
     if not found:
@@ -490,7 +514,7 @@ def measure_bands(attrs: dict[str, Any]) -> dict[str, str]:
         out["r"] = str(0 if room <= 0 else 1 + sum(room >= e for e in ROOM_BANDS[1:]))
     elif attrs.get("room_scope") in NO_BASE_FAR:
         out["r"] = {"own_rules": "x", "open_space": "p", "transport": "t",
-                    "right_of_way": "t", "water": "w", "institution": "i"}[attrs["room_scope"]]  # drawn with transportation zones: one key line
+                    "right_of_way": "t", "water": "w", "institution": "i", "condo": "c"}[attrs["room_scope"]]  # drawn with transportation zones: one key line
     lot = attrs.get("land_sqft")
     if lot:
         out["s"] = str(sum(lot >= e for e in LOT_BANDS))

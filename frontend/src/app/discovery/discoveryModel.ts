@@ -57,7 +57,7 @@ const SEQ = ["#DCEDEB", "#A9D2CE", "#72B0AB", "#4A867E", "#2C4F4A"];
 // Last sale: recent is darkest (where the market is moving).
 const SALE = [SEQ[4], SEQ[3], SEQ[2], SEQ[1], SEQ[0]];
 // The named "room" states: planned development gray (the zoning map's PD gray), park green, transportation peach.
-const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4", institution: "#C9CED6" };
+const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4", institution: "#D9C2E8" };  // lilac: clear of the PD gray (owner)
 // Land in use (Item 112), in the tiles' `l` order (`lot_facts.LAND_IN_USE`): empty land, surface parking, homes,
 // apartments, business, industrial, tax-exempt, road or railroad land. Coastal's colors and a gray, each named in the
 // key; surface parking (lavender) and road land (peach) also carry marks, so neither relies on color alone.
