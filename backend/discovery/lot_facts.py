@@ -350,6 +350,8 @@ def mark_empty_land(attrs: dict[str, Any], lot, pin10: str, src: LotSources) -> 
 # Item 128: CMAP's rail right-of-way over half of any lot was 33 of 34 rail land (whatever stands on it: the L's own
 # structure reads as a building in the LiDAR); the CTA line alone 3 of 8 and the federal line alone 2 of 5, so a line
 # never marks a lot on its own. Road land a CTA line crosses was 6 of 6 "rail and highway" (the L in an expressway).
+# The owner's look at the map (2026-11-16): the Assessor's railroad class (RR, 2,792 lots; CMAP calls 76% rail, yard or
+# linear transport land) and CMAP's intermodal yards (1570, an active line through 74% of them) are rail land too.
 NO_BUILDING = ("empty", "accessory")
 ROAD_MIN_SHARE = 0.5  # CMAP's road polygon covers at least half the lot
 RAIL_MIN_SHARE = 0.5  # CMAP's rail polygon covers at least half the lot
@@ -361,7 +363,7 @@ RIGHT_OF_WAY = ("road", "rail", "road_rail")
 def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
     """``surface_parking`` and ``infrastructure`` (road, rail, road_rail) on one base lot, in place, from the fields
     ``mark_empty_land`` just set; each with its source. Reruns clear them first."""
-    from backend.discovery.cmap_land_use import CMAP_RAIL, CMAP_ROAD
+    from backend.discovery.cmap_land_use import CMAP_INTERMODAL, CMAP_RAIL, CMAP_ROAD
 
     for k in ("surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source"):
         attrs.pop(k, None)
@@ -369,15 +371,20 @@ def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
         attrs["surface_parking"] = True
         attrs["surface_parking_source"] = "assessor_class"
     cm = src.cmap_on_lot.get(pin10) if src.cmap_on_lot is not None else None
-    if not cm:
-        return
-    if cm[0] == CMAP_RAIL and cm[1] >= RAIL_MIN_SHARE and attrs.get("land_kind") != "railroad":
-        # Railroad-class land is hidden already (Item 60) and named by its class.
+    rail_source = None
+    if attrs.get("land_kind") == "railroad":
+        rail_source = "assessor_class"  # the Assessor's railroad class: railroad property, whatever CMAP says
+    elif cm and cm[0] in (CMAP_RAIL, CMAP_INTERMODAL) and cm[1] >= RAIL_MIN_SHARE:
+        rail_source = "cmap_2023"
+    if rail_source:
         attrs["infrastructure"] = "rail"
-        attrs["infrastructure_source"] = "cmap_2023"
+        attrs["infrastructure_source"] = rail_source
         attrs.pop("surface_parking", None)  # parking under the tracks is rail land (owner's labels)
         attrs.pop("surface_parking_source", None)
-    elif cm[0] == CMAP_ROAD and cm[1] >= ROAD_MIN_SHARE and attrs.get("land_kind") == "exempt" \
+        return
+    if not cm:
+        return
+    if cm[0] == CMAP_ROAD and cm[1] >= ROAD_MIN_SHARE and attrs.get("land_kind") == "exempt" \
             and attrs.get("empty_land"):
         cta = (src.rail_on_lot or {}).get(pin10, 0.0)
         attrs["infrastructure"] = "road_rail" if cta >= CTA_MIN_FT else "road"
@@ -405,12 +412,14 @@ _IN_USE_FROM_CLASS = {"residential": "homes", "multi_family": "apartments", "com
 
 
 def land_in_use(attrs: dict[str, Any]) -> str | None:
+    # Right-of-way first: rail and road land is often physically empty too, and it is not "empty land" (owner's look,
+    # Item 128).
+    if attrs.get("infrastructure") in RIGHT_OF_WAY or attrs.get("land_kind") == "railroad":
+        return "road_rail"
     if attrs.get("surface_parking"):
         return "parking"
     if attrs.get("empty_land"):
         return "empty"
-    if attrs.get("infrastructure") in RIGHT_OF_WAY or attrs.get("land_kind") == "railroad":
-        return "road_rail"
     use = attrs.get("land_use_class") or ("exempt" if str(attrs.get("class") or "").upper().startswith("EX") else None)
     return _IN_USE_FROM_CLASS.get(use)
 

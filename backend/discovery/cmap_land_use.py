@@ -33,6 +33,7 @@ CMAP_URL = "https://services5.arcgis.com/LcMXE3TFhi1BSaCY/arcgis/rest/services/L
 CMAP_VINTAGE = "2023 (Spring 2023 aerials; published 2026-03-25)"
 CMAP_ROAD = "1512"  # TCU_ROW_ROAD: road right-of-way
 CMAP_RAIL = "1511"  # TCU_ROW_RAIL: rail right-of-way (Item 128)
+CMAP_INTERMODAL = "1570"  # TCU_INTERMODAL: rail-truck yards; an active line runs through 74% (Item 128)
 CHICAGO_BBOX = (-87.94, 41.64, -87.52, 42.03)
 MIN_POLYGONS = 200_000  # Chicago's box held 231,348 on 2026-11-12: a short read is refused
 

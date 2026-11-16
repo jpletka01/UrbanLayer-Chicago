@@ -47,7 +47,7 @@ export const PALETTES: Record<Theme, Palette> = {
   light: {
     outside: "#E4E7EB", land: "#EEF0F3", water: "#C6D9E3", park: "#D6E8D8",
     highway: "#EE9580", major: "#F3C58C", minor: "#FFFFFF", local: "#FFFFFF", ramp: "#F2AE9C", casing: "#D3D8DE",
-    rail: "#4A5058", railTie: "#FFFFFF",
+    rail: "#5B3FA6", railTie: "#FFFFFF",
     label: "#3C4249", halo: "#F4F6F8",
     parcelLine: "#1C1C1C", parcelLineOpacity: 0.16, parcelHit: "#1C1C1C",
     lot: "#1C1C1C", lotEdge: "#FFFFFF", lotFill: 0.30,
@@ -56,7 +56,7 @@ export const PALETTES: Record<Theme, Palette> = {
   dark: {
     outside: "#141516", land: "#1E2023", water: "#18252D", park: "#1B2620",
     highway: "#E8806F", major: "#D9AE73", minor: "#8A9097", local: "#6B7178", ramp: "#B56F62", casing: "#141516",
-    rail: "#2B2F34", railTie: "#C9CDD2",
+    rail: "#A08BEA", railTie: "#1E2023",
     label: "#C9CDD2", halo: "#1E2023",
     parcelLine: "#FFFFFF", parcelLineOpacity: 0.14, parcelHit: "#FFFFFF",
     lot: "#FFFFFF", lotEdge: "#1C1C1C", lotFill: 0.32,
@@ -133,14 +133,15 @@ export const RAIL_METERS = { cta: 9, metra: 8, amtrak: 8, freight: 7, yard: 4, s
 const railWidth = (scale: number) => {
   const at = (z: number, low: (k: string) => number) => ["match", ["get", "kind"],
     ...Object.entries(RAIL_METERS).flatMap(([k, m]) => [k, Math.max(low(k), (m * scale) / metersPerPixel(z))]), low("")];
-  const low = (k: string) => (k === "yard" || k === "spur" ? 0.8 : 1.6) * scale;
+  const low = (k: string) => (k === "yard" || k === "spur" ? 1.2 : 2.4) * scale;
   return ["interpolate", ["exponential", 2], ["zoom"],
     10, at(10, low), 14, at(14, low), 20, at(20, () => 0)] as unknown as number;
 };
 
-/** Rail in the Cities: Skylines manner (Item 80) and the map convention for railroads: a dark band with light dashes
-    along it from zoom 12, so it never reads as a street (owner's first look: a plain gray line vanished among the
-    streets), drawn over the streets so the elevated L reads above them. Part of the Streets group (the key says "Streets and rail"). */
+/** Rail in the Cities: Skylines manner (Item 80) and the map convention for railroads: a band with dashes along it from
+    zoom 12, in its own violet (no road or zoning color is near it) and at least 2.4 px wide, so it stands out beside the
+    bright arterials and never reads as a street (owner's looks, 2026-11-16: gray, then dark, both blended in), drawn
+    over the streets so the elevated L reads above them. Part of the Streets group (the key says "Streets and rail"). */
 const railLayers: LayerDef[] = [
   {
     group: "streets", needs: "base", opacity: ["line-opacity"],

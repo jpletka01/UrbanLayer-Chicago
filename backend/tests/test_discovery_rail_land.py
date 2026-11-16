@@ -35,12 +35,24 @@ def _src(cmap=None, rail=None):
     ({"land_kind": "commercial", "structure": "accessory"}, ("1511", 1.0), "rail"),
     ({"land_kind": "vacant", "empty_land": True}, ("1511", 0.5), "rail"),
     ({"land_kind": "exempt", "empty_land": True}, ("1511", 0.49), None),  # under half the lot
-    ({"land_kind": "railroad", "structure": "empty"}, ("1511", 0.98), None),  # RR class: hidden and named already
+    ({"land_kind": "exempt", "empty_land": True}, ("1570", 0.9), "rail"),  # an intermodal yard (owner's look)
+    ({"land_kind": "exempt", "empty_land": True}, ("1520", 0.9), None),  # "other linear": an active line in 17% only
 ])
-def test_rail_land_is_cmap_rail_over_half_the_lot(attrs, cmap, want):
+def test_rail_land_is_cmap_rail_or_yard_over_half_the_lot(attrs, cmap, want):
     mark_land_use(attrs, PIN10, _src({PIN10: cmap}))
     assert attrs.get("infrastructure") == want
     assert attrs.get("infrastructure_source") == ("cmap_2023" if want else None)
+
+
+@pytest.mark.parametrize("cmap", [("1511", 0.98), ("4140", 0.9), ("1520", 0.9), None])
+def test_the_assessors_railroad_class_is_rail_land_whatever_cmap_says(cmap):
+    # Fuller Park's yard (owner's look): RR lots read "unknown", and a built one showed room to build
+    attrs = {"land_kind": "railroad", "structure": "built", "density_band": 2.0, "land_sqft": 5_000.0, "bldg_sqft": 0.0}
+    mark_land_use(attrs, PIN10, _src({PIN10: cmap} if cmap else {}))
+    assert attrs["infrastructure"] == "rail" and attrs["infrastructure_source"] == "assessor_class"
+    derive_capacity(attrs)
+    assert "room_sqft" not in attrs and attrs["room_scope"] == "right_of_way"
+    assert measure_bands(attrs)["r"] == "t"
 
 
 def test_a_line_alone_never_marks_a_lot():
@@ -77,7 +89,7 @@ def test_parking_under_the_tracks_is_rail_land():
 
 @pytest.mark.parametrize("kind", ["rail", "road", "road_rail"])
 def test_right_of_way_is_hidden_never_has_room_and_reads_as_road_or_rail(kind):
-    attrs = {"infrastructure": kind, "land_kind": "exempt", "density_band": 3.0, "land_sqft": 10_000.0,
+    attrs = {"infrastructure": kind, "land_kind": "exempt", "empty_land": True, "density_band": 3.0, "land_sqft": 10_000.0,
              "bldg_sqft": 0.0, "room_sqft": 30_000.0}
     derive_capacity(attrs)
     assert "room_sqft" not in attrs and attrs["room_scope"] == "right_of_way"
