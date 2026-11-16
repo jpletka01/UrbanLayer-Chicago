@@ -352,7 +352,7 @@ export interface DeepProjectState {
   step: number;
   /** The builder's own projects on this lot, the card in focus ("largest", "three_flat" or "own:<id>") and each
       card's own sale price or rent (Item 124). Absent on rows saved before them. */
-  own?: { id: string; units: number; stories: number; floor_area_sqft: number }[];
+  own?: { id: string; units: number; stories: number; floor_area_sqft: number; based_on?: "largest" | "three_flat" | "townhouses" }[];
   focus?: string | null;
   prices?: Record<string, { sale_price_unit?: number; rent_unit_month?: number }>;
 }

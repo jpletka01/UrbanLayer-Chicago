@@ -246,7 +246,7 @@ class TestProject:
         c = as_user(user)
         empty = c.get(f"/api/deep-analysis/project?pin={LOT_A}").json()
         assert empty["own"] == [] and empty["focus"] is None and empty["prices"] == {}
-        own = [{"id": "a1", "units": 4, "stories": 3, "floor_area_sqft": 4500},
+        own = [{"id": "a1", "units": 4, "stories": 3, "floor_area_sqft": 4500, "based_on": "three_flat"},
                {"id": "b2", "units": 6, "stories": 4, "floor_area_sqft": 6000}]
         body = {"pin": LOT_A, "project": {**PROJECT, "kind": "own", "units": 6}, "own": own, "focus": "own:b2",
                 "prices": {"own:b2": {"sale_price_unit": 410000}, "three_flat": {"rent_unit_month": 3900}}}
@@ -279,6 +279,7 @@ class TestProject:
         {"pin": LOT_A, "own": [{"id": f"p{i}", "units": 3, "stories": 3, "floor_area_sqft": 3000} for i in range(7)]},
         {"pin": LOT_A, "own": [{"id": "Bad Id!", "units": 3, "stories": 3, "floor_area_sqft": 3000}]},
         {"pin": LOT_A, "focus": "skyscraper"},
+        {"pin": LOT_A, "own": [{"id": "a1", "units": 3, "stories": 3, "floor_area_sqft": 3000, "based_on": "tower"}]},
         {"pin": LOT_A, "prices": {"own:x": {"sale_price_unit": -5}}},
         {"pin": LOT_A, "prices": {"<script>": {"sale_price_unit": 5}}},
     ])

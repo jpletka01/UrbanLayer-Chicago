@@ -9,7 +9,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { BadgeCheck, Calculator, ChartColumnBig, LayoutGrid, LoaderCircle, LogIn, MapPin, Minus, Plus, Scale, X } from "lucide-react";
+import { BadgeCheck, Calculator, ChartColumnBig, LayoutGrid, ChevronDown, LoaderCircle, LogIn, MapPin, Minus, Plus, Scale, X } from "lucide-react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   DeepAnalysisError, DeepClaimError, claimDeepAnalysis, getDeepAnalysis, getDeepProject, putDeepProject,
   type DeepAnalysis, type DeepInputs,
@@ -194,7 +195,9 @@ function DeepAnalysisOpen({ pin, freeHere, onProject }: { pin: string; freeHere:
 }
 
 type CardKey = string; // "largest" | "three_flat" | "townhouses" | `own:${id}`
-type OwnProject = Project & { id: string };
+type PresetKind = "largest" | "three_flat" | "townhouses";
+type OwnProject = Project & { id: string; basedOn?: PresetKind };
+interface ProjectOption { key: CardKey; project: Project; own: OwnProject | null; n: number; bid: number }
 type CardPrice = Partial<Pick<Numbers, "salePriceUnit" | "rentUnitMonth">>;
 type Saved = Awaited<ReturnType<typeof getDeepProject>> | null;
 /** The builder's own projects on one lot (the server allows the same). */
@@ -216,7 +219,7 @@ function newOwnId(owns: OwnProject[]): string {
 }
 
 function ownsFrom(saved: Saved): OwnProject[] {
-  const list = (saved?.own ?? []).map((o) => ({ kind: "own" as const, id: o.id, units: o.units, floors: o.stories, floorAreaSqft: o.floor_area_sqft }));
+  const list: OwnProject[] = (saved?.own ?? []).map((o) => ({ kind: "own" as const, id: o.id, basedOn: o.based_on ?? undefined, units: o.units, floors: o.stories, floorAreaSqft: o.floor_area_sqft }));
   // A row saved before the list: its one "own" project becomes the first of the builder's own.
   const p = saved?.project;
   if (!list.length && p?.kind === "own") list.push({ kind: "own", id: "own1", units: p.units, floors: p.stories, floorAreaSqft: p.floor_area_sqft });
@@ -277,29 +280,47 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
   });
   const numbers: Numbers | null = base ? { ...base.numbers, ...edits, ...prices[focusKey] } : null;
 
-  const addOwn = () => {
-    if (!project || owns.length >= MAX_OWN) return;
+  const ownOf = (k: CardKey) => owns.find((o) => `own:${o.id}` === k) ?? null;
+  // A copy of the project on screen as a new project of the builder's own, in focus; its price comes along.
+  const fork = (from: Project, basedOn: PresetKind | undefined): CardKey | null => {
+    if (owns.length >= MAX_OWN) return null;
     const id = newOwnId(owns);
-    setOwns((o) => [...o, { kind: "own", id, units: project.units, floors: project.floors, floorAreaSqft: project.floorAreaSqft }]);
-    if (prices[focusKey]) setPrices((pr) => ({ ...pr, [`own:${id}`]: { ...pr[focusKey] } }));
-    setFocus(`own:${id}`);
+    const key = `own:${id}`;
+    setOwns((o) => [...o, { kind: "own", id, basedOn, units: from.units, floors: from.floors, floorAreaSqft: from.floorAreaSqft }]);
+    if (prices[focusKey]) setPrices((pr) => ({ ...pr, [key]: { ...pr[focusKey] } }));
+    setFocus(key);
+    return key;
   };
-  const changeOwn = (id: string, next: Project) => {
-    setOwns((o) => o.map((x) => (x.id === id ? { ...next, kind: "own", id } : x)));
-    setFocus(`own:${id}`);
+  const basedOnOf = (k: CardKey): PresetKind | undefined => (k.startsWith("own:") ? ownOf(k)?.basedOn : (k as PresetKind));
+  const addOwn = () => { if (project) fork(project, basedOnOf(focusKey)); };
+  // − / + on a ready-made project saves the change as a project of the builder's own (the ready-made one stays in the
+  // list, with "Back to …"); on one of the builder's own it changes that one.
+  const stepProject = (field: "units" | "floors" | "floorAreaSqft", d: 1 | -1) => {
+    if (!project) return;
+    const next = step(project, field, d);
+    const own = ownOf(focusKey);
+    if (own) setOwns((o) => o.map((x) => (x.id === own.id ? { ...x, units: next.units, floors: next.floors, floorAreaSqft: next.floorAreaSqft } : x)));
+    else fork(next, focusKey as PresetKind);
   };
   const removeOwn = (id: string) => {
+    const gone = owns.find((o) => o.id === id);
     setOwns((o) => o.filter((x) => x.id !== id));
     setPrices((pr) => { const { [`own:${id}`]: _gone, ...rest } = pr; void _gone; return rest; });
-    if (focus === `own:${id}`) setFocus(starts[0]?.kind ?? "largest");
+    if (focus === `own:${id}`) setFocus(gone?.basedOn ?? starts[0]?.kind ?? "largest");
   };
+  const options: ProjectOption[] = [
+    ...starts.map((p) => ({ key: p.kind, project: p, own: null as OwnProject | null, n: 0 })),
+    ...owns.map((o, i) => ({ key: `own:${o.id}`, project: o as Project, own: o, n: i + 1 })),
+  ].map((o) => ({ ...o, bid: compute(o.project, { ...startingNumbers(inputs, o.project).numbers, ...edits, ...prices[o.key] }, mode).landBid }));
 
   // The project on the map.
   useEffect(() => {
     if (!project) { onProject(null); return; }
     const m = projectMass(project, inputs);
-    onProject({ ...m, label: t("deep.map.label", { units: project.units, floors: project.floors }) });
-  }, [project, inputs, onProject, t]);
+    const own = owns.findIndex((o) => `own:${o.id}` === focusKey);
+    const name = own >= 0 ? t("deep.projects.kind.ownN", { n: own + 1, units: project.units }) : t(`deep.projects.kind.${project.kind}`, { units: project.units });
+    onProject({ ...m, label: t("deep.map.label", { name, floors: project.floors }) });
+  }, [project, owns, focusKey, inputs, onProject, t]);
   useEffect(() => () => onProject(null), [onProject]);
 
   // Saved to the account, a moment after the last change (the server keeps one row per lot).
@@ -318,7 +339,7 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
       putDeepProject(pin, {
         project: { kind: project.kind, units: project.units, stories: project.floors, floor_area_sqft: project.floorAreaSqft },
         numbers: snake, mode, step: saved?.step ?? 0,
-        own: owns.map((o) => ({ id: o.id, units: o.units, stories: o.floors, floor_area_sqft: o.floorAreaSqft })),
+        own: owns.map((o) => ({ id: o.id, units: o.units, stories: o.floors, floor_area_sqft: o.floorAreaSqft, ...(o.basedOn && { based_on: o.basedOn }) })),
         focus: focusKey, prices: cardPrices,
       }).catch(() => { /* a failed save keeps the page as it is; the next change tries again */ });
     }, 800);
@@ -390,40 +411,15 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
         </div>
       </section>
 
-      {/* 2 · the projects, with their limits as rings: the ready-made ones and the "+" on one row of equal cards, the
-          builder's own on the row below; the card in focus has the purple outline */}
-      <section className="flex flex-col gap-4" aria-label={t("deep.projects.label")}>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {starts.map((p) => (
-            <ProjectCard key={p.kind} p={p} inputs={inputs} numbers={startingNumbers(inputs, p).numbers} edits={{ ...edits, ...prices[p.kind] }} mode={mode}
-              selected={focusKey === p.kind} onPick={() => setFocus(p.kind)} />
-          ))}
-          <button type="button" onClick={addOwn} disabled={owns.length >= MAX_OWN}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-nx-card-ink/30 bg-nx-stat-a p-5 text-nx-card-ink touch-target enabled:hover:border-nx-pill-purple disabled:opacity-60" data-testid="deep-project-own-add">
-            <Plus aria-hidden className="h-6 w-6" strokeWidth={1.75} />
-            <b className="font-semibold">{t("deep.projects.own")}</b>
-            <span className="text-center text-caption opacity-70">{owns.length >= MAX_OWN
-              ? t("deep.projects.ownFull", { n: MAX_OWN })
-              : t("deep.projects.ownNote", { name: focusKey.startsWith("own:")
-                ? t("deep.projects.name.ownN", { n: owns.findIndex((o) => `own:${o.id}` === focusKey) + 1 })
-                : t(`deep.projects.name.${focusKey}`) })}</span>
-          </button>
-        </div>
-        {owns.length > 0 && (
-          <div className="flex flex-col gap-2" data-testid="deep-own-list">
-            <h4 className="nx-muted text-center text-caption font-normal">{t("deep.projects.yours")}</h4>
-            <div className="flex flex-wrap justify-center gap-4">
-              {owns.map((o, i) => (
-                <OwnCard key={o.id} p={o} n={i + 1} inputs={inputs} numbers={startingNumbers(inputs, o).numbers} edits={{ ...edits, ...prices[`own:${o.id}`] }} mode={mode}
-                  selected={focusKey === `own:${o.id}`} onPick={() => setFocus(`own:${o.id}`)} onChange={(next) => changeOwn(o.id, next)} onRemove={() => removeOwn(o.id)} />
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 3 · your numbers, sourced; and if things move */}
+      {/* 2 · the project (one at a time, chosen from a list) and "if things move", beside your numbers: two columns of
+          about the same height (owner, 2026-11-16) */}
       <section className="nx-cq grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <div className="flex flex-col gap-6">
+          <ProjectPanel project={project} focusKey={focusKey} options={options} owns={owns} inputs={inputs}
+            onPick={setFocus} onStep={stepProject} onSaveNew={addOwn} onRemove={removeOwn}
+            backTo={ownOf(focusKey)?.basedOn ?? null} onBack={(k) => setFocus(k)} />
+          <StressGrid grid={grid} sale={sale?.price ?? null} lng={lng} mode={mode} />
+        </div>
         <div className="flex flex-col gap-4 rounded-2xl bg-nx-block p-6">
           <h3 className="text-center font-semibold">{t("deep.numbers.title")}</h3>
           <Slider label={t("deep.numbers.land")} value={numbers.landPrice ?? 0} min={0} max={landMax} stepBy={10_000}
@@ -459,7 +455,6 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
             <button type="button" onClick={() => { setEdits({}); setPrices({}); }} className="nx-muted self-center text-caption underline touch-target">{t("deep.numbers.reset")}</button>
           )}
         </div>
-        <StressGrid grid={grid} sale={sale?.price ?? null} lng={lng} mode={mode} />
       </section>
       <p className="nx-muted text-center text-caption">{t("deep.disclaimer")}</p>
     </div>
@@ -498,93 +493,109 @@ function BidBar({ bid, sale, lng }: { bid: number; sale: number; lng: string }) 
   );
 }
 
-interface CardProps { p: Project; inputs: DeepInputs; numbers: Numbers; edits: Partial<Numbers>; mode: Mode; selected: boolean; onPick: () => void }
-
-function ProjectCard(props: CardProps) {
-  const { p, selected, onPick } = props;
-  return (
-    <button type="button" aria-pressed={selected} onClick={onPick}
-      className={`nx-on-card flex flex-col gap-3 rounded-2xl p-5 text-left text-nx-card-ink touch-target ${p.kind === "three_flat" ? "bg-nx-stat-b" : "bg-nx-stat-a"} ${selected ? FOCUS_RING : ""}`}
-      data-testid={`deep-project-${p.kind}`} data-selected={selected || undefined}>
-      <CardBody {...props} />
-    </button>
-  );
-}
-
-/** "Your own": the same figures, its − / + inside the card, and an × that removes it. */
-/** The card in focus: the lavender of Pro and Saved (owner, 2026-11-16), offset from the card so it reads on both themes. */
-const FOCUS_RING = "ring-[3px] ring-nx-pill-purple ring-offset-2 ring-offset-nx-page";
-
-/** One of the builder's own projects: the same figures, its − / + inside the card, and an × that removes it. Sized as
-    a third of the row, like the ready-made cards above it. */
-function OwnCard({ onChange, onRemove, n, ...props }: CardProps & { n: number; onChange: (p: Project) => void; onRemove: () => void }) {
-  const { t, i18n } = useTranslation("next");
-  const { p, selected, onPick } = props;
-  const loc = i18n.language.startsWith("es") ? "es-MX" : "en-US";
-  return (
-    <div className={`nx-on-card relative flex w-full flex-col gap-3 rounded-2xl bg-nx-stat-a p-5 text-nx-card-ink md:w-[calc((100%-2rem)/3)] ${selected ? FOCUS_RING : ""}`}
-      data-testid="deep-project-own" data-selected={selected || undefined}>
-      <button type="button" aria-label={t("deep.projects.remove", { n })} onClick={onRemove}
-        className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full hover:bg-nx-card-ink/10 touch-icon" data-testid="deep-own-remove">
-        <X aria-hidden className="h-4 w-4" />
-      </button>
-      <button type="button" aria-pressed={selected} onClick={onPick} className="flex flex-col gap-3 pr-7 text-left touch-target">
-        <CardBody {...props} label={t("deep.projects.kind.ownN", { n, units: p.units })} />
-      </button>
-      <div className="flex flex-col gap-2 border-t border-nx-card-ink/15 pt-3" data-testid="deep-steppers">
-        <Stepper label={t("deep.projects.units")} value={String(p.units)} onStep={(d) => onChange(step(p, "units", d))} />
-        <Stepper label={t("deep.projects.floors")} value={String(p.floors)} onStep={(d) => onChange(step(p, "floors", d))} />
-        <Stepper label={t("deep.projects.floorArea")} value={p.floorAreaSqft.toLocaleString(loc)} onStep={(d) => onChange(step(p, "floorAreaSqft", d))} />
-      </div>
-    </div>
-  );
-}
-
-function CardBody({ p: proj, inputs, numbers, edits, mode, label }: CardProps & { label?: string }) {
+/** The project on screen: chosen from a list (the ready-made ones, then the builder's own, each with its bid), its
+    limits as rings and its − / +. One panel instead of a card per project (owner, 2026-11-16). */
+function ProjectPanel({ project, focusKey, options, owns, inputs, onPick, onStep, onSaveNew, onRemove, backTo, onBack }: {
+  project: Project; focusKey: CardKey; options: ProjectOption[]; owns: OwnProject[]; inputs: DeepInputs;
+  onPick: (k: CardKey) => void; onStep: (field: "units" | "floors" | "floorAreaSqft", d: 1 | -1) => void;
+  onSaveNew: () => void; onRemove: (id: string) => void; backTo: PresetKind | null; onBack: (k: CardKey) => void;
+}) {
   const { t, i18n } = useTranslation("next");
   const lng = i18n.language;
-  const n = { ...numbers, ...edits };
-  const r = compute(proj, n, mode);
-  const uses = limitUse(proj, inputs);
+  const loc = lng.startsWith("es") ? "es-MX" : "en-US";
+  const nameOf = (o: ProjectOption) => (o.own ? t("deep.projects.kind.ownN", { n: o.n, units: o.project.units }) : t(`deep.projects.kind.${o.project.kind}`, { units: o.project.units }));
+  const current = options.find((o) => o.key === focusKey) ?? options[0];
+  const uses = limitUse(project, inputs);
   const over = uses.some((u) => u.over);
-  const ring = (key: "floorArea" | "height") => {
+  const ring = (key: "floorArea" | "height" | "units") => {
     const u = uses.find((x) => x.key === key)!;
     if (u.share == null) return null;
     const v = Math.round(u.share * 100);
-    return <ScoreRing value={v} max={100} size={48} label={t(`deep.projects.ring.${key}`, { v })} inkClass={u.over ? "text-nx-pill-red" : "text-nx-card-ink"} />;
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <ScoreRing value={v} max={100} size={56} label={t(`deep.projects.ring.${key}`, { v })} inkClass={u.over ? "text-nx-pill-red" : "text-nx-ink"} />
+        <span className="nx-muted text-[0.6875rem]">{t(`deep.projects.ringShort.${key}`)}</span>
+      </div>
+    );
   };
+  const full = owns.length >= MAX_OWN;
   return (
-    <>
-      <div className="flex items-baseline justify-between gap-2">
-        <b className="font-semibold">{label ?? t(`deep.projects.kind.${proj.kind}`, { units: proj.units })}</b>
-        <span className="text-caption opacity-70">{t("deep.projects.size", { area: proj.floorAreaSqft.toLocaleString(lng.startsWith("es") ? "es-MX" : "en-US"), floors: proj.floors })}</span>
+    <section className="flex flex-col gap-4 rounded-2xl bg-nx-block p-6" aria-labelledby="deep-project-h" data-testid="deep-project">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 id="deep-project-h" className="font-semibold">{t("deep.projects.title")}</h3>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger aria-label={t("deep.projects.choose", { name: nameOf(current) })} data-testid="deep-project-menu"
+            className="flex items-center gap-2 rounded-full px-4 py-2 font-semibold ring-1 ring-inset ring-nx-ink/25 hover:bg-nx-ink/5 touch-target">
+            {nameOf(current)}<ChevronDown aria-hidden className="h-4 w-4" />
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <div className="ui-next">
+              <DropdownMenu.Content align="end" sideOffset={6} className={MENU} data-testid="deep-project-list">
+                <DropdownMenu.RadioGroup value={focusKey} onValueChange={onPick}>
+                  {options.map((o, i) => (
+                    <div key={o.key}>
+                      {i === options.findIndex((x) => x.own) && (
+                        <><DropdownMenu.Separator className="my-1 h-px bg-nx-ink/10" />
+                          <DropdownMenu.Label className="nx-muted px-2.5 py-1 text-caption">{t("deep.projects.yours")}</DropdownMenu.Label></>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <DropdownMenu.RadioItem value={o.key} className={`${MENU_ITEM} flex-1 justify-between ${PICKED}`} data-testid={`deep-option-${o.key}`}>
+                          <span>{nameOf(o)}</span>
+                          <span className="tabular-nums opacity-80">{o.bid > 0 ? money(o.bid, lng) : t("deep.bid.none")}</span>
+                        </DropdownMenu.RadioItem>
+                        {o.own && (
+                          <DropdownMenu.Item aria-label={t("deep.projects.remove", { n: o.n })} onSelect={(e) => { e.preventDefault(); onRemove(o.own!.id); }}
+                            className={`${MENU_ITEM} px-2`} data-testid="deep-own-remove">
+                            <X aria-hidden className="h-4 w-4" />
+                          </DropdownMenu.Item>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </DropdownMenu.RadioGroup>
+                <DropdownMenu.Separator className="my-1 h-px bg-nx-ink/10" />
+                <DropdownMenu.Item disabled={full} onSelect={onSaveNew} className={MENU_ITEM} data-testid="deep-project-save">
+                  <Plus aria-hidden className="h-4 w-4" />{full ? t("deep.projects.ownFull", { n: MAX_OWN }) : t("deep.projects.save")}
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </div>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </div>
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <div className="text-caption opacity-70">{t("deep.bid.label")}</div>
-          <div className="text-[1.5rem] font-semibold tabular-nums">{r.landBid > 0 ? money(r.landBid, lng) : t("deep.bid.none")}</div>
-          <div className="text-[0.6875rem] opacity-70">{mode === "sell"
-            ? t("deep.projects.atSale", { price: money(n.salePriceUnit, lng) })
-            : t("deep.projects.atRent", { price: money(n.rentUnitMonth, lng, { short: false }) })}</div>
-        </div>
-        <div className="flex items-center gap-2">{ring("floorArea")}{ring("height")}</div>
-      </div>
+      <p className="nx-muted text-caption">{t("deep.projects.size", { area: project.floorAreaSqft.toLocaleString(loc), floors: project.floors })}</p>
+      <div className="flex items-start justify-around gap-3">{ring("floorArea")}{ring("units")}{ring("height")}</div>
       <div className="flex items-center justify-between gap-2 text-caption">
-        <span className="opacity-75">{t("deep.projects.rings")}</span>
+        <span className="nx-muted">{t("deep.projects.rings")}</span>
         {over ? <Pill tone="red">{t("deep.projects.over")}</Pill> : <Pill tone="green">{t("deep.projects.fits")}</Pill>}
       </div>
-    </>
+      <div className="flex flex-col gap-2 border-t border-nx-ink/10 pt-3" data-testid="deep-steppers">
+        <Stepper label={t("deep.projects.units")} value={String(project.units)} onStep={(d) => onStep("units", d)} />
+        <Stepper label={t("deep.projects.floors")} value={String(project.floors)} onStep={(d) => onStep("floors", d)} />
+        <Stepper label={t("deep.projects.floorArea")} value={project.floorAreaSqft.toLocaleString(loc)} onStep={(d) => onStep("floorAreaSqft", d)} />
+      </div>
+      {backTo && (
+        <button type="button" onClick={() => onBack(backTo)} className="nx-muted self-start text-caption underline touch-target" data-testid="deep-project-back">
+          {t("deep.projects.back", { name: t(`deep.projects.name.${backTo}`) })}
+        </button>
+      )}
+    </section>
   );
 }
+
+const MENU = "z-[70] min-w-[260px] rounded-2xl bg-nx-page p-1.5 text-body text-nx-ink shadow-[0_8px_32px_rgb(0_0_0/0.14)] ring-1 ring-nx-ink/10";
+const MENU_ITEM = "flex cursor-pointer select-none items-center gap-2 rounded-xl px-2.5 py-1.5 outline-none data-[highlighted]:bg-nx-ink/5 data-[disabled]:cursor-default data-[disabled]:opacity-60";
+/** The project on screen in the list: one deep violet in both themes (owner, 2026-11-16: "a darker purple"; the
+    light theme's Pro/Saved lavender ink, 91 93 184), white on it (contrast 5.7:1; 7.1:1 highlighted). */
+const PICKED = "data-[state=checked]:bg-[rgb(91_93_184)] data-[state=checked]:font-semibold data-[state=checked]:text-white data-[state=checked]:data-[highlighted]:bg-[rgb(76_78_165)]";
 
 function Stepper({ label, value, onStep }: { label: string; value: string; onStep: (d: 1 | -1) => void }) {
   const { t } = useTranslation("next");
   return (
     <div className="flex items-center gap-2 text-caption">
-      <span className="flex-1 opacity-75">{label}</span>
-      <button type="button" aria-label={t("deep.projects.less", { what: label })} onClick={() => onStep(-1)} className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-inset ring-nx-card-ink/30 hover:bg-nx-card-ink/10 touch-icon"><Minus aria-hidden className="h-4 w-4" /></button>
+      <span className="nx-muted flex-1">{label}</span>
+      <button type="button" aria-label={t("deep.projects.less", { what: label })} onClick={() => onStep(-1)} className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-inset ring-nx-ink/25 hover:bg-nx-ink/5 touch-icon"><Minus aria-hidden className="h-4 w-4" /></button>
       <b className="min-w-[3.5rem] text-center tabular-nums" aria-live="polite">{value}</b>
-      <button type="button" aria-label={t("deep.projects.more", { what: label })} onClick={() => onStep(1)} className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-inset ring-nx-card-ink/30 hover:bg-nx-card-ink/10 touch-icon"><Plus aria-hidden className="h-4 w-4" /></button>
+      <button type="button" aria-label={t("deep.projects.more", { what: label })} onClick={() => onStep(1)} className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-inset ring-nx-ink/25 hover:bg-nx-ink/5 touch-icon"><Plus aria-hidden className="h-4 w-4" /></button>
     </div>
   );
 }
@@ -646,7 +657,7 @@ function StressGrid({ grid, sale, lng, mode }: { grid: number[][]; sale: number 
   const { t } = useTranslation("next");
   const head = (d: number) => (d === 0 ? t("deep.stress.asSet") : `${d > 0 ? "+" : "−"}${Math.abs(d * 100)}%`);
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-nx-block p-6 lg:sticky lg:top-4" data-testid="deep-stress">
+    <div className="flex flex-col gap-3 rounded-2xl bg-nx-block p-6" data-testid="deep-stress">
       <h3 className="text-center font-semibold">{t("deep.stress.title")}</h3>
       <table className="w-full border-separate border-spacing-1.5 text-center tabular-nums">
         <caption className="sr-only">{t("deep.stress.caption")}</caption>

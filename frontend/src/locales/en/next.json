@@ -2232,7 +2232,7 @@
       "compBody": "Early access: Pro, {{limit}} questions a month, until {{date}}.",
       "manageBilling": "Manage billing",
       "adminBody": "Admin: questions are counted, never refused.",
-      "proWhat": "{{limit}} questions a month",
+      "proWhat": "{{limit}} questions a month, Deep analysis on every lot",
       "getPro": "Get Pro",
       "seePricing": "See pricing",
       "billedMonthly": "{{price}} a month",
@@ -2300,7 +2300,7 @@
   "pricing": {
     "title": "Pricing",
     "heading": "Plans",
-    "lead": "Every lot's Property Profile, Discovery and the map are free. Pro adds more questions to the analyst.",
+    "lead": "Every lot's Property Profile, Discovery and the map are free. Pro adds more questions and a Deep analysis of any lot.",
     "billing": "Billing",
     "monthly": "Monthly",
     "yearly": "Yearly",
@@ -2317,11 +2317,13 @@
       "Every Property Profile tab, on every lot",
       "Discovery across all 77 community areas",
       "50 questions a month to the analyst",
+      "One Deep analysis, free, on the lot you choose",
       "Saved lots and searches"
     ],
     "proFeatures": [
       "Everything in Free",
       "200 questions a month",
+      "Deep analysis on every lot, with its PDF",
       "Pro lasts to the end of the period you paid for"
     ],
     "signedOutNote": "Signed out, you can ask 3 questions before signing in.",
@@ -2344,7 +2346,7 @@
       },
       "trial": {
         "q": "Is there a trial?",
-        "a": "The free plan is the trial: every tab and 50 questions a month, with no card."
+        "a": "The free plan is the trial: every tab, 50 questions a month and one Deep analysis, with no card."
       },
       "reports": {
         "q": "Reports I bought before?",
@@ -2460,8 +2462,6 @@
       "units": "Units",
       "floors": "Floors",
       "floorArea": "Floor area",
-      "own": "Your own",
-      "ownNote": "Start from {{name}}, then change units, floors or floor area",
       "kind": {
         "largest": "Largest · {{units}} units",
         "three_flat": "A 3-flat",
@@ -2472,9 +2472,10 @@
       "size": "{{area}} sq ft · {{floors}} floors",
       "ring": {
         "floorArea": "Floor area: {{v}}% of the limit",
-        "height": "Height: {{v}}% of the limit"
+        "height": "Height: {{v}}% of the limit",
+        "units": "Units: {{v}}% of the limit"
       },
-      "rings": "floor area · height, % of the limit",
+      "rings": "% of each limit",
       "over": "Over a limit",
       "fits": "Fits the numbers",
       "less": "Less: {{what}}",
@@ -2490,7 +2491,16 @@
         "ownN": "your project {{n}}"
       },
       "ownFull": "Up to {{n}} of your own; remove one to add another",
-      "yours": "Your projects"
+      "yours": "Your projects",
+      "title": "Project",
+      "choose": "Project: {{name}}. Choose another",
+      "save": "Save as a new project",
+      "back": "Back to {{name}}",
+      "ringShort": {
+        "floorArea": "floor area",
+        "units": "units",
+        "height": "height"
+      }
     },
     "numbers": {
       "title": "Your numbers",
@@ -2564,7 +2574,7 @@
       "legendNoSale": "red = no land price works"
     },
     "map": {
-      "label": "Your project · {{units}} units · {{floors}} floors",
+      "label": "{{name}} · {{floors}} floors",
       "over": "over the height limit"
     },
     "tile": {

@@ -114,64 +114,72 @@ describe("who sees what", () => {
   });
 });
 
+/** Opens the project list (Radix opens its menu on a key or a pointer press, not a click). */
+function openMenu() {
+  const trigger = screen.getByTestId("deep-project-menu");
+  trigger.focus();
+  fireEvent.keyDown(trigger, { key: "Enter" });
+}
+
 describe("the analysis", () => {
   beforeEach(() => {
     api.getEntitlements.mockResolvedValue(ent({ unlimited: true }));
     api.getDeepAnalysis.mockResolvedValue(ANALYSIS);
   });
 
-  it("the most you can pay first, the projects with their limits as rings, sourced numbers, the stress grid", async () => {
+  it("the most you can pay first, the project with its limits as rings, sourced numbers, the stress grid", async () => {
     const { container, onProject } = show();
     expect((await screen.findByTestId("deep-answer")).textContent).toMatch(/up to about \$1\.75M .* last sold for \$1\.21M/);
-    expect(screen.getByTestId("deep-project-largest").getAttribute("data-selected")).toBe("true");
-    expect(within(screen.getByTestId("deep-project-largest")).getAllByRole("img").map((i) => i.getAttribute("aria-label")))
-      .toEqual(["Floor area: 100% of the limit", "Height: 98% of the limit"]);
+    expect(screen.getByTestId("deep-project-menu").textContent).toBe("Largest · 8 units");
+    expect(within(screen.getByTestId("deep-project")).getAllByRole("img").map((i) => i.getAttribute("aria-label")))
+      .toEqual(["Floor area: 100% of the limit", "Units: 100% of the limit", "Height: 98% of the limit"]);
     expect(screen.getByText(/What Chicago builders report, 2025/)).toBeTruthy();
     expect(within(screen.getByTestId("deep-stress")).getAllByRole("cell")).toHaveLength(9);
-    expect(onProject).toHaveBeenLastCalledWith({ heightFt: 44, capFt: 45, label: "Your project · 8 units · 4 floors" });
+    expect(onProject).toHaveBeenLastCalledWith({ heightFt: 44, capFt: 45, label: "Largest · 8 units · 4 floors" });
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it("a floor over the height limit turns the project red and says so", async () => {
+  it("a change to a ready-made project saves it as your own; the ready-made one stays, with Back to it", async () => {
     const { onProject } = show();
     await screen.findByTestId("deep-bid");
-    expect(screen.queryByRole("button", { name: "More: Floors" })).toBeNull(); // − / + live in Your own only
-    fireEvent.click(screen.getByTestId("deep-project-own-add"));
     fireEvent.click(screen.getByRole("button", { name: "More: Floors" }));
-    const own = screen.getByTestId("deep-project-own");
-    expect(own.getAttribute("data-selected")).toBe("true");
-    expect(own.textContent).toMatch(/Over a limit/);
+    expect(screen.getByTestId("deep-project-menu").textContent).toBe("Your project 1 · 8 units");
+    expect(screen.getByTestId("deep-project").textContent).toMatch(/Over a limit/);
     expect(onProject).toHaveBeenLastCalledWith(expect.objectContaining({ heightFt: 55, capFt: 45 }));
+    fireEvent.click(screen.getByTestId("deep-project-back"));
+    expect(screen.getByTestId("deep-project-menu").textContent).toBe("Largest · 8 units");
+    openMenu();
+    expect(screen.getAllByRole("menuitemradio").map((i) => i.textContent?.replace(/\$.*$/, ""))).toEqual(["Largest · 8 units", "A 3-flat", "Your project 1 · 8 units"]);
   });
 
-  it("your own projects: each a copy of the card in focus, below the three, focus follows the click, × removes", async () => {
+  it("the list: pick a project, save a copy, remove one (focus falls back to where it came from)", async () => {
     show();
     await screen.findByTestId("deep-bid");
-    fireEvent.click(screen.getByTestId("deep-project-three_flat"));
-    expect(screen.getByTestId("deep-project-own-add").textContent).toMatch(/Start from the 3-flat/);
-    fireEvent.click(screen.getByTestId("deep-project-own-add"));
-    fireEvent.click(screen.getByRole("button", { name: "More: Units" }));
-    fireEvent.click(screen.getByTestId("deep-project-largest"));
-    fireEvent.click(screen.getByTestId("deep-project-own-add"));
-    const cards = within(screen.getByTestId("deep-own-list")).getAllByTestId("deep-project-own");
-    expect(cards.map((c) => c.textContent?.match(/Your project \d · \d+ units/)?.[0])).toEqual(["Your project 1 · 4 units", "Your project 2 · 8 units"]);
-    expect(cards[1].getAttribute("data-selected")).toBe("true"); // the new one is in focus
-    expect(screen.getByTestId("deep-project-largest").getAttribute("data-selected")).toBeNull();
-    fireEvent.click(within(cards[0]).getByRole("button", { pressed: false }));
-    expect(cards[0].getAttribute("data-selected")).toBe("true");
-    expect(screen.getByTestId("deep-answer").textContent).toMatch(/Selling 4 units/);
-    fireEvent.click(screen.getByRole("button", { name: "Remove your project 1" }));
-    expect(within(screen.getByTestId("deep-own-list")).getAllByTestId("deep-project-own")).toHaveLength(1);
-    expect(screen.getByTestId("deep-project-largest").getAttribute("data-selected")).toBe("true");
+    openMenu();
+    fireEvent.click(screen.getByTestId("deep-option-three_flat"));
+    expect(screen.getByTestId("deep-answer").textContent).toMatch(/Selling 3 units/);
+    openMenu();
+    fireEvent.click(screen.getByTestId("deep-project-save"));
+    expect(screen.getByTestId("deep-project-menu").textContent).toBe("Your project 1 · 3 units");
+    openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Remove your project 1" }));
+    expect(screen.queryByRole("menuitem", { name: "Remove your project 1" })).toBeNull();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(screen.getByTestId("deep-project-menu").textContent).toBe("A 3-flat");
   });
 
-  it("a sale price belongs to its card: changing it on one leaves the others", async () => {
+  it("a sale price belongs to its project: changing it on one leaves the others", async () => {
     show();
     await screen.findByTestId("deep-bid");
-    const before = screen.getByTestId("deep-project-three_flat").textContent;
     fireEvent.change(screen.getByLabelText("Sale price"), { target: { value: "600000" } });
-    expect(screen.getByTestId("deep-project-largest").textContent).toMatch(/if each sells for \$600k/);
-    expect(screen.getByTestId("deep-project-three_flat").textContent).toBe(before);
+    openMenu();
+    const bids = () => screen.getAllByRole("menuitemradio").map((i) => i.textContent);
+    const [largest, flat] = bids();
+    expect(largest).not.toMatch(/\$1\.75M/);
+    fireEvent.click(screen.getByTestId("deep-option-three_flat"));
+    expect((screen.getByLabelText("Sale price") as HTMLInputElement).value).not.toBe("600000");
+    openMenu();
+    expect(bids()[1]).toBe(flat);
   });
 
   it("the land and sale sliders keep a fixed range while dragged (three times the starting figure)", async () => {

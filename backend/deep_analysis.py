@@ -297,6 +297,8 @@ class OwnIn(BaseModel):
     units: int = Field(ge=0, le=2000)
     stories: int = Field(ge=0, le=120)
     floor_area_sqft: int = Field(ge=0, le=5_000_000)
+    # The ready-made project it started from ("Back to the largest" on the page); None for a copy of another own.
+    based_on: Literal["largest", "three_flat", "townhouses"] | None = None
 
 
 class PriceIn(BaseModel):
@@ -371,7 +373,7 @@ async def put_project(body: ProjectBody, user: dict = Depends(require_auth)) -> 
         (uid, body.pin[:10],
          json.dumps({
              "project": body.project.model_dump() if body.project else None,
-             "cards": {"own": [o.model_dump() for o in body.own], "focus": body.focus,
+             "cards": {"own": [o.model_dump(exclude_none=True) for o in body.own], "focus": body.focus,
                        "prices": {k: v.model_dump(exclude_none=True) for k, v in body.prices.items()}},
          }),
          json.dumps({**body.numbers.model_dump(exclude_none=True), "mode": body.mode}) if body.numbers else json.dumps({"mode": body.mode}),

@@ -2232,7 +2232,7 @@
       "compBody": "Acceso anticipado: Pro, {{limit}} preguntas al mes, hasta el {{date}}.",
       "manageBilling": "Administrar facturación",
       "adminBody": "Admin: las preguntas se cuentan, pero nunca se rechazan.",
-      "proWhat": "{{limit}} preguntas al mes",
+      "proWhat": "{{limit}} preguntas al mes, Análisis a fondo de cualquier terreno",
       "getPro": "Obtener Pro",
       "seePricing": "Ver precios",
       "billedMonthly": "{{price}} al mes",
@@ -2300,7 +2300,7 @@
   "pricing": {
     "title": "Precios",
     "heading": "Planes",
-    "lead": "La Ficha de cada terreno, Descubrir y el mapa son gratuitos. Pro agrega más preguntas al analista.",
+    "lead": "La Ficha de cada terreno, Descubrir y el mapa son gratuitos. Pro agrega más preguntas y un Análisis a fondo de cualquier terreno.",
     "billing": "Facturación",
     "monthly": "Mensual",
     "yearly": "Anual",
@@ -2317,11 +2317,13 @@
       "Todas las pestañas de la Ficha, en cada terreno",
       "Descubrir en las 77 áreas comunitarias",
       "50 preguntas al mes al analista",
+      "Un Análisis a fondo gratis, en el terreno que usted elija",
       "Terrenos y búsquedas guardados"
     ],
     "proFeatures": [
       "Todo lo del plan gratuito",
       "200 preguntas al mes",
+      "Análisis a fondo de cualquier terreno, con su PDF",
       "Pro dura hasta el final del periodo que pagó"
     ],
     "signedOutNote": "Sin iniciar sesión, puede hacer 3 preguntas.",
@@ -2344,7 +2346,7 @@
       },
       "trial": {
         "q": "¿Hay periodo de prueba?",
-        "a": "El plan gratuito es la prueba: todas las pestañas y 50 preguntas al mes, sin tarjeta."
+        "a": "El plan gratuito es la prueba: todas las pestañas, 50 preguntas al mes y un Análisis a fondo, sin tarjeta."
       },
       "reports": {
         "q": "¿Y los informes que ya compré?",
@@ -2460,8 +2462,6 @@
       "units": "Unidades",
       "floors": "Pisos",
       "floorArea": "Superficie",
-      "own": "El suyo",
-      "ownNote": "Copie {{name}} y cambie unidades, pisos o superficie",
       "kind": {
         "largest": "El más grande · {{units}} unidades",
         "three_flat": "Un edificio de 3 departamentos",
@@ -2472,9 +2472,10 @@
       "size": "{{area}} pies² · {{floors}} pisos",
       "ring": {
         "floorArea": "Superficie: {{v}}% del límite",
-        "height": "Altura: {{v}}% del límite"
+        "height": "Altura: {{v}}% del límite",
+        "units": "Unidades: {{v}}% del límite"
       },
-      "rings": "superficie · altura, % del límite",
+      "rings": "% de cada límite",
       "over": "Pasa un límite",
       "fits": "Cabe en las cifras",
       "less": "Menos: {{what}}",
@@ -2490,7 +2491,16 @@
         "ownN": "su proyecto {{n}}"
       },
       "ownFull": "Hasta {{n}} propios; quite uno para agregar otro",
-      "yours": "Sus proyectos"
+      "yours": "Sus proyectos",
+      "title": "Proyecto",
+      "choose": "Proyecto: {{name}}. Elija otro",
+      "save": "Guardar como proyecto nuevo",
+      "back": "Volver a {{name}}",
+      "ringShort": {
+        "floorArea": "superficie",
+        "units": "unidades",
+        "height": "altura"
+      }
     },
     "numbers": {
       "title": "Sus cifras",
@@ -2564,7 +2574,7 @@
       "legendNoSale": "rojo = ningún precio del terreno alcanza"
     },
     "map": {
-      "label": "Su proyecto · {{units}} unidades · {{floors}} pisos",
+      "label": "{{name}} · {{floors}} pisos",
       "over": "pasa el límite de altura"
     },
     "tile": {
