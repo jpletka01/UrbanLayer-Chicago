@@ -1,5 +1,6 @@
 // The new map's style (map track M1, Items 90-91): our own tiles only, roads drawn over the fills, names only
 // zoomed in, On / Dim / Off, and a theme switch that repaints every layer without a reload.
+import { validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import { describe, expect, it } from "vitest";
 import {
   GROUPS, LAYER_IDS, ROAD_METERS, metersPerPixel, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint, versionedTiles,
@@ -52,9 +53,13 @@ describe("the style document", () => {
     const s = buildStyle(input());
     const ties = s.layers.find((l) => l.id === "rail-ties") as { minzoom?: number };
     const label = s.layers.find((l) => l.id === "rail-label") as { minzoom?: number; filter?: unknown };
-    expect(ties.minzoom).toBe(14);
+    expect(ties.minzoom).toBe(12);
     expect(label.minzoom).toBe(STREET_LABEL_MIN_ZOOM);
     expect(JSON.stringify(label.filter)).toContain("cta");
+    // MapLibre's own validator accepts every layer (a nested zoom curve once blanked the whole map)
+    for (const theme of ["light", "dark"] as const) {
+      expect(validateStyleMin(buildStyle({ ...input(), theme }) as never).map((e) => e.message)).toEqual([]);
+    }
     // no rail without the base tiles
     expect(buildStyle(input({ ...ALL, base: null })).layers.some((l) => l.id === "rail")).toBe(false);
   });
