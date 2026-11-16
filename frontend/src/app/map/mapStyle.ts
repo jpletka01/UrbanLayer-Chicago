@@ -257,8 +257,9 @@ export const LAYERS: LayerDef[] = [
   },
   {
     group: "parcels", needs: "parcels", opacity: ["line-opacity"],
-    // Lots under the City's water (room band "w", Item 128) aren't outlined: the river reads as water.
-    spec: (t) => ({ id: "parcel-line", type: "line", source: "parcels", "source-layer": "parcels", filter: ["!=", ["get", "r"], "w"],
+    // Park and water lots (room bands "p", "w", Item 128) aren't outlined: the park green and the water read instead.
+    spec: (t) => ({ id: "parcel-line", type: "line", source: "parcels", "source-layer": "parcels",
+      filter: ["!", ["in", ["get", "r"], ["literal", ["w", "p"]]]],
       paint: { "line-color": PALETTES[t].parcelLine, "line-opacity": PALETTES[t].parcelLineOpacity,
         "line-width": zoomWidth([[14, 0.3], [16, 0.7], [19, 1.4]]) } }),
   },

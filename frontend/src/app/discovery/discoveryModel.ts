@@ -61,12 +61,13 @@ const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4", instituti
 // Land in use (Item 112), in the tiles' `l` order (`lot_facts.LAND_IN_USE`): empty land, surface parking, homes,
 // apartments, business, industrial, tax-exempt, road or railroad land. Coastal's colors and a gray, each named in the
 // key; surface parking (lavender) and road land (peach) also carry marks, so neither relies on color alone.
-// Item 128 adds park (8; parks and cemeteries, the park green). Water (9) is never drawn as a lot: see NOT_WATER.
-export const USE_COLORS = ["#B89D47", "#9184C4", "#DCEDEB", "#A9D2CE", "#FE9179", "#355E58", "#B4B4B4", "#FDC1B4", "#A7E2B2"];
+// Park (8) and water (9) lots are never drawn (NOT_DRAWN), so they have no color here.
+export const USE_COLORS = ["#B89D47", "#9184C4", "#DCEDEB", "#A9D2CE", "#FE9179", "#355E58", "#B4B4B4", "#FDC1B4"];
 
-/** Lots mostly under the City's water (the North Branch's riverbed parcels; their room band is "w", Item 128) are
-    left off the lot layers in every measure, so the river reads as water, not as lots (owner's map review). */
-export const NOT_WATER = ["!=", ["get", "r"], "w"] as const;
+/** Lots that are parks, cemeteries or open space (room band "p") or mostly under the City's water ("w") are left off
+    the lot layers in every measure: the base map's park green and water show instead (owner's map reviews, Item 128:
+    "for anything that's a park, just remove the drawing of the lots"). */
+export const NOT_DRAWN = ["!", ["in", ["get", "r"], ["literal", ["w", "p"]]]] as const;
 /** The marks over a land-in-use color: "P" on surface parking, "+" on road or railroad land (as transportation zoning). */
 export const USE_TEXTURE: Record<string, "p" | "plus"> = { "1": "p", "7": "plus" };
 // A tile file built before Item 112 (`u` only): its tax-class bands, mapped to the same colors. Its "vacant" is the tax
@@ -83,7 +84,6 @@ export function measureSteps(m: MeasureId): MeasureStep[] {
       // No base FAR is named, not unknown (owner's review): its own ordinance, open space, a transportation zone (with
       // road and rail right-of-way, Item 128: one key line).
       { value: "x", color: NAMED.own, key: "room.own" },
-      { value: "p", color: NAMED.park, key: "room.park" },
       { value: "t", color: NAMED.transport, key: "room.transport" },
       // An exempt school, church, hospital or government site with no building area to count (Item 128).
       { value: "i", color: NAMED.institution, key: "room.institution" },
@@ -116,8 +116,8 @@ export function measureColorExpr(m: MeasureId, zoningFamily?: Record<string, str
 
 /** Lots with no band for the measure: drawn dotted ("not known"). Land in use also reads an older file's `u`. */
 export function unknownMeasureFilter(m: MeasureId): unknown {
-  if (m === "use") return ["all", NOT_WATER, ["!", ["has", "l"]], ["!", ["in", ["get", "u"], ["literal", Object.keys(U_TO_L)]]]];
-  return ["all", NOT_WATER, ["!", ["has", MEASURE_PROP[m]]]];
+  if (m === "use") return ["all", NOT_DRAWN, ["!", ["has", "l"]], ["!", ["in", ["get", "u"], ["literal", Object.keys(U_TO_L)]]]];
+  return ["all", NOT_DRAWN, ["!", ["has", MEASURE_PROP[m]]]];
 }
 
 /** The texture layer's filter and pattern for a measure (only land in use has marks); null = no texture layer content. */

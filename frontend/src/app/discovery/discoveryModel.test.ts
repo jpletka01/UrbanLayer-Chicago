@@ -3,7 +3,7 @@ import type { ResultRow } from "../../discovery/types";
 import { shapePath } from "./discoveryData";
 import {
   areaSuggestions, cardModel, foldComplexes, clampMiles, classifyQuery, measureColorExpr, measureSteps, measureTexture, unknownMeasureFilter, milesBetween, placeRegion, placeSuggestions, quickFromPanel,
-  quickPanel, ringMiles, ringPolygon, ringRegion, NOT_WATER, formatAt, parseAt,
+  quickPanel, ringMiles, ringPolygon, ringRegion, NOT_DRAWN, formatAt, parseAt,
 } from "./discoveryModel";
 
 const AREAS = { 22: "Logan Square", 24: "West Town", 7: "Lincoln Park" };
@@ -28,7 +28,7 @@ describe("quick filters compile to a panel the server evaluates", () => {
 
 describe("the map's measure", () => {
   it("has a key step per tile band and colors unknown as transparent (the hatch layer draws it)", () => {
-    expect(measureSteps("room").map((s) => s.value)).toEqual(["0", "1", "2", "3", "4", "x", "p", "t", "i"]);
+    expect(measureSteps("room").map((s) => s.value)).toEqual(["0", "1", "2", "3", "4", "x", "t", "i"]);
     const expr = measureColorExpr("room") as unknown[];
     expect(expr.slice(0, 2)).toEqual(["match", ["get", "r"]]);
     expect(expr[expr.length - 1]).toBe("rgba(0,0,0,0)");
@@ -37,7 +37,7 @@ describe("the map's measure", () => {
 
   it("land use is land IN use: the measured `l` band, an older file's tax-class `u` as a fallback (Item 112)", () => {
     const steps = measureSteps("use");
-    expect(steps.map((s) => s.key)).toEqual(["use.0", "use.1", "use.2", "use.3", "use.4", "use.5", "use.6", "use.7", "use.8"]);
+    expect(steps.map((s) => s.key)).toEqual(["use.0", "use.1", "use.2", "use.3", "use.4", "use.5", "use.6", "use.7"]);
     expect(steps.filter((s) => s.texture).map((s) => [s.value, s.texture])).toEqual([["1", "p"], ["7", "plus"]]);
     const expr = measureColorExpr("use") as unknown[];
     expect(expr[0]).toBe("case");
@@ -46,7 +46,7 @@ describe("the map's measure", () => {
     // The tax class's "vacant" (u 0) is not mapped: what stands on the lot decides empty, so it stays unknown.
     expect((expr[3] as unknown[]).includes("0")).toBe(false);
     expect(JSON.stringify(unknownMeasureFilter("use"))).toContain('"u"');
-    expect(unknownMeasureFilter("room")).toEqual(["all", ["!=", ["get", "r"], "w"], ["!", ["has", "r"]]]);
+    expect(unknownMeasureFilter("room")).toEqual(["all", ["!", ["in", ["get", "r"], ["literal", ["w", "p"]]]], ["!", ["has", "r"]]]);
     expect(measureTexture("room", "light")).toBeNull();
     expect(measureTexture("use", "dark")?.pattern).toEqual(["match", ["get", "l"], "1", "pattern-p-dark", "7", "pattern-plus-dark", "pattern-plus-dark"]);
   });
@@ -145,10 +145,10 @@ describe("one card per complex", () => {
   });
 });
 
-describe("water lots (Item 128)", () => {
-  it("are left off the unknown dots in every measure, so the river reads as water", () => {
-    for (const m of ["room", "lot", "sale", "use"] as const) expect(JSON.stringify(unknownMeasureFilter(m))).toContain('["!=",["get","r"],"w"]');
-    expect(NOT_WATER).toEqual(["!=", ["get", "r"], "w"]);
+describe("park and water lots (Item 128)", () => {
+  it("are never drawn: the base map's park green and water show instead", () => {
+    for (const m of ["room", "lot", "sale", "use"] as const) expect(JSON.stringify(unknownMeasureFilter(m))).toContain('["literal",["w","p"]]');
+    expect(NOT_DRAWN).toEqual(["!", ["in", ["get", "r"], ["literal", ["w", "p"]]]]);
   });
 });
 

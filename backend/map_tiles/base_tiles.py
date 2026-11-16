@@ -16,6 +16,7 @@ Layers (zooms 10-16; the map overzooms past 16):
 - ``rail_land`` (Item 128, the owner's map review): CMAP 2023's rail right-of-way and intermodal yards (1511, 1570) as
   areas, from zoom 12, so rail land reads even where the County has no lot (the Kimball yard, the L north of
   Division are right-of-way without a PIN). From ``map_sources/cmap_lui_2023.db``; without it the layer is left out.
+- ``park`` also carries CMAP 2023's cemeteries (1360), since their lots are not drawn (the owner's map review).
 - ``station``: CTA rail and Metra stations (the committed ``ingestion/data/transit_stations.json``, from the CTA and
   Metra GTFS feeds) as points with ``kind`` cta / metra, ``name`` and ``lines``, from zoom 12.
 
@@ -165,6 +166,34 @@ def rail_features(lines: list[tuple[str, object, dict]], city) -> tuple[list[Fea
 RAIL_LAND_MINZOOM = STATION_MINZOOM = 12
 
 
+def cemetery_features(cmap: Path, city) -> list[Feature]:
+    """CMAP 2023's cemeteries (1360) inside the City, drawn in the ``park`` layer (owner's map review: cemeteries read
+    as parkland, and their lots are not drawn, so the base map must show them: Graceland, Rosehill, Oak Woods...)."""
+    import sqlite3
+
+    from shapely import from_wkb, make_valid
+    from shapely.prepared import prep
+
+    from backend.discovery.cmap_land_use import CMAP_CEMETERY
+
+    db = sqlite3.connect(f"file:{cmap}?mode=ro", uri=True)
+    try:
+        rows = db.execute("SELECT wkb FROM lui WHERE landuse = ?", (CMAP_CEMETERY,)).fetchall()
+    finally:
+        db.close()
+    inside = prep(city)
+    out = []
+    for (wkb,) in rows:
+        g = from_wkb(wkb)
+        g = g if g.is_valid else make_valid(g)
+        if not inside.intersects(g):
+            continue
+        part = g if inside.contains(g) else g.intersection(city)
+        if not part.is_empty and part.area > 0:
+            out.append(Feature("park", to_mercator(part), {"name": ""}, 11))
+    return out
+
+
 def rail_land_features(cmap: Path, city) -> list[Feature]:
     """CMAP's rail right-of-way and intermodal yards inside the City, as areas."""
     import sqlite3
@@ -226,6 +255,7 @@ def build_features(sources: dict[str, list[dict]], rail: list | None = None) -> 
         feats += rail_feats
         if sources.get("_cmap"):
             feats += rail_land_features(sources["_cmap"], city)
+            feats += cemetery_features(sources["_cmap"], city)
         if sources.get("_stations"):
             feats += station_features(sources["_stations"], city)
     for row in sources["city"]:

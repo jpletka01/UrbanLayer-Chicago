@@ -1851,6 +1851,8 @@ Run: `PYTHONPATH=. python -m eval.rail_land_label serve` (localhost:8035), then 
 - Discovery keeps the map's place in the URL (`?at=41.96601,-87.68873,16.20z`, Google's lat, lng, zoom), replaced on every move without a new history entry, so Back from a Profile, a reload or a shared link returns to the same view.
 - The lot card's Street View link is two buttons, Street View and Google Maps (a pinned Maps link, no key); this also fixes the card's "key returned an object" label (`map.streetView` is a group of keys).
 
+**The owner's next look (2026-11-16):** parks shouldn't be a layer of lots at all. Lots that are parks, cemeteries or open space (room band `p`) are no longer drawn, like water: no fill, no outline, no key line; the base map's park green shows instead, and the base map now carries CMAP's cemeteries in its park layer (28 areas) so Graceland and Rosehill stay green. The lot card's buttons sit at its full width: Open profile (a dark button, was a link), then Street View and Google Maps side by side.
+
 **Asked, not built:** a satellite layer (Item 78 and the project rules ban satellite from the product's maps; the owner's call to revisit), a Street View coverage layer (Google's coverage tiles need its Maps API and terms), and not drawing right-of-way lots at all (the owner's idea; rail land now shows under them as an area).
 
 *Alternatives rejected:* the City's 2010 Railroads and 2011 Metra shapefiles (superseded by NARN); OpenStreetMap railways (ODbL review still open); a line-through-the-lot rule (3 of 8, 2 of 5); a buffer around the lines (the approximate CTA line clips homes beside the tracks); hiding RR-class land again under "rail" (already hidden as railroad since Item 60).

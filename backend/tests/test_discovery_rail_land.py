@@ -383,3 +383,15 @@ def test_an_exempt_institution_with_no_area_is_named_not_unknown(code, kind, att
     derive_capacity(a2)
     assert a2["room_sqft"] == 34_000.0 and "room_scope" not in a2  # a computable room is never replaced
     assert measure_bands({"room_scope": "institution"})["r"] == "i"
+
+
+def test_cemeteries_join_the_park_layer(tmp_path):
+    cmap = tmp_path / "cmap.db"
+    db = sqlite3.connect(cmap)
+    db.execute("CREATE TABLE lui (oid INTEGER PRIMARY KEY, landuse TEXT, landuse2 TEXT, modifier TEXT, os_mgmt TEXT, wkb BLOB)")
+    for code, g in (("1360", box(-87.67, 41.95, -87.66, 41.96)), ("1111", box(-87.60, 41.80, -87.59, 41.81))):
+        db.execute("INSERT INTO lui (landuse, wkb) VALUES (?, ?)", (code, shapely.to_wkb(g)))
+    db.commit()
+    db.close()
+    feats = base_tiles.cemetery_features(cmap, box(-87.95, 41.64, -87.52, 42.03))
+    assert [(f.layer, f.minzoom) for f in feats] == [("park", 11)]

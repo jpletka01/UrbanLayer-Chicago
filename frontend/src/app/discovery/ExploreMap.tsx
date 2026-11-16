@@ -21,7 +21,7 @@ import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
 import { PALETTES, ZONING_COLORS, buildStyle, groupLayerIds, themePaint, versionedTiles, type MapTiles, type Theme } from "../map/mapStyle";
 import { STROKE } from "../icons";
 import {
-  LOTS_MIN_ZOOM, NOT_WATER, cardModel, formatAt, parseAt, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
+  LOTS_MIN_ZOOM, NOT_DRAWN, cardModel, formatAt, parseAt, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
 } from "./discoveryModel";
 import { foldAttribution } from "../map/attribution";
 
@@ -125,7 +125,7 @@ function addOwnLayers(map: MLMap, theme: Theme, measure: MeasureId, dim: boolean
     // A lot whose measure is unknown is hatched (dots), never colored as if it were low.
     map.addLayer({ id: "lot-unknown", type: "fill", source: "parcels", "source-layer": "parcels",
       filter: unknownFilter(measure), paint: { "fill-pattern": PATTERN_IMAGE("dots", theme), "fill-opacity": dim ? 0.35 : 1 } }, map.getLayer("parcel-line") ? "parcel-line" : before);
-    map.addLayer({ id: "lot-measure", type: "fill", source: "parcels", "source-layer": "parcels", filter: NOT_WATER as never,
+    map.addLayer({ id: "lot-measure", type: "fill", source: "parcels", "source-layer": "parcels", filter: NOT_DRAWN as never,
       paint: paint["lot-measure"] as never }, map.getLayer("parcel-line") ? "parcel-line" : before);
     // Marks over some measure colors (land in use: "P" on surface parking, "+" on road land), so color isn't alone.
     const tex = measureTexture(measure, theme);
@@ -534,22 +534,27 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
             {[card.zone, card.lotSqft != null ? t("discovery.card.lotValue", { value: n(card.lotSqft) }) : null].filter(Boolean).join(" · ")}
           </p>
           <p>{card.roomSqft != null ? t("discovery.card.roomValue", { value: n(card.roomSqft) }) : t("discovery.card.roomUnknown")}</p>
+        </div>
+      )}
+      {card && (
+        // Buttons at the card's full width (owner's review): Open profile, then Street View and Google Maps side by side.
+        // The last two open in a new tab.
+        <div className="mt-3 flex flex-col gap-2">
           {href && (
-            <button type="button" onClick={() => navigate(href)} className="mt-1 inline-flex items-center gap-1 self-start font-medium underline underline-offset-2">
-              {t("discovery.card.open")}<ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
+            <button type="button" onClick={() => navigate(href)} data-testid="lot-card-open"
+              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-nx-ink px-3 font-semibold text-nx-on-ink touch-target">
+              {t("discovery.card.open")}<ArrowRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
             </button>
           )}
-          {/* Two buttons, not a link (owner's map review): Street View standing on the lot's street, and Google Maps at
-              the lot. Both open in a new tab. */}
-          <div className="mt-1.5 flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <a href={streetViewUrl(sv.lat, sv.lon, sv.heading)} target="_blank" rel="noopener noreferrer" data-testid="lot-card-street-view"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-nx-ink/5 px-2.5 font-medium hover:bg-nx-ink/10 touch-target">
-              <PersonStanding aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t("map.streetView.button")}
+              className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium hover:bg-nx-ink/10 touch-target">
+              <PersonStanding aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{t("map.streetView.button")}
               <span className="sr-only">{t("profile.opensInNewTab")}</span>
             </a>
             <a href={googleMapsUrl(picked.ll[1], picked.ll[0])} target="_blank" rel="noopener noreferrer" data-testid="lot-card-google-maps"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-nx-ink/5 px-2.5 font-medium hover:bg-nx-ink/10 touch-target">
-              <MapPinned aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{t("map.googleMaps")}
+              className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium hover:bg-nx-ink/10 touch-target">
+              <MapPinned aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{t("map.googleMaps")}
               <span className="sr-only">{t("profile.opensInNewTab")}</span>
             </a>
           </div>
