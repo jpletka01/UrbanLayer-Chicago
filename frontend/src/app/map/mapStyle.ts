@@ -363,9 +363,12 @@ export const SATELLITE_URL = "https://gis.cookcountyil.gov/imagery/rest/services
 export const SATELLITE_LAYER = "satellite";
 export const satelliteSource = (attribution: string) =>
   ({ type: "raster", tiles: [SATELLITE_URL], tileSize: 256, minzoom: 10, maxzoom: 20, attribution }) as const;
-/** Drawn right under the lot outlines: above the base land, zoning and the lots' measure colors (a photo shows what is
-    there), below the outlines, streets, rail, stations and labels. */
-export const SATELLITE_BEFORE = "parcel-line";
+/** Drawn under the zoning and the lots' colors, which turn see-through over it (owner's look: an opaque photo hid
+    room to build), and under the outlines, streets, rail, stations and labels. */
+export const SATELLITE_BEFORE = "zoning-fill";
+/** Fill opacity of the lots' measure colors and the zoning fill over the photo. */
+export const SATELLITE_FILL_OPACITY = 0.5;
+export const SATELLITE_ZONING_OPACITY = 0.3;
 
 // ---------------------------------------------------------------- the document
 

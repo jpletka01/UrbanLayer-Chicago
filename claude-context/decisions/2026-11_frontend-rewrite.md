@@ -1863,6 +1863,14 @@ Run: `PYTHONPATH=. python -m eval.rail_land_label serve` (localhost:8035), then 
 - **Smaller:** white transit edges in both themes; the L's station icon is a dark "M" on white and Metra's a white train on Metra blue (they were the other way round); exempt institutions lilac and condo buildings sand, apart from the PD gray; the lot a visitor clicks is outlined like a match until the card closes.
 - **Audit after all of it** (`after.json`): "not known" 37,606 to 25,408; park 3,419 to 1; cemetery 87 to 1; water 410 to 0.
 
+**The owner's fifth look (2026-11-16): the Layers control the Google way, and what the condo label covers.**
+- **Layers like Google Maps:** the corner square previews the *other* map (a Cook County photo of Wicker Park while the standard map shows, a miniature of our map while the photo shows) and switches to it on a click; hovering it (a tap on a touch screen) opens a row beside it: Transit, Zoning districts, Saved lots, each with a small preview; no close button, the row folds when the pointer leaves or the map is touched. The data credits moved from the map's "i" button (removed on Discovery) to under that row.
+- **Satellite and the lot colors:** the photo now lies under the zoning and the lots' colors, which turn see-through over it (lots 50%, zoning 30%), so room to build reads on the photo (the opaque photo hid it).
+- **Saved lots on the map:** a Saved lots layer, on by default, draws the visitor's saved lots (account or this browser) as lavender bookmark pins.
+- **Station icons drawn at 3x, 18 px** (the Metra icon looked low-resolution).
+- **The L at Clark Junction:** moving the line onto the right-of-way only sideways, never along the line, so where the L crosses a street (no right-of-way polygon) it stays straight (it jogged at Clark and Roscoe). Elevated L on rail land 50.3%, homes crossed 5.
+- **The condo label, measured:** 14,357 lots; 60% are condo-converted 2-to-6-unit buildings (2-3 units 4,295, 4-6 units 4,409), median lot 5,706 sq ft; 7-20 units 3,734, 21-100 1,408, over 100 511. It lights up ordinary two- and three-flats because many are condominiums.
+
 **Asked, not built:** a satellite layer (Item 78 and the project rules ban satellite from the product's maps; the owner's call to revisit), a Street View coverage layer (Google's coverage tiles need its Maps API and terms), and not drawing right-of-way lots at all (the owner's idea; rail land now shows under them as an area).
 
 *Alternatives rejected:* the City's 2010 Railroads and 2011 Metra shapefiles (superseded by NARN); OpenStreetMap railways (ODbL review still open); a line-through-the-lot rule (3 of 8, 2 of 5); a buffer around the lines (the approximate CTA line clips homes beside the tracks); hiding RR-class land again under "rail" (already hidden as railroad since Item 60).

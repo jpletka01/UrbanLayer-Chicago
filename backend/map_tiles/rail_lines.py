@@ -233,7 +233,7 @@ def snap_to_row(line, row_ft: list, tree=None):
         n = max(2, int(part.length // SNAP_STEP_FT) + 1)
         pts = [part.interpolate(i * part.length / (n - 1)) for i in range(n)]
         moved = []
-        for p in pts:
+        for i, p in enumerate(pts):
             hit = tree.query(p, predicate="within")
             if len(hit):
                 moved.append((p.x, p.y))
@@ -246,6 +246,14 @@ def snap_to_row(line, row_ft: list, tree=None):
             b = nearest_points(poly.boundary, p)[0]
             dx, dy = b.x - p.x, b.y - p.y
             d = (dx * dx + dy * dy) ** 0.5 or 1.0
+            # Only sideways: where the right-of-way lies ahead or behind along the line (a street the L crosses, which
+            # CMAP doesn't map as rail), the point stays; moving it made a jog at Clark Junction (owner's look).
+            a_, b_ = pts[max(i - 1, 0)], pts[min(i + 1, len(pts) - 1)]
+            tx, ty = b_.x - a_.x, b_.y - a_.y
+            tl = (tx * tx + ty * ty) ** 0.5 or 1.0
+            if abs(dx * tx + dy * ty) / (d * tl) > 0.5:
+                moved.append((p.x, p.y))
+                continue
             q = shapely.Point(b.x + dx / d * SNAP_INSET_FT, b.y + dy / d * SNAP_INSET_FT)
             moved.append((q.x, q.y) if poly.contains(q) else (b.x, b.y))
         # A moving average over 5 points (75 ft) takes out the zigzag where moved and kept stretches meet (owner's look);

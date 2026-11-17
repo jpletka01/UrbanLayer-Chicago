@@ -16,10 +16,10 @@ import { profileAddress } from "../../discovery/rowFigures";
 import { discoveryOutlineRow, fetchTransitStations, type DiscoveryOutlineLookup } from "../../lib/api";
 import { apiOrigin, googleMapsUrl, loadMapInfo, streetViewUrl } from "../map/mapInfo";
 import { loadedRoads, streetOfAddress, viewpointFor, type RoadLine } from "../map/streetView";
-import { addPinImages } from "../map/pins";
+import { PIN_IMAGE, addPinImages } from "../map/pins";
 import { PATTERN_IMAGE, addPatternImages } from "../map/patterns";
 import {
-  PALETTES, SATELLITE_BEFORE, SATELLITE_LAYER, ZONING_COLORS, buildStyle, groupLayerIds, satelliteSource, themePaint, versionedTiles,
+  PALETTES, SATELLITE_BEFORE, SATELLITE_FILL_OPACITY, SATELLITE_LAYER, SATELLITE_ZONING_OPACITY, ZONING_COLORS, buildStyle, groupLayerIds, satelliteSource, themePaint, versionedTiles,
   type MapTiles, type Theme,
 } from "../map/mapStyle";
 import type { Basemap } from "../map/LayersControl";
@@ -27,7 +27,6 @@ import { STROKE } from "../icons";
 import {
   LOTS_MIN_ZOOM, NOT_DRAWN, cardModel, formatAt, parseAt, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
 } from "./discoveryModel";
-import { foldAttribution } from "../map/attribution";
 
 maplibregl.setWorkerUrl(workerUrl);
 
@@ -57,6 +56,9 @@ export interface ExploreMapProps {
   showRail?: boolean;
   /** Standard (our style) or Satellite (Cook County's photos, opt-in from the Layers button, Item 128). */
   basemap?: Basemap;
+  /** The visitor's saved lots as pins (the Layers button's Saved lots, on by default; Item 128). */
+  savedPoints?: Array<{ lat: number; lon: number; address: string }>;
+  showSaved?: boolean;
   /** The places the search is limited to, outlined (a neighborhood's outline, or a community area by number). */
   highlight?: Array<{ kind: "hood"; geometry: GeoJSON.Geometry | null } | { kind: "area"; id: number }> | null;
   /** The Transit panel's walk, in miles: a ring of that size around every L stop (null = none). */
@@ -76,6 +78,8 @@ const ZONING_FAMILY_FILL: Record<string, string> = {
   manufacturing: ZONING_COLORS.manufacturing[1], downtown: ZONING_COLORS.downtown[1], planned: ZONING_COLORS.planned[0],
   park: ZONING_COLORS.park[0], transport: ZONING_COLORS.transport[0],
 };
+
+const NO_POINTS: Array<{ lat: number; lon: number; address: string }> = [];
 
 /** A width only where the lot matches a search or is the lot the visitor clicked (feature state; the click outline
     is the owner's ask, Item 128), inside a zoom interpolation (zoom must be outermost). */
@@ -182,7 +186,7 @@ const NONE = ["==", ["get", "__none__"], "__never__"];
 export interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; roads: RoadLine[]; lookup: DiscoveryOutlineLookup | null }
 
 export function ExploreMap({
-  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, basemap = "standard", walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
+  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, basemap = "standard", savedPoints = NO_POINTS, showSaved = true, walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
 }: ExploreMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -232,8 +236,7 @@ export function ExploreMap({
       }
       map = m;
       m.touchZoomRotate.disableRotation();
-      m.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: t("map.attribution") }), "bottom-left");
-      m.once("load", () => foldAttribution(m.getContainer()));
+      // No credit button on the map (owner's look: the "i" was wasted space); the credits sit under the Layers row.
       m.on("webglcontextlost", () => undefined);
       let retryAt = 0;
       m.on("error", (e) => {
@@ -361,24 +364,49 @@ export function ExploreMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
+    const data = { type: "FeatureCollection", features: savedPoints.map((p) => ({ type: "Feature", properties: { address: p.address },
+      geometry: { type: "Point", coordinates: [p.lon, p.lat] } })) } as never;
+    const src = map.getSource("saved-lots") as GeoJSONSource | undefined;
+    if (src) src.setData(data);
+    else {
+      map.addSource("saved-lots", { type: "geojson", data });
+      map.addLayer({ id: "saved-pin", type: "symbol", source: "saved-lots",
+        layout: { "icon-image": PIN_IMAGE.saved, "icon-anchor": "bottom", "icon-allow-overlap": true, "icon-ignore-placement": true,
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 14, 0.85, 16, 1] as never } });
+    }
+    map.setLayoutProperty("saved-pin", "visibility", showSaved ? "visible" : "none");
+  }, [savedPoints, showSaved, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
     for (const id of groupLayerIds("rail")) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", showRail ? "visible" : "none");
   }, [showRail, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    if (basemap === "satellite") {
+    const sat = basemap === "satellite";
+    if (sat) {
       if (!map.getSource(SATELLITE_LAYER)) map.addSource(SATELLITE_LAYER, satelliteSource(t("map.layers.satelliteCredit")) as never);
       if (!map.getLayer(SATELLITE_LAYER)) {
-        const before = map.getLayer(SATELLITE_BEFORE) ? SATELLITE_BEFORE : undefined;
+        const before = map.getLayer(SATELLITE_BEFORE) ? SATELLITE_BEFORE : map.getLayer("parcel-line") ? "parcel-line" : undefined;
         map.addLayer({ id: SATELLITE_LAYER, type: "raster", source: SATELLITE_LAYER, paint: { "raster-fade-duration": 0 } }, before);
       }
     } else {
       if (map.getLayer(SATELLITE_LAYER)) map.removeLayer(SATELLITE_LAYER);
       if (map.getSource(SATELLITE_LAYER)) map.removeSource(SATELLITE_LAYER);
     }
+    // Over the photo the lots' colors and the zoning go see-through, so room to build and the photo both read.
+    const own = ownPaint(live.current.theme, live.current.measure, live.current.dim);
+    for (const id of ["lot-measure", "grid-measure"]) {
+      if (map.getLayer(id)) map.setPaintProperty(id, "fill-opacity", (sat ? SATELLITE_FILL_OPACITY : own[id as "lot-measure"]["fill-opacity"]) as never);
+    }
+    if (map.getLayer("zoning-fill")) {
+      map.setPaintProperty("zoning-fill", "fill-opacity", sat ? SATELLITE_ZONING_OPACITY : PALETTES[live.current.theme].zoningFill);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basemap, ready]);
+  }, [basemap, ready, theme, measure, matches]);  // after the theme effect, which resets these paints
 
   // Matches as outlines (feature state on the lot tiles).
   const marked = useRef<Set<string>>(new Set());

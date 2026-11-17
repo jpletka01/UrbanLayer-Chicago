@@ -25,7 +25,7 @@ import type { FilterDef, PanelState, Predicate, Registry, ResultRow, TopicDef } 
 import { getAutocomplete, savedApi } from "../../lib/api";
 import type { DiscoveryDraft } from "../../discovery/draftModel";
 import { SaveSearch } from "../saved/SaveSearch";
-import { useSaved } from "../saved/savedStore";
+import { pointOf, useSaved } from "../saved/savedStore";
 import { lotKey } from "../home/lotMemory";
 import type { AddressSuggestion } from "../../lib/types";
 import { track } from "../../lib/tracking";
@@ -88,7 +88,13 @@ export default function DiscoveryNextPage() {
   }, [registry]);
   const [measure, setMeasure] = useState<MeasureId>(DEFAULT_MEASURE);
   // The Layers button's choices (Item 128): Standard or Satellite, Transit and Zoning districts on or off.
-  const [layers, setLayers] = useState<LayersState>({ basemap: "standard", transit: true, zoning: false });
+  const [layers, setLayers] = useState<LayersState>({ basemap: "standard", transit: true, zoning: false, saved: true });
+  const savedLots = useSaved();
+  const savedPoints = useMemo(() => savedLots.lots.flatMap((l) => {
+    const p = pointOf(l);
+    return p ? [{ lat: p.lat, lon: p.lon, address: l.address }] : [];
+  }), [savedLots.lots]);
+  const mapTheme = useResolvedThemeOrLight();
   const [view, setView] = useState<ViewBox | null>(null);
   const [camera, setCamera] = useState<{ bbox?: [number, number, number, number]; center?: [number, number]; zoom?: number; seq: number } | null>(null);
   const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
@@ -280,6 +286,8 @@ export default function DiscoveryNextPage() {
       showZoning={layers.zoning}
       showRail={layers.transit}
       basemap={layers.basemap}
+      savedPoints={savedPoints}
+      showSaved={layers.saved}
       walkMiles={walkPreview}
       highlight={highlight}
       onView={setView}
@@ -389,13 +397,13 @@ export default function DiscoveryNextPage() {
         {/* The map, always mounted; List covers it on a desktop, a sheet sits over it on a phone. */}
         {/* A touch on the map folds a phone's open key (owner's review: open, it covered the map). */}
         <div className="relative min-h-0 flex-1" onPointerDownCapture={phone ? (e) => {
-          if (!(e.target as HTMLElement).closest("[data-testid=measure-key]")) setMapTouches((n) => n + 1);
+          if (!(e.target as HTMLElement).closest("[data-testid=measure-key], [data-testid=layers-control]")) setMapTouches((n) => n + 1);
         } : undefined}>
           {map}
           {/* Google Maps' Layers button (Item 128): bottom left above the map credit on a desktop; on a phone at the
               top left, below the filters, opening downward (the sheet covers the bottom). */}
-          <LayersControl value={layers} onChange={setLayers} dropDown={phone}
-            className={`absolute z-30 ${phone ? "left-3 top-16" : "bottom-10 left-3"}`} />
+          <LayersControl value={layers} onChange={setLayers} theme={mapTheme} foldSignal={mapTouches}
+            className={`absolute z-30 ${phone ? "left-3 top-16" : "bottom-4 left-3"}`} />
           {/* On a phone the key sits on its own line below the quick filters at the right, never over them (owner's review). */}
           <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-end" : "items-start justify-between"}`}>
             <div className={`flex min-w-0 flex-col items-start gap-2 ${phone ? "w-full" : ""}`}>
