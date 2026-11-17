@@ -1,7 +1,7 @@
-# Suggest a correction: mockup screenshots (decision Item 129)
+# Suggest a correction: mockup 2 screenshots (decision Item 129)
 
-Dev-only route `/dev/suggest` (`frontend/src/app/dev/SuggestCorrectionMockup.tsx`). Sample lot, nothing is sent.
+Dev-only route `/dev/suggest` (`frontend/src/app/dev/SuggestCorrectionMockup.tsx`). The real map card as it is on #242's branch, over screenshots of the real Discovery map taken from the local stack (`frontend/src/app/dev/mock/`). Nothing is sent.
 
-- `desktop-en.png`, `desktop-es.png`: 1600 px, light and dark side by side. Section 1 is the map card with the form open in place (stories picked, stepped to 3); section 2 the states (card with the link, two picked with a note, sent, signed out, after review); section 3 the phone sheet.
-- `phone-360-en.png`, `phone-360-es.png`: the whole page at 360 px (no horizontal scroll).
-- `phone-360-*-sheet-light.png` / `-dark.png`: the bottom sheet alone at 360 px.
+- `desktop-en.png`, `desktop-es.png`: the whole page at 1720 px, light then dark: 1 the desktop map with the form open (Stories picked, 20 typed), 2 the phone, 3 the states (the card with the pencil and its tooltip, opened, two picked with a note, sent, back on the card with a check, after review).
+- `desktop-*-map-light.png` / `-dark.png`: the desktop map alone.
+- `phone-360-*.png`: the whole page at 360 px (no horizontal scroll); `phone-360-*-light.png` / `-dark.png`: the phone frame alone.
