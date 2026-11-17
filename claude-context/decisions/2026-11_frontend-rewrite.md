@@ -1707,3 +1707,69 @@ On the local citywide copy, `empty_land` is now **76,827** lots (73,482 shown; 3
 - **Evidence:** `npm run build`, `npm run test`, `npm run lint`; e2e `app.spec.ts` "Phase 10: a shared link opens read only" now also stubs a 404 token and checks the message, the `/chat` address and axe; About/Privacy axe and overflow routes pass.
 - **Revisit if:** Deep analysis ships (the report and payments notes then name it); production Apple or Microsoft sign-in starts sending a picture.
 - **Rollout:** #238 merged on the owner's go (`a1f466e`, 2026-11-15, with #237). Verified live: the served `AboutNextPage` and `PrivacyNextPage` chunks carry the notes and the approved words, `index` carries the shared-link string; `/s/no-such-token-check` on production lands on `/chat` with "This shared chat isn't available."; `npm run sweep:live` clean on all 26 runs; the phone overflow audit 70/70 on production. A real shared link (made from a signed-in account) is still not checked live.
+
+## Item 129: Suggest a correction: users report a wrong building fact, a person reviews it, and only an estimate is ever replaced (2026-11-16)
+
+**Status: designed, mockup on localhost for the owner's look; no production code. Nothing merged.** The mockup is a dev-only route, `/dev/suggest` (`frontend/src/app/dev/SuggestCorrectionMockup.tsx`, registered in `main.tsx` only under `import.meta.env.DEV`, so the production build drops it). Screenshots: `claude-context/plans/2026-11-16_suggest-correction/`. No model calls. Numbered 129 because #242 (not merged) holds Item 128.
+
+**The owner's ask (2026-11-16).** Room to build = base FAR × lot area − building floor area, and about 80,000 lots carry an *estimated* floor area (the City's footprint × stories). The owner wants the Wikipedia idea: a user who sees a wrong figure ("it has three floors, not two") suggests a correction, it is reviewed, and accepted ones are applied periodically. The design had to include a mockup of the form: one question, options you tap, one or several, typing optional, in SnowUI.
+
+**Why it is worth building (the evidence).** Item 128 checked the footprint × stories estimate against the Assessor's condo floor area (`char_building_sf`, 12,153 condo lots): median ratio **0.78** (the estimate runs 22% low), **54%** within 25%, 81% within 40%. Put in the card's room bands, the raw estimate lands in the right band 54% of the time and 67% after dividing out the 22% bias; within one band 89-92%. So most estimates are near, a fifth to a third are a band off, and the people looking at a lot often know its story count. Item 128 already replaced the condo stand-ins with the Assessor's figure; the user reports aim at the lots that still have only the estimate.
+
+### 1. The form (the mockup)
+
+- **Where it opens:** a quiet "Suggest a correction" line (Lucide `MessageSquarePlus`, muted, underlined) at the foot of the Discovery map's lot card (`ExploreMap.tsx` `LotCard`), under a thin rule, below Open profile and Street View. A click turns the card itself into the form (the card widens from 17.5 to 20 rem), so the map and the lot stay in view; on a phone it is a bottom sheet over the map, as Discovery's sheets are. The list card (`LotCard.tsx`) is one big button, and a link inside a button is invalid HTML, so it gets no link; the Profile's Build tab can carry the same line later.
+- **The question:** "What's wrong with this building?" / "¿Qué está mal con este edificio?", with the address and "Pick all that apply." under it. Toggle rows (`aria-pressed`, the word always visible, a check replacing the icon when picked):
+  - **Wrong number of stories** (`Layers`) → a − / + stepper starting at the figure we used, "(We used 2)" beside it. The stepper is the one input the review most needs: a story count is a number a reviewer can check in Street View in seconds.
+  - **Floor area looks wrong** (`Ruler`) → Too high / Too low. A direction, not a number: nobody outside knows a building's square feet, but they can say it is bigger than shown, and a direction is still labeled data (section 4).
+  - **The building is gone, the lot is empty** (`SquareDashed`), shown only when we show a building; **There is a building here** (`Building2`) only when we show an empty lot. Picking "gone" hides the two size rows (moot).
+  - **It's not a condo** / **It is a condo** (`Building`), whichever contradicts what we show.
+  - **Something else** (`MessageCircle`) → focuses the note.
+- **Dropped from the candidate list: "wrong owner".** The owner is not on the card, and the owner of record is the Assessor's and Recorder's; we would never change it on a user's word, so the option would collect reports we cannot act on. Someone who thinks it is wrong can say so under Something else.
+- **Optional note:** "Add a note (optional)", two lines, 280 characters, the counter shown only near the end.
+- **Send** (the main button: black in light, lavender in dark) stays off until one option is picked; Cancel beside it. **After sending:** a green check, "Thanks, we'll review it", and "Nothing on the card changes until it's checked against City and County records." Back on the card the link reads "Correction sent, in review" (no second report of the same lot by the same user until it is reviewed).
+- **Signed out:** the same card and question with "Sign in to suggest a correction / It's free. Your report stays private." and a Sign in button. Nothing is blurred, locked or hidden; the card's figures stay (free tier never punished).
+- **After review (the card later):** the floor area and room figure come from the reviewed report, labeled with a gray `UserCheck` pill "Reviewed user report" and the story count, in the place of the "Building area from City footprints × stories" line.
+- **Page rules:** Lucide only, no emoji; every number carries its unit ("3 stories", "We used 2"); color by role (green only for the sent check, the main button by its token); the evidence (who reviewed, when) goes behind a tool later, not printed.
+
+### 2. Storage
+
+- **A new SQLite table** in `backend/db.py` (schema 21 → 22), `lot_corrections`: `id`, `user_id` (FK, `ON DELETE CASCADE`, so account deletion takes them), `pin10`, `kinds` (JSON array of the picked options), `stories` (int or null), `area_dir` (`high`/`low`/null), `note` (≤ 280), `shown` (JSON snapshot of what the card showed: floor area, its source, stories, room, `data_version`), `status` (`new` / `accepted` / `rejected` / `duplicate`), `reviewed_by`, `reviewed_at`, `review_note`, `created_at`. Index on `(status, created_at)` and `(pin10)`.
+- **The route:** `POST /api/discovery/corrections`, signed in only (401 otherwise), body a Pydantic model with `extra="forbid"`, kinds from a closed set, `stories` 1-120, note trimmed and capped. Limits like Saved: `rate_limit.check_saved_limit(user_id, "corrections", 10, 3600)` plus a hard cap of 50 open reports per user, and one open report per user per lot (a second one replaces the first). A lot the user can't see (no index row) is a 404.
+- **Logs:** the event `correction_sent` with kinds only; never the note, the user, or the PIN together with the user in a log line.
+- **Alternatives:** a generic "feedback" table shared with the Profile's feedback (rejected: the review needs typed fields and the snapshot, and mixing them makes the queue harder to work); anonymous reports (rejected: no way to rate-limit or weigh a reporter, and the abuse case below gets cheap); an email to the owner (rejected: no queue, no measurement).
+
+### 3. Review: never applied directly
+
+- **An admin queue** on `/admin` (a new section beside Data health): one report per row, the lot's outline and Street View link, what the card showed, what the user says, other open reports for the same lot, and Accept / Reject / Duplicate with a short reason. Accepting asks for the figure to apply (prefilled from the report: the stepper's stories; for "floor area looks wrong" the reviewer types the stories they see, since a direction alone can't make a number).
+- **Applied through a committed file**, `backend/discovery/user_corrections.json` (the shape of #242's `open_land_overrides.json`): key PIN10, value `{stories, empty, reviewed, report_ids, what}`. `lot_facts.fill_building_area` reads it after the government sources and before the footprint estimate: footprint area × the reviewed stories, `bldg_sqft_source: user_report_reviewed`. `index_backfill` applies it on the next backfill, so a fix shows after the next index build (monthly, or by hand); there is no live write from the queue to the index.
+- **The precedence rule:** Assessor residential or condo floor area, commercial valuation, public land and the City's land inventory **always win**; a reviewed user report only replaces `footprint` (the estimate) or fills a lot with no figure. An accepted "it's not a condo" or "there is a building here" that contradicts a government record changes nothing on the card; it is kept as a case to send to the Assessor (and as a "Records differ" line on the Profile later).
+- **Alternatives:** apply on N agreeing reports (rejected, see abuse); write accepted figures straight into the index database (rejected: lost on the next rebuild, not reviewable in git, not in a PR); a moderator role for trusted users (later, if the queue outgrows one person).
+
+### 4. Abuse
+
+- **The risk:** a seller inflating room to build (say fewer stories), a neighbor deflating it to scare off a developer (say more), or one person with several accounts.
+- **Default: no auto-apply, even when reports agree.** Every change is a person looking at Street View or the lot from above. Agreement only sorts the queue. Per-user limits, one open report per lot per user, and the snapshot (a report on a figure we no longer show is marked stale) keep the queue small. A reporter whose reports are rejected repeatedly is muted (their reports go to the end of the queue), never told.
+- **Revisit if** the queue holds more than a week of reports: then weigh a reporter by past accepted reports, never by count alone.
+
+### 5. Measurement: corrections as labeled data
+
+- Each accepted report is a labeled pair: the estimate's stories vs a reviewed count. `eval/` gets a read-only script that, once there are 50 accepted story corrections, reports the estimate's error against them by stories and building type, beside Item 128's condo comparison (median 0.78). If the bias holds, the estimate's story rule is recalibrated (or the 22% factor applied) in its own PR with before/after band accuracy, and the user figures are never used as the only check: the Assessor's condo floor area stays the independent source.
+- **Selection bias, named:** people report figures that look wrong, so accepted reports over-represent large misses; the recalibration uses them for direction, and the Assessor's figures for size.
+
+### 6. Costs
+
+- **Data health:** `user_corrections.json` is a committed data artifact: `.gitignore` allowlist, `.dockerignore` allowlist and the Dockerfile `COPY` (the three that bit in July), a registry entry in `backend/data_health/registry.py` with its size bound and "reviewed" date, and a sentinel that fails if any entry overrides a non-estimate source.
+- **Spanish (es-MX, usted):** about 30 strings in `next` (`discovery.correction.*`), drafted in the mockup: "Sugerir una corrección", "¿Qué está mal con este edificio?", "Elija todas las que apliquen.", "Número de pisos incorrecto", "Tiene 3 pisos (Usamos 2)", "La superficie construida parece incorrecta" (Muy alta / Muy baja), "Ya no hay edificio, el terreno está vacío", "Aquí hay un edificio", "No es un condominio" / "Es un condominio", "Otra cosa", "Agregue una nota (opcional)", "Enviar", "Gracias, lo revisaremos", "Inicie sesión para sugerir una corrección", "Es gratis. Su reporte es privado.", "Reporte de usuario revisado". No native read-through yet.
+- **Privacy page:** one line that a correction keeps the account, the lot and the note until it is reviewed, then the decision; deleted with the account. Owner approves the words.
+- **Budgets:** the map card gains one line (5 words); the Discovery dot-preview budget (Item 57) must allow it or the line goes behind the card's close row.
+
+### 7. The build plan (each a PR, each ending in a localhost look)
+
+1. **Storage and route:** schema 22, `lot_corrections`, `POST /api/discovery/corrections`, limits, tests (body forbids extras, 401 signed out, limits, one-open-per-lot, account deletion cascades). Backend only.
+2. **The form:** the link on the map card, the form as in the mockup (card on desktop, sheet on phone), signed-out prompt, sent state, strings en + es-MX, vitest, axe light/dark, overflow at 360, the budget. Deletes the dev mockup route.
+3. **The review queue:** `/admin` section, accept/reject/duplicate, export of accepted ones to `user_corrections.json` as a PR-ready diff (the queue writes no file on the server).
+4. **Apply:** `lot_facts` precedence, `bldg_sqft_source: user_report_reviewed`, the card's "Reviewed user report" pill, registry + sentinel + the three allowlists, the Privacy line.
+5. **Measure:** the eval script, run once there are 50 accepted story corrections.
+
+- **Revisit if:** reports run mostly to one kind (make it the first row); the estimate is recalibrated and band accuracy passes 85% (the link may move behind a tool); a government source for stories appears (it would outrank every user report).
