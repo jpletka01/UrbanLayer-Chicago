@@ -42,9 +42,10 @@ import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
 import AuthOverlays from './app/frame/AuthOverlays.tsx'
 import { SegmentQuestion } from './app/frame/SegmentQuestion.tsx'
 import { FrameOutline } from './app/frame/FrameOutline.tsx'
-import { PAGES } from './app/pages.ts'
+import { DEV_PAGES, PAGES } from './app/pages.ts'
 import { pageNameFor } from './app/destinations.ts'
 import { isChatDoor } from './app/chatDoor.ts'
+
 
 function TrackPageView() {
   const { pathname } = useLocation();
@@ -100,6 +101,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/about" element={<Page id="about" />} />
             <Route path="/privacy" element={<Page id="privacy" />} />
             <Route path="/admin" element={<Page id="admin" />} />
+            {/* Dev-only design mockups (decision Item 129): never in the production bundle. */}
+            {DEV_PAGES && <Route path="/dev/suggest" element={<Suspense fallback={<FrameOutline />}><DEV_PAGES.suggest /></Suspense>} />}
             <Route path="*" element={<Page id="notFound" />} />
           </Routes>
           </SelectedParcelProvider>

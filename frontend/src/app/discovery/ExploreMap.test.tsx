@@ -47,6 +47,11 @@ describe("Discovery lot card: Street View", () => {
     expect(lon).toBeCloseTo(-87.67660, 5);
     expect(url.searchParams.get("heading")).toBe("270");
   });
+
+  it("names the button in words, not an i18n error (the key is map.streetView.button)", () => {
+    card(found("1601 N MILWAUKEE AVE"));
+    expect(screen.getByTestId("lot-card-street-view").textContent).toBe("Street View(opens in a new tab)");
+  });
 });
 
 describe("Discovery lot card: the Profile link (Item 109)", () => {

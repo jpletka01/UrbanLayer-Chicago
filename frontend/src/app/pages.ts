@@ -14,3 +14,9 @@ export const PAGES = {
   admin: lazy(() => import("./admin/AdminNextPage")),
   notFound: lazy(() => import("./notfound/NotFoundNextPage")),
 };
+
+/** Dev-only design mockups (decision Item 129). `import.meta.env.DEV` is false in a production build, so these imports
+    are dropped with their routes. */
+export const DEV_PAGES = import.meta.env.DEV ? {
+  suggest: lazy(() => import("./dev/SuggestCorrectionMockup")),
+} : null;
