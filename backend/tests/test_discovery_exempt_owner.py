@@ -70,6 +70,13 @@ def test_city_land_cmap_calls_institutional_stays_an_institution(code, share, pu
     assert attrs.get("institution", False) is (not public)
 
 
+def test_cha_land_cmap_codes_government_is_still_public_land():
+    # 1465 N Clybourn, the Cabrini-Green land: CMAP codes the CHA's empty land as government
+    attrs = dict(EMPTY)
+    mark_land_use(attrs, PIN10, _src(("5", "CHICAGO HSING AUTHORTI"), {PIN10: ("1350", 0.9)}))
+    assert attrs["public_land"] is True and "institution" not in attrs
+
+
 def test_an_empty_school_yard_stays_an_institution():
     # The Board of Education is not a public landholder here: its empty lots are mostly playgrounds and parking
     attrs = dict(EMPTY)

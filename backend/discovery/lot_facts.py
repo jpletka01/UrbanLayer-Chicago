@@ -470,7 +470,7 @@ def mark_owner(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple[str
     Measured by the owner's blind check (``eval/public_land_label.py``, 48 lots): other City lots 9 of 10 empty sites,
     the Land Bank's 7 of 8, the CHA's 7 of 11 (3 had a building the 2022 LiDAR misses, an empty-land error, Item 110);
     but City lots CMAP codes institutional were 0 of 10 (yards, parking and a park of the building beside them), so a
-    lot CMAP calls institutional over half its area is never public land."""
+    City lot CMAP calls institutional over half its area is never public land."""
     rec = (src.exempt_owner or {}).get(pin10)
     if not rec or rec[0] in NOT_OWNERS:
         return
@@ -478,7 +478,9 @@ def mark_owner(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple[str
     known = EXEMPT_OWNERS.get(num)
     if known and name.upper() in known.get("assessor", []):
         attrs["exempt_owner"] = known["name"]
-        institutional = bool(cm) and cm[0] in INSTITUTION_CODES and cm[1] >= OPEN_LAND_MIN_SHARE
+        # Measured on the City's land only; the CHA's and the Land Bank's CMAP-institutional lots (85) went unsampled,
+        # and the Cabrini-Green land the owner asked about is one (CMAP codes the CHA's empty land as government).
+        institutional = num == "1" and bool(cm) and cm[0] in INSTITUTION_CODES and cm[1] >= OPEN_LAND_MIN_SHARE
         if known.get("public_land") and attrs.get("empty_land") and not institutional:
             attrs["public_land"] = True
     else:
