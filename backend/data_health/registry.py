@@ -130,10 +130,10 @@ def _band(n: int) -> tuple[int, int]:
     return max(1, int(n * 0.8)), int(n * 1.25) + 1
 
 
-def _socrata(portal: str, dataset: str, id: str, name: str, publisher: str, owner: str, **kw) -> SourceSpec:
+def _socrata(portal: str, dataset: str, id: str, name: str, publisher: str, owner: str | tuple[str, ...], **kw) -> SourceSpec:
     kw.setdefault("tier", "official_record")
     return SourceSpec(id=id, name=name, publisher=publisher, kind="socrata", locator=f"{portal}:{dataset}",
-                      owner_modules=(owner,), **kw)
+                      owner_modules=owner if isinstance(owner, tuple) else (owner,), **kw)
 
 
 def _layer(url: str, id: str, name: str, publisher: str, owner: str, **kw) -> SourceSpec:
@@ -258,7 +258,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         COOK, "3r7i-mrz4", "cook.assessor.condo_characteristics", "Assessor - Residential Condominium Unit Characteristics",
-        COOK_ASSESSOR, "backend/retrieval/property/building_facts.py", surfaces=_PROP,
+        COOK_ASSESSOR, ("backend/retrieval/property/building_facts.py", "backend/discovery/lot_sources.py"), surfaces=_PROP,
         fact_keys=("property.building", "property.bldg_sqft", "property.year_built"), cadence_days=7, warn_days=14, alarm_days=45,
     ),
     _socrata(
