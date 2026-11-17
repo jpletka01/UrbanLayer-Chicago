@@ -323,10 +323,13 @@
  "cook.assessor.condo_characteristics": [
   "char_bedrooms",
   "char_building_sf",
+  "char_land_sf",
   "char_unit_sf",
   "char_yrblt",
   "class",
   "pin",
+  "pin10",
+  "township_code",
   "year"
  ],
  "cook.assessor.permits": [

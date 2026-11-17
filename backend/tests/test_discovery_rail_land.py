@@ -458,3 +458,46 @@ def test_the_l_line_moves_onto_the_right_of_way_only_when_it_runs_close_beside_i
     assert rail_lines.to_feet(rail_lines.snap_to_row(far, row_ft, tree)).distance(row_ft[0]) > 150
     on = LineString([to_ll(10, 20), to_ll(990, 20)])  # already on it
     assert rail_lines.to_feet(rail_lines.snap_to_row(on, row_ft, tree)).hausdorff_distance(rail_lines.to_feet(on)) < 1
+
+
+def test_a_condo_building_gets_room_from_the_assessors_floor_area():
+    from backend.discovery.index_backfill import _enrich_stand_in
+    from backend.discovery.lot_facts import area_sqft
+
+    lot = box(-87.6600, 41.9400, -87.6598, 41.9402)  # about 4,000 sq ft
+    attrs = {"class": "2-99", "density_band": 2.0, "bldg_sqft": 1_100.0, "bldg_sqft_source": "assessor"}  # one unit's
+    src = dataclasses.replace(_sources([], []), condo_building={"1420201030": (6_000.0, 4_000.0, 6)})
+    _enrich_stand_in(attrs, "14202010301001", lot, src)
+    assert attrs["condo"] is True and attrs["condo_units"] == 6
+    assert attrs["bldg_sqft"] == 6_000.0 and attrs["bldg_sqft_source"] == "assessor_condo"
+    assert attrs["room_sqft"] == max(0.0, round(2.0 * round(area_sqft(lot)) - 6_000.0))
+    assert "room_scope" not in attrs
+
+
+def test_a_condo_building_without_a_floor_area_is_named_not_estimated():
+    from backend.discovery.index_backfill import _enrich_stand_in
+
+    attrs = {"class": "2-99", "density_band": 2.0}
+    src = dataclasses.replace(_sources([], []), condo_building={"1420201030": (None, 4_000.0, 40)})
+    _enrich_stand_in(attrs, "14202010301001", box(-87.66, 41.94, -87.6598, 41.9402), src)
+    assert attrs["room_scope"] == "condo" and "room_sqft" not in attrs and attrs["condo_units"] == 40
+
+
+def test_the_condo_fetch_reads_the_newest_year_and_refuses_a_short_read(tmp_path, monkeypatch):
+    class R:
+        def __init__(self, body):
+            self.body = body
+
+        def json(self):
+            return self.body
+
+    monkeypatch.setattr(lot_sources, "_get_page", lambda client, url, params, attempts=5: R([{"y": "2026"}]))
+    monkeypatch.setattr(lot_sources, "_pages", lambda client, dataset, params, portal=None: [
+        {"pin10": "1420201030", "building_sf": "6000.0", "land_sf": "4000.0", "units": "6"},
+        {"pin10": "1722110100", "land_sf": "28596.0", "units": "487"}, {"pin10": "bad"}])
+    year, rows = lot_sources._read_condo_buildings(None)
+    assert year == "2026" and rows == [("1420201030", 6000.0, 4000.0, 6, "2026"), ("1722110100", None, 28596.0, 487, "2026")]
+    db = tmp_path / "s.db"
+    _minimal(db)
+    with pytest.raises(RuntimeError, match="only 2 lots"):
+        lot_sources.fetch_condo(db)

@@ -427,6 +427,58 @@ def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsi
     return summary
 
 
+# --- the Assessor's condo buildings (Item 128, the owner's map review) ----------------------------------------------
+CONDO_DATASET = "3r7i-mrz4"  # Assessor - Residential Condominium Unit Characteristics
+CHICAGO_TOWNSHIPS = ("70", "71", "72", "73", "74", "75", "76", "77")
+MIN_CONDO_LOTS = 10_000  # 14,489 Chicago condo lots in 2026 (12,153 with a building floor area)
+CONDO_TABLES = """
+    DROP TABLE IF EXISTS condo_building;
+    CREATE TABLE condo_building (pin10 TEXT PRIMARY KEY, building_sf REAL, land_sf REAL, units INTEGER, year TEXT);
+"""
+
+
+def _read_condo_buildings(client: httpx.Client) -> tuple[str, list[tuple]]:
+    """Per condo lot (PIN10): the Assessor's building floor area (``char_building_sf``), land area and unit count, from
+    the newest year in Chicago's townships. Measured (eval note in Item 128): its land area matches our outlines (median
+    0.999, 97.8% within 10%); the City footprint x stories estimate comes out at a median 0.78 of its floor area (81%
+    within 40%), so the Assessor's own figure is used and the footprint estimate is not."""
+    year = _get_page(client, f"{COUNTY_PORTAL}/{CONDO_DATASET}.json", {"$select": "max(year) AS y"}).json()[0]["y"]
+    year = str(year).split(".")[0]
+    towns = ",".join(f"'{t}'" for t in CHICAGO_TOWNSHIPS)
+    rows = _pages(client, CONDO_DATASET, {
+        "$select": "pin10, max(char_building_sf) AS building_sf, max(char_land_sf) AS land_sf, count(*) AS units",
+        "$where": f"year = '{year}' AND township_code in ({towns})", "$group": "pin10", "$order": "pin10"}, portal=COUNTY_PORTAL)
+    out = []
+    for r in rows:
+        p = str(r.get("pin10") or "").strip()
+        if len(p) != 10:
+            continue
+        f = lambda k: float(r[k]) if r.get(k) not in (None, "") else None  # noqa: E731
+        out.append((p, f("building_sf"), f("land_sf"), int(float(r.get("units") or 0)), year))
+    return year, out
+
+
+def fetch_condo(out: Path = DEFAULT_PATH, *, token: str = "") -> dict:
+    """Add (or replace) only ``condo_building`` in an existing copy (Item 128). A short read raises."""
+    if not out.exists():
+        raise FileNotFoundError(f"{out} missing: run without --condo-only first")
+    headers = {"X-App-Token": token} if token else {}
+    with httpx.Client(timeout=120, headers=headers) as c:
+        year, rows = _read_condo_buildings(c)
+    if len(rows) < MIN_CONDO_LOTS:
+        raise RuntimeError(f"the Assessor's condo file gave only {len(rows)} lots: refusing to write")
+    db = sqlite3.connect(out)
+    try:
+        with db:
+            db.executescript(CONDO_TABLES)
+            db.executemany("INSERT INTO condo_building VALUES (?, ?, ?, ?, ?)", rows)
+            summary = {"condo_lots": len(rows), "condo_with_floor_area": sum(1 for r in rows if r[1]), "condo_year": year}
+            db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
+    finally:
+        db.close()
+    return summary
+
+
 def fetch_structures(out: Path = DEFAULT_PATH, *, token: str = "", lidar: Path | None = None,
                      ptaxsim: Path | None = None) -> dict:
     """Add (or replace) only the Item 110 tables in an existing copy, in one transaction."""
@@ -554,6 +606,7 @@ def main() -> None:
     ap.add_argument("--addresses-only", action="store_true", help="add or replace only the address tables (Item 109)")
     ap.add_argument("--structures-only", action="store_true", help="add or replace only the Item 110 tables")
     ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 and 128 tables")
+    ap.add_argument("--condo-only", action="store_true", help="add or replace only the Assessor's condo buildings (Item 128)")
     ap.add_argument("--cmap", type=Path, default=None, help="default: map_sources/cmap_lui_2023.db beside --out")
     ap.add_argument("--lidar", type=Path, default=None, help="default: map_sources/county_buildings_2022.db beside --out")
     ap.add_argument("--ptaxsim", type=Path, default=None, help="default: ptaxsim.db beside --out")
@@ -562,6 +615,8 @@ def main() -> None:
     token = get_settings().socrata_app_token or ""
     if args.addresses_only:
         print(json.dumps(fetch_addresses(args.out, token=token), indent=1))
+    elif args.condo_only:
+        print(json.dumps(fetch_condo(args.out, token=token), indent=1))
     elif args.land_use_only:
         print(json.dumps(fetch_land_use(args.out, cmap=args.cmap, ptaxsim=args.ptaxsim), indent=1))
     elif args.structures_only:

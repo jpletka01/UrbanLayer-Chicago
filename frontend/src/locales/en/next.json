@@ -1216,6 +1216,11 @@
         "institution": "Exempt institution (school, church, hospital or government): room not counted",
         "condo": "Condo building: room not counted (only its units are on file)"
       },
+      "condo": "Condo building",
+      "condoUnits_one": "Condo building, {{count}} unit",
+      "condoUnits_other": "Condo building, {{count}} units",
+      "condoMeasured": "floor area from the Assessor's condo records",
+      "condoNoArea": "no floor area on record",
       "narrow": "Narrow strip, {{ft}} ft wide: rarely buildable alone",
       "now": {
         "empty": "Empty lot",
@@ -1319,7 +1324,7 @@
         "park": "Park, cemetery or open space",
         "transport": "Rail, transit or road land",
         "institution": "Exempt school, church, hospital or government",
-        "condo": "Condo building (room not counted)"
+        "condo": "Condo building, no floor area on record"
       },
       "lot": {
         "name": "Lot size",

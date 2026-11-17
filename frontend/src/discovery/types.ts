@@ -216,6 +216,9 @@ export interface ResultRow {
   infrastructure?: string | null;
   /** park / cemetery / water (Item 128). */
   open_land?: string | null;
+  /** A condo building (Item 128): many owners; room from the Assessor's floor area when it has one. */
+  condo?: boolean | null;
+  condo_units?: number | null;
   community_area: number | null;
   land_use: string | null;
   class: string | null;

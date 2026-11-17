@@ -107,6 +107,8 @@ class ResultRow(BaseModel):
     surface_parking: bool | None = None
     infrastructure: str | None = None
     open_land: str | None = None  # park / cemetery / water (Item 128)
+    condo: bool | None = None  # a condo building (many owners); its floor area from the Assessor's condo file (Item 128)
+    condo_units: int | None = None
     community_area: int | None = None
     land_use: str | None = None
     parcel_class: str | None = Field(default=None, alias="class")
@@ -299,6 +301,8 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         surface_parking=g("surface_parking"),
         infrastructure=g("infrastructure"),
         open_land=g("open_land"),
+        condo=g("condo"),
+        condo_units=g("condo_units"),
         community_area=g("community_area") or _community_area_of(parcel),
         land_use=g("land_use_class"),
         # Display reads the REAL assessed value (exempt/$0 included); only the sort key

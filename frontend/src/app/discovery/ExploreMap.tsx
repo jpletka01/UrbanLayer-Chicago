@@ -597,6 +597,13 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
             {[card.zone, card.lotSqft != null ? t("discovery.card.lotValue", { value: n(card.lotSqft) }) : null].filter(Boolean).join(" · ")}
           </p>
           <p>{card.roomSqft != null ? t("discovery.card.roomValue", { value: n(card.roomSqft) }) : t("discovery.card.roomUnknown")}</p>
+          {/* A condo building: a heads-up, not a wall (owner): many owners, and where the room comes from. */}
+          {card.condo && (
+            <p className="nx-muted" data-testid="lot-card-condo">
+              {card.condo.units != null ? t("discovery.card.condoUnits", { count: card.condo.units }) : t("discovery.card.condo")}
+              {" · "}{card.condo.measured ? t("discovery.card.condoMeasured") : t("discovery.card.condoNoArea")}
+            </p>
+          )}
         </div>
       )}
       {card && (

@@ -66,6 +66,8 @@ class LotSources:
     # PIN10 -> (share under a Park District park, share under the City's water, share of CMAP open space with a public
     # manager) (Item 128); None before the table.
     open_land_on_lot: dict[str, tuple[float, ...]] | None = None
+    # PIN10 -> (the Assessor's condo building floor area, land area, units) (Item 128); None before the table.
+    condo_building: dict[str, tuple[float | None, float | None, int]] | None = None
 
     @classmethod
     def load(cls, path: Path) -> "LotSources":
@@ -97,6 +99,10 @@ class LotSources:
             except sqlite3.OperationalError:  # a copy made before Item 128
                 rail = None
             try:
+                condo = {r[0]: (r[1], r[2], r[3]) for r in db.execute("SELECT pin10, building_sf, land_sf, units FROM condo_building")}
+            except sqlite3.OperationalError:  # a copy made before the condo table (Item 128)
+                condo = None
+            try:
                 open_land = {r[0]: (r[1], r[2], r[3]) for r in db.execute(
                     "SELECT pin10, park, water, public_os FROM open_land_on_lot")}
             except sqlite3.OperationalError:
@@ -113,7 +119,7 @@ class LotSources:
             fp_stories=[r[0] for r in fps], fp_area=[r[1] for r in fps],
             pt_tree={k: (STRtree(g), d) for k, (g, d) in pts.items()},
             area_tree=(STRtree(area_geoms), [a[1] or "" for a in areas]) if areas else None,
-            meta=meta, city_land=city_land, lidar_on_lot=lidar, cmap_on_lot=cmap, rail_on_lot=rail, open_land_on_lot=open_land,
+            meta=meta, city_land=city_land, lidar_on_lot=lidar, cmap_on_lot=cmap, rail_on_lot=rail, open_land_on_lot=open_land, condo_building=condo,
         )
 
 

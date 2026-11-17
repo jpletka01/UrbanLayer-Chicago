@@ -154,6 +154,8 @@ export interface CardModel {
   narrowFt: number | null;
   /** The room is the multi-parcel site's (this many lots), not the lot's alone. */
   complexLots: number | null;
+  /** A condo building: many owners to buy from; `measured` = the Assessor's own floor area is behind the room. */
+  condo: { units: number | null; measured: boolean } | null;
   sale: { price: number; year: string; transfer: boolean } | null;
   warning: CardWarning | null;
 }
@@ -178,6 +180,7 @@ export function cardModel(row: ResultRow): CardModel {
     roomNamed: room == null ? named : null,
     narrowFt: row.narrow_strip && row.lot_width_ft != null ? Math.round(row.lot_width_ft) : null,
     complexLots: room != null && row.room_scope === "complex" ? row.complex_lots ?? null : null,
+    condo: row.condo ? { units: row.condo_units ?? null, measured: row.bldg_sqft_source === "assessor_condo" } : null,
     sale: row.last_sale_price != null && row.last_sale_date
       ? { price: row.last_sale_price, year: row.last_sale_date.slice(0, 4), transfer: row.last_sale_price < TRANSFER_BELOW }
       : null,

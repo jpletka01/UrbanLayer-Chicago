@@ -1216,6 +1216,11 @@
         "institution": "Institución exenta (escuela, iglesia, hospital o gobierno): no se calcula el espacio",
         "condo": "Edificio de condominios: no se calcula el espacio (solo sus unidades están registradas)"
       },
+      "condo": "Edificio de condominios",
+      "condoUnits_one": "Edificio de condominios, {{count}} unidad",
+      "condoUnits_other": "Edificio de condominios, {{count}} unidades",
+      "condoMeasured": "superficie según los registros de condominios del Tasador",
+      "condoNoArea": "sin superficie registrada",
       "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
       "now": {
         "empty": "Terreno baldío",
@@ -1319,7 +1324,7 @@
         "park": "Parque, cementerio o espacio abierto",
         "transport": "Terreno ferroviario, de transporte o de calle",
         "institution": "Escuela, iglesia, hospital o gobierno exentos",
-        "condo": "Edificio de condominios (no se calcula el espacio)"
+        "condo": "Edificio de condominios sin superficie registrada"
       },
       "lot": {
         "name": "Tamaño del terreno",

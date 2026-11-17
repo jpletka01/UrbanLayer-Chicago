@@ -29,6 +29,7 @@ from backend.discovery.assessor_address import AddressSources, verified_address
 from backend.discovery.assessor_address import apply as apply_assessor_address
 from backend.discovery.assessor_address import needs_tier as needs_assessor_tier
 from backend.discovery.lot_facts import (
+    area_sqft,
     NARROW_STRIP_FT, LotSources, derive_capacity, mark_empty_land, mark_land_use, fill_building_area, lot_warnings, lot_width_ft, pending_rezoning_pin10s,
 )
 from backend.discovery.lot_sources import DEFAULT_PATH as SOURCES_PATH
@@ -38,7 +39,7 @@ log = logging.getLogger(__name__)
 # Keys this pass owns: cleared before each fill so a rerun never keeps a stale answer.
 OWNED = ("hood", "lot_width_ft", "narrow_strip", "bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
          "warn_landmark", "surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source",
-         "open_land", "open_land_source", "institution", "lot_stand_in")
+         "open_land", "open_land_source", "institution", "lot_stand_in", "condo", "condo_units")
 
 
 def lot_outlines(ptaxsim: Path, pin10s: Iterable[str]) -> dict[str, Any]:
@@ -131,7 +132,20 @@ def _enrich_stand_in(attrs: dict[str, Any], pin14: str, lot, src: LotSources) ->
         derive_capacity(attrs)  # right-of-way or open land: named, no room figure
         attrs["unusual"] = unusual_rule(attrs)
     elif pin14[10] == CONDO_SUFFIX:
-        attrs["room_scope"] = "condo"
+        # A condo building: the Assessor's own floor area for the building when it has one (12,118 lots), so room to
+        # build is computed like any lot's; else named, never estimated (the footprint estimate ran a median 22% low).
+        attrs["condo"] = True
+        cb = (src.condo_building or {}).get(pin10)
+        if cb:
+            attrs["condo_units"] = cb[2]
+        if cb and cb[0]:
+            # Always the building's figure: the stand-in row is one unit, and its own area is that unit's.
+            attrs["bldg_sqft"] = float(round(cb[0]))
+            attrs["bldg_sqft_source"] = "assessor_condo"
+            attrs["land_sqft"] = float(round(area_sqft(lot)))
+            derive_capacity(attrs)
+        else:
+            attrs["room_scope"] = "condo"
 
 
 def stand_in_pins(pins) -> set[str]:
