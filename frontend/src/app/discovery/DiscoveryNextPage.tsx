@@ -121,13 +121,17 @@ export default function DiscoveryNextPage() {
   // neighborhoods while the list fills (owner's review 2026-11-11: zoning + density showed nothing on the map).
   // A search limited to the view it started in asks only inside that view (owner's review 2026-11-16, Item 128: its
   // 5,000 points left most lots of a dense view unoutlined too).
-  const searchCqsPanel = useMemo(() => (response ? panelFromCqs(response.cqs) : null), [response]);
+  // A search with no filters (nothing chosen, only the defaults) outlines nothing: every lot would match, and the map
+  // reads as if all were picked (owner's review 2026-11-16, Item 128).
+  const openSearch = !!response && !Object.entries(response.cqs.filters)
+    .some(([id, a]) => id !== HIDE_UNUSUAL && a.source !== "default");
+  const searchCqsPanel = useMemo(() => (response && !openSearch ? panelFromCqs(response.cqs) : null), [response, openSearch]);
   const searchClip = response?.cqs.scope?.mode === "viewport" ? response.cqs.scope.bbox ?? null : null;
   const lotZoomNow = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const searchInView = useViewMatches(registry, lotZoomNow ? searchCqsPanel : null, view, 350,
     !!response && !response.cqs.filters.hide_unusual, searchClip);
   const searchInViewPins = searchCqsPanel && lotZoomNow ? searchInView.data?.pins ?? null : null;
-  const matches = response ? searchInViewPins ?? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
+  const matches = openSearch ? null : response ? searchInViewPins ?? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
   const areaCounts = response ? response.areaCounts ?? null : explorePanel ? viewMatches.data?.areaCounts ?? null : null;
   const lotZoom = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const inView = useMemo(() => {
@@ -437,7 +441,7 @@ export default function DiscoveryNextPage() {
               ) : null}
             </div>
           )}
-          {((searchInViewPins ? searchInView.data?.truncated : search.map.truncated) || viewMatches.data?.truncated) && lotZoom && (
+          {!openSearch && ((searchInViewPins ? searchInView.data?.truncated : search.map.truncated) || viewMatches.data?.truncated) && lotZoom && (
             <p className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full bg-nx-page px-3 py-1 text-caption shadow">{t("discovery.capped")}</p>
           )}
 
