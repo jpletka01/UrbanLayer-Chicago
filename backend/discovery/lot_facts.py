@@ -460,12 +460,17 @@ def _load_exempt_owners() -> tuple[dict[str, dict[str, Any]], frozenset[str]]:
 EXEMPT_OWNERS, NOT_OWNERS = _load_exempt_owners()
 
 
-def mark_owner(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
+def mark_owner(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple[str, float] | None = None) -> None:
     """``exempt_owner`` (who owns a tax-exempt lot, from the Assessor's exempt file) and ``public_land`` (a physically
     empty lot of a public landholder: land waiting for use, not a school or office in use), in place. The owner's
     review of 2026-11-16: the empty Cabrini-Green land read "exempt institution" though the CHA holds it for
     redevelopment. A spelled-out name (``exempt_owners.json``) only while the Assessor's text still matches it; else
-    the Assessor's own text, flagged ``exempt_owner_assessor``."""
+    the Assessor's own text, flagged ``exempt_owner_assessor``.
+
+    Measured by the owner's blind check (``eval/public_land_label.py``, 48 lots): other City lots 9 of 10 empty sites,
+    the Land Bank's 7 of 8, the CHA's 7 of 11 (3 had a building the 2022 LiDAR misses, an empty-land error, Item 110);
+    but City lots CMAP codes institutional were 0 of 10 (yards, parking and a park of the building beside them), so a
+    lot CMAP calls institutional over half its area is never public land."""
     rec = (src.exempt_owner or {}).get(pin10)
     if not rec or rec[0] in NOT_OWNERS:
         return
@@ -473,7 +478,8 @@ def mark_owner(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
     known = EXEMPT_OWNERS.get(num)
     if known and name.upper() in known.get("assessor", []):
         attrs["exempt_owner"] = known["name"]
-        if known.get("public_land") and attrs.get("empty_land"):
+        institutional = bool(cm) and cm[0] in INSTITUTION_CODES and cm[1] >= OPEN_LAND_MIN_SHARE
+        if known.get("public_land") and attrs.get("empty_land") and not institutional:
             attrs["public_land"] = True
     else:
         attrs["exempt_owner"] = name
@@ -488,7 +494,7 @@ def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
     for k in ("surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source", "open_land",
               "open_land_source", "institution", "exempt_owner", "exempt_owner_assessor", "public_land"):
         attrs.pop(k, None)
-    mark_owner(attrs, pin10, src)
+    mark_owner(attrs, pin10, src, src.cmap_on_lot.get(pin10) if src.cmap_on_lot is not None else None)
     if attrs.get("land_kind") == "parking" and attrs.get("structure") in NO_BUILDING:
         attrs["surface_parking"] = True
         attrs["surface_parking_source"] = "assessor_class"

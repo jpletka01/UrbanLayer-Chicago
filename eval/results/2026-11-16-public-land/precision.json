@@ -1,0 +1,90 @@
+{
+ "labeled": 48,
+ "pool": {
+  "city_other": 9475,
+  "cps_control": 973,
+  "city_was_institution": 813,
+  "cha": 1306,
+  "land_bank": 1140
+ },
+ "strata": {
+  "land_bank": {
+   "site": 7,
+   "road": 1,
+   "_site": {
+    "site": 7,
+    "decided": 8,
+    "share": 0.875,
+    "ci95": [
+     0.529,
+     0.978
+    ]
+   }
+  },
+  "city_other": {
+   "site": 9,
+   "road": 1,
+   "_site": {
+    "site": 9,
+    "decided": 10,
+    "share": 0.9,
+    "ci95": [
+     0.596,
+     0.982
+    ]
+   }
+  },
+  "cps_control": {
+   "parking": 1,
+   "yard": 3,
+   "park": 4,
+   "_site": {
+    "site": 0,
+    "decided": 8,
+    "share": 0.0,
+    "ci95": [
+     0.0,
+     0.324
+    ]
+   }
+  },
+  "city_was_institution": {
+   "parking": 4,
+   "park": 1,
+   "yard": 5,
+   "_site": {
+    "site": 0,
+    "decided": 10,
+    "share": 0.0,
+    "ci95": [
+     0.0,
+     0.278
+    ]
+   }
+  },
+  "cha": {
+   "building": 3,
+   "site": 7,
+   "yard": 1,
+   "cant_tell": 1,
+   "_site": {
+    "site": 7,
+    "decided": 11,
+    "share": 0.636,
+    "ci95": [
+     0.354,
+     0.848
+    ]
+   }
+  }
+ },
+ "rule": {
+  "site": 23,
+  "decided": 39,
+  "share": 0.59,
+  "ci95": [
+   0.434,
+   0.729
+  ]
+ }
+}

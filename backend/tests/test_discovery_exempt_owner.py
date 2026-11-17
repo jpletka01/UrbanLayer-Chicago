@@ -50,15 +50,24 @@ def test_rows_that_name_the_land_not_the_owner_show_no_owner(num):
 
 
 def test_empty_cha_land_is_empty_public_land_with_room_not_an_institution():
-    # The Cabrini-Green land on N Clybourn: CMAP calls it government land, nothing stands on it
+    # The Cabrini-Green land on N Clybourn: nothing stands on it
     attrs = dict(EMPTY)
-    mark_land_use(attrs, PIN10, _src(("5", "CHICAGO HSING AUTHORTI"), {PIN10: ("1350", 0.9)}))
+    mark_land_use(attrs, PIN10, _src(("5", "CHICAGO HSING AUTHORTI"), {PIN10: ("4110", 0.9)}))
     assert attrs["public_land"] is True and "institution" not in attrs
     fill_building_area(attrs, lot=None, src=None)  # no outline: the rule still holds
     assert attrs["bldg_sqft"] == 0.0 and attrs["bldg_sqft_source"] == "public_land"
     derive_capacity(attrs)
     assert attrs["room_sqft"] == 22_000.0
     assert land_in_use(attrs) == "empty" and measure_bands(attrs)["r"] == "4"
+
+
+@pytest.mark.parametrize("code, share, public", [("1350", 0.9, False), ("1321", 0.5, False), ("1350", 0.49, True)])
+def test_city_land_cmap_calls_institutional_stays_an_institution(code, share, public):
+    # The owner's blind check: 0 of 10 such City lots were sites (a police station's lot, a school's yard)
+    attrs = dict(EMPTY)
+    mark_land_use(attrs, PIN10, _src(("1", "CHICAGO CITY OF"), {PIN10: (code, share)}))
+    assert attrs.get("public_land", False) is public
+    assert attrs.get("institution", False) is (not public)
 
 
 def test_an_empty_school_yard_stays_an_institution():
