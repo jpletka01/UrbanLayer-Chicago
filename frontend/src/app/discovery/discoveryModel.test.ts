@@ -3,7 +3,7 @@ import type { ResultRow } from "../../discovery/types";
 import { shapePath } from "./discoveryData";
 import {
   areaSuggestions, cardModel, foldComplexes, clampMiles, classifyQuery, measureColorExpr, measureSteps, measureTexture, unknownMeasureFilter, milesBetween, placeRegion, placeSuggestions, quickFromPanel,
-  quickPanel, ringMiles, ringPolygon, ringRegion, NOT_DRAWN, formatAt, parseAt,
+  quickPanel, ringMiles, ringPolygon, ringRegion, NOT_DRAWN, formatAt, parseAt, ownerLine,
 } from "./discoveryModel";
 
 const AREAS = { 22: "Logan Square", 24: "West Town", 7: "Lincoln Park" };
@@ -70,6 +70,16 @@ describe("a card", () => {
     const c = cardModel(row({ room_sqft: null, room_scope: "right_of_way" }));
     expect(c.roomNamed).toBe("right_of_way");
     expect(c.roomSqft).toBeNull();
+  });
+  it("names an exempt lot's owner, and empty public land with no building to subtract (Item 128)", () => {
+    const t = (k: string, o?: Record<string, unknown>) => `${k}${o ? `:${o.owner}` : ""}`;
+    const cha = cardModel(row({ room_sqft: 22000, bldg_sqft_source: "public_land", exempt_owner: "Chicago Housing Authority", public_land: true }));
+    expect(cha.roomBasis).toBe("public_land");
+    expect(cha.owner).toEqual({ name: "Chicago Housing Authority", assessorText: false, publicLand: true });
+    expect(ownerLine(t, cha.owner!)).toBe("discovery.card.publicLand · discovery.card.owner:Chicago Housing Authority");
+    const hall = cardModel(row({ exempt_owner: "LINCOLN PK CONG JEH WT", exempt_owner_assessor: true }));
+    expect(ownerLine(t, hall.owner!)).toBe("discovery.card.ownerAssessor:LINCOLN PK CONG JEH WT");
+    expect(cardModel(row({})).owner).toBeNull();
   });
   it("shows the server's one warning, else nominal", () => {
     expect(cardModel(row({ warning: { kind: "landmark", detail: "Wicker Park" } })).warning?.kind).toBe("landmark");

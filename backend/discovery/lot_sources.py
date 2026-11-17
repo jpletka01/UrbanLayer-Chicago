@@ -479,6 +479,57 @@ def fetch_condo(out: Path = DEFAULT_PATH, *, token: str = "") -> dict:
     return summary
 
 
+# --- the Assessor's tax-exempt owners (Item 128, the owner's review of 2026-11-16) -----------------------------------
+EXEMPT_DATASET = "vgzx-68gb"  # Assessor - Exempt Parcels: owner name and number per exempt PIN, yearly
+MIN_EXEMPT_LOTS = 40_000  # 49,675 Chicago exempt PINs in 2026
+EXEMPT_TABLES = """
+    DROP TABLE IF EXISTS exempt_owner;
+    CREATE TABLE exempt_owner (pin10 TEXT PRIMARY KEY, owner_num TEXT, owner_name TEXT, year TEXT);
+"""
+
+
+def _read_exempt_owners(client: httpx.Client) -> tuple[str, list[tuple]]:
+    """Per exempt lot (PIN10): the owner's number and name in the Assessor's exempt file, newest year, Chicago's
+    townships. A lot's base PIN (-0000) speaks for it when several of its PINs are listed."""
+    year = _get_page(client, f"{COUNTY_PORTAL}/{EXEMPT_DATASET}.json", {"$select": "max(year) AS y"}).json()[0]["y"]
+    year = str(year).split(".")[0]
+    towns = ",".join(f"'{t}'" for t in CHICAGO_TOWNSHIPS)
+    rows = _pages(client, EXEMPT_DATASET, {
+        "$select": "pin, owner_num, owner_name", "$where": f"year = {int(year)} AND township_code in ({towns})",
+        "$order": "pin"}, portal=COUNTY_PORTAL)
+    best: dict[str, tuple[str, str, str]] = {}
+    for r in rows:
+        pin = str(r.get("pin") or "").strip()
+        name = str(r.get("owner_name") or "").strip()
+        if len(pin) != 14 or not name:
+            continue
+        p10 = pin[:10]
+        if p10 not in best or pin.endswith("0000"):
+            best[p10] = (pin, str(r.get("owner_num") or "").split(".")[0].strip(), name)
+    return year, [(p10, num, name, year) for p10, (_pin, num, name) in sorted(best.items())]
+
+
+def fetch_exempt(out: Path = DEFAULT_PATH, *, token: str = "") -> dict:
+    """Add (or replace) only ``exempt_owner`` in an existing copy (Item 128). A short read raises."""
+    if not out.exists():
+        raise FileNotFoundError(f"{out} missing: run without --exempt-only first")
+    headers = {"X-App-Token": token} if token else {}
+    with httpx.Client(timeout=120, headers=headers) as c:
+        year, rows = _read_exempt_owners(c)
+    if len(rows) < MIN_EXEMPT_LOTS:
+        raise RuntimeError(f"the Assessor's exempt file gave only {len(rows)} lots: refusing to write")
+    db = sqlite3.connect(out)
+    try:
+        with db:
+            db.executescript(EXEMPT_TABLES)
+            db.executemany("INSERT INTO exempt_owner VALUES (?, ?, ?, ?)", rows)
+            summary = {"exempt_lots": len(rows), "exempt_year": year}
+            db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
+    finally:
+        db.close()
+    return summary
+
+
 def fetch_structures(out: Path = DEFAULT_PATH, *, token: str = "", lidar: Path | None = None,
                      ptaxsim: Path | None = None) -> dict:
     """Add (or replace) only the Item 110 tables in an existing copy, in one transaction."""
@@ -607,6 +658,7 @@ def main() -> None:
     ap.add_argument("--structures-only", action="store_true", help="add or replace only the Item 110 tables")
     ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 and 128 tables")
     ap.add_argument("--condo-only", action="store_true", help="add or replace only the Assessor's condo buildings (Item 128)")
+    ap.add_argument("--exempt-only", action="store_true", help="add or replace only the Assessor's exempt owners (Item 128)")
     ap.add_argument("--cmap", type=Path, default=None, help="default: map_sources/cmap_lui_2023.db beside --out")
     ap.add_argument("--lidar", type=Path, default=None, help="default: map_sources/county_buildings_2022.db beside --out")
     ap.add_argument("--ptaxsim", type=Path, default=None, help="default: ptaxsim.db beside --out")
@@ -617,6 +669,8 @@ def main() -> None:
         print(json.dumps(fetch_addresses(args.out, token=token), indent=1))
     elif args.condo_only:
         print(json.dumps(fetch_condo(args.out, token=token), indent=1))
+    elif args.exempt_only:
+        print(json.dumps(fetch_exempt(args.out, token=token), indent=1))
     elif args.land_use_only:
         print(json.dumps(fetch_land_use(args.out, cmap=args.cmap, ptaxsim=args.ptaxsim), indent=1))
     elif args.structures_only:

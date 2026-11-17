@@ -9,7 +9,7 @@ import { STROKE } from "../icons";
 import { Pill, type PillTone } from "../ui/Blocks";
 import { BlockSlice } from "../ui/BlockSlice";
 import { BOOKMARK_OFF, BOOKMARK_ON } from "../saved/bookmark";
-import { cardModel, measureSteps, type CardWarning } from "./discoveryModel";
+import { cardModel, measureSteps, ownerLine, type CardWarning } from "./discoveryModel";
 import { lotKey } from "../home/lotMemory";
 import type { SaveInput } from "../saved/savedStore";
 
@@ -126,6 +126,7 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0, saved, onTog
               </span>
             )}
             {c.roomBasis && c.complexLots == null && <span className="text-[11px] nx-muted">{t(`discovery.card.basis.${c.roomBasis}`)}</span>}
+            {c.owner && <span className="text-[11px] nx-muted [overflow-wrap:anywhere]" data-testid="row-card-owner">{ownerLine(t, c.owner)}</span>}
           </span>
 
           {chips.length > 0 && (

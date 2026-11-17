@@ -1205,7 +1205,8 @@
       "basis": {
         "commercial_valuation": "Superficie construida de los registros comerciales del Asesor",
         "footprint": "Superficie construida de las huellas de edificios de la Ciudad × pisos",
-        "city_land_inventory": "Sin edificio: terreno baldío de la Ciudad (inventario de terrenos de la Ciudad)"
+        "city_land_inventory": "Sin edificio: terreno baldío de la Ciudad (inventario de terrenos de la Ciudad)",
+        "public_land": "Sin edificio: terreno público vacío (nada en las huellas de la Ciudad ni en el LiDAR 2022 del Condado)"
       },
       "named": {
         "own_rules": "Lo fija su propia ordenanza",
@@ -1251,7 +1252,10 @@
       "allowed": "Permitido {{value}} · {{pct}}% usado",
       "moreInComplex_one": "1 terreno más del conjunto en esta lista",
       "moreInComplex_other": "{{count}} terrenos más del conjunto en esta lista",
-      "sold": "Vendido en {{price}} en {{year}}"
+      "sold": "Vendido en {{price}} en {{year}}",
+      "owner": "Propietario: {{owner}}",
+      "ownerAssessor": "Propietario, según el registro del Tasador: {{owner}}",
+      "publicLand": "Terreno público vacío"
     },
     "goalSoon": "faltan datos",
     "goal": {

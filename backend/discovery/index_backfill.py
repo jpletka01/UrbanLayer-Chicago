@@ -39,7 +39,8 @@ log = logging.getLogger(__name__)
 # Keys this pass owns: cleared before each fill so a rerun never keeps a stale answer.
 OWNED = ("hood", "lot_width_ft", "narrow_strip", "bldg_sqft_unknown", "room_sqft", "room_scope", "complex_lots", "warn_demolition", "warn_vacant_case", "warn_pending_rezoning",
          "warn_landmark", "surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source",
-         "open_land", "open_land_source", "institution", "lot_stand_in", "condo", "condo_units")
+         "open_land", "open_land_source", "institution", "lot_stand_in", "condo", "condo_units",
+         "exempt_owner", "exempt_owner_assessor", "public_land")
 
 
 def lot_outlines(ptaxsim: Path, pin10s: Iterable[str]) -> dict[str, Any]:
@@ -104,7 +105,7 @@ def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set
         mark_land_use(attrs, pin10, src)  # Item 112: reads land_kind, structure and empty_land
     from backend.discovery.index_build import unusual_rule
     attrs["unusual"] = unusual_rule(attrs)
-    if attrs.get("bldg_sqft_source") in ("footprint", "city_land_inventory"):  # a rerun recomputes these
+    if attrs.get("bldg_sqft_source") in ("footprint", "city_land_inventory", "public_land"):  # a rerun recomputes these
         attrs.pop("bldg_sqft", None)
         attrs.pop("bldg_sqft_source", None)
     if attrs.get("multi_pin_member"):

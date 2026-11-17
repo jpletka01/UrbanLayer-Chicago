@@ -262,6 +262,13 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         fact_keys=("property.building", "property.bldg_sqft", "property.year_built"), cadence_days=7, warn_days=14, alarm_days=45,
     ),
     _socrata(
+        COOK, "vgzx-68gb", "cook.assessor.exempt_parcels", "Assessor - Exempt Parcels", COOK_ASSESSOR,
+        "backend/discovery/lot_sources.py", surfaces=("discovery",), fact_keys=(),
+        cadence_days=365, warn_days=400, alarm_days=500,
+        note="Item 128. The owner of each tax-exempt lot, read into the local lot-sources copy (`--exempt-only`); "
+             "a new tax year is published once a year.",
+    ),
+    _socrata(
         COOK, "csik-bsws", "cook.assessor.commercial_valuation", "Assessor - Commercial Valuation Data", COOK_ASSESSOR,
         "backend/retrieval/property/building_facts.py", surfaces=_PROP, fact_keys=("property.building", "property.bldg_sqft", "property.year_built", "property.units"),
         cadence_days=365, content=Content("max_year", "year"), warn_days=450, alarm_days=750,

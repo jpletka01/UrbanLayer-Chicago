@@ -25,7 +25,7 @@ import {
 import type { Basemap } from "../map/LayersControl";
 import { STROKE } from "../icons";
 import {
-  LOTS_MIN_ZOOM, NOT_DRAWN, cardModel, formatAt, parseAt, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ringPolygon, type MeasureId,
+  LOTS_MIN_ZOOM, NOT_DRAWN, cardModel, formatAt, parseAt, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ownerLine, ringPolygon, type MeasureId,
 } from "./discoveryModel";
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -596,7 +596,8 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
           <p className="nx-muted">
             {[card.zone, card.lotSqft != null ? t("discovery.card.lotValue", { value: n(card.lotSqft) }) : null].filter(Boolean).join(" · ")}
           </p>
-          <p>{card.roomSqft != null ? t("discovery.card.roomValue", { value: n(card.roomSqft) }) : t("discovery.card.roomUnknown")}</p>
+          <p>{card.roomSqft != null ? t("discovery.card.roomValue", { value: n(card.roomSqft) })
+            : card.roomNamed ? t(`discovery.card.named.${card.roomNamed}`) : t("discovery.card.roomUnknown")}</p>
           {/* A condo building: a heads-up, not a wall (owner): many owners, and where the room comes from. */}
           {card.condo && (
             <p className="nx-muted" data-testid="lot-card-condo">
@@ -604,6 +605,8 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
               {" · "}{card.condo.measured ? t("discovery.card.condoMeasured") : t("discovery.card.condoNoArea")}
             </p>
           )}
+          {/* Who owns a tax-exempt lot, and empty public land named as such (owner's review, Item 128). */}
+          {card.owner && <p className="nx-muted [overflow-wrap:anywhere]" data-testid="lot-card-owner">{ownerLine(t, card.owner)}</p>}
         </div>
       )}
       {card && (

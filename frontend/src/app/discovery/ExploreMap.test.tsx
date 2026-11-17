@@ -74,3 +74,13 @@ describe("Discovery lot card: the Profile link (Item 109)", () => {
     expect(q.has("address")).toBe(false);
   });
 });
+
+describe("Discovery lot card: owner and named room (Item 128)", () => {
+  it("names an exempt institution and its owner as the Assessor records it", () => {
+    card({ status: "found", row: { pin: "17041220820000", lat: 41.9, lon: -87.64, address: "1301 N MOHAWK ST", lot_sqft: 6992,
+      room_sqft: null, room_scope: "institution", exempt_owner: "LINCOLN PK CONG JEH WT", exempt_owner_assessor: true } as never });
+    expect(screen.getByText(/Exempt institution/)).toBeTruthy();
+    expect(screen.queryByText(/not known/)).toBeNull();
+    expect(screen.getByTestId("lot-card-owner").textContent).toBe("Owner, as the Assessor records it: LINCOLN PK CONG JEH WT");
+  });
+});

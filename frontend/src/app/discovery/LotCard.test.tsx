@@ -35,6 +35,13 @@ describe("LotCard: empty land", () => {
     expect(screen.getByText(/Empty lot/)).toBeTruthy();
   });
 
+  it("names an exempt lot's owner, and empty CHA land as empty public land (Item 128)", () => {
+    render(<LotCard row={{ ...base, land_use: "exempt", empty_land: true, land_kind: "exempt", bldg_sqft: 0, bldg_sqft_source: "public_land",
+      exempt_owner: "Chicago Housing Authority", public_land: true } as ResultRow} hoodName={null} onOpen={() => {}} />);
+    expect(screen.getByTestId("row-card-owner").textContent).toBe("Empty public land · Owner: Chicago Housing Authority");
+    expect(screen.getByText(/No building: empty public land/)).toBeTruthy();
+  });
+
   it("names a parking lot with no building as surface parking (Item 112)", () => {
     render(<LotCard row={{ ...base, land_use: "commercial", empty_land: true, land_kind: "parking", surface_parking: true } as ResultRow}
       hoodName={null} onOpen={() => {}} />);

@@ -146,7 +146,7 @@ export interface CardModel {
   lotSqft: number | null;
   roomSqft: number | null;
   /** Where the building area behind "room to build" came from, when it isn't the Assessor's own record. */
-  roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | null;
+  roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | "public_land" | null;
   /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation, or road
       or rail right-of-way (Items 112, 128). */
   roomNamed: "own_rules" | "open_space" | "transport" | "right_of_way" | "water" | "institution" | "condo" | null;
@@ -156,6 +156,8 @@ export interface CardModel {
   complexLots: number | null;
   /** A condo building: many owners to buy from; `measured` = the Assessor's own floor area is behind the room. */
   condo: { units: number | null; measured: boolean } | null;
+  /** Who owns a tax-exempt lot; `assessorText` = the Assessor's own abbreviated text; `publicLand` = empty public land. */
+  owner: { name: string; assessorText: boolean; publicLand: boolean } | null;
   sale: { price: number; year: string; transfer: boolean } | null;
   warning: CardWarning | null;
 }
@@ -166,7 +168,7 @@ export const TRANSFER_BELOW = 10_000;
 export function cardModel(row: ResultRow): CardModel {
   const { title, approx } = rowTitle(row);
   const src = row.bldg_sqft_source;
-  const basis = src === "commercial_valuation" || src === "footprint" || src === "city_land_inventory" ? src : null;
+  const basis = src === "commercial_valuation" || src === "footprint" || src === "city_land_inventory" || src === "public_land" ? src : null;
   const named = row.room_scope === "own_rules" || row.room_scope === "open_space" || row.room_scope === "transport"
     || row.room_scope === "right_of_way" || row.room_scope === "water" || row.room_scope === "institution" || row.room_scope === "condo" ? row.room_scope : null;
   const room = row.room_sqft ?? null;
@@ -181,11 +183,21 @@ export function cardModel(row: ResultRow): CardModel {
     narrowFt: row.narrow_strip && row.lot_width_ft != null ? Math.round(row.lot_width_ft) : null,
     complexLots: room != null && row.room_scope === "complex" ? row.complex_lots ?? null : null,
     condo: row.condo ? { units: row.condo_units ?? null, measured: row.bldg_sqft_source === "assessor_condo" } : null,
+    owner: row.exempt_owner
+      ? { name: row.exempt_owner, assessorText: !!row.exempt_owner_assessor, publicLand: !!row.public_land }
+      : null,
     sale: row.last_sale_price != null && row.last_sale_date
       ? { price: row.last_sale_price, year: row.last_sale_date.slice(0, 4), transfer: row.last_sale_price < TRANSFER_BELOW }
       : null,
     warning: row.warning ?? (row.nominal_assessment ? { kind: "nominal" } : null),
   };
+}
+
+/** The card's owner line: "Owner: Chicago Housing Authority", led by "Empty public land" when it is; the Assessor's own
+    abbreviated text is said to be his (owner's review, Item 128). */
+export function ownerLine(t: (k: string, o?: Record<string, unknown>) => string, owner: NonNullable<CardModel["owner"]>): string {
+  const who = t(owner.assessorText ? "discovery.card.ownerAssessor" : "discovery.card.owner", { owner: owner.name });
+  return owner.publicLand ? `${t("discovery.card.publicLand")} · ${who}` : who;
 }
 
 /** Fold the lots of one multi-parcel complex into one card (they share one room-to-build figure, the site's): the

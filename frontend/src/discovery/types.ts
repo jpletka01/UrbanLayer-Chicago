@@ -220,6 +220,11 @@ export interface ResultRow {
   /** A condo building (Item 128): many owners; room from the Assessor's floor area when it has one. */
   condo?: boolean | null;
   condo_units?: number | null;
+  /** Who owns a tax-exempt lot (the Assessor's exempt file); `exempt_owner_assessor` = the Assessor's own text. */
+  exempt_owner?: string | null;
+  exempt_owner_assessor?: boolean | null;
+  /** Physically empty land of the City, the CHA or the County Land Bank: a site, not an institution (Item 128). */
+  public_land?: boolean | null;
   community_area: number | null;
   land_use: string | null;
   class: string | null;

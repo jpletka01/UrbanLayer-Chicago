@@ -68,6 +68,8 @@ class LotSources:
     open_land_on_lot: dict[str, tuple[float, ...]] | None = None
     # PIN10 -> (the Assessor's condo building floor area, land area, units) (Item 128); None before the table.
     condo_building: dict[str, tuple[float | None, float | None, int]] | None = None
+    # PIN10 -> (owner number, owner name) in the Assessor's tax-exempt parcels file (Item 128); None before the table.
+    exempt_owner: dict[str, tuple[str, str]] | None = None
 
     @classmethod
     def load(cls, path: Path) -> "LotSources":
@@ -103,6 +105,10 @@ class LotSources:
             except sqlite3.OperationalError:  # a copy made before the condo table (Item 128)
                 condo = None
             try:
+                exempt = {r[0]: (r[1] or "", r[2]) for r in db.execute("SELECT pin10, owner_num, owner_name FROM exempt_owner")}
+            except sqlite3.OperationalError:  # a copy made before the exempt owners (Item 128)
+                exempt = None
+            try:
                 open_land = {r[0]: (r[1], r[2], r[3]) for r in db.execute(
                     "SELECT pin10, park, water, public_os FROM open_land_on_lot")}
             except sqlite3.OperationalError:
@@ -120,6 +126,7 @@ class LotSources:
             pt_tree={k: (STRtree(g), d) for k, (g, d) in pts.items()},
             area_tree=(STRtree(area_geoms), [a[1] or "" for a in areas]) if areas else None,
             meta=meta, city_land=city_land, lidar_on_lot=lidar, cmap_on_lot=cmap, rail_on_lot=rail, open_land_on_lot=open_land, condo_building=condo,
+            exempt_owner=exempt,
         )
 
 
@@ -245,6 +252,12 @@ def fill_building_area(attrs: dict[str, Any], *, commercial=None, lot=None, src:
         attrs.setdefault("bldg_sqft_source", "assessor")
         return
     if attrs.get("is_vacant"):
+        return
+    if attrs.get("public_land"):
+        # Physically empty land of a public landholder (City, CHA, the County Land Bank; ``mark_owner``): nothing
+        # stands on it in the footprints or the 2022 LiDAR, so there is no building to subtract (Item 128).
+        attrs["bldg_sqft"] = 0.0
+        attrs["bldg_sqft_source"] = "public_land"
         return
     if isinstance(commercial, UnitArea) and commercial.bldg_sqft > 0:
         attrs["bldg_sqft"] = float(round(commercial.bldg_sqft))
@@ -436,14 +449,46 @@ def mark_open_land(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple
     return True
 
 
+def _load_exempt_owners() -> tuple[dict[str, dict[str, Any]], frozenset[str]]:
+    p = Path(__file__).with_name("exempt_owners.json")
+    if not p.exists():
+        return {}, frozenset()
+    raw = json.loads(p.read_text())
+    return ({k: v for k, v in raw.items() if not k.startswith("_")}, frozenset(raw.get("_not_owners", [])))
+
+
+EXEMPT_OWNERS, NOT_OWNERS = _load_exempt_owners()
+
+
+def mark_owner(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
+    """``exempt_owner`` (who owns a tax-exempt lot, from the Assessor's exempt file) and ``public_land`` (a physically
+    empty lot of a public landholder: land waiting for use, not a school or office in use), in place. The owner's
+    review of 2026-11-16: the empty Cabrini-Green land read "exempt institution" though the CHA holds it for
+    redevelopment. A spelled-out name (``exempt_owners.json``) only while the Assessor's text still matches it; else
+    the Assessor's own text, flagged ``exempt_owner_assessor``."""
+    rec = (src.exempt_owner or {}).get(pin10)
+    if not rec or rec[0] in NOT_OWNERS:
+        return
+    num, name = rec
+    known = EXEMPT_OWNERS.get(num)
+    if known and name.upper() in known.get("assessor", []):
+        attrs["exempt_owner"] = known["name"]
+        if known.get("public_land") and attrs.get("empty_land"):
+            attrs["public_land"] = True
+    else:
+        attrs["exempt_owner"] = name
+        attrs["exempt_owner_assessor"] = True
+
+
 def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
     """``surface_parking`` and ``infrastructure`` (road, rail, road_rail) on one base lot, in place, from the fields
     ``mark_empty_land`` just set; each with its source. Reruns clear them first."""
     from backend.discovery.cmap_land_use import CMAP_INTERMODAL, CMAP_RAIL, CMAP_ROAD
 
     for k in ("surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source", "open_land",
-              "open_land_source", "institution"):
+              "open_land_source", "institution", "exempt_owner", "exempt_owner_assessor", "public_land"):
         attrs.pop(k, None)
+    mark_owner(attrs, pin10, src)
     if attrs.get("land_kind") == "parking" and attrs.get("structure") in NO_BUILDING:
         attrs["surface_parking"] = True
         attrs["surface_parking_source"] = "assessor_class"
@@ -463,7 +508,8 @@ def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
         return
     if not cm:
         return
-    if cm[0] in INSTITUTION_CODES and cm[1] >= OPEN_LAND_MIN_SHARE and attrs.get("land_kind") in ("exempt", "city_owned"):
+    if cm[0] in INSTITUTION_CODES and cm[1] >= OPEN_LAND_MIN_SHARE and attrs.get("land_kind") in ("exempt", "city_owned") \
+            and not attrs.get("public_land"):
         # A school, church, hospital or government site on tax-exempt land (owner's map review: 2851 N Seminary, a
         # school, read "not known"). Only names the lot when room to build can't be computed (``derive_capacity``).
         attrs["institution"] = True

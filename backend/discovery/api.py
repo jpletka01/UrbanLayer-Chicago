@@ -113,6 +113,11 @@ class ResultRow(BaseModel):
     open_land: str | None = None  # park / cemetery / water (Item 128)
     condo: bool | None = None  # a condo building (many owners); its floor area from the Assessor's condo file (Item 128)
     condo_units: int | None = None
+    # Who owns a tax-exempt lot (the Assessor's exempt file); ``exempt_owner_assessor`` = the Assessor's own text, not a
+    # spelled-out name; ``public_land`` = physically empty land of the City, the CHA or the County Land Bank (Item 128).
+    exempt_owner: str | None = None
+    exempt_owner_assessor: bool | None = None
+    public_land: bool | None = None
     community_area: int | None = None
     land_use: str | None = None
     parcel_class: str | None = Field(default=None, alias="class")
@@ -331,6 +336,9 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         open_land=g("open_land"),
         condo=g("condo"),
         condo_units=g("condo_units"),
+        exempt_owner=g("exempt_owner"),
+        exempt_owner_assessor=g("exempt_owner_assessor"),
+        public_land=g("public_land"),
         community_area=g("community_area") or _community_area_of(parcel),
         land_use=g("land_use_class"),
         # Display reads the REAL assessed value (exempt/$0 included); only the sort key

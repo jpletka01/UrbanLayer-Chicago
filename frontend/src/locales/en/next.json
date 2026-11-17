@@ -1205,7 +1205,8 @@
       "basis": {
         "commercial_valuation": "Building area from the Assessor's commercial records",
         "footprint": "Building area from City footprints × stories",
-        "city_land_inventory": "No building: City-owned vacant land (the City's land inventory)"
+        "city_land_inventory": "No building: City-owned vacant land (the City's land inventory)",
+        "public_land": "No building: empty public land (nothing in the City's footprints or the County's 2022 LiDAR)"
       },
       "named": {
         "own_rules": "Set by its own ordinance",
@@ -1251,7 +1252,10 @@
       "allowed": "Allowed {{value}} · {{pct}}% used",
       "moreInComplex_one": "1 more of its lots in this list",
       "moreInComplex_other": "{{count}} more of its lots in this list",
-      "sold": "Sold {{price}} in {{year}}"
+      "sold": "Sold {{price}} in {{year}}",
+      "owner": "Owner: {{owner}}",
+      "ownerAssessor": "Owner, as the Assessor records it: {{owner}}",
+      "publicLand": "Empty public land"
     },
     "goalSoon": "needs data",
     "goal": {
