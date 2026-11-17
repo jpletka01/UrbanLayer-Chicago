@@ -525,7 +525,7 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
             </button>
           )}
           <a href={streetViewUrl(sv.lat, sv.lon, sv.heading)} target="_blank" rel="noopener noreferrer" data-testid="lot-card-street-view" className="inline-flex items-center gap-1 nx-muted underline underline-offset-2">
-            {t("map.streetView")}<SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
+            {t("map.streetView.link")}<SquareArrowOutUpRight aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
           </a>
         </div>
       )}
