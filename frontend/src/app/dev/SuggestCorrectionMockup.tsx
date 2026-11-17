@@ -167,7 +167,7 @@ function DesktopDialog({ s, initial = EMPTY, onClose, onSend }: { s: Strings; in
 }
 
 // ── Phone: a sheet that slides up over the whole screen; drag the handle down (or ×) to close ─────────────────────
-function PhoneSheet({ s, initial = EMPTY, onClose, onSend }: { s: Strings; initial?: Form; onClose?: () => void; onSend?: () => void }) {
+function CorrectionSheet({ s, initial = EMPTY, onClose, onSend }: { s: Strings; initial?: Form; onClose?: () => void; onSend?: () => void }) {
   const form = useForm(initial);
   const [dy, setDy] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -213,21 +213,28 @@ function Toast({ s, device, onClose }: { s: Strings; device: Device; onClose?: (
 }
 
 // ── The real map card (#242), with the pencil beside the close button ─────────────────────────────────────────────
-function MockLotCard({ lang, mode, onSuggest, showTip = false }: { lang: Lang; mode: CardMode; onSuggest?: () => void; showTip?: boolean }) {
+/** The pencil (or, once sent, a check) and the close button: the same two icons on the card and on the phone sheet. */
+function LotIcons({ s, mode, onSuggest, onClose, showTip }: { s: Strings; mode: CardMode; onSuggest?: () => void; onClose?: () => void; showTip: boolean }) {
+  return (
+    <div className="flex shrink-0 items-center">
+      {mode === "afterSend" ? (
+        <IconTool label={s.sentTip} showTip={showTip}><Check aria-hidden className="h-4 w-4 nx-muted" strokeWidth={STROKE} /></IconTool>
+      ) : mode === "card" ? (
+        <IconTool label={s.suggest} showTip={showTip} onClick={onSuggest}><PencilLine aria-hidden className="h-4 w-4 nx-muted" strokeWidth={STROKE} /></IconTool>
+      ) : null}
+      <IconTool label={s.close} onClick={onClose}><X aria-hidden className="h-4 w-4" strokeWidth={STROKE} /></IconTool>
+    </div>
+  );
+}
+
+/** The card's facts and buttons (#242's card), sized for the card or, larger, for the phone sheet. */
+function LotBody({ lang, mode, showTip, phone }: { lang: Lang; mode: CardMode; showTip: boolean; phone: boolean }) {
   const s = S[lang];
   const n = (v: number) => v.toLocaleString(lang === "es" ? "es-MX" : "en-US");
+  const btn = phone ? "h-11" : "h-9";
   return (
-    <div className={`relative ${CARD}`}>
-      <div className="absolute right-2 top-2 flex items-center">
-        {mode === "afterSend" ? (
-          <IconTool label={s.sentTip} showTip={showTip}><Check aria-hidden className="h-4 w-4 nx-muted" strokeWidth={STROKE} /></IconTool>
-        ) : mode === "card" ? (
-          <IconTool label={s.suggest} showTip={showTip} onClick={onSuggest}><PencilLine aria-hidden className="h-4 w-4 nx-muted" strokeWidth={STROKE} /></IconTool>
-        ) : null}
-        <IconTool label={s.close}><X aria-hidden className="h-4 w-4" strokeWidth={STROKE} /></IconTool>
-      </div>
-      <div className="flex flex-col gap-1.5 pr-14">
-        <p className="text-body font-semibold">{LOT.title}</p>
+    <>
+      <div className={`flex flex-col gap-1.5 ${phone ? "text-body" : ""}`}>
         <p className="nx-muted">{s.lot}</p>
         <p className="group relative flex items-center gap-1">
           {s.room(n(mode === "reviewed" ? LOT.roomReviewed : LOT.room))}
@@ -239,14 +246,50 @@ function MockLotCard({ lang, mode, onSuggest, showTip = false }: { lang: Lang; m
           )}
         </p>
       </div>
-      <div className="mt-3 flex flex-col gap-2">
-        <span className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-nx-ink px-3 font-semibold text-nx-on-ink">{s.open}<ArrowRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} /></span>
+      <div className={`mt-3 flex flex-col gap-2 ${phone ? "text-body" : ""}`}>
+        <span className={`inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-nx-ink px-3 font-semibold text-nx-on-ink ${btn}`}>{s.open}<ArrowRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} /></span>
         <div className="grid grid-cols-2 gap-2">
-          <span className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium"><PersonStanding aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{s.streetView}</span>
-          <span className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium"><MapPinned aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{s.maps}</span>
+          <span className={`inline-flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium ${btn}`}><PersonStanding aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{s.streetView}</span>
+          <span className={`inline-flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium ${btn}`}><MapPinned aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{s.maps}</span>
         </div>
       </div>
+    </>
+  );
+}
+
+function MockLotCard({ lang, mode, onSuggest, showTip = false }: { lang: Lang; mode: CardMode; onSuggest?: () => void; showTip?: boolean }) {
+  const s = S[lang];
+  return (
+    <div className={`relative ${CARD}`}>
+      <div className="absolute right-2 top-2"><LotIcons s={s} mode={mode} onSuggest={onSuggest} showTip={showTip} /></div>
+      <p className="mb-1.5 pr-14 text-body font-semibold">{LOT.title}</p>
+      <LotBody lang={lang} mode={mode} showTip={showTip} phone={false} />
     </div>
+  );
+}
+
+/** Phone: a tapped lot opens in Discovery's own bottom sheet (#242's `PhoneSheet`: the same handle, rounded top and
+    shadow) in place of its "Search these lots" peek, at the height of its content; the map keeps the lot in view above
+    it. Drag the handle down (30 px, as the sheet does today) or × to close; the sheet goes back to what it was. */
+function LotSheet({ lang, mode, onSuggest, onClose, showTip = false }: { lang: Lang; mode: CardMode; onSuggest?: () => void; onClose?: () => void; showTip?: boolean }) {
+  const s = S[lang];
+  const start = useRef<number | null>(null);
+  return (
+    <section aria-label={LOT.title} data-testid="lot-sheet"
+      className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-3xl bg-nx-page text-caption text-nx-ink shadow-[0_-8px_32px_rgb(0_0_0/0.18)]">
+      <div className="flex shrink-0 touch-none flex-col items-center px-4 pb-1 pt-2"
+        onPointerDown={(e) => { start.current = e.clientY; e.currentTarget.setPointerCapture(e.pointerId); }}
+        onPointerUp={(e) => { if (start.current != null && e.clientY - start.current > 30) onClose?.(); start.current = null; }}>
+        <span className="grid h-6 w-16 place-items-center"><span aria-hidden className="h-1.5 w-10 rounded-full bg-nx-ink/20" /></span>
+      </div>
+      <div className="flex flex-col px-5 pb-8">
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <p className="pt-0.5 text-[1.0625rem] font-semibold">{LOT.title}</p>
+          <span className="-mr-2"><LotIcons s={s} mode={mode} onSuggest={onSuggest} onClose={onClose} showTip={showTip} /></span>
+        </div>
+        <LotBody lang={lang} mode={mode} showTip={showTip} phone />
+      </div>
+    </section>
   );
 }
 
@@ -278,18 +321,27 @@ function Screen({ theme, device, lang, step: startStep, initial, cardMode, inter
     ro.observe(el);
     return () => ro.disconnect();
   }, [device]);
-  const cardAt = device === "desktop" ? { left: 690, top: 341 } : { left: 40, top: 200 };
+  const cardAt = { left: 690, top: 341 };
+  const [lotOpen, setLotOpen] = useState(true);
   const inner = device === "desktop" ? { width: 1280, height: 800, transform: `scale(${k})`, transformOrigin: "0 0" } : { inset: 0 };
   return (
     <div className={frame} data-testid={testid} ref={outer}>
      <div className="absolute" style={inner}>
       <img src={BACK[theme][device]} alt="" className="absolute inset-0 h-full w-full object-cover object-left-top" />
-      <div className="absolute" style={cardAt}>
-        <MockLotCard lang={lang} mode={mode} showTip={showTip} onSuggest={interactive ? () => setStep("form") : undefined} />
-      </div>
+      {device === "desktop" ? (
+        <div className="absolute" style={cardAt}>
+          <MockLotCard lang={lang} mode={mode} showTip={showTip} onSuggest={interactive ? () => setStep("form") : undefined} />
+        </div>
+      ) : lotOpen ? (
+        <LotSheet lang={lang} mode={mode} showTip={showTip} onSuggest={interactive ? () => setStep("form") : undefined} onClose={interactive ? () => setLotOpen(false) : undefined} />
+      ) : (
+        // The lot's outline in the screenshot (its real place on the map): tap it to open the sheet again.
+        <button type="button" aria-label={LOT.title} onClick={() => setLotOpen(true)} className="absolute rounded-sm ring-2 ring-transparent hover:ring-nx-ink/40"
+          style={{ left: 194, top: 283, width: 138, height: 37 }} />
+      )}
       {step === "form" && (device === "desktop"
         ? <DesktopDialog s={s} initial={initial} onClose={interactive ? () => setStep("card") : undefined} onSend={interactive ? () => { setSent(true); setStep("toast"); } : undefined} />
-        : <PhoneSheet s={s} initial={initial} onClose={interactive ? () => setStep("card") : undefined} onSend={interactive ? () => { setSent(true); setStep("toast"); } : undefined} />)}
+        : <CorrectionSheet s={s} initial={initial} onClose={interactive ? () => setStep("card") : undefined} onSend={interactive ? () => { setSent(true); setStep("toast"); } : undefined} />)}
       {step === "toast" && <Toast s={s} device={device} onClose={interactive ? () => setStep("card") : undefined} />}
      </div>
     </div>
@@ -313,7 +365,7 @@ function ThemeSection({ theme, lang }: { theme: Theme; lang: Lang }) {
           <Screen theme={theme} device="desktop" lang={lang} step="card" interactive testid={`desktop-live-${theme}`} />
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto" data-testid={`phone-${theme}`}>
-          <Label>2 · Phone, 360 px, live: tap the pencil; drag the handle down to close.</Label>
+          <Label>2 · Phone, 360 px, live: the tapped lot in the bottom sheet. Drag it down, tap the lot again; the pencil opens the form.</Label>
           <Screen theme={theme} device="phone" lang={lang} step="card" interactive testid={`phone-live-${theme}`} />
         </div>
       </div>
@@ -329,8 +381,9 @@ function ThemeSection({ theme, lang }: { theme: Theme; lang: Lang }) {
       <div className="flex flex-col gap-2">
         <Label>4 · Phone states</Label>
         <div className="flex flex-wrap gap-4">
-          <div className="flex w-full flex-col gap-2 sm:w-auto"><Label>a · The sheet, Stories picked</Label><Screen theme={theme} device="phone" lang={lang} step="form" initial={phonePicked} testid={`phone-form-${theme}`} /></div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto"><Label>b · Sent: the toast at the top</Label><Screen theme={theme} device="phone" lang={lang} step="toast" testid={`phone-toast-${theme}`} /></div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto"><Label>a · A tapped lot opens in the bottom sheet</Label><Screen theme={theme} device="phone" lang={lang} step="card" showTip testid={`phone-lot-${theme}`} /></div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto"><Label>b · The form, over the whole screen, Stories picked</Label><Screen theme={theme} device="phone" lang={lang} step="form" initial={phonePicked} testid={`phone-form-${theme}`} /></div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto"><Label>c · Sent: the toast at the top, the pencil a check</Label><Screen theme={theme} device="phone" lang={lang} step="toast" testid={`phone-toast-${theme}`} /></div>
         </div>
       </div>
     </section>
@@ -354,7 +407,7 @@ export default function SuggestCorrectionMockup() {
       <div className="mx-auto flex max-w-[110rem] flex-col gap-6">
         <header className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-0">
           <div>
-            <h1 className="text-[1.375rem] font-semibold">Suggest a correction · mockup 3</h1>
+            <h1 className="text-[1.375rem] font-semibold">Suggest a correction · mockup 4</h1>
             <p className="text-caption nx-muted">Dev-only (decision Item 129). The real card over screenshots of the real map. Nothing is sent.</p>
           </div>
           <div className="inline-flex rounded-full bg-nx-block p-1" role="group" aria-label="Language">
