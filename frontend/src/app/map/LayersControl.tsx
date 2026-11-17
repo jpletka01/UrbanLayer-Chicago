@@ -1,11 +1,12 @@
 // The map's Layers control (owner's map reviews, Item 128), the way Google Maps does it: a square in the corner that
 // previews the OTHER map (a satellite photo while the standard map shows, our map while the photo shows) and switches to
 // it on a click; hovering it (a tap on a touch screen) opens a row beside it with the layers: Transit, Zoning districts,
-// Saved lots. No close button: the row folds when the pointer leaves or the map is touched. The data credits sit under
-// the row (they left the map's corner: the owner found the "i" button wasted space).
+// Saved lots. No close button: the row folds when the pointer leaves or the map is touched. The data credits sit behind
+// a small info icon at the row's end (hover or click), so the row is only as wide as its tiles (owner's review
+// 2026-11-16).
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Info } from "lucide-react";
 import { STROKE } from "../icons";
 import { CTA_COLORS, PALETTES, ZONING_COLORS, type Theme } from "./mapStyle";
 
@@ -80,9 +81,11 @@ export function LayersControl({ value, onChange, theme, className, foldSignal = 
 }) {
   const { t } = useTranslation("next");
   const [open, setOpen] = useState(false);
+  const [credits, setCredits] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const touch = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(hover: none)").matches;
   useEffect(() => { setOpen(false); }, [foldSignal]);
+  useEffect(() => { if (!open) setCredits(false); }, [open]);
   useEffect(() => {
     if (!open) return;
     const down = (e: PointerEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
@@ -122,7 +125,7 @@ export function LayersControl({ value, onChange, theme, className, foldSignal = 
       </button>
       {open && (
         <div role="group" aria-label={t("map.layers.title")}
-          className="flex flex-col gap-1 rounded-2xl bg-nx-page p-2 shadow-[0_8px_32px_rgb(0_0_0/0.18)]" data-testid="layers-row">
+          className="relative rounded-2xl bg-nx-page p-2 shadow-[0_8px_32px_rgb(0_0_0/0.18)]" data-testid="layers-row">
           <div className="flex gap-1">
             {touch && (
               <button type="button" onClick={() => onChange({ ...value, basemap: other })} data-testid={`layers-${other}`}
@@ -140,10 +143,19 @@ export function LayersControl({ value, onChange, theme, className, foldSignal = 
                 <Bookmark aria-hidden className="h-6 w-6 text-[#7C5CC4]" fill="#B9A6E8" strokeWidth={STROKE} />
               </span>
             ))}
+            <button type="button" data-testid="layers-credits" aria-expanded={credits} aria-label={t("map.layers.creditsLabel")}
+              onClick={() => setCredits((c) => !c)}
+              onMouseEnter={touch ? undefined : () => setCredits(true)} onMouseLeave={touch ? undefined : () => setCredits(false)}
+              className="grid h-7 w-7 shrink-0 self-start place-items-center rounded-full nx-muted hover:bg-nx-ink/5 hover:text-nx-ink touch-target">
+              <Info aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+            </button>
           </div>
-          <p className="max-w-[17rem] px-1 text-[10px] leading-snug nx-muted">
-            {value.basemap === "satellite" ? t("map.layers.creditsSatellite") : t("map.layers.credits")}
-          </p>
+          {credits && (
+            <p role="note" data-testid="layers-credits-text"
+              className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-nx-page p-2 text-[11px] leading-snug shadow-[0_8px_32px_rgb(0_0_0/0.18)] nx-muted">
+              {value.basemap === "satellite" ? t("map.layers.creditsSatellite") : t("map.layers.credits")}
+            </p>
+          )}
         </div>
       )}
     </div>

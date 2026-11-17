@@ -192,6 +192,7 @@ export interface SearchRequest {
   includePins?: boolean; // also return the map's points from this same evaluation (SearchResponse.pins)
   includeUnusual?: boolean; // opt in to the parcels the default `hide_unusual` filter keeps out (Item 60)
   includeAreaCounts?: boolean; // also return matches per community area (the new map's city view, Item 104)
+  includeMatchIds?: boolean; // also return every match's lot id, uncapped (the map's outlines, Item 128)
 }
 
 // One hydrated result parcel. `pin` is the frozen identity; the rest is hydrated from the
@@ -301,6 +302,9 @@ export interface SearchResponse {
   pins?: PinsResponse | null;
   /** Only with `includeAreaCounts`: community area number (as a string) -> matches in it (Item 104). */
   areaCounts?: Record<string, number> | null;
+  /** Only with `includeMatchIds`: every match's lot id (PIN10 as a number, each once), up to the server's cap. */
+  matchIds?: number[] | null;
+  matchIdsTruncated?: boolean;
 }
 
 // --- Frontend-only: filter-panel control state ---

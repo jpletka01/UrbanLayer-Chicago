@@ -1748,6 +1748,7 @@
     "layers": {
       "switchTo": "Cambiar a {{map}}",
       "saved": "Terrenos guardados",
+      "creditsLabel": "Fuentes de datos",
       "credits": "Datos: Ciudad de Chicago, Condado de Cook, CMAP, CTA, Metra, FRA/USDOT.",
       "creditsSatellite": "Imágenes: SIG del Condado de Cook, 2025. Datos: Ciudad de Chicago, Condado de Cook, CMAP, CTA, Metra, FRA/USDOT.",
       "button": "Capas",

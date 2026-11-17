@@ -57,6 +57,7 @@ function response(): SearchResponse {
     },
     diagnostics,
     pins: { dataVersion: "d1", total: 1, truncated: false, points: [{ pin: "14313250010000", lat: 41.9, lon: -87.7, upside: null, landUse: "commercial" }] },
+    matchIds: [1431325001],
     areaCounts: { "24": 1 },
   };
 }
@@ -174,7 +175,7 @@ describe("Discovery in the new frame", () => {
     mocks.runSearch.mockImplementation(async (inputs: { scope?: { mode: string } | null }) => {
       const r = response();
       r.cqs = { ...r.cqs, filters: { density_band: { predicate: density, source: "user" } } } as typeof r.cqs;
-      if (inputs.scope?.mode === "viewport") r.pins = { ...r.pins!, points: [{ ...r.pins!.points[0], pin: "17083200230000" }] };
+      if (inputs.scope?.mode === "viewport") r.matchIds = [1708320023];
       return r;
     });
     render(<MemoryRouter><DiscoveryNextPage /></MemoryRouter>);

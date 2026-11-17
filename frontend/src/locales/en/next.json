@@ -1748,6 +1748,7 @@
     "layers": {
       "switchTo": "Switch to {{map}}",
       "saved": "Saved lots",
+      "creditsLabel": "Data sources",
       "credits": "Data: City of Chicago, Cook County, CMAP, CTA, Metra, FRA/USDOT.",
       "creditsSatellite": "Imagery: Cook County GIS, 2025. Data: City of Chicago, Cook County, CMAP, CTA, Metra, FRA/USDOT.",
       "button": "Layers",

@@ -35,6 +35,9 @@ describe("the Layers control", () => {
     fireEvent.click(screen.getByTestId("layers-zoning"));
     expect(onChange).toHaveBeenCalledWith({ ...base, zoning: true });
     expect(screen.queryByRole("button", { name: /close/i })).toBeNull();
+    // The credits hide behind the info icon at the row's end (owner's review 2026-11-16).
+    expect(screen.queryByText(/Data: City of Chicago/)).toBeNull();
+    fireEvent.click(screen.getByTestId("layers-credits"));
     expect(screen.getByText(/Data: City of Chicago/)).toBeTruthy();
     fireEvent.mouseLeave(screen.getByTestId("layers-control"));
     expect(screen.queryByTestId("layers-row")).toBeNull();

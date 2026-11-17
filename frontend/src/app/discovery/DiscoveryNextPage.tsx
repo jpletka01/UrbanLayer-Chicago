@@ -119,12 +119,13 @@ export default function DiscoveryNextPage() {
   // Zoomed in to lots after a search, the map asks for the search's own matches in the view. The search's points are
   // capped at 5,000 (the largest room to build first), so a broad search would otherwise draw none in most
   // neighborhoods while the list fills (owner's review 2026-11-11: zoning + density showed nothing on the map).
-  // A search limited to the view it started in keeps its own points.
-  const searchCqsPanel = useMemo(
-    () => (response && response.cqs.scope?.mode !== "viewport" ? panelFromCqs(response.cqs) : null), [response]);
+  // A search limited to the view it started in asks only inside that view (owner's review 2026-11-16, Item 128: its
+  // 5,000 points left most lots of a dense view unoutlined too).
+  const searchCqsPanel = useMemo(() => (response ? panelFromCqs(response.cqs) : null), [response]);
+  const searchClip = response?.cqs.scope?.mode === "viewport" ? response.cqs.scope.bbox ?? null : null;
   const lotZoomNow = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const searchInView = useViewMatches(registry, lotZoomNow ? searchCqsPanel : null, view, 350,
-    !!response && !response.cqs.filters.hide_unusual);
+    !!response && !response.cqs.filters.hide_unusual, searchClip);
   const searchInViewPins = searchCqsPanel && lotZoomNow ? searchInView.data?.pins ?? null : null;
   const matches = response ? searchInViewPins ?? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
   const areaCounts = response ? response.areaCounts ?? null : explorePanel ? viewMatches.data?.areaCounts ?? null : null;

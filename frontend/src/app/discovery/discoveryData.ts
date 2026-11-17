@@ -16,16 +16,25 @@ export interface ViewMatches {
   truncated: boolean;
 }
 
+/** The part of a view inside a search's own view (west, south, east, north), or null when they do not overlap. */
+export function clipBox(view: [number, number, number, number], clip: [number, number, number, number] | null) {
+  if (!clip) return view;
+  const b: [number, number, number, number] = [Math.max(view[0], clip[0]), Math.max(view[1], clip[1]),
+    Math.min(view[2], clip[2]), Math.min(view[3], clip[3])];
+  return b[0] < b[2] && b[1] < b[3] ? b : null;
+}
+
 /** Explore with quick filters on: the server evaluates them for the current view (the whole city below lot zoom,
     where the areas carry the counts), debounced; the latest request wins. Null when no filter is on. */
 export function useViewMatches(registry: Registry | null, panel: PanelState | null, view: ViewBox | null, delayMs = 350,
-  includeUnusual = false) {
+  includeUnusual = false, clip: [number, number, number, number] | null = null) {
   const [answer, setAnswer] = useState<{ key: string; data: ViewMatches | null; failed: boolean } | null>(null);
   const seq = useRef(0);
   const panelKey = panel ? JSON.stringify(panel) : "";
   const lotZoom = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const viewKey = view && lotZoom ? view.bbox.map((v) => v.toFixed(4)).join(",") : "city";
-  const key = `${panelKey}|${viewKey}|${includeUnusual}`;
+  const clipKey = clip ? clip.join(",") : "";
+  const key = `${panelKey}|${viewKey}|${includeUnusual}|${clipKey}`;
   const asking = !!registry && !!panel && !!view;
   useEffect(() => {
     if (!registry || !panel || !view) return;
@@ -33,20 +42,27 @@ export function useViewMatches(registry: Registry | null, panel: PanelState | nu
     const controller = new AbortController();
     const setState = (s: { data: ViewMatches | null; loading: boolean; failed: boolean }) => setAnswer({ key, data: s.data, failed: s.failed });
     const timer = window.setTimeout(async () => {
-      const scope: SpatialScope | null = lotZoom ? { mode: "viewport", bbox: view.bbox } : null;
+      const bbox = lotZoom ? clipBox(view.bbox, clip) : null;
+      if (lotZoom && !bbox) {  // the view is outside the search's own view: nothing matches here
+        if (id === seq.current) setState({ data: { pins: [], total: 0, areaCounts: null, truncated: false }, loading: false, failed: false });
+        return;
+      }
+      const scope: SpatialScope | null = bbox ? { mode: "viewport", bbox } : (clip ? { mode: "viewport", bbox: clip } : null);
       try {
         const resp = await runSearch(
-          { panelState: panel, scope, limit: 1, includePins: lotZoom, includeAreaCounts: true, includeUnusual },
+          { panelState: panel, scope, limit: 1, includeMatchIds: lotZoom, includeAreaCounts: true, includeUnusual },
           registry, controller.signal,
         );
         if (id !== seq.current) return;
         if (!resp) { setState({ data: null, loading: false, failed: true }); return; }
         setState({
           data: {
-            pins: (resp.pins?.points ?? []).map((p) => p.pin.replace(/-/g, "").slice(0, 10)),
+            // Every match's lot id (not the 5,000 capped points, largest first: a zoomed-out neighborhood outlined
+            // only its biggest lots, owner's review 2026-11-16, Item 128).
+            pins: (resp.matchIds ?? []).map((n) => String(n).padStart(10, "0")),
             total: resp.result.total,
             areaCounts: resp.areaCounts ?? null,
-            truncated: !!resp.pins?.truncated,
+            truncated: !!resp.matchIdsTruncated,
           },
           loading: false, failed: false,
         });
@@ -55,9 +71,9 @@ export function useViewMatches(registry: Registry | null, panel: PanelState | nu
       }
     }, delayMs);
     return () => { window.clearTimeout(timer); controller.abort(); };
-    // panelKey and viewKey stand for panel and view.
+    // panelKey, viewKey and clipKey stand for panel, view and clip.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registry, panelKey, viewKey, delayMs, includeUnusual]);
+  }, [registry, panelKey, viewKey, delayMs, includeUnusual, clipKey]);
   if (!asking) return { data: null, loading: false, failed: false };
   // While a new answer is on its way the previous matches stay on the map.
   return { data: answer?.data ?? null, loading: answer?.key !== key, failed: answer?.key === key && answer.failed };
