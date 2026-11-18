@@ -57,6 +57,7 @@ function response(): SearchResponse {
     },
     diagnostics,
     pins: { dataVersion: "d1", total: 1, truncated: false, points: [{ pin: "14313250010000", lat: 41.9, lon: -87.7, upside: null, landUse: "commercial" }] },
+    matchIds: [1431325001],
     areaCounts: { "24": 1 },
   };
 }
@@ -71,7 +72,9 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 describe("Discovery in the new frame", () => {
   it("runs a Try goal, shows cards with icons and labels, and a card opens its Profile", async () => {
     mocks.loadRegistry.mockResolvedValue(registry);
-    mocks.runSearch.mockResolvedValue(response());
+    const tif = response();
+    tif.cqs = { ...tif.cqs, filters: { tif: { predicate: { kind: "flag", value: true }, source: "user" } } } as typeof tif.cqs;
+    mocks.runSearch.mockResolvedValue(tif);
     const { container } = render(
       <MemoryRouter initialEntries={["/discovery"]}>
         <Routes>
@@ -174,7 +177,7 @@ describe("Discovery in the new frame", () => {
     mocks.runSearch.mockImplementation(async (inputs: { scope?: { mode: string } | null }) => {
       const r = response();
       r.cqs = { ...r.cqs, filters: { density_band: { predicate: density, source: "user" } } } as typeof r.cqs;
-      if (inputs.scope?.mode === "viewport") r.pins = { ...r.pins!, points: [{ ...r.pins!.points[0], pin: "17083200230000" }] };
+      if (inputs.scope?.mode === "viewport") r.matchIds = [1708320023];
       return r;
     });
     render(<MemoryRouter><DiscoveryNextPage /></MemoryRouter>);
@@ -189,6 +192,18 @@ describe("Discovery in the new frame", () => {
     await waitFor(() => expect(mocks.runSearch.mock.calls.some((c) => c[0].scope?.mode === "viewport" && c[0].panelState.density_band)).toBe(true),
       { timeout: 2000 });
     await waitFor(() => expect(mapProps.last?.matches).toEqual(["1708320023"]));
+  });
+
+  it("a search with no filters outlines nothing on the map", async () => {
+    mocks.loadRegistry.mockResolvedValue(registry);
+    mocks.runSearch.mockResolvedValue(response());
+    render(<MemoryRouter><DiscoveryNextPage /></MemoryRouter>);
+    await waitFor(() => expect(mapProps.last).not.toBeNull());
+    (mapProps.last!.onView as (v: unknown) => void)({ bbox: [-87.7, 41.9, -87.6, 41.95], zoom: 15, center: [-87.65, 41.92] });
+    fireEvent.click(await screen.findByTestId("search-view"));
+    await waitFor(() => expect(mocks.runSearch).toHaveBeenCalled(), { timeout: 2000 });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Map", pressed: true })).toBeTruthy());
+    expect(mapProps.last?.matches).toBeNull();
   });
 
   it("says so when Discovery can't load", async () => {

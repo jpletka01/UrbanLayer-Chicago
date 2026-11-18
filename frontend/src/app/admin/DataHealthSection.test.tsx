@@ -86,14 +86,14 @@ describe("DataHealthSection — admin 'Data health' panel", () => {
     );
     render(<DataHealthSection />);
     const banner = await screen.findByTestId("dh-late");
-    expect(banner.textContent).toContain("over 36 hours");
-    expect(banner.textContent).toContain("database is locked");
+    expect(banner.textContent).toContain("Daily check late");
+    expect(screen.getByText("database is locked")).toBeTruthy();
   });
 
   it("says so when the store was never written", async () => {
     vi.mocked(fetchDataHealth).mockResolvedValue(health({ state: "late", last_run: null, age_h: null }));
     render(<DataHealthSection />);
-    expect((await screen.findByTestId("dh-late")).textContent).toContain("never finished");
+    expect((await screen.findByTestId("dh-late")).textContent).toContain("never ran");
   });
 
   it("shows an ack's reason, owner and expiry", async () => {

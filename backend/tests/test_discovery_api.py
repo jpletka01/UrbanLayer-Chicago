@@ -746,3 +746,14 @@ def test_including_unusual_parcels_is_an_opt_in(unusual_client):
     assert sorted(_pins(body)) == ["lot", "old", "rail"]
     assert "hide_unusual" not in body["cqs"]["filters"]
     assert body["diagnostics"]["hiddenUnusual"] == 0
+
+
+def test_match_ids_are_lot_ids_once_in_order_and_capped(monkeypatch):
+    """The map's outlines get every match's lot id, not the 5,000 capped points (Item 128)."""
+    from backend.discovery import api
+
+    ids, cut = api.match_ids(["14-28-319-007-1001", "14-28-319-007-1002", "14-33-103-011-0000", "bad"])
+    assert ids == [1428319007, 1433103011] and cut is False
+    monkeypatch.setattr(api, "MAX_MATCH_IDS", 1)
+    ids, cut = api.match_ids(["14-28-319-007-0000", "14-33-103-011-0000"])
+    assert ids == [1428319007] and cut is True

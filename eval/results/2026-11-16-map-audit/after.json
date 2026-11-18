@@ -1,0 +1,682 @@
+{
+ "lots": 590174,
+ "room_band": {
+  "1": 341571,
+  "2": 80832,
+  "0": 42220,
+  "4": 27101,
+  "x": 26626,
+  "none": 25408,
+  "3": 22598,
+  "t": 10867,
+  "i": 8274,
+  "p": 4109,
+  "w": 568
+ },
+ "unknown": {
+  "lots": 25408,
+  "why_no_room": {
+   "no_footprint": 18608,
+   "stories_missing": 6080,
+   "other": 476,
+   "spans_lots": 244
+  },
+  "by_class": {
+   "2-": 12274,
+   "EX": 6226,
+   "5-": 5210,
+   "3-": 1477,
+   "1-": 145,
+   "9-": 59,
+   "4-": 11,
+   "6-": 5,
+   "65": 1
+  }
+ },
+ "unknown_park": {
+  "lots": 1,
+  "shown": 1,
+  "by_class": {
+   "2-": 1
+  },
+  "by_zoning": {
+   "none": 1
+  },
+  "examples": [
+   {
+    "pin": "14-32-425-005-0000",
+    "address": "~1769 N CLYBOURN AVE",
+    "class": "2-11",
+    "land_kind": "residential",
+    "structure": "empty",
+    "cmap": "1130",
+    "cmap_share": 0.9,
+    "r": null,
+    "zone": null,
+    "park_share": 0.723,
+    "water_share": null,
+    "land_sqft": 2500.0
+   }
+  ]
+ },
+ "unknown_cemetery": {
+  "lots": 1,
+  "shown": 1,
+  "by_class": {
+   "2-": 1
+  },
+  "by_zoning": {
+   "residential": 1
+  },
+  "examples": [
+   {
+    "pin": "14-08-313-009-0000",
+    "address": "~1431 W ARGYLE ST",
+    "class": "2-01",
+    "land_kind": "residential",
+    "structure": "empty",
+    "cmap": "1360",
+    "cmap_share": 0.979,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 8168.0
+   }
+  ]
+ },
+ "unknown_water": {
+  "lots": 0,
+  "shown": 0,
+  "by_class": {},
+  "by_zoning": {},
+  "examples": []
+ },
+ "unknown_cmap_open_space": {
+  "lots": 230,
+  "shown": 223,
+  "by_class": {
+   "EX": 217,
+   "5-": 10,
+   "1-": 1,
+   "2-": 1,
+   "4-": 1
+  },
+  "by_zoning": {
+   "residential": 163,
+   "commercial": 32,
+   "business": 22,
+   "none": 8,
+   "manufacturing": 5
+  },
+  "examples": [
+   {
+    "pin": "24-13-116-001-0000",
+    "address": "10522 S CALIFORNIA AVE",
+    "class": "5-35",
+    "land_kind": "commercial",
+    "structure": "built",
+    "cmap": "3200",
+    "cmap_share": 0.999,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": 0.017,
+    "land_sqft": 3478510.0
+   },
+   {
+    "pin": "19-36-402-001-0000",
+    "address": "~8529 S ROCKWELL ST",
+    "class": "5-35",
+    "land_kind": "commercial",
+    "structure": "built",
+    "cmap": "3200",
+    "cmap_share": 0.998,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 3151871.0
+   },
+   {
+    "pin": "24-13-218-001-0000",
+    "address": "~10600 S FAIRFIELD AVE",
+    "class": "5-35",
+    "land_kind": "commercial",
+    "structure": "built",
+    "cmap": "3200",
+    "cmap_share": 0.994,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 446534.0
+   },
+   {
+    "pin": "20-35-501-001-0000",
+    "address": "~8500 S UNIVERSITY AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "3300",
+    "cmap_share": 0.988,
+    "r": null,
+    "zone": null,
+    "park_share": 0.0,
+    "water_share": null,
+    "land_sqft": 443808.0
+   },
+   {
+    "pin": "24-13-209-001-0000",
+    "address": "10401 S CALIFORNIA AVE",
+    "class": "5-35",
+    "land_kind": "commercial",
+    "structure": "built",
+    "cmap": "3200",
+    "cmap_share": 0.997,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 439672.0
+   },
+   {
+    "pin": "21-31-124-001-0000",
+    "address": "2430 E 82ND ST",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "built",
+    "cmap": "3100",
+    "cmap_share": 0.992,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 355620.0
+   },
+   {
+    "pin": "13-36-127-002-0000",
+    "address": "~2063 N HUMBOLDT BLVD",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "3500",
+    "cmap_share": 0.99,
+    "r": null,
+    "zone": null,
+    "park_share": 0.055,
+    "water_share": null,
+    "land_sqft": 278839.0
+   },
+   {
+    "pin": "13-36-332-002-0000",
+    "address": "~1758 N HUMBOLDT BLVD",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "new_construction",
+    "cmap": "3500",
+    "cmap_share": 0.977,
+    "r": null,
+    "zone": null,
+    "park_share": 0.012,
+    "water_share": null,
+    "land_sqft": 154378.0
+   }
+  ]
+ },
+ "room_on_park": {
+  "lots": 0,
+  "shown": 0,
+  "by_class": {},
+  "by_zoning": {},
+  "examples": []
+ },
+ "room_on_cemetery": {
+  "lots": 0,
+  "shown": 0,
+  "by_class": {},
+  "by_zoning": {},
+  "examples": []
+ },
+ "lots_over_water": {
+  "lots": 571,
+  "shown": 0,
+  "by_class": {
+   "EX": 460,
+   "1-": 91,
+   "5-": 10,
+   "RR": 9,
+   "2-": 1
+  },
+  "by_zoning": {
+   "none": 368,
+   "manufacturing": 175,
+   "planned_development": 13,
+   "residential": 12,
+   "downtown": 2,
+   "commercial": 1
+  },
+  "examples": [
+   {
+    "pin": "25-27-133-003-0000",
+    "address": "~400 E 130TH ST",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "built",
+    "cmap": "1562",
+    "cmap_share": 1.0,
+    "r": "w",
+    "zone": null,
+    "park_share": null,
+    "water_share": 0.582,
+    "land_sqft": 4662108.0
+   },
+   {
+    "pin": "25-13-400-007-0000",
+    "address": "~11236 S TORRENCE AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "3300",
+    "cmap_share": 0.997,
+    "r": "w",
+    "zone": null,
+    "park_share": 1.0,
+    "water_share": 0.594,
+    "land_sqft": 3390406.0
+   },
+   {
+    "pin": "16-35-300-038-0000",
+    "address": "~3701 S SAINT LOUIS AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "5000",
+    "cmap_share": 0.988,
+    "r": "w",
+    "zone": null,
+    "park_share": null,
+    "water_share": 0.994,
+    "land_sqft": 2192521.0
+   },
+   {
+    "pin": "25-13-300-007-0000",
+    "address": "~11236 S TORRENCE AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "3300",
+    "cmap_share": 0.997,
+    "r": "w",
+    "zone": null,
+    "park_share": 1.0,
+    "water_share": 0.808,
+    "land_sqft": 1761319.0
+   },
+   {
+    "pin": "16-36-200-007-0000",
+    "address": "~2915 S LEAVITT ST",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "disagree",
+    "cmap": "5000",
+    "cmap_share": 0.986,
+    "r": "w",
+    "zone": null,
+    "park_share": 0.0,
+    "water_share": 0.901,
+    "land_sqft": 1535518.0
+   },
+   {
+    "pin": "26-20-401-014-0000",
+    "address": "~11759 S AVENUE J",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "4140",
+    "cmap_share": 0.995,
+    "r": "w",
+    "zone": null,
+    "park_share": null,
+    "water_share": 0.556,
+    "land_sqft": 875491.0
+   },
+   {
+    "pin": "26-32-400-004-0000",
+    "address": "~4059 E 134TH ST",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "3300",
+    "cmap_share": 0.998,
+    "r": "w",
+    "zone": null,
+    "park_share": null,
+    "water_share": 0.983,
+    "land_sqft": 866830.0
+   },
+   {
+    "pin": "25-27-301-012-0000",
+    "address": "~901 E 130TH PL",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "1562",
+    "cmap_share": 1.0,
+    "r": "w",
+    "zone": null,
+    "park_share": null,
+    "water_share": 0.69,
+    "land_sqft": 748538.0
+   }
+  ]
+ },
+ "line_through_unmarked": {
+  "lots": 502,
+  "by_r": {
+   "x": 185,
+   "4": 121,
+   "none": 102,
+   "2": 25,
+   "3": 21,
+   "p": 13,
+   "t": 13,
+   "i": 6,
+   "1": 6,
+   "0": 5,
+   "w": 5
+  },
+  "by_cmap": {
+   "other_linear": 76,
+   "road": 68,
+   "1420": 59,
+   "4140": 53,
+   "1431": 37,
+   "1432": 32,
+   "1130": 19,
+   "1215": 19,
+   "open_space": 16,
+   "4130": 14
+  },
+  "by_class": {
+   "EX": 197,
+   "5-": 168,
+   "1-": 87,
+   "2-": 21,
+   "6-": 16,
+   "3-": 6,
+   "RR": 2,
+   "67": 2
+  },
+  "by_structure": {
+   "empty": 230,
+   "built": 157,
+   "disagree": 102,
+   "accessory": 7,
+   "new_construction": 5,
+   "demolished_since_2022": 1
+  }
+ },
+ "line_through_unknown": {
+  "lots": 102,
+  "shown": 102,
+  "by_class": {
+   "EX": 86,
+   "5-": 15,
+   "3-": 1
+  },
+  "by_zoning": {
+   "downtown": 28,
+   "manufacturing": 25,
+   "residential": 24,
+   "business": 14,
+   "none": 6,
+   "commercial": 5
+  },
+  "examples": [
+   {
+    "pin": "25-02-419-012-0000",
+    "address": "~1050 E 95TH ST",
+    "class": "5-80",
+    "land_kind": "parking",
+    "structure": "disagree",
+    "cmap": "1420",
+    "cmap_share": 0.983,
+    "r": null,
+    "zone": null,
+    "park_share": 0.0,
+    "water_share": null,
+    "land_sqft": 713524.0
+   },
+   {
+    "pin": "16-35-204-001-0000",
+    "address": "~3237 S CENTRAL PARK AVE",
+    "class": "5-81",
+    "land_kind": "commercial",
+    "structure": "empty",
+    "cmap": "4130",
+    "cmap_share": 0.995,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 712019.0
+   },
+   {
+    "pin": "26-06-100-037-0000",
+    "address": "~9006 S ANTHONY AVE",
+    "class": "5-90",
+    "land_kind": "parking",
+    "structure": "empty",
+    "cmap": "1561",
+    "cmap_share": 0.991,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 701098.0
+   },
+   {
+    "pin": "16-34-302-023-0000",
+    "address": "~3600 S KOSTNER AVE",
+    "class": "5-80",
+    "land_kind": "parking",
+    "structure": "empty",
+    "cmap": "1420",
+    "cmap_share": 1.0,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 441067.0
+   },
+   {
+    "pin": "25-27-108-008-0000",
+    "address": "11900 S COTTAGE GROVE AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "built",
+    "cmap": "1420",
+    "cmap_share": 0.999,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 383948.0
+   },
+   {
+    "pin": "16-17-500-011-0000",
+    "address": "800 S CENTRAL AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "disagree",
+    "cmap": "1512",
+    "cmap_share": 0.978,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 377262.0
+   },
+   {
+    "pin": "25-22-401-037-0000",
+    "address": "~11900 S COTTAGE GROVE AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "built",
+    "cmap": "1420",
+    "cmap_share": 0.993,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 364245.0
+   },
+   {
+    "pin": "25-22-400-026-0000",
+    "address": "~11740 S CALUMET AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "empty",
+    "cmap": "1420",
+    "cmap_share": 0.991,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 228849.0
+   }
+  ]
+ },
+ "line_through_cmap_road_not_marked": {
+  "lots": 55,
+  "shown": 55,
+  "by_class": {
+   "1-": 34,
+   "EX": 20,
+   "5-": 1
+  },
+  "by_zoning": {
+   "manufacturing": 22,
+   "residential": 21,
+   "commercial": 7,
+   "business": 3,
+   "none": 1,
+   "planned_development": 1
+  },
+  "examples": [
+   {
+    "pin": "25-35-100-011-0000",
+    "address": "~13100 S DOTY AVE",
+    "class": "1-00",
+    "land_kind": "vacant",
+    "structure": "empty",
+    "cmap": "1512",
+    "cmap_share": 0.991,
+    "r": "4",
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 506781.0
+   },
+   {
+    "pin": "16-17-500-011-0000",
+    "address": "800 S CENTRAL AVE",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "disagree",
+    "cmap": "1512",
+    "cmap_share": 0.978,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 377262.0
+   },
+   {
+    "pin": "20-33-411-032-0000",
+    "address": "~8601 S STATE ST",
+    "class": "1-00",
+    "land_kind": "vacant",
+    "structure": "disagree",
+    "cmap": "1512",
+    "cmap_share": 0.991,
+    "r": "4",
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 245745.0
+   },
+   {
+    "pin": "25-04-209-012-0000",
+    "address": "~9100 S LAFAYETTE AVE",
+    "class": "EX",
+    "land_kind": "city_owned",
+    "structure": "empty",
+    "cmap": "1512",
+    "cmap_share": 0.987,
+    "r": "4",
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 139841.0
+   },
+   {
+    "pin": "13-23-130-025-0000",
+    "address": "3622 W ADDISON ST",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "disagree",
+    "cmap": "1512",
+    "cmap_share": 0.989,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 124851.0
+   },
+   {
+    "pin": "25-04-209-010-0000",
+    "address": "~4 E 90TH ST",
+    "class": "1-00",
+    "land_kind": "vacant",
+    "structure": "empty",
+    "cmap": "1512",
+    "cmap_share": 0.986,
+    "r": "4",
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 124086.0
+   },
+   {
+    "pin": "16-16-500-001-0000",
+    "address": "~5418 W FLOURNOY ST",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "disagree",
+    "cmap": "1512",
+    "cmap_share": 0.972,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 90156.0
+   },
+   {
+    "pin": "20-21-419-049-0000",
+    "address": "~15 W 69TH ST",
+    "class": "EX",
+    "land_kind": "exempt",
+    "structure": "disagree",
+    "cmap": "1512",
+    "cmap_share": 0.987,
+    "r": null,
+    "zone": null,
+    "park_share": null,
+    "water_share": null,
+    "land_sqft": 74832.0
+   }
+  ]
+ }
+}

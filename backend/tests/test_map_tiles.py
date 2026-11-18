@@ -88,7 +88,7 @@ def test_base_keeps_streets_by_class_and_status_and_says_what_it_left_out():
     assert [f.props["kind"] for f in roads] == ["highway", "major", "minor", "local", "ramp"]
     assert [f.minzoom for f in roads] == [10, 10, 12, 13, 12]
     assert roads[4].props["name"] == ""  # ramps carry no label
-    assert left_out == {"road_class": 3, "road_status": 2, "no_geometry": 0}
+    assert left_out == {"road_class": 3, "road_status": 2, "no_geometry": 0, "water_islands": 0}
 
 
 def test_base_refuses_an_empty_source(tmp_path, monkeypatch):
@@ -198,6 +198,7 @@ def test_tiles_404_when_not_installed_then_serve(client, tmp_path):
     assert client.get("/api/map/tiles/base/16/1/1.mvt").status_code == 204
     assert client.get("/api/map/tiles/base/30/1/1.mvt").status_code == 400
     info = client.get("/api/map/info").json()
+    assert info["base"].pop("version").isdigit()  # the file's version in the tile URL (Item 128)
     assert info["base"] == {"minZoom": 15, "maxZoom": 16, "builtAt": "2026-11-08"}
     assert info["zoning"] is None
 

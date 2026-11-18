@@ -48,9 +48,9 @@ describe("Discovery lot card: Street View", () => {
     expect(url.searchParams.get("heading")).toBe("270");
   });
 
-  it("names the link in words, not an i18n error (the key is map.streetView.link)", () => {
+  it("names the button in words, not an i18n error (the key is map.streetView.button)", () => {
     card(found("1601 N MILWAUKEE AVE"));
-    expect(screen.getByTestId("lot-card-street-view").textContent).toBe("Street View (Google)");
+    expect(screen.getByTestId("lot-card-street-view").textContent).toBe("Street View(opens in a new tab)");
   });
 });
 
@@ -77,5 +77,15 @@ describe("Discovery lot card: the Profile link (Item 109)", () => {
     const q = profileLink(found("2626 S TROY ST", "assessor"));
     expect(q.get("pin")).toBe("14313250010000");
     expect(q.has("address")).toBe(false);
+  });
+});
+
+describe("Discovery lot card: owner and named room (Item 128)", () => {
+  it("names an exempt institution and its owner as the Assessor records it", () => {
+    card({ status: "found", row: { pin: "17041220820000", lat: 41.9, lon: -87.64, address: "1301 N MOHAWK ST", lot_sqft: 6992,
+      room_sqft: null, room_scope: "institution", exempt_owner: "LINCOLN PK CONG JEH WT", exempt_owner_assessor: true } as never });
+    expect(screen.getByText(/Exempt institution/)).toBeTruthy();
+    expect(screen.queryByText(/not known/)).toBeNull();
+    expect(screen.getByTestId("lot-card-owner").textContent).toBe("Owner, as the Assessor records it: LINCOLN PK CONG JEH WT");
   });
 });

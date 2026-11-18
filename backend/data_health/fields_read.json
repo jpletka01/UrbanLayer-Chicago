@@ -74,6 +74,12 @@
   "primary_type",
   "year"
  ],
+ "chi.cta_rail_lines": [
+  "legend",
+  "lines",
+  "the_geom",
+  "type"
+ ],
  "chi.divvy": [
   "docks_in_service",
   "latitude",
@@ -318,10 +324,22 @@
  "cook.assessor.condo_characteristics": [
   "char_bedrooms",
   "char_building_sf",
+  "char_land_sf",
   "char_unit_sf",
   "char_yrblt",
   "class",
   "pin",
+  "pin10",
+  "township_code",
+  "year"
+ ],
+ "cook.assessor.exempt_parcels": [
+  "lat",
+  "lon",
+  "owner_name",
+  "owner_num",
+  "pin",
+  "township_code",
   "year"
  ],
  "cook.assessor.permits": [

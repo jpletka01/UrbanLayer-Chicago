@@ -9,8 +9,9 @@ CMAP draws parcels *dissolved on a common use* (57 codes), so a lot is matched b
 * ``codes_on_lots(cmap, ptaxsim)``: for every lot outline in Chicago's box, CMAP's code covering the most of it and
   that share. ``lot_sources --land-use-only`` writes it as ``cmap_on_lot``; ``lot_facts.mark_land_use`` reads it.
 
-Only one CMAP code reaches the page so far: **1512, road right-of-way**, on exempt land the Item 110 rule calls
-empty. The owner's blind checks found 27 of 27 such lots were road or rail land, so they are hidden by default.
+Two CMAP codes reach the page: **1512, road right-of-way**, on exempt land the Item 110 rule calls empty (the owner's
+blind checks: 27 of 27 road or rail land), and **1511, rail right-of-way**, over half of any lot (Item 128: 33 of 34
+rail). Both are hidden by default and never show room to build.
 
     PYTHONPATH=. python -m backend.discovery.cmap_land_use --out backend/data/map_sources/cmap_lui_2023.db
 """
@@ -31,6 +32,10 @@ from shapely.strtree import STRtree
 CMAP_URL = "https://services5.arcgis.com/LcMXE3TFhi1BSaCY/arcgis/rest/services/LUI_2023_view/FeatureServer/1/query"
 CMAP_VINTAGE = "2023 (Spring 2023 aerials; published 2026-03-25)"
 CMAP_ROAD = "1512"  # TCU_ROW_ROAD: road right-of-way
+CMAP_RAIL = "1511"  # TCU_ROW_RAIL: rail right-of-way (Item 128)
+CMAP_CEMETERY = "1360"  # INST_CEMETERY (owner: treat as parkland)
+CMAP_WATER = "5000"
+CMAP_INTERMODAL = "1570"  # TCU_INTERMODAL: rail-truck yards; an active line runs through 74% (Item 128)
 CHICAGO_BBOX = (-87.94, 41.64, -87.52, 42.03)
 MIN_POLYGONS = 200_000  # Chicago's box held 231,348 on 2026-11-12: a short read is refused
 
@@ -158,12 +163,10 @@ def load_polygons(cmap: Path) -> tuple[list[str], np.ndarray, STRtree]:
     return [r[0] or "" for r in rows], geoms, STRtree(geoms)
 
 
-def codes_on_lots(cmap: Path, ptaxsim: Path) -> list[tuple[str, str, float]]:
-    """(pin10, CMAP's code covering the most of the lot, that share of the lot) for every lot outline in Chicago's box
-    (PTAXSIM's newest outline, the same lots the Profile reasons about)."""
+def lot_outlines_in_box(ptaxsim: Path) -> tuple[list[str], list]:
+    """(pin10s, their newest PTAXSIM outlines) for every lot in Chicago's box, the same lots the Profile reasons about."""
     from shapely import wkt as shapely_wkt
 
-    codes, geoms, tree = load_polygons(cmap)
     w, s_, e, n = CHICAGO_BBOX
     geo = sqlite3.connect(f"file:{ptaxsim}?mode=ro", uri=True)
     try:
@@ -185,6 +188,15 @@ def codes_on_lots(cmap: Path, ptaxsim: Path) -> list[tuple[str, str, float]]:
         if not g.is_empty and g.area > 0:
             pins.append(pin10)
             lots.append(g)
+    return pins, lots
+
+
+def codes_on_lots(cmap: Path, ptaxsim: Path, outlines: tuple[list[str], list] | None = None
+                  ) -> list[tuple[str, str, float]]:
+    """(pin10, CMAP's code covering the most of the lot, that share of the lot) for every lot outline in Chicago's box
+    (``lot_outlines_in_box``, or ``outlines`` when the caller already has them)."""
+    codes, geoms, tree = load_polygons(cmap)
+    pins, lots = outlines or lot_outlines_in_box(ptaxsim)
     by_lot: dict[int, dict[str, float]] = {}
     for li, gi, sh in zip(*pair_shares(np.array(lots, dtype=object), tree, geoms)):
         d = by_lot.setdefault(int(li), {})

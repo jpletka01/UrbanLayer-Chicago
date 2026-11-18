@@ -1,0 +1,223 @@
+{
+ "labeled": 69,
+ "strata": {
+  "cmap_cta": {
+   "rail_under": 10,
+   "_rail": {
+    "rail": 10,
+    "decided": 10,
+    "share": 1.0,
+    "ci95": [
+     0.722,
+     1.0
+    ]
+   }
+  },
+  "road_with_cta": {
+   "rail_under": 6,
+   "_rail": {
+    "rail": 6,
+    "decided": 6,
+    "share": 1.0,
+    "ci95": [
+     0.61,
+     1.0
+    ]
+   }
+  },
+  "cmap_narn": {
+   "rail_under": 8,
+   "_rail": {
+    "rail": 8,
+    "decided": 8,
+    "share": 1.0,
+    "ci95": [
+     0.676,
+     1.0
+    ]
+   }
+  },
+  "near_line_no_source": {
+   "empty": 5,
+   "building": 1,
+   "_rail": {
+    "rail": 0,
+    "decided": 6,
+    "share": 0.0,
+    "ci95": [
+     0.0,
+     0.39
+    ]
+   }
+  },
+  "cmap_only": {
+   "rail_under": 10,
+   "_rail": {
+    "rail": 10,
+    "decided": 10,
+    "share": 1.0,
+    "ci95": [
+     0.722,
+     1.0
+    ]
+   }
+  },
+  "cta_only_empty": {
+   "rail_under": 3,
+   "empty": 3,
+   "road": 2,
+   "_rail": {
+    "rail": 3,
+    "decided": 8,
+    "share": 0.375,
+    "ci95": [
+     0.137,
+     0.694
+    ]
+   }
+  },
+  "cta_only_other": {
+   "rail_under": 3,
+   "building": 1,
+   "unlabeled": 1,
+   "_rail": {
+    "rail": 3,
+    "decided": 4,
+    "share": 0.75,
+    "ci95": [
+     0.301,
+     0.954
+    ]
+   }
+  },
+  "narn_only_empty": {
+   "empty": 3,
+   "cant_tell": 1,
+   "rail_under": 2,
+   "_rail": {
+    "rail": 2,
+    "decided": 5,
+    "share": 0.4,
+    "ci95": [
+     0.118,
+     0.769
+    ]
+   }
+  },
+  "cmap_not_empty": {
+   "rail_under": 5,
+   "open_space": 1,
+   "_rail": {
+    "rail": 5,
+    "decided": 6,
+    "share": 0.833,
+    "ci95": [
+     0.436,
+     0.97
+    ]
+   }
+  },
+  "narn_only_other": {
+   "open_space": 1,
+   "rail_under": 2,
+   "cant_tell": 1,
+   "building": 1,
+   "_rail": {
+    "rail": 2,
+    "decided": 4,
+    "share": 0.5,
+    "ci95": [
+     0.15,
+     0.85
+    ]
+   }
+  }
+ },
+ "by_source": {
+  "cmap": {
+   "rail": 33,
+   "not_rail": 1,
+   "precision": {
+    "rail": 33,
+    "decided": 34,
+    "share": 0.971,
+    "ci95": [
+     0.851,
+     0.995
+    ]
+   }
+  },
+  "cta": {
+   "rail": 18,
+   "not_rail": 6,
+   "precision": {
+    "rail": 18,
+    "decided": 24,
+    "share": 0.75,
+    "ci95": [
+     0.551,
+     0.88
+    ]
+   }
+  },
+  "narn": {
+   "rail": 15,
+   "not_rail": 6,
+   "precision": {
+    "rail": 15,
+    "decided": 21,
+    "share": 0.714,
+    "ci95": [
+     0.5,
+     0.862
+    ]
+   }
+  }
+ },
+ "rules": {
+  "cmap_on_empty_land": {
+   "rail": 28,
+   "decided": 28,
+   "share": 1.0,
+   "ci95": [
+    0.879,
+    1.0
+   ],
+   "weighted": 1.0,
+   "pool": 1219
+  },
+  "cmap_any": {
+   "rail": 33,
+   "decided": 34,
+   "share": 0.971,
+   "ci95": [
+    0.851,
+    0.995
+   ],
+   "weighted": 0.984,
+   "pool": 1351
+  },
+  "cta_only_empty": {
+   "rail": 3,
+   "decided": 8,
+   "share": 0.375,
+   "ci95": [
+    0.137,
+    0.694
+   ],
+   "weighted": 0.375,
+   "pool": 85
+  },
+  "narn_only_empty": {
+   "rail": 2,
+   "decided": 5,
+   "share": 0.4,
+   "ci95": [
+    0.118,
+    0.769
+   ],
+   "weighted": 0.4,
+   "pool": 142
+  }
+ }
+}

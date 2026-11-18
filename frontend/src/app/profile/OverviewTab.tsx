@@ -2,7 +2,7 @@
 // per tab with its key figure, a small visual and at most one warning. Tiles alternate SnowUI's two pale stat
 // colors and reflow from four to two to one.
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Scale, SquareParking, Sprout, TriangleAlert } from "lucide-react";
+import { ArrowRight, Route, Scale, SquareParking, Sprout, TrainTrack, Trees, TriangleAlert, Waves } from "lucide-react";
 import type { ScorecardResponse } from "../../lib/api";
 import type { ScorecardVerdict } from "../../lib/scorecardVerdict";
 import { answerSentence } from "../../lib/answerSentence";
@@ -52,7 +52,15 @@ export function OverviewTab({
           <p className="flex w-full items-center gap-2 text-caption" data-testid="lot-in-use">
             {lotInUse.kind === "parking"
               ? <SquareParking aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
-              : <Sprout aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />}
+              : lotInUse.kind === "empty"
+                ? <Sprout aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
+                : lotInUse.kind === "road"
+                  ? <Route aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
+                  : lotInUse.kind === "park" || lotInUse.kind === "cemetery"
+                    ? <Trees aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
+                    : lotInUse.kind === "water"
+                      ? <Waves aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
+                      : <TrainTrack aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />}
             <Term label={lotInUse.words} definition={t(`profile.lotInUse.define.${lotInUse.kind}`)}
               question={t(`profile.lotInUse.ask.${lotInUse.kind}`, { address })} />
           </p>

@@ -36,10 +36,13 @@ describe("CodeCurrencySection — rezonings the City's map lacks (WS1 M5)", () =
       },
     });
     render(<CodeCurrencySection />);
-    await waitFor(() => expect(screen.getByTestId("map-lag")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("map-lag-count")).toBeTruthy());
     expect(screen.getByTestId("map-lag-count").textContent).toBe("80");
-    expect(screen.getByText("98 days")).toBeTruthy();
-    expect(screen.getByText(/Map by hand in rezoning_overrides.json: O2026-0026168/)).toBeTruthy();
+    expect(screen.getByText("Oldest 98 days")).toBeTruthy();
+    // The titles to place by hand sit behind one expand, with the file to put them in.
+    expect(screen.getByTestId("code-hand-work").textContent).toContain("1");
+    expect(screen.getByTestId("map-lag").textContent).toContain("rezoning_overrides.json");
+    expect(screen.getByTestId("map-lag").textContent).toContain("O2026-0026168");
   });
 
   it("says unknown, never zero, when the check has never run", async () => {
@@ -52,7 +55,9 @@ describe("CodeCurrencySection — rezonings the City's map lacks (WS1 M5)", () =
     });
     render(<CodeCurrencySection />);
     await waitFor(() => expect(screen.getByTestId("map-lag-count")).toBeTruthy());
-    expect(screen.getByTestId("map-lag-count").textContent).toBe("unknown (never checked)");
+    // Never a zero: a dash, and the tile says it was never checked.
+    expect(screen.getByTestId("map-lag-count").textContent).toBe("—");
+    expect(screen.getByText("Never checked")).toBeTruthy();
   });
 });
 
@@ -66,9 +71,10 @@ describe("CodeCurrencySection — landmark designations (WS1 M5b)", () => {
       },
     });
     render(<CodeCurrencySection />);
-    await waitFor(() => expect(screen.getByTestId("designations")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("designations-count")).toBeTruthy());
     expect(screen.getByTestId("designations-count").textContent).toBe("8");
-    expect(screen.getByText(/Not placed \(no flag\): O2025-0019665/)).toBeTruthy();
+    expect(screen.getByText("Last 180 days · 5 placed")).toBeTruthy();
+    expect(screen.getByTestId("designations").textContent).toContain("O2025-0019665");
   });
 
   it("says unknown, never zero, when the check has never run; renders nothing for an older payload", async () => {
@@ -78,27 +84,32 @@ describe("CodeCurrencySection — landmark designations (WS1 M5b)", () => {
     });
     const { unmount } = render(<CodeCurrencySection />);
     await waitFor(() => expect(screen.getByTestId("designations-count")).toBeTruthy());
-    expect(screen.getByTestId("designations-count").textContent).toBe("unknown (never checked)");
+    expect(screen.getByTestId("designations-count").textContent).toBe("—");
+    expect(screen.getByText("Never checked")).toBeTruthy();
     unmount();
     vi.mocked(fetchAdminCodeCurrency).mockResolvedValue(base);
     render(<CodeCurrencySection />);
     await waitFor(() => expect(screen.getByTestId("code-currency")).toBeTruthy());
-    expect(screen.queryByTestId("designations")).toBeNull();
+    expect(screen.getByTestId("designations-count").textContent).toBe("—");
+    expect(screen.getAllByText("Not reported").length).toBe(2);
   });
 });
 
 describe("CodeCurrencySection — admin 'Code currency' card", () => {
-  it("shows status, age, the Title 17 count and the unreviewed amendments", async () => {
+  it("shows status, age, the zoning-code count and the unreviewed amendments", async () => {
     vi.mocked(fetchAdminCodeCurrency).mockResolvedValue(base);
     render(<CodeCurrencySection />);
     await waitFor(() => expect(screen.getByTestId("code-currency")).toBeTruthy());
-    expect(screen.getByTestId("code-status").textContent).toBe("amber");
+    expect(screen.getByTestId("code-status").textContent).toBe("Aging");
     expect(screen.getByTestId("code-title17").textContent).toBe("2");
-    expect(screen.getByText("126 days")).toBeTruthy();
-    const rows = screen.getByTestId("code-amendments-table").querySelectorAll("tbody tr");
+    expect(screen.getByText("126")).toBeTruthy();
+    const rows = screen.getByTestId("code-amendments-table").querySelectorAll("li");
     expect(rows.length).toBe(2);
-    expect(rows[0].textContent).toContain("not reviewed");
-    expect(rows[1].textContent).toContain("applied");
+    expect(rows[0].textContent).toContain("To review");
+    expect(rows[1].textContent).toContain("Applied");
+    // "Title 17" means nothing to a reader: the scope pill says zoning (a Council title may still name it).
+    const scopes = [...rows].map((r) => r.querySelector("[data-pill]")?.textContent);
+    expect(scopes.every((x) => x === "Zoning" || x === "Other code")).toBe(true);
   });
 
   it("never shows a count when the Clerk check is stale, and surfaces the last error", async () => {
@@ -109,8 +120,10 @@ describe("CodeCurrencySection — admin 'Code currency' card", () => {
     });
     render(<CodeCurrencySection />);
     await waitFor(() => expect(screen.getByTestId("code-title17")).toBeTruthy());
-    expect(screen.getByTestId("code-title17").textContent).toContain("unknown");
+    expect(screen.getByTestId("code-title17").textContent).toBe("—");
+    expect(screen.getByText("Not checked lately")).toBeTruthy();
     expect(screen.getByText("ClerkUnavailable: 503")).toBeTruthy();
+    expect(screen.getByText("4 failed in a row")).toBeTruthy();
   });
 
   it("says so when the endpoint is unavailable", async () => {

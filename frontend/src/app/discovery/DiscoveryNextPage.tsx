@@ -25,16 +25,18 @@ import type { FilterDef, PanelState, Predicate, Registry, ResultRow, TopicDef } 
 import { getAutocomplete, savedApi } from "../../lib/api";
 import type { DiscoveryDraft } from "../../discovery/draftModel";
 import { SaveSearch } from "../saved/SaveSearch";
-import { useSaved } from "../saved/savedStore";
+import { pointOf, useSaved } from "../saved/savedStore";
 import { lotKey } from "../home/lotMemory";
 import type { AddressSuggestion } from "../../lib/types";
 import { track } from "../../lib/tracking";
 import { useIsPhone } from "../../lib/useIsPhone";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
+import { LayersControl, type LayersState } from "../map/LayersControl";
 import { Pill } from "../ui/Blocks";
-import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
+import { ExploreMap, LotSheetBody, LotSheetHead, type Picked, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
+import { ToastHost } from "../ui/Toast";
 import { fetchParcelRow } from "../../discovery/searchClient";
 import { LotCard } from "./LotCard";
 import { useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
@@ -86,7 +88,14 @@ export default function DiscoveryNextPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registry]);
   const [measure, setMeasure] = useState<MeasureId>(DEFAULT_MEASURE);
-  const [showZoning, setShowZoning] = useState(false);
+  // The Layers button's choices (Item 128): Standard or Satellite, Transit and Zoning districts on or off.
+  const [layers, setLayers] = useState<LayersState>({ basemap: "standard", transit: true, zoning: false, saved: true });
+  const savedLots = useSaved();
+  const savedPoints = useMemo(() => savedLots.lots.flatMap((l) => {
+    const p = pointOf(l);
+    return p ? [{ lat: p.lat, lon: p.lon, address: l.address }] : [];
+  }), [savedLots.lots]);
+  const mapTheme = useResolvedThemeOrLight();
   const [view, setView] = useState<ViewBox | null>(null);
   const [camera, setCamera] = useState<{ bbox?: [number, number, number, number]; center?: [number, number]; zoom?: number; seq: number } | null>(null);
   const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
@@ -97,6 +106,13 @@ export default function DiscoveryNextPage() {
   const [place, setPlace] = useState<Place | null>(null);
   const [ring, setRing] = useState<Ring | null>(null);
   const [sheet, setSheet] = useState<"peek" | "half" | "full">("peek");
+  // The lot the visitor tapped on the map. On a phone it opens in the sheet in place of the list (Item 129 §1); closing
+  // it brings the sheet back to what it was. On a laptop the map shows its floating card.
+  const [picked, setPicked] = useState<Picked | null>(null);
+  const [lotSheetPx, setLotSheetPx] = useState(0);
+  // A lot picked in one layout was placed for it (the card's spot, the sheet): switching layouts closes it.
+  const [pickedLayout, setPickedLayout] = useState(phone);
+  if (pickedLayout !== phone) { setPickedLayout(phone); setPicked(null); }
 
   // Explore's quick filters (no search yet): the server evaluates them for the view.
   const [quick, setQuick] = useState<Set<QuickId>>(new Set());
@@ -111,14 +127,19 @@ export default function DiscoveryNextPage() {
   // Zoomed in to lots after a search, the map asks for the search's own matches in the view. The search's points are
   // capped at 5,000 (the largest room to build first), so a broad search would otherwise draw none in most
   // neighborhoods while the list fills (owner's review 2026-11-11: zoning + density showed nothing on the map).
-  // A search limited to the view it started in keeps its own points.
-  const searchCqsPanel = useMemo(
-    () => (response && response.cqs.scope?.mode !== "viewport" ? panelFromCqs(response.cqs) : null), [response]);
+  // A search limited to the view it started in asks only inside that view (owner's review 2026-11-16, Item 128: its
+  // 5,000 points left most lots of a dense view unoutlined too).
+  // A search with no filters (nothing chosen, only the defaults) outlines nothing: every lot would match, and the map
+  // reads as if all were picked (owner's review 2026-11-16, Item 128).
+  const openSearch = !!response && !Object.entries(response.cqs.filters)
+    .some(([id, a]) => id !== HIDE_UNUSUAL && a.source !== "default");
+  const searchCqsPanel = useMemo(() => (response && !openSearch ? panelFromCqs(response.cqs) : null), [response, openSearch]);
+  const searchClip = response?.cqs.scope?.mode === "viewport" ? response.cqs.scope.bbox ?? null : null;
   const lotZoomNow = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const searchInView = useViewMatches(registry, lotZoomNow ? searchCqsPanel : null, view, 350,
-    !!response && !response.cqs.filters.hide_unusual);
+    !!response && !response.cqs.filters.hide_unusual, searchClip);
   const searchInViewPins = searchCqsPanel && lotZoomNow ? searchInView.data?.pins ?? null : null;
-  const matches = response ? searchInViewPins ?? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
+  const matches = openSearch ? null : response ? searchInViewPins ?? searchPins : explorePanel ? viewMatches.data?.pins ?? [] : null;
   const areaCounts = response ? response.areaCounts ?? null : explorePanel ? viewMatches.data?.areaCounts ?? null : null;
   const lotZoom = !!view && view.zoom >= LOTS_MIN_ZOOM;
   const inView = useMemo(() => {
@@ -275,12 +296,20 @@ export default function DiscoveryNextPage() {
       place={place}
       focus={camera}
       fit={fit}
-      showZoning={showZoning}
+      showZoning={layers.zoning}
+      showRail={layers.transit}
+      basemap={layers.basemap}
+      savedPoints={savedPoints}
+      showSaved={layers.saved}
       walkMiles={walkPreview}
       highlight={highlight}
       onView={setView}
       onPickArea={pickArea}
       sortKey={response?.cqs.sort.key ?? registry?.defaultSort.key ?? "lot_size"}
+      picked={picked}
+      onPickedChange={setPicked}
+      inlineCard={!phone}
+      bottomInset={phone && picked ? lotSheetPx : 0}
       className="absolute inset-0"
     />
   );
@@ -385,9 +414,13 @@ export default function DiscoveryNextPage() {
         {/* The map, always mounted; List covers it on a desktop, a sheet sits over it on a phone. */}
         {/* A touch on the map folds a phone's open key (owner's review: open, it covered the map). */}
         <div className="relative min-h-0 flex-1" onPointerDownCapture={phone ? (e) => {
-          if (!(e.target as HTMLElement).closest("[data-testid=measure-key]")) setMapTouches((n) => n + 1);
+          if (!(e.target as HTMLElement).closest("[data-testid=measure-key], [data-testid=layers-control]")) setMapTouches((n) => n + 1);
         } : undefined}>
           {map}
+          {/* Google Maps' Layers button (Item 128): bottom left above the map credit on a desktop; on a phone at the
+              top left, below the filters, opening downward (the sheet covers the bottom). */}
+          <LayersControl value={layers} onChange={setLayers} theme={mapTheme} foldSignal={mapTouches}
+            className={`absolute z-30 ${phone ? "left-3 top-16" : "bottom-4 left-3"}`} />
           {/* On a phone the key sits on its own line below the quick filters at the right, never over them (owner's review). */}
           <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-end" : "items-start justify-between"}`}>
             <div className={`flex min-w-0 flex-col items-start gap-2 ${phone ? "w-full" : ""}`}>
@@ -397,7 +430,7 @@ export default function DiscoveryNextPage() {
                   onPick={(topic) => { search.pickRecipe(topic); setFocus("list"); }} />
               )}
             </div>
-            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} showZoning={showZoning} onZoning={setShowZoning} compact={phone}
+            <MeasureKey key={phone ? "phone" : "desk"} measure={measure} onMeasure={setMeasure} compact={phone}
               foldSignal={mapTouches} />
           </div>
           {place && <PlaceCard place={place} ring={ring} onRing={(miles) => { const r = { lat: place.lat, lon: place.lon, miles }; setRing(r); }}
@@ -420,7 +453,7 @@ export default function DiscoveryNextPage() {
               ) : null}
             </div>
           )}
-          {((searchInViewPins ? searchInView.data?.truncated : search.map.truncated) || viewMatches.data?.truncated) && lotZoom && (
+          {!openSearch && ((searchInViewPins ? searchInView.data?.truncated : search.map.truncated) || viewMatches.data?.truncated) && lotZoom && (
             <p className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full bg-nx-page px-3 py-1 text-caption shadow">{t("discovery.capped")}</p>
           )}
 
@@ -433,13 +466,17 @@ export default function DiscoveryNextPage() {
           )}
 
           {phone && (
-            <PhoneSheet state={sheet} setState={setSheet}
-              head={response
+            <PhoneSheet state={picked ? "lot" : sheet} setState={setSheet} onClose={() => setPicked(null)} onHeight={setLotSheetPx}
+              head={picked
+                ? <LotSheetHead picked={picked} onClose={() => setPicked(null)} />
+                : response
                 ? <span className="font-semibold">{countLine}</span>
                 : <button type="button" onClick={searchView} className="inline-flex items-center gap-2 font-medium" data-testid="search-view">
                     <Search aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{exploreLabel(t, fmt, explorePanel, viewMatches.data, lotZoom)}
                   </button>}>
-              {response ? (
+              {picked ? (
+                <LotSheetBody picked={picked} />
+              ) : response ? (
                 <Results response={response} rows={search.rows} fmt={fmt} onMore={search.nextOffset != null && !response.result.gated ? () => void search.loadMore() : null}
                   loadingMore={search.loadingMore} refreshing={search.refreshing} hiddenUnusual={response.diagnostics.hiddenUnusual ?? 0}
                   onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} hoodName={hoodNameOf} />
@@ -453,6 +490,8 @@ export default function DiscoveryNextPage() {
           )}
         </div>
       </div>
+      {/* "Thanks, we'll review it." after a correction is sent (Item 129). */}
+      <ToastHost />
     </AppFrame>
   );
 }
@@ -613,8 +652,8 @@ function QuickFilters({ on, onToggle, loading }: { on: ReadonlySet<QuickId>; onT
   );
 }
 
-function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact, foldSignal = 0 }: {
-  measure: MeasureId; onMeasure: (m: MeasureId) => void; showZoning: boolean; onZoning: (b: boolean) => void; compact: boolean;
+function MeasureKey({ measure, onMeasure, compact, foldSignal = 0 }: {
+  measure: MeasureId; onMeasure: (m: MeasureId) => void; compact: boolean;
   /** Changes when the map is touched: a phone's open key folds. */
   foldSignal?: number;
 }) {
@@ -663,10 +702,6 @@ function MeasureKey({ measure, onMeasure, showZoning, onZoning, compact, foldSig
           </ul>
           {!compact && measure === "room" && <p className="nx-muted">{t("discovery.measure.room.note")}</p>}
           {!compact && measure === "use" && <p className="nx-muted">{t("discovery.measure.use.note")}</p>}
-          <label className="mt-1 flex items-center gap-2">
-            <input type="checkbox" checked={showZoning} onChange={(e) => onZoning(e.target.checked)} className="h-4 w-4" />
-            {t("discovery.measure.showZoning")}
-          </label>
           {!compact && <p className="nx-muted">{t("discovery.measure.zoomHint")}</p>}
         </div>
       )}
@@ -719,32 +754,61 @@ function PlaceCard({ place, ring, onRing, onSearchRing, ringActive, onClose }: {
   );
 }
 
-function PhoneSheet({ state, setState, head, children }: {
-  state: "peek" | "half" | "full"; setState: (s: "peek" | "half" | "full") => void; head: React.ReactNode; children: React.ReactNode;
+type SheetState = "peek" | "half" | "full" | "lot";
+
+export function PhoneSheet({ state, setState, head, children, onClose, onHeight }: {
+  state: SheetState; setState: (s: "peek" | "half" | "full") => void; head: React.ReactNode; children: React.ReactNode;
+  /** "lot": the tapped lot at the height of its content (Item 129 §1); dragging down or `onClose` closes it. */
+  onClose?: () => void;
+  /** The sheet's height in pixels while it holds a lot, so the map can keep the lot above it. */
+  onHeight?: (px: number) => void;
 }) {
   const { t } = useTranslation("next");
+  const lot = state === "lot";
   // The peek clears the preview badge pinned to the bottom of every page (52 px on touch screens, Item 99).
-  const height = state === "peek" ? "9.5rem" : state === "half" ? "52%" : "92%";
+  const height = lot ? "auto" : state === "peek" ? "9.5rem" : state === "half" ? "52%" : "92%";
   const start = useRef<number | null>(null);
+  const box = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!lot || !el || !onHeight) return;
+    onHeight(el.getBoundingClientRect().height);
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => onHeight(el.getBoundingClientRect().height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [lot, onHeight]);
   return (
-    <section aria-label={t("discovery.sheet.label")} data-testid="phone-sheet" data-state={state}
+    <section ref={box} aria-label={lot ? t("discovery.map.lot") : t("discovery.sheet.label")} data-testid="phone-sheet" data-state={state}
       className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-3xl bg-nx-page shadow-[0_-8px_32px_rgb(0_0_0/0.18)] transition-[height] duration-200 motion-reduce:transition-none"
-      style={{ height }}>
+      style={{ height, maxHeight: "92%" }}>
       <div
         onPointerDown={(e) => { start.current = e.clientY; }}
+        onPointerMove={(e) => {
+          // Once it is a drag, keep the pointer: a mouse would otherwise release over the map and never close the sheet.
+          // Not on press: a captured press would take the click away from the × and the head's buttons.
+          if (start.current == null || Math.abs(e.clientY - start.current) < 6 || e.currentTarget.hasPointerCapture?.(e.pointerId)) return;
+          try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* jsdom, or the pointer is gone */ }
+        }}
         onPointerUp={(e) => {
           if (start.current == null) return;
           const dy = e.clientY - start.current;
           start.current = null;
+          if (lot) { if (dy > 30) onClose?.(); return; }
           if (dy < -30) setState(state === "peek" ? "half" : "full");
           else if (dy > 30) setState(state === "full" ? "half" : "peek");
         }}
-        className="flex shrink-0 touch-none flex-col items-center gap-2 px-4 pb-2 pt-2">
-        <button type="button" aria-label={state === "full" ? t("discovery.sheet.less") : t("discovery.sheet.more")}
-          onClick={() => setState(state === "full" ? "peek" : state === "peek" ? "half" : "full")}
-          className="grid h-6 w-16 place-items-center touch-icon">
-          <span aria-hidden className="h-1.5 w-10 rounded-full bg-nx-ink/20" />
-        </button>
+        className="flex shrink-0 touch-none select-none flex-col items-center gap-2 px-4 pb-2 pt-2">
+        {lot ? (
+          // The lot's own × closes it; the handle is for dragging down.
+          <span aria-hidden data-testid="lot-sheet-handle" className="grid h-6 w-16 place-items-center"><span className="h-1.5 w-10 rounded-full bg-nx-ink/20" /></span>
+        ) : (
+          <button type="button" aria-label={state === "full" ? t("discovery.sheet.less") : t("discovery.sheet.more")}
+            onClick={() => setState(state === "full" ? "peek" : state === "peek" ? "half" : "full")}
+            className="grid h-6 w-16 place-items-center touch-icon">
+            <span aria-hidden className="h-1.5 w-10 rounded-full bg-nx-ink/20" />
+          </button>
+        )}
         <div className="flex w-full items-center justify-between gap-2 text-body">{head}</div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">{state !== "peek" && children}</div>

@@ -60,18 +60,18 @@ type TabId = "overview" | "build" | "money" | "neighborhood" | "history" | "deep
     recent sales; Build pulls back to the districts around it. Zoning is on in both (owner's review: it reads best
     fully on). The visitor's On / Off choices hold until the tab changes. */
 const MAP_VIEWS: Record<TabId, MapView> = {
-  overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", building: "off", transit: "on", streets: "on" } },
-  build: { id: "build", zoom: 15.6, threeD: true, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "on", streets: "on" } },
+  overview: { id: "overview", zoom: 17, modes: { zoning: "on", parcels: "on", sales: "on", building: "off", transit: "on", rail: "on", streets: "on" } },
+  build: { id: "build", zoom: 15.6, threeD: true, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "on", rail: "on", streets: "on" } },
   // Money: the nearby market sales around the lot (brief: "market sales within ¼ mile"); zoning off so the sale pins
   // read (Item 99). It opens framed on the lot and its sales (`fit`), which a widened search can find half a mile out.
-  money: { id: "money", zoom: 15.2, fit: "sales", modes: { zoning: "off", parcels: "on", sales: "on", building: "off", transit: "off", streets: "on" } },
+  money: { id: "money", zoom: 15.2, fit: "sales", modes: { zoning: "off", parcels: "on", sales: "on", building: "off", transit: "off", rail: "on", streets: "on" } },
   // Neighborhood: new construction within half a mile (the brief's map default for this tab, Item 102), framed on the
   // permits; zoning off so the pins read, transit on (getting around).
-  neighborhood: { id: "neighborhood", zoom: 14.6, fit: "building", modes: { zoning: "off", parcels: "on", sales: "off", building: "on", transit: "on", streets: "on" } },
+  neighborhood: { id: "neighborhood", zoom: 14.6, fit: "building", modes: { zoning: "off", parcels: "on", sales: "off", building: "on", transit: "on", rail: "on", streets: "on" } },
   // History: the lot alone (owner, Item 103), zoning on so its district (and a rezoning's) reads.
-  history: { id: "history", zoom: 17.2, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "off", streets: "on" } },
+  history: { id: "history", zoom: 17.2, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "off", rail: "on", streets: "on" } },
   // Deep analysis (Item 124): close on the lot in 3D, so the chosen project reads against its neighbors.
-  deep: { id: "deep", zoom: 17.6, threeD: true, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "off", streets: "on" } },
+  deep: { id: "deep", zoom: 17.6, threeD: true, modes: { zoning: "on", parcels: "on", sales: "off", building: "off", transit: "off", rail: "on", streets: "on" } },
 };
 const TABS: TabId[] = ["overview", "build", "money", "neighborhood", "history", "deep"];
 

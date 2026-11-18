@@ -21,6 +21,9 @@ multifamily lots (the Assessor's characteristics are residential only). This mod
   covering the most of each lot's PTAXSIM outline and that share, measured once from the local copy
   ``map_sources/cmap_lui_2023.db`` (``cmap_land_use.fetch``, run on the Mac and installed). Without the copy the
   table is not written and no lot is marked road land.
+* **The CTA L on each lot** (decision Item 128): ``rail_on_lot``, the feet of CTA elevated or at-grade line inside each
+  lot it crosses, from ``map_sources/cta_lines.json`` (``backend.map_tiles.rail_lines``). It only tells rail from road
+  where CMAP calls an L right-of-way "road"; rail land itself is CMAP's rail code.
 
 The fetch refuses to write a copy that looks partial (row floors below), so "could not read" never becomes "no
 building" or "no case". The copy is read only by the index build and ``index_backfill``; the live Profile is unchanged.
@@ -29,7 +32,7 @@ building" or "no case". The copy is read only by the index build and ``index_bac
 
 ``--addresses-only`` adds (or replaces) just the address tables in an existing copy; ``--structures-only`` just the
 Item 110 tables (needs ``map_sources/county_buildings_2022.db`` and PTAXSIM beside the copy, or ``--lidar``/``--ptaxsim``);
-``--land-use-only`` just ``cmap_on_lot`` (needs ``map_sources/cmap_lui_2023.db`` and PTAXSIM, or ``--cmap``/``--ptaxsim``).
+``--land-use-only`` just ``cmap_on_lot`` and ``rail_on_lot`` (needs ``map_sources/cmap_lui_2023.db`` and PTAXSIM, or ``--cmap``/``--ptaxsim``).
 """
 
 from __future__ import annotations
@@ -338,24 +341,72 @@ LAND_USE_TABLES = """
     DROP TABLE IF EXISTS cmap_on_lot;
     CREATE TABLE cmap_on_lot (pin10 TEXT PRIMARY KEY, code TEXT NOT NULL, share REAL NOT NULL);
 """
+RAIL_TABLES = """
+    DROP TABLE IF EXISTS rail_on_lot;
+    CREATE TABLE rail_on_lot (pin10 TEXT PRIMARY KEY, cta_ft REAL NOT NULL);
+"""
 MIN_CMAP_LOTS = 500_000  # 589,574 of Chicago's lots matched on 2026-11-12: fewer means a partial copy
+OPEN_LAND_TABLES = """
+    DROP TABLE IF EXISTS open_land_on_lot;
+    CREATE TABLE open_land_on_lot (pin10 TEXT PRIMARY KEY, park REAL NOT NULL, water REAL NOT NULL,
+                                   public_os REAL NOT NULL DEFAULT 0);
+"""
+MIN_OPEN_LAND_LOTS = 2_000  # lots a park or water touches (about 9,000 on 2026-11-16)
+MIN_RAIL_LOTS = 1_000  # lots a CTA elevated or at-grade line runs through (about 3,000 on 2026-11-13)
 
 
-def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path) -> dict:
+def _write_land_use(db: sqlite3.Connection, rows: list[tuple], cmap: Path, rail_rows: list[tuple] | None = None,
+                    open_rows: list[tuple] | None = None) -> dict:
     from backend.discovery.cmap_land_use import read_meta
 
     if len(rows) < MIN_CMAP_LOTS:
         raise RuntimeError(f"CMAP matched only {len(rows)} lots: refusing to write")
+    if rail_rows is not None and len(rail_rows) < MIN_RAIL_LOTS:
+        raise RuntimeError(f"the CTA lines crossed only {len(rail_rows)} lots: refusing to write")
     db.executescript(LAND_USE_TABLES)
     db.executemany("INSERT INTO cmap_on_lot VALUES (?, ?, ?)", rows)
     meta = read_meta(cmap)
-    return {"cmap_lots": len(rows), "cmap_vintage": meta.get("vintage"), "cmap_fetched": meta.get("fetched")}
+    out = {"cmap_lots": len(rows), "cmap_vintage": meta.get("vintage"), "cmap_fetched": meta.get("fetched")}
+    if rail_rows is not None:
+        db.executescript(RAIL_TABLES)
+        db.executemany("INSERT INTO rail_on_lot VALUES (?, ?)", rail_rows)
+        out["cta_line_lots"] = len(rail_rows)
+    if open_rows is not None:
+        if len(open_rows) < MIN_OPEN_LAND_LOTS:
+            raise RuntimeError(f"parks and water touched only {len(open_rows)} lots: refusing to write")
+        db.executescript(OPEN_LAND_TABLES)
+        db.executemany("INSERT INTO open_land_on_lot VALUES (?, ?, ?, ?)", open_rows)
+        out["open_land_lots"] = len(open_rows)
+    return out
+
+
+def _land_use_rows(cmap: Path, ptaxsim: Path, rail: Path) -> tuple[list[tuple], list[tuple] | None, list[tuple] | None]:
+    """CMAP's code on every lot; the CTA line's feet on the lots it crosses; parks and water on the lots they touch
+    (Item 128). A missing copy gives None for its table, with a warning: road land crossed by the L is then just road
+    land, and no lot is called a park or water."""
+    from backend.discovery import open_land
+    from backend.discovery.cmap_land_use import codes_on_lots, lot_outlines_in_box
+    from backend.map_tiles import rail_lines
+
+    outlines = lot_outlines_in_box(ptaxsim)
+    rows = codes_on_lots(cmap, ptaxsim, outlines)
+    rail_rows = open_rows = None
+    if rail_lines.present(rail):
+        rail_rows = rail_lines.cta_on_lots(rail, *outlines)
+    else:
+        log.warning("lot sources: no rail lines in %s (python -m backend.map_tiles.rail_lines); rail_on_lot not written",
+                    rail)
+    if open_land.present(rail):
+        open_rows = open_land.open_land_on_lots(rail, *outlines)
+    else:
+        log.warning("lot sources: no parks/water copy in %s (python -m backend.map_tiles.base_tiles writes it); "
+                    "open_land_on_lot not written", rail)
+    return rows, rail_rows, open_rows
 
 
 def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsim: Path | None = None) -> dict:
-    """Add (or replace) only ``cmap_on_lot`` in an existing copy, in one transaction (Item 112)."""
-    from backend.discovery.cmap_land_use import codes_on_lots
-
+    """Add (or replace) only ``cmap_on_lot`` and ``rail_on_lot`` in an existing copy, in one transaction (Items 112,
+    128)."""
     if not out.exists():
         raise FileNotFoundError(f"{out} missing: run without --land-use-only first")
     cmap = cmap or out.parent / "map_sources" / "cmap_lui_2023.db"
@@ -364,15 +415,118 @@ def fetch_land_use(out: Path = DEFAULT_PATH, *, cmap: Path | None = None, ptaxsi
         if not need.exists() or need.stat().st_size == 0:
             raise FileNotFoundError(f"{need} missing")
     t0 = time.monotonic()
-    rows = codes_on_lots(cmap, ptaxsim)
+    rows, rail_rows, open_rows = _land_use_rows(cmap, ptaxsim, cmap.parent)
     db = sqlite3.connect(out)
     try:
         with db:
-            summary = _write_land_use(db, rows, cmap)
+            summary = _write_land_use(db, rows, cmap, rail_rows, open_rows)
             db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
     finally:
         db.close()
     summary["seconds"] = round(time.monotonic() - t0, 1)
+    return summary
+
+
+# --- the Assessor's condo buildings (Item 128, the owner's map review) ----------------------------------------------
+CONDO_DATASET = "3r7i-mrz4"  # Assessor - Residential Condominium Unit Characteristics
+CHICAGO_TOWNSHIPS = ("70", "71", "72", "73", "74", "75", "76", "77")
+MIN_CONDO_LOTS = 10_000  # 14,489 Chicago condo lots in 2026 (12,153 with a building floor area)
+CONDO_TABLES = """
+    DROP TABLE IF EXISTS condo_building;
+    CREATE TABLE condo_building (pin10 TEXT PRIMARY KEY, building_sf REAL, land_sf REAL, units INTEGER, year TEXT);
+"""
+
+
+def _read_condo_buildings(client: httpx.Client) -> tuple[str, list[tuple]]:
+    """Per condo lot (PIN10): the Assessor's building floor area (``char_building_sf``), land area and unit count, from
+    the newest year in Chicago's townships. Measured (eval note in Item 128): its land area matches our outlines (median
+    0.999, 97.8% within 10%); the City footprint x stories estimate comes out at a median 0.78 of its floor area (81%
+    within 40%), so the Assessor's own figure is used and the footprint estimate is not."""
+    year = _get_page(client, f"{COUNTY_PORTAL}/{CONDO_DATASET}.json", {"$select": "max(year) AS y"}).json()[0]["y"]
+    year = str(year).split(".")[0]
+    towns = ",".join(f"'{t}'" for t in CHICAGO_TOWNSHIPS)
+    rows = _pages(client, CONDO_DATASET, {
+        "$select": "pin10, max(char_building_sf) AS building_sf, max(char_land_sf) AS land_sf, count(*) AS units",
+        "$where": f"year = '{year}' AND township_code in ({towns})", "$group": "pin10", "$order": "pin10"}, portal=COUNTY_PORTAL)
+    out = []
+    for r in rows:
+        p = str(r.get("pin10") or "").strip()
+        if len(p) != 10:
+            continue
+        f = lambda k: float(r[k]) if r.get(k) not in (None, "") else None  # noqa: E731
+        out.append((p, f("building_sf"), f("land_sf"), int(float(r.get("units") or 0)), year))
+    return year, out
+
+
+def fetch_condo(out: Path = DEFAULT_PATH, *, token: str = "") -> dict:
+    """Add (or replace) only ``condo_building`` in an existing copy (Item 128). A short read raises."""
+    if not out.exists():
+        raise FileNotFoundError(f"{out} missing: run without --condo-only first")
+    headers = {"X-App-Token": token} if token else {}
+    with httpx.Client(timeout=120, headers=headers) as c:
+        year, rows = _read_condo_buildings(c)
+    if len(rows) < MIN_CONDO_LOTS:
+        raise RuntimeError(f"the Assessor's condo file gave only {len(rows)} lots: refusing to write")
+    db = sqlite3.connect(out)
+    try:
+        with db:
+            db.executescript(CONDO_TABLES)
+            db.executemany("INSERT INTO condo_building VALUES (?, ?, ?, ?, ?)", rows)
+            summary = {"condo_lots": len(rows), "condo_with_floor_area": sum(1 for r in rows if r[1]), "condo_year": year}
+            db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
+    finally:
+        db.close()
+    return summary
+
+
+# --- the Assessor's tax-exempt owners (Item 128, the owner's review of 2026-11-16) -----------------------------------
+EXEMPT_DATASET = "vgzx-68gb"  # Assessor - Exempt Parcels: owner name and number per exempt PIN, yearly
+MIN_EXEMPT_LOTS = 40_000  # 49,675 Chicago exempt PINs in 2026
+EXEMPT_TABLES = """
+    DROP TABLE IF EXISTS exempt_owner;
+    CREATE TABLE exempt_owner (pin10 TEXT PRIMARY KEY, owner_num TEXT, owner_name TEXT, year TEXT);
+"""
+
+
+def _read_exempt_owners(client: httpx.Client) -> tuple[str, list[tuple]]:
+    """Per exempt lot (PIN10): the owner's number and name in the Assessor's exempt file, newest year, Chicago's
+    townships. A lot's base PIN (-0000) speaks for it when several of its PINs are listed."""
+    year = _get_page(client, f"{COUNTY_PORTAL}/{EXEMPT_DATASET}.json", {"$select": "max(year) AS y"}).json()[0]["y"]
+    year = str(year).split(".")[0]
+    towns = ",".join(f"'{t}'" for t in CHICAGO_TOWNSHIPS)
+    rows = _pages(client, EXEMPT_DATASET, {
+        "$select": "pin, owner_num, owner_name", "$where": f"year = {int(year)} AND township_code in ({towns})",
+        "$order": "pin"}, portal=COUNTY_PORTAL)
+    best: dict[str, tuple[str, str, str]] = {}
+    for r in rows:
+        pin = str(r.get("pin") or "").strip()
+        name = str(r.get("owner_name") or "").strip()
+        if len(pin) != 14 or not name:
+            continue
+        p10 = pin[:10]
+        if p10 not in best or pin.endswith("0000"):
+            best[p10] = (pin, str(r.get("owner_num") or "").split(".")[0].strip(), name)
+    return year, [(p10, num, name, year) for p10, (_pin, num, name) in sorted(best.items())]
+
+
+def fetch_exempt(out: Path = DEFAULT_PATH, *, token: str = "") -> dict:
+    """Add (or replace) only ``exempt_owner`` in an existing copy (Item 128). A short read raises."""
+    if not out.exists():
+        raise FileNotFoundError(f"{out} missing: run without --exempt-only first")
+    headers = {"X-App-Token": token} if token else {}
+    with httpx.Client(timeout=120, headers=headers) as c:
+        year, rows = _read_exempt_owners(c)
+    if len(rows) < MIN_EXEMPT_LOTS:
+        raise RuntimeError(f"the Assessor's exempt file gave only {len(rows)} lots: refusing to write")
+    db = sqlite3.connect(out)
+    try:
+        with db:
+            db.executescript(EXEMPT_TABLES)
+            db.executemany("INSERT INTO exempt_owner VALUES (?, ?, ?, ?)", rows)
+            summary = {"exempt_lots": len(rows), "exempt_year": year}
+            db.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [(k, json.dumps(v)) for k, v in summary.items()])
+    finally:
+        db.close()
     return summary
 
 
@@ -479,8 +633,8 @@ def fetch(out: Path = DEFAULT_PATH, *, token: str = "", today: datetime.date | N
         log.warning("lot sources: %s or %s missing; the Item 110 structure tables are not written", lidar, ptaxsim)
     cmap = out.parent / "map_sources" / "cmap_lui_2023.db"
     if cmap.exists() and cmap.stat().st_size and ptaxsim.exists():
-        from backend.discovery.cmap_land_use import codes_on_lots
-        address_summary.update(_write_land_use(db, codes_on_lots(cmap, ptaxsim), cmap))
+        rows, rail_rows, open_rows = _land_use_rows(cmap, ptaxsim, cmap.parent)
+        address_summary.update(_write_land_use(db, rows, cmap, rail_rows, open_rows))
     else:  # the build then marks no lot road land (Item 112), with a warning
         log.warning("lot sources: %s missing; the Item 112 land-use table is not written", cmap)
     summary = {
@@ -502,7 +656,9 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=DEFAULT_PATH)
     ap.add_argument("--addresses-only", action="store_true", help="add or replace only the address tables (Item 109)")
     ap.add_argument("--structures-only", action="store_true", help="add or replace only the Item 110 tables")
-    ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 table")
+    ap.add_argument("--land-use-only", action="store_true", help="add or replace only the Item 112 and 128 tables")
+    ap.add_argument("--condo-only", action="store_true", help="add or replace only the Assessor's condo buildings (Item 128)")
+    ap.add_argument("--exempt-only", action="store_true", help="add or replace only the Assessor's exempt owners (Item 128)")
     ap.add_argument("--cmap", type=Path, default=None, help="default: map_sources/cmap_lui_2023.db beside --out")
     ap.add_argument("--lidar", type=Path, default=None, help="default: map_sources/county_buildings_2022.db beside --out")
     ap.add_argument("--ptaxsim", type=Path, default=None, help="default: ptaxsim.db beside --out")
@@ -511,6 +667,10 @@ def main() -> None:
     token = get_settings().socrata_app_token or ""
     if args.addresses_only:
         print(json.dumps(fetch_addresses(args.out, token=token), indent=1))
+    elif args.condo_only:
+        print(json.dumps(fetch_condo(args.out, token=token), indent=1))
+    elif args.exempt_only:
+        print(json.dumps(fetch_exempt(args.out, token=token), indent=1))
     elif args.land_use_only:
         print(json.dumps(fetch_land_use(args.out, cmap=args.cmap, ptaxsim=args.ptaxsim), indent=1))
     elif args.structures_only:

@@ -88,8 +88,10 @@ export function ShareBar({ share, emphasis = false, hatched = false, label }: {
 
 /** SnowUI's stat card (Item 74): one key figure on a pale fill (alternate `a` / `b`), its label above, a short
     note and at most one warning below. The tile row reflows from four to two to one. */
-export function StatTile({ label, figure, unit, note, warning, state, tone = "a", checking = false, testId, visual, icon }: {
+export function StatTile({ label, figure, unit, note, warning, state, tone = "a", checking = false, testId, visual, icon, info }: {
   label: ReactNode;
+  /** An info toggletip in the card's top corner: what the figure means, instead of a line under it (owner, Item 130). */
+  info?: ReactNode;
   /** An icon in a square at the card's start, like the Neighborhood tab's "Around the lot" cards (owner, Item 102). */
   icon?: ReactNode;
   figure?: ReactNode;
@@ -122,7 +124,8 @@ export function StatTile({ label, figure, unit, note, warning, state, tone = "a"
     );
   }
   return (
-    <li className={`flex min-w-0 flex-col gap-2 rounded-2xl p-4 text-nx-card-ink ${icon ? "" : "sm:p-6"} ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
+    <li className={`relative flex min-w-0 flex-col gap-2 rounded-2xl p-4 text-nx-card-ink ${icon ? "" : "sm:p-6"} ${tone === "a" ? "bg-nx-stat-a" : "bg-nx-stat-b"}`} data-testid={testId}>
+      {info && <span className="nx-on-card absolute right-3 top-3">{info}</span>}
       {icon ? <span className="flex items-center gap-3">{iconBox}<span className="text-caption font-semibold">{label}</span></span> : <span className="text-caption font-semibold">{label}</span>}
       {checking ? (
         <span aria-hidden className="flex items-center text-nx-figure"><span className="block h-[0.8em] w-24 animate-pulse rounded bg-nx-card-ink/10" />&#8203;</span>

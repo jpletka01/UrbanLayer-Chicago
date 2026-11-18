@@ -3,7 +3,7 @@ import type { ResultRow } from "../../discovery/types";
 import { shapePath } from "./discoveryData";
 import {
   areaSuggestions, cardModel, foldComplexes, clampMiles, classifyQuery, measureColorExpr, measureSteps, measureTexture, unknownMeasureFilter, milesBetween, placeRegion, placeSuggestions, quickFromPanel,
-  quickPanel, ringMiles, ringPolygon, ringRegion,
+  quickPanel, ringMiles, ringPolygon, ringRegion, NOT_DRAWN, formatAt, parseAt, ownerLine,
 } from "./discoveryModel";
 
 const AREAS = { 22: "Logan Square", 24: "West Town", 7: "Lincoln Park" };
@@ -28,7 +28,7 @@ describe("quick filters compile to a panel the server evaluates", () => {
 
 describe("the map's measure", () => {
   it("has a key step per tile band and colors unknown as transparent (the hatch layer draws it)", () => {
-    expect(measureSteps("room").map((s) => s.value)).toEqual(["0", "1", "2", "3", "4", "x", "p", "t"]);
+    expect(measureSteps("room").map((s) => s.value)).toEqual(["0", "1", "2", "3", "4", "x", "t", "i", "c"]);
     const expr = measureColorExpr("room") as unknown[];
     expect(expr.slice(0, 2)).toEqual(["match", ["get", "r"]]);
     expect(expr[expr.length - 1]).toBe("rgba(0,0,0,0)");
@@ -46,7 +46,7 @@ describe("the map's measure", () => {
     // The tax class's "vacant" (u 0) is not mapped: what stands on the lot decides empty, so it stays unknown.
     expect((expr[3] as unknown[]).includes("0")).toBe(false);
     expect(JSON.stringify(unknownMeasureFilter("use"))).toContain('"u"');
-    expect(unknownMeasureFilter("room")).toEqual(["!", ["has", "r"]]);
+    expect(unknownMeasureFilter("room")).toEqual(["all", ["!", ["in", ["get", "r"], ["literal", ["w", "p"]]]], ["!", ["has", "r"]]]);
     expect(measureTexture("room", "light")).toBeNull();
     expect(measureTexture("use", "dark")?.pattern).toEqual(["match", ["get", "l"], "1", "pattern-p-dark", "7", "pattern-plus-dark", "pattern-plus-dark"]);
   });
@@ -65,6 +65,21 @@ describe("a card", () => {
     expect(c.complexLots).toBe(3);
     expect(c.roomBasis).toBe("commercial_valuation");
     expect(cardModel(row({ room_sqft: null, bldg_sqft_source: "footprint" })).roomBasis).toBeNull();
+  });
+  it("names road and rail right-of-way instead of a room figure (Item 128)", () => {
+    const c = cardModel(row({ room_sqft: null, room_scope: "right_of_way" }));
+    expect(c.roomNamed).toBe("right_of_way");
+    expect(c.roomSqft).toBeNull();
+  });
+  it("names an exempt lot's owner, and empty public land with no building to subtract (Item 128)", () => {
+    const t = (k: string, o?: Record<string, unknown>) => `${k}${o ? `:${o.owner}` : ""}`;
+    const cha = cardModel(row({ room_sqft: 22000, bldg_sqft_source: "public_land", exempt_owner: "Chicago Housing Authority", public_land: true }));
+    expect(cha.roomBasis).toBe("public_land");
+    expect(cha.owner).toEqual({ name: "Chicago Housing Authority", assessorText: false, publicLand: true });
+    expect(ownerLine(t, cha.owner!)).toBe("discovery.card.publicLand · discovery.card.owner:Chicago Housing Authority");
+    const hall = cardModel(row({ exempt_owner: "LINCOLN PK CONG JEH WT", exempt_owner_assessor: true }));
+    expect(ownerLine(t, hall.owner!)).toBe("discovery.card.ownerAssessor:LINCOLN PK CONG JEH WT");
+    expect(cardModel(row({})).owner).toBeNull();
   });
   it("shows the server's one warning, else nominal", () => {
     expect(cardModel(row({ warning: { kind: "landmark", detail: "Wicker Park" } })).warning?.kind).toBe("landmark");
@@ -137,5 +152,22 @@ describe("one card per complex", () => {
       r("4", { room_scope: "complex", room_sqft: 9000, complex_lots: 3, lat: 41.95 }),  // another complex, far away
     ];
     expect(foldComplexes(rows).map((x) => [x.row.pin, x.more])).toEqual([["1", 1], ["3", 0], ["4", 0]]);
+  });
+});
+
+describe("park and water lots (Item 128)", () => {
+  it("are never drawn: the base map's park green and water show instead", () => {
+    for (const m of ["room", "lot", "sale", "use"] as const) expect(JSON.stringify(unknownMeasureFilter(m))).toContain('["literal",["w","p"]]');
+    expect(NOT_DRAWN).toEqual(["!", ["in", ["get", "r"], ["literal", ["w", "p"]]]]);
+  });
+});
+
+describe("the map's place in the URL (owner's map review)", () => {
+  it("writes and reads lat,lng,zoom like Google Maps and refuses anything outside Chicago", () => {
+    const at = formatAt([-87.68873, 41.96601], 16.2);
+    expect(at).toBe("41.96601,-87.68873,16.20z");
+    expect(parseAt(at)).toEqual({ center: [-87.68873, 41.96601], zoom: 16.2 });
+    expect(parseAt("41.9,-87.6,14")).toEqual({ center: [-87.6, 41.9], zoom: 14 });
+    for (const bad of [null, "", "abc", "40.7,-74.0,12z", "41.9,-87.6,3z"]) expect(parseAt(bad)).toBeNull();
   });
 });

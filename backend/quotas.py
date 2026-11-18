@@ -232,7 +232,8 @@ async def prune(now: datetime | None = None) -> int:
     cutoff = int(((now or datetime.now(CHICAGO)).timestamp() - ANON_RETENTION_DAYS * 86_400) * 1000)
     conn = db._get_db()
     cur = await conn.execute(
-        "DELETE FROM usage_counters WHERE ((subject LIKE 'anon:%' OR subject LIKE 'ip:%') AND updated_at < ?) "
+        "DELETE FROM usage_counters WHERE ((subject LIKE 'anon:%' OR subject LIKE 'ip:%' OR subject LIKE 'corr-%') "
+        "AND updated_at < ?) "
         "OR (subject LIKE 'idh:%' AND period < ?)",
         (cutoff, month_period(now)),
     )

@@ -11,7 +11,7 @@ Parcel feasibility engine for Chicago real-estate professionals, built on RAG ov
 | Vector DB | Qdrant v1.9.0 (Docker), BAAI/bge-base-en-v1.5 embeddings (768-dim, local) |
 | Reranker | bge-reranker-v2-m3, 20% weight blended with dense+keyword scores |
 | Frontend | React + TypeScript + Vite + Tailwind v3 |
-| Map | MapLibre GL over our own vector tiles (the City's streets, zoning, County lots, LiDAR buildings); no Mapbox, no satellite |
+| Map | MapLibre GL over our own vector tiles (the City's streets, zoning, County lots, LiDAR buildings); no Mapbox; Satellite only as an opt-in layer (Cook County 2025 photos, Item 128) |
 | Persistence | SQLite via aiosqlite (WAL mode) |
 | Streaming | SSE (text/event-stream) |
 | Geocoding | Census Geocoder (free) + shapely point-in-polygon |
@@ -67,7 +67,7 @@ cd frontend && npm run sweep:live                 # after a deploy: console erro
 - Domain orchestrators (`property/`, `regulatory/`, `incentives/`, `neighborhood/`) run sub-queries in parallel via `asyncio.gather` with graceful degradation.
 - TTLCache used for all external API queries. Clear caches between tests via autouse fixture in `conftest.py`.
 - Frontend state: `useChat` hook owns SSE consumption. `App.tsx` is the state machine. Per-message context architecture (each assistant message stores its own context/plan/mapData).
-- **One UI (since Phase 10, 2026-11-14, decision Item 125).** The front end is `frontend/src/app/` (renamed from `ui-next/` 2026-11-15, Item 126; there is no `?ui=` flag and no old UI). It follows `claude-context/guides/frontend-redesign-vision.md` + decisions Items 73+ in `claude-context/decisions/2026-11_frontend-rewrite.md` (runbook: `guides/frontend-rewrite-runbook.md`): SnowUI frame, Coastal chart palette, black for this lot, **no satellite map anywhere**, and **the Cities: Skylines map style is required** (Item 80). Light/dark/system themes (`ThemeProvider`/`useTheme`); the tokens live in `app/app.css` on `:root` and every `.ui-next` root. The Bento Pro guides, `page-design.md`, `design-system.md` and `light-dark-theming.md` are history.
+- **One UI (since Phase 10, 2026-11-14, decision Item 125).** The front end is `frontend/src/app/` (renamed from `ui-next/` 2026-11-15, Item 126; there is no `?ui=` flag and no old UI). It follows `claude-context/guides/frontend-redesign-vision.md` + decisions Items 73+ in `claude-context/decisions/2026-11_frontend-rewrite.md` (runbook: `guides/frontend-rewrite-runbook.md`): SnowUI frame, Coastal chart palette, black for this lot, **no satellite by default** (an opt-in Satellite choice in the map's Layers button since Item 128), and **the Cities: Skylines map style is required** (Item 80). Light/dark/system themes (`ThemeProvider`/`useTheme`); the tokens live in `app/app.css` on `:root` and every `.ui-next` root. The Bento Pro guides, `page-design.md`, `design-system.md` and `light-dark-theming.md` are history.
 - Tests: mock external APIs, mark real-API tests with `@pytest.mark.integration`.
 - Env vars: `.env` (ANTHROPIC_API_KEY, SOCRATA_APP_TOKEN, WALKSCORE_API_KEY), `frontend/.env` (VITE_API_BASE, optional VITE_SENTRY_DSN / VITE_CLARITY_ID).
 

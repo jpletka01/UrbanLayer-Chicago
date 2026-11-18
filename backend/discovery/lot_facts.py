@@ -61,6 +61,15 @@ class LotSources:
     # PIN10 -> (CMAP 2023 code covering the most of the lot, that share) (Item 112); None when the copy predates the
     # table, so no lot is marked road land.
     cmap_on_lot: dict[str, tuple[str, float]] | None = None
+    # PIN10 -> feet of CTA elevated or at-grade line inside the lot (Item 128); None when the copy predates the table.
+    rail_on_lot: dict[str, float] | None = None
+    # PIN10 -> (share under a Park District park, share under the City's water, share of CMAP open space with a public
+    # manager) (Item 128); None before the table.
+    open_land_on_lot: dict[str, tuple[float, ...]] | None = None
+    # PIN10 -> (the Assessor's condo building floor area, land area, units) (Item 128); None before the table.
+    condo_building: dict[str, tuple[float | None, float | None, int]] | None = None
+    # PIN10 -> (owner number, owner name) in the Assessor's tax-exempt parcels file (Item 128); None before the table.
+    exempt_owner: dict[str, tuple[str, str]] | None = None
 
     @classmethod
     def load(cls, path: Path) -> "LotSources":
@@ -87,6 +96,26 @@ class LotSources:
                 cmap = {r[0]: (r[1], r[2]) for r in db.execute("SELECT pin10, code, share FROM cmap_on_lot")}
             except sqlite3.OperationalError:  # a copy made before Item 112
                 cmap = None
+            try:
+                rail = {r[0]: r[1] for r in db.execute("SELECT pin10, cta_ft FROM rail_on_lot")}
+            except sqlite3.OperationalError:  # a copy made before Item 128
+                rail = None
+            try:
+                condo = {r[0]: (r[1], r[2], r[3]) for r in db.execute("SELECT pin10, building_sf, land_sf, units FROM condo_building")}
+            except sqlite3.OperationalError:  # a copy made before the condo table (Item 128)
+                condo = None
+            try:
+                exempt = {r[0]: (r[1] or "", r[2]) for r in db.execute("SELECT pin10, owner_num, owner_name FROM exempt_owner")}
+            except sqlite3.OperationalError:  # a copy made before the exempt owners (Item 128)
+                exempt = None
+            try:
+                open_land = {r[0]: (r[1], r[2], r[3]) for r in db.execute(
+                    "SELECT pin10, park, water, public_os FROM open_land_on_lot")}
+            except sqlite3.OperationalError:
+                try:  # the first version had no public open space column
+                    open_land = {r[0]: (r[1], r[2], 0.0) for r in db.execute("SELECT pin10, park, water FROM open_land_on_lot")}
+                except sqlite3.OperationalError:  # a copy made before the owner's map review (Item 128)
+                    open_land = None
         finally:
             db.close()
         reps = shapely.point_on_surface(geoms)
@@ -96,7 +125,8 @@ class LotSources:
             fp_stories=[r[0] for r in fps], fp_area=[r[1] for r in fps],
             pt_tree={k: (STRtree(g), d) for k, (g, d) in pts.items()},
             area_tree=(STRtree(area_geoms), [a[1] or "" for a in areas]) if areas else None,
-            meta=meta, city_land=city_land, lidar_on_lot=lidar, cmap_on_lot=cmap,
+            meta=meta, city_land=city_land, lidar_on_lot=lidar, cmap_on_lot=cmap, rail_on_lot=rail, open_land_on_lot=open_land, condo_building=condo,
+            exempt_owner=exempt,
         )
 
 
@@ -175,6 +205,14 @@ def derive_capacity(attrs: dict[str, Any]) -> None:
     attrs.pop("room_sqft", None)
     if attrs.get("room_scope") in NO_BASE_FAR:
         attrs.pop("room_scope")
+    if attrs.get("infrastructure") in RIGHT_OF_WAY:
+        # Road and rail right-of-way is not a building site, whatever its zoning says (Items 112, 128).
+        attrs["room_scope"] = "right_of_way"
+        return
+    if attrs.get("open_land"):
+        # Parks, cemeteries and water aren't building sites either (owner's map review, Item 128).
+        attrs["room_scope"] = "water" if attrs["open_land"] == "water" else "open_space"
+        return
     if far and lsf and lsf > 0 and bsf is not None:
         attrs["room_sqft"] = float(max(0.0, round(far * lsf - bsf)))
     elif not far:
@@ -183,9 +221,12 @@ def derive_capacity(attrs: dict[str, Any]) -> None:
         scope = no_far_scope(attrs)
         if scope:
             attrs["room_scope"] = scope
+    if "room_sqft" not in attrs and "room_scope" not in attrs and attrs.get("institution"):
+        # Exempt institution with no building area to count: named, never dotted "not known" (Item 128).
+        attrs["room_scope"] = "institution"
 
 
-NO_BASE_FAR = ("own_rules", "open_space", "transport")
+NO_BASE_FAR = ("own_rules", "open_space", "transport", "right_of_way", "water", "institution", "condo")
 
 
 def no_far_scope(attrs: dict[str, Any]) -> str | None:
@@ -211,6 +252,12 @@ def fill_building_area(attrs: dict[str, Any], *, commercial=None, lot=None, src:
         attrs.setdefault("bldg_sqft_source", "assessor")
         return
     if attrs.get("is_vacant"):
+        return
+    if attrs.get("public_land"):
+        # Physically empty land of a public landholder (City, CHA, the County Land Bank; ``mark_owner``): nothing
+        # stands on it in the footprints or the 2022 LiDAR, so there is no building to subtract (Item 128).
+        attrs["bldg_sqft"] = 0.0
+        attrs["bldg_sqft_source"] = "public_land"
         return
     if isinstance(commercial, UnitArea) and commercial.bldg_sqft > 0:
         attrs["bldg_sqft"] = float(round(commercial.bldg_sqft))
@@ -337,25 +384,148 @@ def mark_empty_land(attrs: dict[str, Any], lot, pin10: str, src: LotSources) -> 
 # nothing standing on the lot was 23 of 23 (all source combinations together 39 of 42); CMAP's road right-of-way on
 # exempt land the Item 110 rule calls empty was 27 of 27 road or rail land. OSM parking (22 of 23) waits for a
 # licensing review, CMAP's parking code alone (4 of 6), its parks (2 of 6) and garages (0 of 4) are not used.
+# Item 128: CMAP's rail right-of-way over half of any lot was 33 of 34 rail land (whatever stands on it: the L's own
+# structure reads as a building in the LiDAR); the CTA line alone 3 of 8 and the federal line alone 2 of 5, so a line
+# never marks a lot on its own. Road land a CTA line crosses was 6 of 6 "rail and highway" (the L in an expressway).
+# The owner's look at the map (2026-11-16): the Assessor's railroad class (RR, 2,792 lots; CMAP calls 76% rail, yard or
+# linear transport land) and CMAP's intermodal yards (1570, an active line through 74% of them) are rail land too.
 NO_BUILDING = ("empty", "accessory")
 ROAD_MIN_SHARE = 0.5  # CMAP's road polygon covers at least half the lot
+RAIL_MIN_SHARE = 0.5  # CMAP's rail polygon covers at least half the lot
+CTA_MIN_FT = 25.0  # a CTA line runs at least this far through the lot
+# Right-of-way kinds: hidden by default (``index_build.unusual_rule``) and never given room to build.
+RIGHT_OF_WAY = ("road", "rail", "road_rail")
+OPEN_LAND_MIN_SHARE = 0.5  # a park, the water or CMAP's cemetery covers at least half the lot
+OPEN_LAND_NOT_ON = ("residential", "side_yard")
+
+
+def _load_overrides() -> dict[str, str]:
+    """PIN10 -> park / cemetery / water, from the committed, owner-reviewed list (spots no source can tell apart, e.g. a
+    park the City rather than the Park District runs, coded "cultural" like a museum)."""
+    p = Path(__file__).with_name("open_land_overrides.json")
+    if not p.exists():
+        return {}
+    return {pin10: v["open_land"] for pin10, v in json.loads(p.read_text()).items() if not pin10.startswith("_")}
+
+
+OPEN_LAND_OVERRIDES = _load_overrides()
+# CMAP's institutional codes, cemetery (1360) left out: medical, K-12, higher education, government, prison, religious,
+# other, national laboratory.
+INSTITUTION_CODES = ("1310", "1321", "1322", "1330", "1340", "1350", "1370", "1380")  # a home inside a park's outline stays a home (6 of 3,609 lots)
+
+
+def mark_open_land(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple[str, float] | None) -> bool:
+    """``open_land`` (water, park or cemetery) with its source, in place; True when set. Water first (a lagoon inside a
+    park is water), then a Chicago Park District park, then CMAP's cemetery code. Measured by ``eval/map_audit.py``:
+    573 lots at least half under the City's water, 3,609 at least half in a park (CMAP calls 92% open space), 92
+    cemetery lots; nearly all drew "not known", and a few showed room to build (Rosehill, St Boniface's corner)."""
+    from backend.discovery.cmap_land_use import CMAP_CEMETERY, CMAP_WATER
+
+    shares = (src.open_land_on_lot or {}).get(pin10) or (0.0, 0.0, 0.0)
+    park, water = shares[0], shares[1]
+    public_os = shares[2] if len(shares) > 2 else 0.0
+    code, share = cm or (None, 0.0)
+    found = None
+    override = OPEN_LAND_OVERRIDES.get(pin10)
+    if override:
+        found = (override, "owner_review")
+    elif water >= OPEN_LAND_MIN_SHARE:
+        found = ("water", "city_water")
+    elif code == CMAP_WATER and share >= OPEN_LAND_MIN_SHARE:
+        found = ("water", "cmap_2023")
+    elif attrs.get("land_kind") in OPEN_LAND_NOT_ON:
+        return False
+    elif park >= OPEN_LAND_MIN_SHARE:
+        found = ("park", "park_district")
+    elif public_os >= OPEN_LAND_MIN_SHARE:
+        found = ("park", "cmap_2023_public")
+    elif code == CMAP_CEMETERY and share >= OPEN_LAND_MIN_SHARE:
+        found = ("cemetery", "cmap_2023")
+    if not found:
+        return False
+    attrs["open_land"], attrs["open_land_source"] = found
+    attrs.pop("surface_parking", None)
+    attrs.pop("surface_parking_source", None)
+    return True
+
+
+def _load_exempt_owners() -> tuple[dict[str, dict[str, Any]], frozenset[str]]:
+    p = Path(__file__).with_name("exempt_owners.json")
+    if not p.exists():
+        return {}, frozenset()
+    raw = json.loads(p.read_text())
+    return ({k: v for k, v in raw.items() if not k.startswith("_")}, frozenset(raw.get("_not_owners", [])))
+
+
+EXEMPT_OWNERS, NOT_OWNERS = _load_exempt_owners()
+
+
+def mark_owner(attrs: dict[str, Any], pin10: str, src: LotSources, cm: tuple[str, float] | None = None) -> None:
+    """``exempt_owner`` (who owns a tax-exempt lot, from the Assessor's exempt file) and ``public_land`` (a physically
+    empty lot of a public landholder: land waiting for use, not a school or office in use), in place. The owner's
+    review of 2026-11-16: the empty Cabrini-Green land read "exempt institution" though the CHA holds it for
+    redevelopment. A spelled-out name (``exempt_owners.json``) only while the Assessor's text still matches it; else
+    the Assessor's own text, flagged ``exempt_owner_assessor``.
+
+    Measured by the owner's blind check (``eval/public_land_label.py``, 48 lots): other City lots 9 of 10 empty sites,
+    the Land Bank's 7 of 8, the CHA's 7 of 11 (3 had a building the 2022 LiDAR misses, an empty-land error, Item 110);
+    but City lots CMAP codes institutional were 0 of 10 (yards, parking and a park of the building beside them), so a
+    City lot CMAP calls institutional over half its area is never public land."""
+    rec = (src.exempt_owner or {}).get(pin10)
+    if not rec or rec[0] in NOT_OWNERS:
+        return
+    num, name = rec
+    known = EXEMPT_OWNERS.get(num)
+    if known and name.upper() in known.get("assessor", []):
+        attrs["exempt_owner"] = known["name"]
+        # Measured on the City's land only; the CHA's and the Land Bank's CMAP-institutional lots (85) went unsampled,
+        # and the Cabrini-Green land the owner asked about is one (CMAP codes the CHA's empty land as government).
+        institutional = num == "1" and bool(cm) and cm[0] in INSTITUTION_CODES and cm[1] >= OPEN_LAND_MIN_SHARE
+        if known.get("public_land") and attrs.get("empty_land") and not institutional:
+            attrs["public_land"] = True
+    else:
+        attrs["exempt_owner"] = name
+        attrs["exempt_owner_assessor"] = True
 
 
 def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
-    """``surface_parking`` and ``infrastructure`` on one base lot, in place, from the fields ``mark_empty_land`` just
-    set; each with its source. Reruns clear them first."""
-    from backend.discovery.cmap_land_use import CMAP_ROAD
+    """``surface_parking`` and ``infrastructure`` (road, rail, road_rail) on one base lot, in place, from the fields
+    ``mark_empty_land`` just set; each with its source. Reruns clear them first."""
+    from backend.discovery.cmap_land_use import CMAP_INTERMODAL, CMAP_RAIL, CMAP_ROAD
 
-    for k in ("surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source"):
+    for k in ("surface_parking", "surface_parking_source", "infrastructure", "infrastructure_source", "open_land",
+              "open_land_source", "institution", "exempt_owner", "exempt_owner_assessor", "public_land"):
         attrs.pop(k, None)
+    mark_owner(attrs, pin10, src, src.cmap_on_lot.get(pin10) if src.cmap_on_lot is not None else None)
     if attrs.get("land_kind") == "parking" and attrs.get("structure") in NO_BUILDING:
         attrs["surface_parking"] = True
         attrs["surface_parking_source"] = "assessor_class"
     cm = src.cmap_on_lot.get(pin10) if src.cmap_on_lot is not None else None
-    if cm and cm[0] == CMAP_ROAD and cm[1] >= ROAD_MIN_SHARE and attrs.get("land_kind") == "exempt" \
+    rail_source = None
+    if attrs.get("land_kind") == "railroad":
+        rail_source = "assessor_class"  # the Assessor's railroad class: railroad property, whatever CMAP says
+    elif cm and cm[0] in (CMAP_RAIL, CMAP_INTERMODAL) and cm[1] >= RAIL_MIN_SHARE:
+        rail_source = "cmap_2023"
+    if rail_source:
+        attrs["infrastructure"] = "rail"
+        attrs["infrastructure_source"] = rail_source
+        attrs.pop("surface_parking", None)  # parking under the tracks is rail land (owner's labels)
+        attrs.pop("surface_parking_source", None)
+        return
+    if mark_open_land(attrs, pin10, src, cm):
+        return
+    if not cm:
+        return
+    if cm[0] in INSTITUTION_CODES and cm[1] >= OPEN_LAND_MIN_SHARE and attrs.get("land_kind") in ("exempt", "city_owned") \
+            and not attrs.get("public_land"):
+        # A school, church, hospital or government site on tax-exempt land (owner's map review: 2851 N Seminary, a
+        # school, read "not known"). Only names the lot when room to build can't be computed (``derive_capacity``).
+        attrs["institution"] = True
+    if cm[0] == CMAP_ROAD and cm[1] >= ROAD_MIN_SHARE and attrs.get("land_kind") == "exempt" \
             and attrs.get("empty_land"):
-        attrs["infrastructure"] = "road"
-        attrs["infrastructure_source"] = "cmap_2023"
+        cta = (src.rail_on_lot or {}).get(pin10, 0.0)
+        attrs["infrastructure"] = "road_rail" if cta >= CTA_MIN_FT else "road"
+        attrs["infrastructure_source"] = "cmap_2023+cta" if cta >= CTA_MIN_FT else "cmap_2023"
 
 
 __all__ = [
@@ -373,18 +543,24 @@ LAND_USES = ("vacant", "residential", "multi_family", "commercial", "industrial"
 # Land in use (Item 112): what the lot is used for, measured. Empty land is what stands on it (Item 110), surface
 # parking and road land the owner's blind checks (23/23, 27/27); the rest is the Assessor's use class. A vacant-class lot
 # with a building on it gets no band (drawn dotted, not known), never "vacant".
-LAND_IN_USE = ("empty", "parking", "homes", "apartments", "business", "industrial", "exempt", "road_rail")
+LAND_IN_USE = ("empty", "parking", "homes", "apartments", "business", "industrial", "exempt", "road_rail", "park", "water")
 _IN_USE_FROM_CLASS = {"residential": "homes", "multi_family": "apartments", "commercial": "business",
                       "industrial": "industrial", "exempt": "exempt"}
 
 
 def land_in_use(attrs: dict[str, Any]) -> str | None:
+    # Right-of-way first: rail and road land is often physically empty too, and it is not "empty land" (owner's look,
+    # Item 128).
+    if attrs.get("infrastructure") in RIGHT_OF_WAY or attrs.get("land_kind") == "railroad":
+        return "road_rail"
+    if attrs.get("open_land") in ("park", "cemetery"):
+        return "park"
+    if attrs.get("open_land") == "water":
+        return "water"
     if attrs.get("surface_parking"):
         return "parking"
     if attrs.get("empty_land"):
         return "empty"
-    if attrs.get("infrastructure") == "road" or attrs.get("land_kind") == "railroad":
-        return "road_rail"
     use = attrs.get("land_use_class") or ("exempt" if str(attrs.get("class") or "").upper().startswith("EX") else None)
     return _IN_USE_FROM_CLASS.get(use)
 
@@ -397,7 +573,8 @@ def measure_bands(attrs: dict[str, Any]) -> dict[str, str]:
     if room is not None:
         out["r"] = str(0 if room <= 0 else 1 + sum(room >= e for e in ROOM_BANDS[1:]))
     elif attrs.get("room_scope") in NO_BASE_FAR:
-        out["r"] = {"own_rules": "x", "open_space": "p", "transport": "t"}[attrs["room_scope"]]
+        out["r"] = {"own_rules": "x", "open_space": "p", "transport": "t",
+                    "right_of_way": "t", "water": "w", "institution": "i", "condo": "c"}[attrs["room_scope"]]  # drawn with transportation zones: one key line
     lot = attrs.get("land_sqft")
     if lot:
         out["s"] = str(sum(lot >= e for e in LOT_BANDS))

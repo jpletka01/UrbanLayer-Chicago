@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 21
+_SCHEMA_VERSION = 23
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -624,6 +624,47 @@ CREATE TABLE IF NOT EXISTS deep_projects (
 """)
 
 
+async def _migrate_v22(db: aiosqlite.Connection) -> None:
+    """Suggest a correction (decision Item 129). ``lot_corrections``: one row per report that a lot's estimated
+    building facts are wrong. Signed in = ``user_id`` (deleted with the account); signed out = the signed ``ul_anon``
+    cookie id plus an HMAC of the network address (``ip_hash``; a raw IP is never stored). ``shown`` is the server's
+    snapshot of what the card showed. Nothing here is applied without a person's review (``status``)."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS lot_corrections (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      TEXT REFERENCES users(id) ON DELETE CASCADE,
+    anon_id      TEXT,
+    ip_hash      TEXT,
+    pin10        TEXT NOT NULL,
+    kinds        TEXT NOT NULL,
+    stories      INTEGER,
+    area_dir     TEXT CHECK (area_dir IN ('high', 'low')),
+    note         TEXT CHECK (note IS NULL OR length(note) <= 280),
+    shown        TEXT,
+    status       TEXT NOT NULL DEFAULT 'new'
+                 CHECK (status IN ('new', 'accepted', 'rejected', 'duplicate', 'stale')),
+    reviewed_by  TEXT,
+    reviewed_at  INTEGER,
+    review_note  TEXT,
+    created_at   INTEGER NOT NULL,
+    CHECK (user_id IS NOT NULL OR anon_id IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS idx_lot_corrections_status ON lot_corrections(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_lot_corrections_pin ON lot_corrections(pin10);
+CREATE INDEX IF NOT EXISTS idx_lot_corrections_anon ON lot_corrections(anon_id);
+CREATE INDEX IF NOT EXISTS idx_lot_corrections_ip ON lot_corrections(ip_hash, created_at);
+""")
+
+
+async def _migrate_v23(db: aiosqlite.Connection) -> None:
+    """Suggest a correction, review (decision Item 129, PR 4): ``lot_corrections.applied`` holds what an accepted
+    report applies, as the reviewer set it (JSON ``{"stories": n}`` or ``{"empty": true}``; ``{}`` = accepted as a
+    case for the Assessor, nothing applied). Read only by the export to ``user_corrections.json``."""
+    cur = await db.execute("PRAGMA table_info(lot_corrections)")
+    if "applied" not in {r[1] for r in await cur.fetchall()}:
+        await db.execute("ALTER TABLE lot_corrections ADD COLUMN applied TEXT")
+
+
 async def init_db() -> None:
     """Open the database and create tables if needed."""
     global _db
@@ -662,6 +703,8 @@ async def init_db() -> None:
         await _migrate_v19(_db)
         await _migrate_v20(_db)
         await _migrate_v21(_db)
+        await _migrate_v22(_db)
+        await _migrate_v23(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -726,6 +769,12 @@ async def init_db() -> None:
         if version < 21:
             await _migrate_v21(_db)
             version = 21
+        if version < 22:
+            await _migrate_v22(_db)
+            version = 22
+        if version < 23:
+            await _migrate_v23(_db)
+            version = 23
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -1912,6 +1961,8 @@ async def delete_user_account(user_id: str) -> dict:
     await conn.execute("DELETE FROM entitlement_uses WHERE subject = ?", (f"user:{user_id}",))
     # Deep analysis projects (Item 124): the FK cascades too, but say it here.
     await conn.execute("DELETE FROM deep_projects WHERE user_id = ?", (user_id,))
+    # Lot corrections (Item 129): the FK cascades too, but say it here.
+    await conn.execute("DELETE FROM lot_corrections WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM report_renders WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM events WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM request_logs WHERE user_id = ?", (user_id,))

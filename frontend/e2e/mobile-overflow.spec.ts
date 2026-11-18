@@ -64,6 +64,11 @@ const PAGES: Array<{
   { id: "pricing", path: "/pricing", settle: 1500 },
   { id: "about", path: "/about", settle: 1500 },
   { id: "privacy", path: "/privacy", settle: 1500 },
+  // /admin (sign-in is off locally, so the stand-in account is an admin; production shows "Admin access required").
+  { id: "admin", path: "/admin", settle: 1500 },
+  { id: "admin-code", path: "/admin/code", awaitApi: "/api/admin/code-currency", settle: 1500 },
+  { id: "admin-corrections", path: "/admin/corrections", awaitApi: "/api/admin/corrections", settle: 1500 },
+  { id: "admin-access", path: "/admin/access", settle: 1500 },
   { id: "not-found", path: "/no-such-page", settle: 1500 },
 ];
 

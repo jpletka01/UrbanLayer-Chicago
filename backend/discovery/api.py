@@ -81,6 +81,10 @@ class SearchRequest(BaseModel):
     # Also return how many matches fall in each community area, from the same evaluation (the new map's city view
     # labels each area with its count: matches are drawn as lot outlines only, Item 104).
     includeAreaCounts: bool = False
+    # Also return every match's lot id (PIN10 as a number), uncapped up to MAX_MATCH_IDS: the map outlines matches by
+    # lot id, and the 5,000 points above (largest room first) left most of a neighborhood unoutlined when zoomed out
+    # just to lots (owner's review 2026-11-16, Item 128). Ids only, no coordinates, so a whole view stays small.
+    includeMatchIds: bool = False
 
 
 class ResultRow(BaseModel):
@@ -106,6 +110,14 @@ class ResultRow(BaseModel):
     # Land in use (Item 112): a parking lot with no building (the Assessor's 5-90/5-80), and road right-of-way (CMAP).
     surface_parking: bool | None = None
     infrastructure: str | None = None
+    open_land: str | None = None  # park / cemetery / water (Item 128)
+    condo: bool | None = None  # a condo building (many owners); its floor area from the Assessor's condo file (Item 128)
+    condo_units: int | None = None
+    # Who owns a tax-exempt lot (the Assessor's exempt file); ``exempt_owner_assessor`` = the Assessor's own text, not a
+    # spelled-out name; ``public_land`` = physically empty land of the City, the CHA or the County Land Bank (Item 128).
+    exempt_owner: str | None = None
+    exempt_owner_assessor: bool | None = None
+    public_land: bool | None = None
     community_area: int | None = None
     land_use: str | None = None
     parcel_class: str | None = Field(default=None, alias="class")
@@ -189,6 +201,30 @@ class SearchResponse(BaseModel):
     pins: PinsResponse | None = None
     # Only with `includeAreaCounts`: community area number (as a string) -> matches in it.
     areaCounts: dict[str, int] | None = None
+    # Only with `includeMatchIds`: the matches' lot ids (PIN10 as a number, each once, in result order).
+    matchIds: list[int] | None = None
+    matchIdsTruncated: bool = False
+
+
+# A whole view at the map's lot zoom holds up to ~50k lots in the densest areas; the largest community area ~62k.
+MAX_MATCH_IDS = 120_000
+
+
+def match_ids(pins: list[str]) -> tuple[list[int], bool]:
+    """Each match's lot id (PIN10 as a number, the lot tiles' feature id), once, in result order, capped."""
+    seen: set[int] = set()
+    out: list[int] = []
+    for i, pin in enumerate(pins):
+        digits = pin.replace("-", "")[:10]
+        if not digits.isdigit():
+            continue
+        n = int(digits)
+        if n not in seen:
+            seen.add(n)
+            out.append(n)
+            if len(out) >= MAX_MATCH_IDS:
+                return out, i + 1 < len(pins)
+    return out, False
 
 
 ALL_COMMUNITY_AREAS = 77  # Chicago has 77 community areas → coverage "all"
@@ -297,6 +333,12 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         structure=g("structure"),
         surface_parking=g("surface_parking"),
         infrastructure=g("infrastructure"),
+        open_land=g("open_land"),
+        condo=g("condo"),
+        condo_units=g("condo_units"),
+        exempt_owner=g("exempt_owner"),
+        exempt_owner_assessor=g("exempt_owner_assessor"),
+        public_land=g("public_land"),
         community_area=g("community_area") or _community_area_of(parcel),
         land_use=g("land_use_class"),
         # Display reads the REAL assessed value (exempt/$0 included); only the sort key
@@ -403,7 +445,13 @@ def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) ->
         diagnostics=diagnostics,
         pins=_pins_payload(result, data_version) if req.includePins else None,
         areaCounts=_area_counts(result, data_version) if req.includeAreaCounts else None,
+        **_match_ids_fields(result) if req.includeMatchIds else {},
     )
+
+
+def _match_ids_fields(result) -> dict:
+    ids, truncated = match_ids(result.pins)
+    return {"matchIds": ids, "matchIdsTruncated": truncated}
 
 
 def _community_area_of(parcel) -> int | None:

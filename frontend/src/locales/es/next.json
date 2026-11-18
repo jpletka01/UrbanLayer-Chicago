@@ -78,11 +78,31 @@
     "lotInUse": {
       "define": {
         "parking": "El Tasador lo grava como mejora menor (clase 5-90 o 5-80), y no hay nada construido en las huellas de edificios de la Ciudad ni en el LiDAR 2022 del Condado, salvo a lo más una cochera o un cobertizo. Una revisión a mano de 23 lotes así encontró que todos eran estacionamiento en superficie.",
-        "empty": "No hay nada construido en las huellas de edificios de la Ciudad ni en el LiDAR 2022 del Condado, tras los permisos de demolición y de obra nueva, salvo a lo más una cochera o un cobertizo. Solo se muestra en terrenos baldíos, de la Ciudad, de estacionamiento y exentos de impuestos."
+        "empty": "No hay nada construido en las huellas de edificios de la Ciudad ni en el LiDAR 2022 del Condado, tras los permisos de demolición y de obra nueva, salvo a lo más una cochera o un cobertizo. Solo se muestra en terrenos baldíos, de la Ciudad, de estacionamiento y exentos de impuestos.",
+        "rail": "El Tasador clasifica este terreno como propiedad ferroviaria (clase RR), o el Inventario de Uso de Suelo 2023 de CMAP (hecho con fotos aéreas de la primavera de 2023 y los archivos del Tasador) clasifica la mayor parte como derecho de vía ferroviario o patio ferroviario. Una revisión a mano de 34 terrenos que CMAP clasifica como derecho de vía ferroviario encontró que 33 eran terreno ferroviario: vías, la estructura elevada del L o un terraplén. Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir.",
+        "road": "El Inventario de Uso de Suelo 2023 de CMAP clasifica la mayor parte de este terreno exento de impuestos como derecho de vía de calle, y no hay nada construido. Una revisión a mano de 27 terrenos así encontró que todos eran terreno de calle o ferroviario. Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir.",
+        "road_rail": "El Inventario de Uso de Suelo 2023 de CMAP clasifica la mayor parte de este terreno como derecho de vía de calle, y la línea del L de la CTA lo atraviesa (las líneas de la CTA de la Ciudad). Una revisión a mano de 6 terrenos así encontró que todos eran terreno ferroviario y de autopista. Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir.",
+        "park": "Al menos la mitad de este terreno está dentro de un parque del Distrito de Parques de Chicago (los límites del propio Distrito). Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir.",
+        "cemetery": "El Inventario de Uso de Suelo 2023 de CMAP clasifica la mayor parte de este terreno como cementerio. Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir.",
+        "water": "Al menos la mitad de este terreno está bajo el agua en el mapa de lagos y ríos de la Ciudad (los contornos de terrenos del Condado entran al río en algunos lugares). Discovery oculta estos terrenos de forma predeterminada y no les asigna espacio para construir."
+      },
+      "words": {
+        "rail": "Derecho de vía ferroviario: no es un sitio para construir",
+        "road": "Derecho de vía de calle: no es un sitio para construir",
+        "road_rail": "Derecho de vía de calle y del L: no es un sitio para construir",
+        "park": "Parque: no es un sitio para construir",
+        "cemetery": "Cementerio: no es un sitio para construir",
+        "water": "Agua: no es un sitio para construir"
       },
       "ask": {
         "parking": "¿Qué se podría construir en el estacionamiento en superficie de {{address}}?",
-        "empty": "¿Qué se podría construir en el terreno vacío de {{address}}?"
+        "empty": "¿Qué se podría construir en el terreno vacío de {{address}}?",
+        "rail": "¿Quién es dueño del derecho de vía ferroviario en {{address}}, y se podrá construir ahí algún día?",
+        "road": "¿Quién es dueño del derecho de vía de calle en {{address}}, y se podrá construir ahí algún día?",
+        "road_rail": "¿Quién es dueño del derecho de vía de calle y del L en {{address}}, y se podrá construir ahí algún día?",
+        "park": "¿Qué parque hay en {{address}} y quién lo administra?",
+        "cemetery": "¿Qué cementerio hay en {{address}} y se podrá construir en alguna parte algún día?",
+        "water": "¿Por qué el terreno en {{address}} está en el agua y quién es su dueño?"
       }
     },
     "approximate": "Coincidencia aproximada",
@@ -1185,13 +1205,23 @@
       "basis": {
         "commercial_valuation": "Superficie construida de los registros comerciales del Asesor",
         "footprint": "Superficie construida de las huellas de edificios de la Ciudad × pisos",
-        "city_land_inventory": "Sin edificio: terreno baldío de la Ciudad (inventario de terrenos de la Ciudad)"
+        "city_land_inventory": "Sin edificio: terreno baldío de la Ciudad (inventario de terrenos de la Ciudad)",
+        "public_land": "Sin edificio: terreno público vacío (nada en las huellas de la Ciudad ni en el LiDAR 2022 del Condado)"
       },
       "named": {
         "own_rules": "Lo fija su propia ordenanza",
-        "open_space": "Espacio abierto",
-        "transport": "Terreno ferroviario o de transporte"
+        "open_space": "Parque, cementerio o espacio abierto",
+        "transport": "Terreno ferroviario o de transporte",
+        "right_of_way": "Derecho de vía de calle o ferrocarril: no es un sitio para construir",
+        "water": "Agua: no es un sitio para construir",
+        "institution": "Institución exenta (escuela, iglesia, hospital o gobierno): no se calcula el espacio",
+        "condo": "Edificio de condominios: no se calcula el espacio (solo sus unidades están registradas)"
       },
+      "condo": "Edificio de condominios",
+      "condoUnits_one": "Edificio de condominios, {{count}} unidad",
+      "condoUnits_other": "Edificio de condominios, {{count}} unidades",
+      "condoMeasured": "superficie según los registros de condominios del Tasador",
+      "condoNoArea": "sin superficie registrada",
       "narrow": "Franja angosta de {{ft}} pies: rara vez se construye sola",
       "now": {
         "empty": "Terreno baldío",
@@ -1222,7 +1252,10 @@
       "allowed": "Permitido {{value}} · {{pct}}% usado",
       "moreInComplex_one": "1 terreno más del conjunto en esta lista",
       "moreInComplex_other": "{{count}} terrenos más del conjunto en esta lista",
-      "sold": "Vendido en {{price}} en {{year}}"
+      "sold": "Vendido en {{price}} en {{year}}",
+      "owner": "Propietario: {{owner}}",
+      "ownerAssessor": "Propietario, según el registro del Tasador: {{owner}}",
+      "publicLand": "Terreno público vacío"
     },
     "goalSoon": "faltan datos",
     "goal": {
@@ -1281,6 +1314,7 @@
       "unknown": "Sin dato (punteado)",
       "match": "Coincide con la búsqueda",
       "showZoning": "Mostrar distritos de zonificación",
+      "showRail": "Mostrar trenes y transporte",
       "zoomHint": "Los terrenos aparecen al acercarse; la vista de la ciudad muestra las comunidades.",
       "room": {
         "name": "Espacio para construir",
@@ -1291,8 +1325,10 @@
         "3": "5,000–10,000 pies²",
         "4": "10,000 pies² o más",
         "own": "Lo fija su propia ordenanza (PD)",
-        "park": "Parque o espacio abierto",
-        "transport": "Terreno ferroviario o de transporte"
+        "park": "Parque, cementerio o espacio abierto",
+        "transport": "Terreno ferroviario, de transporte o de calle",
+        "institution": "Escuela, iglesia, hospital o gobierno exentos",
+        "condo": "Edificio de condominios sin superficie registrada"
       },
       "lot": {
         "name": "Tamaño del terreno",
@@ -1320,7 +1356,8 @@
         "4": "Comercio",
         "5": "Industrial",
         "6": "Exento de impuestos",
-        "7": "Terreno vial o ferroviario"
+        "7": "Terreno vial o ferroviario",
+        "8": "Parque o cementerio"
       },
       "zoning": {
         "name": "Familia de zonificación",
@@ -1647,7 +1684,34 @@
       "undervalued_mf": "Edificios de 2 a 6 en la cuarta parte más barata por pie²",
       "adu_2flats": "Faltan las áreas de casa de cochera en el índice"
     },
-    "or": " o "
+    "or": " o ",
+    "correction": {
+      "suggest": "Sugerir una corrección",
+      "sent": "Corrección enviada, en revisión",
+      "question": "¿Qué está mal con este edificio?",
+      "chips": {
+        "stories": "Pisos",
+        "area": "Superficie",
+        "gone": "Ya no hay edificio",
+        "there": "Hay un edificio",
+        "isCondo": "Es condominio",
+        "notCondo": "No es condominio",
+        "other": "Otra cosa"
+      },
+      "storiesUnit": "pisos",
+      "storiesLabel": "Número de pisos",
+      "areaLabel": "La superficie que mostramos es",
+      "areaHigh": "Muy alta",
+      "areaLow": "Muy baja",
+      "note": "Agregue una nota (opcional)",
+      "send": "Enviar",
+      "sending": "Enviando…",
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "thanks": "Gracias, lo revisaremos.",
+      "tooMany": "Demasiados reportes por hoy",
+      "failed": "No se pudo enviar. Inténtelo de nuevo."
+    }
   },
   "map": {
     "key": "Leyenda del mapa",
@@ -1670,6 +1734,7 @@
       "sales": "Ventas recientes",
       "transit": "Transporte",
       "streets": "Calles",
+      "rail": "Trenes y transporte",
       "building": "Obras"
     },
     "count": {
@@ -1707,7 +1772,27 @@
     },
     "back": "Volver a la propiedad",
     "streetView": {
-      "link": "Street View (Google)"
+      "link": "Street View (Google)",
+      "button": "Street View"
+    },
+    "googleMaps": "Google Maps",
+    "layers": {
+      "switchTo": "Cambiar a {{map}}",
+      "saved": "Terrenos guardados",
+      "creditsLabel": "Fuentes de datos",
+      "credits": "Datos: Ciudad de Chicago, Condado de Cook, CMAP, CTA, Metra, FRA/USDOT.",
+      "creditsSatellite": "Imágenes: SIG del Condado de Cook, 2025. Datos: Ciudad de Chicago, Condado de Cook, CMAP, CTA, Metra, FRA/USDOT.",
+      "button": "Capas",
+      "title": "Capas del mapa",
+      "close": "Cerrar capas del mapa",
+      "map": "Mapa",
+      "standard": "Mapa",
+      "satellite": "Satélite",
+      "show": "Mostrar",
+      "transit": "Transporte",
+      "zoning": "Distritos de zonificación",
+      "satelliteNote": "Fotos aéreas 2025 del Condado de Cook. Los colores de los terrenos quedan bajo la foto; los contornos y las búsquedas se siguen viendo.",
+      "satelliteCredit": "Imágenes: SIG del Condado de Cook, 2025"
     },
     "families": {
       "residential": "Residencial",
@@ -2588,5 +2673,8 @@
       "usedNote": "Su análisis gratis se usó en otro terreno",
       "approximate": "Necesita un terreno exacto"
     }
+  },
+  "toast": {
+    "close": "Cerrar"
   }
 }

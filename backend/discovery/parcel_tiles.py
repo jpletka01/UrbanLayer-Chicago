@@ -284,10 +284,11 @@ def load_parcels(
             continue
         p = pin.replace("-", "")
         pin10 = p[:10]
-        # The base parcel (suffix 0000) speaks for the lot when the index has it; else the first row seen.
-        if pin10 in want and p[10:] != "0000":
-            continue
+        # The base parcel (suffix 0000) speaks for the lot when the index has it; else the lot's stand-in row (Item 128),
+        # else the first row seen.
         a = json.loads(attrs)
+        if pin10 in want and p[10:] != "0000" and not a.get("lot_stand_in"):
+            continue
         props = {"g": str(a.get("zoning_group"))} if a.get("zoning_group") else {}
         props.update(measure_bands(a))  # Item 104: the Explore map's measures, banded
         want[pin10] = props

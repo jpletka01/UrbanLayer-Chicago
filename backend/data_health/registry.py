@@ -130,10 +130,10 @@ def _band(n: int) -> tuple[int, int]:
     return max(1, int(n * 0.8)), int(n * 1.25) + 1
 
 
-def _socrata(portal: str, dataset: str, id: str, name: str, publisher: str, owner: str, **kw) -> SourceSpec:
+def _socrata(portal: str, dataset: str, id: str, name: str, publisher: str, owner: str | tuple[str, ...], **kw) -> SourceSpec:
     kw.setdefault("tier", "official_record")
     return SourceSpec(id=id, name=name, publisher=publisher, kind="socrata", locator=f"{portal}:{dataset}",
-                      owner_modules=(owner,), **kw)
+                      owner_modules=owner if isinstance(owner, tuple) else (owner,), **kw)
 
 
 def _layer(url: str, id: str, name: str, publisher: str, owner: str, **kw) -> SourceSpec:
@@ -258,8 +258,15 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         COOK, "3r7i-mrz4", "cook.assessor.condo_characteristics", "Assessor - Residential Condominium Unit Characteristics",
-        COOK_ASSESSOR, "backend/retrieval/property/building_facts.py", surfaces=_PROP,
+        COOK_ASSESSOR, ("backend/retrieval/property/building_facts.py", "backend/discovery/lot_sources.py"), surfaces=_PROP,
         fact_keys=("property.building", "property.bldg_sqft", "property.year_built"), cadence_days=7, warn_days=14, alarm_days=45,
+    ),
+    _socrata(
+        COOK, "vgzx-68gb", "cook.assessor.exempt_parcels", "Assessor - Exempt Parcels", COOK_ASSESSOR,
+        "backend/discovery/lot_sources.py", surfaces=("discovery",), fact_keys=(),
+        cadence_days=365, warn_days=400, alarm_days=500,
+        note="Item 128. The owner of each tax-exempt lot, read into the local lot-sources copy (`--exempt-only`); "
+             "a new tax year is published once a year.",
     ),
     _socrata(
         COOK, "csik-bsws", "cook.assessor.commercial_valuation", "Assessor - Commercial Valuation Data", COOK_ASSESSOR,
@@ -417,6 +424,22 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         cadence_days=1460, warn_days=1825, alarm_days=2190,
         note="Item 112. Read from a local copy (map_sources/cmap_lui_2023.db, fetched on the Mac; data edited "
              "2026-09-15 when copied 2026-11-11). A newer data edit means re-fetch. New inventories come every 3-5 years.",
+    ),
+    _socrata(
+        CITY, "xbyr-jnvx", "chi.cta_rail_lines", "CTA - 'L' (Rail) Lines", "Chicago Transit Authority",
+        "backend/map_tiles/rail_lines.py", surfaces=("discovery", "map"), fact_keys=(),
+        cadence_days=730, warn_days=1095, alarm_days=1825,
+        note="Item 128. The L on the base map, and which road right-of-way the L crosses (rail_on_lot). Read from a "
+             "local copy (map_sources/cta_lines.json); a new line or extension means re-fetch. Updated 2024-07-23.",
+    ),
+    _layer(
+        "https://services.arcgis.com/xOi1kZaI0eWDREZv/arcgis/rest/services/NTAD_North_American_Rail_Network_Lines/FeatureServer/0",
+        "fed.ntad.rail_lines", "North American Rail Network Lines", "FRA / USDOT BTS (NTAD)",
+        "backend/map_tiles/rail_lines.py", surfaces=("map",), fact_keys=(),
+        contract=Contract(layer_name="North American Rail Network Lines"),
+        cadence_days=365, warn_days=730, alarm_days=1095,
+        note="Item 128. Metra, Amtrak and freight on the base map; never marks a lot on its own (2 of 5 in the "
+             "owner's check). Public domain. Read from a local copy (map_sources/narn_lines.geojson).",
     ),
     _socrata(
         CITY, "igwz-8jzy", "chi.community_areas", "Boundaries - Community Areas", "City of Chicago",

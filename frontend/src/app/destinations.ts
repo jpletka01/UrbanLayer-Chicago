@@ -29,13 +29,14 @@ export const DESTINATIONS: readonly Destination[] = [
 ];
 
 /** The page_name for a pathname: an exact path, a stored chat (/c/:id) as "chat", a shared one (/s/:token) as
-    "shared_chat", a Settings section as "settings", anything else as "not_found". */
+    "shared_chat", a Settings section as "settings", an admin section as "admin", anything else as "not_found". */
 export function pageNameFor(pathname: string): string {
   const exact = DESTINATIONS.find((e) => e.path === pathname);
   if (exact) return exact.analytics;
   if (pathname.startsWith("/c/")) return "chat";
   if (pathname.startsWith("/s/")) return "shared_chat";
   if (pathname.startsWith("/settings/")) return "settings";
+  if (pathname.startsWith("/admin/")) return "admin";
   if (pathname === "/explore") return "discovery";
   return "not_found";
 }

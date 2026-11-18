@@ -29,6 +29,11 @@ const ROUTES = [
   { id: "about", path: "/about", ready: "about" },
   { id: "privacy", path: "/privacy", ready: "privacy" },
   { id: "not-found", path: "/no-such-page", ready: "not-found" },
+  // /admin redesigned (owner's review 2026-11-17): sign-in is off locally, so the stand-in account is an admin.
+  { id: "admin", path: "/admin", ready: "admin-overview-tiles" },
+  { id: "admin-code", path: "/admin/code", ready: "code-currency" },
+  { id: "admin-corrections", path: "/admin/corrections", ready: "corrections-section" },
+  { id: "admin-access", path: "/admin/access", ready: "early-access" },
 ];
 
 async function open(page: Page, path: string, ready?: string) {
@@ -276,6 +281,85 @@ test("Discovery: a search, matches on the map as outlines, the list, axe light a
     await page.waitForTimeout(300);
     expect(await axe(page), `axe ${scheme}, zoning panel`).toEqual([]);
   }
+});
+
+// The lot in the phone sheet (decision Item 129 §1, PR 2): at 360 px a tapped lot opens in Discovery's own bottom sheet
+// (the address, ×, figures, 44 px buttons), not the floating card; dragging the handle down closes it and the sheet goes
+// back to its peek. 1601 N Milwaukee Ave, framed at its index point, sits in the middle of the map.
+test("Discovery: a tapped lot opens in the phone sheet, drag down closes it, axe light and dark", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, "/discovery?at=41.91085,-87.67777,18.00z");
+  const canvas = page.locator('[data-testid="explore-map"] canvas');
+  await canvas.waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(2500); // the lot tiles
+  const sheet = page.getByTestId("phone-sheet");
+  await expect(sheet).toHaveAttribute("data-state", "peek");
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(sheet).toHaveAttribute("data-state", "lot");
+  await expect(page.getByTestId("lot-sheet-title")).toHaveText("1601 N Milwaukee Ave", { timeout: 15_000 });
+  await expect(page.getByTestId("lot-card")).toHaveCount(0);
+  for (const id of ["lot-card-open", "lot-card-street-view", "lot-card-google-maps"]) {
+    expect((await page.getByTestId(id).boundingBox())!.height, id).toBeGreaterThanOrEqual(44);
+  }
+  // The sheet sits at the height of its content, below the lot it opened for.
+  const sheetBox = (await sheet.boundingBox())!;
+  expect(sheetBox.height).toBeLessThan(box.height * 0.6);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(300);
+    expect(await axe(page), `axe ${scheme}, lot sheet`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "lot sheet overflow").toBeLessThanOrEqual(1);
+  // Drag the handle down past 30 px: the lot closes and the peek is back.
+  const handle = (await page.getByTestId("lot-sheet-handle").boundingBox())!;
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 80, { steps: 5 });
+  await page.mouse.up();
+  await expect(sheet).toHaveAttribute("data-state", "peek");
+  // × closes it too.
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(sheet).toHaveAttribute("data-state", "lot");
+  await page.getByTestId("lot-sheet-close").click();
+  await expect(sheet).toHaveAttribute("data-state", "peek");
+});
+
+// Suggest a correction (decision Item 129 §1, PR 3): the pencil beside the lot sheet's × opens the form over the whole
+// screen; Stories focuses a number field; Send posts the report (CSRF like every POST), the sheet closes, a toast says
+// thanks at the top and the pencil is a check. axe on the open form in both themes, no overflow.
+test("Discovery: suggest a correction from the phone's lot sheet, axe light and dark", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, "/discovery?at=41.91085,-87.67777,18.00z");
+  const canvas = page.locator('[data-testid="explore-map"] canvas');
+  await canvas.waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(2500);
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByTestId("lot-sheet-title")).toHaveText("1601 N Milwaukee Ave", { timeout: 15_000 });
+  await page.getByTestId("correction-open").click();
+  const form = page.getByTestId("correction-dialog");
+  await expect(form.getByText("What's wrong with this building?")).toBeVisible();
+  await expect(form.getByTestId("correction-send")).toBeDisabled();
+  await form.getByRole("button", { name: "Stories" }).click();
+  await expect(form.getByTestId("correction-stories")).toBeFocused();
+  await page.keyboard.type("3");
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(400);
+    expect(await axe(page), `axe ${scheme}, correction form`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "correction form overflow").toBeLessThanOrEqual(1);
+  const sent = page.waitForResponse((r) => r.url().includes("/api/discovery/corrections") && r.request().method() === "POST");
+  await form.getByTestId("correction-send").click();
+  const resp = await sent;
+  expect(resp.status()).toBe(201);
+  expect(resp.request().postDataJSON()).toEqual({ pin: "1431332018", kinds: ["stories"], stories: 3 });
+  await expect(form).toHaveCount(0);
+  await expect(page.getByTestId("toast")).toContainText("Thanks, we'll review it.");
+  await expect(page.getByTestId("correction-sent")).toBeVisible();
 });
 
 // Land in use (M5, decision Item 112): the Lot group offers surface parking beside empty land; turning it on asks the

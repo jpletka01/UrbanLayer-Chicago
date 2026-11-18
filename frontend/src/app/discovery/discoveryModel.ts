@@ -57,11 +57,17 @@ const SEQ = ["#DCEDEB", "#A9D2CE", "#72B0AB", "#4A867E", "#2C4F4A"];
 // Last sale: recent is darkest (where the market is moving).
 const SALE = [SEQ[4], SEQ[3], SEQ[2], SEQ[1], SEQ[0]];
 // The named "room" states: planned development gray (the zoning map's PD gray), park green, transportation peach.
-const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4" };
+const NAMED = { own: "#8F959C", park: "#A7E2B2", transport: "#FDC1B4", institution: "#D9C2E8", condo: "#E8D9B0" };  // lilac and sand: clear of the PD gray (owner)
 // Land in use (Item 112), in the tiles' `l` order (`lot_facts.LAND_IN_USE`): empty land, surface parking, homes,
 // apartments, business, industrial, tax-exempt, road or railroad land. Coastal's colors and a gray, each named in the
 // key; surface parking (lavender) and road land (peach) also carry marks, so neither relies on color alone.
+// Park (8) and water (9) lots are never drawn (NOT_DRAWN), so they have no color here.
 export const USE_COLORS = ["#B89D47", "#9184C4", "#DCEDEB", "#A9D2CE", "#FE9179", "#355E58", "#B4B4B4", "#FDC1B4"];
+
+/** Lots that are parks, cemeteries or open space (room band "p") or mostly under the City's water ("w") are left off
+    the lot layers in every measure: the base map's park green and water show instead (owner's map reviews, Item 128:
+    "for anything that's a park, just remove the drawing of the lots"). */
+export const NOT_DRAWN = ["!", ["in", ["get", "r"], ["literal", ["w", "p"]]]] as const;
 /** The marks over a land-in-use color: "P" on surface parking, "+" on road or railroad land (as transportation zoning). */
 export const USE_TEXTURE: Record<string, "p" | "plus"> = { "1": "p", "7": "plus" };
 // A tile file built before Item 112 (`u` only): its tax-class bands, mapped to the same colors. Its "vacant" is the tax
@@ -75,10 +81,14 @@ export function measureSteps(m: MeasureId): MeasureStep[] {
   switch (m) {
     case "room": return [
       ...SEQ.map((color, i) => ({ value: String(i), color, key: `room.${i}` })),
-      // No base FAR is named, not unknown (owner's review): its own ordinance, open space, a transportation zone.
+      // No base FAR is named, not unknown (owner's review): its own ordinance, open space, a transportation zone (with
+      // road and rail right-of-way, Item 128: one key line).
       { value: "x", color: NAMED.own, key: "room.own" },
-      { value: "p", color: NAMED.park, key: "room.park" },
       { value: "t", color: NAMED.transport, key: "room.transport" },
+      // An exempt school, church, hospital or government site with no building area to count (Item 128).
+      { value: "i", color: NAMED.institution, key: "room.institution" },
+      // A condo building: only its units are on file, so no lot-wide figure (Item 128).
+      { value: "c", color: NAMED.condo, key: "room.condo" },
     ];
     case "lot": return SEQ.map((color, i) => ({ value: String(i), color, key: `lot.${i}` }));
     case "sale": return SALE.map((color, i) => ({ value: String(i), color, key: `sale.${i}` }));
@@ -108,8 +118,8 @@ export function measureColorExpr(m: MeasureId, zoningFamily?: Record<string, str
 
 /** Lots with no band for the measure: drawn dotted ("not known"). Land in use also reads an older file's `u`. */
 export function unknownMeasureFilter(m: MeasureId): unknown {
-  if (m === "use") return ["all", ["!", ["has", "l"]], ["!", ["in", ["get", "u"], ["literal", Object.keys(U_TO_L)]]]];
-  return ["!", ["has", MEASURE_PROP[m]]];
+  if (m === "use") return ["all", NOT_DRAWN, ["!", ["has", "l"]], ["!", ["in", ["get", "u"], ["literal", Object.keys(U_TO_L)]]]];
+  return ["all", NOT_DRAWN, ["!", ["has", MEASURE_PROP[m]]]];
 }
 
 /** The texture layer's filter and pattern for a measure (only land in use has marks); null = no texture layer content. */
@@ -136,13 +146,18 @@ export interface CardModel {
   lotSqft: number | null;
   roomSqft: number | null;
   /** Where the building area behind "room to build" came from, when it isn't the Assessor's own record. */
-  roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | null;
-  /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation. */
-  roomNamed: "own_rules" | "open_space" | "transport" | null;
+  roomBasis: "commercial_valuation" | "footprint" | "city_land_inventory" | "public_land" | null;
+  /** Why there is no room figure, when it isn't unknown: set by its own ordinance, open space, transportation, or road
+      or rail right-of-way (Items 112, 128). */
+  roomNamed: "own_rules" | "open_space" | "transport" | "right_of_way" | "water" | "institution" | "condo" | null;
   /** A strip under 16 ft wide (hidden by default), with its width in feet. */
   narrowFt: number | null;
   /** The room is the multi-parcel site's (this many lots), not the lot's alone. */
   complexLots: number | null;
+  /** A condo building: many owners to buy from; `measured` = the Assessor's own floor area is behind the room. */
+  condo: { units: number | null; measured: boolean } | null;
+  /** Who owns a tax-exempt lot; `assessorText` = the Assessor's own abbreviated text; `publicLand` = empty public land. */
+  owner: { name: string; assessorText: boolean; publicLand: boolean } | null;
   sale: { price: number; year: string; transfer: boolean } | null;
   warning: CardWarning | null;
 }
@@ -153,8 +168,9 @@ export const TRANSFER_BELOW = 10_000;
 export function cardModel(row: ResultRow): CardModel {
   const { title, approx } = rowTitle(row);
   const src = row.bldg_sqft_source;
-  const basis = src === "commercial_valuation" || src === "footprint" || src === "city_land_inventory" ? src : null;
-  const named = row.room_scope === "own_rules" || row.room_scope === "open_space" || row.room_scope === "transport" ? row.room_scope : null;
+  const basis = src === "commercial_valuation" || src === "footprint" || src === "city_land_inventory" || src === "public_land" ? src : null;
+  const named = row.room_scope === "own_rules" || row.room_scope === "open_space" || row.room_scope === "transport"
+    || row.room_scope === "right_of_way" || row.room_scope === "water" || row.room_scope === "institution" || row.room_scope === "condo" ? row.room_scope : null;
   const room = row.room_sqft ?? null;
   return {
     title,
@@ -166,11 +182,22 @@ export function cardModel(row: ResultRow): CardModel {
     roomNamed: room == null ? named : null,
     narrowFt: row.narrow_strip && row.lot_width_ft != null ? Math.round(row.lot_width_ft) : null,
     complexLots: room != null && row.room_scope === "complex" ? row.complex_lots ?? null : null,
+    condo: row.condo ? { units: row.condo_units ?? null, measured: row.bldg_sqft_source === "assessor_condo" } : null,
+    owner: row.exempt_owner
+      ? { name: row.exempt_owner, assessorText: !!row.exempt_owner_assessor, publicLand: !!row.public_land }
+      : null,
     sale: row.last_sale_price != null && row.last_sale_date
       ? { price: row.last_sale_price, year: row.last_sale_date.slice(0, 4), transfer: row.last_sale_price < TRANSFER_BELOW }
       : null,
     warning: row.warning ?? (row.nominal_assessment ? { kind: "nominal" } : null),
   };
+}
+
+/** The card's owner line: "Owner: Chicago Housing Authority", led by "Empty public land" when it is; the Assessor's own
+    abbreviated text is said to be his (owner's review, Item 128). */
+export function ownerLine(t: (k: string, o?: Record<string, unknown>) => string, owner: NonNullable<CardModel["owner"]>): string {
+  const who = t(owner.assessorText ? "discovery.card.ownerAssessor" : "discovery.card.owner", { owner: owner.name });
+  return owner.publicLand ? `${t("discovery.card.publicLand")} · ${who}` : who;
 }
 
 /** Fold the lots of one multi-parcel complex into one card (they share one room-to-build figure, the site's): the
@@ -291,3 +318,21 @@ export function milesBetween(aLat: number, aLon: number, bLat: number, bLon: num
 }
 
 export const clampMiles = (mi: number) => Math.min(RING_MAX_MI, Math.max(RING_MIN_MI, Math.round(mi * 20) / 20));
+
+
+// ---------------------------------------------------------------- where the map is, in the URL (owner's map review)
+
+/** The map's place as `at=41.96600,-87.68870,16.20z` (Google Maps' "@lat,lng,zoom"), so Back, a reload or a shared
+    link returns to the same view instead of the whole city. */
+export function formatAt(center: [number, number], zoom: number): string {
+  return `${center[1].toFixed(5)},${center[0].toFixed(5)},${zoom.toFixed(2)}z`;
+}
+
+/** The view an `at` value names, or null when it is missing, malformed or outside Chicago's area. */
+export function parseAt(value: string | null): { center: [number, number]; zoom: number } | null {
+  const m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)z?$/.exec((value ?? "").trim());
+  if (!m) return null;
+  const lat = Number(m[1]), lon = Number(m[2]), zoom = Number(m[3]);
+  if (lat < 41.5 || lat > 42.2 || lon < -88.3 || lon > -87.2 || zoom < 10 || zoom > 20) return null;
+  return { center: [lon, lat], zoom };
+}

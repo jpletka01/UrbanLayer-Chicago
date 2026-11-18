@@ -1,8 +1,9 @@
 // The new map's style (map track M1, Items 90-91): our own tiles only, roads drawn over the fills, names only
 // zoomed in, On / Dim / Off, and a theme switch that repaints every layer without a reload.
+import { validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import { describe, expect, it } from "vitest";
 import {
-  GROUPS, LAYER_IDS, ROAD_METERS, metersPerPixel, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint, versionedTiles,
+  CTA_COLORS, GROUPS, LAYER_IDS, ROAD_METERS, metersPerPixel, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint, versionedTiles,
   type MapTiles,
 } from "./mapStyle";
 
@@ -41,6 +42,38 @@ describe("the style document", () => {
     expect(at("transit-pin")).toBe(ids.length - 2);
     // The property's own pin is on top, and only when zoomed out (Item 96).
     expect(at("lot-pin")).toBe(ids.length - 1);
+  });
+
+  it("draws transit like Google Maps in its own Rail and transit group: colored lines with an edge, freight with ticks (Item 128)", () => {
+    const ids = LAYER_IDS;
+    expect(ids.indexOf("transit-line")).toBeGreaterThan(ids.indexOf("road-highway"));
+    expect(ids.indexOf("transit-line")).toBeGreaterThan(ids.indexOf("transit-casing"));
+    expect(ids.indexOf("transit-line")).toBeLessThan(ids.indexOf("lot-fill"));
+    expect(groupLayerIds("rail")).toEqual(["rail-land", "rail", "rail-ties", "transit-casing", "transit-line", "station", "rail-label", "station-label"]);
+    expect(groupLayerIds("streets")).not.toContain("rail");
+    // rail land sits under the lots, so a lot paints over it and right-of-way with no lot still reads as rail land
+    expect(ids.indexOf("rail-land")).toBeLessThan(ids.indexOf("parcel-line"));
+    const s = buildStyle(input());
+    const line = s.layers.find((l) => l.id === "transit-line") as { paint: Record<string, unknown> };
+    const color = JSON.stringify(line.paint["line-color"]);
+    for (const c of Object.values(CTA_COLORS)) expect(color).toContain(c);
+    expect(color).toContain('["get","color"]');  // Metra in its own line colors
+    expect(JSON.stringify(line.paint["line-offset"])).toContain('"o"');  // shared track side by side
+    const label = s.layers.find((l) => l.id === "rail-label") as { minzoom?: number };
+    expect(label.minzoom).toBe(STREET_LABEL_MIN_ZOOM);
+    const station = s.layers.find((l) => l.id === "station") as { layout: Record<string, unknown> };
+    expect(JSON.stringify(station.layout["icon-image"])).toContain("station-metra");
+    // MapLibre's own validator accepts every layer (a nested zoom curve once blanked the whole map)
+    for (const theme of ["light", "dark"] as const) {
+      expect(validateStyleMin(buildStyle({ ...input(), theme }) as never).map((e) => e.message)).toEqual([]);
+    }
+    // no rail without the base tiles
+    expect(buildStyle(input({ ...ALL, base: null })).layers.some((l) => l.id === "rail")).toBe(false);
+  });
+
+  it("puts the base file's version in its tile URL too, so the rebuilt base with rail shows at once (Item 128)", () => {
+    const s = buildStyle(input({ ...ALL, base: { minZoom: 10, maxZoom: 16, version: "1800000001" } }));
+    expect((s.sources.base as { tiles: string[] }).tiles).toEqual(["https://urbanlayerchicago.com/api/map/tiles/base/{z}/{x}/{y}.mvt?v=1800000001"]);
   });
 
   it("names streets only zoomed in", () => {

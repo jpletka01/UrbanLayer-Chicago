@@ -1,6 +1,7 @@
-// The new UI's map has no satellite view (Jack, 2026-11-07, Item 78): since Phase 5 it is our own MapLibre style
-// over our own tiles (Items 90-91), with no raster source at all, and nothing in the site loads Mapbox (the old UI's satellite place map
-// went with it in Phase 10).
+// The new UI's map opens without a satellite view (Jack, 2026-11-07, Item 78): its style is our own MapLibre style over
+// our own tiles (Items 90-91), with no raster source at all, and nothing in the site loads Mapbox (the old UI's satellite
+// place map went with it in Phase 10). Since Item 128 (the owner, 2026-11-16) Satellite is an opt-in choice in the Layers
+// button, added to the map only when picked (`satelliteSource`), so the default style below still has none.
 import { describe, expect, it } from "vitest";
 import { buildStyle } from "../map/mapStyle";
 

@@ -397,7 +397,7 @@ class TestMigration:
             await db.close_db()
             await db.init_db()
             cur = await db._get_db().execute("SELECT version FROM schema_version")
-            assert (await cur.fetchone())[0] == 21
+            assert (await cur.fetchone())[0] == db._SCHEMA_VERSION  # later migrations run on top
             cur = await db._get_db().execute("SELECT name FROM sqlite_master WHERE name = 'deep_projects'")
             assert await cur.fetchone()
             await db.close_db()
