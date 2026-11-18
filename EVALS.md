@@ -29,6 +29,7 @@ the latest results, their history, and where the evals are still weak.
 | Parcel kit ([`parcel_kit.py`](eval/parcel_kit.py)) | For 7 hard Chicago parcels with a primary-source answer key, are the zoning district, bulk numbers, overlays and the task answer right, on the Profile and in chat? | 7 parcels × 6 fields × 2 surfaces | Mechanical for district, numbers and overlays; expected-phrase rubric for use and task answers; optional hand-score file | $0 Profile, ~$1 chat | ~8 min |
 | Router ([`run_eval.py --router-only`](eval/run_eval.py)) | Does the router pick the right data sources, intent, location and disclaimer? | 44 questions | Deterministic checks against a hand-labeled expected plan | ~$0.50 | ~4 min |
 | Full pipeline ([`run_eval.py --full`](eval/run_eval.py)) | End-to-end over SSE: plan, retrieved sections, citation validity, per-phase latency | 44 questions | Deterministic, plus optional LLM judge (`--judge`) | ~$3–5 (+~$1.50 judge) | ~25 min |
+| Chat answer audit ([`chat_audit.py`](eval/chat_audit.py), [questions](eval/chat_audit_questions.json)) | Are chat answers right (use verdict vs the use table), and do they fetch, say and carry only what the question needs? Question + follow-up pairs over SSE | 71 questions, 15 follow-ups | Deterministic: conclusion and first-sentence polarity, sources needed vs fetched, unasked topics, field names, `[N]` drift across turns | ~$0.04 a turn, ~$0.004 a router plan | ~1 min a pair |
 | Source coverage ([`source_coverage.py`](eval/source_coverage.py)) | Does each data source reach the context, and does the answer use it? | 29 questions | Per source: COVERED / SYNTHESIS_GAP / RETRIEVAL_GAP / HALLUCINATION | ~$2–3 | ~12 min |
 
 Checks that run in CI on every push, with no API keys:
@@ -368,6 +369,17 @@ Stated plainly, since these limit what the numbers above can claim:
   hallucination when an answer matches a data pattern for a source that isn't
   in the context. Loose patterns can produce false positives, so these are
   leads to read, not verdicts.
+
+### The chat answer audit (2026-11-12)
+
+The suites above check plans and citations; none asked whether a use answer is *right*, or whether an answer sticks
+to the question. The audit set gives every question a one-line answer read from the use and bulk tables, the
+sources it needs and those it doesn't, and a follow-up. The first run (19 full turns, 65 router plans, $0.88–0.93)
+found 4 confident-wrong use answers in 19 (a B2 tavern called a special use, a C2 car wash called prohibited),
+community-area feeds fetched for 17 of 17 parcel use questions, unasked topics in 12 of 16 answers, and `[N]`
+citations drifting to other sections in 4 of 8 follow-ups. Write-up and fixes:
+[`claude-context/audits/2026-11-12_chat-answer-audit.md`](claude-context/audits/2026-11-12_chat-answer-audit.md);
+results in [`eval/results/2026-11-12-chat-audit/`](eval/results/2026-11-12-chat-audit/).
 
 ## Running the evals
 

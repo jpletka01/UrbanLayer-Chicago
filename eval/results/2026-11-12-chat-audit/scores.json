@@ -1,0 +1,1145 @@
+[
+ {
+  "id": "bar_b23_chicago",
+  "category": "parcel_use",
+  "question": "Can I open a bar at 2200 W Chicago Ave?",
+  "followup": "What about a restaurant that serves drinks?",
+  "gold": "no",
+  "turn1": {
+   "first_sentence": "Short answer: A tavern is not permitted by right at 2200 W Chicago Ave — it requires a Special Use approval.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [
+    "special use[^.\\n]{0,80}(bar|tavern)|(bar|tavern)[^.\\n]{0,80}special use"
+   ],
+   "conclusion_ok": false,
+   "intent": "legal_question",
+   "workflow": "business_launch",
+   "search_query": "B3 use table allowed uses tavern drinking establishment permitted uses",
+   "fetched": [
+    "business_api",
+    "incentives_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "business_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "adu",
+    "aro",
+    "business",
+    "flood",
+    "transit"
+   ],
+   "filler_topics": [
+    "adu",
+    "aro",
+    "business",
+    "flood",
+    "transit"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-6-0400",
+    "17-17-0100"
+   ],
+   "gold_prefixes": [
+    "17-17-01",
+    "17-3-02"
+   ],
+   "gold_retrieved": [
+    "17-17-0100",
+    "17-3-0200"
+   ],
+   "cited_sections": [
+    "17-3-0200"
+   ],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 481,
+   "pin": "17063290360000",
+   "cost": 0.091167,
+   "error": null
+  },
+  "turn2": {
+   "first_sentence": "Are you looking to open a business at 2200 W Chicago Ave — specifically, would it be primarily a restaurant that serves alcohol, or primarily a bar/tavern?",
+   "first_sentence_agrees": false,
+   "mixed_conclusion": false,
+   "must_ok": false,
+   "wrong_hits": [],
+   "conclusion_ok": false,
+   "intent": "clarification_needed",
+   "workflow": "business_launch",
+   "search_query": "B3 permitted uses commercial use table allowed uses",
+   "fetched": [
+    "business_api",
+    "incentives_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "business_api"
+   ],
+   "under_fetch": [],
+   "topics": [],
+   "filler_topics": [],
+   "leaked_fields": [],
+   "retrieved_sections": [],
+   "gold_prefixes": [
+    "17-17-01",
+    "17-3-02"
+   ],
+   "gold_retrieved": [],
+   "cited_sections": [],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 35,
+   "pin": "17063290360000",
+   "cost": 0.0041279,
+   "error": null,
+   "carry_ok": false,
+   "same_pin": true,
+   "router_saw_address": true,
+   "parcel_data_refetched": false,
+   "turn1_chunk_sections": [
+    "17-3-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-6-0400",
+    "17-17-0100"
+   ],
+   "index_drift": []
+  }
+ },
+ {
+  "id": "crime_wicker_park",
+  "category": "neighborhood",
+  "question": "How much crime was there in Wicker Park in the last 90 days?",
+  "followup": "Which of those happened near Division and Damen?",
+  "gold": "info",
+  "turn1": {
+   "first_sentence": "West Town had 1,670 reported crimes in the last 90 days (through November 5, 2026, with a 7-day data lag) [data:crime].",
+   "first_sentence_agrees": null,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "incident_lookup",
+   "workflow": "general",
+   "search_query": null,
+   "fetched": [
+    "crime_api"
+   ],
+   "over_fetch": [],
+   "under_fetch": [],
+   "topics": [
+    "crime"
+   ],
+   "filler_topics": [],
+   "leaked_fields": [],
+   "retrieved_sections": [],
+   "gold_prefixes": [],
+   "gold_retrieved": [],
+   "cited_sections": [],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 234,
+   "pin": null,
+   "cost": 0.0147474,
+   "error": null
+  },
+  "turn2": {
+   "first_sentence": "The city's public crime database doesn't allow filtering by specific intersection or block — incidents are recorded with coordinates, but the API data I have access to is aggregated at the community area level (West Town as a whole) [data:c",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "incident_lookup",
+   "workflow": "general",
+   "search_query": null,
+   "fetched": [
+    "crime_api"
+   ],
+   "over_fetch": [],
+   "under_fetch": [],
+   "topics": [
+    "crime"
+   ],
+   "filler_topics": [],
+   "leaked_fields": [],
+   "retrieved_sections": [],
+   "gold_prefixes": [],
+   "gold_retrieved": [],
+   "cited_sections": [],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 142,
+   "pin": null,
+   "cost": 0.014142400000000001,
+   "error": null,
+   "carry_ok": true,
+   "same_pin": null,
+   "router_saw_address": true,
+   "parcel_data_refetched": false,
+   "turn1_chunk_sections": [],
+   "index_drift": []
+  }
+ },
+ {
+  "id": "demolish_landmark_milwaukee",
+  "category": "parcel_trick",
+  "question": "Can I demolish the building at 1601 N Milwaukee Ave?",
+  "followup": null,
+  "gold": "conditional",
+  "turn1": {
+   "first_sentence": "The parcel (PIN 14313320180000, matched via Cook County Address Points) is zoned B3-2 and is not itself a designated Chicago Landmark building — but it sits inside the Milwaukee Avenue District (HD-56), an official Chicago Landmark district",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "legal_question",
+   "workflow": "development_feasibility",
+   "search_query": "demolition permit requirements zoning landmark historic preservation district restrictions",
+   "fetched": [
+    "permits_api",
+    "property_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "permits_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "brownfield",
+    "overlay_landmark",
+    "transit"
+   ],
+   "filler_topics": [
+    "brownfield",
+    "transit"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "2-120-825",
+    "2-120-740",
+    "14A-4-407",
+    "17-4-0400",
+    "14A-2-202"
+   ],
+   "gold_prefixes": [
+    "13-32-23",
+    "2-120-74"
+   ],
+   "gold_retrieved": [
+    "2-120-740"
+   ],
+   "cited_sections": [
+    "2-120-825",
+    "2-120-740",
+    "14A-4-407"
+   ],
+   "cited_off_gold": [
+    "14A-4-407",
+    "2-120-825"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 657,
+   "pin": "14313320180000",
+   "cost": 0.0518904,
+   "error": null
+  },
+  "turn2": null
+ },
+ {
+  "id": "evanston_duplex",
+  "category": "out_of_city",
+  "question": "Can I build a duplex in Evanston?",
+  "followup": "OK, what about 6247 N Rockwell St in Chicago?",
+  "gold": "decline",
+  "turn1": {
+   "first_sentence": "Evanston is a separate city outside Chicago — I only cover Chicago city limits.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "clarification_needed",
+   "workflow": "general",
+   "search_query": null,
+   "fetched": [
+    "vector_search"
+   ],
+   "over_fetch": [],
+   "under_fetch": [],
+   "topics": [],
+   "filler_topics": [],
+   "leaked_fields": [],
+   "retrieved_sections": [],
+   "gold_prefixes": [],
+   "gold_retrieved": [],
+   "cited_sections": [],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 28,
+   "pin": null,
+   "cost": 0.0027909000000000002,
+   "error": null
+  },
+  "turn2": {
+   "first_sentence": "Short answer: No, not by right.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "legal_question",
+   "workflow": "development_feasibility",
+   "search_query": "RS-3 use table allowed uses two-flat duplex multi-unit residential",
+   "fetched": [
+    "permits_api",
+    "property_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "permits_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "adu",
+    "aro",
+    "brownfield",
+    "flood"
+   ],
+   "filler_topics": [
+    "adu",
+    "aro",
+    "brownfield",
+    "flood"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-2-0100",
+    "17-2-0300",
+    "17-2-0200",
+    "17-5-0200",
+    "17-7-0590"
+   ],
+   "gold_prefixes": [
+    "17-2-02"
+   ],
+   "gold_retrieved": [
+    "17-2-0200"
+   ],
+   "cited_sections": [
+    "17-2-0100",
+    "17-2-0200",
+    "17-5-0200",
+    "17-7-0590"
+   ],
+   "cited_off_gold": [
+    "17-2-0100",
+    "17-5-0200",
+    "17-7-0590"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 444,
+   "pin": "13012120030000",
+   "cost": 0.0417334,
+   "error": null,
+   "carry_ok": true,
+   "same_pin": null,
+   "router_saw_address": true,
+   "parcel_data_refetched": true,
+   "turn1_chunk_sections": [],
+   "index_drift": []
+  }
+ },
+ {
+  "id": "gas_station_c25_chicago",
+  "category": "parcel_trick",
+  "question": "Can I open a gas station at 368 W Chicago Ave?",
+  "followup": "What about a car wash?",
+  "gold": "no",
+  "turn1": {
+   "first_sentence": "No — a new gas station cannot be opened at 368 W Chicago Ave under current rules.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "legal_question",
+   "workflow": "business_launch",
+   "search_query": "B3 use table allowed uses automobile service station fueling",
+   "fetched": [
+    "business_api",
+    "incentives_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "business_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "aro",
+    "flood",
+    "incentives",
+    "transit"
+   ],
+   "filler_topics": [
+    "aro",
+    "flood",
+    "incentives"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-3-0100",
+    "3-52-010",
+    "17-3-0500",
+    "17-3-0200",
+    "3-52-110"
+   ],
+   "gold_prefixes": [
+    "17-3-02"
+   ],
+   "gold_retrieved": [
+    "17-3-0200"
+   ],
+   "cited_sections": [
+    "17-3-0200"
+   ],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 370,
+   "pin": "17044360170000",
+   "cost": 0.042647399999999995,
+   "error": null
+  },
+  "turn2": {
+   "first_sentence": "A car wash faces the same hard prohibition as a gas station at this address — it cannot be opened at 368 W Chicago Ave.",
+   "first_sentence_agrees": false,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": false,
+   "intent": "legal_question",
+   "workflow": "business_launch",
+   "search_query": "B3 use table allowed uses commercial vehicle services",
+   "fetched": [
+    "business_api",
+    "incentives_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "business_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "aro",
+    "incentives",
+    "transit"
+   ],
+   "filler_topics": [
+    "aro",
+    "incentives"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-3-0200",
+    "17-3-0100",
+    "17-17-0100",
+    "17-3-0500",
+    "3-52-010"
+   ],
+   "gold_prefixes": [
+    "17-3-02"
+   ],
+   "gold_retrieved": [
+    "17-3-0200"
+   ],
+   "cited_sections": [
+    "17-3-0200",
+    "17-3-0100",
+    "17-3-0500"
+   ],
+   "cited_off_gold": [
+    "17-3-0100",
+    "17-3-0500"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 364,
+   "pin": "17044360170000",
+   "cost": 0.0477294,
+   "error": null,
+   "carry_ok": true,
+   "same_pin": true,
+   "router_saw_address": true,
+   "parcel_data_refetched": true,
+   "turn1_chunk_sections": [
+    "17-3-0100",
+    "3-52-010",
+    "17-3-0500",
+    "17-3-0200",
+    "3-52-110"
+   ],
+   "index_drift": [
+    "[4] 17-3-0200 -> 17-3-0500"
+   ]
+  }
+ },
+ {
+  "id": "misspelled_artesian",
+  "category": "vague",
+  "question": "can i bild apartmnts at 1256 n artesion",
+  "followup": null,
+  "gold": "yes",
+  "turn1": {
+   "first_sentence": "Yes, multi-unit residential is allowed at 1256 N Artesian Ave — but the lot is small and city-owned, which is the bigger hurdle.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "legal_question",
+   "workflow": "development_feasibility",
+   "search_query": "residential multifamily use table allowed uses bulk and density standards FAR building height",
+   "fetched": [
+    "neighborhood_domain",
+    "permits_api",
+    "property_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "permits_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "adu",
+    "aro",
+    "brownfield",
+    "flood",
+    "property_value",
+    "walkscore"
+   ],
+   "filler_topics": [
+    "adu",
+    "aro",
+    "brownfield",
+    "flood",
+    "property_value",
+    "walkscore"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-2-0300",
+    "17-4-0400",
+    "17-3-0300",
+    "17-3-0400",
+    "17-4-0200"
+   ],
+   "gold_prefixes": [
+    "17-2-02",
+    "17-2-03"
+   ],
+   "gold_retrieved": [
+    "17-2-0300"
+   ],
+   "cited_sections": [
+    "17-2-0300"
+   ],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 572,
+   "pin": "16012280180000",
+   "cost": 0.0635064,
+   "error": null
+  },
+  "turn2": null
+ },
+ {
+  "id": "restaurant_m23_clybourn",
+  "category": "parcel_use",
+  "question": "Could I open a restaurant at 1930 N Clybourn Ave?",
+  "followup": "And could I live in an apartment upstairs?",
+  "gold": "conditional",
+  "turn1": {
+   "first_sentence": "Opening a restaurant at 1930 N Clybourn Ave is possible under M2-3 zoning, but with important limitations.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "legal_question",
+   "workflow": "business_launch",
+   "search_query": "B3 use table allowed uses permitted uses commercial restaurant food service",
+   "fetched": [
+    "business_api",
+    "food_inspections_api",
+    "incentives_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "business_api",
+    "food_inspections_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "food",
+    "incentives",
+    "transit"
+   ],
+   "filler_topics": [
+    "food",
+    "incentives",
+    "transit"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-3-0200",
+    "17-3-0300",
+    "17-17-0100",
+    "17-3-0100",
+    "17-5-0200"
+   ],
+   "gold_prefixes": [
+    "17-5-02"
+   ],
+   "gold_retrieved": [
+    "17-5-0200"
+   ],
+   "cited_sections": [
+    "17-3-0200",
+    "17-3-0300",
+    "17-3-0100",
+    "17-5-0200"
+   ],
+   "cited_off_gold": [
+    "17-3-0100",
+    "17-3-0200",
+    "17-3-0300"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 393,
+   "pin": "14324060010000",
+   "cost": 0.040451400000000005,
+   "error": null
+  },
+  "turn2": {
+   "first_sentence": "No — residential use is not permitted in M2-3 zoning, so you cannot live upstairs.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "legal_question",
+   "workflow": "development_feasibility",
+   "search_query": "M2-3 use table allowed uses residential dwelling unit upper floor",
+   "fetched": [
+    "property_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [],
+   "under_fetch": [],
+   "topics": [
+    "adu"
+   ],
+   "filler_topics": [
+    "adu"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-2-0300",
+    "17-6-0400",
+    "14B-5-509",
+    "14B-16-1607",
+    "17-3-0400"
+   ],
+   "gold_prefixes": [
+    "17-5-02"
+   ],
+   "gold_retrieved": [],
+   "cited_sections": [
+    "17-2-0300",
+    "17-6-0400"
+   ],
+   "cited_off_gold": [
+    "17-2-0300",
+    "17-6-0400"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 321,
+   "pin": "14324060010000",
+   "cost": 0.0409324,
+   "error": null,
+   "carry_ok": true,
+   "same_pin": true,
+   "router_saw_address": true,
+   "parcel_data_refetched": true,
+   "turn1_chunk_sections": [
+    "17-3-0200",
+    "17-3-0300",
+    "17-17-0100",
+    "17-3-0100",
+    "17-5-0200"
+   ],
+   "index_drift": [
+    "[1] 17-3-0200 -> 17-2-0300",
+    "[2] 17-3-0300 -> 17-6-0400"
+   ]
+  }
+ },
+ {
+  "id": "restaurant_rm6_wrightwood",
+  "category": "parcel_use",
+  "question": "Can I put a restaurant in 443 w wrightwood?",
+  "followup": "What about a coffee shop instead?",
+  "gold": "conditional",
+  "turn1": {
+   "first_sentence": "Short answer: No — not by right at 443 W Wrightwood Ave.",
+   "first_sentence_agrees": false,
+   "mixed_conclusion": false,
+   "must_ok": false,
+   "wrong_hits": [],
+   "conclusion_ok": false,
+   "intent": "legal_question",
+   "workflow": "business_launch",
+   "search_query": "use table allowed uses restaurant food service zoning district",
+   "fetched": [
+    "business_api",
+    "food_inspections_api",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "business_api",
+    "food_inspections_api"
+   ],
+   "under_fetch": [
+    "property_domain"
+   ],
+   "topics": [
+    "aro",
+    "food",
+    "overlay_landmark"
+   ],
+   "filler_topics": [
+    "aro",
+    "food"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-5-0200",
+    "17-3-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-17-0100"
+   ],
+   "gold_prefixes": [
+    "17-17-01",
+    "17-2-02",
+    "17-9-01"
+   ],
+   "gold_retrieved": [
+    "17-17-0100",
+    "17-2-0200"
+   ],
+   "cited_sections": [
+    "17-3-0200",
+    "17-2-0200",
+    "17-17-0100"
+   ],
+   "cited_off_gold": [
+    "17-3-0200"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 361,
+   "pin": "14283180570000",
+   "cost": 0.074961,
+   "error": null
+  },
+  "turn2": {
+   "first_sentence": "Same answer, unfortunately — a coffee shop is also not permitted by right at 443 W Wrightwood Ave.",
+   "first_sentence_agrees": false,
+   "mixed_conclusion": false,
+   "must_ok": false,
+   "wrong_hits": [
+    "not (be )?permitted by[- ]right"
+   ],
+   "conclusion_ok": false,
+   "intent": "legal_question",
+   "workflow": "business_launch",
+   "search_query": "use table allowed uses retail food service commercial district",
+   "fetched": [
+    "business_api",
+    "incentives_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "business_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "business",
+    "overlay_landmark"
+   ],
+   "filler_topics": [
+    "business"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-5-0200",
+    "17-7-0450",
+    "10-28-800",
+    "17-3-0200",
+    "4-8-010"
+   ],
+   "gold_prefixes": [
+    "17-2-02",
+    "17-9-01"
+   ],
+   "gold_retrieved": [],
+   "cited_sections": [
+    "17-7-0450",
+    "17-3-0200"
+   ],
+   "cited_off_gold": [
+    "17-3-0200",
+    "17-7-0450"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 293,
+   "pin": "14283180570000",
+   "cost": 0.0375144,
+   "error": null,
+   "carry_ok": true,
+   "same_pin": true,
+   "router_saw_address": true,
+   "parcel_data_refetched": true,
+   "turn1_chunk_sections": [
+    "17-5-0200",
+    "17-3-0200",
+    "17-4-0200",
+    "17-2-0200",
+    "17-17-0100"
+   ],
+   "index_drift": [
+    "[2] 17-3-0200 -> 17-7-0450",
+    "[4] 17-2-0200 -> 17-3-0200"
+   ]
+  }
+ },
+ {
+  "id": "restaurants_residential_code",
+  "category": "code_research",
+  "question": "Are restaurants allowed in residential zoning districts in Chicago?",
+  "followup": "What does that section say about how big it can be?",
+  "gold": "no",
+  "turn1": {
+   "first_sentence": "In Chicago's residential zoning districts, restaurants are generally not permitted.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": false,
+   "wrong_hits": [],
+   "conclusion_ok": false,
+   "intent": "legal_question",
+   "workflow": "general",
+   "search_query": "residential zoning district use table allowed uses commercial",
+   "fetched": [
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "regulatory_domain"
+   ],
+   "under_fetch": [],
+   "topics": [],
+   "filler_topics": [],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-3-0200",
+    "17-2-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-9-0100"
+   ],
+   "gold_prefixes": [
+    "17-17-01",
+    "17-2-02",
+    "17-9-01"
+   ],
+   "gold_retrieved": [
+    "17-2-0200",
+    "17-9-0100"
+   ],
+   "cited_sections": [
+    "17-3-0200",
+    "17-2-0200",
+    "17-5-0200",
+    "17-9-0100"
+   ],
+   "cited_off_gold": [
+    "17-3-0200",
+    "17-5-0200"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 321,
+   "pin": null,
+   "cost": 0.0245004,
+   "error": null
+  },
+  "turn2": {
+   "first_sentence": "The retrieved code sections don't directly address restaurant size limits — the question is a bit ambiguous without a specific address or district, but I can share what the code text does say about size standards that came back in this cont",
+   "first_sentence_agrees": null,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "legal_question",
+   "workflow": "general",
+   "search_query": "residential district use table allowed uses bulk and density standards floor area size limitations",
+   "fetched": [
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "regulatory_domain"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "overlay_landmark",
+    "transit"
+   ],
+   "filler_topics": [
+    "overlay_landmark",
+    "transit"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-2-0300",
+    "17-4-0400",
+    "17-3-0400",
+    "17-9-0100",
+    "17-5-0400"
+   ],
+   "gold_prefixes": [
+    "17-9-01"
+   ],
+   "gold_retrieved": [
+    "17-9-0100"
+   ],
+   "cited_sections": [
+    "17-2-0300",
+    "17-4-0400",
+    "17-3-0400",
+    "17-9-0100"
+   ],
+   "cited_off_gold": [
+    "17-2-0300",
+    "17-3-0400",
+    "17-4-0400"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 295,
+   "pin": null,
+   "cost": 0.025041400000000002,
+   "error": null,
+   "carry_ok": true,
+   "same_pin": null,
+   "router_saw_address": false,
+   "parcel_data_refetched": false,
+   "turn1_chunk_sections": [
+    "17-3-0200",
+    "17-2-0200",
+    "17-5-0200",
+    "17-4-0200",
+    "17-9-0100"
+   ],
+   "index_drift": [
+    "[1] 17-3-0200 -> 17-2-0300",
+    "[2] 17-2-0200 -> 17-4-0400",
+    "[3] 17-5-0200 -> 17-3-0400"
+   ]
+  }
+ },
+ {
+  "id": "tod_c25_chicago_bonus",
+  "category": "parcel_trick",
+  "question": "Can I get a density bonus at 368 W Chicago Ave because it's near transit?",
+  "followup": null,
+  "gold": "no",
+  "turn1": {
+   "first_sentence": "No — this parcel does not qualify for a density, FAR, or height bonus based on transit proximity.",
+   "first_sentence_agrees": true,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "legal_question",
+   "workflow": "development_feasibility",
+   "search_query": "transit served location density bonus TOD transit-oriented development bulk and density standards floor area ratio",
+   "fetched": [
+    "incentives_domain",
+    "neighborhood_domain",
+    "permits_api",
+    "property_domain",
+    "regulatory_domain",
+    "vector_search"
+   ],
+   "over_fetch": [
+    "permits_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "aro",
+    "transit"
+   ],
+   "filler_topics": [
+    "aro"
+   ],
+   "leaked_fields": [],
+   "retrieved_sections": [
+    "17-4-0400",
+    "17-3-0400",
+    "2-44-085",
+    "17-7-0400",
+    "17-2-0300"
+   ],
+   "gold_prefixes": [
+    "17-10-01",
+    "17-3-04"
+   ],
+   "gold_retrieved": [
+    "17-3-0400"
+   ],
+   "cited_sections": [
+    "17-4-0400",
+    "17-3-0400",
+    "2-44-085"
+   ],
+   "cited_off_gold": [
+    "17-4-0400",
+    "2-44-085"
+   ],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 368,
+   "pin": "17044360170000",
+   "cost": 0.062420399999999994,
+   "error": null
+  },
+  "turn2": null
+ },
+ {
+  "id": "vacant_englewood",
+  "category": "neighborhood",
+  "question": "Which vacant buildings were reported in Englewood recently?",
+  "followup": "Tell me more about the first address you listed.",
+  "gold": "info",
+  "turn1": {
+   "first_sentence": "Englewood has 332 vacant building cases on record, all reported through the Chicago Police Department [data:vacantbuildings].",
+   "first_sentence_agrees": null,
+   "mixed_conclusion": false,
+   "must_ok": true,
+   "wrong_hits": [],
+   "conclusion_ok": true,
+   "intent": "incident_lookup",
+   "workflow": "general",
+   "search_query": null,
+   "fetched": [
+    "vacant_buildings_api"
+   ],
+   "over_fetch": [],
+   "under_fetch": [],
+   "topics": [
+    "vacant"
+   ],
+   "filler_topics": [],
+   "leaked_fields": [],
+   "retrieved_sections": [],
+   "gold_prefixes": [],
+   "gold_retrieved": [],
+   "cited_sections": [],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 244,
+   "pin": null,
+   "cost": 0.0180144,
+   "error": null
+  },
+  "turn2": {
+   "first_sentence": "Could you provide a specific address or street name in Englewood so I can look up vacant building reports and related information for that location?",
+   "first_sentence_agrees": null,
+   "mixed_conclusion": false,
+   "must_ok": false,
+   "wrong_hits": [],
+   "conclusion_ok": false,
+   "intent": "clarification_needed",
+   "workflow": "general",
+   "search_query": null,
+   "fetched": [
+    "311_api",
+    "crime_api",
+    "vacant_buildings_api"
+   ],
+   "over_fetch": [
+    "311_api",
+    "crime_api"
+   ],
+   "under_fetch": [],
+   "topics": [
+    "vacant"
+   ],
+   "filler_topics": [],
+   "leaked_fields": [],
+   "retrieved_sections": [],
+   "gold_prefixes": [],
+   "gold_retrieved": [],
+   "cited_sections": [],
+   "cited_off_gold": [],
+   "citation_warnings": [],
+   "truncated": false,
+   "words": 25,
+   "pin": null,
+   "cost": 0.0051149,
+   "error": null,
+   "carry_ok": true,
+   "same_pin": null,
+   "router_saw_address": true,
+   "parcel_data_refetched": false,
+   "turn1_chunk_sections": [],
+   "index_drift": []
+  }
+ }
+]
