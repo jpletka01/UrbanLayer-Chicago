@@ -539,17 +539,18 @@
       "sections": [
         "2-44-140"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "The Commissioner of Housing may still waive any debt, and release its liens, for a residential or mixed-use building in a Department of Housing neighborhood-revitalization initiative or program, but no longer has to consult the Commissioner of Buildings first in every case: consultation is now required only when the building is subject to an abatement proceeding under §14A-3-313 (§2-44-140).",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "Chat retrieves the new text once codified. No Profile fact or rule depends on §2-44-140.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/13212631-f6fb-4b20-8240-06b49302290d.pdf",
+      "reviewed_on": "2026-11-18",
+      "reviewed_by": "claude (read in session, 2026-11-18); Jack approves in the monthly-review PR",
+      "effective": "upon passage and publication"
     },
     "SO2025-0017573": {
       "record": "SO2025-0017573",
@@ -560,19 +561,21 @@
       "relevance": "cited_other",
       "kind": "text",
       "sections": [
-        "2-44-170"
+        "2-44-050",
+        "2-44-055"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "As passed (substitute), it adds §2-44-055, not the §2-44-170 its title names, and amends §2-44-050(a)(7)-(8) so the Housing Commissioner's tax-credit powers are exercised subject to it. For City-assisted rental developments of 10 or more units with some affordable units, under any Qualified Allocation Plan published on or after 2027-01-01: each is underwritten with a project-specific construction contingency reserve, generally held by the sponsor, who may keep cost savings and unspent contingency after completion; change orders need no prior Department approval once the sponsor certifies compliance, unless they change unit count, unit mix or affordability, materially affect accessibility or approved amenities, or consume the greater of $20,000 or 20% of the remaining contingency; occupancy is authorized on five listed conditions (final certificate of occupancy, insurance, architect's substantial completion and punch list, MOPD accessibility sign-off). From no later than 2027-06-30 until 2032-06-30 the Department publishes an annual status report on each development and quarterly processing-time metrics.",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "Chat retrieves the new text once codified. No Profile fact or rule depends on Chapter 2-44's tax-credit administration. Title says new §2-44-170; the passed substitute adds §2-44-055 instead.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/3311f477-00d8-4302-a915-a1be2f3892e3.pdf",
+      "reviewed_on": "2026-11-18",
+      "reviewed_by": "claude (read in session, 2026-11-18); Jack approves in the monthly-review PR",
+      "effective": "upon passage and publication; the policy rules apply to developments under a Qualified Allocation Plan published on or after 2027-01-01"
     },
     "SO2026-0027165": {
       "record": "SO2026-0027165",
@@ -587,17 +590,18 @@
         "18-14-101.4",
         "18-14-102.3"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "As passed (substitute as amended in committee): a Group 1 or Group 2 covered building with a data center is now a covered building for energy benchmarking even if more than 10% of its floor area is Group A-5, F, H, S or U, and \"data center\" is defined (§18-14-101.3). The Commissioner of Water Management shall (was may) send buildings' water usage to the Chief Sustainability Officer, who may make it public for covered buildings selected by rule; an owner may ask that it not be published on grounds listed in §18-14-102.1(c)(i), (iii) or (iv), and the old owner's option to include water data in its benchmark is deleted (§18-14-101.4). Data centers are dropped from the exception that kept a building's benchmarking information and energy rating from public release; television studios and trading floors keep it (§18-14-102.3).",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "The Profile shows a building's record from the City's Energy Benchmarking dataset (xq83-jr8c) as published; nothing in the product states which buildings are covered or that data centers are excluded, so newly published data-center records and any water data simply appear when the City adds them. Chat retrieves the new text once codified. Read the 'as amended in Committee' Legislation PDF: the committee substituted and amended on 2026-09-01, and the earlier SO PDF still says 'may transmit'.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/68247cfa-8746-49a9-8f00-def9779e0ca1.pdf",
+      "reviewed_on": "2026-11-18",
+      "reviewed_by": "claude (read in session, 2026-11-18); Jack approves in the monthly-review PR",
+      "effective": "upon passage and publication"
     },
     "SO2026-0027237": {
       "record": "SO2026-0027237",
@@ -610,17 +614,18 @@
       "sections": [
         "2-45-165"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Adds Class 8 MICRO, Class C and Class L to the Cook County incentive classifications whose revocation the City may request under §2-45-165(a)(1). Adds to the factors the Committee may weigh on a resolution to revoke a property tax incentive (§2-45-165(e)): debts to the City or its sister agencies outstanding more than two payment periods or six months after notice (violation-remediation liens, water and utility bills, fines), failure to keep required licenses or permits, or repeated or substantial Code violations including the Zoning Ordinance or Building Code left uncured after notice, by an owner-occupant or by tenants holding 75% of the occupied space; the property staying vacant or substantially underused for 12 or more months after the classification ordinance without documented cause; failure to start construction on schedule; failure to execute a required redevelopment agreement within 270 days; appealing taxes or otherwise taking the benefit before the City's certificate of completion; and fraud or material misrepresentation in obtaining the incentive.",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "The Profile's incentive facts say which classes a lot could seek, not the revocation process, so nothing it states changes. Chat retrieves the new text once codified. Exhibit A (an example revocation resolution) is a separate attachment and was not read; it is not part of the Code text.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/1ae55c31-f769-4641-bc83-84040157c6c0.pdf",
+      "reviewed_on": "2026-11-18",
+      "reviewed_by": "claude (read in session, 2026-11-18); Jack approves in the monthly-review PR",
+      "effective": "upon passage and publication"
     }
   }
 }
