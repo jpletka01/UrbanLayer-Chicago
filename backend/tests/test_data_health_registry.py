@@ -132,6 +132,14 @@ def test_frozen_sources_state_what_they_are_frozen_at():
             assert s.warn_days is None and s.alarm_days is None, f"{s.id}: frozen sources alarm on change, not age"
 
 
+def test_street_centerlines_alarm_on_change_not_age():
+    # Registered (Item 67) when the City's last refresh was already 4.4 years old, so an age rule alarmed on
+    # a static layer forever (data-health-baselines Item 2). A change is what matters: base tiles and block faces.
+    spec = BY_ID["chi.street_centerlines"]
+    assert spec.frozen and spec.frozen.as_of == "2021-06-11"
+    assert spec.warn_days is None and spec.alarm_days is None
+
+
 def test_critical_set_matches_the_plan():
     critical = {s.id for s in SOURCES if s.severity == "critical"}
     for sid in ("chi.zoning.districts", "cook.parcel_universe", "cook.address_points", "cook.assessor.values",
@@ -142,7 +150,7 @@ def test_critical_set_matches_the_plan():
 
 
 def test_known_stale_sources_are_in_the_plans_day_one_table():
-    for sid in ("cook.address_points", "chi.vacant_buildings", "chi.nof_large"):
+    for sid in ("cook.address_points", "chi.vacant_buildings", "chi.nof_large", "chi.nof_small"):
         assert BY_ID[sid].ack, sid
     assert BY_ID["chi.socioeconomic_2008_2012"].retired
 
