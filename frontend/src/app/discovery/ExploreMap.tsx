@@ -3,7 +3,7 @@
 // retried); Discovery adds the city's community areas below lot zoom, every lot filled by the chosen measure (the
 // tiles' banded properties), matches as outlines only (owner, Item 99: no dots, no pins), the rest dimmed while a
 // search or quick filter is on, the address ring, and a lot card that opens its Profile.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import * as maplibregl from "maplibre-gl";
@@ -67,6 +67,13 @@ export interface ExploreMapProps {
   onPickArea?: (ca: number) => void;
   /** The sort key for a lot card's row (the card shows the same row as the list). */
   sortKey: string;
+  /** The clicked lot, when the page holds it (on a phone the page shows it in its bottom sheet, Item 129 §1). */
+  picked?: Picked | null;
+  onPickedChange?: Dispatch<SetStateAction<Picked | null>>;
+  /** Draw the floating lot card over the map (laptop); false = the page shows the lot itself (phone sheet). */
+  inlineCard?: boolean;
+  /** Pixels of the map hidden under the page's bottom sheet: a picked lot is kept in view above them. */
+  bottomInset?: number;
   className?: string;
 }
 
@@ -186,7 +193,8 @@ const NONE = ["==", ["get", "__none__"], "__never__"];
 export interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; roads: RoadLine[]; lookup: DiscoveryOutlineLookup | null }
 
 export function ExploreMap({
-  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, basemap = "standard", savedPoints = NO_POINTS, showSaved = true, walkMiles = null, highlight = null, onView, onPickArea, sortKey, className,
+  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, basemap = "standard", savedPoints = NO_POINTS, showSaved = true, walkMiles = null, highlight = null, onView, onPickArea, sortKey,
+  picked: pickedProp, onPickedChange, inlineCard = true, bottomInset = 0, className,
 }: ExploreMapProps) {
   const { t, i18n } = useTranslation("next");
   const { resolvedTheme } = useThemeContext();
@@ -196,7 +204,10 @@ export function ExploreMap({
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   const [tiles, setTiles] = useState<MapTiles | null>(null);
-  const [picked, setPicked] = useState<Picked | null>(null);
+  const [ownPicked, setOwnPicked] = useState<Picked | null>(null);
+  // Held by the page when it passes `onPickedChange` (the phone's lot sheet), else here.
+  const picked = onPickedChange ? pickedProp ?? null : ownPicked;
+  const setPicked = onPickedChange ?? setOwnPicked;
   // The clicked lot is outlined like a match while its card is open; a click elsewhere or closing the card clears it.
   const pickedId = useRef<number | null>(null);
   useEffect(() => {
@@ -209,8 +220,8 @@ export function ExploreMap({
     pickedId.current = next;
   }, [picked, ready]);
   const [areas, setAreas] = useState<GeoJSON.FeatureCollection | null>(null);
-  const live = useRef({ theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring });
-  useEffect(() => { live.current = { theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring }; });
+  const live = useRef({ theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring, setPicked });
+  useEffect(() => { live.current = { theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring, setPicked }; });
 
   // Create the map once.
   useEffect(() => {
@@ -283,10 +294,10 @@ export function ExploreMap({
           return;
         }
         const f = m.getLayer("lot-measure") ? m.queryRenderedFeatures(e.point, { layers: ["lot-measure"] })[0] : undefined;
-        if (!f || f.id == null) { setPicked(null); return; }
+        if (!f || f.id == null) { live.current.setPicked(null); return; }
         const pin10 = String(f.id).padStart(10, "0");
         const c = m.getContainer();
-        setPicked({ pin10, at: [e.point.x, e.point.y], size: [c.clientWidth, c.clientHeight], ll: [e.lngLat.lng, e.lngLat.lat], roads: loadedRoads(m), lookup: null });
+        live.current.setPicked({ pin10, at: [e.point.x, e.point.y], size: [c.clientWidth, c.clientHeight], ll: [e.lngLat.lng, e.lngLat.lat], roads: loadedRoads(m), lookup: null });
       });
       m.on("mouseenter", "lot-measure", () => { m.getCanvas().style.cursor = "pointer"; });
       m.on("mouseleave", "lot-measure", () => { m.getCanvas().style.cursor = ""; });
@@ -541,7 +552,19 @@ export function ExploreMap({
       if (!c.signal.aborted) setPicked((p) => (p && p.pin10 === picked.pin10 ? { ...p, lookup } : p));
     });
     return () => c.abort();
-  }, [picked, sortKey]);
+  }, [picked, sortKey, setPicked]);
+
+  // On a phone the lot opens in the bottom sheet: when the sheet would cover it, the map moves it into the part above.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !picked || bottomInset <= 0) return;
+    const h = map.getContainer().clientHeight;
+    const visible = h - bottomInset;
+    const y = map.project(picked.ll as [number, number]).y;
+    if (visible > 48 && (y > visible - 24 || y < 24)) map.panBy([0, y - visible / 2], { duration: reducedMotion() ? 0 : 300 });
+    // The lot (its click point) and the sheet's height decide; the rest of `picked` (its row arriving) doesn't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picked?.pin10, picked?.ll, bottomInset, ready]);
 
   if (error) {
     return (
@@ -562,77 +585,142 @@ export function ExploreMap({
           <LoaderCircle aria-hidden className="h-5 w-5 animate-spin nx-muted" strokeWidth={STROKE} />
         </div>
       )}
-      {picked && <LotCard picked={picked} onClose={() => setPicked(null)} />}
+      {picked && inlineCard && <LotCard picked={picked} onClose={() => setPicked(null)} />}
     </div>
   );
 }
 
-export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => void }) {
-  const { t, i18n } = useTranslation("next");
-  const navigate = useNavigate();
+/** What a picked lot shows, shared by the floating card (laptop) and the phone's lot sheet. */
+function useLotCard(picked: Picked) {
+  const { i18n } = useTranslation("next");
   const n = (v: number) => Math.round(v).toLocaleString(i18n.language.startsWith("es") ? "es-MX" : "en-US");
-  const [w, h] = picked.size;
-  const left = Math.min(Math.max(8, picked.at[0] - 140), w - 288);
-  const above = picked.at[1] > h * 0.55;
-  const style = above ? { left, bottom: h - picked.at[1] + 12 } : { left, top: picked.at[1] + 12 };
   const row = picked.lookup?.status === "found" ? picked.lookup.row : null;
   const card = row ? cardModel(row) : null;
   // Stand on the lot's own address street (its frontage), facing the lot, not in the alley behind it (Item 94).
   const sv = useMemo(() => viewpointFor(picked.ll, picked.roads, streetOfAddress(row?.address)), [picked.ll, picked.roads, row?.address]);
   const profileAddr = row ? profileAddress(row) : null;
   const href = row ? `/scorecard?${new URLSearchParams({ pin: row.pin, ...(profileAddr ? { address: profileAddr } : {}) })}` : null;
+  return { card, sv, href, n };
+}
+
+type LotCardModel = ReturnType<typeof useLotCard>;
+
+function LotTitle({ card }: { card: NonNullable<LotCardModel["card"]> }) {
+  const { t } = useTranslation("next");
+  return <>{card.approx ? t("discovery.card.near", { address: card.title }) : card.title}</>;
+}
+
+function LotStatus({ picked }: { picked: Picked }) {
+  const { t } = useTranslation("next");
+  if (!picked.lookup) return <p className="flex items-center gap-2 nx-muted"><LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={STROKE} />{t("discovery.map.loading")}</p>;
+  if (picked.lookup.status === "missing") return <p className="nx-muted">{t("discovery.map.missing")}</p>;
+  if (picked.lookup.status === "failed") return <p className="nx-muted">{t("discovery.map.failed")}</p>;
+  return null;
+}
+
+/** The lot's figures under its title: district and lot size, room to build, a condo's heads-up, an exempt owner. */
+function LotFacts({ card, n }: Pick<LotCardModel, "n"> & { card: NonNullable<LotCardModel["card"]> }) {
+  const { t } = useTranslation("next");
+  return (
+    <>
+      <p className="nx-muted">
+        {[card.zone, card.lotSqft != null ? t("discovery.card.lotValue", { value: n(card.lotSqft) }) : null].filter(Boolean).join(" · ")}
+      </p>
+      <p>{card.roomSqft != null ? t("discovery.card.roomValue", { value: n(card.roomSqft) })
+        : card.roomNamed ? t(`discovery.card.named.${card.roomNamed}`) : t("discovery.card.roomUnknown")}</p>
+      {/* A condo building: a heads-up, not a wall (owner): many owners, and where the room comes from. */}
+      {card.condo && (
+        <p className="nx-muted" data-testid="lot-card-condo">
+          {card.condo.units != null ? t("discovery.card.condoUnits", { count: card.condo.units }) : t("discovery.card.condo")}
+          {" · "}{card.condo.measured ? t("discovery.card.condoMeasured") : t("discovery.card.condoNoArea")}
+        </p>
+      )}
+      {/* Who owns a tax-exempt lot, and empty public land named as such (owner's review, Item 128). */}
+      {card.owner && <p className="nx-muted [overflow-wrap:anywhere]" data-testid="lot-card-owner">{ownerLine(t, card.owner)}</p>}
+    </>
+  );
+}
+
+/** Open profile at full width, then Street View and Google Maps side by side (owner's review); the last two open in a
+ * new tab. `tall` = 44 px buttons (the phone sheet). */
+function LotButtons({ picked, sv, href, tall = false }: Pick<LotCardModel, "sv" | "href"> & { picked: Picked; tall?: boolean }) {
+  const { t } = useTranslation("next");
+  const navigate = useNavigate();
+  const h = tall ? "h-11" : "h-9";
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {href && (
+        <button type="button" onClick={() => navigate(href)} data-testid="lot-card-open"
+          className={`inline-flex ${h} w-full items-center justify-center gap-1.5 rounded-lg bg-nx-ink px-3 font-semibold text-nx-on-ink touch-target`}>
+          {t("discovery.card.open")}<ArrowRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+        </button>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <a href={streetViewUrl(sv.lat, sv.lon, sv.heading)} target="_blank" rel="noopener noreferrer" data-testid="lot-card-street-view"
+          className={`inline-flex ${h} min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium hover:bg-nx-ink/10 touch-target`}>
+          <PersonStanding aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{t("map.streetView.button")}
+          <span className="sr-only">{t("profile.opensInNewTab")}</span>
+        </a>
+        <a href={googleMapsUrl(picked.ll[1], picked.ll[0])} target="_blank" rel="noopener noreferrer" data-testid="lot-card-google-maps"
+          className={`inline-flex ${h} min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium hover:bg-nx-ink/10 touch-target`}>
+          <MapPinned aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{t("map.googleMaps")}
+          <span className="sr-only">{t("profile.opensInNewTab")}</span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => void }) {
+  const { t } = useTranslation("next");
+  const { card, sv, href, n } = useLotCard(picked);
+  const [w, h] = picked.size;
+  const left = Math.min(Math.max(8, picked.at[0] - 140), w - 288);
+  const above = picked.at[1] > h * 0.55;
+  const style = above ? { left, bottom: h - picked.at[1] + 12 } : { left, top: picked.at[1] + 12 };
   return (
     <div role="dialog" aria-label={card?.title ?? t("discovery.map.lot")} data-testid="lot-card"
       className="absolute z-10 w-[17.5rem] rounded-2xl bg-nx-page p-4 text-caption shadow-[0_8px_32px_rgb(0_0_0/0.18)]" style={style}>
       <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
         <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
       </button>
-      {!picked.lookup && <p className="flex items-center gap-2 nx-muted"><LoaderCircle aria-hidden className="h-4 w-4 animate-spin" strokeWidth={STROKE} />{t("discovery.map.loading")}</p>}
-      {picked.lookup?.status === "missing" && <p className="nx-muted">{t("discovery.map.missing")}</p>}
-      {picked.lookup?.status === "failed" && <p className="nx-muted">{t("discovery.map.failed")}</p>}
+      <LotStatus picked={picked} />
       {card && (
         <div className="flex flex-col gap-1.5 pr-6">
-          <p className="text-body font-semibold [overflow-wrap:anywhere]">{card.approx ? t("discovery.card.near", { address: card.title }) : card.title}</p>
-          <p className="nx-muted">
-            {[card.zone, card.lotSqft != null ? t("discovery.card.lotValue", { value: n(card.lotSqft) }) : null].filter(Boolean).join(" · ")}
-          </p>
-          <p>{card.roomSqft != null ? t("discovery.card.roomValue", { value: n(card.roomSqft) })
-            : card.roomNamed ? t(`discovery.card.named.${card.roomNamed}`) : t("discovery.card.roomUnknown")}</p>
-          {/* A condo building: a heads-up, not a wall (owner): many owners, and where the room comes from. */}
-          {card.condo && (
-            <p className="nx-muted" data-testid="lot-card-condo">
-              {card.condo.units != null ? t("discovery.card.condoUnits", { count: card.condo.units }) : t("discovery.card.condo")}
-              {" · "}{card.condo.measured ? t("discovery.card.condoMeasured") : t("discovery.card.condoNoArea")}
-            </p>
-          )}
-          {/* Who owns a tax-exempt lot, and empty public land named as such (owner's review, Item 128). */}
-          {card.owner && <p className="nx-muted [overflow-wrap:anywhere]" data-testid="lot-card-owner">{ownerLine(t, card.owner)}</p>}
+          <p className="text-body font-semibold [overflow-wrap:anywhere]"><LotTitle card={card} /></p>
+          <LotFacts card={card} n={n} />
         </div>
       )}
-      {card && (
-        // Buttons at the card's full width (owner's review): Open profile, then Street View and Google Maps side by side.
-        // The last two open in a new tab.
-        <div className="mt-3 flex flex-col gap-2">
-          {href && (
-            <button type="button" onClick={() => navigate(href)} data-testid="lot-card-open"
-              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-nx-ink px-3 font-semibold text-nx-on-ink touch-target">
-              {t("discovery.card.open")}<ArrowRight aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-            </button>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            <a href={streetViewUrl(sv.lat, sv.lon, sv.heading)} target="_blank" rel="noopener noreferrer" data-testid="lot-card-street-view"
-              className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium hover:bg-nx-ink/10 touch-target">
-              <PersonStanding aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{t("map.streetView.button")}
-              <span className="sr-only">{t("profile.opensInNewTab")}</span>
-            </a>
-            <a href={googleMapsUrl(picked.ll[1], picked.ll[0])} target="_blank" rel="noopener noreferrer" data-testid="lot-card-google-maps"
-              className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-nx-ink/5 px-2 font-medium hover:bg-nx-ink/10 touch-target">
-              <MapPinned aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{t("map.googleMaps")}
-              <span className="sr-only">{t("profile.opensInNewTab")}</span>
-            </a>
-          </div>
-        </div>
-      )}
+      {card && <LotButtons picked={picked} sv={sv} href={href} />}
+    </div>
+  );
+}
+
+/** The phone's lot sheet head (Item 129 §1): the address (or the lookup's state) and ×. */
+export function LotSheetHead({ picked, onClose }: { picked: Picked; onClose: () => void }) {
+  const { t } = useTranslation("next");
+  const { card } = useLotCard(picked);
+  return (
+    <>
+      <div className="min-w-0 flex-1 text-left" data-testid="lot-sheet-title">
+        {card ? <p className="font-semibold [overflow-wrap:anywhere]"><LotTitle card={card} /></p> : <LotStatus picked={picked} />}
+      </div>
+      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} data-testid="lot-sheet-close"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-nx-ink/5">
+        <X aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
+      </button>
+    </>
+  );
+}
+
+/** The phone's lot sheet body: the same figures and buttons as the laptop card, the buttons 44 px tall. */
+export function LotSheetBody({ picked }: { picked: Picked }) {
+  const { card, sv, href, n } = useLotCard(picked);
+  if (!card) return null;
+  return (
+    <div className="flex flex-col gap-1.5 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-caption" data-testid="lot-sheet-body">
+      <LotFacts card={card} n={n} />
+      <LotButtons picked={picked} sv={sv} href={href} tall />
     </div>
   );
 }

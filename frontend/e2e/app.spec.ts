@@ -278,6 +278,49 @@ test("Discovery: a search, matches on the map as outlines, the list, axe light a
   }
 });
 
+// The lot in the phone sheet (decision Item 129 §1, PR 2): at 360 px a tapped lot opens in Discovery's own bottom sheet
+// (the address, ×, figures, 44 px buttons), not the floating card; dragging the handle down closes it and the sheet goes
+// back to its peek. 1601 N Milwaukee Ave, framed at its index point, sits in the middle of the map.
+test("Discovery: a tapped lot opens in the phone sheet, drag down closes it, axe light and dark", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, "/discovery?at=41.91085,-87.67777,18.00z");
+  const canvas = page.locator('[data-testid="explore-map"] canvas');
+  await canvas.waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(2500); // the lot tiles
+  const sheet = page.getByTestId("phone-sheet");
+  await expect(sheet).toHaveAttribute("data-state", "peek");
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(sheet).toHaveAttribute("data-state", "lot");
+  await expect(page.getByTestId("lot-sheet-title")).toHaveText("1601 N Milwaukee Ave", { timeout: 15_000 });
+  await expect(page.getByTestId("lot-card")).toHaveCount(0);
+  for (const id of ["lot-card-open", "lot-card-street-view", "lot-card-google-maps"]) {
+    expect((await page.getByTestId(id).boundingBox())!.height, id).toBeGreaterThanOrEqual(44);
+  }
+  // The sheet sits at the height of its content, below the lot it opened for.
+  const sheetBox = (await sheet.boundingBox())!;
+  expect(sheetBox.height).toBeLessThan(box.height * 0.6);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(300);
+    expect(await axe(page), `axe ${scheme}, lot sheet`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "lot sheet overflow").toBeLessThanOrEqual(1);
+  // Drag the handle down past 30 px: the lot closes and the peek is back.
+  const handle = (await page.getByTestId("lot-sheet-handle").boundingBox())!;
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 80, { steps: 5 });
+  await page.mouse.up();
+  await expect(sheet).toHaveAttribute("data-state", "peek");
+  // × closes it too.
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(sheet).toHaveAttribute("data-state", "lot");
+  await page.getByTestId("lot-sheet-close").click();
+  await expect(sheet).toHaveAttribute("data-state", "peek");
+});
+
 // Land in use (M5, decision Item 112): the Lot group offers surface parking beside empty land; turning it on asks the
 // server (never evaluated here) and the panel passes axe in both themes.
 test("Discovery: the Lot group's surface parking toggle, axe light and dark", async ({ page }, testInfo) => {

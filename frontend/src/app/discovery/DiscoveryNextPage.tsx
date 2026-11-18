@@ -34,7 +34,7 @@ import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
 import { LayersControl, type LayersState } from "../map/LayersControl";
 import { Pill } from "../ui/Blocks";
-import { ExploreMap, type Ring, type ViewBox } from "./ExploreMap";
+import { ExploreMap, LotSheetBody, LotSheetHead, type Picked, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
 import { fetchParcelRow } from "../../discovery/searchClient";
 import { LotCard } from "./LotCard";
@@ -105,6 +105,13 @@ export default function DiscoveryNextPage() {
   const [place, setPlace] = useState<Place | null>(null);
   const [ring, setRing] = useState<Ring | null>(null);
   const [sheet, setSheet] = useState<"peek" | "half" | "full">("peek");
+  // The lot the visitor tapped on the map. On a phone it opens in the sheet in place of the list (Item 129 §1); closing
+  // it brings the sheet back to what it was. On a laptop the map shows its floating card.
+  const [picked, setPicked] = useState<Picked | null>(null);
+  const [lotSheetPx, setLotSheetPx] = useState(0);
+  // A lot picked in one layout was placed for it (the card's spot, the sheet): switching layouts closes it.
+  const [pickedLayout, setPickedLayout] = useState(phone);
+  if (pickedLayout !== phone) { setPickedLayout(phone); setPicked(null); }
 
   // Explore's quick filters (no search yet): the server evaluates them for the view.
   const [quick, setQuick] = useState<Set<QuickId>>(new Set());
@@ -298,6 +305,10 @@ export default function DiscoveryNextPage() {
       onView={setView}
       onPickArea={pickArea}
       sortKey={response?.cqs.sort.key ?? registry?.defaultSort.key ?? "lot_size"}
+      picked={picked}
+      onPickedChange={setPicked}
+      inlineCard={!phone}
+      bottomInset={phone && picked ? lotSheetPx : 0}
       className="absolute inset-0"
     />
   );
@@ -454,13 +465,17 @@ export default function DiscoveryNextPage() {
           )}
 
           {phone && (
-            <PhoneSheet state={sheet} setState={setSheet}
-              head={response
+            <PhoneSheet state={picked ? "lot" : sheet} setState={setSheet} onClose={() => setPicked(null)} onHeight={setLotSheetPx}
+              head={picked
+                ? <LotSheetHead picked={picked} onClose={() => setPicked(null)} />
+                : response
                 ? <span className="font-semibold">{countLine}</span>
                 : <button type="button" onClick={searchView} className="inline-flex items-center gap-2 font-medium" data-testid="search-view">
                     <Search aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{exploreLabel(t, fmt, explorePanel, viewMatches.data, lotZoom)}
                   </button>}>
-              {response ? (
+              {picked ? (
+                <LotSheetBody picked={picked} />
+              ) : response ? (
                 <Results response={response} rows={search.rows} fmt={fmt} onMore={search.nextOffset != null && !response.result.gated ? () => void search.loadMore() : null}
                   loadingMore={search.loadingMore} refreshing={search.refreshing} hiddenUnusual={response.diagnostics.hiddenUnusual ?? 0}
                   onShowUnusual={() => search.setIncludeUnusual(true)} onOpen={(row) => openProfile(navigate, row)} hoodName={hoodNameOf} />
@@ -736,32 +751,61 @@ function PlaceCard({ place, ring, onRing, onSearchRing, ringActive, onClose }: {
   );
 }
 
-function PhoneSheet({ state, setState, head, children }: {
-  state: "peek" | "half" | "full"; setState: (s: "peek" | "half" | "full") => void; head: React.ReactNode; children: React.ReactNode;
+type SheetState = "peek" | "half" | "full" | "lot";
+
+export function PhoneSheet({ state, setState, head, children, onClose, onHeight }: {
+  state: SheetState; setState: (s: "peek" | "half" | "full") => void; head: React.ReactNode; children: React.ReactNode;
+  /** "lot": the tapped lot at the height of its content (Item 129 §1); dragging down or `onClose` closes it. */
+  onClose?: () => void;
+  /** The sheet's height in pixels while it holds a lot, so the map can keep the lot above it. */
+  onHeight?: (px: number) => void;
 }) {
   const { t } = useTranslation("next");
+  const lot = state === "lot";
   // The peek clears the preview badge pinned to the bottom of every page (52 px on touch screens, Item 99).
-  const height = state === "peek" ? "9.5rem" : state === "half" ? "52%" : "92%";
+  const height = lot ? "auto" : state === "peek" ? "9.5rem" : state === "half" ? "52%" : "92%";
   const start = useRef<number | null>(null);
+  const box = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!lot || !el || !onHeight) return;
+    onHeight(el.getBoundingClientRect().height);
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => onHeight(el.getBoundingClientRect().height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [lot, onHeight]);
   return (
-    <section aria-label={t("discovery.sheet.label")} data-testid="phone-sheet" data-state={state}
+    <section ref={box} aria-label={lot ? t("discovery.map.lot") : t("discovery.sheet.label")} data-testid="phone-sheet" data-state={state}
       className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-3xl bg-nx-page shadow-[0_-8px_32px_rgb(0_0_0/0.18)] transition-[height] duration-200 motion-reduce:transition-none"
-      style={{ height }}>
+      style={{ height, maxHeight: "92%" }}>
       <div
         onPointerDown={(e) => { start.current = e.clientY; }}
+        onPointerMove={(e) => {
+          // Once it is a drag, keep the pointer: a mouse would otherwise release over the map and never close the sheet.
+          // Not on press: a captured press would take the click away from the × and the head's buttons.
+          if (start.current == null || Math.abs(e.clientY - start.current) < 6 || e.currentTarget.hasPointerCapture?.(e.pointerId)) return;
+          try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* jsdom, or the pointer is gone */ }
+        }}
         onPointerUp={(e) => {
           if (start.current == null) return;
           const dy = e.clientY - start.current;
           start.current = null;
+          if (lot) { if (dy > 30) onClose?.(); return; }
           if (dy < -30) setState(state === "peek" ? "half" : "full");
           else if (dy > 30) setState(state === "full" ? "half" : "peek");
         }}
-        className="flex shrink-0 touch-none flex-col items-center gap-2 px-4 pb-2 pt-2">
-        <button type="button" aria-label={state === "full" ? t("discovery.sheet.less") : t("discovery.sheet.more")}
-          onClick={() => setState(state === "full" ? "peek" : state === "peek" ? "half" : "full")}
-          className="grid h-6 w-16 place-items-center touch-icon">
-          <span aria-hidden className="h-1.5 w-10 rounded-full bg-nx-ink/20" />
-        </button>
+        className="flex shrink-0 touch-none select-none flex-col items-center gap-2 px-4 pb-2 pt-2">
+        {lot ? (
+          // The lot's own × closes it; the handle is for dragging down.
+          <span aria-hidden data-testid="lot-sheet-handle" className="grid h-6 w-16 place-items-center"><span className="h-1.5 w-10 rounded-full bg-nx-ink/20" /></span>
+        ) : (
+          <button type="button" aria-label={state === "full" ? t("discovery.sheet.less") : t("discovery.sheet.more")}
+            onClick={() => setState(state === "full" ? "peek" : state === "peek" ? "half" : "full")}
+            className="grid h-6 w-16 place-items-center touch-icon">
+            <span aria-hidden className="h-1.5 w-10 rounded-full bg-nx-ink/20" />
+          </button>
+        )}
         <div className="flex w-full items-center justify-between gap-2 text-body">{head}</div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">{state !== "peek" && children}</div>
