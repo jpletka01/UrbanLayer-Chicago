@@ -365,8 +365,11 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         CITY, "pr57-gg9e", "chi.street_centerlines", "Street Center Lines", "CDOT",
-        "backend/retrieval/property/block_face.py", surfaces=("profile",), cadence_days=365, warn_days=730,
-        alarm_days=1460, note="Block faces for the RS-3 block-face rule (Item 67); a static layer, updated rarely.",
+        "backend/retrieval/property/block_face.py", surfaces=("profile",),
+        frozen=Frozen("2021-06-11", "street centerlines last refreshed 2021-06-11; no successor dataset"),
+        note="Block faces for the RS-3 block-face rule (Item 67), the base map tiles and the Assessor-address "
+             "match. Frozen, not aged (decisions/2026-10_data-health-baselines.md Item 2): it was 4.4 years old "
+             "when registered, and a change means rebuilding the base tiles and re-checking block faces.",
     ),
     _socrata(
         CITY, "gc7y-n4xa", "chi.traffic", "Average Daily Traffic Counts", "CDOT",
@@ -495,6 +498,10 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         CITY, "rym7-49n8", "chi.nof_small", "Financial Incentive Projects - NOF Small", "DPD",
         "backend/retrieval/incentives/grant_programs.py", surfaces=("chat",), fact_keys=("incentive.grants",),
         cadence_days=90, warn_days=120, alarm_days=270,
+        ack=Ack("Rows last updated 2026-02-02 against a quarterly claim (newest approval 2025-08-25, 126 projects); "
+                "no successor dataset found. Only a completed-project list in chat. "
+                "Decision: data-health-baselines Item 2.",
+                _ACK_UNTIL, _OWNER),
     ),
     _socrata(
         CITY, "s6ha-ppgi", "chi.aro_projects", "Affordable Rental Housing Developments", "DOH",
