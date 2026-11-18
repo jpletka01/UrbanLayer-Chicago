@@ -41,7 +41,14 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 
 # (warn after, alarm after) in days.
-CODE_VINTAGE_DAYS = (60, 90)
+# The registry's thresholds (from the publisher's measured lag, Item 131), so CI and the daily checker agree.
+def _code_vintage_days() -> tuple[int, int]:
+    from backend.data_health.registry import BY_ID
+    spec = BY_ID["code.municipal_text"]
+    return spec.warn_days, spec.alarm_days
+
+
+CODE_VINTAGE_DAYS = _code_vintage_days()
 ZONING_CACHE_DAYS = (365, 730)
 TRANSIT_DAYS = (180, 365)
 RENT_DAYS = (400, 730)  # ACS 5-year releases arrive each December

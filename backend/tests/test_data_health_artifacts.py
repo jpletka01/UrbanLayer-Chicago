@@ -46,19 +46,20 @@ def test_everything_current_is_quiet(tmp_path):
     assert not any(x.annotates for x in c.values())
 
 
-def test_the_code_text_warns_after_60_days_and_alarms_after_90(tmp_path):
-    r = _repo(tmp_path, code="2026-08-20")                 # 63 days
+def test_the_code_text_warns_after_180_days_and_alarms_after_240(tmp_path):
+    assert artifacts.CODE_VINTAGE_DAYS == (180, 240)        # the registry's, from the publisher's lag (Item 131)
+    r = _repo(tmp_path, code="2026-06-17")                 # 127 days: the export as it arrived
+    assert artifacts.check_code_vintage(TODAY, r).state == "ok"
+    r = _repo(tmp_path, code="2026-04-15")                 # 190 days
     assert artifacts.check_code_vintage(TODAY, r).state == "warn"
-    r = _repo(tmp_path, code="2026-06-17")                 # 127 days
+    r = _repo(tmp_path, code="2026-02-01")                 # 263 days
     c = artifacts.check_code_vintage(TODAY, r)
-    assert c.state == "alarm" and c.age_days == 127 and "alarm after 90" in c.message
+    assert c.state == "alarm" and c.age_days == 263 and "alarm after 240" in c.message
 
 
-def test_the_registry_ack_is_named_so_a_pr_author_is_not_left_guessing(tmp_path):
-    c = artifacts.check_code_vintage(date(2026, 11, 1), _repo(tmp_path, code="2026-06-17"))
-    assert "acked in the data-health registry until 2026-12-15" in c.message
-    after = artifacts.check_code_vintage(date(2027, 1, 5), _repo(tmp_path, code="2026-06-17"))
-    assert "acked" not in after.message
+def test_an_unacked_warning_says_nothing_about_an_ack(tmp_path):
+    c = artifacts.check_code_vintage(date(2027, 1, 5), _repo(tmp_path, code="2026-06-17"))
+    assert c.state == "warn" and "acked" not in c.message
 
 
 def test_the_zoning_cache_must_record_the_code_vintage_it_was_checked_against(tmp_path):
@@ -89,12 +90,12 @@ def test_the_real_repo_has_a_sidecar_a_zoning_vintage_and_a_current_key():
 def test_ci_mode_only_ever_annotates_warnings_and_always_exits_zero(capsys, monkeypatch, tmp_path):
     summary = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
-    assert artifacts.main(["--ci", "--today", "2026-12-01"]) == 0
+    assert artifacts.main(["--ci", "--today", "2027-01-05"]) == 0
     out = capsys.readouterr().out
     assert "::warning file=backend/code_vintage.json" in out and "::error" not in out
     assert "| Artifact | State | Detail |" in summary.read_text()
     # outside CI a red artifact is a nonzero exit, so a person running it by hand sees it
-    assert artifacts.main(["--today", "2026-12-01"]) == 1
+    assert artifacts.main(["--today", "2027-03-01"]) == 1   # the code text past 240 days
 
 
 def test_a_stale_artifact_never_turns_the_ci_step_red():
