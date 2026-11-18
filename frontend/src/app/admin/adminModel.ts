@@ -62,22 +62,28 @@ export function correctionsAttention(open: number | null | undefined): Attention
 /** The code's state as a word (the API's "green / amber / red"). */
 export const CODE_STATUS_WORD = { green: "Current", amber: "Aging", red: "Out of date" } as const;
 
-/** A section's notification badge (owner, 2026-11-17: "a little notification icon for things that are outstanding"):
-    how much is waiting on a person there. Red only for something failing; work to do in the neutral primary. "!" when
-    something needs doing but there is nothing to count (the daily check never ran, the code text is out of date). */
-export interface Badge { text: string; tone: "red" | "work"; spoken: string }
+/** A section's notification badge (owner, 2026-11-17: Reddit's style): a count on the section's icon when there is
+    something to count, a dot when something needs doing with nothing to count (the daily check not running, the code
+    text out of date). Never a "!" glyph: in our font it reads like a 1. Red only for something failing; work to do in
+    the neutral primary. */
+export interface Badge { count: number | null; tone: "red" | "work"; spoken: string }
 
 export function sectionBadges(health: DataHealth | null | undefined, code: AdminCodeCurrency | null | undefined, openReports: number | null | undefined): Partial<Record<AdminSectionId, Badge>> {
   const out: Partial<Record<AdminSectionId, Badge>> = {};
   if (health) {
     const failing = (health.counts.alarm ?? 0) + (health.counts.error ?? 0);
-    if (failing) out.data = { text: String(failing), tone: "red", spoken: `${plural(failing, "source", "sources")} failing` };
-    else if (health.checker.state === "late") out.data = { text: "!", tone: "red", spoken: "daily check not running" };
+    if (failing) out.data = { count: failing, tone: "red", spoken: `${plural(failing, "source", "sources")} failing` };
+    else if (health.checker.state === "late") out.data = { count: null, tone: "red", spoken: "daily check not running" };
   }
   if (code) {
-    if (code.code.lag.unreviewed) out.code = { text: String(code.code.lag.unreviewed), tone: "work", spoken: `${plural(code.code.lag.unreviewed, "amendment", "amendments")} to review` };
-    else if (code.code.status === "red") out.code = { text: "!", tone: "red", spoken: "code text out of date" };
+    if (code.code.lag.unreviewed) out.code = { count: code.code.lag.unreviewed, tone: "work", spoken: `${plural(code.code.lag.unreviewed, "amendment", "amendments")} to review` };
+    else if (code.code.status === "red") out.code = { count: null, tone: "red", spoken: "code text out of date" };
   }
-  if (openReports) out.corrections = { text: String(openReports), tone: "work", spoken: `${plural(openReports, "report", "reports")} to review` };
+  if (openReports) out.corrections = { count: openReports, tone: "work", spoken: `${plural(openReports, "report", "reports")} to review` };
   return out;
+}
+
+/** What a badge prints: the count, "9+" past nine (Reddit's cap keeps the pill small), nothing for a dot. */
+export function badgeText(count: number | null): string | null {
+  return count == null ? null : count > 9 ? "9+" : String(count);
 }

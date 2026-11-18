@@ -18,8 +18,8 @@ import {
 } from "../../lib/api";
 import type { BenchmarkResults, ConversationStats, JudgeResults, RequestLogEntry } from "../../lib/types";
 import { STROKE } from "../icons";
-import { ADMIN_SECTIONS, PERIOD_SECTIONS, adminSectionFrom, sectionBadges } from "./adminModel";
-import { AdminNav, AdminNavStrip } from "./AdminNav";
+import { ADMIN_SECTIONS, PERIOD_SECTIONS, adminSectionFrom, sectionBadges, type Badge } from "./adminModel";
+import { AdminNav, AdminNavStrip, NotificationBadge } from "./AdminNav";
 import { OverviewSection, QualitySection, RequestsSection, UsageSection, VisitorsSection, type PeriodData } from "./WatchSections";
 import { DataHealthSection } from "./DataHealthSection";
 import { CorrectionsSection } from "./CorrectionsSection";
@@ -98,12 +98,18 @@ function AdminDashboard() {
   }, [requestOffset]);
 
   const badges = sectionBadges(health, code, openReports);
-  const waiting = Object.keys(badges).length > 0;
+  // The Sections tool on a phone carries everything waiting (each dot counts as one), red if anything fails.
+  const all = Object.values(badges);
+  const total: Badge | null = all.length ? {
+    count: all.reduce((t, b) => t + (b!.count ?? 1), 0),
+    tone: all.some((b) => b!.tone === "red") ? "red" : "work",
+    spoken: all.map((b) => b!.spoken).join(", "),
+  } : null;
   const usesPeriod = PERIOD_SECTIONS.has(current);
   const tools = (
     <span className="relative lg:hidden">
-      <ToolButton label="Sections" icon={PanelLeft} onClick={() => setNavSheet(true)} testId="admin-nav-show" />
-      {waiting && <span aria-hidden className="pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-nx-pill-red" />}
+      <ToolButton label={total ? `Sections, ${total.spoken}` : "Sections"} icon={PanelLeft} onClick={() => setNavSheet(true)} testId="admin-nav-show" />
+      {total && <span className="pointer-events-none absolute right-2.5 top-2.5"><span className="relative block h-0 w-0"><NotificationBadge badge={total} testId="admin-nav-show-badge" /></span></span>}
     </span>
   );
   return (

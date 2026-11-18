@@ -6,7 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { AdminCodeCurrency, DataHealth } from "../../lib/api";
 import { axeViolations } from "../test/axe";
-import { codeAttention, correctionsAttention, dataAttention, adminSectionFrom, sectionBadges } from "./adminModel";
+import { badgeText, codeAttention, correctionsAttention, dataAttention, adminSectionFrom, sectionBadges } from "./adminModel";
 import AdminNextPage from "./AdminNextPage";
 import { VouchersSection } from "./VouchersSection";
 
@@ -99,16 +99,20 @@ function page(path: string) {
 }
 
 describe("the badges", () => {
-  it("count what waits; red only for something failing; '!' when there is nothing to count", () => {
+  it("count what waits; red only for something failing; a dot when there is nothing to count", () => {
     expect(sectionBadges(health({}, { alarm: 2, error: 1 }), code("amber", 3), 4)).toEqual({
-      data: { text: "3", tone: "red", spoken: "3 sources failing" },
-      code: { text: "3", tone: "work", spoken: "3 amendments to review" },
-      corrections: { text: "4", tone: "work", spoken: "4 reports to review" },
+      data: { count: 3, tone: "red", spoken: "3 sources failing" },
+      code: { count: 3, tone: "work", spoken: "3 amendments to review" },
+      corrections: { count: 4, tone: "work", spoken: "4 reports to review" },
     });
+    // Nothing to count: a dot, never a "!" (it reads like a 1).
     expect(sectionBadges(health({ state: "late" }), code("red", 0, 154), 0)).toEqual({
-      data: { text: "!", tone: "red", spoken: "daily check not running" },
-      code: { text: "!", tone: "red", spoken: "code text out of date" },
+      data: { count: null, tone: "red", spoken: "daily check not running" },
+      code: { count: null, tone: "red", spoken: "code text out of date" },
     });
+    expect(badgeText(3)).toBe("3");
+    expect(badgeText(12)).toBe("9+");
+    expect(badgeText(null)).toBeNull();
     expect(sectionBadges(health({}, { ok: 80 }), code("green"), 0)).toEqual({});
     expect(sectionBadges(undefined, null, undefined)).toEqual({});
   });
@@ -127,6 +131,9 @@ describe("the page", () => {
     expect(screen.getByTestId("admin-nav")).toBeTruthy();
     fireEvent.click(screen.getByTestId("admin-nav-show"));
     expect(await screen.findByTestId("admin-nav-sheet")).toBeTruthy();
+    // The phone's Sections tool carries everything waiting: the 2 open reports.
+    expect(screen.getByTestId("admin-nav-show-badge").textContent).toBe("2");
+    expect(screen.getByTestId("admin-nav-show").getAttribute("aria-label")).toBe("Sections, 2 reports to review");
   });
 
   it("opens on Overview: four figures, what needs attention linked to its section, the section list, axe", async () => {
