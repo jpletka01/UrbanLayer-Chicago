@@ -31,6 +31,12 @@ updates:
       frontend-deps:
         patterns: ["*"]
         update-types: [minor, patch]
+    # TypeScript 7 waits for typescript-eslint: its peer range stops at 6, so
+    # `npm ci` fails ERESOLVE (PR #37, closed 2026-11-18). Drop this once
+    # typescript-eslint accepts ^7.
+    ignore:
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
     labels: [dependencies]
 
   - package-ecosystem: github-actions
@@ -50,7 +56,11 @@ updates:
     # 3.14-slim (PR #5) — a whole-runtime change dressed as a dependency bump.
     # The stack is pinned to 3.11 deliberately; moving it is a decision, not a
     # dependency update.
+    # Python's 3.x steps are "minor" to Dependabot but are runtime migrations
+    # here too (PR #168 proposed 3.15-slim and left the Dockerfile copying
+    # /usr/local/lib/python3.11), so minors are ignored as well. Patches
+    # (3.11.x) still come through.
     ignore:
       - dependency-name: python
-        update-types: [version-update:semver-major]
+        update-types: [version-update:semver-major, version-update:semver-minor]
     labels: [dependencies]
