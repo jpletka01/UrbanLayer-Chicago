@@ -72,7 +72,7 @@ An ack is a code change, so each one is reviewed in a PR. It names a reason (wha
 - `chi.vacant_buildings`: the feed stopped on 2025-10-08.
 - `chi.nof_large`: stale since 2023-09-19; only a project list in chat.
 
-All three run until 2027-01-31. A fourth, `code.municipal_text`, runs until 2026-12-15 (see below). When one expires and the source is still bad it becomes an alarm, which forces the question.
+A fourth, `chi.nof_small` (stale since 2026-02-02, decision data-health-baselines Item 2), was added 2026-11-18. All four run until 2027-01-31. A fifth, `code.municipal_text`, runs until 2026-12-15 (see below). When one expires and the source is still bad it becomes an alarm, which forces the question.
 
 ## Gotchas
 
