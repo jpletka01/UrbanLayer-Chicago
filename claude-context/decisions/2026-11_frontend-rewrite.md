@@ -2084,3 +2084,10 @@ Run on the owner's instruction to take the recommendation on each item without a
 - **M6 phone frame rate:** the owner's, on a real device; not checked.
 - **OSM-only parking (4,564 lots, Item 112):** parked until a licensing review (ODbL attribution and share-alike on a derived filter).
 - **Revisit if:** the owner sets a chat budget (start with the use lookup), a newer American Legal export lands more than 150 days behind (re-measure the thresholds), or typescript-eslint accepts TypeScript 7 (drop the ignore).
+
+## Item 132: "What best describes you?" redesigned on SnowUI (2026-11-18)
+
+- **Why:** the owner flagged the question asked once after a first sign-in (`frame/SegmentQuestion`) as still the old UI: Phase 10 had moved it into the frame as a row of plain gray chips, never designed.
+- **Decision:** it follows the sign-in chooser it comes right after (`AuthOverlaysNext`): the page blurred behind it, a sheet on a phone and a card on a wider screen, the title with the account icon. Each answer is a tile in a two-column grid with its own Lucide icon in a small page-colored square; "Just curious" spans both columns; a visible "Skip for now" under the tiles beside the ×. Same seven answers, same storage (`ul_segment`, `ul_segment_due`) and `segment_selected` event.
+- **Icons (one per concept, `icons.ts`):** developer HardHat, architect DraftingCompass, attorney Gavel, broker Handshake, investor PiggyBank, homeowner HouseHeart, curious Lightbulb. Scale, House, Compass, TrendingUp and UserRound were passed over because they already mean the code, Home, the map's reset, a trend and "signed in".
+- **Checked:** light and dark, English and Spanish at 360 px (tiles tightened below `sm` so "Desarrollador" keeps one line), no horizontal scroll, axe clean in a new `SegmentQuestion.test.tsx`.
