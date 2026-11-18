@@ -205,9 +205,10 @@ app.include_router(saved_router)
 from backend.deep_analysis import router as deep_analysis_router  # noqa: E402  (Deep analysis, decision Item 124)
 
 app.include_router(deep_analysis_router)
-from backend.corrections import router as corrections_router  # noqa: E402  (Suggest a correction, decision Item 129)
+from backend.corrections import admin_router as corrections_admin_router, router as corrections_router  # noqa: E402  (Suggest a correction, decision Item 129)
 
 app.include_router(corrections_router)
+app.include_router(corrections_admin_router)
 
 
 @app.on_event("startup")

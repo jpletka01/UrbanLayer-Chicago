@@ -30,6 +30,7 @@ import { LatencyTable } from "./LatencyTable";
 import { RequestsTable } from "./RequestsTable";
 import { CodeCurrencySection } from "./CodeCurrencySection";
 import { DataHealthSection } from "./DataHealthSection";
+import { CorrectionsSection } from "./CorrectionsSection";
 import { BenchmarkSection } from "./BenchmarkSection";
 import { JudgeSection } from "./JudgeSection";
 import { VouchersSection } from "./VouchersSection";
@@ -592,6 +593,14 @@ function AdminDashboard() {
                 Data Health
               </h2>
               <DataHealthSection />
+            </section>
+
+            {/* Row 9b: Suggested corrections to building facts (Item 129): review, then export for a PR */}
+            <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
+              <h2 className="text-body font-semibold nx-muted mb-3">
+                Corrections
+              </h2>
+              <CorrectionsSection />
             </section>
 
             {/* Row 9: How current the Municipal Code text is */}

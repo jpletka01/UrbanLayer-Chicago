@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -118,7 +119,8 @@ class TestBody:
         assert row["user_id"] == "user_a" and row["anon_id"] is None and row["ip_hash"] is None
         assert row["status"] == "new" and row["reviewed_by"] is None and row["created_at"] > 0
         assert json.loads(row["shown"]) == {"bldg_sqft": 2400.0, "bldg_sqft_source": "footprint", "stories": None,
-                                            "room_sqft": 1350.0, "data_version": VERSION}
+                                            "room_sqft": 1350.0, "structure": None, "condo": None,
+                                            "data_version": VERSION}
 
     async def test_note_is_trimmed_and_capped(self, store, as_user):
         assert _send(as_user(A), {"pin": PIN, "kinds": ["other"], "note": "  " + "x" * 600}).status_code == 201
@@ -293,7 +295,7 @@ class TestMigration:
             await db.close_db()
             await db.init_db()
             cur = await db._get_db().execute("SELECT version FROM schema_version")
-            assert (await cur.fetchone())[0] == 22
+            assert (await cur.fetchone())[0] == db._SCHEMA_VERSION  # later migrations run on top
             idx = await _rows("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'lot_corrections'")
             assert {r["name"] for r in idx} >= {"idx_lot_corrections_status", "idx_lot_corrections_pin",
                                                 "idx_lot_corrections_anon", "idx_lot_corrections_ip"}
@@ -305,3 +307,203 @@ class TestMigration:
                            "('corr-anon:x', '2026-01-01', 1, 0), ('corr-ip:y', '2026-01-01', 1, 0)")
         await conn.commit()
         assert await quotas.prune() == 2
+
+
+# ── Review (PR 4): the admin queue, verdicts, the export and retention ────────────────────────────────────────────
+
+from backend.auth import require_admin  # noqa: E402
+
+ADMIN = {"id": "admin_1", "email": "admin@example.com", "name": "Admin", "tier": "admin"}
+
+
+@pytest.fixture
+def as_admin(as_user):
+    def _set(admin: dict | None = ADMIN) -> TestClient:
+        c = as_user(None)
+        if admin is None:
+            def _deny():
+                from fastapi import HTTPException
+                raise HTTPException(status_code=403, detail="Admin access required")
+            app.dependency_overrides[require_admin] = _deny
+        else:
+            app.dependency_overrides[require_admin] = lambda: admin
+        return c
+    return _set
+
+
+async def _seed(as_user) -> dict[str, int]:
+    """Three reports: A signed in on PIN, a visitor on PIN, A again on another lot."""
+    ids = {}
+    ids["a_pin"] = _send(as_user(A)).json()["id"]
+    anon = as_user(None)
+    anon.cookies.set(quotas.ANON_COOKIE, quotas.sign_anon("visitor1"))
+    with patch("backend.corrections.client_ip", return_value="203.0.113.7"):
+        ids["anon_pin"] = _send(anon, {"pin": PIN, "kinds": ["area"], "area_dir": "high", "note": "Much bigger."}).json()["id"]
+    ids["a_other"] = _send(as_user(A), pin=LOTS[0]).json()["id"]
+    return ids
+
+
+class TestQueue:
+    async def test_admin_only(self, store, as_admin):
+        c = as_admin(None)
+        assert c.get("/api/admin/corrections").status_code == 403
+        assert c.post("/api/admin/corrections/1/review", json={"action": "reject"}).status_code == 403
+        assert c.get("/api/admin/corrections/export").status_code == 403
+
+    async def test_lists_open_reports_signed_in_first_with_no_ids(self, store, as_user, as_admin):
+        ids = await _seed(as_user)
+        body = as_admin().get("/api/admin/corrections").json()
+        assert body["total"] == 3
+        order = [r["id"] for r in body["reports"]]
+        assert order == [ids["a_pin"], ids["a_other"], ids["anon_pin"]]  # signed out sorts below signed in
+        r = next(x for x in body["reports"] if x["id"] == ids["anon_pin"])
+        assert r["signed_in"] is False and r["kinds"] == ["area"] and r["area_dir"] == "high" and r["note"] == "Much bigger."
+        assert r["others_open"] == [ids["a_pin"]]
+        assert r["shown"]["bldg_sqft"] == 2400.0 and r["now"]["bldg_sqft"] == 2400.0 and r["changed"] is False
+        assert r["past"] == {"accepted": 0, "rejected": 0} and r["muted"] is False
+        for x in body["reports"]:
+            assert not {"user_id", "anon_id", "ip_hash", "reviewed_by"} & set(x)
+        assert "203.0.113.7" not in json.dumps(body)
+
+    async def test_changed_when_the_card_now_shows_another_figure(self, store, as_user, as_admin):
+        _send(as_user(A))
+        parcel_source.set_snapshot("v2", [DictParcel(PIN, {"bldg_sqft": 3600.0, "bldg_sqft_source": "footprint"})])
+        [r] = as_admin().get("/api/admin/corrections").json()["reports"]
+        assert r["changed"] is True and r["now"]["data_version"] == "v2" and r["shown"]["data_version"] == VERSION
+
+    async def test_muted_reporter_sorts_last_and_past_counts_exclude_the_report_itself(self, store, as_user, as_admin):
+        c = as_user(A)
+        rejected = [_send(c, pin=p).json()["id"] for p in LOTS[:3]]
+        admin = as_admin()
+        for i in rejected:
+            assert admin.post(f"/api/admin/corrections/{i}/review", json={"action": "reject", "reason": "Street View shows 2"}).status_code == 200
+        muted = _send(as_user(A), pin=LOTS[3]).json()["id"]
+        anon = as_user(None)
+        anon.cookies.set(quotas.ANON_COOKIE, quotas.sign_anon("visitor1"))
+        first = _send(anon, pin=LOTS[4]).json()["id"]
+        reports = as_admin().get("/api/admin/corrections").json()["reports"]
+        assert [r["id"] for r in reports] == [first, muted]
+        assert reports[1]["muted"] is True and reports[1]["past"] == {"accepted": 0, "rejected": 3}
+        done = as_admin().get("/api/admin/corrections?status=rejected").json()["reports"]
+        assert len(done) == 3 and all(r["past"]["rejected"] == 2 for r in done)
+        assert done[0]["review_note"] == "Street View shows 2"
+
+    async def test_unknown_status_is_422(self, store, as_admin):
+        assert as_admin().get("/api/admin/corrections?status=open").status_code == 422
+
+
+class TestReview:
+    async def test_accept_records_what_applies_and_clears_the_ip_hash(self, store, as_user, as_admin):
+        ids = await _seed(as_user)
+        r = as_admin().post(f"/api/admin/corrections/{ids['anon_pin']}/review",
+                            json={"action": "accept", "apply": "stories", "stories": 4, "reason": "4 stories on Street View"})
+        assert r.status_code == 200 and r.json() == {"id": ids["anon_pin"], "status": "accepted", "applied": {"stories": 4}}
+        [row] = await _rows("SELECT * FROM lot_corrections WHERE id = ?", (ids["anon_pin"],))
+        assert row["status"] == "accepted" and row["reviewed_by"] == "admin_1" and row["reviewed_at"] > 0
+        assert row["ip_hash"] is None and row["anon_id"] == "visitor1" and json.loads(row["applied"]) == {"stories": 4}
+        assert row["review_note"] == "4 stories on Street View"
+
+    async def test_accept_empty_or_nothing_and_reject_and_duplicate(self, store, as_user, as_admin):
+        ids = await _seed(as_user)
+        admin = as_admin()
+        assert admin.post(f"/api/admin/corrections/{ids['a_pin']}/review", json={"action": "accept", "apply": "none"}).json()["applied"] == {}
+        assert admin.post(f"/api/admin/corrections/{ids['a_other']}/review", json={"action": "accept", "apply": "empty"}).json()["applied"] == {"empty": True}
+        assert admin.post(f"/api/admin/corrections/{ids['anon_pin']}/review", json={"action": "duplicate", "reason": "  "}).json()["status"] == "duplicate"
+        statuses = {r["id"]: (r["status"], r["review_note"]) for r in await _rows()}
+        assert statuses[ids["anon_pin"]] == ("duplicate", None)
+
+    async def test_only_an_open_report_and_404(self, store, as_user, as_admin):
+        ids = await _seed(as_user)
+        admin = as_admin()
+        assert admin.post(f"/api/admin/corrections/{ids['a_pin']}/review", json={"action": "reject"}).status_code == 200
+        r = admin.post(f"/api/admin/corrections/{ids['a_pin']}/review", json={"action": "accept", "apply": "none"})
+        assert r.status_code == 409 and r.json()["detail"] == "already rejected"
+        assert admin.post("/api/admin/corrections/9999/review", json={"action": "reject"}).status_code == 404
+
+    @pytest.mark.parametrize("body", [
+        {"action": "accept"},
+        {"action": "accept", "apply": "stories"},
+        {"action": "accept", "apply": "stories", "stories": 0},
+        {"action": "accept", "apply": "empty", "stories": 3},
+        {"action": "reject", "apply": "none"},
+        {"action": "reject", "stories": 3},
+        {"action": "approve"},
+        {"action": "reject", "reason": "x" * 201},
+        {"action": "reject", "status": "accepted"},
+    ])
+    async def test_review_body_rules(self, store, as_user, as_admin, body):
+        ids = await _seed(as_user)
+        assert as_admin().post(f"/api/admin/corrections/{ids['a_pin']}/review", json=body).status_code == 422
+
+    async def test_review_logs_only_the_action(self, store, as_user, as_admin, caplog):
+        ids = await _seed(as_user)
+        with caplog.at_level(logging.INFO, logger="backend.corrections"):
+            as_admin().post(f"/api/admin/corrections/{ids['a_pin']}/review", json={"action": "reject", "reason": "secret reason"})
+        lines = [r.getMessage() for r in caplog.records if r.name == "backend.corrections"]
+        assert lines == ["correction_reviewed action=reject"]
+
+
+class TestExport:
+    async def test_merges_accepted_reports_into_the_committed_file(self, store, as_user, as_admin, tmp_path):
+        committed = tmp_path / "user_corrections.json"
+        committed.write_text(json.dumps({"1700000000": {"stories": 2, "empty": False, "reviewed": "2026-11-01", "report_ids": [1], "what": "kept"}}))
+        ids = await _seed(as_user)
+        admin = as_admin()
+        admin.post(f"/api/admin/corrections/{ids['a_pin']}/review", json={"action": "accept", "apply": "stories", "stories": 3})
+        admin.post(f"/api/admin/corrections/{ids['anon_pin']}/review", json={"action": "accept", "apply": "stories", "stories": 4, "reason": "Four floors"})
+        admin.post(f"/api/admin/corrections/{ids['a_other']}/review", json={"action": "accept", "apply": "none"})
+        with patch("backend.corrections.COMMITTED_FILE", committed):
+            body = admin.get("/api/admin/corrections/export").json()
+        content = json.loads(body["content"])
+        assert content["1700000000"]["what"] == "kept"  # never dropped by the export
+        assert content[PIN10] == {"stories": 4, "empty": False, "reviewed": content[PIN10]["reviewed"],
+                                  "report_ids": sorted([ids["a_pin"], ids["anon_pin"]]), "what": "Four floors"}
+        assert LOTS[0] not in content  # accepted as a case for the Assessor: nothing applied
+        assert body["entries"] == 2 and body["new_reports"] == 2
+        assert body["diff"].startswith("--- a/backend/discovery/user_corrections.json")
+        assert f'+  "{PIN10}": {{' in body["diff"]
+        assert json.loads(committed.read_text()) == {"1700000000": {"stories": 2, "empty": False, "reviewed": "2026-11-01", "report_ids": [1], "what": "kept"}}
+
+    async def test_no_committed_file_yet(self, store, as_user, as_admin, tmp_path):
+        ids = await _seed(as_user)
+        as_admin().post(f"/api/admin/corrections/{ids['a_other']}/review", json={"action": "accept", "apply": "empty"})
+        with patch("backend.corrections.COMMITTED_FILE", tmp_path / "missing.json"):
+            body = as_admin().get("/api/admin/corrections/export").json()
+        assert json.loads(body["content"]) == {LOTS[0]: {"stories": None, "empty": True, "reviewed": json.loads(body["content"])[LOTS[0]]["reviewed"],
+                                                         "report_ids": [ids["a_other"]], "what": "no building"}}
+        assert not (tmp_path / "missing.json").exists()
+
+
+class TestRetention:
+    async def test_signed_out_reports_go_180_days_after_review(self, store, as_user, as_admin):
+        ids = await _seed(as_user)
+        admin = as_admin()
+        for i in ids.values():
+            admin.post(f"/api/admin/corrections/{i}/review", json={"action": "reject"})
+        old = int(time.time() * 1000) - 181 * 86_400_000
+        await db._get_db().execute("UPDATE lot_corrections SET reviewed_at = ?", (old,))
+        await db._get_db().commit()
+        body = admin.get("/api/admin/corrections?status=all").json()
+        assert body["pruned"] == 1
+        assert {r["signed_in"] for r in body["reports"]} == {True}
+
+    async def test_open_and_recent_reports_stay(self, store, as_user):
+        await _seed(as_user)
+        assert await corrections.prune_reviewed() == 0
+        assert len(await _rows()) == 3
+
+
+class TestMigrationV23:
+    async def test_v22_database_gains_applied(self, tmp_path):
+        settings = MagicMock()
+        settings.db_path = str(tmp_path / "old.db")
+        with patch("backend.db.get_settings", return_value=settings):
+            await db.init_db()
+            await db._get_db().execute("ALTER TABLE lot_corrections DROP COLUMN applied")
+            await db._get_db().execute("UPDATE schema_version SET version = 22")
+            await db._get_db().commit()
+            await db.close_db()
+            await db.init_db()
+            cols = {r["name"] for r in await _rows("PRAGMA table_info(lot_corrections)")}
+            assert "applied" in cols
+            await db.close_db()

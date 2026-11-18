@@ -1818,3 +1818,66 @@ export async function sendLotCorrection(body: LotCorrectionBody): Promise<LotCor
     return resp.status === 429 ? "too_many" : "failed";
   } catch { return "failed"; }
 }
+
+// The review queue for suggested corrections (decision Item 129, PR 4): admins only. No account, cookie or network
+// id comes back, only whether the reporter was signed in and their past verdicts.
+export type CorrectionStatus = "new" | "accepted" | "rejected" | "duplicate" | "stale";
+export interface AdminCorrection {
+  id: number;
+  pin10: string;
+  kinds: LotCorrectionKind[];
+  stories: number | null;
+  area_dir: "high" | "low" | null;
+  note: string | null;
+  shown: { bldg_sqft?: number | null; bldg_sqft_source?: string | null; stories?: number | null; room_sqft?: number | null; structure?: string | null; condo?: boolean | null; data_version?: string };
+  now: {
+    address: string | null; lat: number | null; lon: number | null; zone_class: string | null;
+    bldg_sqft: number | null; bldg_sqft_source: string | null; room_sqft: number | null;
+    structure: string | null; condo: boolean | null; data_version: string;
+  } | null;
+  changed: boolean;
+  signed_in: boolean;
+  past: { accepted: number; rejected: number };
+  muted: boolean;
+  others_open: number[];
+  status: CorrectionStatus;
+  created_at: number;
+  reviewed_at: number | null;
+  review_note: string | null;
+  applied: { stories?: number; empty?: boolean } | null;
+}
+export interface AdminCorrectionReview {
+  action: "accept" | "reject" | "duplicate";
+  reason?: string;
+  apply?: "stories" | "empty" | "none";
+  stories?: number;
+}
+export interface AdminCorrectionExport { content: string; diff: string; entries: number; new_reports: number }
+
+export async function fetchAdminCorrections(status: CorrectionStatus | "all" = "new"): Promise<{ reports: AdminCorrection[]; total: number } | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/corrections?${new URLSearchParams({ status })}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function reviewAdminCorrection(id: number, body: AdminCorrectionReview): Promise<void> {
+  const resp = await authFetch(`${API_BASE}/api/admin/corrections/${id}/review`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const detail = (await resp.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : "Couldn't save the review");
+  }
+}
+
+export async function exportAdminCorrections(): Promise<AdminCorrectionExport | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/corrections/export`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}

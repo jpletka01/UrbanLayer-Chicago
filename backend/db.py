@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 22
+_SCHEMA_VERSION = 23
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -656,6 +656,15 @@ CREATE INDEX IF NOT EXISTS idx_lot_corrections_ip ON lot_corrections(ip_hash, cr
 """)
 
 
+async def _migrate_v23(db: aiosqlite.Connection) -> None:
+    """Suggest a correction, review (decision Item 129, PR 4): ``lot_corrections.applied`` holds what an accepted
+    report applies, as the reviewer set it (JSON ``{"stories": n}`` or ``{"empty": true}``; ``{}`` = accepted as a
+    case for the Assessor, nothing applied). Read only by the export to ``user_corrections.json``."""
+    cur = await db.execute("PRAGMA table_info(lot_corrections)")
+    if "applied" not in {r[1] for r in await cur.fetchall()}:
+        await db.execute("ALTER TABLE lot_corrections ADD COLUMN applied TEXT")
+
+
 async def init_db() -> None:
     """Open the database and create tables if needed."""
     global _db
@@ -695,6 +704,7 @@ async def init_db() -> None:
         await _migrate_v20(_db)
         await _migrate_v21(_db)
         await _migrate_v22(_db)
+        await _migrate_v23(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -762,6 +772,9 @@ async def init_db() -> None:
         if version < 22:
             await _migrate_v22(_db)
             version = 22
+        if version < 23:
+            await _migrate_v23(_db)
+            version = 23
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
