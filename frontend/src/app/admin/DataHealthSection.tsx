@@ -9,6 +9,12 @@ import {
 } from "../../lib/api";
 import { STATE_ORDER, sortSources } from "../../lib/dataHealth";
 import { formatDay } from "../../lib/format";
+import { CircleAlert, Clock, Database } from "lucide-react";
+import { Block, Pill, type PillTone } from "../ui/Blocks";
+
+const COUNT_TONE: Record<SourceState, PillTone> = {
+  alarm: "red", error: "red", warn: "yellow", acked: "yellow", unknown: "gray", ok: "green", frozen_ok: "green",
+};
 
 const stateCls: Record<SourceState, string> = {
   alarm: "text-nx-pill-red border-nx-pill-red/30 bg-nx-pill-red/10",
@@ -77,13 +83,11 @@ function HistoryStrip({ source }: { source: string }) {
 function Counts({ counts }: { counts: DataHealth["counts"] }) {
   const entries = STATE_ORDER.filter((s) => (counts[s] ?? 0) > 0);
   return (
-    <div className="flex flex-wrap gap-2" data-testid="dh-counts">
+    <span className="contents" data-testid="dh-counts">
       {entries.map((s) => (
-        <span key={s} className={`text-caption rounded-md border px-2 py-0.5 ${stateCls[s]}`} data-testid={`dh-count-${s}`}>
-          {counts[s]} {STATE_LABEL[s]}
-        </span>
+        <span key={s} data-testid={`dh-count-${s}`}><Pill tone={COUNT_TONE[s]}>{counts[s]} {STATE_LABEL[s]}</Pill></span>
       ))}
-    </div>
+    </span>
   );
 }
 
@@ -124,26 +128,22 @@ export function DataHealthSection() {
   const late = checker.state === "late";
   const rows = sortSources(data.sources);
   return (
-    <div className="space-y-3" data-testid="data-health">
-      {late && (
-        <div
-          className="rounded-md border border-nx-pill-red/30 bg-nx-pill-red/10 text-nx-pill-red text-caption px-3 py-2"
-          data-testid="dh-late"
-        >
-          {checker.last_run
-            ? `The daily check hasn't finished in over ${checker.late_after_h} hours (last run ${hoursAgo(checker.age_h)}). The rows below are from that run.`
-            : "The daily check has never finished, or its store can't be read."}
-          {checker.last_error ? ` Last error: ${checker.last_error}` : ""}
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <div className="flex flex-col gap-4" data-testid="data-health">
+      <div className="flex flex-wrap items-center gap-2">
+        {late && (
+          <span data-testid="dh-late" title={checker.last_error ?? undefined}>
+            <Pill tone="red" icon={CircleAlert}>{checker.last_run ? `Daily check late, ${hoursAgo(checker.age_h)}` : "Daily check never ran"}</Pill>
+          </span>
+        )}
         <Counts counts={data.counts} />
-        <span className="text-caption nx-muted" data-testid="dh-last-run">
-          Last run {hoursAgo(checker.age_h)}
-          {checker.next_run ? ` · next ${formatDay(checker.next_run)} 05:37 UTC` : ""}
+        <span data-testid="dh-last-run">
+          <Pill icon={Clock}>{checker.last_run ? `Ran ${hoursAgo(checker.age_h)}` : "Never ran"}{checker.next_run ? ` · next ${formatDay(checker.next_run)}` : ""}</Pill>
         </span>
       </div>
+      {late && checker.last_error && <p className="text-caption text-nx-pill-red [overflow-wrap:anywhere]">{checker.last_error}</p>}
+      {rows.length === 0 && <Block><p className="flex items-center gap-2 text-caption nx-muted"><Database aria-hidden className="h-4 w-4" strokeWidth={1.5} />No sources checked yet.</p></Block>}
       {rows.length > 0 && (
+        <Block title="Sources" icon={Database} aside={`${rows.length}`}>
         <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full text-caption border-collapse" data-testid="dh-table">
             <thead>
@@ -160,6 +160,7 @@ export function DataHealthSection() {
             </tbody>
           </table>
         </div>
+        </Block>
       )}
     </div>
   );

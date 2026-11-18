@@ -5,7 +5,10 @@
 // from here: "Export accepted" gives the file `backend/discovery/user_corrections.json` and its diff for a PR, and the
 // next index build reads it. English-only, like the rest of /admin.
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Download, FileDiff, MapPinned, PersonStanding, UserRound, UserRoundX, X } from "lucide-react";
+import {
+  Building2, Check, CircleAlert, CircleCheck, Copy, Download, Eraser, FileDiff, History, Info, Landmark, Layers, MapPinned,
+  PersonStanding, UserRound, UserRoundX, VolumeX, X,
+} from "lucide-react";
 import {
   exportAdminCorrections, fetchAdminCorrections, reviewAdminCorrection,
   type AdminCorrection, type AdminCorrectionExport, type AdminCorrectionReview, type CorrectionStatus,
@@ -13,13 +16,15 @@ import {
 import { titleCaseAddress } from "../../lib/format";
 import { googleMapsUrl, streetViewUrl } from "../map/mapInfo";
 import { BlockSlice } from "../ui/BlockSlice";
+import { Block, Pill } from "../ui/Blocks";
+import { Empty, IconAction } from "./adminUi";
 import { familyOf } from "../saved/savedModel";
+import { defaultApply, reportWords } from "./correctionsModel";
 import { STROKE } from "../icons";
 
 const TABS: Array<[CorrectionStatus, string]> = [["new", "Open"], ["accepted", "Accepted"], ["rejected", "Rejected"], ["duplicate", "Duplicates"]];
-const inputCls = "px-2.5 py-1.5 rounded-md bg-nx-page border border-nx-ink/10 text-caption text-nx-ink placeholder:nx-muted focus:outline-none focus:border-nx-ink/60";
-const buttonCls = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-nx-ink/10 text-caption hover:border-nx-ink/30 disabled:opacity-50";
-const pill = "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro";
+const inputCls = "rounded-lg bg-nx-page px-2.5 text-caption text-nx-ink ring-1 ring-nx-ink/15 placeholder:text-nx-ink/50 focus:outline-none focus:ring-nx-ink/60";
+const buttonCls = "inline-flex h-8 items-center gap-1.5 rounded-lg border border-nx-ink/10 px-3 text-caption hover:bg-nx-ink/5 disabled:opacity-50 touch-target";
 
 const SOURCE_WORDS: Record<string, string> = {
   footprint: "footprint × stories estimate", assessor: "Assessor", assessor_condo: "Assessor (condo units)",
@@ -28,48 +33,27 @@ const SOURCE_WORDS: Record<string, string> = {
 const sqft = (v: number | null | undefined) => (v == null ? "not known" : `${Math.round(v).toLocaleString("en-US")} sq ft`);
 const when = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-/** What the reporter says, in words: "Stories: 20", "Floor area too high", "No building now" / "It's a condo" by what
- * the card showed (the two building and the two condo chips share a kind; the snapshot says which way). */
-export function reportWords(r: Pick<AdminCorrection, "kinds" | "stories" | "area_dir" | "shown" | "now">): string[] {
-  // The snapshot says what the card showed (reports sent before it carried these fall back to the index today).
-  const structure = r.shown.structure !== undefined ? r.shown.structure : r.now?.structure;
-  const condo = r.shown.condo !== undefined ? r.shown.condo : r.now?.condo;
-  const hadBuilding = structure !== "empty";
-  return r.kinds.map((k) => {
-    if (k === "stories") return `Stories: ${r.stories ?? "?"}`;
-    if (k === "area") return `Floor area too ${r.area_dir ?? "?"}`;
-    if (k === "gone") return hadBuilding ? "No building now" : "There's a building";
-    if (k === "condo") return condo ? "Not a condo" : "It's a condo";
-    return "Other";
-  });
-}
-
-/** What Accept applies by default: the reporter's story count, no building for "no building now", else stories for the
- * reviewer to type (floor area: a direction alone can't make a number), or nothing for a condo or "other" report. */
-export function defaultApply(r: Pick<AdminCorrection, "kinds" | "stories">): { apply: "stories" | "empty" | "none"; stories: string } {
-  if (r.kinds.includes("stories") && r.stories) return { apply: "stories", stories: String(r.stories) };
-  if (r.kinds.includes("gone")) return { apply: "empty", stories: "" };
-  if (r.kinds.includes("area")) return { apply: "stories", stories: "" };
-  return { apply: "none", stories: "" };
-}
-
 export function CorrectionsSection() {
   const [tab, setTab] = useState<CorrectionStatus>("new");
-  const [data, setData] = useState<{ reports: AdminCorrection[]; total: number } | null | "failed">(null);
+  const [loaded, setLoaded] = useState<{ key: string; data: { reports: AdminCorrection[]; total: number } | "failed" } | null>(null);
+  const [seq, setSeq] = useState(0);
   const [exported, setExported] = useState<AdminCorrectionExport | null | "failed">(null);
-  const load = useCallback(() => {
-    setData(null);
-    fetchAdminCorrections(tab).then((d) => setData(d ?? "failed"));
-  }, [tab]);
-  useEffect(load, [load]);
+  const key = `${tab}:${seq}`;
+  useEffect(() => {
+    let live = true;
+    fetchAdminCorrections(tab).then((d) => { if (live) setLoaded({ key, data: d ?? "failed" }); });
+    return () => { live = false; };
+  }, [tab, key]);
+  const data = loaded?.key === key ? loaded.data : null;
+  const load = useCallback(() => setSeq((n) => n + 1), []);
 
   return (
-    <div className="flex flex-col gap-3" data-testid="corrections-section">
+    <div className="flex flex-col gap-4" data-testid="corrections-section">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="tablist" aria-label="Reports" className="inline-flex rounded-lg bg-nx-ink/5 p-1">
+        <div role="tablist" aria-label="Reports" className="inline-flex rounded-xl bg-nx-ink/5 p-1">
           {TABS.map(([s, label]) => (
-            <button key={s} role="tab" aria-selected={tab === s} onClick={() => setTab(s)}
-              className={`rounded-md px-3 py-1 text-caption ${tab === s ? "bg-nx-page font-semibold shadow-sm" : "nx-muted hover:text-nx-ink"}`}>
+            <button key={s} type="button" role="tab" aria-selected={tab === s} onClick={() => setTab(s)}
+              className={`rounded-lg px-3 py-1 text-caption touch-target ${tab === s ? "bg-nx-page font-semibold shadow-sm" : "nx-muted hover:text-nx-ink"}`}>
               {label}{tab === s && data && data !== "failed" ? ` · ${data.total}` : ""}
             </button>
           ))}
@@ -79,72 +63,76 @@ export function CorrectionsSection() {
         </button>
       </div>
       {exported && <ExportPanel exported={exported} onClose={() => setExported(null)} />}
-      {data === null && <p className="text-caption nx-muted">Loading reports…</p>}
-      {data === "failed" && <p className="text-caption text-nx-pill-red">Couldn't load the reports.</p>}
-      {data && data !== "failed" && data.reports.length === 0 && (
-        <p className="text-caption nx-muted">{tab === "new" ? "No open reports." : "None yet."}</p>
-      )}
-      {data && data !== "failed" && (
-        <ul className="grid gap-3 lg:grid-cols-2">
-          {data.reports.map((r) => <ReportCard key={r.id} report={r} onReviewed={load} />)}
-        </ul>
-      )}
+      <Block>
+        {data === null && <p className="text-caption nx-muted">Loading reports…</p>}
+        {data === "failed" && <Empty icon={CircleAlert}>Couldn't load the reports.</Empty>}
+        {data && data !== "failed" && data.reports.length === 0 && (
+          <Empty icon={CircleCheck}>{tab === "new" ? "No open reports." : "None yet."}</Empty>
+        )}
+        {data && data !== "failed" && data.reports.length > 0 && (
+          <ul className="flex flex-col divide-y divide-nx-ink/10">
+            {data.reports.map((r) => <ReportRow key={r.id} report={r} onReviewed={load} />)}
+          </ul>
+        )}
+      </Block>
     </div>
   );
 }
 
-function ReportCard({ report: r, onReviewed }: { report: AdminCorrection; onReviewed: () => void }) {
+function addressOf(r: AdminCorrection): string {
+  const a = r.now?.address;
+  if (!a) return `PIN ${r.pin10}`;
+  return a.startsWith("~") ? `Near ${titleCaseAddress(a.slice(1))}` : titleCaseAddress(a);
+}
+
+/** One report on one row: the lot's block, the address with who sent it, what they say, what the card showed, and
+    the actions as icons. Accepting, rejecting or marking a duplicate opens a small form under the row. */
+function ReportRow({ report: r, onReviewed }: { report: AdminCorrection; onReviewed: () => void }) {
+  const [mode, setMode] = useState<AdminCorrectionReview["action"] | null>(null);
   const lat = r.now?.lat, lon = r.now?.lon;
+  const source = r.shown.bldg_sqft_source ? SOURCE_WORDS[r.shown.bldg_sqft_source] ?? r.shown.bldg_sqft_source : null;
+  const hasPast = r.past.accepted + r.past.rejected > 0;
   return (
-    <li className="overflow-hidden rounded-xl border border-nx-ink/10 bg-nx-page" data-testid="correction-report">
-      <BlockSlice pin10={r.pin10} zoneTag={r.now?.zone_class ?? null} family={familyOf(r.now?.zone_class)} className="h-24" />
-      <div className="flex flex-col gap-2 p-3 text-caption">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <p className="text-body font-semibold">{r.now?.address ? (r.now.address.startsWith("~") ? `Near ${titleCaseAddress(r.now.address.slice(1))}` : titleCaseAddress(r.now.address)) : `PIN ${r.pin10}`}</p>
-            <p className="nx-muted">#{r.id} · PIN {r.pin10} · sent {when(r.created_at)}</p>
-          </div>
-          {lat != null && lon != null && (
-            <div className="flex gap-1.5">
-              <a href={streetViewUrl(lat, lon)} target="_blank" rel="noopener noreferrer" className={buttonCls}>
-                <PersonStanding aria-hidden className="h-4 w-4" strokeWidth={STROKE} />Street View<span className="sr-only"> (opens in a new tab)</span>
-              </a>
-              <a href={googleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer" className={buttonCls}>
-                <MapPinned aria-hidden className="h-4 w-4" strokeWidth={STROKE} />Map<span className="sr-only"> (opens in a new tab)</span>
-              </a>
-            </div>
+    <li className="flex flex-col gap-3 py-3" data-testid="correction-report">
+      <div className="flex flex-wrap items-start gap-3">
+        <BlockSlice pin10={r.pin10} zoneTag={null} family={familyOf(r.now?.zone_class)} className="h-16 w-16 shrink-0 rounded-xl" />
+        <div className="flex min-w-0 flex-1 basis-[12rem] flex-col gap-1.5">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-semibold">{addressOf(r)}</span>
+            <span title={r.signed_in ? "Signed in" : "Signed out"} className="inline-flex">
+              {r.signed_in
+                ? <UserRound aria-label="Signed in" className="h-4 w-4 text-nx-pill-green" strokeWidth={STROKE} />
+                : <UserRoundX aria-label="Signed out" className="h-4 w-4 nx-muted" strokeWidth={STROKE} />}
+            </span>
+            <span className="text-caption nx-muted">{when(r.created_at)}</span>
+          </p>
+          <p className="flex flex-wrap gap-1.5">
+            {reportWords(r).map((w) => <Pill key={w} tone="blue">{w}</Pill>)}
+            {r.muted && <Pill tone="yellow" icon={VolumeX}>Muted</Pill>}
+            {hasPast && <Pill icon={History}>{r.past.accepted} accepted, {r.past.rejected} rejected</Pill>}
+            {r.others_open.length > 0 && <Pill icon={Layers}>{r.others_open.map((i) => `#${i}`).join(", ")} also open</Pill>}
+          </p>
+          {r.note && <p className="line-clamp-2 text-caption [overflow-wrap:anywhere]" title={r.note}>“{r.note}”</p>}
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption nx-muted">
+            <span className="inline-flex items-center gap-1"><Layers aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{sqft(r.shown.bldg_sqft)}{source ? ` · ${source}` : ""}</span>
+            {r.changed && r.now && <span data-testid="correction-changed"><Pill tone="yellow">Now {sqft(r.now.bldg_sqft)}</Pill></span>}
+            {r.status !== "new" && <span className="inline-flex items-center gap-1"><Check aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{r.status}{r.applied ? `, ${appliedWords(r.applied)}` : ""}{r.review_note ? `: “${r.review_note}”` : ""}</span>}
+          </p>
+        </div>
+        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-0.5">
+          {lat != null && lon != null && <IconAction label="Street View" icon={PersonStanding} href={streetViewUrl(lat, lon)} />}
+          {lat != null && lon != null && <IconAction label="Map" icon={MapPinned} href={googleMapsUrl(lat, lon)} />}
+          {r.status === "new" && (
+            <>
+              <span aria-hidden className="mx-1 h-5 w-px bg-nx-ink/10" />
+              <IconAction label="Accept" icon={Check} onClick={() => setMode("accept")} pressed={mode === "accept"} testId="correction-accept" />
+              <IconAction label="Reject" icon={X} onClick={() => setMode("reject")} pressed={mode === "reject"} testId="correction-reject" />
+              <IconAction label="Duplicate" icon={Copy} onClick={() => setMode("duplicate")} pressed={mode === "duplicate"} testId="correction-duplicate" />
+            </>
           )}
         </div>
-        <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1">
-          <dt className="nx-muted">Card showed</dt>
-          <dd>{sqft(r.shown.bldg_sqft)} built{r.shown.bldg_sqft_source ? ` (${SOURCE_WORDS[r.shown.bldg_sqft_source] ?? r.shown.bldg_sqft_source})` : ""} · room {sqft(r.shown.room_sqft)}</dd>
-          {r.changed && r.now && (
-            <>
-              <dt className="nx-muted">Shows now</dt>
-              <dd className="text-nx-pill-yellow" data-testid="correction-changed">{sqft(r.now.bldg_sqft)} built ({SOURCE_WORDS[r.now.bldg_sqft_source ?? ""] ?? r.now.bldg_sqft_source ?? "no source"})</dd>
-            </>
-          )}
-          <dt className="nx-muted">Reporter says</dt>
-          <dd className="flex flex-wrap gap-1">{reportWords(r).map((w) => <span key={w} className={`${pill} bg-nx-ink/5`}>{w}</span>)}</dd>
-          {r.note && (<><dt className="nx-muted">Note</dt><dd className="[overflow-wrap:anywhere]">“{r.note}”</dd></>)}
-          <dt className="nx-muted">Reporter</dt>
-          <dd className="flex flex-wrap items-center gap-1.5">
-            {r.signed_in
-              ? <span className={`${pill} bg-nx-pill-green/10 text-nx-pill-green`}><UserRound aria-hidden className="h-3 w-3" strokeWidth={STROKE} />Signed in</span>
-              : <span className={`${pill} bg-nx-ink/5`}><UserRoundX aria-hidden className="h-3 w-3" strokeWidth={STROKE} />Signed out</span>}
-            <span className="nx-muted">{r.past.accepted} accepted · {r.past.rejected} rejected before</span>
-            {r.muted && <span className={`${pill} bg-nx-pill-yellow/10 text-nx-pill-yellow`}>Muted (sorted last)</span>}
-          </dd>
-          {r.others_open.length > 0 && (<><dt className="nx-muted">Also open</dt><dd>{r.others_open.map((i) => `#${i}`).join(", ")}</dd></>)}
-          {r.status !== "new" && (
-            <>
-              <dt className="nx-muted">Review</dt>
-              <dd>{r.status}{r.reviewed_at ? ` ${when(r.reviewed_at)}` : ""}{r.applied ? ` · ${appliedWords(r.applied)}` : ""}{r.review_note ? ` · “${r.review_note}”` : ""}</dd>
-            </>
-          )}
-        </dl>
-        {r.status === "new" && <ReviewActions report={r} onReviewed={onReviewed} />}
       </div>
+      {mode && <ReviewForm key={mode} report={r} mode={mode} onCancel={() => setMode(null)} onReviewed={onReviewed} />}
     </li>
   );
 }
@@ -155,25 +143,20 @@ function appliedWords(a: NonNullable<AdminCorrection["applied"]>): string {
   return "nothing applied (a case for the Assessor)";
 }
 
-function ReviewActions({ report: r, onReviewed }: { report: AdminCorrection; onReviewed: () => void }) {
-  const [mode, setMode] = useState<AdminCorrectionReview["action"] | null>(null);
+function ReviewForm({ report: r, mode, onCancel, onReviewed }: {
+  report: AdminCorrection; mode: AdminCorrectionReview["action"]; onCancel: () => void; onReviewed: () => void;
+}) {
   const init = defaultApply(r);
   const [apply, setApply] = useState(init.apply);
   const [stories, setStories] = useState(init.stories);
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState(mode === "duplicate" && r.others_open.length ? `Duplicate of #${r.others_open[0]}` : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const storiesOk = /^\d{1,3}$/.test(stories) && Number(stories) >= 1 && Number(stories) <= 150;
   const ready = mode !== "accept" || apply !== "stories" || storiesOk;
 
-  function open(m: AdminCorrectionReview["action"]) {
-    setMode(m);
-    setError(null);
-    setReason(m === "duplicate" && r.others_open.length ? `Duplicate of #${r.others_open[0]}` : "");
-  }
-
   async function save() {
-    if (!mode || !ready || busy) return;
+    if (!ready || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -189,44 +172,39 @@ function ReviewActions({ report: r, onReviewed }: { report: AdminCorrection; onR
     }
   }
 
-  if (!mode) {
-    return (
-      <div className="flex flex-wrap gap-1.5 pt-1">
-        <button type="button" className={buttonCls} onClick={() => open("accept")}><Check aria-hidden className="h-4 w-4" strokeWidth={STROKE} />Accept</button>
-        <button type="button" className={buttonCls} onClick={() => open("reject")}><X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />Reject</button>
-        <button type="button" className={buttonCls} onClick={() => open("duplicate")}><Copy aria-hidden className="h-4 w-4" strokeWidth={STROKE} />Duplicate</button>
-      </div>
-    );
-  }
+  const choice = (value: typeof apply, label: string, Icon: typeof Check) => (
+    <button type="button" role="radio" aria-checked={apply === value} onClick={() => setApply(value)}
+      className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-caption touch-target ${apply === value ? "bg-nx-ink font-medium text-nx-on-ink" : "bg-nx-ink/5 hover:bg-nx-ink/10"}`}>
+      <Icon aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />{label}
+    </button>
+  );
+
   return (
-    <form className="flex flex-col gap-2 rounded-lg bg-nx-block p-2.5" onSubmit={(e) => { e.preventDefault(); void save(); }} data-testid="correction-review">
+    <form className="ml-0 flex flex-col gap-3 rounded-2xl bg-nx-ink/[0.03] p-3 sm:ml-[4.75rem]" onSubmit={(e) => { e.preventDefault(); void save(); }} data-testid="correction-review">
       {mode === "accept" && (
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1 font-medium">Apply</legend>
-          <label className="flex items-center gap-2">
-            <input type="radio" name={`apply-${r.id}`} checked={apply === "stories"} onChange={() => setApply("stories")} />
-            Stories I see
-            <input type="text" inputMode="numeric" maxLength={3} value={stories} aria-label="Stories to apply" disabled={apply !== "stories"}
-              onChange={(e) => setStories(e.target.value.replace(/\D/g, ""))} className={`${inputCls} w-16 text-center`} />
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" name={`apply-${r.id}`} checked={apply === "empty"} onChange={() => setApply("empty")} />No building
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" name={`apply-${r.id}`} checked={apply === "none"} onChange={() => setApply("none")} />Nothing: a case for the Assessor
-          </label>
-          <p className="nx-muted">Applies only over the footprint estimate; a government record always wins.</p>
-        </fieldset>
+        <div className="flex flex-col gap-2">
+          <div role="radiogroup" aria-label="Apply" className="flex flex-wrap items-center gap-1.5">
+            {choice("stories", "Stories", Building2)}
+            {choice("empty", "No building", Eraser)}
+            {choice("none", "Nothing", Landmark)}
+            {apply === "stories" && (
+              <input type="text" inputMode="numeric" maxLength={3} value={stories} aria-label="Stories to apply" autoFocus
+                onChange={(e) => setStories(e.target.value.replace(/\D/g, ""))} className={`${inputCls} h-8 w-16 text-center`} />
+            )}
+          </div>
+          <p className="flex items-center gap-1.5 text-caption nx-muted"><Info aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />
+            {apply === "none" ? "Kept as a case for the Assessor." : "Replaces only the footprint estimate."}</p>
+        </div>
       )}
-      <input type="text" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)}
-        placeholder={mode === "reject" ? "Why (optional)" : "What you saw (optional)"} aria-label="Reason" className={inputCls} />
-      {error && <p role="alert" className="text-nx-pill-red">{error}</p>}
-      <div className="flex gap-1.5">
-        <button type="submit" disabled={!ready || busy} className={`${buttonCls} bg-nx-ink font-semibold text-nx-on-ink`} data-testid="correction-review-save">
+      <div className="flex flex-wrap items-center gap-2">
+        <input type="text" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)}
+          placeholder={mode === "reject" ? "Why (optional)" : "What you saw (optional)"} aria-label="Reason" className={`${inputCls} h-8 min-w-0 flex-1`} />
+        <button type="submit" disabled={!ready || busy} className={`${buttonCls} border-transparent bg-nx-ink font-semibold text-nx-on-ink`} data-testid="correction-review-save">
           {mode === "accept" ? "Accept" : mode === "reject" ? "Reject" : "Mark duplicate"}
         </button>
-        <button type="button" className={buttonCls} onClick={() => setMode(null)}>Cancel</button>
+        <button type="button" className={buttonCls} onClick={onCancel}>Cancel</button>
       </div>
+      {error && <p role="alert" className="text-caption text-nx-pill-red">{error}</p>}
     </form>
   );
 }

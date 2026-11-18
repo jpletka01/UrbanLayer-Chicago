@@ -1,246 +1,163 @@
-// Early-adopter access management: mint voucher codes (time-boxed comp
-// premium), see who redeemed what, and grant access directly by email
-// (only works after the user's first sign-in — codes work before).
+// "Early access" (owner's review 2026-11-17: "we could do better than this UI for creating codes"): make a code in
+// one card (who it's for, how long, how many uses; the code itself is made up unless you type one), give an account
+// Pro by email beside it, and the codes as rows: the code with a copy button, how long it lasts and how many used it
+// as pills, who used it one click away. Same endpoints as before. English only, like the rest of /admin.
 import { useEffect, useState } from "react";
-import {
-  adminGrantPremium,
-  createAdminVoucher,
-  fetchAdminVouchers,
-  type AdminVoucher,
-} from "../../lib/api";
+import { Check, ChevronDown, Clock, Copy, Mail, Minus, Plus, Sparkles, Ticket, Users } from "lucide-react";
+import { adminGrantPremium, createAdminVoucher, fetchAdminVouchers, type AdminVoucher } from "../../lib/api";
+import { STROKE } from "../icons";
+import { Block, Pill } from "../ui/Blocks";
+import { Empty, IconAction } from "./adminUi";
 
-const inputCls =
-  "px-2.5 py-1.5 rounded-md bg-nx-block border border-nx-ink/10 text-caption text-nx-ink placeholder:nx-muted focus:outline-none focus:border-nx-ink/60";
-const buttonCls =
-  "px-3 py-1.5 rounded-md border border-nx-ink/10 text-caption nx-muted hover:underline hover:border-nx-ink/30 transition-colors disabled:opacity-50";
+const LENGTHS = [7, 30, 90, 365] as const;
+const FIELD = "h-10 w-full rounded-xl bg-nx-page px-3 text-body ring-1 ring-nx-ink/15 placeholder:text-nx-ink/50 focus:outline-none focus:ring-nx-ink/60";
+const PRIMARY = "inline-flex h-10 items-center justify-center gap-2 rounded-full bg-nx-primary px-5 font-semibold text-nx-primary-fg disabled:opacity-40 touch-target";
+const lengthWord = (d: number) => (d === 365 ? "1 year" : `${d} days`);
+const day = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-function CopyableCode({ code }: { code: string }) {
-  const [copied, setCopied] = useState(false);
+/** Length chips: the usual choices, picked = ink. */
+function LengthChips({ value, onChange, label }: { value: number; onChange: (d: number) => void; label: string }) {
   return (
-    <button
-      onClick={() => {
-        navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-      title="Copy code"
-      className="font-mono text-caption text-nx-ink hover:underline transition-colors"
-    >
-      {code}
-      {copied && <span className="ml-1.5 text-micro text-nx-pill-green">copied</span>}
-    </button>
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
+      {LENGTHS.map((d) => (
+        <button key={d} type="button" role="radio" aria-checked={value === d} onClick={() => onChange(d)}
+          className={`h-8 rounded-full px-3 text-caption touch-target ${value === d ? "bg-nx-ink font-medium text-nx-on-ink" : "bg-nx-ink/5 hover:bg-nx-ink/10"}`}>
+          {lengthWord(d)}
+        </button>
+      ))}
+    </div>
   );
 }
 
 export function VouchersSection() {
   const [vouchers, setVouchers] = useState<AdminVoucher[] | null>(null);
+  useEffect(() => { fetchAdminVouchers().then(setVouchers); }, []);
 
+  return (
+    <div className="flex flex-col gap-4" data-testid="early-access">
+      <div className="nx-cq"><div className="nx-split nx-split-even">
+        <NewCode onMade={(v) => setVouchers((prev) => [v, ...(prev ?? [])])} />
+        <GrantByEmail />
+      </div></div>
+      <Block title="Codes" icon={Ticket} aside={vouchers?.length ? `${vouchers.length}` : undefined}>
+        {vouchers === null ? <p className="text-caption nx-muted">Loading…</p>
+          : vouchers.length === 0 ? <Empty icon={Ticket}>No codes yet.</Empty>
+            : <ul className="flex flex-col divide-y divide-nx-ink/10" data-testid="voucher-list">{vouchers.map((v) => <CodeRow key={v.code} v={v} />)}</ul>}
+      </Block>
+    </div>
+  );
+}
+
+function NewCode({ onMade }: { onMade: (v: AdminVoucher) => void }) {
   const [label, setLabel] = useState("");
   const [days, setDays] = useState(30);
-  const [maxRedemptions, setMaxRedemptions] = useState(1);
-  const [customCode, setCustomCode] = useState("");
-  const [minting, setMinting] = useState(false);
-  const [mintError, setMintError] = useState<string | null>(null);
+  const [uses, setUses] = useState(1);
+  const [custom, setCustom] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [made, setMade] = useState<string | null>(null);
 
-  const [grantEmail, setGrantEmail] = useState("");
-  const [grantDays, setGrantDays] = useState(30);
-  const [granting, setGranting] = useState(false);
-  const [grantResult, setGrantResult] = useState<{ ok: boolean; text: string } | null>(null);
-
-  useEffect(() => {
-    fetchAdminVouchers().then(setVouchers);
-  }, []);
-
-  async function handleMint() {
-    if (minting) return;
-    setMinting(true);
-    setMintError(null);
+  async function make() {
+    if (busy) return;
+    setBusy(true); setError(null); setMade(null);
     try {
-      const v = await createAdminVoucher({
-        label: label.trim(),
-        duration_days: days,
-        max_redemptions: maxRedemptions,
-        code: customCode.trim() || undefined,
-      });
-      setVouchers((prev) => [v, ...(prev ?? [])]);
-      setLabel("");
-      setCustomCode("");
+      const v = await createAdminVoucher({ label: label.trim(), duration_days: days, max_redemptions: uses, code: custom.trim() || undefined });
+      onMade(v); setMade(v.code); setLabel(""); setCustom("");
     } catch (err) {
-      setMintError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setMinting(false);
-    }
-  }
-
-  async function handleGrant() {
-    const email = grantEmail.trim();
-    if (!email || granting) return;
-    setGranting(true);
-    setGrantResult(null);
-    try {
-      const res = await adminGrantPremium(email, grantDays);
-      setGrantResult({
-        ok: true,
-        text: `${res.email} has premium until ${new Date(res.premium_until).toLocaleDateString()}`,
-      });
-      setGrantEmail("");
-    } catch (err) {
-      setGrantResult({
-        ok: false,
-        text: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setGranting(false);
-    }
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setBusy(false); }
   }
 
   return (
-    <div className="space-y-5">
-      {/* Mint a code */}
-      <div>
-        <div className="text-micro nx-muted uppercase tracking-wide mb-2">
-          Mint a code
+    <Block title="New code" icon={Sparkles}>
+      <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); void make(); }} data-testid="voucher-new">
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Who it's for" aria-label="Who it's for" className={FIELD} />
+        <div className="flex flex-col gap-1.5">
+          <span className="flex items-center gap-1.5 text-caption nx-muted"><Clock aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />Pro for</span>
+          <LengthChips value={days} onChange={setDays} label="Pro for" />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="Label (who / channel)"
-            className={`${inputCls} w-44`}
-          />
-          <label className="flex items-center gap-1.5 text-caption nx-muted">
-            <input
-              type="number"
-              min={1}
-              value={days}
-              onChange={(e) => setDays(Math.max(1, Number(e.target.value) || 1))}
-              className={`${inputCls} w-16`}
-            />
-            days
-          </label>
-          <label className="flex items-center gap-1.5 text-caption nx-muted">
-            <input
-              type="number"
-              min={1}
-              value={maxRedemptions}
-              onChange={(e) =>
-                setMaxRedemptions(Math.max(1, Number(e.target.value) || 1))
-              }
-              className={`${inputCls} w-16`}
-            />
-            uses
-          </label>
-          <input
-            value={customCode}
-            onChange={(e) => setCustomCode(e.target.value)}
-            placeholder="Custom code (optional)"
-            className={`${inputCls} w-44 font-mono uppercase placeholder:normal-case placeholder:font-sans`}
-          />
-          <button onClick={handleMint} disabled={minting} className={buttonCls}>
-            {minting ? "Minting…" : "Mint code"}
-          </button>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-col gap-1.5">
+            <span className="flex items-center gap-1.5 text-caption nx-muted"><Users aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />Uses</span>
+            <div className="inline-flex items-center gap-1 rounded-full bg-nx-page p-1 ring-1 ring-nx-ink/15">
+              <IconAction label="One fewer use" icon={Minus} onClick={() => setUses((u) => Math.max(1, u - 1))} disabled={uses <= 1} />
+              <span className="w-8 text-center font-semibold tabular-nums" aria-live="polite" data-testid="voucher-uses">{uses}</span>
+              <IconAction label="One more use" icon={Plus} onClick={() => setUses((u) => Math.min(999, u + 1))} />
+            </div>
+          </div>
+          <input value={custom} onChange={(e) => setCustom(e.target.value.toUpperCase())} placeholder="Own code (optional)" aria-label="Own code (optional)"
+            className={`${FIELD} max-w-[13rem] font-mono placeholder:font-sans`} />
         </div>
-        {mintError && (
-          <p className="mt-1.5 text-caption text-nx-pill-red">{mintError}</p>
-        )}
-      </div>
+        {error && <p role="alert" className="text-caption text-nx-pill-red">{error}</p>}
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="submit" disabled={busy} className={PRIMARY} data-testid="voucher-make"><Ticket aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{busy ? "Making…" : "Make code"}</button>
+          {made && <span role="status" className="flex items-center gap-1.5 text-caption"><Check aria-hidden className="h-4 w-4 text-nx-pill-green" strokeWidth={STROKE} /><span className="font-mono">{made}</span> ready</span>}
+        </div>
+      </form>
+    </Block>
+  );
+}
 
-      {/* Grant by email */}
-      <div>
-        <div className="text-micro nx-muted uppercase tracking-wide mb-2">
-          Grant by email
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            value={grantEmail}
-            onChange={(e) => setGrantEmail(e.target.value)}
-            placeholder="user@example.com"
-            className={`${inputCls} w-56`}
-          />
-          <label className="flex items-center gap-1.5 text-caption nx-muted">
-            <input
-              type="number"
-              min={1}
-              value={grantDays}
-              onChange={(e) => setGrantDays(Math.max(1, Number(e.target.value) || 1))}
-              className={`${inputCls} w-16`}
-            />
-            days
-          </label>
-          <button
-            onClick={handleGrant}
-            disabled={granting || !grantEmail.trim()}
-            className={buttonCls}
-          >
-            {granting ? "Granting…" : "Grant"}
-          </button>
-        </div>
-        {grantResult && (
-          <p
-            className={`mt-1.5 text-caption ${grantResult.ok ? "text-nx-pill-green" : "text-nx-pill-red"}`}
-          >
-            {grantResult.text}
-          </p>
-        )}
-      </div>
+function GrantByEmail() {
+  const [email, setEmail] = useState("");
+  const [days, setDays] = useState(30);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
-      {/* Codes table */}
-      {vouchers === null ? (
-        <div className="nx-muted text-body text-center py-6">Loading…</div>
-      ) : vouchers.length === 0 ? (
-        <div className="nx-muted text-body text-center py-6">
-          No codes minted yet
+  async function grant() {
+    const e = email.trim();
+    if (!e || busy) return;
+    setBusy(true); setResult(null);
+    try {
+      const res = await adminGrantPremium(e, days);
+      setResult({ ok: true, text: `Pro until ${day(res.premium_until)}` });
+      setEmail("");
+    } catch (err) {
+      setResult({ ok: false, text: err instanceof Error ? err.message : String(err) });
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <Block title="Give Pro by email" icon={Mail} aside="After their first sign-in">
+      <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); void grant(); }} data-testid="voucher-grant">
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" aria-label="Email" className={FIELD} />
+        <div className="flex flex-col gap-1.5">
+          <span className="flex items-center gap-1.5 text-caption nx-muted"><Clock aria-hidden className="h-3.5 w-3.5" strokeWidth={STROKE} />Pro for</span>
+          <LengthChips value={days} onChange={setDays} label="Pro for, by email" />
         </div>
-      ) : (
-        <div tabIndex={0} className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-micro nx-muted uppercase tracking-wide">
-                <th className="py-1.5 pr-4 font-medium">Code</th>
-                <th className="py-1.5 pr-4 font-medium">Label</th>
-                <th className="py-1.5 pr-4 font-medium">Days</th>
-                <th className="py-1.5 pr-4 font-medium">Used</th>
-                <th className="py-1.5 pr-4 font-medium">Redeemed by</th>
-                <th className="py-1.5 font-medium">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vouchers.map((v) => (
-                <tr key={v.code} className="border-t border-nx-ink/10 align-top">
-                  <td className="py-2 pr-4 whitespace-nowrap">
-                    <CopyableCode code={v.code} />
-                  </td>
-                  <td className="py-2 pr-4 text-caption nx-muted">
-                    {v.label || "—"}
-                  </td>
-                  <td className="py-2 pr-4 text-caption nx-muted">
-                    {v.duration_days}
-                  </td>
-                  <td className="py-2 pr-4 text-caption nx-muted whitespace-nowrap">
-                    {v.redemptions.length}/{v.max_redemptions}
-                  </td>
-                  <td className="py-2 pr-4 text-caption nx-muted">
-                    {v.redemptions.length === 0
-                      ? "—"
-                      : v.redemptions.map((r) => (
-                          <div key={`${v.code}-${r.user_id}`} className="whitespace-nowrap">
-                            {r.email ?? r.user_id}
-                            <span className="nx-muted">
-                              {" · "}
-                              {new Date(r.redeemed_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        ))}
-                  </td>
-                  <td className="py-2 text-caption nx-muted whitespace-nowrap">
-                    {new Date(v.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {result && <p role={result.ok ? "status" : "alert"} className={`text-caption ${result.ok ? "text-nx-pill-green" : "text-nx-pill-red"}`}>{result.text}</p>}
+        <div><button type="submit" disabled={busy || !email.trim()} className={PRIMARY}><Mail aria-hidden className="h-4 w-4" strokeWidth={STROKE} />{busy ? "Giving…" : "Give Pro"}</button></div>
+      </form>
+    </Block>
+  );
+}
+
+function CodeRow({ v }: { v: AdminVoucher }) {
+  const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
+  const used = v.redemptions.length;
+  const full = used >= v.max_redemptions;
+  return (
+    <li className="py-2.5" data-testid="voucher-row">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span className="font-mono font-semibold">{v.code}</span>
+        <IconAction label={copied ? "Copied" : `Copy ${v.code}`} icon={copied ? Check : Copy}
+          onClick={() => { void navigator.clipboard?.writeText(v.code); setCopied(true); window.setTimeout(() => setCopied(false), 1500); }} />
+        <span className="min-w-0 flex-1 truncate text-caption nx-muted">{v.label || "No label"}</span>
+        <span className="flex flex-wrap items-center gap-1.5">
+          <Pill icon={Clock}>{lengthWord(v.duration_days)}</Pill>
+          <Pill tone={full ? "green" : used ? "blue" : "gray"} icon={Users}>{used} of {v.max_redemptions} used</Pill>
+          {v.disabled ? <Pill tone="red">Off</Pill> : null}
+          {used > 0 && <IconAction label={open ? "Hide who used it" : "Who used it"} icon={ChevronDown} onClick={() => setOpen((o) => !o)} pressed={open} />}
+        </span>
+      </div>
+      {open && (
+        <ul className="mt-2 flex flex-col gap-1 rounded-xl bg-nx-ink/[0.03] px-3 py-2 text-caption">
+          {v.redemptions.map((r) => (
+            <li key={r.user_id} className="flex justify-between gap-3"><span className="truncate">{r.email ?? r.name ?? r.user_id}</span><span className="nx-muted">{day(r.redeemed_at)}</span></li>
+          ))}
+        </ul>
       )}
-    </div>
+    </li>
   );
 }

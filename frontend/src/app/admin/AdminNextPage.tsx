@@ -1,81 +1,40 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Navigate } from "react-router-dom";
+// /admin, redesigned on the site's own pieces (owner's review 2026-11-17: "a clear line of hierarchy", icons over
+// text). Like Settings (design B): the sections on the left, one at a time at its own address (/admin/<id>); on a
+// phone /admin is the list and each section opens on its own. Overview comes first: four figures and what needs
+// attention, each in a few words with a link to its section. Every endpoint the old dashboard read is still read.
+// Admins only: anyone else is sent home when sign-in is required, or told it needs admin access. English only.
+import { useCallback, useEffect, useState } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import {
+  Activity, BadgeCheck, ChevronLeft, ChevronRight, HeartPulse, LayoutDashboard, ListTree, PencilLine, Scale, Ticket, Users,
+  type LucideIcon,
+} from "lucide-react";
 import { AppFrame } from "../frame/AppFrame";
 import { FrameOutline } from "../frame/FrameOutline";
 import { useAuthContext } from "../../contexts/AuthContext";
 import {
-  fetchAdminEngagement,
-  fetchAdminOverview,
-  fetchAdminTimeseries,
-  fetchAdminLatency,
-  fetchConversationStats,
-  fetchRequestLogs,
-  fetchBenchmarkResults,
-  fetchJudgeResults,
+  fetchAdminEngagement, fetchAdminLatency, fetchAdminOverview, fetchAdminTimeseries, fetchBenchmarkResults,
+  fetchConversationStats, fetchJudgeResults, fetchRequestLogs,
 } from "../../lib/api";
-import type {
-  AdminOverview,
-  EngagementMetrics,
-  TimeseriesBucket,
-  LatencyPercentiles,
-  ConversationStats,
-  RequestLogEntry,
-  BenchmarkResults,
-  JudgeResults,
-} from "../../lib/types";
-import type { PieSlice } from "../../lib/analytics";
-import { StatCard } from "./StatCard";
-import { TimeSeriesChart } from "./TimeSeriesChart";
-import { LatencyTable } from "./LatencyTable";
-import { RequestsTable } from "./RequestsTable";
-import { CodeCurrencySection } from "./CodeCurrencySection";
+import type { BenchmarkResults, ConversationStats, JudgeResults, RequestLogEntry } from "../../lib/types";
+import { STROKE } from "../icons";
+import { ADMIN_SECTIONS, PERIOD_SECTIONS, adminSectionFrom, type AdminSectionId } from "./adminModel";
+import { OverviewSection, QualitySection, RequestsSection, UsageSection, VisitorsSection, type PeriodData } from "./WatchSections";
 import { DataHealthSection } from "./DataHealthSection";
 import { CorrectionsSection } from "./CorrectionsSection";
-import { BenchmarkSection } from "./BenchmarkSection";
-import { JudgeSection } from "./JudgeSection";
+import { CodeCurrencySection } from "./CodeCurrencySection";
 import { VouchersSection } from "./VouchersSection";
-import { PieChart } from "./PieChart";
-import { BarChart } from "./HBarChart";
-import { CountUp } from "../../components/CountUp";
 
 type Period = "today" | "7d" | "30d" | "all";
 const PERIODS: { key: Period; label: string }[] = [
-  { key: "today", label: "Today" },
-  { key: "7d", label: "7 Days" },
-  { key: "30d", label: "30 Days" },
-  { key: "all", label: "All Time" },
+  { key: "today", label: "Today" }, { key: "7d", label: "7 days" }, { key: "30d", label: "30 days" }, { key: "all", label: "All time" },
 ];
 
-const MODEL_COLORS: Record<string, string> = {
-  "claude-sonnet-4-6": "#fe9179",
-  "claude-haiku-4-5-20251001": "#72b0ab",
+const SECTION_ICON: Record<AdminSectionId, LucideIcon> = {
+  overview: LayoutDashboard, usage: Activity, visitors: Users, quality: BadgeCheck, requests: ListTree,
+  data: HeartPulse, corrections: PencilLine, code: Scale, access: Ticket,
 };
 
-const PHASE_COLORS: Record<string, string> = {
-  conversation: "#72b0ab",
-  router: "#fe9179",
-  synthesizer: "#b89d47",
-};
-
-function formatCost(n: number): string {
-  if (n < 0.01) return `$${n.toFixed(4)}`;
-  return `$${n.toFixed(2)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
-function shortenModel(m: string): string {
-  if (m.includes("sonnet")) return "Sonnet";
-  if (m.includes("haiku")) return "Haiku";
-  return m;
-}
-
-// /admin in the new UI (Phase 10): today's dashboard, every section and endpoint kept, in the new frame and colors.
-// Admins only: anyone else is sent home when sign-in is required, or told it needs admin access.
 export default function AdminNextPage() {
   const { isAuthenticated, authRequired, user, loading } = useAuthContext();
   if (loading) return <FrameOutline />;
@@ -91,536 +50,114 @@ export default function AdminNextPage() {
 }
 
 function AdminDashboard() {
+  const params = useParams<{ section?: string }>();
+  const current = adminSectionFrom(params.section);
+  const onList = !params.section; // a phone shows the list at /admin
+  const label = ADMIN_SECTIONS.find((s) => s.id === current)!.label;
+
   const [period, setPeriod] = useState<Period>("30d");
-  const [overview, setOverview] = useState<AdminOverview | null>(null);
-  const [timeseries, setTimeseries] = useState<TimeseriesBucket[]>([]);
-  const [latency, setLatency] = useState<LatencyPercentiles[]>([]);
-  const [convStats, setConvStats] = useState<ConversationStats | null>(null);
+  const [loadedPeriod, setLoadedPeriod] = useState<{ period: Period; data: PeriodData } | null>(null);
+  const periodData = loadedPeriod?.period === period ? loadedPeriod.data : null;
+  const [conversations, setConversations] = useState<ConversationStats | null>(null);
   const [requests, setRequests] = useState<RequestLogEntry[]>([]);
   const [requestOffset, setRequestOffset] = useState(0);
   const [benchmark, setBenchmark] = useState<BenchmarkResults | null>(null);
-  const [judgeResults, setJudgeResults] = useState<JudgeResults | null>(null);
-  const [engagement, setEngagement] = useState<EngagementMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadData = useCallback(async (p: Period) => {
-    setLoading(true);
-    const bucket = p === "today" ? "hour" : "day";
-    const [ov, ts, lat, cs, req, bm, jr, eng] = await Promise.all([
-      fetchAdminOverview(p),
-      fetchAdminTimeseries(p, bucket),
-      fetchAdminLatency(p),
-      fetchConversationStats(),
-      fetchRequestLogs(50, 0),
-      fetchBenchmarkResults(),
-      fetchJudgeResults(),
-      fetchAdminEngagement(p),
-    ]);
-    setOverview(ov);
-    setTimeseries(ts);
-    setLatency(lat);
-    setConvStats(cs);
-    setRequests(req);
-    setRequestOffset(50);
-    setBenchmark(bm);
-    setJudgeResults(jr);
-    setEngagement(eng);
-    setLoading(false);
-  }, []);
+  const [judge, setJudge] = useState<JudgeResults | null>(null);
 
   useEffect(() => {
-    loadData(period);
-  }, [period, loadData]);
-
-  const handleLoadMore = useCallback(async () => {
+    let live = true;
+    Promise.all([fetchAdminOverview(period), fetchAdminTimeseries(period, period === "today" ? "hour" : "day"), fetchAdminLatency(period), fetchAdminEngagement(period)])
+      .then(([overview, timeseries, latency, engagement]) => { if (live) setLoadedPeriod({ period, data: { overview, timeseries, latency, engagement } }); });
+    return () => { live = false; };
+  }, [period]);
+  useEffect(() => {
+    fetchConversationStats().then(setConversations);
+    fetchRequestLogs(50, 0).then((r) => { setRequests(r); setRequestOffset(50); });
+    fetchBenchmarkResults().then(setBenchmark);
+    fetchJudgeResults().then(setJudge);
+  }, []);
+  const loadMore = useCallback(async () => {
     const more = await fetchRequestLogs(50, requestOffset);
     setRequests((prev) => [...prev, ...more]);
     setRequestOffset((prev) => prev + 50);
   }, [requestOffset]);
 
-  const avgLatency = useMemo(() => {
-    if (!overview || overview.total_requests === 0) return 0;
-    const phases = Object.values(overview.by_phase);
-    if (phases.length === 0) return 0;
-    const totalAvg = phases.reduce((sum, p) => sum + p.avg_duration_ms, 0);
-    return Math.round(totalAvg);
-  }, [overview]);
-
-  // Cost by model pie
-  const costByModelSlices = useMemo((): PieSlice[] => {
-    if (!overview) return [];
-    return Object.entries(overview.by_model).map(([model, usage]) => ({
-      label: shortenModel(model),
-      value: usage.estimated_cost_usd,
-      color: MODEL_COLORS[model] ?? "#8a8a8a",
-    }));
-  }, [overview]);
-
-  // Cost by phase pie
-  const costByPhaseSlices = useMemo((): PieSlice[] => {
-    if (!overview) return [];
-    return Object.entries(overview.by_phase)
-      .filter(([, usage]) => usage.count > 0)
-      .map(([phase, usage]) => ({
-        label: phase.charAt(0).toUpperCase() + phase.slice(1),
-        value: usage.count,
-        color: PHASE_COLORS[phase] ?? "#8a8a8a",
-      }));
-  }, [overview]);
-
-  // Usage timeseries
-  const requestsSeries = useMemo(
-    () => [
-      {
-        label: "Requests",
-        values: timeseries.map((b) => ({ bucket: b.bucket, value: b.request_count })),
-        color: "#fe9179",
-      },
-    ],
-    [timeseries],
-  );
-
-  const costSeries = useMemo(
-    () => [
-      {
-        label: "Cost",
-        values: timeseries.map((b) => ({ bucket: b.bucket, value: b.estimated_cost_usd })),
-        color: "#b89d47",
-      },
-    ],
-    [timeseries],
-  );
-
-  const latencySeries = useMemo(
-    () => [
-      {
-        label: "Avg Duration",
-        values: timeseries.map((b) => ({ bucket: b.bucket, value: b.avg_duration_ms })),
-        color: "#72b0ab",
-      },
-    ],
-    [timeseries],
-  );
-
+  const usesPeriod = PERIOD_SECTIONS.has(current);
   return (
-    <AppFrame crumbs={["Admin"]}>
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-7" data-testid="admin">
-        <h1 className="sr-only">Admin</h1>
-        {/* Period selector */}
-        <div className="flex gap-2 mb-6">
-          {PERIODS.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => setPeriod(p.key)}
-              className={`px-3 py-1.5 rounded-lg text-body transition-colors ${
-                period === p.key
-                  ? "bg-nx-primary text-nx-primary-fg"
-                  : "bg-nx-block nx-muted hover:text-nx-ink border border-nx-ink/10"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+    <AppFrame crumbs={onList ? ["Admin"] : [<Link key="a" to="/admin" className="nx-muted hover:text-nx-ink">Admin</Link>, label]}>
+      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-6 sm:px-8 sm:py-10" data-testid="admin">
+        <h1 className={`text-[1.875rem] font-semibold tracking-[-0.02em] ${onList ? "" : "hidden md:block"}`}>Admin</h1>
 
-        {loading ? (
-          <div className="nx-muted text-center py-20">Loading...</div>
-        ) : (
-          <div className="space-y-6">
-            {/* Row 1: Stat cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard
-                label="Total Requests"
-                value={overview?.total_requests ?? 0}
-                format={(n) => n.toLocaleString()}
-              />
-              <StatCard
-                label="Tokens Used"
-                value={(overview?.total_input_tokens ?? 0) + (overview?.total_output_tokens ?? 0)}
-                format={formatTokens}
-                subtitle={`${formatTokens(overview?.total_input_tokens ?? 0)} in / ${formatTokens(overview?.total_output_tokens ?? 0)} out`}
-              />
-              <StatCard
-                label="Estimated Cost"
-                value={overview?.estimated_cost_usd ?? 0}
-                format={formatCost}
-              />
-              <StatCard
-                label="Avg Latency (sum)"
-                value={avgLatency}
-                format={(n) => `${(n / 1000).toFixed(1)}s`}
-                subtitle="Sum of avg phase durations"
-              />
-            </div>
+        <div className="flex flex-wrap items-start gap-8">
+          <nav aria-label="Admin sections" className="hidden w-[200px] shrink-0 flex-col gap-0.5 md:flex" data-testid="admin-nav">
+            {ADMIN_SECTIONS.map((s, i) => (
+              <div key={s.id}>
+                {i > 0 && ADMIN_SECTIONS[i - 1].group !== s.group && <div className="my-2 border-t border-nx-ink/10" />}
+                <SectionLink id={s.id} label={s.label} current={s.id === current} />
+              </div>
+            ))}
+          </nav>
 
-            {/* Row 2: Usage over time */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                <h2 className="text-body font-semibold nx-muted mb-3">
-                  Requests Over Time
-                </h2>
-                <TimeSeriesChart series={requestsSeries} />
-              </section>
-              <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                <h2 className="text-body font-semibold nx-muted mb-3">
-                  Cost Over Time
-                </h2>
-                <TimeSeriesChart
-                  series={costSeries}
-                  formatValue={formatCost}
-                />
-              </section>
-            </div>
+          {onList && (
+            <nav aria-label="All admin sections" className="w-full overflow-hidden rounded-2xl bg-nx-block md:hidden" data-testid="admin-phone-list">
+              {ADMIN_SECTIONS.map((s, i) => {
+                const Icon = SECTION_ICON[s.id];
+                return (
+                  <Link key={s.id} to={`/admin/${s.id}`} className={`flex min-h-[52px] items-center gap-3 px-4 ${i ? "border-t border-nx-ink/10" : ""}`}>
+                    <Icon aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />
+                    <span className="flex-1">{s.label}</span>
+                    <ChevronRight aria-hidden className="h-4 w-4 nx-muted" strokeWidth={STROKE} />
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
-            {/* Row 3: Pie charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                <h2 className="text-body font-semibold nx-muted mb-3">
-                  Cost by Model
-                </h2>
-                {costByModelSlices.length > 0 ? (
-                  <div className="flex justify-center">
-                    <PieChart slices={costByModelSlices} size={180} />
-                  </div>
-                ) : (
-                  <div className="nx-muted text-body text-center py-8">
-                    No data
-                  </div>
-                )}
-              </section>
-              <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                <h2 className="text-body font-semibold nx-muted mb-3">
-                  Calls by Phase
-                </h2>
-                {costByPhaseSlices.length > 0 ? (
-                  <div className="flex justify-center">
-                    <PieChart slices={costByPhaseSlices} size={180} />
-                  </div>
-                ) : (
-                  <div className="nx-muted text-body text-center py-8">
-                    No data
-                  </div>
-                )}
-              </section>
-            </div>
-
-            {/* Row 4: Latency */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                <h2 className="text-body font-semibold nx-muted mb-3">
-                  Latency Percentiles
-                </h2>
-                <LatencyTable rows={latency} />
-              </section>
-              <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                <h2 className="text-body font-semibold nx-muted mb-3">
-                  Latency Over Time
-                </h2>
-                <TimeSeriesChart
-                  series={latencySeries}
-                  formatValue={(v) =>
-                    v >= 1000 ? `${(v / 1000).toFixed(1)}s` : `${Math.round(v)}ms`
-                  }
-                />
-              </section>
-            </div>
-
-            {/* Row 5: Eval quality (Retrieval + Synthesis) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                <h2 className="text-body font-semibold nx-muted mb-3">
-                  Retrieval Quality
-                </h2>
-                <BenchmarkSection benchmark={benchmark} />
-              </section>
-
-              <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                <h2 className="text-body font-semibold nx-muted mb-3">
-                  Synthesis Quality
-                </h2>
-                <JudgeSection results={judgeResults} />
-              </section>
-            </div>
-
-            {/* Row 6: Conversations */}
-            <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-              <h2 className="text-body font-semibold nx-muted mb-3">
-                Conversations
-              </h2>
-              {convStats ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
-                  <div className="text-center">
-                    <CountUp
-                      to={convStats.total_conversations}
-                      format={(n) => n.toLocaleString()}
-                      className="text-section font-semibold text-nx-ink"
-                    />
-                    <div className="text-caption nx-muted mt-1">
-                      Total Conversations
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <CountUp
-                      to={convStats.total_messages}
-                      format={(n) => n.toLocaleString()}
-                      className="text-section font-semibold text-nx-ink"
-                    />
-                    <div className="text-caption nx-muted mt-1">
-                      Total Messages
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <CountUp
-                      to={convStats.avg_messages_per_conversation}
-                      format={(n) => n.toFixed(1)}
-                      className="text-section font-semibold text-nx-ink"
-                    />
-                    <div className="text-caption nx-muted mt-1">
-                      Avg Msgs / Conv
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <CountUp
-                      to={convStats.conversations_today}
-                      format={(n) => n.toLocaleString()}
-                      className="text-section font-semibold text-nx-ink"
-                    />
-                    <div className="text-caption nx-muted mt-1">
-                      Today
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="nx-muted text-body text-center py-8">
-                  No data
+          <div className={`min-w-0 flex-[999_1_420px] flex-col gap-4 ${onList ? "hidden md:flex" : "flex"}`} data-testid={`admin-${current}`}>
+            <Link to="/admin" className="inline-flex items-center gap-1 self-start text-caption font-medium nx-muted md:hidden touch-target">
+              <ChevronLeft aria-hidden className="h-4 w-4" strokeWidth={STROKE} />Admin
+            </Link>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="flex items-center gap-2 text-[1.5rem] font-semibold tracking-[-0.02em]">{label}</h2>
+              {usesPeriod && (
+                <div role="group" aria-label="Period" className="inline-flex rounded-xl bg-nx-ink/5 p-1" data-testid="admin-period">
+                  {PERIODS.map((p) => (
+                    <button key={p.key} type="button" aria-pressed={period === p.key} onClick={() => setPeriod(p.key)}
+                      className={`rounded-lg px-3 py-1 text-caption touch-target ${period === p.key ? "bg-nx-page font-semibold shadow-sm" : "nx-muted hover:text-nx-ink"}`}>
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
               )}
-            </section>
-
-            {/* Row 7: Engagement */}
-            {engagement && (
+            </div>
+            {usesPeriod && !periodData ? (
+              <p className="py-10 text-center nx-muted">Loading…</p>
+            ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                    <h2 className="text-body font-semibold nx-muted mb-3">
-                      Acquisition Funnel
-                    </h2>
-                    {engagement.funnel?.some((s) => s.visitors > 0) ? (
-                      <div className="space-y-2 py-1">
-                        {engagement.funnel.map((s, i) => {
-                          const base = engagement.funnel[0].visitors || 1;
-                          const prev = i > 0 ? engagement.funnel[i - 1].visitors : null;
-                          const stepRate =
-                            prev != null && prev > 0 ? (s.visitors / prev) * 100 : null;
-                          return (
-                            <div key={s.step} className="flex items-center gap-2">
-                              <span className="w-32 shrink-0 text-caption nx-muted capitalize">
-                                {s.step.replace(/_/g, " ")}
-                              </span>
-                              <div className="flex-1 h-4 rounded bg-nx-block overflow-hidden">
-                                <div
-                                  className="h-full rounded bg-nx-chart-1"
-                                  style={{ width: `${Math.max(s.visitors > 0 ? 1 : 0, (s.visitors / base) * 100)}%` }}
-                                />
-                              </div>
-                              <span className="w-10 shrink-0 text-right text-caption font-semibold text-nx-ink">
-                                {s.visitors}
-                              </span>
-                              <span className="w-12 shrink-0 text-right text-micro nx-muted">
-                                {i > 0 && stepRate != null ? `${stepRate.toFixed(0)}%` : ""}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="nx-muted text-body text-center py-8">No data</div>
-                    )}
-                  </section>
-                  <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                    <h2 className="text-body font-semibold nx-muted mb-3">
-                      Acquisition Channels
-                    </h2>
-                    {engagement.channels && Object.keys(engagement.channels).length > 0 ? (
-                      <BarChart
-                        bars={Object.entries(engagement.channels).map(([label, value]) => ({ label, value }))}
-                      />
-                    ) : (
-                      <div className="nx-muted text-body text-center py-8">No data</div>
-                    )}
-                  </section>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard
-                    label="Unique Visitors"
-                    value={engagement.unique_visitors}
-                    format={(n) => n.toLocaleString()}
-                  />
-                  <StatCard
-                    label="Returning Visitors"
-                    value={engagement.returning_visitors}
-                    format={(n) => n.toLocaleString()}
-                    subtitle={engagement.avg_days_between_visits != null
-                      ? `Avg ${engagement.avg_days_between_visits}d between visits`
-                      : undefined}
-                  />
-                  <StatCard
-                    label="Scorecard → Chat"
-                    value={engagement.scorecard_to_chat_rate ?? 0}
-                    format={(n) => `${(n * 100).toFixed(1)}%`}
-                  />
-                  <StatCard
-                    label="Chat Messages"
-                    value={engagement.chat_messages}
-                    format={(n) => n.toLocaleString()}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                    <h2 className="text-body font-semibold nx-muted mb-3">
-                      Investigate Clicks by Card
-                    </h2>
-                    {Object.keys(engagement.investigate_clicks).length > 0 ? (
-                      <BarChart
-                        bars={Object.entries(engagement.investigate_clicks).map(([label, value]) => ({ label, value }))}
-                      />
-                    ) : (
-                      <div className="nx-muted text-body text-center py-8">No data</div>
-                    )}
-                  </section>
-                  <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                    <h2 className="text-body font-semibold nx-muted mb-3">
-                      Return Rate by Behavior
-                    </h2>
-                    {Object.keys(engagement.return_rate_by_behavior).length > 0 ? (
-                      <div className="space-y-3 py-2">
-                        {Object.entries(engagement.return_rate_by_behavior).map(([behavior, data]) => (
-                          <div key={behavior} className="flex items-center justify-between">
-                            <span className="text-body text-nx-ink capitalize">
-                              {behavior.replace("_", " ")}
-                            </span>
-                            <div className="text-right">
-                              <span className="text-body font-semibold text-nx-ink">
-                                {(data.rate * 100).toFixed(1)}%
-                              </span>
-                              <span className="text-caption nx-muted ml-2">
-                                ({data.returned}/{data.total})
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="nx-muted text-body text-center py-8">No data</div>
-                    )}
-                    {engagement.report_cta_clicks > 0 && (
-                      <div className="mt-3 pt-3 border-t border-nx-ink/10 flex items-center justify-between">
-                        <span className="text-body nx-muted">Report CTA Clicks</span>
-                        <div className="text-right">
-                          <span className="text-body font-semibold text-nx-ink">
-                            {engagement.report_cta_clicks}
-                          </span>
-                          {engagement.report_purchases_count > 0 && (
-                            <span className="text-caption nx-muted ml-2">
-                              → {engagement.report_purchases_count} purchased
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    {engagement.sample_report_clicks > 0 && (
-                      <div className="mt-3 pt-3 border-t border-nx-ink/10 flex items-center justify-between">
-                        <span className="text-body nx-muted">Sample Report Clicks</span>
-                        <span className="text-body font-semibold text-nx-ink">
-                          {engagement.sample_report_clicks}
-                        </span>
-                      </div>
-                    )}
-                  </section>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                    <h2 className="text-body font-semibold nx-muted mb-3">
-                      Hero Entries
-                    </h2>
-                    {Object.keys(engagement.hero_address_submits).length > 0
-                      || Object.keys(engagement.hero_librarian_clicks).length > 0 ? (
-                      <BarChart
-                        bars={[
-                          ...Object.entries(engagement.hero_address_submits).map(
-                            ([source, value]) => ({ label: `Address — ${source}`, value }),
-                          ),
-                          ...Object.entries(engagement.hero_librarian_clicks).map(
-                            ([source, value]) => ({ label: `Librarian — ${source}`, value }),
-                          ),
-                        ]}
-                      />
-                    ) : (
-                      <div className="nx-muted text-body text-center py-8">No data</div>
-                    )}
-                  </section>
-                  <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-                    <h2 className="text-body font-semibold nx-muted mb-3">
-                      Scorecard Bridge Clicks
-                    </h2>
-                    {Object.keys(engagement.scorecard_bridge_clicks).length > 0 ? (
-                      <BarChart
-                        bars={Object.entries(engagement.scorecard_bridge_clicks).map(([label, value]) => ({ label, value }))}
-                      />
-                    ) : (
-                      <div className="nx-muted text-body text-center py-8">No data</div>
-                    )}
-                  </section>
-                </div>
+                {current === "overview" && <OverviewSection data={periodData!} />}
+                {current === "usage" && <UsageSection data={periodData!} />}
+                {current === "visitors" && <VisitorsSection data={periodData!} conversations={conversations} />}
+                {current === "quality" && <QualitySection benchmark={benchmark} judge={judge} />}
+                {current === "requests" && <RequestsSection rows={requests} onMore={loadMore} hasMore={requests.length >= requestOffset} />}
+                {current === "data" && <DataHealthSection />}
+                {current === "corrections" && <CorrectionsSection />}
+                {current === "code" && <CodeCurrencySection />}
+                {current === "access" && <VouchersSection />}
               </>
             )}
-
-            {/* Row 8: Recent requests */}
-            <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-              <h2 className="text-body font-semibold nx-muted mb-3">
-                Recent Requests
-              </h2>
-              <RequestsTable
-                rows={requests}
-                onLoadMore={handleLoadMore}
-                hasMore={requests.length >= requestOffset}
-              />
-            </section>
-
-            {/* Row 9a: Data health (WS6 M3): every source, worst first */}
-            <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-              <h2 className="text-body font-semibold nx-muted mb-3">
-                Data Health
-              </h2>
-              <DataHealthSection />
-            </section>
-
-            {/* Row 9b: Suggested corrections to building facts (Item 129): review, then export for a PR */}
-            <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-              <h2 className="text-body font-semibold nx-muted mb-3">
-                Corrections
-              </h2>
-              <CorrectionsSection />
-            </section>
-
-            {/* Row 9: How current the Municipal Code text is */}
-            <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-              <h2 className="text-body font-semibold nx-muted mb-3">
-                Code Currency
-              </h2>
-              <CodeCurrencySection />
-            </section>
-
-            {/* Row 10: Early-adopter access (voucher codes + email grants) */}
-            <section className="bg-nx-block border border-nx-ink/10 rounded-xl p-4">
-              <h2 className="text-body font-semibold nx-muted mb-3">
-                Early Access
-              </h2>
-              <VouchersSection />
-            </section>
           </div>
-        )}
+        </div>
       </div>
     </AppFrame>
+  );
+}
+
+function SectionLink({ id, label, current }: { id: AdminSectionId; label: string; current: boolean }) {
+  const Icon = SECTION_ICON[id];
+  return (
+    <Link to={`/admin/${id}`} aria-current={current ? "page" : undefined}
+      className={`flex h-9 items-center gap-2.5 rounded-xl px-2.5 ${current ? "bg-nx-ink/5 font-semibold" : "hover:bg-nx-ink/5"}`}>
+      <Icon aria-hidden className="h-4 w-4 shrink-0" strokeWidth={STROKE} />{label}
+    </Link>
   );
 }

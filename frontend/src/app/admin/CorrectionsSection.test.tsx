@@ -3,7 +3,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { AdminCorrection } from "../../lib/api";
-import { CorrectionsSection, defaultApply, reportWords } from "./CorrectionsSection";
+import { CorrectionsSection } from "./CorrectionsSection";
+import { defaultApply, reportWords } from "./correctionsModel";
 
 vi.mock("../../lib/api", async (orig) => {
   const mod = await orig<typeof import("../../lib/api")>();
@@ -48,15 +49,16 @@ describe("the queue", () => {
     render(<CorrectionsSection />);
     const card = await screen.findByTestId("correction-report");
     expect(card.textContent).toContain("1601 N Milwaukee Ave");
-    expect(card.textContent).toContain("22,486 sq ft built (footprint × stories estimate)");
+    expect(card.textContent).toContain("22,486 sq ft · footprint × stories estimate");
     expect(within(card).getByTestId("correction-changed").textContent).toContain("30,000 sq ft");
     expect(card.textContent).toContain("Stories: 3");
     expect(card.textContent).toContain("“Three floors, not two.”");
-    expect(card.textContent).toContain("Signed out");
-    expect(card.textContent).toContain("1 accepted · 0 rejected before");
-    expect(card.textContent).toContain("#9");
+    expect(within(card).getByLabelText("Signed out")).toBeTruthy();
+    expect(card.textContent).toContain("1 accepted, 0 rejected");
+    expect(card.textContent).toContain("#9 also open");
     const sv = within(card).getByRole("link", { name: /Street View/ });
     expect(sv.getAttribute("target")).toBe("_blank");
+    expect(within(card).getByTestId("correction-changed").textContent).toBe("Now 30,000 sq ft");
     fireEvent.click(within(card).getByRole("button", { name: "Accept" }));
     expect((within(card).getByLabelText("Stories to apply") as HTMLInputElement).value).toBe("3");
     fireEvent.change(within(card).getByLabelText("Reason"), { target: { value: "3 floors on Street View" } });

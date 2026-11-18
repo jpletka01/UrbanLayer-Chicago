@@ -101,6 +101,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/about" element={<Page id="about" />} />
             <Route path="/privacy" element={<Page id="privacy" />} />
             <Route path="/admin" element={<Page id="admin" />} />
+            <Route path="/admin/:section" element={<Page id="admin" />} />
             <Route path="*" element={<Page id="notFound" />} />
           </Routes>
           </SelectedParcelProvider>

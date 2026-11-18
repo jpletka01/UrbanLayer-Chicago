@@ -29,6 +29,11 @@ const ROUTES = [
   { id: "about", path: "/about", ready: "about" },
   { id: "privacy", path: "/privacy", ready: "privacy" },
   { id: "not-found", path: "/no-such-page", ready: "not-found" },
+  // /admin redesigned (owner's review 2026-11-17): sign-in is off locally, so the stand-in account is an admin.
+  { id: "admin", path: "/admin", ready: "admin-phone-list" },  // a phone shows the section list here
+  { id: "admin-code", path: "/admin/code", ready: "code-currency" },
+  { id: "admin-corrections", path: "/admin/corrections", ready: "corrections-section" },
+  { id: "admin-access", path: "/admin/access", ready: "early-access" },
 ];
 
 async function open(page: Page, path: string, ready?: string) {
