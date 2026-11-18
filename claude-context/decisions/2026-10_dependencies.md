@@ -33,3 +33,18 @@ Format: see `README.md` in this folder.
 **Revisit if:** `typescript-eslint` accepts TypeScript 7 (then remove the `typescript` ignore); a Python migration is scheduled (remove the minor ignore); Sentry events stop arriving after deploy.
 
 **Not verified locally:** the new Python floors (the shared `.venv` is older: uvicorn 0.48, pydantic-settings 2.14, sentence-transformers 5.5); CI's fresh install is the test. No production Docker image built locally.
+
+## Item 3: the 2026-11-18 Dependabot batch as one PR; i18next 27 and @types/node 26 ignored (2026-11-18)
+
+**Decision:** take #256 (pytest floor 9.2), #257 (Pillow floor 13), #258 (python-multipart floor 0.0.33) and #259 (the frontend group: lucide-react 1.73, maplibre-gl 6.18, postcss, Playwright 1.65, @vitejs/plugin-react 6.3, eslint 10.15, eslint-plugin-react-refresh, globals, typescript-eslint 8.72.2, Vite 8.3.8, vitest 5.1) in one PR and close them. Close #260 (`@types/node` 26) and #261 (i18next 27) and add Dependabot ignores for the majors of `@types/node`, `i18next` and `react-i18next`.
+
+**Why:** the four PRs touch different files but would mean four deploys; one tested change is one deploy (Item 1). Pillow is used only for `Image.open`, `thumbnail(…, Image.LANCZOS)` and JPEG `save` (`vision.py`, `report_builder.py`'s map composites), all unchanged in 13; the D3 report-map tests exercise them. `@types/node` should describe the Node that runs the code: CI and the image use `frontend/.nvmrc` = 24, so its 26 types would allow APIs that aren't there. i18next 27 cannot go alone: react-i18next 18 is the first release that accepts it (peer `i18next >= 27.0.1`), and with both installed `tsc -b` reports 39 errors in 14 files, all the same kind: the new `TFunction<ns>` is a rest-tuple union that no longer fits the plain `(key: string, opts?) => string` helpers the app passes `t` into (`scorecardVerdict.TFunc`, `useChat`, `savedModel`, `ExportReport`, …). No looser helper signature accepted it (`Record<string, unknown>`, `Record<string, any>`, `TOptions` all fail). The fix is a typed-`t` refactor across the helpers plus a react-i18next major, for no change a visitor sees.
+
+**Alternatives:** cast `t` at each of the 39 call sites; rejected, it hides the mismatch rather than fixing it. A `useLooseT` wrapper hook in the 14 files; possible, but it pairs with the react-i18next 18 runtime major and belongs in its own tested change. Merge the four safe PRs one by one; rejected, four deploys.
+
+**Revisit if:** a security advisory lands for i18next 26 or react-i18next 17; i18n work is planned anyway (then do the typed-`t` migration and drop both ignores); CI moves to Node 26 (drop the `@types/node` ignore).
+
+**Numbers**
+- **Gates on this branch:** backend `pytest -m "not integration"` 3,330 passed, 5 skipped, run with Pillow 13.0.0, pytest 9.2.0 and python-multipart 0.0.34 on top of the shared `.venv`; frontend `npm run build` ok, `npm run lint` 0 errors / 45 warnings (cap 65), vitest 87 files / 798 tests passed.
+- **Not measured:** MapLibre 6.18 in a real browser (vitest and the build only; the post-deploy `sweep:live` is the check); a production Docker image built locally.
+- **Reproduce the i18next failure:** `cd frontend && npm install i18next@^27.2.1 react-i18next@^18.0.2 && npx tsc -b`.

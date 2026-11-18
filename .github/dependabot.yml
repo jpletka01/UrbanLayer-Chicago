@@ -34,8 +34,20 @@ updates:
     # TypeScript 7 waits for typescript-eslint: its peer range stops at 6, so
     # `npm ci` fails ERESOLVE (PR #37, closed 2026-11-18). Drop this once
     # typescript-eslint accepts ^7.
+    # @types/node follows the Node that CI and the image run (frontend/.nvmrc = 24);
+    # its majors come with a Node upgrade (PR #260, closed 2026-11-18).
+    # i18next 27 needs react-i18next 18 in the same step and its new TFunction types
+    # reject passing `t` to our (key, opts) => string helpers: 39 build errors in 14
+    # files (PR #261, closed 2026-11-18). A planned migration, not a bump.
+    # Decision: claude-context/decisions/2026-10_dependencies.md Item 3.
     ignore:
       - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+      - dependency-name: i18next
+        update-types: [version-update:semver-major]
+      - dependency-name: react-i18next
         update-types: [version-update:semver-major]
     labels: [dependencies]
 
