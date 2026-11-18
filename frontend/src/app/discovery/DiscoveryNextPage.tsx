@@ -36,6 +36,7 @@ import { LayersControl, type LayersState } from "../map/LayersControl";
 import { Pill } from "../ui/Blocks";
 import { ExploreMap, LotSheetBody, LotSheetHead, type Picked, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
+import { ToastHost } from "../ui/Toast";
 import { fetchParcelRow } from "../../discovery/searchClient";
 import { LotCard } from "./LotCard";
 import { useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
@@ -489,6 +490,8 @@ export default function DiscoveryNextPage() {
           )}
         </div>
       </div>
+      {/* "Thanks, we'll review it." after a correction is sent (Item 129). */}
+      <ToastHost />
     </AppFrame>
   );
 }

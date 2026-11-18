@@ -1684,7 +1684,34 @@
       "undervalued_mf": "2–6 flats in the cheapest quarter per sq ft",
       "adu_2flats": "Needs coach-house areas in the index"
     },
-    "or": " or "
+    "or": " or ",
+    "correction": {
+      "suggest": "Suggest a correction",
+      "sent": "Correction sent, in review",
+      "question": "What's wrong with this building?",
+      "chips": {
+        "stories": "Stories",
+        "area": "Floor area",
+        "gone": "No building now",
+        "there": "There's a building",
+        "isCondo": "It's a condo",
+        "notCondo": "Not a condo",
+        "other": "Other"
+      },
+      "storiesUnit": "stories",
+      "storiesLabel": "Number of stories",
+      "areaLabel": "The floor area we show is",
+      "areaHigh": "Too high",
+      "areaLow": "Too low",
+      "note": "Add a note (optional)",
+      "send": "Send",
+      "sending": "Sending…",
+      "cancel": "Cancel",
+      "close": "Close",
+      "thanks": "Thanks, we'll review it.",
+      "tooMany": "Too many reports today",
+      "failed": "Couldn't send it. Please try again."
+    }
   },
   "map": {
     "key": "Map key",
@@ -2646,5 +2673,8 @@
       "usedNote": "Your free one went to another lot",
       "approximate": "Needs an exact lot"
     }
+  },
+  "toast": {
+    "close": "Close"
   }
 }

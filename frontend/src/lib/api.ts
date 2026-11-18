@@ -1793,3 +1793,28 @@ export const savedApi = {
     savedJson<SavedSearchWire>(`/searches/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ name }) }),
   deleteSearch: (id: string) => savedJson<void>(`/searches/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
+
+// Suggest a correction (decision Item 129): anyone may report that a lot's estimated building facts are wrong. The
+// server keeps who sent it (the account, or the signed visitor cookie and a keyed network hash) and what the card
+// showed; nothing is applied without a person's review.
+export type LotCorrectionKind = "stories" | "area" | "gone" | "condo" | "other";
+export interface LotCorrectionBody {
+  pin: string;
+  kinds: LotCorrectionKind[];
+  stories?: number;
+  area_dir?: "high" | "low";
+  note?: string;
+}
+export type LotCorrectionResult = "sent" | "too_many" | "failed";
+
+export async function sendLotCorrection(body: LotCorrectionBody): Promise<LotCorrectionResult> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/discovery/corrections`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (resp.ok) return "sent";
+    return resp.status === 429 ? "too_many" : "failed";
+  } catch { return "failed"; }
+}

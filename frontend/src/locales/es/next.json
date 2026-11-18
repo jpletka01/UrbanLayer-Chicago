@@ -1684,7 +1684,34 @@
       "undervalued_mf": "Edificios de 2 a 6 en la cuarta parte más barata por pie²",
       "adu_2flats": "Faltan las áreas de casa de cochera en el índice"
     },
-    "or": " o "
+    "or": " o ",
+    "correction": {
+      "suggest": "Sugerir una corrección",
+      "sent": "Corrección enviada, en revisión",
+      "question": "¿Qué está mal con este edificio?",
+      "chips": {
+        "stories": "Pisos",
+        "area": "Superficie",
+        "gone": "Ya no hay edificio",
+        "there": "Hay un edificio",
+        "isCondo": "Es condominio",
+        "notCondo": "No es condominio",
+        "other": "Otra cosa"
+      },
+      "storiesUnit": "pisos",
+      "storiesLabel": "Número de pisos",
+      "areaLabel": "La superficie que mostramos es",
+      "areaHigh": "Muy alta",
+      "areaLow": "Muy baja",
+      "note": "Agregue una nota (opcional)",
+      "send": "Enviar",
+      "sending": "Enviando…",
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "thanks": "Gracias, lo revisaremos.",
+      "tooMany": "Demasiados reportes por hoy",
+      "failed": "No se pudo enviar. Inténtelo de nuevo."
+    }
   },
   "map": {
     "key": "Leyenda del mapa",
@@ -2646,5 +2673,8 @@
       "usedNote": "Su análisis gratis se usó en otro terreno",
       "approximate": "Necesita un terreno exacto"
     }
+  },
+  "toast": {
+    "close": "Cerrar"
   }
 }

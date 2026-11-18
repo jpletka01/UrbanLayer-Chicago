@@ -321,6 +321,42 @@ test("Discovery: a tapped lot opens in the phone sheet, drag down closes it, axe
   await expect(sheet).toHaveAttribute("data-state", "peek");
 });
 
+// Suggest a correction (decision Item 129 §1, PR 3): the pencil beside the lot sheet's × opens the form over the whole
+// screen; Stories focuses a number field; Send posts the report (CSRF like every POST), the sheet closes, a toast says
+// thanks at the top and the pencil is a check. axe on the open form in both themes, no overflow.
+test("Discovery: suggest a correction from the phone's lot sheet, axe light and dark", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Galaxy S24", "the 360 px device");
+  await open(page, "/discovery?at=41.91085,-87.67777,18.00z");
+  const canvas = page.locator('[data-testid="explore-map"] canvas');
+  await canvas.waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(2500);
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByTestId("lot-sheet-title")).toHaveText("1601 N Milwaukee Ave", { timeout: 15_000 });
+  await page.getByTestId("correction-open").click();
+  const form = page.getByTestId("correction-dialog");
+  await expect(form.getByText("What's wrong with this building?")).toBeVisible();
+  await expect(form.getByTestId("correction-send")).toBeDisabled();
+  await form.getByRole("button", { name: "Stories" }).click();
+  await expect(form.getByTestId("correction-stories")).toBeFocused();
+  await page.keyboard.type("3");
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(400);
+    expect(await axe(page), `axe ${scheme}, correction form`).toEqual([]);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "correction form overflow").toBeLessThanOrEqual(1);
+  const sent = page.waitForResponse((r) => r.url().includes("/api/discovery/corrections") && r.request().method() === "POST");
+  await form.getByTestId("correction-send").click();
+  const resp = await sent;
+  expect(resp.status()).toBe(201);
+  expect(resp.request().postDataJSON()).toEqual({ pin: "1431332018", kinds: ["stories"], stories: 3 });
+  await expect(form).toHaveCount(0);
+  await expect(page.getByTestId("toast")).toContainText("Thanks, we'll review it.");
+  await expect(page.getByTestId("correction-sent")).toBeVisible();
+});
+
 // Land in use (M5, decision Item 112): the Lot group offers surface parking beside empty land; turning it on asks the
 // server (never evaluated here) and the panel passes axe in both themes.
 test("Discovery: the Lot group's surface parking toggle, axe light and dark", async ({ page }, testInfo) => {

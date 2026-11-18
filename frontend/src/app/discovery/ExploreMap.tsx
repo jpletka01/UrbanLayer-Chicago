@@ -24,6 +24,7 @@ import {
 } from "../map/mapStyle";
 import type { Basemap } from "../map/LayersControl";
 import { STROKE } from "../icons";
+import { SuggestCorrection } from "./SuggestCorrection";
 import {
   LOTS_MIN_ZOOM, NOT_DRAWN, cardModel, formatAt, parseAt, clampMiles, measureColorExpr, measureTexture, unknownMeasureFilter, milesBetween, ownerLine, ringPolygon, type MeasureId,
 } from "./discoveryModel";
@@ -600,14 +601,20 @@ function useLotCard(picked: Picked) {
   const sv = useMemo(() => viewpointFor(picked.ll, picked.roads, streetOfAddress(row?.address)), [picked.ll, picked.roads, row?.address]);
   const profileAddr = row ? profileAddress(row) : null;
   const href = row ? `/scorecard?${new URLSearchParams({ pin: row.pin, ...(profileAddr ? { address: profileAddr } : {}) })}` : null;
-  return { card, sv, href, n };
+  // What the correction form asks about (Item 129): a lot we show empty asks "There's a building", a condo "Not a condo".
+  const lot = row ? { hasBuilding: row.structure !== "empty", condo: !!card?.condo } : null;
+  return { card, sv, href, n, lot };
 }
 
 type LotCardModel = ReturnType<typeof useLotCard>;
 
+function titleText(t: (k: string, o?: Record<string, unknown>) => string, card: NonNullable<LotCardModel["card"]>): string {
+  return card.approx ? t("discovery.card.near", { address: card.title }) : card.title;
+}
+
 function LotTitle({ card }: { card: NonNullable<LotCardModel["card"]> }) {
   const { t } = useTranslation("next");
-  return <>{card.approx ? t("discovery.card.near", { address: card.title }) : card.title}</>;
+  return <>{titleText(t, card)}</>;
 }
 
 function LotStatus({ picked }: { picked: Picked }) {
@@ -673,7 +680,7 @@ function LotButtons({ picked, sv, href, tall = false }: Pick<LotCardModel, "sv" 
 
 export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => void }) {
   const { t } = useTranslation("next");
-  const { card, sv, href, n } = useLotCard(picked);
+  const { card, sv, href, n, lot } = useLotCard(picked);
   const [w, h] = picked.size;
   const left = Math.min(Math.max(8, picked.at[0] - 140), w - 288);
   const above = picked.at[1] > h * 0.55;
@@ -681,12 +688,16 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
   return (
     <div role="dialog" aria-label={card?.title ?? t("discovery.map.lot")} data-testid="lot-card"
       className="absolute z-10 w-[17.5rem] rounded-2xl bg-nx-page p-4 text-caption shadow-[0_8px_32px_rgb(0_0_0/0.18)]" style={style}>
-      <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
-        <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
-      </button>
+      <div className="absolute right-2 top-2 flex items-center">
+        {/* Suggest a correction (Item 129): one muted pencil beside the ×, its name in a tooltip. */}
+        {card && lot && <SuggestCorrection pin10={picked.pin10} title={titleText(t, card)} hasBuilding={lot.hasBuilding} condo={lot.condo} phone={false} />}
+        <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} className="grid h-7 w-7 place-items-center rounded-lg hover:bg-nx-ink/5 touch-icon">
+          <X aria-hidden className="h-4 w-4" strokeWidth={STROKE} />
+        </button>
+      </div>
       <LotStatus picked={picked} />
       {card && (
-        <div className="flex flex-col gap-1.5 pr-6">
+        <div className="flex flex-col gap-1.5 pr-14">
           <p className="text-body font-semibold [overflow-wrap:anywhere]"><LotTitle card={card} /></p>
           <LotFacts card={card} n={n} />
         </div>
@@ -699,12 +710,13 @@ export function LotCard({ picked, onClose }: { picked: Picked; onClose: () => vo
 /** The phone's lot sheet head (Item 129 §1): the address (or the lookup's state) and ×. */
 export function LotSheetHead({ picked, onClose }: { picked: Picked; onClose: () => void }) {
   const { t } = useTranslation("next");
-  const { card } = useLotCard(picked);
+  const { card, lot } = useLotCard(picked);
   return (
     <>
       <div className="min-w-0 flex-1 text-left" data-testid="lot-sheet-title">
         {card ? <p className="font-semibold [overflow-wrap:anywhere]"><LotTitle card={card} /></p> : <LotStatus picked={picked} />}
       </div>
+      {card && lot && <SuggestCorrection pin10={picked.pin10} title={titleText(t, card)} hasBuilding={lot.hasBuilding} condo={lot.condo} phone />}
       <button type="button" onClick={onClose} aria-label={t("discovery.map.close")} data-testid="lot-sheet-close"
         className="grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-nx-ink/5">
         <X aria-hidden className="h-5 w-5" strokeWidth={STROKE} />
