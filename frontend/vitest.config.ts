@@ -8,5 +8,8 @@ export default defineConfig({
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
     setupFiles: ["./src/test-setup.ts"],
+    // 5 s default is too tight for the render + axe tests under load: NeighborhoodTab took 6.7 s with four
+    // suites at once, and its axe run then leaked into the next test ("Axe is already running").
+    testTimeout: 20_000,
   },
 });

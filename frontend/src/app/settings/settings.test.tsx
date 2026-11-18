@@ -136,7 +136,8 @@ describe("the page", () => {
       await vi.advanceTimersByTimeAsync(2100);
       await waitFor(() => expect(screen.queryByTestId("settings-confirming")).toBeNull());
       expect(screen.getByTestId("settings-date-tile").textContent).toContain("Nov 13, 2027");
-      expect(auth.checkAuth).toHaveBeenCalled();
+      // checkAuth runs in the effect after the confirmed render, so wait for it rather than read it at once.
+      await waitFor(() => expect(auth.checkAuth).toHaveBeenCalled());
     } finally {
       vi.useRealTimers();
     }
@@ -179,7 +180,8 @@ describe("the page", () => {
     auth = signedIn("premium");
     api.getSubscription.mockResolvedValue(sub({ tier: "premium", plan: "pro", source: "voucher", comp_until: Date.UTC(2027, 0, 15) }));
     at("/settings/plan");
-    expect((await screen.findByTestId("settings-plan")).textContent).toMatch(/Early access: Pro, 200 questions a month, until/);
+    // The plan card renders before the subscription arrives; wait for its text, not just the card.
+    await waitFor(() => expect(screen.getByTestId("settings-plan").textContent).toMatch(/Early access: Pro, 200 questions a month, until/));
     await waitFor(() => expect(screen.queryByRole("button", { name: "Manage billing" })).toBeNull());
   });
 
