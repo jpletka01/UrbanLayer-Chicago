@@ -86,13 +86,17 @@ describe("Discovery in the new frame", () => {
     const goals = await screen.findByTestId("goals");
     fireEvent.click(within(goals).getAllByRole("button")[0]);
     const list = await screen.findByTestId("next-results");
-    const card = list.querySelector("button[data-pin]") as HTMLElement;
-    expect(card.textContent).toContain("1601 N Milwaukee Ave");
+    // The list can mount before its first card; wait for the card itself.
+    const card = await waitFor(() => {
+      const c = list.querySelector("button[data-pin]") as HTMLElement | null;
+      expect(c?.textContent).toContain("1601 N Milwaukee Ave");
+      return c!;
+    });
     // Each card has a bookmark beside it (Saved, Item 119); signed out it saves in this browser.
     const bookmark = within(list).getByTestId("lot-bookmark");
     expect(bookmark.getAttribute("aria-label")).toBe("Save 1601 N Milwaukee Ave");
     fireEvent.click(bookmark);
-    await waitFor(() => expect(within(list).getByTestId("lot-bookmark").getAttribute("aria-pressed")).toBe("true"), { timeout: 4000 });
+    await waitFor(() => expect(within(list).getByTestId("lot-bookmark").getAttribute("aria-pressed")).toBe("true"));
     expect(JSON.parse(localStorage.getItem("urbanlayer-next-saved-lots:v1") ?? "[]")[0]).toMatchObject({ key: "pin:14313250010000", pin: "14313250010000" });
     expect(card.textContent).toContain("B3-2");
     expect(card.textContent).toMatch(/room to build/i);
@@ -103,7 +107,7 @@ describe("Discovery in the new frame", () => {
     // The search asked for the map's points and the area counts in the same evaluation.
     expect(mocks.runSearch.mock.calls[0][0]).toMatchObject({ includePins: true, includeAreaCounts: true });
     // The map outlines the matches by PIN10 and labels the areas.
-    await waitFor(() => expect(mapProps.last?.matches).toEqual(["1431325001"]), { timeout: 4000 });
+    await waitFor(() => expect(mapProps.last?.matches).toEqual(["1431325001"]));
     expect(mapProps.last?.areaCounts).toEqual({ "24": 1 });
     expect(await axeViolations(container)).toEqual([]);
     fireEvent.click(card);

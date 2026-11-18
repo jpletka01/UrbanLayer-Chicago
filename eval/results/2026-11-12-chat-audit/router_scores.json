@@ -1,0 +1,850 @@
+[
+ {
+  "id": "311_pilsen",
+  "category": "neighborhood",
+  "intent": "neighborhood_overview",
+  "workflow": "neighborhood_overview",
+  "fetched": [
+   "311_api",
+   "neighborhood_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "adu_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "coach house additional dwelling unit accessory dwelling allowed zones districts eligibility",
+  "error": null
+ },
+ {
+  "id": "adu_rs3_central_park",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "coach house additional dwelling unit accessory dwelling allowed uses RS residential zoning district",
+  "error": null
+ },
+ {
+  "id": "airbnb_rs3",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "business_launch",
+  "fetched": [
+   "business_api",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "business_api"
+  ],
+  "under_fetch": [],
+  "search_query": "short-term rental license requirements dwelling unit",
+  "error": null
+ },
+ {
+  "id": "aro_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": "Affordable Requirements Ordinance ARO affordable housing requirements developer obligations",
+  "error": null
+ },
+ {
+  "id": "cannabis_b1_wilson",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "business_launch",
+  "fetched": [
+   "business_api",
+   "incentives_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "business_api"
+  ],
+  "under_fetch": [],
+  "search_query": "cannabis dispensary allowed uses use table zoning district permitted retail",
+  "error": null
+ },
+ {
+  "id": "carwash_b1_wilson",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "business_api",
+   "permits_api",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "business_api",
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "B3 use table allowed uses automobile service",
+  "error": null
+ },
+ {
+  "id": "coachhouse_rt4_george",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "coach house additional dwelling unit accessory dwelling permitted uses allowed RS RT residential district",
+  "error": null
+ },
+ {
+  "id": "compare_crime",
+  "category": "neighborhood",
+  "intent": "trend_analysis",
+  "workflow": "neighborhood_overview",
+  "fetched": [
+   "crime_api",
+   "neighborhood_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "construction_noise_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "construction noise hours allowed ordinance regulations",
+  "error": null
+ },
+ {
+  "id": "crime_near_address",
+  "category": "neighborhood",
+  "intent": "incident_lookup",
+  "workflow": "general",
+  "fetched": [
+   "crime_api"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "daycare_rs3",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "business_launch",
+  "fetched": [
+   "business_api",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "business_api"
+  ],
+  "under_fetch": [],
+  "search_query": "use table allowed uses day care child care public civic",
+  "error": null
+ },
+ {
+  "id": "demolition_permit_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "demolition permit requirements residential building Chicago Municipal Code",
+  "error": null
+ },
+ {
+  "id": "far_dc16_wacker",
+  "category": "parcel_bulk",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": "floor area ratio FAR maximum bulk and density standards bonus exceeded transfer development rights",
+  "error": null
+ },
+ {
+  "id": "far_pd_wabash",
+  "category": "parcel_bulk",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": "floor area ratio FAR bulk and density standards downtown DX district",
+  "error": null
+ },
+ {
+  "id": "far_rt4_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "RT-4 bulk and density standards FAR floor area ratio",
+  "error": null
+ },
+ {
+  "id": "flood_rockwell",
+  "category": "parcel_bulk",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "future_rezoning_george",
+  "category": "parcel_trick",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [
+   "regulatory_domain"
+  ],
+  "search_query": "rezoning petition process Chicago zoning map amendment",
+  "error": null
+ },
+ {
+  "id": "groundfloor_apts_b12_wilson",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "ground floor residential use table allowed uses B3 B2 transit-served commercial district",
+  "error": null
+ },
+ {
+  "id": "height_rs3_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "RS-3 bulk and density standards building height",
+  "error": null
+ },
+ {
+  "id": "height_rt4_george",
+  "category": "parcel_bulk",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": "bulk and density standards building height residential zoning district",
+  "error": null
+ },
+ {
+  "id": "hotel_b33_irving",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "B3 use table allowed uses hotel lodging commercial district",
+  "error": null
+ },
+ {
+  "id": "income_englewood",
+  "category": "neighborhood",
+  "intent": "neighborhood_overview",
+  "workflow": "neighborhood_overview",
+  "fetched": [
+   "neighborhood_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "intersection_clark_wrightwood",
+  "category": "vague",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": "B3 permitted uses commercial zoning use table allowed uses",
+  "error": null
+ },
+ {
+  "id": "landmark_status_lsd",
+  "category": "parcel_trick",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": "Chicago landmark designation criteria individual building landmark status",
+  "error": null
+ },
+ {
+  "id": "market_value_wrightwood",
+  "category": "parcel_trick",
+  "intent": "incident_lookup",
+  "workflow": "property_intelligence",
+  "fetched": [
+   "neighborhood_domain",
+   "property_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "mla_rm5_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": "RM-5 bulk and density standards minimum lot area per dwelling unit",
+  "error": null
+ },
+ {
+  "id": "multiunit_rm65_lsd",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "multi-unit residential allowed uses use table overlay district planned development lakefront protection",
+  "error": null
+ },
+ {
+  "id": "nonexistent_address",
+  "category": "vague",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "neighborhood_domain",
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "bulk and density standards allowed uses zoning district buildable lot development",
+  "error": null
+ },
+ {
+  "id": "overview_wicker",
+  "category": "neighborhood",
+  "intent": "neighborhood_overview",
+  "workflow": "neighborhood_overview",
+  "fetched": [
+   "311_api",
+   "business_api",
+   "crime_api",
+   "permits_api"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "owner_clybourn",
+  "category": "parcel_trick",
+  "intent": "incident_lookup",
+  "workflow": "property_intelligence",
+  "fetched": [
+   "property_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "parking_b12_wilson",
+  "category": "parcel_bulk",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": "off-street parking ratio residential dwelling units apartment",
+  "error": null
+ },
+ {
+  "id": "pd_definition_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "planned development required thresholds triggers zoning approval",
+  "error": null
+ },
+ {
+  "id": "permits_logan",
+  "category": "neighborhood",
+  "intent": "incident_lookup",
+  "workflow": "general",
+  "fetched": [
+   "permits_api"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "prompt_injection",
+  "category": "off_topic",
+  "intent": "clarification_needed",
+  "workflow": "general",
+  "fetched": [
+   "vector_search"
+  ],
+  "over_fetch": [
+   "vector_search"
+  ],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "restaurant_b3_milwaukee",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "business_launch",
+  "fetched": [
+   "business_api",
+   "food_inspections_api",
+   "incentives_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "business_api",
+   "food_inspections_api"
+  ],
+  "under_fetch": [],
+  "search_query": "B3 permitted uses commercial use table allowed uses restaurant food service",
+  "error": null
+ },
+ {
+  "id": "restaurant_parking_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "off-street parking ratio B-2 district commercial use restaurant",
+  "error": null
+ },
+ {
+  "id": "safe_lincoln_park",
+  "category": "neighborhood",
+  "intent": "neighborhood_overview",
+  "workflow": "neighborhood_overview",
+  "fetched": [
+   "311_api",
+   "crime_api",
+   "neighborhood_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "schools_spaulding",
+  "category": "neighborhood",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "vector_search"
+  ],
+  "over_fetch": [
+   "vector_search"
+  ],
+  "under_fetch": [],
+  "search_query": "school attendance boundaries enrollment districts Chicago public schools",
+  "error": null
+ },
+ {
+  "id": "short_term_rental_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "short-term rental license requirements regulations Chicago Municipal Code",
+  "error": null
+ },
+ {
+  "id": "tattoo_b3_milwaukee",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "business_launch",
+  "fetched": [
+   "business_api",
+   "incentives_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "business_api"
+  ],
+  "under_fetch": [],
+  "search_query": "B3 use table allowed uses personal service",
+  "error": null
+ },
+ {
+  "id": "tavern_districts_code",
+  "category": "code_research",
+  "intent": "legal_question",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": "tavern bar use table allowed uses by right zoning districts permitted uses",
+  "error": null
+ },
+ {
+  "id": "taxes_belden",
+  "category": "parcel_bulk",
+  "intent": "incident_lookup",
+  "workflow": "property_intelligence",
+  "fetched": [
+   "property_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "tenstory_rs2",
+  "category": "parcel_trick",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "bulk and density standards building height FAR residential zoning district",
+  "error": null
+ },
+ {
+  "id": "tif_logan",
+  "category": "neighborhood",
+  "intent": "incident_lookup",
+  "workflow": "general",
+  "fetched": [
+   "incentives_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "time_offtopic",
+  "category": "off_topic",
+  "intent": "clarification_needed",
+  "workflow": "general",
+  "fetched": [],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "tod_b33_irving",
+  "category": "parcel_bulk",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "neighborhood_domain",
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "transit-oriented development TOD bonus density FAR height allowance near transit station",
+  "error": null
+ },
+ {
+  "id": "transit_irving",
+  "category": "neighborhood",
+  "intent": "event_query",
+  "workflow": "general",
+  "fetched": [
+   "neighborhood_domain"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "twoflat_rs2_rockwell",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "two-flat two family residential allowed uses use table RS RT zoning district",
+  "error": null
+ },
+ {
+  "id": "twoflat_rs3_central_park",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "two-flat two-unit residential allowed uses RS RT RM use table permitted uses",
+  "error": null
+ },
+ {
+  "id": "units_rm45_artesian",
+  "category": "parcel_bulk",
+  "intent": "legal_question",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "permits_api",
+   "property_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "permits_api"
+  ],
+  "under_fetch": [],
+  "search_query": "residential density maximum units allowed bulk and density standards dwelling units per lot",
+  "error": null
+ },
+ {
+  "id": "vague_milwaukee",
+  "category": "vague",
+  "intent": "clarification_needed",
+  "workflow": "general",
+  "fetched": [
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "regulatory_domain"
+  ],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "vague_my_lot",
+  "category": "vague",
+  "intent": "clarification_needed",
+  "workflow": "development_feasibility",
+  "fetched": [
+   "vector_search"
+  ],
+  "over_fetch": [],
+  "under_fetch": [],
+  "search_query": null,
+  "error": null
+ },
+ {
+  "id": "warehouse_b3_milwaukee",
+  "category": "parcel_use",
+  "intent": "legal_question",
+  "workflow": "business_launch",
+  "fetched": [
+   "business_api",
+   "incentives_domain",
+   "regulatory_domain",
+   "vector_search"
+  ],
+  "over_fetch": [
+   "business_api"
+  ],
+  "under_fetch": [],
+  "search_query": "warehouse storage use table allowed uses industrial commercial zoning district permitted uses",
+  "error": null
+ }
+]

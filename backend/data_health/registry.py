@@ -586,13 +586,12 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         tier="official_publication", kind="artifact", locator="backend/code_vintage.json", probe="code_text",
         owner_modules=("backend/code_vintage.py", "backend/legislation/currency.py"),
         surfaces=("profile", "chat", "report"), fact_keys=("code.vintage",), severity="critical", cadence_days=30,
-        warn_days=60, alarm_days=90,
-        ack=Ack("American Legal publishes about four months behind Council: the newest export available (2026-10-21) is "
-                "current through 2026-06-17, already 126 days old, so the 90-day alarm would fire on day one and every "
-                "day until their next export. The monthly 'download a new export' reminder (.github/workflows/"
-                "code-export-reminder.yml) carries the nudge instead; claude-context/guides/code-refresh.md says what to do. Re-decide the "
-                "thresholds against the publisher's real lag when this expires.", date(2026, 12, 15), _OWNER),
-        note="Content date = current_through. Thresholds are WS1's. Reports the amendments passed since.",
+        # Thresholds follow the publisher's real lag (2026-11-18, Phase 12): American Legal's export was 71 days
+        # behind Council when downloaded 2026-05-28 and 126 days behind on 2026-10-21. Warn at 180 = the worst lag
+        # seen plus two monthly reminder cycles (an export that existed but was not ingested); alarm at 240 = two
+        # more months on top. Replaces the 60/90 + ack that could never be met.
+        warn_days=180, alarm_days=240,
+        note="Content date = current_through. Thresholds from the publisher's measured lag (Phase 12). Reports the amendments passed since.",
     ),
     SourceSpec(
         id="code.qdrant_index", name="Municipal Code vector index (Qdrant)", publisher="UrbanLayer", tier="official_publication",

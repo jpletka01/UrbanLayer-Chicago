@@ -406,10 +406,16 @@ def test_without_a_fresh_clerk_check_the_backlog_is_not_judged(monkeypatch):
 
 
 def test_the_review_alarm_is_not_swallowed_by_the_code_text_ack(monkeypatch):
-    """code.municipal_text is acked until its thresholds are re-decided; this source must not be, or its
-    alarm would show as 'acked' and never reach Sentry."""
+    """Neither source is acked: an ack on this one would show its alarm as 'acked' and never reach Sentry."""
     from backend.data_health.evaluate import evaluate
-    assert BY_ID["code.municipal_text"].ack is not None and BY_ID["internal.amendment_review"].ack is None
+    assert BY_ID["code.municipal_text"].ack is None and BY_ID["internal.amendment_review"].ack is None
     res = _review_probe(monkeypatch, _clerk_rows(("O2026-1", "2026-08-01", "title17")))
     assert evaluate(BY_ID["internal.amendment_review"], res, date(2026, 10, 21)).state == "alarm"
     assert evaluate(BY_ID["internal.amendment_review"], _review_probe(monkeypatch, _clerk_rows()), date(2026, 10, 21)).state == "ok"
+
+
+def test_code_text_thresholds_clear_the_publishers_measured_lag():
+    """American Legal's export has run 71 and 126 days behind Council at download. The warn must sit past the
+    worst lag seen, or the code text warns the day a fresh export goes in (the 60/90 thresholds did)."""
+    spec = BY_ID["code.municipal_text"]
+    assert spec.ack is None and spec.warn_days > 126 + 30 and spec.alarm_days > spec.warn_days

@@ -507,7 +507,7 @@ REVIEW_OTHER_WARN_DAYS = 45
 
 async def probe_amendment_review(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     """Is the monthly review of what Council passed being done? Reads the snapshot and the review file only.
-    Its own source because ``code.municipal_text`` is acked: an alarm raised there would be swallowed."""
+    Its own source so the review backlog alarms on its own clock, apart from the code text's age."""
     from backend.legislation.currency import check_state, load_snapshot, review_backlog
 
     res = ProbeResult()
