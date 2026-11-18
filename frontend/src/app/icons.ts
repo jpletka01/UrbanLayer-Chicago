@@ -1,7 +1,7 @@
 // One icon per concept, everywhere in the new UI (decision Item 75, standard 1). Lucide only (pinned
 // lucide-react), 1.5 stroke. A new concept gets one line here before it gets a component.
 import {
-  ArrowUpToLine, BadgeDollarSign, House, BookOpen, Bookmark, Building2, ChartColumn, HandCoins, KeyRound, CircleUser, Download, FileClock, LandPlot, Layers,
+  ArrowUpToLine, BadgeDollarSign, DraftingCompass, Gavel, Handshake, HardHat, HouseHeart, Lightbulb, PiggyBank, House, BookOpen, Bookmark, Building2, ChartColumn, HandCoins, KeyRound, CircleUser, Download, FileClock, LandPlot, Layers,
   Footprints, GraduationCap, Hammer, History, ListChecks, LocateFixed, Map as MapIcon, Scale, Megaphone, Shield, Users, MessageCircle, MessageCircleQuestion, Receipt, Ruler, Search, Square, type LucideIcon,
 } from "lucide-react";
 import type { NavIcon } from "./destinations";
@@ -44,6 +44,14 @@ export const ICON = {
   around: LocateFixed,
   onMap: MapIcon,
   chats: History,
+  // who you are: the question asked once after a first sign-in (SegmentQuestion; its title uses `account`)
+  developer: HardHat,
+  architect: DraftingCompass,
+  attorney: Gavel,
+  broker: Handshake,
+  investor: PiggyBank,
+  homeowner: HouseHeart,
+  curious: Lightbulb,
 } satisfies Record<string, LucideIcon>;
 
 export const NAV_ICON: Record<NavIcon, LucideIcon> = {

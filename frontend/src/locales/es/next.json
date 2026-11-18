@@ -2465,6 +2465,7 @@
     "question": "¿Cuál describe mejor su situación?",
     "hint": "Un toque — nos ayuda a construir para las personas correctas.",
     "skip": "Omitir",
+    "skipForNow": "Omitir por ahora",
     "options": {
       "developer": "Desarrollador",
       "architect": "Arquitecto",
