@@ -10,7 +10,7 @@ import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MLMap } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { ArrowRight, LoaderCircle, MapPinOff, MapPinned, PersonStanding, X } from "lucide-react";
+import { ArrowRight, LoaderCircle, MapPinOff, MapPinned, PersonStanding, UserCheck, X } from "lucide-react";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import { profileAddress } from "../../discovery/rowFigures";
 import { discoveryOutlineRow, fetchTransitStations, type DiscoveryOutlineLookup } from "../../lib/api";
@@ -633,8 +633,11 @@ function LotFacts({ card, n }: Pick<LotCardModel, "n"> & { card: NonNullable<Lot
       <p className="nx-muted">
         {[card.zone, card.lotSqft != null ? t("discovery.card.lotValue", { value: n(card.lotSqft) }) : null].filter(Boolean).join(" · ")}
       </p>
-      <p>{card.roomSqft != null ? t("discovery.card.roomValue", { value: n(card.roomSqft) })
-        : card.roomNamed ? t(`discovery.card.named.${card.roomNamed}`) : t("discovery.card.roomUnknown")}</p>
+      <p className="flex items-center gap-1">
+        {card.roomSqft != null ? t("discovery.card.roomValue", { value: n(card.roomSqft) })
+          : card.roomNamed ? t(`discovery.card.named.${card.roomNamed}`) : t("discovery.card.roomUnknown")}
+        {card.roomSqft != null && card.userReport && <UserReportIcon stories={card.userReport.stories} />}
+      </p>
       {/* A condo building: a heads-up, not a wall (owner): many owners, and where the room comes from. */}
       {card.condo && (
         <p className="nx-muted" data-testid="lot-card-condo">
@@ -645,6 +648,24 @@ function LotFacts({ card, n }: Pick<LotCardModel, "n"> & { card: NonNullable<Lot
       {/* Who owns a tax-exempt lot, and empty public land named as such (owner's review, Item 128). */}
       {card.owner && <p className="nx-muted [overflow-wrap:anywhere]" data-testid="lot-card-owner">{ownerLine(t, card.owner)}</p>}
     </>
+  );
+}
+
+/** The room comes from a reviewed user report (Item 129 §1): an icon, not a label; its tooltip (hover and keyboard focus)
+    says so with the reviewed story count. Who reviewed it and when stay off the card. */
+function UserReportIcon({ stories }: { stories: number }) {
+  const { t } = useTranslation("next");
+  const label = stories > 0 ? t("discovery.card.userReport", { count: stories }) : t("discovery.card.userReportEmpty");
+  return (
+    <span className="group relative inline-flex" data-testid="lot-card-user-report">
+      <span tabIndex={0} role="img" aria-label={label} className="inline-flex rounded focus-visible:outline focus-visible:outline-2">
+        <UserCheck aria-hidden className="h-3.5 w-3.5 nx-muted" strokeWidth={STROKE} />
+      </span>
+      <span role="tooltip" aria-hidden
+        className="pointer-events-none absolute left-1/2 top-full z-30 mt-1 hidden w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-nx-ink px-2 py-1 text-[11px] text-nx-on-ink group-hover:block group-focus-within:block">
+        {label}
+      </span>
+    </span>
   );
 }
 

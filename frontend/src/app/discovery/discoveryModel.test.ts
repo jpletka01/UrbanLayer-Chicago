@@ -66,6 +66,14 @@ describe("a card", () => {
     expect(c.roomBasis).toBe("commercial_valuation");
     expect(cardModel(row({ room_sqft: null, bldg_sqft_source: "footprint" })).roomBasis).toBeNull();
   });
+  it("marks a room figure resting on a reviewed user report, and only then (Item 129)", () => {
+    const c = cardModel(row({ room_sqft: 9000, bldg_sqft_source: "user_report_reviewed", user_report: { stories: 3, reviewed: "2026-11-18" } }));
+    expect(c.userReport).toEqual({ stories: 3 });
+    expect(c.roomBasis).toBeNull(); // the icon says it, not a basis line
+    expect(cardModel(row({ room_sqft: 9000, bldg_sqft_source: "user_report_reviewed", user_report: { empty: true, reviewed: "2026-11-18" } })).userReport)
+      .toEqual({ stories: 0 });
+    expect(cardModel(row({ room_sqft: 9000, bldg_sqft_source: "footprint", user_report: { stories: 3, reviewed: "2026-11-18" } })).userReport).toBeNull();
+  });
   it("names road and rail right-of-way instead of a room figure (Item 128)", () => {
     const c = cardModel(row({ room_sqft: null, room_scope: "right_of_way" }));
     expect(c.roomNamed).toBe("right_of_way");

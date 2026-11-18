@@ -646,6 +646,18 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "45 days alarms. A separate source so the Profile's 'not yet reviewed' state is also an operator signal. "
              "Reads the pending snapshot and the review file only; no judgement without a fresh snapshot.",
     ),
+    SourceSpec(
+        id="internal.user_corrections", name="Reviewed user reports of building facts (committed)",
+        publisher="UrbanLayer", tier="internal", kind="internal", locator="backend/discovery/user_corrections.json",
+        probe="user_corrections", owner_modules=("backend/discovery/user_corrections.py", "backend/discovery/lot_facts.py",
+                                                  "backend/corrections.py"), availability_only=True,
+        surfaces=("discovery",),
+        note="Visitors' reports of a lot's stories or building that a person reviewed in /admin, exported to this file "
+             "and committed in a PR (decision Item 129). Applied on the next index build, only over the footprint x "
+             "stories estimate, never over the Assessor, public land or the City's land inventory. An entry that can't "
+             "be applied (bad PIN, both or neither of stories and empty, no review day, no report ids) alarms; more "
+             "than 2,000 entries warns (the queue has outgrown one reviewer). No file yet is fine.",
+    ),
     # --- Committed artifacts -----------------------------------------------------------------
     SourceSpec(
         id="artifact.transit_stations", name="Transit stations (committed)", publisher="UrbanLayer from CTA/Metra GTFS",

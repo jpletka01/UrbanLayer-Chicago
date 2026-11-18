@@ -55,3 +55,20 @@ describe("LotCard: empty land", () => {
     expect(screen.getByText(/Empty lot or parking/)).toBeTruthy();
   });
 });
+
+describe("LotCard: a reviewed user report (Item 129)", () => {
+  it("names the report behind the building area, with its story count", () => {
+    render(<LotCard row={{ ...base, bldg_sqft: 3420, bldg_sqft_source: "user_report_reviewed", user_report: { stories: 3, reviewed: "2026-11-18" } } as ResultRow}
+      hoodName={null} onOpen={() => {}} />);
+    expect(screen.getByTestId("row-card-user-report").textContent).toBe("Floor area from a reviewed user report (3 stories)");
+  });
+  it("one story reads as one story, and no building as no building", () => {
+    const { unmount } = render(<LotCard row={{ ...base, bldg_sqft: 900, bldg_sqft_source: "user_report_reviewed", user_report: { stories: 1, reviewed: "2026-11-18" } } as ResultRow}
+      hoodName={null} onOpen={() => {}} />);
+    expect(screen.getByTestId("row-card-user-report").textContent).toBe("Floor area from a reviewed user report (1 story)");
+    unmount();
+    render(<LotCard row={{ ...base, bldg_sqft: 0, bldg_sqft_source: "user_report_reviewed", user_report: { empty: true, reviewed: "2026-11-18" } } as ResultRow}
+      hoodName={null} onOpen={() => {}} />);
+    expect(screen.getByTestId("row-card-user-report").textContent).toBe("No building: a reviewed user report");
+  });
+});

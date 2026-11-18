@@ -251,6 +251,8 @@ export interface ResultRow {
   room_sqft?: number | null;
   /** Where the building area came from: assessor, commercial_valuation or footprint. */
   bldg_sqft_source?: string | null;
+  /** A reviewed user report behind the building area (Item 129): its story count, or no building. */
+  user_report?: { stories?: number; empty?: boolean; reviewed: string } | null;
   /** "complex" = the room of the multi-parcel site the lot belongs to (`complex_lots` lots). */
   room_scope?: string | null;
   complex_lots?: number | null;

@@ -89,3 +89,17 @@ describe("Discovery lot card: owner and named room (Item 128)", () => {
     expect(screen.getByTestId("lot-card-owner").textContent).toBe("Owner, as the Assessor records it: LINCOLN PK CONG JEH WT");
   });
 });
+
+describe("Discovery lot card: a reviewed user report (Item 129)", () => {
+  it("puts a UserCheck icon beside the room figure, its tooltip naming the reviewed stories", () => {
+    card({ status: "found", row: { pin: "14313250010000", lat: 41.91, lon: -87.677, address: "1601 N MILWAUKEE AVE", lot_sqft: 3125,
+      room_sqft: 2000, bldg_sqft: 3420, bldg_sqft_source: "user_report_reviewed", user_report: { stories: 3, reviewed: "2026-11-18" } } as never });
+    const icon = screen.getByTestId("lot-card-user-report");
+    expect(icon.querySelector('[role="img"]')!.getAttribute("aria-label")).toBe("Floor area from a reviewed user report (3 stories)");
+    expect(icon.querySelector('[role="img"]')!.getAttribute("tabindex")).toBe("0");
+  });
+  it("shows no icon for the footprint estimate", () => {
+    card(found("1601 N MILWAUKEE AVE"));
+    expect(screen.queryByTestId("lot-card-user-report")).toBeNull();
+  });
+});

@@ -1255,7 +1255,10 @@
       "sold": "Sold {{price}} in {{year}}",
       "owner": "Owner: {{owner}}",
       "ownerAssessor": "Owner, as the Assessor records it: {{owner}}",
-      "publicLand": "Empty public land"
+      "publicLand": "Empty public land",
+      "userReport_one": "Floor area from a reviewed user report ({{count}} story)",
+      "userReport_other": "Floor area from a reviewed user report ({{count}} stories)",
+      "userReportEmpty": "No building: a reviewed user report"
     },
     "goalSoon": "needs data",
     "goal": {

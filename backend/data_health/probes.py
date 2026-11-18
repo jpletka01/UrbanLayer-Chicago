@@ -853,6 +853,34 @@ async def probe_checker(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     return ProbeResult(content=finished.date(), info=f"last finished run {finished:%Y-%m-%d %H:%M} UTC")
 
 
+async def probe_user_corrections(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """Can every reviewed user report be applied (Item 129)? Reads the committed file only."""
+    from backend.discovery.user_corrections import MAX_ENTRIES, read_raw, validate_user_correction
+
+    res = ProbeResult()
+    try:
+        raw = read_raw()
+    except Exception as exc:
+        raise ProbeError("service", _clean(f"{type(exc).__name__}: {exc}")) from exc
+    if raw is None:
+        res.info = "no reviewed user reports yet"
+        return res
+    entries = {k: v for k, v in raw.items() if not k.startswith("_")}
+    bad = sorted(k for k, v in entries.items() if validate_user_correction(k, v))
+    good = [v for k, v in entries.items() if k not in bad]
+    days = sorted(v["reviewed"] for v in good)
+    stories = sum(1 for v in good if v.get("stories"))
+    res.info = (f"{len(good)} lots ({stories} with stories, {len(good) - stories} with no building)"
+                + (f", newest reviewed {days[-1]}" if days else ""))
+    if bad:
+        res.findings.append(Finding("alarm", f"{len(bad)} entr{'y' if len(bad) == 1 else 'ies'} can't be applied and "
+                                             f"{'is' if len(bad) == 1 else 'are'} skipped: {', '.join(bad[:5])}"))
+    if len(entries) > MAX_ENTRIES:
+        res.findings.append(Finding("warn", f"{len(entries)} entries, past {MAX_ENTRIES}: weigh reporters by past "
+                                            "accepted reports (Item 129 §5)"))
+    return res
+
+
 PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] = {
     "kit_weekly": probe_kit_weekly,
     "artifact_sidecar": probe_artifact_sidecar,
@@ -865,6 +893,7 @@ PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] 
     "clerk_latest": probe_clerk_latest,
     "pending_legislation": probe_pending_legislation,
     "pending_impact_review": probe_pending_impact_review,
+    "user_corrections": probe_user_corrections,
     "code_text": probe_code_text,
     "amendment_review": probe_amendment_review,
     "qdrant": probe_qdrant,

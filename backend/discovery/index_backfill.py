@@ -105,9 +105,12 @@ def enrich(attrs: dict[str, Any], pin14: str, lot, src: LotSources, pending: set
         mark_land_use(attrs, pin10, src)  # Item 112: reads land_kind, structure and empty_land
     from backend.discovery.index_build import unusual_rule
     attrs["unusual"] = unusual_rule(attrs)
-    if attrs.get("bldg_sqft_source") in ("footprint", "city_land_inventory", "public_land"):  # a rerun recomputes these
+    if attrs.get("bldg_sqft_source") in ("footprint", "city_land_inventory", "public_land", "user_report_reviewed"):
+        # A rerun recomputes these (a reviewed user report too: the committed file may have changed, Item 129).
         attrs.pop("bldg_sqft", None)
         attrs.pop("bldg_sqft_source", None)
+    attrs.pop("user_report", None)
+    attrs.pop("user_report_unapplied", None)
     if attrs.get("multi_pin_member"):
         commercial = None
     else:
