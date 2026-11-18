@@ -1981,6 +1981,7 @@ Run: `PYTHONPATH=. python -m eval.rail_land_label serve` (localhost:8035), then 
 5. **Apply:** `lot_facts` precedence, `bldg_sqft_source: user_report_reviewed`, the card's `UserCheck` icon, registry + sentinel + the three allowlists, the Privacy line.
 6. **Measure:** the eval script, run once there are 50 accepted story corrections.
 
+- **Rollout (design only):** #243 (this Item, the dev-only mockup at `/dev/suggest`, screenshots) and #244 (the Discovery map card's Street View link, found while building the mockup) merged on the owner's go 2026-11-17 (`335379a`, `22e9e5a`); both deploys succeeded. Verified live: the Discovery chunk now reads `map.streetView.link`, the production bundle carries none of the mockup, `npm run sweep:live` clean on every route, desktop and phone. The six build PRs (§8) are not started.
 - **Revisit if:** anonymous reports are mostly rejected (make reporting sign-in only after all); reports run mostly to one kind (put that chip first); the estimate is recalibrated and band accuracy passes 85%; a government source for stories appears (it would outrank every user report).
 
 ### 9. Rollout
