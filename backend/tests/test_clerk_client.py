@@ -178,6 +178,26 @@ def test_substitute_without_final_in_the_name_picks_the_so_pdf():
     assert m.legislation_pdf().file_name == "SO2026-0025391.pdf"  # TOD Streets: not "O... Ordinance.pdf"
 
 
+def test_substitute_amended_in_committee_picks_the_as_amended_pdf():
+    # SO2026-0027165 (passed 2026-09-23): the committee substituted AND amended it, and
+    # the plain SO PDF still carries the pre-amendment text ("may transmit").
+    m = clerk.ClerkMatter.from_api(_row(recordNumber="SO2026-0027165", subStatus="Passed as Substitute", attachments=[
+        {"fileName": "w49others - o27165.pdf", "path": "u1", "attachmentType": "Legislation"},
+        {"fileName": "SO2026-0027165.pdf", "path": "u2", "attachmentType": "Legislation"},
+        {"fileName": "SO2026-0027165 as amended in Committee.pdf", "path": "u3", "attachmentType": "Legislation"},
+        {"fileName": "SO2026-0027165 Committee Letter 9.1.2026.sep3.pdf", "path": "u4", "attachmentType": "Committee Letter"},
+    ]))
+    assert m.legislation_pdf().url == "u3"
+
+
+def test_amendment_in_a_file_name_is_not_as_amended():
+    m = clerk.ClerkMatter.from_api(_row(recordNumber="SO2026-1", subStatus="Passed as Substitute", attachments=[
+        {"fileName": "SO2026-1 Substituted Ordinance.pdf", "path": "u1", "attachmentType": "Legislation"},
+        {"fileName": "SO2026-1 Amendment of Municipal Code Chapter 2-45.pdf", "path": "u2", "attachmentType": "Legislation"},
+    ]))
+    assert m.legislation_pdf().url == "u1"
+
+
 def test_an_original_ordinance_picks_its_legislation_pdf():
     m = clerk.ClerkMatter.from_api(_row(attachments=[
         {"fileName": "O2026-1 Application.pdf", "path": "u1", "attachmentType": "Miscellaneous"},

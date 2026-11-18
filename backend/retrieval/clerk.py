@@ -62,6 +62,8 @@ from backend.retrieval.cache import TTLCache
 log = logging.getLogger(__name__)
 
 CHICAGO = ZoneInfo("America/Chicago")
+# "SO… as amended in Committee.pdf"; \b keeps "Amendment of Municipal Code…" out.
+_AMENDED_RE = re.compile(r"\bamended\b", re.IGNORECASE)
 PUBLIC_MATTER_URL = "https://chicityclerkelms.chicago.gov/Matter/?matterId={id}"
 USER_AGENT = "UrbanLayer/1 (+https://urbanlayerchicago.com)"
 
@@ -218,15 +220,18 @@ class ClerkMatter(BaseModel):
 
     def legislation_pdf(self) -> ClerkAttachment | None:
         """The text that passed: for a substitute, the Legislation PDF named for the SO
-        number (preferring a "Final" one); otherwise the first Legislation PDF."""
+        number, preferring a "Final" one, then one "as amended" (in committee or on the
+        floor: SO2026-0027165's plain SO PDF predates the committee's amendment);
+        otherwise the first Legislation PDF."""
         legislation = [a for a in self.attachments if a.type == "Legislation"]
         if not legislation:
             return None
         if self.is_substitute:
             mine = [a for a in legislation if a.file_name.startswith(self.record_number)]
             final = [a for a in mine if "final" in a.file_name.lower()]
-            if final or mine:
-                return (final or mine)[0]
+            amended = [a for a in mine if _AMENDED_RE.search(a.file_name)]
+            if final or amended or mine:
+                return (final or amended or mine)[0]
         return legislation[0]
 
 
