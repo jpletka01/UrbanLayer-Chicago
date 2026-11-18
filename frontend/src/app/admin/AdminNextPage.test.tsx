@@ -6,14 +6,19 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { AdminCodeCurrency, DataHealth } from "../../lib/api";
 import { axeViolations } from "../test/axe";
-import { codeAttention, correctionsAttention, dataAttention, adminSectionFrom } from "./adminModel";
+import { codeAttention, correctionsAttention, dataAttention, adminSectionFrom, sectionBadges } from "./adminModel";
 import AdminNextPage from "./AdminNextPage";
 import { VouchersSection } from "./VouchersSection";
 
 vi.mock("../../contexts/AuthContext", () => ({
   useAuthContext: () => ({ user: { id: "a", tier: "admin" }, isAuthenticated: true, authRequired: true, loading: false }),
 }));
-vi.mock("../frame/AppFrame", () => ({ AppFrame: ({ children }: { children: React.ReactNode }) => <div className="ui-next">{children}</div> }));
+vi.mock("../frame/AppFrame", () => ({
+  AppFrame: ({ children, secondary, tools }: { children: React.ReactNode; secondary?: React.ReactNode; tools?: React.ReactNode }) => (
+    <div className="ui-next">{tools}{secondary}<main>{children}</main></div>
+  ),
+  ToolButton: ({ label, onClick, testId }: { label: string; onClick: () => void; testId?: string }) => <button type="button" aria-label={label} onClick={onClick} data-testid={testId} />,
+}));
 vi.mock("../../lib/api", async (orig) => {
   const mod = await orig<typeof import("../../lib/api")>();
   const overview = { total_requests: 12, total_input_tokens: 1000, total_output_tokens: 500, estimated_cost_usd: 0.42, by_model: {}, by_phase: {} };
@@ -93,7 +98,37 @@ function page(path: string) {
   );
 }
 
+describe("the badges", () => {
+  it("count what waits; red only for something failing; '!' when there is nothing to count", () => {
+    expect(sectionBadges(health({}, { alarm: 2, error: 1 }), code("amber", 3), 4)).toEqual({
+      data: { text: "3", tone: "red", spoken: "3 sources failing" },
+      code: { text: "3", tone: "work", spoken: "3 amendments to review" },
+      corrections: { text: "4", tone: "work", spoken: "4 reports to review" },
+    });
+    expect(sectionBadges(health({ state: "late" }), code("red", 0, 154), 0)).toEqual({
+      data: { text: "!", tone: "red", spoken: "daily check not running" },
+      code: { text: "!", tone: "red", spoken: "code text out of date" },
+    });
+    expect(sectionBadges(health({}, { ok: 80 }), code("green"), 0)).toEqual({});
+    expect(sectionBadges(undefined, null, undefined)).toEqual({});
+  });
+});
+
 describe("the page", () => {
+  it("the sections fold to a strip like the chat's list, and open as a sheet from the top bar", async () => {
+    try { sessionStorage.removeItem("urbanlayer-next-adminnav"); } catch { /* jsdom */ }
+    page("/admin/usage");
+    await screen.findByTestId("admin-usage-tiles");
+    fireEvent.click(screen.getByTestId("admin-nav-hide"));
+    const strip = screen.getByTestId("admin-nav-strip");
+    expect(within(strip).getByRole("link", { name: "Usage and cost" }).getAttribute("aria-current")).toBe("page");
+    expect(sessionStorage.getItem("urbanlayer-next-adminnav")).toBe("hidden");
+    fireEvent.click(screen.getByTestId("admin-nav-expand"));
+    expect(screen.getByTestId("admin-nav")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("admin-nav-show"));
+    expect(await screen.findByTestId("admin-nav-sheet")).toBeTruthy();
+  });
+
   it("opens on Overview: four figures, what needs attention linked to its section, the section list, axe", async () => {
     const { container } = page("/admin");
     const tiles = await screen.findByTestId("admin-overview-tiles");
@@ -103,9 +138,11 @@ describe("the page", () => {
     expect(screen.getByTestId("attention-corrections").getAttribute("href")).toBe("/admin/corrections");
     const nav = screen.getByTestId("admin-nav");
     expect(within(nav).getByRole("link", { name: "Overview" }).getAttribute("aria-current")).toBe("page");
-    expect(within(nav).getAllByRole("link").map((l) => l.textContent)).toEqual([
-      "Overview", "Usage and cost", "Visitors", "Answer quality", "Requests", "Data health", "Corrections", "Code updates", "Early access",
+    expect(within(nav).getAllByRole("link").map((l) => l.getAttribute("aria-label") ?? l.textContent)).toEqual([
+      "Overview", "Usage and cost", "Visitors", "Answer quality", "Requests", "Data health", "Corrections, 2 reports to review", "Code updates", "Early access",
     ]);
+    // The badge on Corrections counts the open reports.
+    expect(within(nav).getByTestId("admin-badge-corrections").textContent).toBe("2");
     expect(await axeViolations(container)).toEqual([]);
   });
 

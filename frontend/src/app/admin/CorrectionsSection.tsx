@@ -33,7 +33,7 @@ const SOURCE_WORDS: Record<string, string> = {
 const sqft = (v: number | null | undefined) => (v == null ? "not known" : `${Math.round(v).toLocaleString("en-US")} sq ft`);
 const when = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-export function CorrectionsSection() {
+export function CorrectionsSection({ onReviewed }: { onReviewed?: () => void } = {}) {
   const [tab, setTab] = useState<CorrectionStatus>("new");
   const [loaded, setLoaded] = useState<{ key: string; data: { reports: AdminCorrection[]; total: number } | "failed" } | null>(null);
   const [seq, setSeq] = useState(0);
@@ -45,7 +45,7 @@ export function CorrectionsSection() {
     return () => { live = false; };
   }, [tab, key]);
   const data = loaded?.key === key ? loaded.data : null;
-  const load = useCallback(() => setSeq((n) => n + 1), []);
+  const load = useCallback(() => { setSeq((n) => n + 1); onReviewed?.(); }, [onReviewed]);
 
   return (
     <div className="flex flex-col gap-4" data-testid="corrections-section">

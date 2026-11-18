@@ -1,16 +1,15 @@
 // The sections an admin reads (Overview, Usage and cost, Visitors, Answer quality, Requests), on the site's own
 // blocks: one row of stat tiles with an icon each (the figure first), then blocks of charts. Charts are the existing
 // admin charts; empty ones say so in a line instead of drawing an empty frame.
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity, ChartLine, ChartPie, ChevronRight, CircleDollarSign, Clock, Coins, Gauge, MessagesSquare, MousePointerClick,
   HeartPulse, PencilLine, Repeat, Route, Scale, Target, Timer, UserPlus, Users,
 } from "lucide-react";
-import {
-  fetchAdminCodeCurrency, fetchAdminCorrections, fetchDataHealth,
-  type AdminCodeCurrency, type DataHealth,
-} from "../../lib/api";
+import type { AdminCodeCurrency, DataHealth } from "../../lib/api";
+import { Toggletip } from "../../components/ui/Toggletip";
+import { Donut } from "../ui/Donut";
 import type {
   AdminOverview, BenchmarkResults, ConversationStats, EngagementMetrics, JudgeResults, LatencyPercentiles, RequestLogEntry,
   TimeseriesBucket,
@@ -55,19 +54,37 @@ function avgLatency(o: AdminOverview | null): number {
   return Math.round(Object.values(o.by_phase).reduce((s, p) => s + p.avg_duration_ms, 0));
 }
 
+/** The info icon in a tile's corner (what a figure means, instead of a line under every figure). */
+function Info({ label, children }: { label: string; children: React.ReactNode }) {
+  return <Toggletip label={label} align="end">{children}</Toggletip>;
+}
+
+const CHANNEL_COLORS = [1, 2, 3, 4, 5, 6, 7].map((n) => `rgb(var(--nx-cat-${n}))`);
+const CHANNEL_WORDS: Record<string, string> = { direct: "Direct", google: "Google", bing: "Bing", linkedin: "LinkedIn", twitter: "X", facebook: "Facebook" };
+
+/** Where visitors came from as donut segments: the biggest first, the rest past six folded into "Other". */
+function channelSegments(channels: Record<string, number> | undefined) {
+  const rows = Object.entries(channels ?? {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+  const total = rows.reduce((t, [, n]) => t + n, 0);
+  if (!total) return [];
+  const top = rows.slice(0, 6);
+  const rest = rows.slice(6).reduce((t, [, n]) => t + n, 0);
+  const list = rest ? [...top, ["other", rest] as [string, number]] : top;
+  return list.map(([k, n], i) => ({
+    key: k, label: CHANNEL_WORDS[k] ?? (k === "other" ? "Other" : k), pct: (n / total) * 100, color: CHANNEL_COLORS[i], note: `${n}`,
+  }));
+}
+
 // ---------------------------------------------------------------- Overview
 
 const SECTION_ICON = { data: HeartPulse, code: Scale, corrections: PencilLine } as const;
 
-export function OverviewSection({ data }: { data: PeriodData }) {
-  const [health, setHealth] = useState<DataHealth | null | undefined>(undefined);
-  const [code, setCode] = useState<AdminCodeCurrency | null | undefined>(undefined);
-  const [open, setOpen] = useState<number | null | undefined>(undefined);
-  useEffect(() => {
-    fetchDataHealth().then(setHealth);
-    fetchAdminCodeCurrency().then(setCode);
-    fetchAdminCorrections("new").then((d) => setOpen(d ? d.total : null));
-  }, []);
+export function OverviewSection({ data, health, code, openReports: open }: {
+  data: PeriodData;
+  health: DataHealth | null | undefined;
+  code: AdminCodeCurrency | null | undefined;
+  openReports: number | null | undefined;
+}) {
   const o = data.overview;
   const e = data.engagement;
   const items: Attention[] = [dataAttention(health), codeAttention(code), correctionsAttention(open)];
@@ -124,9 +141,10 @@ export function UsageSection({ data }: { data: PeriodData }) {
       <Tiles testId="admin-usage-tiles">
         <StatTile tone="a" icon={<Activity className={ICON_CLS} strokeWidth={STROKE} />} label="Requests" figure={(o?.total_requests ?? 0).toLocaleString()} />
         <StatTile tone="b" icon={<Coins className={ICON_CLS} strokeWidth={STROKE} />} label="Tokens" figure={formatTokens(tokens)}
-          note={`${formatTokens(o?.total_input_tokens ?? 0)} in · ${formatTokens(o?.total_output_tokens ?? 0)} out`} />
+          unit={`${formatTokens(o?.total_input_tokens ?? 0)} in · ${formatTokens(o?.total_output_tokens ?? 0)} out`} />
         <StatTile tone="b" icon={<CircleDollarSign className={ICON_CLS} strokeWidth={STROKE} />} label="Model cost" figure={formatCost(o?.estimated_cost_usd ?? 0)} />
-        <StatTile tone="a" icon={<Timer className={ICON_CLS} strokeWidth={STROKE} />} label="Answer time" figure={seconds(avgLatency(o))} note="All phases, average" />
+        <StatTile tone="a" icon={<Timer className={ICON_CLS} strokeWidth={STROKE} />} label="Answer time" figure={seconds(avgLatency(o))}
+          info={<Info label="About answer time">The average time of each step (understanding the question, looking up records, writing the answer), added together.</Info>} />
       </Tiles>
       {empty ? (
         <Block title="Over time" icon={ChartLine}><Empty icon={ChartLine}>No requests or model calls in this period.</Empty></Block>
@@ -165,10 +183,11 @@ export function VisitorsSection({ data, conversations }: { data: PeriodData; con
       <Tiles testId="admin-visitor-tiles">
         <StatTile tone="a" icon={<Users className={ICON_CLS} strokeWidth={STROKE} />} label="Visitors" figure={(e?.unique_visitors ?? 0).toLocaleString()} />
         <StatTile tone="b" icon={<Repeat className={ICON_CLS} strokeWidth={STROKE} />} label="Came back" figure={(e?.returning_visitors ?? 0).toLocaleString()}
-          note={e?.avg_days_between_visits != null ? `Every ${e.avg_days_between_visits} days` : undefined} />
+          unit={e?.avg_days_between_visits != null ? `every ${e.avg_days_between_visits} days` : undefined} />
         <StatTile tone="b" icon={<MousePointerClick className={ICON_CLS} strokeWidth={STROKE} />} label="Profile to chat" figure={`${((e?.scorecard_to_chat_rate ?? 0) * 100).toFixed(1)}%`} />
         <StatTile tone="a" icon={<MessagesSquare className={ICON_CLS} strokeWidth={STROKE} />} label="Chats" figure={(conversations?.total_conversations ?? 0).toLocaleString()}
-          note={conversations ? `${conversations.avg_messages_per_conversation.toFixed(1)} messages each · ${conversations.conversations_today} today` : undefined} />
+          unit={conversations ? `${conversations.conversations_today} today` : undefined}
+          info={conversations ? <Info label="About chats">{`${conversations.avg_messages_per_conversation.toFixed(1)} messages a chat, ${conversations.total_messages.toLocaleString()} in all.`}</Info> : undefined} />
       </Tiles>
       <div className="nx-cq"><div className="nx-split nx-split-even">
         <Block title="Funnel" icon={UserPlus}>
@@ -190,7 +209,9 @@ export function VisitorsSection({ data, conversations }: { data: PeriodData; con
           ) : <Empty icon={UserPlus}>No visits yet.</Empty>}
         </Block>
         <Block title="Where they came from" icon={Route}>
-          {bars(e?.channels).length ? <BarChart bars={bars(e?.channels)} /> : <Empty icon={Route}>No visits yet.</Empty>}
+          {channelSegments(e?.channels).length
+            ? <Donut segments={channelSegments(e?.channels)} title="Where visitors came from" showTitle={false} size={132} testId="admin-channels" />
+            : <Empty icon={Route}>No visits yet.</Empty>}
         </Block>
         <Block title="Profile clicks" icon={MousePointerClick}>
           {bars(e?.investigate_clicks).length || bars(e?.scorecard_bridge_clicks).length
