@@ -2,7 +2,7 @@
 // A slice of the block colored like the map (this lot outlined), the zoning as a colored tag, the neighborhood and
 // what's there now, room to build as the headline with built vs allowed as a bar, then chips for only what applies.
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Bookmark, FileClock, Gift, Hammer, House, Landmark, Receipt, Ruler, Shovel, TrainFront, TriangleAlert, type LucideIcon } from "lucide-react";
+import { ArrowRight, Bookmark, FileClock, Gift, Hammer, House, Landmark, Receipt, Ruler, Shovel, TrainFront, TriangleAlert, UserCheck, type LucideIcon } from "lucide-react";
 import type { ResultRow } from "../../discovery/types";
 import { ZONING_COLORS } from "../map/mapStyle";
 import { STROKE } from "../icons";
@@ -126,6 +126,12 @@ export function LotCard({ row, hoodName, onOpen, moreInComplex = 0, saved, onTog
               </span>
             )}
             {c.roomBasis && c.complexLots == null && <span className="text-[11px] nx-muted">{t(`discovery.card.basis.${c.roomBasis}`)}</span>}
+            {c.userReport && c.complexLots == null && (
+              <span className="inline-flex items-center gap-1 text-[11px] nx-muted" data-testid="row-card-user-report">
+                <UserCheck aria-hidden className="h-3 w-3 shrink-0" strokeWidth={STROKE} />
+                {c.userReport.stories > 0 ? t("discovery.card.userReport", { count: c.userReport.stories }) : t("discovery.card.userReportEmpty")}
+              </span>
+            )}
             {c.owner && <span className="text-[11px] nx-muted [overflow-wrap:anywhere]" data-testid="row-card-owner">{ownerLine(t, c.owner)}</span>}
           </span>
 

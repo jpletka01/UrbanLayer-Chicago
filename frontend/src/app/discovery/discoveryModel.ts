@@ -156,6 +156,8 @@ export interface CardModel {
   complexLots: number | null;
   /** A condo building: many owners to buy from; `measured` = the Assessor's own floor area is behind the room. */
   condo: { units: number | null; measured: boolean } | null;
+  /** The building area behind the room is a reviewed user report (Item 129): its story count, or 0 = no building. */
+  userReport: { stories: number } | null;
   /** Who owns a tax-exempt lot; `assessorText` = the Assessor's own abbreviated text; `publicLand` = empty public land. */
   owner: { name: string; assessorText: boolean; publicLand: boolean } | null;
   sale: { price: number; year: string; transfer: boolean } | null;
@@ -183,6 +185,7 @@ export function cardModel(row: ResultRow): CardModel {
     narrowFt: row.narrow_strip && row.lot_width_ft != null ? Math.round(row.lot_width_ft) : null,
     complexLots: room != null && row.room_scope === "complex" ? row.complex_lots ?? null : null,
     condo: row.condo ? { units: row.condo_units ?? null, measured: row.bldg_sqft_source === "assessor_condo" } : null,
+    userReport: src === "user_report_reviewed" && row.user_report ? { stories: row.user_report.empty ? 0 : row.user_report.stories ?? 0 } : null,
     owner: row.exempt_owner
       ? { name: row.exempt_owner, assessorText: !!row.exempt_owner_assessor, publicLand: !!row.public_land }
       : null,

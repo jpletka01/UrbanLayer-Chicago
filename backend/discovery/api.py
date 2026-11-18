@@ -14,7 +14,7 @@ import logging
 import re
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Iterator
+from typing import Any, Iterator
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response, StreamingResponse
@@ -144,6 +144,8 @@ class ResultRow(BaseModel):
     # commercial_valuation or footprint (Item 104). None = unknown, never 0.
     room_sqft: float | None = None
     bldg_sqft_source: str | None = None
+    # A reviewed user report behind the building area (Item 129): {stories, reviewed} or {empty: true, reviewed}.
+    user_report: dict[str, Any] | None = None
     # "complex" = the room of the multi-parcel site this lot belongs to (complex_lots lots), not of the lot alone.
     room_scope: str | None = None
     complex_lots: int | None = None
@@ -362,6 +364,7 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         nominal_assessment=nominal,
         room_sqft=g("room_sqft"),
         bldg_sqft_source=g("bldg_sqft_source"),
+        user_report=g("user_report") if g("bldg_sqft_source") == "user_report_reviewed" else None,
         room_scope=g("room_scope"),
         complex_lots=g("complex_lots"),
         lot_width_ft=g("lot_width_ft"),

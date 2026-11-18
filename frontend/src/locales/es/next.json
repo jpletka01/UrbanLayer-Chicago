@@ -1255,7 +1255,10 @@
       "sold": "Vendido en {{price}} en {{year}}",
       "owner": "Propietario: {{owner}}",
       "ownerAssessor": "Propietario, según el registro del Tasador: {{owner}}",
-      "publicLand": "Terreno público vacío"
+      "publicLand": "Terreno público vacío",
+      "userReport_one": "Superficie de un reporte de usuario revisado ({{count}} piso)",
+      "userReport_other": "Superficie de un reporte de usuario revisado ({{count}} pisos)",
+      "userReportEmpty": "Sin edificio: un reporte de usuario revisado"
     },
     "goalSoon": "faltan datos",
     "goal": {

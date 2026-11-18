@@ -5,7 +5,9 @@ Pure functions over local copies, shared by the index build (``index_build``) an
 * **Building area, one source per lot, named** (``bldg_sqft_source``): the Assessor's residential characteristics
   first (``assessor``), then the Assessor's Commercial Valuation for a building that is this lot's own
   (``commercial_valuation``), then the City's building footprints whose own interior point lies inside the lot,
-  summed as footprint area x stories (``footprint``). The footprint answer is withheld (no area, never zero) when a
+  summed as footprint area x stories (``footprint``); where a person has reviewed a visitor's report of the stories
+  (Item 129, ``user_corrections.json``), footprint area x the reviewed stories instead (``user_report_reviewed``),
+  which only ever replaces that estimate or fills a lot with none. The footprint answer is withheld (no area, never zero) when a
   footprint has no stories on record, or a footprint is larger than the lot by the Profile's own slack
   (``_FOOTPRINT_SPAN_SLACK``: the building spans several lots). A vacant lot's building area is 0.
 * **Room to build** (``room_sqft``): allowed floor area (the base district's FAR x the lot area) minus the building
@@ -243,9 +245,60 @@ def no_far_scope(attrs: dict[str, Any]) -> str | None:
     return None
 
 
+# --- reviewed user reports (decision Item 129 §4) --------------------------------------------------------------------
+# A visitor reports that a lot's building is wrong ("3 stories, not 2"; "no building now"); a person checks Street View
+# or the lot from above and accepts it in /admin; the queue exports the accepted ones to this committed file, which a
+# PR reviews in git. Read here on every index build. Precedence: the Assessor (residential, condo, commercial), public
+# land and the City's land inventory always win; a reviewed report only replaces the footprint estimate or fills a lot
+# that had no figure. Nothing is written live from the queue.
+from backend.discovery.user_corrections import (  # noqa: E402  (light: data health imports it too)
+    USER_REPORT_SOURCE, load_user_corrections, validate_user_correction,
+)
+
+USER_CORRECTIONS = load_user_corrections()
+
+
+def footprint_plain_area(lot, lot_sqft: float | None, src: LotSources) -> tuple[float | None, str]:
+    """The ground area of the footprints inside ``lot`` (their stories not needed), with the reason when there is none:
+    what a reviewed story count multiplies. A footprint larger than the lot spans several lots, as ``footprint_area``."""
+    idx = src.fp_tree.query(lot, predicate="contains")
+    if len(idx) == 0:
+        return None, "no_footprint"
+    total = 0.0
+    for i in idx:
+        fa = src.fp_area[i]
+        if lot_sqft and fa > lot_sqft * FOOTPRINT_SPAN_SLACK:
+            return None, "spans_lots"
+        total += fa
+    return (total, "footprint") if total > 0 else (None, "no_footprint")
+
+
+def _apply_user_report(attrs: dict[str, Any], report: dict[str, Any], lot, src: LotSources, pin10: str) -> bool:
+    """A reviewed report in place of the footprint estimate; True when it set the building area. "No building now"
+    gives 0, except on a lot the City's land inventory already answers (no footprint, City-owned: its own record);
+    stories multiply the footprints' ground area, and with no footprint to measure there is nothing to multiply."""
+    area, why = footprint_plain_area(lot, attrs.get("land_sqft"), src)
+    if report.get("empty"):
+        if area is None and why == "no_footprint" and pin10 in src.city_land:
+            return False
+        attrs["bldg_sqft"] = 0.0
+        attrs["bldg_sqft_source"] = USER_REPORT_SOURCE
+        attrs["user_report"] = {"empty": True, "reviewed": report["reviewed"]}
+        return True
+    if area is None:
+        attrs["user_report_unapplied"] = why
+        return False
+    stories = int(report["stories"])
+    attrs["bldg_sqft"] = float(round(area * stories))
+    attrs["bldg_sqft_source"] = USER_REPORT_SOURCE
+    attrs["user_report"] = {"stories": stories, "reviewed": report["reviewed"]}
+    return True
+
+
 def fill_building_area(attrs: dict[str, Any], *, commercial=None, lot=None, src: LotSources | None = None,
-                       pin10: str | None = None) -> None:
-    """Fill ``bldg_sqft`` (and name its source) where the Assessor's characteristics left it empty."""
+                       pin10: str | None = None, user_corrections: dict[str, dict[str, Any]] | None = None) -> None:
+    """Fill ``bldg_sqft`` (and name its source) where the Assessor's characteristics left it empty. ``user_corrections``
+    defaults to the committed file (tests pass their own)."""
     from backend.retrieval.property.commercial_artifact import UnitArea
 
     if attrs.get("bldg_sqft") is not None:
@@ -262,6 +315,10 @@ def fill_building_area(attrs: dict[str, Any], *, commercial=None, lot=None, src:
     if isinstance(commercial, UnitArea) and commercial.bldg_sqft > 0:
         attrs["bldg_sqft"] = float(round(commercial.bldg_sqft))
         attrs["bldg_sqft_source"] = "commercial_valuation"
+        return
+    reports = USER_CORRECTIONS if user_corrections is None else user_corrections
+    report = reports.get(pin10) if pin10 else None
+    if report and lot is not None and src is not None and _apply_user_report(attrs, report, lot, src, pin10):
         return
     if lot is not None and src is not None:
         sqft, why = footprint_area(lot, attrs.get("land_sqft"), src)
@@ -530,7 +587,8 @@ def mark_land_use(attrs: dict[str, Any], pin10: str, src: LotSources) -> None:
 
 __all__ = [
     "LotSources", "EMPTY_LAND_KINDS", "land_kind", "structure_on_lot", "mark_empty_land", "mark_land_use", "footprint_area", "lot_warnings", "pending_rezoning_pin10s", "derive_capacity",
-    "fill_building_area", "WARNING_ORDER", "area_sqft",
+    "fill_building_area", "WARNING_ORDER", "area_sqft", "USER_REPORT_SOURCE", "validate_user_correction",
+    "load_user_corrections", "footprint_plain_area",
 ]
 
 

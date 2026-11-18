@@ -25,7 +25,7 @@ export default function PrivacyNextPage() {
     <AppFrame crumbs={["Privacy"]}>
       <article className="mx-auto w-full max-w-[760px] px-4 pb-32 pt-10 sm:px-7" data-testid="privacy">
         <h1 className="mb-2 text-[1.875rem] font-semibold tracking-[-0.02em]">Privacy Policy</h1>
-        <p className="text-caption nx-muted mb-10">Last updated: November 15, 2026</p>
+        <p className="text-caption nx-muted mb-10">Last updated: November 18, 2026</p>
 
         <Section title="The short version">
           <P>
@@ -87,6 +87,15 @@ export default function PrivacyNextPage() {
               until you revoke them.
             </Li>
             <Li>
+              <strong className="text-nx-ink">Suggested corrections.</strong> If you report that a
+              lot's building facts are wrong, we keep the report (what you picked and any note), the
+              lot, and who sent it: your account if you're signed in; otherwise a random ID in a
+              cookie and a scrambled form of your network address that can't be turned back into it.
+              The scrambled address is deleted once a person reviews the report. A person reviews
+              every report, and an accepted one only ever replaces our own estimate of a building's
+              size, never a government record.
+            </Li>
+            <Li>
               <strong className="text-nx-ink">Error reports.</strong> We use Sentry to
               capture application errors (stack traces and request context) so we can fix bugs.
             </Li>
@@ -114,15 +123,18 @@ export default function PrivacyNextPage() {
         <Section title="Cookies">
           <P>
             We use cookies only for authentication (keeping you signed in, and a CSRF-protection
-            token) and browser storage for preferences like theme and language, plus the anonymous
-            analytics IDs described above. There are no advertising cookies.
+            token), a random ID that counts a signed-out visitor's questions and suggested
+            corrections, and browser storage for preferences like theme and language, plus the
+            anonymous analytics IDs described above. There are no advertising cookies.
           </P>
         </Section>
 
         <Section title="Retention & deletion">
           <P>
             You can delete your account and its conversations at any time from the Settings page.
-            Purchase records are retained as required for accounting. Analytics events are kept so
+            Purchase records are retained as required for accounting. Corrections you send while
+            signed in are deleted with your account; ones sent signed out are deleted 180 days after
+            they are reviewed. Analytics events are kept so
             we can measure the product over time; they carry a random visitor ID, not your name.
           </P>
         </Section>
