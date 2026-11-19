@@ -2,9 +2,10 @@
 // language, sign in, one line, one picture), an address bar pinned to the bottom of the screen at every scroll
 // position, then bands that show the product instead of describing it. Motion, all of it stopped under reduced
 // motion: the stats and money cards count up the first time they scroll into view, and the room-to-build grid glows
-// a few blocks at a time. The hero is a still rendered from our own 3D map (never satellite, Items 75 and 78).
+// a few blocks at a time. The hero is a looping montage of four Chicago aerials (Item 134); under reduced motion
+// it is the montage's first frame.
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "motion/react";
+import { useInView, useReducedMotion } from "motion/react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Map as MapIcon } from "lucide-react";
@@ -14,11 +15,8 @@ import { PanelMenuButton } from "../frame/AppFrame";
 import { STROKE } from "../icons";
 import { CountUp } from "../../components/CountUp";
 import { Faq } from "../ui/Faq";
-import { useThemeContext } from "../../contexts/ThemeContext";
-import heroLight1x from "./hero/hero-light-1200.jpg";
-import heroLight2x from "./hero/hero-light.jpg";
-import heroDark1x from "./hero/hero-dark-1200.jpg";
-import heroDark2x from "./hero/hero-dark.jpg";
+import heroLoop from "./hero/hero-loop.mp4";
+import heroPoster from "./hero/hero-poster.jpg";
 
 const EXAMPLE_ADDRESS = "1601 N Milwaukee Ave";
 
@@ -159,29 +157,25 @@ function ExampleTag() {
   return <span className="text-caption nx-muted">{t("landing.example")}</span>;
 }
 
-/** The hero: a still of our own 3D map (the Cities: Skylines style, never satellite, Items 75, 78, 80) at 1601 N
-    Milwaukee, the example address: the lot in this-lot black (white in dark) under the largest building its zoning
-    allows, rendered from the live site by `scripts/render-hero.mjs`. A still, not a moving drawing: the drift
-    jittered (owner's reviews, 2026-11-12 and 2026-11-18). Its figures sit in the caption under the picture, never on
-    top of it (owner, 2026-11-18), and are the lot's own Profile figures. */
+/** The hero (Item 134, owner 2026-11-19): a calm ~20 s loop of four Chicago aerials from Pexels (the lagoon, the river,
+    the Gold Coast, a neighborhood), 1 s dissolves, the last shot dissolving back into the first so the loop never cuts.
+    Pre-encoded video: nothing animates in the page (the drawn hero jittered, Item 133). Muted, inline and looping,
+    so phones autoplay it; the first frame is the poster while it loads, and the whole picture under reduced motion.
+    Re-cut with `scripts/make-hero-loop.sh`. */
 function Hero() {
   const { t } = useTranslation("next");
-  const { resolvedTheme } = useThemeContext();
-  const [small, large] = resolvedTheme === "dark" ? [heroDark1x, heroDark2x] : [heroLight1x, heroLight2x];
+  const still = useReducedMotion();
   return (
-    <figure className="mt-6 flex w-full max-w-[1200px] flex-col gap-2.5">
-      {/* On a phone the wide picture would be a thin strip: it crops to 16:10 around the lot (centered in the frame). */}
+    <figure className="mt-6 flex w-full max-w-[1200px] flex-col">
+      {/* On a phone a 2.6:1 picture would be a thin strip: it crops to 16:10 there. */}
       <div className="aspect-[16/10] overflow-hidden rounded-[20px] bg-nx-block sm:aspect-[1200/460]">
-        <img src={small} srcSet={`${small} 1200w, ${large} 2400w`} sizes="(min-width: 1200px) 1200px, 100vw"
-          width={1200} height={460} alt={t("landing.heroAlt")} className="block h-full w-full object-cover" fetchPriority="high" decoding="async" />
+        {still ? (
+          <img src={heroPoster} alt={t("landing.heroAlt")} width={1600} height={900} className="block h-full w-full object-cover" />
+        ) : (
+          <video src={heroLoop} poster={heroPoster} autoPlay muted loop playsInline preload="auto" aria-label={t("landing.heroAlt")}
+            width={1600} height={900} className="block h-full w-full object-cover" data-testid="landing-hero-video" />
+        )}
       </div>
-      <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-caption">
-        <span className="inline-flex items-center gap-2 font-semibold">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-[3px] bg-nx-lot" />{EXAMPLE_ADDRESS}
-        </span>
-        <span>{t("landing.heroAllowed")}</span>
-        <span className="nx-muted">{t("landing.heroBuilt")}</span>
-      </figcaption>
     </figure>
   );
 }
