@@ -162,6 +162,17 @@ function ExampleTag() {
     Pre-encoded video: nothing animates in the page (the drawn hero jittered, Item 133). Muted, inline and looping,
     so phones autoplay it; the first frame is the poster while it loads, and the whole picture under reduced motion.
     Re-cut with `scripts/make-hero-loop.sh`. */
+/** Safari autoplays only a video whose `muted` is an HTML attribute; React sets it as a property only (and adds no
+    attribute), so Safari showed the poster and waited (owner, 2026-11-19). Set both, then ask it to play. A browser
+    that still refuses (Low Power Mode) keeps the poster, which is the first frame. */
+function startMuted(v: HTMLVideoElement | null) {
+  if (!v) return;
+  v.muted = true;
+  v.defaultMuted = true;
+  v.setAttribute("muted", "");
+  v.play?.()?.catch(() => { /* autoplay refused: the poster stays */ });
+}
+
 function Hero() {
   const { t } = useTranslation("next");
   const still = useReducedMotion();
@@ -172,7 +183,7 @@ function Hero() {
         {still ? (
           <img src={heroPoster} alt={t("landing.heroAlt")} width={1600} height={900} className="block h-full w-full object-cover" />
         ) : (
-          <video src={heroLoop} poster={heroPoster} autoPlay muted loop playsInline preload="auto" aria-label={t("landing.heroAlt")}
+          <video ref={startMuted} src={heroLoop} poster={heroPoster} autoPlay muted loop playsInline preload="auto" aria-label={t("landing.heroAlt")}
             width={1600} height={900} className="block h-full w-full object-cover" data-testid="landing-hero-video" />
         )}
       </div>

@@ -10,6 +10,8 @@
 #   scripts/make-hero-loop.sh <that folder> /tmp/hero-loop.mp4 28
 #   ffmpeg -i /tmp/hero-loop.mp4 -frames:v 1 -q:v 4 /tmp/hero-poster.jpg
 # and copy both into src/app/landing/hero/.
+# The output must be 4:2:0 High profile: the dissolves otherwise leave it in High 4:4:4, which Chrome decodes in software
+# but Safari and phones can't, so they showed only the poster (owner, 2026-11-19).
 set -euo pipefail
 SRC="$1"; OUT="$2"; CRF="${3:-28}"
 P="scale=1600:900:force_original_aspect_ratio=increase,crop=1600:900,fps=30,format=yuv420p,setsar=1"
@@ -24,5 +26,5 @@ ffmpeg -loglevel error -y \
 [ab][c]xfade=transition=fade:duration=1:offset=10[abc];\
 [abc][d]xfade=transition=fade:duration=1:offset=15[abcd];\
 [abcd][e]xfade=transition=fade:duration=1:offset=20,trim=start=2,setpts=PTS-STARTPTS[v]" \
-  -map "[v]" -an -c:v libx264 -crf "$CRF" -preset slow -movflags +faststart "$OUT"
+  -map "[v]" -an -c:v libx264 -pix_fmt yuv420p -profile:v high -level 4.0 -crf "$CRF" -preset slow -movflags +faststart "$OUT"
 ls -la "$OUT"

@@ -46,6 +46,8 @@ const lot = (n: number) => ({ key: lotKey(null, `${n} N Milwaukee Ave`), address
 
 beforeEach(() => {
   reduced = false;
+  // jsdom has no media playback.
+  HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());
   localStorage.clear();
   account.length = 0;
   _resetForTests();
@@ -61,6 +63,9 @@ describe("the landing", () => {
     expect(v.hasAttribute("playsinline")).toBe(true);
     expect(v.getAttribute("poster")).toMatch(/hero-poster/);
     expect(v.getAttribute("aria-label")).toMatch(/aerial views of Chicago/);
+    // Safari autoplays only with the attribute, which React doesn't write (owner, 2026-11-19).
+    expect(v.hasAttribute("muted")).toBe(true);
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
   });
 
   it("shows the still first frame instead of the video under reduced motion", () => {
