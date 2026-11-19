@@ -6,7 +6,8 @@
 // It is arithmetic against the builder's own targets, never a judgement of the deal (brief rule 11's one exception).
 import type { DeepInputs } from "../../lib/api";
 
-export type Mode = "sell" | "rent";
+/** Sell the units (as condos), sell the whole building (2-6 units only, Item 133), or rent them out. */
+export type Mode = "sell" | "whole" | "rent";
 export type ProjectKind = "largest" | "three_flat" | "townhouses" | "own";
 
 export interface Project {
@@ -20,6 +21,8 @@ export interface Numbers {
   /** What the lot costs (its last sale to start); null when there is none on record. */
   landPrice: number | null;
   salePriceUnit: number;
+  /** The whole building's sale price (selling a 2-6 unit building as one). */
+  buildingPrice: number;
   rentUnitMonth: number;
   buildCostSqft: number;
   softCostPct: number;
@@ -42,6 +45,8 @@ export type NumberSource =
   | { kind: "area_sales"; group: string; year: string; n: number }
   | { kind: "new_construction"; perSqft: number; low: number; high: number; unitSqft: number; n: number;
       pooled: boolean; newSales: number; years: [string, string]; premium: number; premiumN: number }
+  | { kind: "new_building"; perSqft: number; low: number; high: number; sqft: number; n: number;
+      pooled: boolean; newSales: number; years: [string, string]; premium: number; premiumN: number }
   | { kind: "census_rent"; bedrooms: string; scope: string; period: string | null; moe: number | null }
   | { kind: "hud_rent"; bedrooms: string; fy: number }
   | { kind: "tax_rate"; year: number | null }
@@ -52,6 +57,17 @@ export type NumberSource =
 /** Chicago's 2024 effective rate on residential market value: 10% assessment × 3.0355 equalizer × 6.6186% composite
     (Cook County Clerk, 2024 tax rate report). Used only when the parcel's own rate is unknown (an exempt lot). */
 export const CHICAGO_EFFECTIVE_RATE = 0.1 * 3.0355 * 0.066186;
+/** Selling the building whole is offered for 2-6 units: the band is measured on 2-6 unit buildings. */
+export const WHOLE_MIN_UNITS = 2;
+export const WHOLE_MAX_UNITS = 6;
+export function canSellWhole(p: Project): boolean {
+  return p.units >= WHOLE_MIN_UNITS && p.units <= WHOLE_MAX_UNITS;
+}
+/** The mode the page works in: "whole" falls back to selling the units for a project it doesn't fit. */
+export function effectiveMode(mode: Mode, p: Project): Mode {
+  return mode === "whole" && !canSellWhole(p) ? "sell" : mode;
+}
+
 /** A unit this size or smaller is compared with 2-bedroom rents, larger with 3-bedroom. */
 export const TWO_BED_MAX_SQFT = 1100;
 
@@ -142,6 +158,20 @@ export function startingNumbers(inputs: DeepInputs, p: Project): { numbers: Numb
     sources.salePriceUnit = { kind: "area_sales", group: "condo", year: condo.year, n: condo.n };
   } else sources.salePriceUnit = { kind: "none" };
 
+  // The whole building: what a new 2-6 unit building sells for per building sq ft here x the project's floor area
+  // (Item 133). Without it, the area's 2-6 unit median of any age (labeled so).
+  const nb = nc?.building;
+  const six = inputs.area_sales.two_to_six;
+  let buildingPrice = 0;
+  if (nb && p.floorAreaSqft > 0) {
+    buildingPrice = Math.round((nb.value * p.floorAreaSqft) / 10_000) * 10_000; // the building slider's own step
+    sources.buildingPrice = { kind: "new_building", perSqft: nb.value, low: nb.low, high: nb.high, sqft: Math.round(p.floorAreaSqft),
+      n: nb.n, pooled: !!nb.pooled_areas, newSales: nb.new_sales, years: nc!.years, premium: nb.premium, premiumN: nb.premium_n };
+  } else if (six) {
+    buildingPrice = six.median;
+    sources.buildingPrice = { kind: "area_sales", group: "two_to_six", year: six.year, n: six.n };
+  } else sources.buildingPrice = { kind: "none" };
+
   const bed = unitSize <= TWO_BED_MAX_SQFT ? "2_bedrooms" : "3_bedrooms";
   const census = inputs.rents.census[bed];
   const hudKey = bed === "2_bedrooms" ? "2" : "3";
@@ -161,6 +191,7 @@ export function startingNumbers(inputs: DeepInputs, p: Project): { numbers: Numb
   const numbers: Numbers = {
     landPrice: sale?.price ?? null,
     salePriceUnit,
+    buildingPrice,
     rentUnitMonth: rent,
     buildCostSqft: pick("buildCostSqft", "build_cost_sqft", 250),
     softCostPct: pick("softCostPct", "soft_cost_pct", 0.18),
@@ -183,7 +214,8 @@ export interface Result {
   buildCost: number;
   /** The most the land can cost and still meet the target (negative = no land price works). */
   landBid: number;
-  /** Per unit, at the land price: the sale price (sell) or monthly rent (rent) that just meets the target. */
+  /** At the land price, what just meets the target: the sale price per unit (sell), the whole building's price
+      (whole) or the monthly rent per unit (rent). */
   breakEven: number | null;
   /** The property tax once built, a year. */
   taxesOnceBuilt: number;
@@ -205,11 +237,13 @@ export function compute(p: Project, n: Numbers, mode: Mode): Result {
   let landBid: number;
   let breakEven: number | null = null;
   let taxesOnceBuilt: number;
-  if (mode === "sell") {
-    const revenue = p.units * n.salePriceUnit;
+  if (mode === "sell" || mode === "whole") {
+    const whole = mode === "whole";
+    const revenue = whole ? n.buildingPrice : p.units * n.salePriceUnit;
     landBid = (revenue * (1 - n.sellingPct)) / (1 + n.profitOnCost) - build;
     taxesOnceBuilt = revenue * n.taxRate;
-    if (land != null && p.units > 0) breakEven = ((land + build) * (1 + n.profitOnCost)) / (1 - n.sellingPct) / p.units;
+    const need = land != null ? ((land + build) * (1 + n.profitOnCost)) / (1 - n.sellingPct) : null;
+    if (need != null && (whole || p.units > 0)) breakEven = whole ? need : need / p.units;
   } else {
     // A rental's value is its income after tax at the cap rate, and its tax is a share of that value, so:
     // value = NOI before tax / (cap + tax rate).
@@ -236,6 +270,7 @@ export function stressGrid(p: Project, n: Numbers, mode: Mode): number[][] {
   return STRESS_STEPS.map((dp) => STRESS_STEPS.map((dc) => compute(p, {
     ...n,
     salePriceUnit: n.salePriceUnit * (1 + dp),
+    buildingPrice: n.buildingPrice * (1 + dp),
     rentUnitMonth: n.rentUnitMonth * (1 + dp),
     buildCostSqft: n.buildCostSqft * (1 + dc),
   }, mode).landBid));

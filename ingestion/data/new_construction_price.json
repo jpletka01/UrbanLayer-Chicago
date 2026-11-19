@@ -1,172 +1,343 @@
 {
+ "building_premium": {
+  "median": 1.632,
+  "n": 110,
+  "p25": 1.25,
+  "p75": 1.98
+ },
  "community_areas": {
   "1": {
    "areas": null,
-   "high": 231,
+   "building": {
+    "areas": null,
+    "high": 394,
+    "level": 199,
+    "low": 249,
+    "n": 90,
+    "new_sales": 1,
+    "value": 325
+   },
+   "high": 232,
    "level": 159,
-   "low": 159,
+   "low": 168,
    "n": 518,
    "new_sales": 0,
-   "value": 185
+   "value": 200
   },
   "10": {
    "areas": null,
-   "high": 235,
+   "building": {
+    "areas": null,
+    "high": 439,
+    "level": 222,
+    "low": 277,
+    "n": 52,
+    "new_sales": 0,
+    "value": 362
+   },
+   "high": 236,
    "level": 162,
-   "low": 162,
+   "low": 171,
    "n": 64,
-   "new_sales": 0,
-   "value": 188
+   "new_sales": 1,
+   "value": 204
   },
   "11": {
    "areas": null,
+   "building": {
+    "areas": null,
+    "high": 455,
+    "level": 230,
+    "low": 287,
+    "n": 161,
+    "new_sales": 0,
+    "value": 375
+   },
    "high": 246,
    "level": 169,
-   "low": 169,
+   "low": 178,
    "n": 122,
    "new_sales": 0,
-   "value": 196
+   "value": 212
   },
   "12": {
    "areas": [
     "12",
     "11"
    ],
+   "building": {
+    "areas": [
+     "12",
+     "11"
+    ],
+    "high": 455,
+    "level": 230,
+    "low": 287,
+    "n": 181,
+    "new_sales": 0,
+    "value": 375
+   },
    "high": 246,
    "level": 169,
-   "low": 169,
+   "low": 178,
    "n": 130,
    "new_sales": 0,
-   "value": 196
+   "value": 212
   },
   "13": {
    "areas": null,
-   "high": 240,
+   "building": {
+    "areas": null,
+    "high": 396,
+    "level": 200,
+    "low": 250,
+    "n": 70,
+    "new_sales": 0,
+    "value": 326
+   },
+   "high": 241,
    "level": 165,
-   "low": 165,
+   "low": 174,
    "n": 56,
    "new_sales": 0,
-   "value": 192
+   "value": 207
   },
   "14": {
    "areas": null,
-   "high": 275,
+   "building": {
+    "areas": null,
+    "high": 400,
+    "level": 202,
+    "low": 252,
+    "n": 191,
+    "new_sales": 1,
+    "value": 330
+   },
+   "high": 276,
    "level": 189,
-   "low": 189,
+   "low": 200,
    "n": 253,
-   "new_sales": 1,
-   "value": 219
+   "new_sales": 2,
+   "value": 237
   },
   "15": {
    "areas": null,
-   "high": 235,
+   "building": {
+    "areas": null,
+    "high": 428,
+    "level": 216,
+    "low": 270,
+    "n": 350,
+    "new_sales": 0,
+    "value": 352
+   },
+   "high": 236,
    "level": 162,
-   "low": 162,
+   "low": 171,
    "n": 124,
    "new_sales": 0,
-   "value": 188
+   "value": 204
   },
   "16": {
    "areas": null,
-   "high": 289,
+   "building": {
+    "areas": null,
+    "high": 483,
+    "level": 244,
+    "low": 305,
+    "n": 318,
+    "new_sales": 3,
+    "value": 398
+   },
+   "high": 290,
    "level": 199,
-   "low": 199,
+   "low": 210,
    "n": 338,
    "new_sales": 0,
-   "value": 231
+   "value": 250
   },
   "17": {
    "areas": null,
+   "building": {
+    "areas": null,
+    "high": 406,
+    "level": 205,
+    "low": 256,
+    "n": 89,
+    "new_sales": 1,
+    "value": 334
+   },
    "high": 227,
    "level": 156,
-   "low": 156,
+   "low": 165,
    "n": 78,
-   "new_sales": 0,
-   "value": 181
+   "new_sales": 2,
+   "value": 196
   },
   "18": {
    "areas": null,
-   "high": 244,
+   "building": {
+    "areas": null,
+    "high": 380,
+    "level": 192,
+    "low": 240,
+    "n": 33,
+    "new_sales": 1,
+    "value": 313
+   },
+   "high": 245,
    "level": 168,
-   "low": 168,
+   "low": 177,
    "n": 31,
    "new_sales": 0,
-   "value": 195
+   "value": 211
   },
   "19": {
    "areas": null,
-   "high": 174,
+   "building": {
+    "areas": null,
+    "high": 378,
+    "level": 191,
+    "low": 239,
+    "n": 299,
+    "new_sales": 0,
+    "value": 312
+   },
+   "high": 175,
    "level": 120,
-   "low": 120,
+   "low": 127,
    "n": 74,
    "new_sales": 0,
-   "value": 139
+   "value": 151
   },
   "2": {
    "areas": null,
-   "high": 209,
+   "building": {
+    "areas": null,
+    "high": 354,
+    "level": 179,
+    "low": 224,
+    "n": 260,
+    "new_sales": 0,
+    "value": 292
+   },
+   "high": 210,
    "level": 144,
-   "low": 144,
+   "low": 152,
    "n": 467,
-   "new_sales": 0,
-   "value": 167
+   "new_sales": 1,
+   "value": 181
   },
   "20": {
    "areas": [
     "20",
     "23"
    ],
-   "high": 228,
+   "building": {
+    "areas": null,
+    "high": 406,
+    "level": 205,
+    "low": 256,
+    "n": 109,
+    "new_sales": 1,
+    "value": 334
+   },
+   "high": 229,
    "level": 157,
-   "low": 157,
+   "low": 166,
    "n": 58,
    "new_sales": 0,
-   "value": 182
+   "value": 197
   },
   "21": {
    "areas": null,
-   "high": 363,
+   "building": {
+    "areas": null,
+    "high": 503,
+    "level": 254,
+    "low": 317,
+    "n": 294,
+    "new_sales": 2,
+    "value": 414
+   },
+   "high": 365,
    "level": 250,
-   "low": 250,
+   "low": 264,
    "n": 204,
-   "new_sales": 0,
-   "value": 290
+   "new_sales": 20,
+   "value": 314
   },
   "22": {
    "areas": null,
-   "high": 431,
+   "building": {
+    "areas": null,
+    "high": 568,
+    "level": 287,
+    "low": 359,
+    "n": 584,
+    "new_sales": 5,
+    "value": 468
+   },
+   "high": 433,
    "level": 297,
-   "low": 297,
+   "low": 314,
    "n": 751,
-   "new_sales": 9,
-   "value": 345
+   "new_sales": 63,
+   "value": 373
   },
   "23": {
    "areas": null,
-   "high": 228,
+   "building": {
+    "areas": null,
+    "high": 311,
+    "level": 157,
+    "low": 196,
+    "n": 489,
+    "new_sales": 3,
+    "value": 256
+   },
+   "high": 229,
    "level": 157,
-   "low": 157,
+   "low": 166,
    "n": 48,
-   "new_sales": 1,
-   "value": 182
+   "new_sales": 6,
+   "value": 197
   },
   "24": {
    "areas": null,
-   "high": 465,
+   "building": {
+    "areas": null,
+    "high": 566,
+    "level": 286,
+    "low": 357,
+    "n": 698,
+    "new_sales": 4,
+    "value": 467
+   },
+   "high": 467,
    "level": 320,
-   "low": 320,
+   "low": 338,
    "n": 2160,
-   "new_sales": 29,
-   "value": 372
+   "new_sales": 177,
+   "value": 402
   },
   "25": {
    "areas": null,
-   "high": 222,
+   "building": {
+    "areas": null,
+    "high": 247,
+    "level": 125,
+    "low": 156,
+    "n": 769,
+    "new_sales": 2,
+    "value": 204
+   },
+   "high": 223,
    "level": 153,
-   "low": 153,
+   "low": 162,
    "n": 34,
    "new_sales": 0,
-   "value": 178
+   "value": 192
   },
   "26": {
    "areas": [
@@ -174,30 +345,57 @@
     "29",
     "27"
    ],
-   "high": 193,
+   "building": {
+    "areas": null,
+    "high": 212,
+    "level": 107,
+    "low": 134,
+    "n": 249,
+    "new_sales": 0,
+    "value": 175
+   },
+   "high": 194,
    "level": 133,
-   "low": 133,
+   "low": 140,
    "n": 89,
    "new_sales": 0,
-   "value": 154
+   "value": 167
   },
   "27": {
    "areas": null,
-   "high": 193,
+   "building": {
+    "areas": null,
+    "high": 245,
+    "level": 124,
+    "low": 155,
+    "n": 244,
+    "new_sales": 5,
+    "value": 202
+   },
+   "high": 194,
    "level": 133,
-   "low": 133,
+   "low": 140,
    "n": 66,
    "new_sales": 0,
-   "value": 154
+   "value": 167
   },
   "28": {
    "areas": null,
-   "high": 362,
+   "building": {
+    "areas": null,
+    "high": 493,
+    "level": 249,
+    "low": 311,
+    "n": 149,
+    "new_sales": 0,
+    "value": 406
+   },
+   "high": 363,
    "level": 249,
-   "low": 249,
+   "low": 263,
    "n": 368,
-   "new_sales": 1,
-   "value": 289
+   "new_sales": 16,
+   "value": 313
   },
   "29": {
    "areas": [
@@ -205,21 +403,39 @@
     "26",
     "27"
    ],
-   "high": 193,
+   "building": {
+    "areas": null,
+    "high": 218,
+    "level": 110,
+    "low": 137,
+    "n": 466,
+    "new_sales": 1,
+    "value": 179
+   },
+   "high": 194,
    "level": 133,
-   "low": 133,
+   "low": 140,
    "n": 89,
    "new_sales": 0,
-   "value": 154
+   "value": 167
   },
   "3": {
    "areas": null,
-   "high": 354,
+   "building": {
+    "areas": null,
+    "high": 513,
+    "level": 259,
+    "low": 324,
+    "n": 94,
+    "new_sales": 1,
+    "value": 423
+   },
+   "high": 356,
    "level": 244,
-   "low": 244,
+   "low": 258,
    "n": 686,
-   "new_sales": 6,
-   "value": 283
+   "new_sales": 24,
+   "value": 307
   },
   "30": {
    "areas": [
@@ -230,147 +446,308 @@
     "59",
     "31"
    ],
-   "high": 378,
+   "building": {
+    "areas": null,
+    "high": 277,
+    "level": 140,
+    "low": 175,
+    "n": 324,
+    "new_sales": 1,
+    "value": 228
+   },
+   "high": 379,
    "level": 260,
-   "low": 260,
+   "low": 275,
    "n": 96,
    "new_sales": 0,
-   "value": 302
+   "value": 327
   },
   "31": {
    "areas": null,
-   "high": 378,
+   "building": {
+    "areas": null,
+    "high": 396,
+    "level": 200,
+    "low": 250,
+    "n": 259,
+    "new_sales": 1,
+    "value": 326
+   },
+   "high": 379,
    "level": 260,
-   "low": 260,
+   "low": 275,
    "n": 67,
-   "new_sales": 4,
-   "value": 302
+   "new_sales": 18,
+   "value": 327
   },
   "32": {
    "areas": [
     "32",
     "8"
    ],
-   "high": 471,
+   "building": {
+    "areas": [
+     "32",
+     "8"
+    ],
+    "high": 744,
+    "level": 376,
+    "low": 470,
+    "n": 32,
+    "new_sales": 0,
+    "value": 613
+   },
+   "high": 472,
    "level": 324,
-   "low": 324,
+   "low": 342,
    "n": 309,
    "new_sales": 0,
-   "value": 376
+   "value": 407
   },
   "33": {
    "areas": [
     "33",
     "35"
    ],
+   "building": {
+    "areas": [
+     "33",
+     "35",
+     "32",
+     "34"
+    ],
+    "high": 455,
+    "level": 230,
+    "low": 287,
+    "n": 73,
+    "new_sales": 0,
+    "value": 375
+   },
    "high": 227,
    "level": 156,
-   "low": 156,
+   "low": 165,
    "n": 56,
    "new_sales": 0,
-   "value": 181
+   "value": 196
   },
   "34": {
    "areas": null,
-   "high": 272,
+   "building": {
+    "areas": null,
+    "high": 455,
+    "level": 230,
+    "low": 287,
+    "n": 52,
+    "new_sales": 2,
+    "value": 375
+   },
+   "high": 273,
    "level": 187,
-   "low": 187,
+   "low": 197,
    "n": 33,
    "new_sales": 0,
-   "value": 217
+   "value": 235
   },
   "35": {
    "areas": null,
+   "building": {
+    "areas": [
+     "35",
+     "34"
+    ],
+    "high": 455,
+    "level": 230,
+    "low": 287,
+    "n": 68,
+    "new_sales": 3,
+    "value": 375
+   },
    "high": 227,
    "level": 156,
-   "low": 156,
+   "low": 165,
    "n": 33,
    "new_sales": 0,
-   "value": 181
+   "value": 196
   },
   "36": {
    "areas": null,
-   "high": 260,
+   "building": {
+    "areas": [
+     "36",
+     "39",
+     "38"
+    ],
+    "high": 313,
+    "level": 158,
+    "low": 197,
+    "n": 106,
+    "new_sales": 0,
+    "value": 258
+   },
+   "high": 261,
    "level": 179,
-   "low": 179,
+   "low": 189,
    "n": 49,
    "new_sales": 0,
-   "value": 208
+   "value": 225
   },
   "37": {
    "areas": [
     "37",
     "38"
    ],
-   "high": 202,
+   "building": {
+    "areas": [
+     "37",
+     "38"
+    ],
+    "high": 313,
+    "level": 158,
+    "low": 197,
+    "n": 120,
+    "new_sales": 0,
+    "value": 258
+   },
+   "high": 203,
    "level": 139,
-   "low": 139,
+   "low": 147,
    "n": 214,
    "new_sales": 0,
-   "value": 161
+   "value": 175
   },
   "38": {
    "areas": null,
-   "high": 202,
+   "building": {
+    "areas": null,
+    "high": 313,
+    "level": 158,
+    "low": 197,
+    "n": 92,
+    "new_sales": 10,
+    "value": 258
+   },
+   "high": 203,
    "level": 139,
-   "low": 139,
+   "low": 147,
    "n": 211,
-   "new_sales": 0,
-   "value": 161
+   "new_sales": 3,
+   "value": 175
   },
   "39": {
    "areas": null,
-   "high": 224,
+   "building": {
+    "areas": [
+     "39",
+     "36",
+     "41"
+    ],
+    "high": 378,
+    "level": 191,
+    "low": 239,
+    "n": 32,
+    "new_sales": 1,
+    "value": 312
+   },
+   "high": 225,
    "level": 154,
-   "low": 154,
+   "low": 163,
    "n": 118,
-   "new_sales": 0,
-   "value": 179
+   "new_sales": 7,
+   "value": 193
   },
   "4": {
    "areas": null,
-   "high": 318,
+   "building": {
+    "areas": null,
+    "high": 505,
+    "level": 255,
+    "low": 319,
+    "n": 214,
+    "new_sales": 1,
+    "value": 416
+   },
+   "high": 319,
    "level": 219,
-   "low": 219,
+   "low": 231,
    "n": 484,
-   "new_sales": 4,
-   "value": 254
+   "new_sales": 16,
+   "value": 275
   },
   "40": {
    "areas": null,
-   "high": 142,
+   "building": {
+    "areas": null,
+    "high": 251,
+    "level": 127,
+    "low": 159,
+    "n": 65,
+    "new_sales": 7,
+    "value": 207
+   },
+   "high": 143,
    "level": 98,
-   "low": 98,
+   "low": 104,
    "n": 46,
-   "new_sales": 0,
-   "value": 114
+   "new_sales": 1,
+   "value": 123
   },
   "41": {
    "areas": null,
+   "building": {
+    "areas": [
+     "41",
+     "39",
+     "42"
+    ],
+    "high": 263,
+    "level": 133,
+    "low": 166,
+    "n": 297,
+    "new_sales": 0,
+    "value": 217
+   },
    "high": 211,
    "level": 145,
-   "low": 145,
+   "low": 153,
    "n": 179,
    "new_sales": 0,
-   "value": 168
+   "value": 182
   },
   "42": {
    "areas": null,
+   "building": {
+    "areas": null,
+    "high": 263,
+    "level": 133,
+    "low": 166,
+    "n": 273,
+    "new_sales": 37,
+    "value": 217
+   },
    "high": 208,
    "level": 143,
-   "low": 143,
+   "low": 151,
    "n": 108,
-   "new_sales": 1,
-   "value": 166
+   "new_sales": 3,
+   "value": 180
   },
   "43": {
    "areas": null,
-   "high": 123,
+   "building": {
+    "areas": null,
+    "high": 192,
+    "level": 97,
+    "low": 121,
+    "n": 252,
+    "new_sales": 0,
+    "value": 158
+   },
+   "high": 124,
    "level": 85,
-   "low": 85,
+   "low": 90,
    "n": 74,
    "new_sales": 0,
-   "value": 99
+   "value": 107
   },
   "44": {
    "areas": [
@@ -380,36 +757,67 @@
     "68",
     "42"
    ],
+   "building": {
+    "areas": null,
+    "high": 184,
+    "level": 93,
+    "low": 116,
+    "n": 192,
+    "new_sales": 0,
+    "value": 152
+   },
    "high": 208,
    "level": 143,
-   "low": 143,
+   "low": 151,
    "n": 121,
    "new_sales": 0,
-   "value": 166
+   "value": 180
   },
   "45": {
    "areas": [
     "44",
     "43"
    ],
-   "high": 123,
+   "building": {
+    "areas": [
+     "45",
+     "47",
+     "48"
+    ],
+    "high": 202,
+    "level": 102,
+    "low": 127,
+    "n": 65,
+    "new_sales": 0,
+    "value": 166
+   },
+   "high": 124,
    "level": 85,
-   "low": 85,
+   "low": 90,
    "n": 79,
    "new_sales": 0,
-   "value": 99
+   "value": 107
   },
   "46": {
    "areas": [
     "46",
     "43"
    ],
-   "high": 123,
+   "building": {
+    "areas": null,
+    "high": 210,
+    "level": 106,
+    "low": 132,
+    "n": 246,
+    "new_sales": 0,
+    "value": 173
+   },
+   "high": 124,
    "level": 85,
-   "low": 85,
+   "low": 90,
    "n": 81,
    "new_sales": 0,
-   "value": 99
+   "value": 107
   },
   "47": {
    "areas": [
@@ -418,12 +826,24 @@
     "73",
     "43"
    ],
-   "high": 123,
+   "building": {
+    "areas": [
+     "47",
+     "44"
+    ],
+    "high": 184,
+    "level": 93,
+    "low": 116,
+    "n": 196,
+    "new_sales": 0,
+    "value": 152
+   },
+   "high": 124,
    "level": 85,
-   "low": 85,
+   "low": 90,
    "n": 83,
    "new_sales": 0,
-   "value": 99
+   "value": 107
   },
   "48": {
    "areas": [
@@ -431,12 +851,21 @@
     "44",
     "43"
    ],
-   "high": 123,
+   "building": {
+    "areas": null,
+    "high": 202,
+    "level": 102,
+    "low": 127,
+    "n": 38,
+    "new_sales": 0,
+    "value": 166
+   },
+   "high": 124,
    "level": 85,
-   "low": 85,
+   "low": 90,
    "n": 86,
    "new_sales": 0,
-   "value": 99
+   "value": 107
   },
   "49": {
    "areas": [
@@ -446,21 +875,39 @@
     "75",
     "72"
    ],
-   "high": 199,
+   "building": {
+    "areas": null,
+    "high": 194,
+    "level": 98,
+    "low": 122,
+    "n": 153,
+    "new_sales": 0,
+    "value": 160
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 48,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "5": {
    "areas": null,
-   "high": 440,
+   "building": {
+    "areas": null,
+    "high": 574,
+    "level": 290,
+    "low": 362,
+    "n": 263,
+    "new_sales": 8,
+    "value": 473
+   },
+   "high": 442,
    "level": 303,
-   "low": 303,
+   "low": 320,
    "n": 508,
-   "new_sales": 3,
-   "value": 352
+   "new_sales": 24,
+   "value": 381
   },
   "50": {
    "areas": [
@@ -472,12 +919,24 @@
     "46",
     "72"
    ],
-   "high": 199,
+   "building": {
+    "areas": [
+     "50",
+     "49"
+    ],
+    "high": 194,
+    "level": 98,
+    "low": 122,
+    "n": 171,
+    "new_sales": 0,
+    "value": 160
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 60,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "51": {
    "areas": [
@@ -488,12 +947,24 @@
     "73",
     "43"
    ],
-   "high": 123,
+   "building": {
+    "areas": [
+     "51",
+     "50"
+    ],
+    "high": 190,
+    "level": 96,
+    "low": 120,
+    "n": 32,
+    "new_sales": 0,
+    "value": 157
+   },
+   "high": 124,
    "level": 85,
-   "low": 85,
+   "low": 90,
    "n": 95,
    "new_sales": 0,
-   "value": 99
+   "value": 107
   },
   "52": {
    "areas": [
@@ -501,12 +972,21 @@
     "55",
     "43"
    ],
-   "high": 123,
+   "building": {
+    "areas": null,
+    "high": 216,
+    "level": 109,
+    "low": 136,
+    "n": 54,
+    "new_sales": 0,
+    "value": 178
+   },
+   "high": 124,
    "level": 85,
-   "low": 85,
+   "low": 90,
    "n": 86,
    "new_sales": 0,
-   "value": 99
+   "value": 107
   },
   "53": {
    "areas": [
@@ -515,12 +995,21 @@
     "73",
     "72"
    ],
-   "high": 199,
+   "building": {
+    "areas": null,
+    "high": 190,
+    "level": 96,
+    "low": 120,
+    "n": 88,
+    "new_sales": 0,
+    "value": 157
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 43,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "54": {
    "areas": [
@@ -530,12 +1019,24 @@
     "73",
     "72"
    ],
-   "high": 199,
+   "building": {
+    "areas": [
+     "54",
+     "53"
+    ],
+    "high": 190,
+    "level": 96,
+    "low": 120,
+    "n": 90,
+    "new_sales": 0,
+    "value": 157
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 48,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "55": {
    "areas": [
@@ -547,21 +1048,42 @@
     "73",
     "43"
    ],
-   "high": 123,
+   "building": {
+    "areas": [
+     "55",
+     "51"
+    ],
+    "high": 200,
+    "level": 101,
+    "low": 126,
+    "n": 43,
+    "new_sales": 0,
+    "value": 165
+   },
+   "high": 124,
    "level": 85,
-   "low": 85,
+   "low": 90,
    "n": 101,
    "new_sales": 0,
-   "value": 99
+   "value": 107
   },
   "56": {
    "areas": null,
-   "high": 228,
+   "building": {
+    "areas": null,
+    "high": 390,
+    "level": 197,
+    "low": 246,
+    "n": 43,
+    "new_sales": 0,
+    "value": 321
+   },
+   "high": 229,
    "level": 157,
-   "low": 157,
+   "low": 166,
    "n": 37,
    "new_sales": 0,
-   "value": 182
+   "value": 197
   },
   "57": {
    "areas": [
@@ -572,12 +1094,21 @@
     "30",
     "56"
    ],
-   "high": 228,
+   "building": {
+    "areas": null,
+    "high": 337,
+    "level": 170,
+    "low": 212,
+    "n": 44,
+    "new_sales": 0,
+    "value": 277
+   },
+   "high": 229,
    "level": 157,
-   "low": 157,
+   "low": 166,
    "n": 56,
    "new_sales": 0,
-   "value": 182
+   "value": 197
   },
   "58": {
    "areas": [
@@ -589,12 +1120,21 @@
     "62",
     "31"
    ],
-   "high": 378,
+   "building": {
+    "areas": null,
+    "high": 317,
+    "level": 160,
+    "low": 200,
+    "n": 268,
+    "new_sales": 1,
+    "value": 261
+   },
+   "high": 379,
    "level": 260,
-   "low": 260,
+   "low": 275,
    "n": 95,
    "new_sales": 0,
-   "value": 302
+   "value": 327
   },
   "59": {
    "areas": [
@@ -602,33 +1142,60 @@
     "58",
     "60"
    ],
-   "high": 277,
+   "building": {
+    "areas": null,
+    "high": 366,
+    "level": 185,
+    "low": 231,
+    "n": 110,
+    "new_sales": 0,
+    "value": 302
+   },
+   "high": 278,
    "level": 191,
-   "low": 191,
+   "low": 202,
    "n": 39,
    "new_sales": 0,
-   "value": 222
+   "value": 240
   },
   "6": {
    "areas": null,
-   "high": 494,
+   "building": {
+    "areas": null,
+    "high": 673,
+    "level": 340,
+    "low": 425,
+    "n": 369,
+    "new_sales": 5,
+    "value": 555
+   },
+   "high": 496,
    "level": 340,
-   "low": 340,
+   "low": 359,
    "n": 1673,
-   "new_sales": 4,
-   "value": 395
+   "new_sales": 58,
+   "value": 427
   },
   "60": {
    "areas": [
     "60",
     "34"
    ],
-   "high": 272,
+   "building": {
+    "areas": null,
+    "high": 420,
+    "level": 212,
+    "low": 265,
+    "n": 256,
+    "new_sales": 1,
+    "value": 346
+   },
+   "high": 273,
    "level": 187,
-   "low": 187,
+   "low": 197,
    "n": 59,
-   "new_sales": 1,
-   "value": 217
+   "new_sales": 2,
+   "value": 235
   },
   "61": {
    "areas": [
@@ -637,12 +1204,21 @@
     "58",
     "60"
    ],
-   "high": 277,
+   "building": {
+    "areas": null,
+    "high": 234,
+    "level": 118,
+    "low": 147,
+    "n": 352,
+    "new_sales": 1,
+    "value": 193
+   },
+   "high": 278,
    "level": 191,
-   "low": 191,
+   "low": 202,
    "n": 42,
    "new_sales": 0,
-   "value": 222
+   "value": 240
   },
   "62": {
    "areas": [
@@ -653,12 +1229,24 @@
     "58",
     "56"
    ],
-   "high": 228,
+   "building": {
+    "areas": [
+     "62",
+     "57"
+    ],
+    "high": 337,
+    "level": 170,
+    "low": 212,
+    "n": 66,
+    "new_sales": 0,
+    "value": 277
+   },
+   "high": 229,
    "level": 157,
-   "low": 157,
+   "low": 166,
    "n": 65,
    "new_sales": 0,
-   "value": 182
+   "value": 197
   },
   "63": {
    "areas": [
@@ -669,21 +1257,39 @@
     "65",
     "59"
    ],
-   "high": 186,
+   "building": {
+    "areas": null,
+    "high": 283,
+    "level": 143,
+    "low": 179,
+    "n": 88,
+    "new_sales": 0,
+    "value": 233
+   },
+   "high": 187,
    "level": 128,
-   "low": 128,
+   "low": 135,
    "n": 37,
    "new_sales": 0,
-   "value": 149
+   "value": 161
   },
   "64": {
    "areas": null,
-   "high": 222,
+   "building": {
+    "areas": null,
+    "high": 346,
+    "level": 175,
+    "low": 219,
+    "n": 51,
+    "new_sales": 0,
+    "value": 286
+   },
+   "high": 223,
    "level": 153,
-   "low": 153,
+   "low": 162,
    "n": 116,
    "new_sales": 0,
-   "value": 178
+   "value": 192
   },
   "65": {
    "areas": [
@@ -691,12 +1297,21 @@
     "62",
     "70"
    ],
-   "high": 186,
+   "building": {
+    "areas": null,
+    "high": 356,
+    "level": 180,
+    "low": 225,
+    "n": 36,
+    "new_sales": 0,
+    "value": 294
+   },
+   "high": 187,
    "level": 128,
-   "low": 128,
+   "low": 135,
    "n": 38,
    "new_sales": 0,
-   "value": 149
+   "value": 161
   },
   "66": {
    "areas": [
@@ -705,12 +1320,21 @@
     "62",
     "70"
    ],
-   "high": 186,
+   "building": {
+    "areas": null,
+    "high": 244,
+    "level": 123,
+    "low": 154,
+    "n": 245,
+    "new_sales": 0,
+    "value": 201
+   },
+   "high": 187,
    "level": 128,
-   "low": 128,
+   "low": 135,
    "n": 39,
    "new_sales": 0,
-   "value": 149
+   "value": 161
   },
   "67": {
    "areas": [
@@ -718,57 +1342,105 @@
     "63",
     "40"
    ],
-   "high": 142,
+   "building": {
+    "areas": null,
+    "high": 230,
+    "level": 116,
+    "low": 145,
+    "n": 244,
+    "new_sales": 0,
+    "value": 189
+   },
+   "high": 143,
    "level": 98,
-   "low": 98,
+   "low": 104,
    "n": 51,
    "new_sales": 0,
-   "value": 114
+   "value": 123
   },
   "68": {
    "areas": [
     "68",
     "40"
    ],
-   "high": 142,
+   "building": {
+    "areas": null,
+    "high": 226,
+    "level": 114,
+    "low": 142,
+    "n": 290,
+    "new_sales": 0,
+    "value": 186
+   },
+   "high": 143,
    "level": 98,
-   "low": 98,
+   "low": 104,
    "n": 50,
    "new_sales": 0,
-   "value": 114
+   "value": 123
   },
   "69": {
    "areas": [
     "68",
     "40"
    ],
-   "high": 142,
+   "building": {
+    "areas": null,
+    "high": 208,
+    "level": 105,
+    "low": 131,
+    "n": 305,
+    "new_sales": 0,
+    "value": 171
+   },
+   "high": 143,
    "level": 98,
-   "low": 98,
+   "low": 104,
    "n": 50,
    "new_sales": 0,
-   "value": 114
+   "value": 123
   },
   "7": {
    "areas": null,
-   "high": 578,
+   "building": {
+    "areas": null,
+    "high": 792,
+    "level": 400,
+    "low": 500,
+    "n": 207,
+    "new_sales": 4,
+    "value": 653
+   },
+   "high": 580,
    "level": 398,
-   "low": 398,
+   "low": 420,
    "n": 1254,
-   "new_sales": 8,
-   "value": 462
+   "new_sales": 85,
+   "value": 500
   },
   "70": {
    "areas": [
     "70",
     "65"
    ],
+   "building": {
+    "areas": [
+     "70",
+     "66"
+    ],
+    "high": 244,
+    "level": 123,
+    "low": 154,
+    "n": 267,
+    "new_sales": 0,
+    "value": 201
+   },
    "high": 150,
    "level": 103,
-   "low": 103,
+   "low": 109,
    "n": 31,
    "new_sales": 0,
-   "value": 120
+   "value": 129
   },
   "71": {
    "areas": [
@@ -777,21 +1449,42 @@
     "68",
     "72"
    ],
-   "high": 199,
+   "building": {
+    "areas": null,
+    "high": 198,
+    "level": 100,
+    "low": 125,
+    "n": 336,
+    "new_sales": 0,
+    "value": 163
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 44,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "72": {
    "areas": null,
-   "high": 199,
+   "building": {
+    "areas": [
+     "72",
+     "73"
+    ],
+    "high": 172,
+    "level": 87,
+    "low": 109,
+    "n": 75,
+    "new_sales": 0,
+    "value": 142
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 33,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "73": {
    "areas": [
@@ -799,84 +1492,158 @@
     "49",
     "72"
    ],
-   "high": 199,
+   "building": {
+    "areas": null,
+    "high": 172,
+    "level": 87,
+    "low": 109,
+    "n": 57,
+    "new_sales": 0,
+    "value": 142
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 37,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "74": {
    "areas": [
     "74",
     "72"
    ],
-   "high": 199,
+   "building": {
+    "areas": [
+     "74",
+     "72",
+     "75"
+    ],
+    "high": 206,
+    "level": 104,
+    "low": 130,
+    "n": 44,
+    "new_sales": 0,
+    "value": 170
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 51,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "75": {
    "areas": [
     "75",
     "72"
    ],
-   "high": 199,
+   "building": {
+    "areas": [
+     "75",
+     "72"
+    ],
+    "high": 206,
+    "level": 104,
+    "low": 130,
+    "n": 40,
+    "new_sales": 0,
+    "value": 170
+   },
+   "high": 200,
    "level": 137,
-   "low": 137,
+   "low": 145,
    "n": 39,
    "new_sales": 0,
-   "value": 159
+   "value": 172
   },
   "76": {
    "areas": null,
-   "high": 237,
+   "building": {
+    "areas": null,
+    "high": 339,
+    "level": 171,
+    "low": 214,
+    "n": 30,
+    "new_sales": 0,
+    "value": 279
+   },
+   "high": 238,
    "level": 163,
-   "low": 163,
+   "low": 172,
    "n": 83,
    "new_sales": 0,
-   "value": 189
+   "value": 205
   },
   "77": {
    "areas": null,
-   "high": 331,
+   "building": {
+    "areas": null,
+    "high": 529,
+    "level": 267,
+    "low": 334,
+    "n": 132,
+    "new_sales": 0,
+    "value": 436
+   },
+   "high": 332,
    "level": 228,
-   "low": 228,
+   "low": 241,
    "n": 458,
-   "new_sales": 0,
-   "value": 265
+   "new_sales": 4,
+   "value": 286
   },
   "8": {
    "areas": null,
-   "high": 471,
+   "building": {
+    "areas": null,
+    "high": 744,
+    "level": 376,
+    "low": 470,
+    "n": 30,
+    "new_sales": 0,
+    "value": 613
+   },
+   "high": 472,
    "level": 324,
-   "low": 324,
+   "low": 342,
    "n": 304,
-   "new_sales": 0,
-   "value": 376
+   "new_sales": 2,
+   "value": 407
   },
   "9": {
    "areas": null,
-   "high": 259,
+   "building": {
+    "areas": [
+     "9",
+     "10"
+    ],
+    "high": 439,
+    "level": 222,
+    "low": 277,
+    "n": 67,
+    "new_sales": 0,
+    "value": 362
+   },
+   "high": 260,
    "level": 178,
-   "low": 178,
+   "low": 188,
    "n": 71,
    "new_sales": 0,
-   "value": 207
+   "value": 224
   }
  },
+ "condo_max_age": 5,
  "max_age": 2,
- "method": "area condo median per gross sq ft (any age) x the citywide new-construction premium; gross sq ft = building sq ft x the unit's ownership share",
+ "method": "condos: area condo median per gross sq ft (any age) x the citywide premium of a unit's first sale within condo_max_age years of being built; gross sq ft = building sq ft x the unit's ownership share. building (2-6 units): area 2-6 unit median per building sq ft (any age) x the premium of a building's first sale on or after its year built, within max_age years",
  "min_n": 30,
  "premium": {
-  "median": 1.161,
-  "n": 71,
-  "p25": 0.999,
-  "p75": 1.453
+  "median": 1.256,
+  "n": 533,
+  "p25": 1.056,
+  "p75": 1.458
  },
- "source": "Cook County Assessor sales wvhk-k5uv + condo characteristics 3r7i-mrz4 + Parcel Universe pabr-t5kh",
+ "source": "Cook County Assessor sales wvhk-k5uv + condo characteristics 3r7i-mrz4 + residential characteristics x54s-btds + Parcel Universe pabr-t5kh",
  "unit": "usd_per_gross_sqft",
  "years": [
   "2023",

@@ -275,6 +275,7 @@ class NumbersIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     land_price: float | None = Field(default=None, ge=0, le=500_000_000)
     sale_price_unit: float | None = Field(default=None, ge=0, le=50_000_000)
+    building_price: float | None = Field(default=None, ge=0, le=500_000_000)
     rent_unit_month: float | None = Field(default=None, ge=0, le=100_000)
     build_cost_sqft: float | None = Field(default=None, ge=0, le=10_000)
     soft_cost_pct: float | None = Field(default=None, ge=0, le=1)
@@ -302,9 +303,10 @@ class OwnIn(BaseModel):
 
 
 class PriceIn(BaseModel):
-    """A card's own sale price or rent: they depend on its unit size, so each project keeps its own."""
+    """A card's own sale price, whole-building price or rent: they depend on its size, so each project keeps its own."""
     model_config = ConfigDict(extra="forbid")
     sale_price_unit: float | None = Field(default=None, ge=0, le=50_000_000)
+    building_price: float | None = Field(default=None, ge=0, le=500_000_000)
     rent_unit_month: float | None = Field(default=None, ge=0, le=100_000)
 
 
@@ -317,7 +319,8 @@ class ProjectBody(BaseModel):
     pin: str = Field(pattern=r"^\d{14}$")
     project: ProjectIn | None = None
     numbers: NumbersIn | None = None
-    mode: Literal["sell", "rent"] = "sell"
+    # "whole" = sell a 2-6 unit building as one (Item 133); the page offers it only for 2-6 units.
+    mode: Literal["sell", "whole", "rent"] = "sell"
     step: int = Field(default=0, ge=0, le=12)
     # The builder's own projects, the card in focus, and each card's own price (Item 124, owner 2026-11-16).
     own: list[OwnIn] = Field(default_factory=list, max_length=MAX_OWN)

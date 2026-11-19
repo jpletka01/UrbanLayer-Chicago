@@ -429,6 +429,9 @@ class TestInputs:
         nc = deep_analysis.build_payload(r, pin=LOT_A)["inputs"]["new_construction"]
         assert nc["low"] <= nc["value"] <= nc["high"] and abs(nc["value"] - nc["level"] * nc["premium"]) <= 1
         assert nc["pooled_areas"] is None and nc["n"] >= 30 and nc["premium_n"] > 0 and len(nc["years"]) == 2
+        b = nc["building"]
+        assert b["low"] <= b["value"] <= b["high"] and abs(b["value"] - b["level"] * b["premium"]) <= 1
+        assert b["n"] >= 30 and b["premium_n"] > 0
 
     def test_a_thin_area_borrows_its_neighbors_and_says_so(self):
         from backend.deep_inputs import load_new_construction
@@ -457,9 +460,12 @@ def test_new_construction_builder_pools_to_min_n_and_bands_by_the_premium():
     from ingestion.build_new_construction_artifact import MIN_N, build
     res = {
         "years": [2023, 2025], "max_age": 2,
-        "community_areas": {"1": {"condo_any_age": {"per_sqft": {"n": 40, "median": 300}}},
-                            "2": {"condo_any_age": {"per_sqft": {"n": 5, "median": 200}}}},
-        "records": [["1", "condo", 2024, v] for v in (300, 330, 360, 420)],
+        "community_areas": {"1": {"condo_any_age": {"per_sqft": {"n": 40, "median": 300}},
+                                  "two_to_six_any_age": {"per_sqft": {"n": 6, "median": 150}}},
+                            "2": {"condo_any_age": {"per_sqft": {"n": 5, "median": 200}},
+                                  "two_to_six_any_age": {"per_sqft": {"n": 50, "median": 120}}}},
+        "records": [["1", "condo", 2024, v] for v in (300, 330, 360, 420)]
+        + [["2", "two_to_six", 2024, v] for v in (180, 200, 240, 300)],
     }
     art, meta = build(res)
     a1, a2 = art["community_areas"]["1"], art["community_areas"]["2"]
@@ -467,3 +473,25 @@ def test_new_construction_builder_pools_to_min_n_and_bands_by_the_premium():
     assert a1["low"] <= a1["value"] <= a1["high"]
     assert a2["areas"][0] == "2" and "1" in a2["areas"] and a2["n"] >= MIN_N and a2["new_sales"] == 0
     assert meta["with_new_sales"] == 1
+    # The whole-building band: its own premium (new 2-6 sales over area 2's 2-6 level), area 1 borrows area 2.
+    b1, b2 = a1["building"], a2["building"]
+    assert art["building_premium"]["n"] == 4 and art["building_premium"]["median"] == round(220 / 120, 3)
+    assert b2["areas"] is None and b2["new_sales"] == 4 and b2["low"] <= b2["value"] <= b2["high"]
+    assert b1["areas"] == ["1", "2"] and b1["new_sales"] == 0 and meta["building_with_new_sales"] == 1
+
+
+def test_first_new_sale_rules():
+    from eval.new_construction_price import CONDO_MAX_AGE, first_new_sale
+
+    def sale(year, price=500_000, cls="299", **flags):
+        return {"year": str(year), "sale_date": f"{year}-05-01", "sale_price": str(price), "class": cls,
+                "is_multisale": False, "sale_filter_less_than_10k": False, "sale_filter_deed_type": False, **flags}
+    # A condo unit: only its first sale ever counts, up to CONDO_MAX_AGE years after built.
+    assert first_new_sale([sale(2024), sale(2025, 600_000)], "condo", 2020, 2) == (2024, 500_000)
+    assert first_new_sale([sale(2020 + CONDO_MAX_AGE + 1)], "condo", 2020, 2) is None
+    assert first_new_sale([sale(2023, is_multisale=True), sale(2024)], "condo", 2021, 2) is None
+    # A 2-6 unit building: the lot sale before the teardown is skipped; the first sale after built counts.
+    rows = [sale(2019, 300_000, "211"), sale(2023, 1_400_000, "211")]
+    assert first_new_sale(rows, "two_to_six", 2022, 2) == (2023, 1_400_000)
+    assert first_new_sale(rows, "two_to_six", 2020, 2) is None  # 3 years after: not new any more
+    assert first_new_sale([sale(2023, 900_000, "203")], "two_to_six", 2022, 2) is None  # sold as another kind

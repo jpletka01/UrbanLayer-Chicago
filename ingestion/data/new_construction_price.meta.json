@@ -1,15 +1,23 @@
 {
   "builder": "ingestion/build_new_construction_artifact.py",
-  "built_at": "2026-11-16",
+  "building_pooled": 20,
+  "building_premium": {
+    "median": 1.632,
+    "n": 110,
+    "p25": 1.25,
+    "p75": 1.98
+  },
+  "building_with_new_sales": 29,
+  "built_at": "2026-11-18",
   "community_areas": 77,
   "pooled": 37,
   "premium": {
-    "median": 1.161,
-    "n": 71,
-    "p25": 0.999,
-    "p75": 1.453
+    "median": 1.256,
+    "n": 533,
+    "p25": 1.056,
+    "p75": 1.458
   },
-  "with_new_sales": 13,
+  "with_new_sales": 22,
   "years": [
     "2023",
     "2025"

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DeepInputs } from "../../lib/api";
 import {
-  CHICAGO_EFFECTIVE_RATE, buildCost, compute, limitUse, money, projectMass, startingNumbers, startingProjects, step,
+  CHICAGO_EFFECTIVE_RATE, buildCost, canSellWhole, compute, effectiveMode, limitUse, money, projectMass, startingNumbers, startingProjects, step,
   stressGrid, type Numbers, type Project,
 } from "./deepModel";
 
@@ -148,5 +148,44 @@ describe("the sale price from new construction (Item 124's measured band)", () =
   it("no artifact figure: back to the area's condo median, labeled as such", () => {
     const [largest] = startingProjects(INPUTS);
     expect(startingNumbers({ ...INPUTS, new_construction: null }, largest).sources.salePriceUnit).toMatchObject({ kind: "area_sales", group: "condo" });
+  });
+});
+
+describe("selling the building whole (Item 133)", () => {
+  const [largest, flat] = startingProjects(INPUTS);
+  const NB = { value: 300, low: 220, high: 380, level: 175, n: 84, pooled_areas: null, new_sales: 5, premium: 1.73, premium_n: 140 };
+  const WITH = { ...INPUTS, new_construction: { value: 541, low: 450, high: 640, level: 398, n: 900, pooled_areas: null, new_sales: 85,
+    years: ["2023", "2025"] as [string, string], premium: 1.36, premium_n: 535, building: NB } };
+
+  it("is offered for 2-6 units only; another project falls back to selling the units", () => {
+    expect(canSellWhole(flat)).toBe(true);
+    expect(canSellWhole(largest)).toBe(false); // 8 units
+    expect(effectiveMode("whole", largest)).toBe("sell");
+    expect(effectiveMode("whole", flat)).toBe("whole");
+  });
+
+  it("starts from the new-building figure x the project's floor area, with its source and band", () => {
+    const { numbers, sources } = startingNumbers(WITH, flat);
+    expect(numbers.buildingPrice).toBe(1_350_000); // 300 x 4,500 sq ft
+    expect(sources.buildingPrice).toMatchObject({ kind: "new_building", perSqft: 300, sqft: 4500, premium: 1.73, newSales: 5 });
+  });
+
+  it("without the figure, the area's 2-6 unit median, labeled so", () => {
+    const { numbers, sources } = startingNumbers(INPUTS, flat);
+    expect(numbers.buildingPrice).toBe(1_432_500);
+    expect(sources.buildingPrice).toEqual({ kind: "area_sales", group: "two_to_six", year: "2025", n: 84 });
+  });
+
+  it("prices the whole building once (not per unit) and breaks even on the building", () => {
+    const { numbers } = startingNumbers(WITH, flat);
+    const r = compute(flat, numbers, "whole");
+    const build = buildCost(flat, numbers);
+    expect(r.landBid).toBeCloseTo((numbers.buildingPrice * (1 - numbers.sellingPct)) / (1 + numbers.profitOnCost) - build, 6);
+    expect(r.taxesOnceBuilt).toBeCloseTo(numbers.buildingPrice * numbers.taxRate, 6);
+    expect(r.breakEven).toBeCloseTo(((1_207_000 + build) * (1 + numbers.profitOnCost)) / (1 - numbers.sellingPct), 6);
+    // Moving the building's price moves the stress grid's rows.
+    const g = stressGrid(flat, numbers, "whole");
+    expect(g[0][1]).toBeLessThan(g[1][1]);
+    expect(g[2][1]).toBeGreaterThan(g[1][1]);
   });
 });

@@ -2517,12 +2517,16 @@
       "sellNoSale": "Selling {{units}} units here supports paying up to about {{bid}} for this lot.",
       "rentNoSale": "Renting {{units}} units here supports paying up to about {{bid}} for this lot.",
       "sellNoLand": "Selling {{units}} units here doesn't cover the cost to build them at these numbers, even with free land.",
-      "rentNoLand": "Renting {{units}} units here doesn't meet your target at these numbers, even with free land."
+      "rentNoLand": "Renting {{units}} units here doesn't meet your target at these numbers, even with free land.",
+      "whole": "Selling the {{units}}-unit building whole supports paying up to about {{bid}} for this lot; it last sold for {{sale}}.",
+      "wholeNoSale": "Selling the {{units}}-unit building whole supports paying up to about {{bid}} for this lot.",
+      "wholeNoLand": "Selling the {{units}}-unit building whole doesn't cover the cost to build it at these numbers, even with free land."
     },
     "mode": {
       "label": "Sell or rent",
       "sell": "Sell the units",
-      "rent": "Rent them out"
+      "rent": "Rent them out",
+      "whole": "Sell the building"
     },
     "bid": {
       "label": "Most you can pay for this lot",
@@ -2544,7 +2548,8 @@
       "taxesToday": "today {{bill}}",
       "cash": "Cash you bring",
       "atPrice": "at the {{price}} price",
-      "atBid": "at the most you can pay"
+      "atBid": "at the most you can pay",
+      "perBuilding": "the building"
     },
     "projects": {
       "label": "Projects",
@@ -2617,10 +2622,11 @@
       "vacancy": "Vacancy",
       "cap": "Cap rate here",
       "tax": "Property tax rate",
-      "reset": "Back to the starting numbers"
+      "reset": "Back to the starting numbers",
+      "building": "Building sale price"
     },
     "src": {
-      "newConstruction": "A new condo here: {{perSqft}} a sq ft × {{unitSqft}} sq ft a unit · the area's condo sales {{years}} ({{n}}) × {{premium}}, the new-build premium · Assessor",
+      "newConstruction": "A new condo here: {{perSqft}} a sq ft × {{unitSqft}} sq ft a unit · the area's condo sales {{years}} ({{n}}) × {{premium}}, a new unit's first sale · Assessor",
       "newConstructionPooled": " · with nearby areas",
       "newConstructionCarried": " · no new condos sold here, so the premium comes from other areas",
       "lotSale": "This lot's last sale, {{date}}",
@@ -2642,7 +2648,9 @@
         "chicago_brokers_2026": "Chicago brokers' small multifamily cap rates, {{asOf}}",
         "spread_rule": "The cap rate here plus a 1.5-point margin, a common target"
       },
-      "none": "Not on record; enter yours"
+      "none": "Not on record; enter yours",
+      "newBuilding": "A new 2–6 unit building here: {{perSqft}} a sq ft × {{sqft}} sq ft · the area's 2–6 unit sales {{years}} ({{n}}) × {{premium}}, a new building's first sale · Assessor",
+      "newBuildingCarried": " · no new 2–6 unit buildings sold here, so the premium comes from other areas"
     },
     "beds": {
       "1_bedroom": "1-bedroom",
@@ -2676,7 +2684,8 @@
       "usedOn": "Your free one went to {{where}}",
       "usedNote": "Your free one went to another lot",
       "approximate": "Needs an exact lot"
-    }
+    },
+    "lowBuilding": "Few new 2–6 unit buildings sell, so this figure can be off by about a third here. Use your broker's number if you have one."
   },
   "toast": {
     "close": "Close"

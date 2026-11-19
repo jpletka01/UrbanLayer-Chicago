@@ -6,12 +6,14 @@ any size or age, per unit, so a new 3-flat bid almost nothing for its land. This
 * **The area's condo price level:** the median arm's-length condo sale per gross square foot, 2023-2025, any age
   (``eval.new_construction_price``: Assessor sales, the unit's share of the building = building sq ft x ownership
   share). An area with fewer than ``MIN_N`` sales borrows its nearest areas (by centroid) until it has them, and says so.
-* **The new-construction premium:** each condo sold within two years of being built, over its own area's level,
-  citywide (too few new sales to measure area by area: 71 in three years). Its median and middle half set the
-  starting figure and its band.
+* **The new-construction premium:** each condo's first sale (within five years of being built, Item 133) over its
+  own area's level, citywide. Its median and middle half set the starting figure and its band.
+* **The whole building (2-6 units, Item 133):** the same two steps on 2-6 unit buildings, per building sq ft: the
+  area's 2-6 unit level (any age) x the premium of a new building's first sale after it was built. Kept under each
+  area's ``building`` key; never compared with the condo figure per sq ft (different square-foot bases).
 
-Measured 2026-11-16: premium 1.16 (middle half 1.00-1.45, n 71); predicting each area's new-condo median from the
-other areas missed by a median 16% (8 areas with 3+ new sales). See decision Item 124.
+Measured 2026-11-16 (Item 124): premium 1.16 on condos sold within two years (n 71). Item 133 has the first-sale
+numbers.
 
 No model calls; public Socrata reads (~15 min cold; ``--cache`` keeps the raw pulls).
 
@@ -59,22 +61,23 @@ def _quartiles(values: list[float]) -> tuple[float, float, float]:
     return q[0], statistics.median(v), q[2]
 
 
-def build(res: dict) -> tuple[dict, dict]:
+def _bands(res: dict, group: str, cents: dict[str, tuple[float, float]]) -> tuple[dict, dict[str, dict]]:
+    """One group's premium and every area's figure: the area's any-age level per sq ft (pooled with its nearest
+    areas below ``MIN_N`` sales) x the citywide premium of new sales over their own area's level."""
     records = res["records"]
-    # Every any-age condo sale per area, from the measurement's per-area lists.
-    any_age = {ca: v["condo_any_age"]["per_sqft"] for ca, v in res["community_areas"].items() if "condo_any_age" in v}
+    key = f"{group}_any_age"
+    any_age = {ca: v[key]["per_sqft"] for ca, v in res["community_areas"].items() if key in v}
 
-    # The premium: each new condo over its own area's any-age median (areas with a reliable median only).
+    # The premium: each new sale over its own area's any-age median (areas with a reliable median only).
     ratios = [psf / any_age[ca]["median"] for ca, g, _y, psf in records
-              if g == "condo" and ca in any_age and any_age[ca]["n"] >= MIN_N]
+              if g == group and ca in any_age and any_age[ca]["n"] >= MIN_N]
     p25, med, p75 = _quartiles(ratios)
 
     new_here: dict[str, int] = {}
     for ca, g, _y, _psf in records:
-        if g == "condo":
+        if g == group:
             new_here[ca] = new_here.get(ca, 0) + 1
 
-    cents = _centroids()
     areas: dict[str, dict] = {}
     for ca in sorted(cents, key=int):
         if ca in any_age and any_age[ca]["n"] >= MIN_N:
@@ -100,25 +103,41 @@ def build(res: dict) -> tuple[dict, dict]:
         areas[ca] = {
             "level": round(level), "n": n, "areas": used if used != [ca] else None,
             "value": round(level * med), "low": round(level * p25), "high": round(level * p75),
-            # New condos sold in this area itself in the window; 0 = the premium is carried over from other areas.
+            # New sales in this area itself in the window; 0 = the premium is carried over from other areas.
             "new_sales": new_here.get(ca, 0),
         }
+    premium = {"median": round(med, 3), "p25": round(p25, 3), "p75": round(p75, 3), "n": len(ratios)}
+    return premium, areas
 
+
+def build(res: dict) -> tuple[dict, dict]:
+    cents = _centroids()
+    premium, condo = _bands(res, "condo", cents)
+    building_premium, building = _bands(res, "two_to_six", cents)
+    areas = {ca: {**row, "building": building[ca]} for ca, row in condo.items()}
     first, last = res["years"]
     artifact = {
         "unit": "usd_per_gross_sqft",
         "years": [str(first), str(last)],
         "max_age": res["max_age"],
-        "premium": {"median": round(med, 3), "p25": round(p25, 3), "p75": round(p75, 3), "n": len(ratios)},
+        "condo_max_age": res.get("condo_max_age"),
+        "premium": premium,
+        "building_premium": building_premium,
         "min_n": MIN_N,
-        "method": ("area condo median per gross sq ft (any age) x the citywide new-construction premium; "
-                   "gross sq ft = building sq ft x the unit's ownership share"),
-        "source": "Cook County Assessor sales wvhk-k5uv + condo characteristics 3r7i-mrz4 + Parcel Universe pabr-t5kh",
+        "method": ("condos: area condo median per gross sq ft (any age) x the citywide premium of a unit's first sale "
+                   "within condo_max_age years of being built; gross sq ft = building sq ft x the unit's ownership "
+                   "share. building (2-6 units): area 2-6 unit median per building sq ft (any age) x the premium of "
+                   "a building's first sale on or after its year built, within max_age years"),
+        "source": ("Cook County Assessor sales wvhk-k5uv + condo characteristics 3r7i-mrz4 + residential "
+                   "characteristics x54s-btds + Parcel Universe pabr-t5kh"),
         "community_areas": areas,
     }
-    meta = {"built_at": date.today().isoformat(), "years": artifact["years"], "premium": artifact["premium"],
-            "community_areas": len(areas), "pooled": sum(1 for a in areas.values() if a["areas"]),
+    meta = {"built_at": date.today().isoformat(), "years": artifact["years"], "premium": premium,
+            "building_premium": building_premium, "community_areas": len(areas),
+            "pooled": sum(1 for a in areas.values() if a["areas"]),
             "with_new_sales": sum(1 for a in areas.values() if a["new_sales"]),
+            "building_pooled": sum(1 for a in areas.values() if a["building"]["areas"]),
+            "building_with_new_sales": sum(1 for a in areas.values() if a["building"]["new_sales"]),
             "builder": "ingestion/build_new_construction_artifact.py"}
     return artifact, meta
 

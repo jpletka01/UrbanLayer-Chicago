@@ -21,8 +21,9 @@ import { Pill } from "../ui/Blocks";
 import { ScoreRing } from "../ui/ScoreRing";
 import {
   STRESS_STEPS, compute, limitUse, money, projectMass, startingNumbers, startingProjects, step, stressGrid,
-  type Mode, type NumberSource, type Numbers, type Project,
+  canSellWhole, effectiveMode, type Mode, type NumberSource, type Numbers, type Project,
 } from "./deepModel";
+import { LowConfidence } from "../ui/LowConfidence";
 
 export interface DeepProjectOnMap { heightFt: number; capFt: number | null; label: string }
 
@@ -198,14 +199,14 @@ type CardKey = string; // "largest" | "three_flat" | "townhouses" | `own:${id}`
 type PresetKind = "largest" | "three_flat" | "townhouses";
 type OwnProject = Project & { id: string; basedOn?: PresetKind };
 interface ProjectOption { key: CardKey; project: Project; own: OwnProject | null; n: number; bid: number }
-type CardPrice = Partial<Pick<Numbers, "salePriceUnit" | "rentUnitMonth">>;
+type CardPrice = Partial<Pick<Numbers, "salePriceUnit" | "buildingPrice" | "rentUnitMonth">>;
 type Saved = Awaited<ReturnType<typeof getDeepProject>> | null;
 /** The builder's own projects on one lot (the server allows the same). */
 export const MAX_OWN = 6;
 /** The numbers that belong to a card (they depend on its unit size); the rest are shared. */
-const CARD_NUMBERS: (keyof Numbers)[] = ["salePriceUnit", "rentUnitMonth"];
+const CARD_NUMBERS: (keyof Numbers)[] = ["salePriceUnit", "buildingPrice", "rentUnitMonth"];
 const TO_SNAKE: Record<keyof Numbers, string> = {
-  landPrice: "land_price", salePriceUnit: "sale_price_unit", rentUnitMonth: "rent_unit_month", buildCostSqft: "build_cost_sqft",
+  landPrice: "land_price", salePriceUnit: "sale_price_unit", buildingPrice: "building_price", rentUnitMonth: "rent_unit_month", buildCostSqft: "build_cost_sqft",
   softCostPct: "soft_cost_pct", loanToCost: "loan_to_cost", loanRate: "loan_rate", buildMonths: "build_months",
   sellingPct: "selling_pct", profitOnCost: "profit_on_cost", vacancyPct: "vacancy_pct", opexPct: "opex_pct",
   capRate: "cap_rate", targetYield: "target_yield", taxRate: "tax_rate",
@@ -236,7 +237,8 @@ function focusFrom(saved: Saved, starts: Project[]): CardKey {
 function pricesFrom(saved: Saved, focus: CardKey): Record<string, CardPrice> {
   const out: Record<string, CardPrice> = {};
   for (const [k, v] of Object.entries(saved?.prices ?? {})) {
-    out[k] = { ...(v.sale_price_unit != null && { salePriceUnit: v.sale_price_unit }), ...(v.rent_unit_month != null && { rentUnitMonth: v.rent_unit_month }) };
+    out[k] = { ...(v.sale_price_unit != null && { salePriceUnit: v.sale_price_unit }), ...(v.building_price != null && { buildingPrice: v.building_price }),
+      ...(v.rent_unit_month != null && { rentUnitMonth: v.rent_unit_month }) };
   }
   // A row saved before per-card prices: its one sale price or rent was the focused card's.
   const n = saved?.numbers ?? {};
@@ -268,7 +270,12 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
     k.startsWith("own:") ? owns.find((o) => `own:${o.id}` === k) ?? null : starts.find((p) => p.kind === k) ?? null;
   const project = cardOf(focus) ?? starts[0] ?? null;
   const focusKey: CardKey = cardOf(focus) ? focus : (starts[0]?.kind ?? "largest");
-  const [mode, setMode] = useState<Mode>(() => (saved?.numbers?.mode === "rent" ? "rent" : "sell"));
+  // What the builder chose; "whole" applies only to a 2-6 unit project (effectiveMode), and comes back when they
+  // pick one again.
+  const [mode, setMode] = useState<Mode>(() => {
+    const m = saved?.mode ?? saved?.numbers?.mode;
+    return m === "rent" || m === "whole" ? m : "sell";
+  });
   const base = useMemo(() => (project ? startingNumbers(inputs, project) : null), [inputs, project]);
   const [edits, setEdits] = useState<Partial<Numbers>>(() => {
     const out: Partial<Numbers> = {};
@@ -311,7 +318,7 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
   const options: ProjectOption[] = [
     ...starts.map((p) => ({ key: p.kind, project: p, own: null as OwnProject | null, n: 0 })),
     ...owns.map((o, i) => ({ key: `own:${o.id}`, project: o as Project, own: o, n: i + 1 })),
-  ].map((o) => ({ ...o, bid: compute(o.project, { ...startingNumbers(inputs, o.project).numbers, ...edits, ...prices[o.key] }, mode).landBid }));
+  ].map((o) => ({ ...o, bid: compute(o.project, { ...startingNumbers(inputs, o.project).numbers, ...edits, ...prices[o.key] }, effectiveMode(mode, o.project)).landBid }));
 
   // The project on the map.
   useEffect(() => {
@@ -334,7 +341,8 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
       const cardPrices: Record<string, { sale_price_unit?: number; rent_unit_month?: number }> = {};
       for (const [k, v] of Object.entries(prices)) {
         if (k.startsWith("own:") && !owns.some((o) => `own:${o.id}` === k)) continue;
-        cardPrices[k] = { ...(v.salePriceUnit != null && { sale_price_unit: v.salePriceUnit }), ...(v.rentUnitMonth != null && { rent_unit_month: v.rentUnitMonth }) };
+        cardPrices[k] = { ...(v.salePriceUnit != null && { sale_price_unit: v.salePriceUnit }), ...(v.buildingPrice != null && { building_price: v.buildingPrice }),
+          ...(v.rentUnitMonth != null && { rent_unit_month: v.rentUnitMonth }) };
       }
       putDeepProject(pin, {
         project: { kind: project.kind, units: project.units, stories: project.floors, floor_area_sqft: project.floorAreaSqft },
@@ -355,15 +363,17 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
     );
   }
 
-  const result = compute(project, numbers, mode);
-  const grid = stressGrid(project, numbers, mode);
+  const m = effectiveMode(mode, project);
+  const selling = m !== "rent";
+  const result = compute(project, numbers, m);
+  const grid = stressGrid(project, numbers, m);
   const sale = inputs.last_sale;
   const bid = result.landBid;
   const answer = bid <= 0
-    ? t(mode === "sell" ? "deep.answer.sellNoLand" : "deep.answer.rentNoLand", { units: project.units })
+    ? t(`deep.answer.${m}NoLand`, { units: project.units })
     : sale
-      ? t(mode === "sell" ? "deep.answer.sell" : "deep.answer.rent", { units: project.units, bid: money(bid, lng), sale: money(sale.price, lng) })
-      : t(mode === "sell" ? "deep.answer.sellNoSale" : "deep.answer.rentNoSale", { units: project.units, bid: money(bid, lng) });
+      ? t(`deep.answer.${m}`, { units: project.units, bid: money(bid, lng), sale: money(sale.price, lng) })
+      : t(`deep.answer.${m}NoSale`, { units: project.units, bid: money(bid, lng) });
   const set = (k: keyof Numbers, v: number) => (CARD_NUMBERS.includes(k)
     ? setPrices((pr) => ({ ...pr, [focusKey]: { ...pr[focusKey], [k]: v } }))
     : setEdits((e) => ({ ...e, [k]: v })));
@@ -372,6 +382,8 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
   const roundUp = (v: number, to: number) => Math.ceil(v / to) * to;
   const landMax = roundUp(Math.max(1_500_000, (base.numbers.landPrice ?? 0) * 3), 100_000);
   const saleMax = roundUp(Math.max(500_000, base.numbers.salePriceUnit * 3), 50_000);
+  const buildingMax = roundUp(Math.max(1_500_000, base.numbers.buildingPrice * 3), 100_000);
+  const modes: Mode[] = canSellWhole(project) ? ["sell", "whole", "rent"] : ["sell", "rent"];
   return (
     <div className="flex flex-col gap-7" data-testid="deep-tab" data-gate="open">
       <div className="flex flex-col gap-1.5">
@@ -384,24 +396,24 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
       {/* 1 · the most you can pay */}
       <section className="nx-cq grid grid-cols-1 items-center gap-8 rounded-2xl bg-nx-block p-6 md:grid-cols-2" aria-labelledby="deep-bid-h">
         <div className="flex flex-col items-center gap-2.5 text-center">
-          <div role="radiogroup" aria-label={t("deep.mode.label")} className="inline-flex rounded-full p-1 ring-1 ring-inset ring-nx-ink/20">
-            {(["sell", "rent"] as const).map((m) => (
-              <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => setMode(m)}
-                className={`rounded-full px-4 py-1.5 touch-target ${mode === m ? "bg-nx-ink font-semibold text-nx-page" : "hover:bg-nx-ink/5"}`} data-mode={m}>
-                {t(`deep.mode.${m}`)}
+          <div role="radiogroup" aria-label={t("deep.mode.label")} className="inline-flex flex-wrap justify-center rounded-3xl p-1 ring-1 ring-inset ring-nx-ink/20">
+            {modes.map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={m === k} onClick={() => setMode(k)}
+                className={`rounded-full px-4 py-1.5 touch-target ${m === k ? "bg-nx-ink font-semibold text-nx-page" : "hover:bg-nx-ink/5"}`} data-mode={k}>
+                {t(`deep.mode.${k}`)}
               </button>
             ))}
           </div>
           <h3 id="deep-bid-h" className="nx-muted pt-1 text-caption font-normal">{t("deep.bid.label")}</h3>
           <div className="text-[3rem] font-semibold leading-none tabular-nums" data-testid="deep-bid">{bid > 0 ? money(bid, lng) : t("deep.bid.none")}</div>
-          <div className="nx-muted text-caption">{t(mode === "sell" ? "deep.bid.atProfit" : "deep.bid.atYield", { pct: pct(mode === "sell" ? numbers.profitOnCost : numbers.targetYield, lng) })}</div>
+          <div className="nx-muted text-caption">{t(selling ? "deep.bid.atProfit" : "deep.bid.atYield", { pct: pct(selling ? numbers.profitOnCost : numbers.targetYield, lng) })}</div>
         </div>
         <div className="flex flex-col gap-3">
           {sale && bid > 0 && <BidBar bid={bid} sale={sale.price} lng={lng} />}
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-            <Mini label={t(mode === "sell" ? "deep.out.breakEvenSale" : "deep.out.breakEvenRent")}
-              figure={result.breakEven != null ? money(result.breakEven, lng, { short: mode === "sell" }) : "—"}
-              unit={t(mode === "sell" ? "deep.out.perUnit" : "deep.out.perUnitMonth")}
+            <Mini label={t(selling ? "deep.out.breakEvenSale" : "deep.out.breakEvenRent")}
+              figure={result.breakEven != null ? money(result.breakEven, lng, { short: selling }) : "—"}
+              unit={t(m === "whole" ? "deep.out.perBuilding" : m === "sell" ? "deep.out.perUnit" : "deep.out.perUnitMonth")}
               note={result.breakEven == null ? t("deep.out.noSale") : undefined} />
             <Mini label={t("deep.out.taxes")} figure={money(result.taxesOnceBuilt, lng)} unit={t("deep.out.perYear")}
               note={inputs.tax.current_bill != null ? t("deep.out.taxesToday", { bill: money(inputs.tax.current_bill, lng) }) : undefined} />
@@ -418,13 +430,16 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
           <ProjectPanel project={project} focusKey={focusKey} options={options} owns={owns} inputs={inputs}
             onPick={setFocus} onStep={stepProject} onSaveNew={addOwn} onRemove={removeOwn}
             backTo={ownOf(focusKey)?.basedOn ?? null} onBack={(k) => setFocus(k)} />
-          <StressGrid grid={grid} sale={sale?.price ?? null} lng={lng} mode={mode} />
+          <StressGrid grid={grid} sale={sale?.price ?? null} lng={lng} mode={m} />
         </div>
         <div className="flex flex-col gap-4 rounded-2xl bg-nx-block p-6">
           <h3 className="text-center font-semibold">{t("deep.numbers.title")}</h3>
           <Slider label={t("deep.numbers.land")} value={numbers.landPrice ?? 0} min={0} max={landMax} stepBy={10_000}
             show={money(numbers.landPrice ?? 0, lng)} source={base.sources.landPrice} onChange={(v) => set("landPrice", v)} />
-          {mode === "sell"
+          {m === "whole"
+            ? <Slider label={t("deep.numbers.building")} value={numbers.buildingPrice} min={200_000} max={buildingMax} stepBy={10_000}
+                show={money(numbers.buildingPrice, lng)} source={base.sources.buildingPrice} onChange={(v) => set("buildingPrice", v)} />
+            : m === "sell"
             ? <Slider label={t("deep.numbers.sale")} value={numbers.salePriceUnit} min={50_000} max={saleMax} stepBy={5_000}
                 show={t("deep.numbers.perUnit", { v: money(numbers.salePriceUnit, lng) })} source={base.sources.salePriceUnit} onChange={(v) => set("salePriceUnit", v)} />
             : <Slider label={t("deep.numbers.rent")} value={numbers.rentUnitMonth} min={500} max={8_000} stepBy={25}
@@ -433,7 +448,7 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
             show={t("deep.numbers.perSqft", { v: money(numbers.buildCostSqft, lng, { short: false }) })} source={base.sources.buildCostSqft} hint={t("deep.numbers.buildHint")} onChange={(v) => set("buildCostSqft", v)} />
           <Slider label={t("deep.numbers.soft")} value={numbers.softCostPct} min={0.05} max={0.4} stepBy={0.01} show={t("deep.numbers.ofBuild", { v: pct(numbers.softCostPct, lng) })} source={base.sources.softCostPct} onChange={(v) => set("softCostPct", v)} />
           <Slider label={t("deep.numbers.loanRate")} value={numbers.loanRate} min={0.05} max={0.14} stepBy={0.0025} show={t("deep.numbers.loan", { ltc: pct(numbers.loanToCost, lng), rate: pct(numbers.loanRate, lng, 2) })} source={base.sources.loanRate} onChange={(v) => set("loanRate", v)} />
-          {mode === "sell"
+          {selling
             ? <Slider label={t("deep.numbers.profit")} value={numbers.profitOnCost} min={0.05} max={0.4} stepBy={0.01} show={t("deep.numbers.onCost", { v: pct(numbers.profitOnCost, lng) })} source={base.sources.profitOnCost} onChange={(v) => set("profitOnCost", v)} />
             : <Slider label={t("deep.numbers.yield")} value={numbers.targetYield} min={0.04} max={0.12} stepBy={0.0025} show={pct(numbers.targetYield, lng, 2)} source={base.sources.targetYield} onChange={(v) => set("targetYield", v)} />}
           <details className="group">
@@ -441,7 +456,7 @@ function Analysis({ pin, data, saved, freeHere, onProject }: {
             <div className="flex flex-col gap-4 pt-3">
               <Slider label={t("deep.numbers.ltc")} value={numbers.loanToCost} min={0.4} max={0.9} stepBy={0.05} show={pct(numbers.loanToCost, lng)} source={base.sources.loanToCost} onChange={(v) => set("loanToCost", v)} />
               <Slider label={t("deep.numbers.months")} value={numbers.buildMonths} min={6} max={36} stepBy={1} show={t("deep.numbers.monthsV", { v: numbers.buildMonths })} source={base.sources.buildMonths} onChange={(v) => set("buildMonths", v)} />
-              {mode === "sell"
+              {selling
                 ? <Slider label={t("deep.numbers.selling")} value={numbers.sellingPct} min={0} max={0.12} stepBy={0.005} show={pct(numbers.sellingPct, lng, 1)} source={base.sources.sellingPct} onChange={(v) => set("sellingPct", v)} />
                 : <>
                     <Slider label={t("deep.numbers.opex")} value={numbers.opexPct} min={0.15} max={0.5} stepBy={0.01} show={pct(numbers.opexPct, lng)} source={base.sources.opexPct} onChange={(v) => set("opexPct", v)} />
@@ -604,15 +619,21 @@ function Stepper({ label, value, onStep }: { label: string; value: string; onSte
 function Slider({ label, value, min, max, stepBy, show, source, hint, onChange }: {
   label: string; value: number; min: number; max: number; stepBy: number; show: string; source: NumberSource; hint?: string; onChange: (v: number) => void;
 }) {
+  const { t } = useTranslation("next");
   const id = useId();
   const band = source.kind === "assumption" ? [source.low, source.high]
     : source.kind === "census_rent" && source.moe ? [value - source.moe, value + source.moe]
-    : source.kind === "new_construction" ? [source.low * source.unitSqft, source.high * source.unitSqft] : null;
+    : source.kind === "new_construction" ? [source.low * source.unitSqft, source.high * source.unitSqft]
+    : source.kind === "new_building" ? [source.low * source.sqft, source.high * source.sqft] : null;
   const at = (v: number) => `${Math.max(0, Math.min(100, ((v - min) / (max - min)) * 100))}%`;
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id}>{label}</label>
+        <span className="flex flex-wrap items-center gap-2">
+          <label htmlFor={id}>{label}</label>
+          {/* Few new 2-6 unit buildings sell: the figure misses an area by about 30% (Item 133). */}
+          {source.kind === "new_building" && <LowConfidence definition={t("deep.lowBuilding")} testId="deep-building-low" />}
+        </span>
         <b className="tabular-nums">{show}</b>
       </div>
       <div className="relative">
@@ -641,6 +662,14 @@ function SourceLine({ source, hint }: { source: NumberSource; hint?: string }) {
       if (!source.newSales) text += t("deep.src.newConstructionCarried");
       break;
     }
+    case "new_building": {
+      const loc = lng.startsWith("es") ? "es-MX" : "en-US";
+      text = t("deep.src.newBuilding", { perSqft: money(source.perSqft, lng, { short: false }), sqft: source.sqft.toLocaleString(loc),
+        years: source.years.join("–"), n: source.n.toLocaleString(loc), premium: source.premium.toLocaleString(loc, { maximumFractionDigits: 2 }) });
+      if (source.pooled) text += t("deep.src.newConstructionPooled");
+      if (!source.newSales) text += t("deep.src.newBuildingCarried");
+      break;
+    }
     case "area_sales": text = t(`deep.src.areaSales.${source.group}`, { year: source.year, n: source.n.toLocaleString(lng.startsWith("es") ? "es-MX" : "en-US") }); break;
     case "census_rent": text = t("deep.src.census", { beds: t(`deep.beds.${source.bedrooms}`), scope: t(`deep.scope.${source.scope}`), period: source.period ?? "", moe: source.moe ? money(source.moe, lng, { short: false }) : "—" }); break;
     case "hud_rent": text = t("deep.src.hud", { beds: t(`deep.beds.${source.bedrooms}`), fy: source.fy }); break;
@@ -663,7 +692,7 @@ function StressGrid({ grid, sale, lng, mode }: { grid: number[][]; sale: number 
         <caption className="sr-only">{t("deep.stress.caption")}</caption>
         <thead>
           <tr>
-            <th scope="col" className="nx-muted text-left text-caption font-normal">{t(mode === "sell" ? "deep.stress.axesSell" : "deep.stress.axesRent")}</th>
+            <th scope="col" className="nx-muted text-left text-caption font-normal">{t(mode !== "rent" ? "deep.stress.axesSell" : "deep.stress.axesRent")}</th>
             {STRESS_STEPS.map((d) => <th key={d} scope="col" className="text-caption font-medium">{head(d)}</th>)}
           </tr>
         </thead>
