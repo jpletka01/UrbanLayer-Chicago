@@ -2074,9 +2074,9 @@
     "headline": "Sepa qué puede construir en cualquier terreno de Chicago.",
     "subline": "Zonificación, costos y el camino a la aprobación, con registros públicos.",
     "explore": "Explorar el mapa",
-    "heroAlt": "Una cuadra de la ciudad en 3D, moviéndose despacio: los edificios vecinos a su altura, teñidos por zonificación, y un terreno con el edificio más grande que su zonificación permite, dibujado con una línea punteada encima",
-    "heroAllowed": "Permitido: 6 unidades, 60 pies",
-    "heroBuilt": "Construido hoy: 2 unidades, 32 pies",
+    "heroAlt": "Nuestro mapa 3D de las cuadras alrededor de 1601 N Milwaukee Ave: los edificios a su altura medida, teñidos por zonificación, y el terreno marcado con el edificio más grande que su zonificación permite dibujado encima",
+    "heroAllowed": "Permitido: hasta 11 unidades, 45–50 pies",
+    "heroBuilt": "Construido hoy: 2 pisos",
     "example": "Terreno de ejemplo",
     "stats": {
       "label": "Lo que respalda cada respuesta",

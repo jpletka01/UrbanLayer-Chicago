@@ -2074,9 +2074,9 @@
     "headline": "Know what you can build on any Chicago lot.",
     "subline": "Zoning, costs and the path to approval, from public records.",
     "explore": "Explore the map",
-    "heroAlt": "A block of the city in 3D, drifting slowly: neighboring buildings at their heights tinted by zoning, and one lot with the largest building its zoning allows drawn as a dashed outline above it",
-    "heroAllowed": "Allowed: 6 units, 60 ft",
-    "heroBuilt": "Built today: 2 units, 32 ft",
+    "heroAlt": "Our 3D map of the blocks around 1601 N Milwaukee Ave: buildings at their measured heights, tinted by zoning, and the lot marked with the largest building its zoning allows drawn over it",
+    "heroAllowed": "Allowed: up to 11 units, 45–50 ft",
+    "heroBuilt": "Built today: 2 stories",
     "example": "Example lot",
     "stats": {
       "label": "What's behind every answer",
