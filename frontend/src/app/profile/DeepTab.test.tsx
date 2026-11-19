@@ -209,7 +209,24 @@ describe("the analysis", () => {
       years: ["2023", "2025"], premium: 1.161, premium_n: 71 } } });
     show();
     await screen.findByTestId("deep-bid");
-    expect(screen.getByText(/A new condo here: \$462 a sq ft × 838 sq ft a unit .* 1\.16, the new-build premium .* with nearby areas .* no new condos sold here/)).toBeTruthy();
+    expect(screen.getByText(/A new condo here: \$462 a sq ft × 838 sq ft a unit .* 1\.16, a new unit's first sale .* with nearby areas .* no new condos sold here/)).toBeTruthy();
+    // 8 units: selling the building whole isn't offered (the band is measured on 2-6 unit buildings).
+    expect(screen.queryByRole("radio", { name: "Sell the building" })).toBeNull();
+  });
+
+  it("a 2-6 unit project can sell the whole building, priced from new 2-6 unit buildings here", async () => {
+    api.getDeepAnalysis.mockResolvedValue({ ...ANALYSIS, inputs: { ...ANALYSIS.inputs,
+      lot: { ...ANALYSIS.inputs.lot, units_allowed: 3 },
+      new_construction: { value: 541, low: 450, high: 640, level: 398, n: 1254, pooled_areas: null, new_sales: 85,
+        years: ["2023", "2025"], premium: 1.36, premium_n: 535,
+        building: { value: 300, low: 220, high: 380, level: 175, n: 84, pooled_areas: ["7", "6"], new_sales: 0, premium: 1.73, premium_n: 140 } } } });
+    show();
+    await screen.findByTestId("deep-bid");
+    fireEvent.click(screen.getByRole("radio", { name: "Sell the building" }));
+    expect(screen.getByTestId("deep-answer").textContent).toMatch(/Selling the 3-unit building whole/);
+    expect(screen.getByText(/A new 2–6 unit building here: \$300 a sq ft .* 1\.73, a new building's first sale .* with nearby areas .* no new 2–6 unit buildings sold here/)).toBeTruthy();
+    expect(screen.getByLabelText("Building sale price")).toBeTruthy();
+    expect(screen.getByTestId("deep-building-low")).toBeTruthy();
   });
 
   it("too many lots today: says so, no retry", async () => {

@@ -2074,9 +2074,9 @@
     "headline": "Sepa qué puede construir en cualquier terreno de Chicago.",
     "subline": "Zonificación, costos y el camino a la aprobación, con registros públicos.",
     "explore": "Explorar el mapa",
-    "heroAlt": "Una cuadra de la ciudad en 3D, moviéndose despacio: los edificios vecinos a su altura, teñidos por zonificación, y un terreno con el edificio más grande que su zonificación permite, dibujado con una línea punteada encima",
-    "heroAllowed": "Permitido: 6 unidades, 60 pies",
-    "heroBuilt": "Construido hoy: 2 unidades, 32 pies",
+    "heroAlt": "Nuestro mapa 3D de las cuadras alrededor de 1601 N Milwaukee Ave: los edificios a su altura medida, teñidos por zonificación, y el terreno marcado con el edificio más grande que su zonificación permite dibujado encima",
+    "heroAllowed": "Permitido: hasta 11 unidades, 45–50 pies",
+    "heroBuilt": "Construido hoy: 2 pisos",
     "example": "Terreno de ejemplo",
     "stats": {
       "label": "Lo que respalda cada respuesta",
@@ -2517,12 +2517,16 @@
       "sellNoSale": "Vender {{units}} unidades aquí permite pagar hasta unos {{bid}} por este terreno.",
       "rentNoSale": "Rentar {{units}} unidades aquí permite pagar hasta unos {{bid}} por este terreno.",
       "sellNoLand": "Con estas cifras, vender {{units}} unidades aquí no cubre el costo de construirlas, ni con el terreno gratis.",
-      "rentNoLand": "Con estas cifras, rentar {{units}} unidades aquí no alcanza su meta, ni con el terreno gratis."
+      "rentNoLand": "Con estas cifras, rentar {{units}} unidades aquí no alcanza su meta, ni con el terreno gratis.",
+      "whole": "Vender completo el edificio de {{units}} unidades permite pagar hasta unos {{bid}} por este terreno; su última venta fue de {{sale}}.",
+      "wholeNoSale": "Vender completo el edificio de {{units}} unidades permite pagar hasta unos {{bid}} por este terreno.",
+      "wholeNoLand": "Con estas cifras, vender completo el edificio de {{units}} unidades no cubre el costo de construirlo, ni con el terreno gratis."
     },
     "mode": {
       "label": "Vender o rentar",
       "sell": "Vender las unidades",
-      "rent": "Rentarlas"
+      "rent": "Rentarlas",
+      "whole": "Vender el edificio"
     },
     "bid": {
       "label": "Lo máximo que puede pagar por este terreno",
@@ -2544,7 +2548,8 @@
       "taxesToday": "hoy {{bill}}",
       "cash": "Efectivo que usted pone",
       "atPrice": "al precio de {{price}}",
-      "atBid": "al máximo a pagar"
+      "atBid": "al máximo a pagar",
+      "perBuilding": "el edificio"
     },
     "projects": {
       "label": "Proyectos",
@@ -2617,10 +2622,11 @@
       "vacancy": "Desocupación",
       "cap": "Tasa de capitalización aquí",
       "tax": "Tasa del impuesto predial",
-      "reset": "Volver a las cifras de partida"
+      "reset": "Volver a las cifras de partida",
+      "building": "Precio de venta del edificio"
     },
     "src": {
-      "newConstruction": "Un condominio nuevo aquí: {{perSqft}} por pie² × {{unitSqft}} pies² por unidad · ventas de condominios del área {{years}} ({{n}}) × {{premium}}, la prima por obra nueva · Assessor",
+      "newConstruction": "Un condominio nuevo aquí: {{perSqft}} por pie² × {{unitSqft}} pies² por unidad · ventas de condominios del área {{years}} ({{n}}) × {{premium}}, la primera venta de una unidad nueva · Assessor",
       "newConstructionPooled": " · con áreas cercanas",
       "newConstructionCarried": " · aquí no se vendieron condominios nuevos, así que la prima viene de otras áreas",
       "lotSale": "Última venta de este terreno, {{date}}",
@@ -2642,7 +2648,9 @@
         "chicago_brokers_2026": "Tasas de capitalización de corredores de Chicago para edificios pequeños, {{asOf}}",
         "spread_rule": "La tasa de capitalización de aquí más 1.5 puntos, una meta común"
       },
-      "none": "Sin registro; anote la suya"
+      "none": "Sin registro; anote la suya",
+      "newBuilding": "Un edificio nuevo de 2 a 6 unidades aquí: {{perSqft}} por pie² × {{sqft}} pies² · ventas de edificios de 2 a 6 unidades del área {{years}} ({{n}}) × {{premium}}, la primera venta de un edificio nuevo · Assessor",
+      "newBuildingCarried": " · aquí no se vendieron edificios nuevos de 2 a 6 unidades, así que la prima viene de otras áreas"
     },
     "beds": {
       "1_bedroom": "1 recámara",
@@ -2676,7 +2684,8 @@
       "usedOn": "Su análisis gratis se usó en {{where}}",
       "usedNote": "Su análisis gratis se usó en otro terreno",
       "approximate": "Necesita un terreno exacto"
-    }
+    },
+    "lowBuilding": "Se venden pocos edificios nuevos de 2 a 6 unidades, así que esta cifra puede desviarse cerca de un tercio aquí. Use la cifra de su corredor si la tiene."
   },
   "toast": {
     "close": "Cerrar"

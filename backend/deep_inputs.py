@@ -6,8 +6,9 @@ Every number the tab starts from carries where it came from, its range when ther
   type (Assessor sales by community area and year), rents by bedroom (the Census tract, HUD's ZIP-level voucher
   standard), and the effective tax rate (the parcel's tax code, as the Profile shows it).
 * **What a new condo sells for per gross sq ft here** (the committed ``new_construction_price.json``: the area's
-  condo median per gross sq ft x the citywide new-construction premium, with its band). The sale price starts here;
-  the page multiplies it by the project's floor area.
+  condo median per gross sq ft x the citywide premium of a unit's first sale, with its band), and **what a new 2-6
+  unit building sells for whole** per building sq ft (``building``, Item 133). The sale price starts here; the page
+  multiplies it by the project's floor area.
 * **Assumptions with no public source for this lot** (build cost, soft costs, loans, selling costs, operating costs,
   cap rates, a profit target): defaults from the research behind Item 124, each with its range and source named, and
   always editable on the page. Build cost is the one the answer rests on; its range is what builders report (2025),
@@ -82,10 +83,17 @@ def _new_construction_for(community_area: int | None) -> dict | None:
     row = art["community_areas"].get(str(community_area))
     if not row:
         return None
+    b, bp = row.get("building"), art.get("building_premium")
     return {
         "value": row["value"], "low": row["low"], "high": row["high"], "level": row["level"], "n": row["n"],
         "pooled_areas": row.get("areas"), "new_sales": row.get("new_sales", 0),
         "years": art["years"], "premium": art["premium"]["median"], "premium_n": art["premium"]["n"],
+        # The whole building (2-6 units) per building sq ft: a separate figure on a separate sq-ft basis (Item 133).
+        "building": {
+            "value": b["value"], "low": b["low"], "high": b["high"], "level": b["level"], "n": b["n"],
+            "pooled_areas": b.get("areas"), "new_sales": b.get("new_sales", 0),
+            "premium": bp["median"], "premium_n": bp["n"],
+        } if b and bp else None,
     }
 
 

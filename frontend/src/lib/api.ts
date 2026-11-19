@@ -320,6 +320,12 @@ export interface DeepInputs {
 export interface DeepNewConstruction {
   value: number; low: number; high: number; level: number; n: number;
   pooled_areas: string[] | null; new_sales: number; years: [string, string]; premium: number; premium_n: number;
+  /** A new 2-6 unit building sold whole, per building sq ft (Item 133): its own figure on its own sq-ft basis. */
+  building?: DeepBuildingBand | null;
+}
+export interface DeepBuildingBand {
+  value: number; low: number; high: number; level: number; n: number;
+  pooled_areas: string[] | null; new_sales: number; premium: number; premium_n: number;
 }
 export interface DeepEnvelope {
   footprint: GeoJSON.Polygon | null; footprint_sqft: number | null; approximate: boolean; method: string;
@@ -348,13 +354,13 @@ export async function getDeepAnalysis(pin: string, language: string, signal?: Ab
 export interface DeepProjectState {
   project: { kind: "largest" | "three_flat" | "townhouses" | "own"; units: number; stories: number; floor_area_sqft: number } | null;
   numbers: Record<string, number | string | null> | null;
-  mode?: "sell" | "rent";
+  mode?: "sell" | "whole" | "rent";
   step: number;
   /** The builder's own projects on this lot, the card in focus ("largest", "three_flat" or "own:<id>") and each
       card's own sale price or rent (Item 124). Absent on rows saved before them. */
   own?: { id: string; units: number; stories: number; floor_area_sqft: number; based_on?: "largest" | "three_flat" | "townhouses" }[];
   focus?: string | null;
-  prices?: Record<string, { sale_price_unit?: number; rent_unit_month?: number }>;
+  prices?: Record<string, { sale_price_unit?: number; building_price?: number; rent_unit_month?: number }>;
 }
 export async function getDeepProject(pin: string): Promise<DeepProjectState> {
   const resp = await authFetch(`${API_BASE}/api/deep-analysis/project?pin=${encodeURIComponent(pin)}`);

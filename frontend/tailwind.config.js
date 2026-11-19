@@ -124,12 +124,8 @@ export default {
         'nx-figure': ['1.5rem', { lineHeight: '2.25rem', fontWeight: '600' }],
       },
       keyframes: {
-        // The new landing (Phase 8, owner 2026-11-12): the hero scene drifts slowly; Discovery's block grid glows a few
-        // blocks at a time. Both stop under reduced motion (motion-safe: in the markup).
-        'scene-drift': {
-          '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
-          '50%': { transform: 'translate3d(-24px, -6px, 0) scale(1.03)' },
-        },
+        // The new landing (Phase 8, owner 2026-11-12): Discovery's block grid glows a few blocks at a time; it stops
+        // under reduced motion (motion-safe: in the markup). The hero is a still since 2026-11-18 (it jittered).
         // The chat's current step (Phase 8): a light passing across the words, like a thinking trace.
         'text-shimmer': {
           '0%': { backgroundPosition: '100% 0' },
@@ -166,7 +162,6 @@ export default {
         },
       },
       animation: {
-        'scene-drift': 'scene-drift 26s ease-in-out infinite',
         'block-glow': 'block-glow 9s ease-in-out infinite',
         'text-shimmer': 'text-shimmer 2.2s linear infinite',
         'nx-rim': 'nx-rim 8s linear infinite',

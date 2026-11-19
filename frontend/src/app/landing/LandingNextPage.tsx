@@ -1,9 +1,8 @@
 // The new landing page (Phase 8, wireframe v5 approved by the owner 2026-11-12): one calm first screen (the menu,
 // language, sign in, one line, one picture), an address bar pinned to the bottom of the screen at every scroll
 // position, then bands that show the product instead of describing it. Motion, all of it stopped under reduced
-// motion: the hero scene drifts, the stats and money cards count up the first time they scroll into view, and the
-// room-to-build grid glows a few blocks at a time. The hero is a placeholder drawing until the real image exists
-// (a loop rendered from our own 3D map, never satellite, Items 75 and 78).
+// motion: the stats and money cards count up the first time they scroll into view, and the room-to-build grid glows
+// a few blocks at a time. The hero is a still rendered from our own 3D map (never satellite, Items 75 and 78).
 import { useEffect, useRef, useState } from "react";
 import { useInView } from "motion/react";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,6 +14,11 @@ import { PanelMenuButton } from "../frame/AppFrame";
 import { STROKE } from "../icons";
 import { CountUp } from "../../components/CountUp";
 import { Faq } from "../ui/Faq";
+import { useThemeContext } from "../../contexts/ThemeContext";
+import heroLight1x from "./hero/hero-light-1200.jpg";
+import heroLight2x from "./hero/hero-light.jpg";
+import heroDark1x from "./hero/hero-dark-1200.jpg";
+import heroDark2x from "./hero/hero-dark.jpg";
 
 const EXAMPLE_ADDRESS = "1601 N Milwaukee Ave";
 
@@ -155,47 +159,29 @@ function ExampleTag() {
   return <span className="text-caption nx-muted">{t("landing.example")}</span>;
 }
 
-/** The placeholder hero: one block in 3D, the lot in this-lot black (white in dark) with its zoning mass dashed above
-    it, drifting slowly. */
+/** The hero: a still of our own 3D map (the Cities: Skylines style, never satellite, Items 75, 78, 80) at 1601 N
+    Milwaukee, the example address: the lot in this-lot black (white in dark) under the largest building its zoning
+    allows, rendered from the live site by `scripts/render-hero.mjs`. A still, not a moving drawing: the drift
+    jittered (owner's reviews, 2026-11-12 and 2026-11-18). Its figures sit in the caption under the picture, never on
+    top of it (owner, 2026-11-18), and are the lot's own Profile figures. */
 function Hero() {
   const { t } = useTranslation("next");
-  const f = (v: string) => ({ fill: `var(${v})` });
+  const { resolvedTheme } = useThemeContext();
+  const [small, large] = resolvedTheme === "dark" ? [heroDark1x, heroDark2x] : [heroLight1x, heroLight2x];
   return (
-    <figure className="mt-6 flex w-full max-w-[1200px] flex-col gap-2">
-      {/* The drift moves the whole picture as one composited layer (transform on a box, not on SVG shapes), so
-          nothing re-renders frame by frame (owner's review: the drawing jittered). The label stays still on top. */}
-      <div className="relative overflow-hidden rounded-[20px] bg-nx-block">
-        <div className="motion-safe:animate-scene-drift [will-change:transform]">
-        <svg viewBox="0 0 1200 460" role="img" aria-label={t("landing.heroAlt")} className="block h-auto w-full">
-          <g>
-            <path d="M0 300 L600 120 L1200 300 L600 480 Z" style={f("--sc-g1")} />
-            <path d="M120 300 L600 156 L1080 300 L600 444 Z" style={f("--sc-g2")} />
-            <path d="M330 237 L600 156 L870 237 L600 318 Z" fill="none" strokeWidth={10} style={{ stroke: "var(--sc-street)" }} />
-            <path d="M225 268 L495 187 M705 187 L975 268 M495 349 L225 268 M975 268 L705 349" strokeWidth={10} style={{ stroke: "var(--sc-street)" }} />
-            {[[300, 280, 60, 62, "b"], [420, 248, 50, 83, "b"], [690, 236, 50, 101, "p"], [800, 268, 60, 60, "b"], [440, 330, 60, 50, "n"], [650, 330, 60, 72, "b"]].map(([x, y, w, h, k]) => {
-              const [X, Y, W, H] = [x as number, y as number, w as number, h as number];
-              // An isometric box: the front face rises 0.3 per unit of width; every side face is 50 wide, falling 15.
-              const r = W * 0.3;
-              return (
-                <g key={`${X}-${Y}`}>
-                  <path d={`M${X} ${Y} L${X + W} ${Y - r} L${X + W} ${Y - r - H} L${X} ${Y - H} Z`} style={f(`--sc-${k}1`)} />
-                  <path d={`M${X + W} ${Y - r} L${X + W + 50} ${Y - r + 15} L${X + W + 50} ${Y - r + 15 - H} L${X + W} ${Y - r - H} Z`} style={f(`--sc-${k}2`)} />
-                  <path d={`M${X} ${Y - H} L${X + W} ${Y - r - H} L${X + W + 50} ${Y - r + 15 - H} L${X + 50} ${Y + 15 - H} Z`} style={f(`--sc-${k}3`)} />
-                </g>
-              );
-            })}
-            <path d="M560 300 L610 285 L610 248 L560 263 Z" className="fill-nx-lot" />
-            <path d="M610 285 L650 297 L650 260 L610 248 Z" style={f("--sc-lot-side")} />
-            <path d="M560 263 L610 248 L650 260 L600 275 Z" style={f("--sc-lot-top")} />
-            <path d="M560 300 L610 285 L610 150 L560 165 Z M610 285 L650 297 L650 162 L610 150 Z M560 165 L610 150 L650 162 L600 177 Z" className="fill-nx-lot/[0.07] stroke-nx-lot" strokeWidth={2} strokeDasharray="7 5" />
-          </g>
-        </svg>
-        </div>
-        <div aria-hidden className="absolute left-[56.5%] top-[31.5%] hidden flex-col rounded-xl bg-nx-page px-3 py-2 text-left shadow-[0_2px_10px_rgb(0_0_0/0.12)] ring-1 ring-nx-ink/15 sm:flex">
-          <span className="text-caption font-semibold">{t("landing.heroAllowed")}</span>
-          <span className="text-caption nx-muted">{t("landing.heroBuilt")}</span>
-        </div>
+    <figure className="mt-6 flex w-full max-w-[1200px] flex-col gap-2.5">
+      {/* On a phone the wide picture would be a thin strip: it crops to 16:10 around the lot (centered in the frame). */}
+      <div className="aspect-[16/10] overflow-hidden rounded-[20px] bg-nx-block sm:aspect-[1200/460]">
+        <img src={small} srcSet={`${small} 1200w, ${large} 2400w`} sizes="(min-width: 1200px) 1200px, 100vw"
+          width={1200} height={460} alt={t("landing.heroAlt")} className="block h-full w-full object-cover" fetchPriority="high" decoding="async" />
       </div>
+      <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-caption">
+        <span className="inline-flex items-center gap-2 font-semibold">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-[3px] bg-nx-lot" />{EXAMPLE_ADDRESS}
+        </span>
+        <span>{t("landing.heroAllowed")}</span>
+        <span className="nx-muted">{t("landing.heroBuilt")}</span>
+      </figcaption>
     </figure>
   );
 }

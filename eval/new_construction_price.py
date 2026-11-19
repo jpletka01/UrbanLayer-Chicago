@@ -1,18 +1,21 @@
-"""Measure what new construction sells for per square foot, by community area (Deep analysis, decision Item 124).
+"""Measure what new construction sells for per square foot, by community area (Deep analysis, decision Items 124, 133).
 
-Item 124 parked the Deep analysis tab partly because its sale price was the area's median condo of any size or age,
-so a new 3-flat bid almost nothing for its land. This measures the replacement: arm's-length Assessor sales
-(``wvhk-k5uv``, the comps' filters) of homes sold within ``--max-age`` years of being built, priced per square foot
-of the building's gross floor area, joined to the community area by PIN10 (Parcel Universe ``pabr-t5kh``):
+Arm's-length Assessor sales (``wvhk-k5uv``, the comps' filters) of new homes, priced per square foot of the
+building's gross floor area, joined to the community area by PIN10 (Parcel Universe ``pabr-t5kh``):
 
 * **Condos** (``3r7i-mrz4``): the unit's share of the building's gross area = ``char_building_sf`` x the unit's
   ownership share (``tieback_proration_rate``). The unit-size field (``char_unit_sf``) is filled for about 9% of
-  units, too few to use; the ownership share follows value, which tracks size closely within one new building.
-  Parking spaces and common-area PINs are left out. This is the basis the tab needs: it prices a project's gross
-  floor area (the zoning FAR area), so the sellable-area share is already inside the figure.
-* **2-6 unit and single-family** (``x54s-btds``): the building's square feet.
+  units, too few to use. Parking spaces and common-area PINs are left out. A condo is **new on its first recorded
+  sale ever, at most ``CONDO_MAX_AGE`` years after the year built** (Item 133): units first sell 0-9 years after the
+  Assessor's year built (peak 4), so a 2-year window caught only the earliest few and read as a recording lag.
+* **2-6 unit and single-family** (``x54s-btds``): the building's square feet. A building is **new on its first sale
+  on or after the year built, within ``--max-age`` years**: most new 2-6 unit buildings stand on a lot that sold
+  before the teardown, and that lot sale is not the new building's price.
 
-No model calls; public Socrata reads only (~200 requests, a few minutes). Writes a JSON summary (default to stdout).
+The two square-foot bases differ (a condo's share of the whole building vs the residential record's building area),
+so condo and 2-6 unit figures are never compared per square foot. Each group's any-age level per area is kept too.
+
+No model calls; public Socrata reads only (a few hundred requests, ~15 min cold). Writes a JSON summary.
 
 Usage:  PYTHONPATH=. python -m eval.new_construction_price [--first 2023 --last 2025 --max-age 2] [--out FILE]
 """
@@ -36,6 +39,8 @@ SALES = "wvhk-k5uv"
 CONDO_CHARS = "3r7i-mrz4"
 RES_CHARS = "x54s-btds"
 BATCH = 250
+CONDO_MAX_AGE = 5
+LEVEL_GROUPS = ("condo", "two_to_six")
 
 
 def _get(client: httpx.Client, dataset: str, **params: str) -> list[dict]:
@@ -92,6 +97,46 @@ def _chars(client: httpx.Client, dataset: str, pins: list[str], condo: bool) -> 
     return out
 
 
+def _history(client: httpx.Client, pins: list[str]) -> dict[str, list[dict]]:
+    """PIN -> every recorded sale (any year, unfiltered), oldest first: to find a PIN's first sale."""
+    out: dict[str, list[dict]] = defaultdict(list)
+    for i in range(0, len(pins), BATCH):
+        chunk = pins[i:i + BATCH]
+        for r in _get(client, SALES, **{
+                "$select": "pin,year,sale_date,sale_price,class,is_multisale,sale_filter_less_than_10k,"
+                           "sale_filter_deed_type",
+                "$where": f"pin in ({','.join(repr(p) for p in chunk)})", "$limit": "50000"}):
+            out[r["pin"]].append(r)
+    for rows in out.values():
+        rows.sort(key=lambda r: r.get("sale_date") or "")
+    return dict(out)
+
+
+def _arms_length(r: dict) -> bool:
+    flags = ("is_multisale", "sale_filter_less_than_10k", "sale_filter_deed_type")
+    return not any(r.get(f) in (True, "true") for f in flags)
+
+
+def first_new_sale(rows: list[dict], group: str, year_built: int, max_age: int) -> tuple[int, float] | None:
+    """(sale year, price) of the sale that counts as new, or None.
+
+    Condo: the unit's first recorded sale ever, if it falls within ``CONDO_MAX_AGE`` years of being built. Other
+    groups: the first sale on or after the year built (an earlier sale is the lot before the teardown), within
+    ``max_age`` years. Either way that sale must be arm's-length and of the same group."""
+    if group == "condo":
+        candidates, limit = rows[:1], CONDO_MAX_AGE
+    else:
+        candidates, limit = [r for r in rows if int(float(r["year"])) >= year_built][:1], max_age
+    if not candidates:
+        return None
+    r = candidates[0]
+    y = int(float(r["year"]))
+    price = rm._num(r.get("sale_price"))
+    if not (0 <= y - year_built <= limit) or not price or not _arms_length(r) or sale_group(r.get("class")) != group:
+        return None
+    return y, price
+
+
 def _summary(values: list[float]) -> dict:
     values = sorted(values)
     q = statistics.quantiles(values, n=4) if len(values) >= 4 else [values[0], statistics.median(values), values[-1]]
@@ -128,11 +173,26 @@ def measure(first: int, last: int, max_age: int, cache: Path | None = None) -> d
             chars.update(_chars(client, RES_CHARS, other_pins, condo=False))
             if chars_cache:
                 chars_cache.write_text(json.dumps(chars))
-        new = [(p, g, y, price) for p, g, y, price in sales
-               if p in chars and 0 <= y - chars[p][0] <= max_age]
-        # Every condo sale with a size, any age: the area's own price level per gross sq ft.
-        condo_any = [(p, y, price) for p, g, y, price in sales if g == "condo" and p in chars]
-        pin10s = sorted({p[:10] for p, *_ in new} | {p[:10] for p, *_ in condo_any})
+        # The PINs that could hold a new sale in the window, and every sale they ever had.
+        hist_cache = cache.with_name(cache.stem + "_history.json") if cache else None
+        cand = sorted({p for p, g, _, _ in sales if p in chars and g in ("condo", "two_to_six", "single_family")
+                       and chars[p][0] >= first - (CONDO_MAX_AGE if g == "condo" else max_age)})
+        if hist_cache and hist_cache.exists():
+            history = json.loads(hist_cache.read_text())
+        else:
+            history = _history(client, cand)
+            if hist_cache:
+                hist_cache.write_text(json.dumps(history))
+        group_of = {p: g for p, g, _, _ in sales}
+        new = []
+        for p in cand:
+            hit = first_new_sale(history.get(p, []), group_of[p], chars[p][0], max_age)
+            if hit and first <= hit[0] <= last:
+                new.append((p, group_of[p], hit[0], hit[1]))
+        print(f"{len(new)} new sales ({len(cand)} recently built PINs checked)", file=sys.stderr)
+        # Every sale with a size, any age: each group's own price level per gross sq ft by area.
+        level_sales = [(p, g, y, price) for p, g, y, price in sales if g in LEVEL_GROUPS and p in chars]
+        pin10s = sorted({p[:10] for p, *_ in new} | {p[:10] for p, *_ in level_sales})
         area: dict[str, str] = {}
         for i in range(0, len(pin10s), BATCH):
             chunk = pin10s[i:i + BATCH]
@@ -156,19 +216,19 @@ def measure(first: int, last: int, max_age: int, cache: Path | None = None) -> d
             cells[(ca, g)].append(psf)
             unit_price[(ca, g)].append(price)
             records.append([ca, g, y, round(psf, 1)])
-    any_age: dict[str, list[float]] = defaultdict(list)
-    for p, _, price in condo_any:
+    any_age: dict[tuple[str, str], list[float]] = defaultdict(list)
+    for p, g, _, price in level_sales:
         psf = price / chars[p][1]
         ca = area.get(p[:10])
         if ca and 50 <= psf <= 2500:
-            any_age[ca].append(psf)
+            any_age[(ca, g)].append(psf)
     by_area: dict[str, dict] = defaultdict(dict)
-    for ca, v in any_age.items():
-        by_area[ca]["condo_any_age"] = {"per_sqft": _summary(v)}
+    for (ca, g), v in any_age.items():
+        by_area[ca][f"{g}_any_age"] = {"per_sqft": _summary(v)}
     for (ca, g), v in cells.items():
         by_area[ca][g] = {"per_sqft": _summary(v), "price": _summary(unit_price[(ca, g)])}
     return {
-        "years": [first, last], "max_age": max_age, "groups": sorted(SALE_GROUPS),
+        "years": [first, last], "max_age": max_age, "condo_max_age": CONDO_MAX_AGE, "groups": sorted(SALE_GROUPS),
         "sales": len(sales), "with_chars": sum(1 for s in sales if s[0] in chars), "new": len(new),
         "city": {g: _summary(v) for g, v in city.items()},
         "community_areas": {ca: by_area[ca] for ca in sorted(by_area, key=int)},
