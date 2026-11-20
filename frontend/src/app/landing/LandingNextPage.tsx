@@ -44,7 +44,8 @@ export default function LandingNextPage() {
 
   return (
     <div className="ui-next nx-scene relative min-h-dvh bg-nx-page font-sans text-body text-nx-ink" data-ui-version="next" data-testid="landing">
-      <header className="flex items-center gap-2 px-4 py-3 sm:gap-3 sm:px-8">
+      {/* Pinned to the top at every scroll position, mirroring the address bar at the bottom. */}
+      <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-nx-ink/10 bg-nx-page px-4 py-3 sm:gap-3 sm:px-8" data-testid="landing-header">
         <PanelMenuButton />
         <span className="truncate text-[1.0625rem] font-bold tracking-[-0.01em]">UrbanLayer</span>
         <span className="flex-1" />
