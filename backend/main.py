@@ -138,6 +138,8 @@ if _settings_init.sentry_dsn:
     import sentry_sdk
     sentry_sdk.init(
         dsn=_settings_init.sentry_dsn,
+        environment=_settings_init.sentry_environment,
+        release=_settings_init.sentry_release or None,
         traces_sample_rate=0.1,
         send_default_pii=False,
     )

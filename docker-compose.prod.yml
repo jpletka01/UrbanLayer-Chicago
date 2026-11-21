@@ -28,6 +28,10 @@ services:
       # each backup. With this set the data-health checker alarms when that file is missing or stale;
       # in a dev checkout (unset) a missing file just reads "not probed here".
       - BACKUP_STATUS_REQUIRED=true
+      # Sentry tags (2026-11-21): which deploy an error came from, kept apart from local runs.
+      # GIT_SHA is exported by deploy/urbanlayer-deploy.sh; empty = no release tag, nothing breaks.
+      - SENTRY_ENVIRONMENT=production
+      - SENTRY_RELEASE=${GIT_SHA:-}
 
   frontend:
     build:
@@ -39,8 +43,25 @@ services:
         # Microsoft Clarity session replay (validation window, disclosed on
         # /privacy). The ID is public — it ships in every page's HTML anyway.
         VITE_CLARITY_ID: ${VITE_CLARITY_ID:-xhsx626r62}
+        # Sentry release + source maps (2026-11-21). The release is the deployed git SHA. Maps are
+        # built and uploaded only when SENTRY_AUTH_TOKEN is in the server's .env; it reaches the
+        # build as a BuildKit secret (never an image layer or build arg) and the maps are deleted
+        # after upload, so the public site never serves them. Without the token the build is as before.
+        VITE_SENTRY_ENVIRONMENT: production
+        VITE_SENTRY_RELEASE: ${GIT_SHA:-}
+        SENTRY_ORG: ${SENTRY_ORG:-}
+        SENTRY_PROJECT: ${SENTRY_FRONTEND_PROJECT:-}
+        SENTRY_URL: ${SENTRY_URL:-}
+      secrets:
+        - sentry_auth_token
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /etc/ssl/cloudflare:/etc/nginx/ssl:ro
+
+secrets:
+  # Read from SENTRY_AUTH_TOKEN in the server's .env (Compose reads .env for this too). Unset =
+  # an empty secret, and the build skips the source-map upload (checked 2026-11-21, Compose v5).
+  sentry_auth_token:
+    environment: SENTRY_AUTH_TOKEN
