@@ -10,6 +10,9 @@ import { axeViolations } from "../test/axe";
 import { lotKey, rememberRecent, readSaved } from "./lotMemory";
 import { _resetForTests } from "../saved/savedStore";
 
+// The hero loop plays unless the visitor asks for reduced motion (Item 134).
+let reduced = false;
+vi.mock("motion/react", async (orig) => ({ ...(await orig<typeof import("motion/react")>()), useReducedMotion: () => reduced }));
 let auth = { user: null, isAuthenticated: false, authRequired: true, loading: false, signIn: vi.fn(), signOut: vi.fn() };
 vi.mock("../../contexts/AuthContext", () => ({ useAuthContext: () => auth }));
 vi.mock("../../contexts/ThemeContext", () => ({
@@ -42,6 +45,9 @@ const mount = (path = "/") => render(<MemoryRouter initialEntries={[path]}><Root
 const lot = (n: number) => ({ key: lotKey(null, `${n} N Milwaukee Ave`), address: `${n} N Milwaukee Ave`, pin: null, zone: "B3-2", area: "West Town", outline: null, lat: 41.91, lon: -87.68 });
 
 beforeEach(() => {
+  reduced = false;
+  // jsdom has no media playback.
+  HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());
   localStorage.clear();
   account.length = 0;
   _resetForTests();
@@ -50,6 +56,25 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("the landing", () => {
+  it("plays the hero loop muted, inline and looping, with its first frame as the poster (Item 134)", () => {
+    mount();
+    const v = screen.getByTestId("landing-hero-video") as HTMLVideoElement;
+    expect(v.muted && v.loop && v.autoplay).toBe(true);
+    expect(v.hasAttribute("playsinline")).toBe(true);
+    expect(v.getAttribute("poster")).toMatch(/hero-poster/);
+    expect(v.getAttribute("aria-label")).toMatch(/aerial views of Chicago/);
+    // Safari autoplays only with the attribute, which React doesn't write (owner, 2026-11-19).
+    expect(v.hasAttribute("muted")).toBe(true);
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+  });
+
+  it("shows the still first frame instead of the video under reduced motion", () => {
+    reduced = true;
+    mount();
+    expect(screen.queryByTestId("landing-hero-video")).toBeNull();
+    expect(screen.getByRole("img", { name: /aerial views of Chicago/ })).toBeTruthy();
+  });
+
   it("is what a visitor who isn't signed in sees: the headline, Explore, the pinned address bar", async () => {
     const { container } = mount();
     expect(screen.getByTestId("landing")).toBeTruthy();
