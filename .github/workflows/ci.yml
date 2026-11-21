@@ -165,6 +165,7 @@ jobs:
             cd /opt/urbanlayer
             git fetch origin
             git merge origin/main
+            export GIT_SHA="$(git rev-parse HEAD)"
             # set -e above makes a failed --build fail the deploy. Without it, a broken
             # build left the OLD image running and the health curl still passed → a
             # false-success deploy (hit 2026-06-18: a committed data artifact was missing

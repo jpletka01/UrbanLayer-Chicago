@@ -10,6 +10,10 @@ import { initTracking, track } from './lib/tracking'
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
+    // Set by the production image build (docker-compose.prod.yml): the deployed git SHA, which is
+    // also the release the source maps are uploaded under (vite.config.ts).
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
+    release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
     integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: 0.1,
   });
