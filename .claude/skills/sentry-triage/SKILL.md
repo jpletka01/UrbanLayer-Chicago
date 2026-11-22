@@ -13,9 +13,9 @@ ready work batched into one PR and one deploy). Merging deploys, so it stops at 
 
 - The Sentry connector must answer. Call its `whoami`; if it fails, say "Sentry isn't connected:
   run `/mcp` → sentry → Authenticate" and stop.
-- Org and projects (EU region): fill in on the first connected run and commit the change.
-  - org: `TODO`
-  - backend project: `TODO` · frontend project: `TODO`
+- Org and projects (EU region, `https://de.sentry.io`):
+  - org: `urban-layer-chicago`
+  - backend project: `python-fastapi` · frontend project: `javascript-react`
 - Start from fresh `origin/main`: `git fetch origin && git switch -c fix/sentry-<yyyy-mm-dd> origin/main --no-track`.
   Leave any other branch's work alone.
 
