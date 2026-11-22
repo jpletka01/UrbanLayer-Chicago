@@ -21,7 +21,7 @@ from backend.legislation.pending_store import MatterRow, Snapshot, Store
 from backend.provenance import FACTS, text_impact_entries
 
 
-FIX = Path(__file__).parent / "fixtures" / "clerk" / "pending_title17_text_2026-10-28.json"
+FIX = Path(__file__).parent / "fixtures" / "clerk" / "pending_title17_text_2026-11-22.json"
 NOW = datetime(2026, 10, 28, 18, 0, tzinfo=timezone.utc)
 POPULATION = json.loads(FIX.read_text())["matters"]
 REVIEWS = impacts.load_reviews()
@@ -180,7 +180,8 @@ def test_a_proposal_needs_the_profile_to_actually_show_the_fact_it_could_change(
 @pytest.mark.parametrize("address,record,effect", [
     ("2931 N Milwaukee Ave", "O2025-0016007", "ped-street-milwaukee"),
     ("1050 W Diversey Pkwy", "O2026-0029431", "ped-street-diversey"),
-    ("1700 W Lawrence Ave", "O2026-0026237", "tod-street-lawrence"),
+    ("1700 W Lawrence Ave", "SO2026-0026237", "tod-street-lawrence"),
+    ("2430 W Belmont Ave", "SO2026-0026237", "tod-street-belmont"),  # added by the substitute (2026-11-22)
     ("3700 N Western Ave", "O2026-0026261", "tod-street-western"),
     ("4500 N Ravenswood Ave", "O2026-0026239", "tod-street-ravenswood"),
 ])
@@ -191,10 +192,11 @@ def test_street_designations_match_by_address_range(address, record, effect):
 
 @pytest.mark.parametrize("address", [
     "1601 N Milwaukee Ave", "3000 N Milwaukee Ave", "5200 N Western Ave", "2200 W Foster Ave", "1100 N Diversey Ave",
+    "2500 W Belmont Ave", "2300 W Belmont Ave",
 ])
 def test_addresses_outside_every_reviewed_segment_match_no_street_designation(address):
     found = _hits(_parcel("B3-2", address=address))
-    assert not [r for r in found if r in {"O2025-0016007", "O2026-0029431", "O2026-0026237", "O2026-0026261", "O2026-0026239"}]
+    assert not [r for r in found if r in {"O2025-0016007", "O2026-0029431", "SO2026-0026237", "O2026-0026261", "O2026-0026239"}]
 
 
 def test_each_effect_names_the_current_fact_beside_the_proposal_without_changing_it():
