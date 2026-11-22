@@ -154,6 +154,10 @@ STRIPE_PRICE_ID=price_...
 
 - **UptimeRobot**: `/health` checks
 - **Sentry**: Backend (`sentry-sdk[fastapi]`) + frontend (`@sentry/react`), EU region
+  - **Tags (2026-11-21, decision Item 134):** every production event carries `environment=production` and `release=<deployed git SHA>` (`deploy/urbanlayer-deploy.sh` exports `GIT_SHA`; `docker-compose.prod.yml` hands it to both images). Local runs tag `development`. The data-health alarms read the same env vars.
+  - **Frontend source maps:** built "hidden", uploaded by `@sentry/vite-plugin` under that release and deleted from `dist/` before nginx serves it, but only when the server's `.env` has `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_FRONTEND_PROJECT` (see `.env.example`). The token reaches the build as a BuildKit secret, never an image layer. No token or a bad one = the old build; the upload error is logged and the deploy goes on.
+  - **After changing `deploy/urbanlayer-deploy.sh`** the installed copy must be refreshed by hand (it is root-owned and command-locked): `sudo install -o root -g root -m 755 /opt/urbanlayer/deploy/urbanlayer-deploy.sh /usr/local/bin/urbanlayer-deploy`. Until then deploys carry no release tag.
+  - **Triage:** the `sentry-triage` skill (Claude Code with the `sentry` MCP server) sorts open production issues and opens one PR of fixes; it never merges or changes an issue's status.
 
 ## Database Backups
 

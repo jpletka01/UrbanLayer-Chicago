@@ -258,6 +258,11 @@ class Settings(BaseSettings):
     auth_callback_base: str = ""
 
     sentry_dsn: str = ""
+    # Tags every event so an issue can be traced to the commit that served it and kept apart from
+    # local runs. Production sets both in docker-compose.prod.yml (the release is the deployed git
+    # SHA, exported by deploy/urbanlayer-deploy.sh); a local run reads "development".
+    sentry_environment: str = "development"
+    sentry_release: str = ""
 
     mapbox_token: str = ""
     vite_mapbox_token: str = ""

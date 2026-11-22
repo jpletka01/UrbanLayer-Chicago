@@ -13,6 +13,10 @@ git fetch origin
 # Fast-forward only: a server-side divergence should stop the deploy, not be
 # silently merged into what production serves.
 git merge --ff-only origin/main
+# The commit being deployed, read by docker-compose.prod.yml as the Sentry release (backend events,
+# frontend events and the uploaded source maps all carry it).
+GIT_SHA="$(git rev-parse HEAD)"
+export GIT_SHA
 # A failed --build must fail the deploy (set -e). Otherwise the old image keeps
 # running and the health check below passes on stale code.
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
