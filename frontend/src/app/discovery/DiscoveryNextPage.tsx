@@ -441,7 +441,7 @@ export default function DiscoveryNextPage() {
           {map}
           {/* Google Maps' Layers button (Item 128): bottom left above the map credit on a desktop; on a phone at the
               top left, below the filters, opening downward (the sheet covers the bottom). */}
-          <LayersControl value={layers} onChange={setLayers} theme={mapTheme} foldSignal={mapTouches} hints={layerHints}
+          <LayersControl value={layers} onChange={setLayers} theme={mapTheme} foldSignal={mapTouches} hints={layerHints} stacked={phone}
             className={`absolute z-30 ${phone ? "left-3 top-16" : "bottom-4 left-3"}`} />
           {/* On a phone the key sits on its own line below the quick filters at the right, never over them (owner's review). */}
           <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-end" : "items-start justify-between"}`}>

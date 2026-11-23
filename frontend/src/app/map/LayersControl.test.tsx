@@ -53,6 +53,14 @@ describe("the Layers control", () => {
     expect(screen.getByTestId("layers-zoning").textContent).toContain("Zoning districts");
   });
 
+  it("on a phone the row opens under the corner square, so it fits a 360 px screen", () => {
+    const { rerender } = render(<LayersControl value={base} onChange={() => {}} theme="light" />);
+    expect(screen.getByTestId("layers-control").className).toContain("items-end");
+    expect(screen.getByTestId("layers-control").className).not.toContain("flex-col");
+    rerender(<LayersControl value={base} onChange={() => {}} theme="light" stacked />);
+    expect(screen.getByTestId("layers-control").className).toContain("flex-col");
+  });
+
   it("shows a plain tile, not a black square, when the satellite preview can't load", () => {
     render(<LayersControl value={base} onChange={() => {}} theme="light" />);
     const img = screen.getByTestId("layers-button").querySelector("img")!;

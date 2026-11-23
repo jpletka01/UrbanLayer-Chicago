@@ -87,7 +87,7 @@ function SatellitePreview({ lazy = false }: { lazy?: boolean }) {
   return <img src={SATELLITE_PREVIEW} alt="" className="h-full w-full object-cover" loading={lazy ? "lazy" : undefined} onError={() => setFailed(true)} />;
 }
 
-export function LayersControl({ value, onChange, theme, className, foldSignal = 0, hints }: {
+export function LayersControl({ value, onChange, theme, className, foldSignal = 0, hints, stacked = false }: {
   value: LayersState;
   onChange: (next: LayersState) => void;
   theme: Theme;
@@ -96,6 +96,8 @@ export function LayersControl({ value, onChange, theme, className, foldSignal = 
   foldSignal?: number;
   /** A short note under a layer's name when turning it on would show nothing right now ("Zoom in to see"). */
   hints?: Partial<Record<LayerToggle, string>>;
+  /** The row opens under the corner square, not beside it: on a phone, beside it ran ~25 px off a 375 px screen. */
+  stacked?: boolean;
 }) {
   const { t } = useTranslation("next");
   const [open, setOpen] = useState(false);
@@ -129,7 +131,7 @@ export function LayersControl({ value, onChange, theme, className, foldSignal = 
     );
   };
   return (
-    <div ref={box} className={`pointer-events-auto flex items-end gap-2 ${className ?? ""}`} data-testid="layers-control"
+    <div ref={box} className={`pointer-events-auto flex gap-2 ${stacked ? "flex-col items-start" : "items-end"} ${className ?? ""}`} data-testid="layers-control"
       onMouseEnter={touch ? undefined : () => setOpen(true)} onMouseLeave={touch ? undefined : () => setOpen(false)}>
       {/* The corner square: the other map's preview; a click switches to it (a touch screen's first tap opens the row). */}
       <button type="button" data-testid="layers-button" aria-expanded={open}
