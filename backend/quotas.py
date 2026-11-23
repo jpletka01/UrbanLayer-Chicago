@@ -8,8 +8,12 @@
   admin        counted, never refused
 
 A question is taken before the pipeline runs, with one atomic upsert per counter ("add 1 only while under the
-limit"), and given back when the turn ends without an answer (an error, or a clarification). Limits are environment
-settings (``QUOTA_*``). Nothing here stores text: subjects, periods and counts only.
+limit"), and given back when the turn ends without an answer. A failed turn gives everything back. A clarification
+gives back the visitor's question only while their free clarifications last (``clar:<subject>``, the same period,
+``QUOTA_FREE_CLARIFICATIONS``, 3), and never the network's: the router also files off-topic questions as
+clarifications, and an unlimited give-back let a signed-out visitor with one question left keep asking forever
+(seen in production 2026-11-22, Item 135). Limits are environment settings (``QUOTA_*``). Nothing here stores
+text: subjects, periods and counts only.
 """
 
 from __future__ import annotations
@@ -52,6 +56,7 @@ def limits() -> dict[str, int]:
         "anonymous_network_day": int(os.environ.get("QUOTA_ANON_IP_DAY", "15")),
         "free": int(os.environ.get("QUOTA_FREE_MONTH", "50")),
         "pro": int(os.environ.get("QUOTA_PRO_MONTH", "200")),
+        "free_clarifications": int(os.environ.get("QUOTA_FREE_CLARIFICATIONS", "3")),
     }
 
 
@@ -142,17 +147,25 @@ async def used(subject: str, period: str) -> int:
 
 @dataclass
 class Ticket:
-    """The counters one question took; ``refund`` gives them back once."""
+    """The counters one question took; ``refund`` gives them back once. The first is the visitor's own
+    (``user:`` or ``anon:``), any after it the network's."""
 
     taken: list[tuple[str, str]] = field(default_factory=list)
     refunded: bool = False
 
-    async def refund(self) -> None:
-        if self.refunded:
+    async def refund(self, *, clarification: bool = False) -> None:
+        """Give the question back. For a failed turn, every counter. For a clarification, only the visitor's own,
+        and only while their free clarifications last; past that the clarification counts as a question."""
+        if self.refunded or not self.taken:
             return
         self.refunded = True
         async with _get_lock():
-            for subject, period in self.taken:
+            if not clarification:
+                for subject, period in self.taken:
+                    await _give_back(subject, period)
+                return
+            subject, period = self.taken[0]
+            if await _take(f"clar:{subject}", period, limits()["free_clarifications"]):
                 await _give_back(subject, period)
 
 
@@ -232,7 +245,8 @@ async def prune(now: datetime | None = None) -> int:
     cutoff = int(((now or datetime.now(CHICAGO)).timestamp() - ANON_RETENTION_DAYS * 86_400) * 1000)
     conn = db._get_db()
     cur = await conn.execute(
-        "DELETE FROM usage_counters WHERE ((subject LIKE 'anon:%' OR subject LIKE 'ip:%' OR subject LIKE 'corr-%') "
+        "DELETE FROM usage_counters WHERE ((subject LIKE 'anon:%' OR subject LIKE 'ip:%' OR subject LIKE 'corr-%' "
+        "OR subject LIKE 'clar:%') "
         "AND updated_at < ?) "
         "OR (subject LIKE 'idh:%' AND period < ?)",
         (cutoff, month_period(now)),

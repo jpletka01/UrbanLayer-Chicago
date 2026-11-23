@@ -1474,6 +1474,8 @@ async def _event_stream(req: ChatRequest, outcome: dict | None = None) -> AsyncI
     yield _sse(ChatChunk(type="plan", plan=plan, t_ms=elapsed_ms()))
 
     if plan.intent == "clarification_needed" and plan.clarification:
+        if outcome is not None:
+            outcome["clarification"] = True
         clarification_text = plan.clarification
         if req.language != "en":
             try:
@@ -2888,7 +2890,8 @@ async def chat(request: Request, req: ChatRequest) -> StreamingResponse:
     outcome: dict[str, bool] = {}
 
     async def stream() -> AsyncIterator[str]:
-        # A question counts once it is answered; a clarification or a failed turn gives it back (Item 120).
+        # A question counts once it is answered; a failed turn gives it back (Item 120), and so does a
+        # clarification while the visitor's free clarifications last (Item 135).
         token = CURRENT_USER.set(user["id"] if user else None)
         try:
             async for chunk in _event_stream(req, outcome):
@@ -2896,7 +2899,7 @@ async def chat(request: Request, req: ChatRequest) -> StreamingResponse:
         finally:
             CURRENT_USER.reset(token)
             if not outcome.get("answered"):
-                await ticket.refund()
+                await ticket.refund(clarification=bool(outcome.get("clarification")))
 
     resp = StreamingResponse(
         stream(),
