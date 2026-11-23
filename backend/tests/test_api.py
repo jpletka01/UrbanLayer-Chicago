@@ -269,6 +269,21 @@ class TestChatEndpoint:
         assert len(token_events) == 1
         assert "neighborhood" in token_events[0]["text"].lower()
 
+    async def test_clarification_marks_the_outcome_for_the_quota(self):
+        """/chat gives a clarification's question back only while the free clarifications last (Item 135), so the
+        stream has to say the turn was a clarification, not an answer."""
+        from backend.main import _event_stream
+        from backend.models import ChatRequest
+
+        plan = RetrievalPlan(sources=[], location=Location(raw="", type="none"),
+                             intent="clarification_needed", clarification="Which neighborhood?")
+        outcome: dict = {}
+        with patch("backend.main.route", new_callable=AsyncMock, return_value=plan), \
+             patch("backend.main._save_request_log", new_callable=AsyncMock):
+            async for _ in _event_stream(ChatRequest(message="What's the crime like?", history=[]), outcome):
+                pass
+        assert outcome == {"clarification": True}
+
     def test_clarification_is_translated_without_a_conversation(self, client):
         """Regression: `settings` was only bound inside `if req.conversation_id`,
         so a non-English clarification on a fresh chat raised UnboundLocalError,

@@ -31,7 +31,8 @@ async def store(tmp_path, monkeypatch):
     settings.db_path = str(tmp_path / "q.db")
     settings.upload_dir = tmp_path / "uploads"
     settings.report_store_dir = tmp_path / "reports"
-    for k in ("QUOTA_ANON_TOTAL", "QUOTA_ANON_IP_DAY", "QUOTA_FREE_MONTH", "QUOTA_PRO_MONTH"):
+    for k in ("QUOTA_ANON_TOTAL", "QUOTA_ANON_IP_DAY", "QUOTA_FREE_MONTH", "QUOTA_PRO_MONTH",
+              "QUOTA_FREE_CLARIFICATIONS"):
         monkeypatch.delenv(k, raising=False)
     with patch("backend.db.get_settings", return_value=settings):
         await db.init_db()
@@ -172,7 +173,8 @@ class TestAnonymous:
 
 
 class TestChatEndpoint:
-    """The real /chat route with the stream stubbed: answered counts, clarification and failure give it back."""
+    """The real /chat route with the stream stubbed: answered counts, failure gives it back, a clarification gives
+    it back while the free clarifications last."""
 
     def _client(self, user):
         app.dependency_overrides[get_current_user] = lambda: user
@@ -182,6 +184,8 @@ class TestChatEndpoint:
         async def fake(req, outcome=None):
             if kind == "answer" and outcome is not None:
                 outcome["answered"] = True
+            if kind == "clarify" and outcome is not None:
+                outcome["clarification"] = True
             yield 'data: {"type":"done"}\n\n'
         return fake
 
@@ -208,6 +212,47 @@ class TestChatEndpoint:
         assert (await self._ask(FREE, "answer")).status_code == 200
         r = await self._ask(FREE, "answer")
         assert r.status_code == 429 and r.json()["detail"]["resets_on"]
+
+    async def test_signed_out_off_topic_turns_stop_at_the_limit(self, store):
+        """Production 2026-11-22 (Item 135): two answers, then off-topic questions the router files as
+        clarifications. Each was given back, so "1 question left" never ran out. Now three are free and the
+        fourth counts, so the visitor is refused after it."""
+        first = await self._ask(None, "answer")
+        cookie = {quotas.ANON_COOKIE: first.cookies.get(quotas.ANON_COOKIE)}
+        anon = "anon:" + cookie[quotas.ANON_COOKIE].rsplit(".", 1)[0]
+        assert (await self._ask(None, "answer", cookie)).status_code == 200
+        for _ in range(3):
+            assert (await self._ask(None, "clarify", cookie)).status_code == 200
+        assert await quotas.used(anon, "all") == 2
+        assert (await self._ask(None, "clarify", cookie)).status_code == 200  # the fourth counts
+        assert await quotas.used(anon, "all") == 3
+        r = await self._ask(None, "clarify", cookie)
+        assert r.status_code == 429 and r.json()["detail"]["plan"] == "anonymous"
+
+    async def test_clarifications_still_meet_the_network_ceiling(self, store, monkeypatch):
+        """A clarification never gives the network's count back, so new cookies can't mint free turns."""
+        monkeypatch.setenv("QUOTA_ANON_IP_DAY", "4")
+        for _ in range(4):
+            assert (await self._ask(None, "clarify")).status_code == 200  # a new cookie every time
+        r = await self._ask(None, "clarify")
+        assert r.status_code == 429 and r.json()["detail"].get("network") is True
+
+    async def test_failure_gives_back_the_network_count_too(self, store, monkeypatch):
+        monkeypatch.setenv("QUOTA_ANON_IP_DAY", "2")
+        for _ in range(4):
+            assert (await self._ask(None, "fail")).status_code == 200
+        assert (await self._ask(None, "answer")).status_code == 200
+
+    async def test_free_clarifications_reset_with_the_month(self, store, monkeypatch):
+        monkeypatch.setenv("QUOTA_FREE_CLARIFICATIONS", "1")
+        ticket, _ = await quotas.reserve(_request(), FREE, now=datetime(2026, 11, 30, 12, tzinfo=CHI))
+        await ticket.refund(clarification=True)
+        ticket, _ = await quotas.reserve(_request(), FREE, now=datetime(2026, 11, 30, 12, tzinfo=CHI))
+        await ticket.refund(clarification=True)  # past the free one: counts
+        assert await quotas.used("user:u_free", "2026-11") == 1
+        ticket, _ = await quotas.reserve(_request(), FREE, now=datetime(2026, 12, 1, 12, tzinfo=CHI))
+        await ticket.refund(clarification=True)  # a new month, a new free one
+        assert await quotas.used("user:u_free", "2026-12") == 0
 
     async def test_signed_out_gets_a_cookie_and_three_questions(self, store):
         first = await self._ask(None, "answer")

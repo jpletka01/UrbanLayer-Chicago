@@ -1955,8 +1955,8 @@ async def delete_user_account(user_id: str) -> dict:
     # Saved lots (with their private notes) and searches: the FK cascades too, but say it here (Item 119).
     await conn.execute("DELETE FROM saved_lots WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM saved_searches WHERE user_id = ?", (user_id,))
-    # Quota counters (Item 120): counts only, keyed by the account.
-    await conn.execute("DELETE FROM usage_counters WHERE subject = ?", (f"user:{user_id}",))
+    # Quota counters (Item 120) and free clarifications (Item 135): counts only, keyed by the account.
+    await conn.execute("DELETE FROM usage_counters WHERE subject IN (?, ?)", (f"user:{user_id}", f"clar:user:{user_id}"))
     # The free Deep analysis stays recorded under the identities' HMACs (Item 123); the account's own row goes.
     await conn.execute("DELETE FROM entitlement_uses WHERE subject = ?", (f"user:{user_id}",))
     # Deep analysis projects (Item 124): the FK cascades too, but say it here.
