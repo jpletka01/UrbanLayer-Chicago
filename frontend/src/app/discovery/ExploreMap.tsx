@@ -23,6 +23,7 @@ import {
   type MapTiles, type Theme,
 } from "../map/mapStyle";
 import type { Basemap } from "../map/LayersControl";
+import { watchTiles, type TileWatch } from "../map/tileWatch";
 import { STROKE } from "../icons";
 import { SuggestCorrection } from "./SuggestCorrection";
 import {
@@ -57,6 +58,9 @@ export interface ExploreMapProps {
   showRail?: boolean;
   /** Standard (our style) or Satellite (Cook County's photos, opt-in from the Layers button, Item 128). */
   basemap?: Basemap;
+  /** Satellite's photos didn't arrive (Cook County's image server not answering, Item 136): the page goes back to the
+      map and says so, rather than a click that seems to do nothing. */
+  onBasemapFailed?: () => void;
   /** The visitor's saved lots as pins (the Layers button's Saved lots, on by default; Item 128). */
   savedPoints?: Array<{ lat: number; lon: number; address: string }>;
   showSaved?: boolean;
@@ -194,7 +198,7 @@ const NONE = ["==", ["get", "__none__"], "__never__"];
 export interface Picked { pin10: string; at: [number, number]; size: [number, number]; ll: [number, number]; roads: RoadLine[]; lookup: DiscoveryOutlineLookup | null }
 
 export function ExploreMap({
-  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, basemap = "standard", savedPoints = NO_POINTS, showSaved = true, walkMiles = null, highlight = null, onView, onPickArea, sortKey,
+  measure, matches, areaCounts, ring, onRingChange, place, focus, fit = null, showZoning, showRail = true, basemap = "standard", onBasemapFailed, savedPoints = NO_POINTS, showSaved = true, walkMiles = null, highlight = null, onView, onPickArea, sortKey,
   picked: pickedProp, onPickedChange, inlineCard = true, bottomInset = 0, className,
 }: ExploreMapProps) {
   const { t, i18n } = useTranslation("next");
@@ -221,8 +225,10 @@ export function ExploreMap({
     pickedId.current = next;
   }, [picked, ready]);
   const [areas, setAreas] = useState<GeoJSON.FeatureCollection | null>(null);
-  const live = useRef({ theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring, setPicked });
-  useEffect(() => { live.current = { theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring, setPicked }; });
+  const live = useRef({ theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring, setPicked, onBasemapFailed });
+  useEffect(() => { live.current = { theme, measure, dim: matches !== null, onView, onPickArea, onRingChange, ring, setPicked, onBasemapFailed }; });
+  // Whether Satellite's photo tiles are arriving since it was switched on (Item 136).
+  const satWatch = useRef<TileWatch | null>(null);
 
   // Create the map once.
   useEffect(() => {
@@ -253,6 +259,7 @@ export function ExploreMap({
       let retryAt = 0;
       m.on("error", (e) => {
         const id = (e as unknown as { sourceId?: string }).sourceId;
+        if (id === SATELLITE_LAYER) { satWatch.current?.error(); return; }
         if (!id || !["base", "zoning", "parcels"].includes(id)) { console.warn("map:", e.error ?? e); return; }
         const now = Date.now();
         if (now - retryAt < 4000) return;
@@ -287,6 +294,7 @@ export function ExploreMap({
         window.history.replaceState(window.history.state, "", url.toString());
       };
       m.on("moveend", () => report(m));
+      m.on("sourcedata", (e) => { if (e.sourceId === SATELLITE_LAYER && e.tile) satWatch.current?.loaded(); });
       m.on("click", (e) => {
         if (m.getZoom() < LOTS_MIN_ZOOM) {
           const hit = m.queryRenderedFeatures(e.point, { layers: ["area-fill", "area-line"].filter((l) => m.getLayer(l)) })[0];
@@ -324,7 +332,8 @@ export function ExploreMap({
       mapRef.current = m;
       if (import.meta.env.DEV) (window as unknown as { __exploreMap?: MLMap }).__exploreMap = m;
     });
-    return () => { cancelled = true; map?.remove(); mapRef.current = null; };
+    const watch = satWatch;
+    return () => { cancelled = true; watch.current?.stop(); watch.current = null; map?.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -402,10 +411,14 @@ export function ExploreMap({
     if (sat) {
       if (!map.getSource(SATELLITE_LAYER)) map.addSource(SATELLITE_LAYER, satelliteSource(t("map.layers.satelliteCredit")) as never);
       if (!map.getLayer(SATELLITE_LAYER)) {
+        satWatch.current?.stop();
+        satWatch.current = watchTiles(() => { satWatch.current = null; live.current.onBasemapFailed?.(); });
         const before = map.getLayer(SATELLITE_BEFORE) ? SATELLITE_BEFORE : map.getLayer("parcel-line") ? "parcel-line" : undefined;
         map.addLayer({ id: SATELLITE_LAYER, type: "raster", source: SATELLITE_LAYER, paint: { "raster-fade-duration": 0 } }, before);
       }
     } else {
+      satWatch.current?.stop();
+      satWatch.current = null;
       if (map.getLayer(SATELLITE_LAYER)) map.removeLayer(SATELLITE_LAYER);
       if (map.getSource(SATELLITE_LAYER)) map.removeSource(SATELLITE_LAYER);
     }

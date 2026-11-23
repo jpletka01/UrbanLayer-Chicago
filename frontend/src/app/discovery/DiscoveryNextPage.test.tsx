@@ -26,6 +26,11 @@ vi.mock("./ExploreMap", () => ({
   },
 }));
 vi.mock("../../lib/useIsPhone", () => ({ useIsPhone: () => false }));
+// The tile sets the server has: zoning starts at zoom 13 (Item 136's "Zoom in to see").
+vi.mock("../map/mapInfo", async (orig) => ({
+  ...(await orig<typeof import("../map/mapInfo")>()),
+  loadMapInfo: () => Promise.resolve({ base: { minZoom: 10, maxZoom: 16 }, zoning: { minZoom: 13, maxZoom: 16 }, parcels: null, grid: null, buildings: null }),
+}));
 vi.mock("./discoveryData", async (orig) => ({
   ...(await orig<typeof import("./discoveryData")>()),
   fetchLotShape: () => Promise.resolve(null),
@@ -208,6 +213,31 @@ describe("Discovery in the new frame", () => {
     await waitFor(() => expect(mocks.runSearch).toHaveBeenCalled(), { timeout: 2000 });
     await waitFor(() => expect(screen.getByRole("button", { name: "Map", pressed: true })).toBeTruthy());
     expect(mapProps.last?.matches).toBeNull();
+  });
+
+  // Item 136 (owner's report 2026-11-22: "switching to Satellite does nothing, and every other layer choice too"). At the
+  // city view the zoning tiles have nothing to draw and nothing is saved, and Cook County's image server reset every
+  // connection: each choice now says why, and a Satellite that never arrives goes back to the map with a note.
+  it("the Layers choices say when they have nothing to show, and a failed Satellite goes back to the map", async () => {
+    localStorage.clear();
+    mocks.loadRegistry.mockResolvedValue(registry);
+    render(<MemoryRouter><DiscoveryNextPage /></MemoryRouter>);
+    await waitFor(() => expect(mapProps.last).not.toBeNull());
+    (mapProps.last!.onView as (v: unknown) => void)({ bbox: [-88, 41.6, -87.5, 42.1], zoom: 10.2, center: [-87.68, 41.84] });
+    fireEvent.mouseEnter(screen.getByTestId("layers-control"));
+    await waitFor(() => expect(screen.getByTestId("layers-zoning-hint").textContent).toBe("Zoom in to see"));
+    expect(screen.getByTestId("layers-saved-hint").textContent).toBe("None saved yet");
+    // Zoomed in to the lots, zoning has tiles: no hint.
+    (mapProps.last!.onView as (v: unknown) => void)({ bbox: [-87.7, 41.9, -87.6, 41.95], zoom: 15, center: [-87.65, 41.92] });
+    await waitFor(() => expect(screen.queryByTestId("layers-zoning-hint")).toBeNull());
+
+    fireEvent.click(screen.getByTestId("layers-button"));
+    await waitFor(() => expect(mapProps.last?.basemap).toBe("satellite"));
+    (mapProps.last!.onBasemapFailed as () => void)();
+    await waitFor(() => expect(mapProps.last?.basemap).toBe("standard"));
+    expect(screen.getByTestId("layers-button").getAttribute("aria-label")).toBe("Switch to Satellite");
+    expect(await screen.findByText(/Satellite photos aren't loading/)).toBeTruthy();
+    expect(screen.getByTestId("toast-notice")).toBeTruthy();
   });
 
   it("says so when Discovery can't load", async () => {

@@ -1795,7 +1795,10 @@
       "transit": "Transporte",
       "zoning": "Distritos de zonificación",
       "satelliteNote": "Fotos aéreas 2025 del Condado de Cook. Los colores de los terrenos quedan bajo la foto; los contornos y las búsquedas se siguen viendo.",
-      "satelliteCredit": "Imágenes: SIG del Condado de Cook, 2025"
+      "satelliteCredit": "Imágenes: SIG del Condado de Cook, 2025",
+      "zoomIn": "Acerque el mapa para verlos",
+      "noneSaved": "Aún no guarda ninguno",
+      "satelliteDown": "Las fotos satelitales no cargan: el servidor de imágenes del Condado de Cook no responde. Se muestra el mapa."
     },
     "families": {
       "residential": "Residencial",

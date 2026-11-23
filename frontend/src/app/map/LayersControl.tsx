@@ -3,14 +3,17 @@
 // it on a click; hovering it (a tap on a touch screen) opens a row beside it with the layers: Transit, Zoning districts,
 // Saved lots. No close button: the row folds when the pointer leaves or the map is touched. The data credits sit behind
 // a small info icon at the row's end (hover or click), so the row is only as wide as its tiles (owner's review
-// 2026-11-16).
+// 2026-11-16). A layer with nothing to draw at this zoom, or nothing saved, says so under its name (Item 136: a click
+// that changed nothing on the map read as broken).
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Bookmark, Info } from "lucide-react";
+import { Bookmark, ImageOff, Info } from "lucide-react";
 import { STROKE } from "../icons";
 import { CTA_COLORS, PALETTES, ZONING_COLORS, type Theme } from "./mapStyle";
 
 export type Basemap = "standard" | "satellite";
+
+export type LayerToggle = "transit" | "zoning" | "saved";
 
 export interface LayersState {
   basemap: Basemap;
@@ -71,13 +74,28 @@ function ZoningPreview() {
   );
 }
 
-export function LayersControl({ value, onChange, theme, className, foldSignal = 0 }: {
+/** The Satellite preview, or a plain tile with a crossed-out picture when Cook County's image server doesn't answer. */
+function SatellitePreview({ lazy = false }: { lazy?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span className="grid h-full w-full place-items-center bg-nx-block nx-muted" data-testid="satellite-preview-failed">
+        <ImageOff aria-hidden className="h-6 w-6" strokeWidth={STROKE} />
+      </span>
+    );
+  }
+  return <img src={SATELLITE_PREVIEW} alt="" className="h-full w-full object-cover" loading={lazy ? "lazy" : undefined} onError={() => setFailed(true)} />;
+}
+
+export function LayersControl({ value, onChange, theme, className, foldSignal = 0, hints }: {
   value: LayersState;
   onChange: (next: LayersState) => void;
   theme: Theme;
   className?: string;
   /** Changes when the map is touched: the open row folds. */
   foldSignal?: number;
+  /** A short note under a layer's name when turning it on would show nothing right now ("Zoom in to see"). */
+  hints?: Partial<Record<LayerToggle, string>>;
 }) {
   const { t } = useTranslation("next");
   const [open, setOpen] = useState(false);
@@ -98,13 +116,15 @@ export function LayersControl({ value, onChange, theme, className, foldSignal = 
   const other: Basemap = value.basemap === "standard" ? "satellite" : "standard";
   const tileBox = "relative h-14 w-14 overflow-hidden rounded-lg";
   const label = "text-[11px] font-medium leading-tight";
-  const toggle = (k: "transit" | "zoning" | "saved", preview: ReactNode) => {
+  const toggle = (k: LayerToggle, preview: ReactNode) => {
     const on = value[k];
+    const hint = hints?.[k];
     return (
       <button key={k} type="button" aria-pressed={on} data-testid={`layers-${k}`} onClick={() => onChange({ ...value, [k]: !on })}
         className="flex w-16 flex-col items-center gap-1 rounded-xl p-1 hover:bg-nx-ink/5 touch-target">
         <span className={`${tileBox} ring-2 ${on ? "ring-nx-ink" : "ring-transparent"}`}>{preview}</span>
         <span className={`${label} ${on ? "" : "nx-muted"}`}>{t(`map.layers.${k}`)}</span>
+        {hint && <span className="text-center text-[10px] leading-tight nx-muted" data-testid={`layers-${k}-hint`}>{hint}</span>}
       </button>
     );
   };
@@ -116,9 +136,7 @@ export function LayersControl({ value, onChange, theme, className, foldSignal = 
         aria-label={t("map.layers.switchTo", { map: t(`map.layers.${other}`) })}
         onClick={() => (touch && !open ? setOpen(true) : onChange({ ...value, basemap: other }))}
         className="relative h-16 w-16 overflow-hidden rounded-xl border-2 border-white shadow-[0_4px_16px_rgb(0_0_0/0.25)] touch-target">
-        {other === "satellite"
-          ? <img src={SATELLITE_PREVIEW} alt="" className="h-full w-full object-cover" loading="lazy" />
-          : <MapPreview theme={theme} />}
+        {other === "satellite" ? <SatellitePreview lazy /> : <MapPreview theme={theme} />}
         <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent pb-0.5 pt-3 text-center text-[11px] font-semibold text-white">
           {t(`map.layers.${other}`)}
         </span>
@@ -131,7 +149,7 @@ export function LayersControl({ value, onChange, theme, className, foldSignal = 
               <button type="button" onClick={() => onChange({ ...value, basemap: other })} data-testid={`layers-${other}`}
                 className="flex w-16 flex-col items-center gap-1 rounded-xl p-1 hover:bg-nx-ink/5 touch-target">
                 <span className={tileBox}>
-                  {other === "satellite" ? <img src={SATELLITE_PREVIEW} alt="" className="h-full w-full object-cover" /> : <MapPreview theme={theme} />}
+                  {other === "satellite" ? <SatellitePreview /> : <MapPreview theme={theme} />}
                 </span>
                 <span className={label}>{t(`map.layers.${other}`)}</span>
               </button>
