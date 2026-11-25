@@ -462,7 +462,7 @@ export function ExportReport({ report, onClose }: Props) {
                 return (
                   <div key={i}>
                     <h2 style={s.h2}>{section.title}</h2>
-                    <img src={section.content as string} alt={t("sidebar:map")} style={s.map} />
+                    <img src={section.content as string} alt={t("common:map")} style={s.map} />
                   </div>
                 );
               case "property":

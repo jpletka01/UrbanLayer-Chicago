@@ -2,40 +2,16 @@
   "opensInNewTab": "(opens in a new tab)",
   "newTabBlocked": "Your browser blocked the new tab. Allow pop-ups for this site and try again.",
   "history": "History",
-  "newChat": "New chat",
-  "export": "Export",
   "share": "Share",
-  "tryUrbanLayer": "Try UrbanLayer",
-  "viewHistory": "View history",
-  "chatHistory": "Chat history",
-  "noConversations": "No conversations yet",
-  "signInShort": "Sign in",
-  "signInToSave": "Sign in to save your research",
-  "signInToSaveShort": "Sign in to save",
-  "signInTitle": "Sign in to continue",
-  "signInDescription": "Create an account to save your conversations and access all features.",
-  "signInFreeNote": "Free accounts get 50 questions a month",
-  "continueBrowsing": "Continue browsing",
-  "signOut": "Sign out",
   "settings": "Settings",
-  "manageSubscription": "Manage subscription",
-  "upgrade": "Upgrade",
   "pro": "Pro",
   "admin": "Admin dashboard",
   "disclaimer": "Notice: This information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the relevant city department for official guidance.",
-  "copyLink": "Copy link",
   "copied": "Copied!",
   "copy": "Copy",
-  "revoke": "Revoke",
-  "shareConversation": "Share conversation",
-  "exportTranscript": "Export transcript",
-  "conversationActions": "Conversation actions",
   "connectionLost": "Connection lost — please try again.",
-  "sharedConversation": "This is a shared conversation — read only",
   "today": "Today",
   "yesterday": "Yesterday",
-  "daysAgo": "{{count}} days ago",
-  "deleteAll": "Clear all",
   "shareTitle": "Share this conversation",
   "shareDescription": "Anyone with this link can view this conversation read-only.",
   "creatingLink": "Creating link...",
@@ -45,46 +21,12 @@
   "createNewLink": "Create new link",
   "done": "Done",
   "close": "Close",
-  "startNewConversation": "Start a new conversation",
-  "upgradeToPro": "Upgrade to Pro",
-  "followUpPlaceholder": "Ask a follow-up...",
   "shared": "Shared",
-  "openDataPanel": "Open data panel",
   "submit": "Submit",
-  "addAttachment": "Add attachment",
-  "deleteConversation": "Delete conversation",
   "copyMessage": "Copy message",
-  "maybeLater": "Maybe later",
-  "upgradePrompt": {
-    "featureBody": "{{feature}} is a Pro feature. Upgrade to unlock it along with unlimited queries, PDF reports, and more.",
-    "genericBody": "Unlock unlimited queries, PDF zoning reports, Property Discovery, and priority support for $99/month.",
-    "cta": "Upgrade — $99/month",
-    "redirecting": "Redirecting to checkout…"
-  },
-  "reportPrompt": {
-    "title": "Get This Report",
-    "buy": "Buy Report — $25",
-    "redirecting": "Redirecting to checkout…",
-    "orPro": "Pro includes the report for every lot",
-    "upgrade": "Upgrade — $19/month",
-    "redirectingShort": "Redirecting…",
-    "bodyPrefix": "Download a professional development feasibility report for",
-    "haveCode": "Have an access code?"
-  },
   "loadConversationError": "Couldn't load conversation. It may have been deleted or you may not have access.",
   "transcriptTitle": "Chicago Transcript",
   "viewQuestionData": "Click to view this question's data",
-  "theme": {
-    "label": "Theme",
-    "light": "Light",
-    "dark": "Dark",
-    "system": "System"
-  },
-  "payments": {
-    "comingSoon": "Purchases coming soon",
-    "reportsSoon": "Single reports are no longer sold: Pro includes the report for every lot. The free Property Profile has the same underlying data, and you can view a sample report now.",
-    "proSoon": "Pro subscriptions are coming soon."
-  },
   "confidence": {
     "state": {
       "low": "Low confidence"
@@ -175,9 +117,6 @@
       "source": "Source: {{value}}",
       "scope": "Covers: {{value}}"
     },
-    "sourceHeading": "Source",
-    "unavailable": "Couldn't be checked today",
-    "ai": "AI",
     "moeMethod": {
       "acs_handbook_median": "Summed from Census rent brackets"
     },
@@ -219,10 +158,6 @@
     "sinceUnknown": "(couldn't check recently for later amendments)"
   },
   "tools": {
-    "dates": "Dates: {{label}}",
-    "code": "Code section: {{label}}",
-    "source": "Official record: {{label}}",
-    "explain": "What this means: {{label}}",
     "ask": "Ask about: {{label}}"
   },
   "quota": {
@@ -240,7 +175,6 @@
   },
   "auth": {
     "continueWith": "Continue with {{provider}}",
-    "testAccount": "local test account",
     "chooserTitle": "Sign in to UrbanLayer",
     "chooserBody": "Free, with 50 questions a month. Sign in with Google, Apple or Microsoft; we never ask for a password.",
     "close": "Close",
@@ -262,9 +196,6 @@
       }
     },
     "methods": {
-      "title": "Sign-in methods",
-      "body": "The ways into this account. Accounts are never joined by email.",
-      "add": "Add {{provider}}",
       "remove": "Remove",
       "lastOne": "That's your only way in, so it can't be removed.",
       "lastOneShort": "Only way in",
@@ -274,5 +205,6 @@
       "error": "That didn't work. Please try again."
     },
     "testNote": "Local review: a test account, no real Google, Apple or Microsoft account is used."
-  }
+  },
+  "map": "Map"
 }

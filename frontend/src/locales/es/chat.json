@@ -9,12 +9,6 @@
     "unavailable": "El chat no está disponible por el momento. Su pregunta se conservó: inténtelo de nuevo en un rato.",
     "retry": "Intentar de nuevo"
   },
-  "chips": {
-    "map": "Mapa",
-    "mapCount": "Mapa · {{count}}",
-    "data": "Datos · {{count}}",
-    "sources": "Fuentes · {{count}}"
-  },
   "placeholder": "Pregunte sobre Chicago...",
   "analyzing": "Analizando su consulta...",
   "analyzed": "Consulta analizada",
@@ -23,15 +17,6 @@
   "searchingFor": "Buscando en el código municipal \"{{query}}\"",
   "propertyFor": "Consultando registros de propiedad de {{address}}",
   "inArea": "{{label}} en {{area}}",
-  "emptyState": {
-    "heading": "Consulta al analista",
-    "subline": "Lee el código municipal de Chicago y cita las secciones. Pregunte sobre el código — o sobre cualquier parcela que haya abierto.",
-    "examples": [
-      "¿Cuáles son los requisitos de retiro para la zonificación B3-2?",
-      "¿Qué usos están permitidos en un distrito C1-2?",
-      "¿Cuándo requiere una ampliación trasera una variación de zonificación?"
-    ]
-  },
   "propertyStarters": {
     "heading": "Pregunte sobre esta propiedad",
     "sublineWithAddress": "Basado en la Ficha de {{address}} — zonificación, incentivos, comparables y el código que los respalda.",
@@ -63,13 +48,6 @@
     "sourceN": "Fuente {{n}}",
     "view": "Ver {{ref}}",
     "openSource": "Haga clic para abrir la fuente completa"
-  },
-  "crossref": {
-    "view": "Ver § {{id}}",
-    "loading": "Cargando vista previa…",
-    "unavailable": "Texto completo no disponible para esta referencia.",
-    "openSection": "Haga clic para abrir la sección completa",
-    "notCodified": "Aún no está en el texto publicado del código; una enmienda lo agregó."
   },
   "dataPill": {
     "crime": "Datos de delitos",
@@ -133,7 +111,6 @@
       "adu_area": "un área elegible para ADU",
       "aro_zone": "una zona de la Ordenanza de Requisitos de Vivienda Asequible",
       "fema_floodplain": "una zona inundable de FEMA"
-    },
-    "exportAnswered": "Respondida el {{date}}"
+    }
   }
 }
