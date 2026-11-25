@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main.tsx!",
+    "scripts/*.mjs",
+    "e2e/*.mjs"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": [
+    "@maplibre/maplibre-gl-style-spec"
+  ],
+  "ignoreUnresolved": [
+    "geojson"
+  ],
+  "ignore": [
+    "src/test-setup.ts",
+    "src/app/test/**",
+    "src/**/*fixtures.ts"
+  ]
+}

@@ -4,8 +4,6 @@ figure entries built from it, and the source-date precedence."""
 from __future__ import annotations
 
 import copy
-import json
-import sqlite3
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
@@ -19,7 +17,7 @@ from backend.models import (
     AssessmentRecord, CensusTractDemographics, CrimeSummary, DemographicsSummary,
 )
 from backend.provenance import build_provenance
-from backend.provenance_figures import area_benchmark_entry, source_dates, year_end
+from backend.provenance_figures import source_dates, year_end
 from backend.retrieval.neighborhood import census_tract as ct
 from backend.retrieval.property.assessment_level import CLASS_NORM_RATE_PER_LEVEL, CLASS_NORM_TAX_YEAR
 from backend.tests.test_census_tract import SAMPLE_RESPONSE
@@ -306,34 +304,6 @@ def test_a_year_only_frozen_vintage_reads_as_that_years_end():
 
 
 # --- area benchmark ------------------------------------------------------------------------------------------------
-
-def test_the_area_benchmark_carries_its_sample_coverage_and_index_date():
-    stats = {"community_area": 3, "median_mv_per_land_sqft": 187.5, "n_mv_psf": 189, "coverage_share": 189 / 4905, "index_built": "2026-10-01"}
-    e = area_benchmark_entry(stats, QD)
-    assert e["coverage"]["n"] == 189 and e["coverage"]["sample"] == "area_sample"
-    assert e["confidence"] == "withheld" and e["confidence_reasons"] == ["low_coverage"]  # 3.9% of Uptown's parcels
-    assert (e["as_of"], e["tier"], e["method_key"], e["basis_tier"]) == ("2026-10-01", "our_calculation", "calculation", "official_record")
-    ok = area_benchmark_entry({**stats, "n_mv_psf": 3000, "coverage_share": 0.6}, QD)
-    assert ok["confidence"] == "standard"
-    assert area_benchmark_entry({"median_mv_per_land_sqft": None, "n_mv_psf": 0}, QD) is None
-
-
-def test_the_area_scan_reports_coverage_and_the_index_build_date(tmp_path):
-    from backend.retrieval import area_stats
-
-    db = tmp_path / "idx.db"
-    con = sqlite3.connect(db)
-    con.execute("CREATE TABLE parcels (pin TEXT, attrs TEXT, regions TEXT)")
-    con.execute("CREATE TABLE meta (id INTEGER, built_at INTEGER)")
-    con.execute("INSERT INTO meta VALUES (1, ?)", (int(datetime(2026, 10, 1, tzinfo=timezone.utc).timestamp()),))
-    rows = [({"total_assessed_value": 100000, "land_sqft": 5000, "class": "205"}, ["neighborhood:24"]),
-            ({"total_assessed_value": 120000, "class": "205"}, ["neighborhood:24"])]  # no land area
-    for i, (a, r) in enumerate(rows):
-        con.execute("INSERT INTO parcels VALUES (?, ?, ?)", (f"1431332018{i:04d}", json.dumps(a), json.dumps(r)))
-    con.commit()
-    con.close()
-    stats = area_stats._scan_index(str(db))[24]
-    assert stats["n_parcels"] == 2 and stats["n_mv_psf"] == 1 and stats["coverage_share"] == 0.5 and stats["index_built"] == "2026-10-01"
 
 
 def test_a_zero_is_a_figure():

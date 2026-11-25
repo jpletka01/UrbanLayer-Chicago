@@ -7,7 +7,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import type { PendingAttachment } from "../components/ChatInput";
 import {
   createConversation,
   getConversation,
@@ -25,6 +24,12 @@ import { useAuthContext } from "../contexts/AuthContext";
 import { buildScorecardContext } from "./scorecardContext";
 import { takeHandoff } from "./openInNewTab";
 import { track } from "./tracking";
+
+/** A file picked for the next question, with its image preview URL while it waits. */
+export interface PendingAttachment {
+  file: File;
+  previewUrl: string | null;
+}
 
 export interface ChatSessionCallbacks {
   onContext?: (ctx: ContextObject) => void;
@@ -452,5 +457,3 @@ export function useChatSession(options: ChatSessionOptions = {}) {
     dismissAuth,
   };
 }
-
-export type ChatSession = ReturnType<typeof useChatSession>;

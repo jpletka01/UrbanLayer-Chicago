@@ -25,10 +25,6 @@ export const COMMUNITY_AREAS: Record<number, string> = {
   75: "Morgan Park", 76: "O'Hare", 77: "Edgewater",
 };
 
-export const SORTED_CAS = Object.entries(COMMUNITY_AREAS)
-  .sort(([, a], [, b]) => a.localeCompare(b))
-  .map(([id, name]) => ({ id: Number(id), name }));
-
 export const NEIGHBORHOOD_PREFIX = "neighborhood:";
 
 export function caName(ref: string): string {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { JudgeResults } from "../../lib/types";
-import type { PieSlice } from "../../lib/analytics";
+import type { PieSlice } from "./PieChart";
 import { BarChart } from "./BarChart";
 import { PieChart } from "./PieChart";
 import { CountUp } from "../../components/CountUp";

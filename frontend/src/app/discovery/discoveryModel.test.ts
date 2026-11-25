@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { ResultRow } from "../../discovery/types";
-import { shapePath } from "./discoveryData";
 import {
   areaSuggestions, cardModel, foldComplexes, clampMiles, classifyQuery, measureColorExpr, measureSteps, measureTexture, unknownMeasureFilter, milesBetween, placeRegion, placeSuggestions, quickFromPanel,
   quickPanel, ringMiles, ringPolygon, ringRegion, NOT_DRAWN, formatAt, parseAt, ownerLine,
@@ -125,14 +124,6 @@ describe("the ring", () => {
     expect(milesBetween(41.9105, -87.6775, ring[0][1], ring[0][0])).toBeCloseTo(0.5, 2);
     expect(clampMiles(7)).toBe(2);
     expect(clampMiles(0.33)).toBe(0.35);
-  });
-});
-
-describe("a lot's picture", () => {
-  it("draws the outline to scale inside the box", () => {
-    const d = shapePath({ type: "Polygon", coordinates: [[[-87.7, 41.9], [-87.6999, 41.9], [-87.6999, 41.9003], [-87.7, 41.9003], [-87.7, 41.9]]] }, 160, 72);
-    expect(d).toMatch(/^M[\d.]+,[\d.]+L/);
-    for (const n of d!.match(/[\d.]+/g)!.map(Number)) expect(n).toBeLessThanOrEqual(160);
   });
 });
 

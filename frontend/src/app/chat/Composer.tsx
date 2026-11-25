@@ -5,7 +5,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUp, Mic, MicOff, Paperclip, Square, X } from "lucide-react";
-import type { PendingAttachment } from "../../components/ChatInput";
+import type { PendingAttachment } from "../../lib/useChatSession";
 import { STROKE } from "../icons";
 import { useDictation } from "./useDictation";
 

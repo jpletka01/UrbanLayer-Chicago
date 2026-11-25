@@ -5,8 +5,6 @@ import type { ContextObject, Message } from "../../lib/types";
 import { sourcesFor } from "./evidenceModel";
 import { chooseLens, lensView, type Lens } from "./chatLens";
 
-export type PreviewKind = "lot" | "map" | "sources";
-
 export interface LotPreview { kind: "lot"; address: string; pin: string | null; href: string }
 /** The map chip names what its lens draws: the lot, or how many crimes or projects are nearby. */
 export interface MapPreview { kind: "map"; lens: Lens; count: number; near: boolean }

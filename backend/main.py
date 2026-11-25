@@ -64,7 +64,6 @@ from backend.data_health import failures
 from backend.provenance import withhold_low_evidence
 from backend.retrieval import buildings, business, crime, food_inspections, three11, vacant
 from backend.retrieval.geo import (
-    COMMUNITY_AREAS,
     community_area_by_point,
     community_area_name,
     geocode_address,
@@ -80,7 +79,6 @@ from backend.retrieval.regulatory.aro_housing import aro_housing_by_community_ar
 from backend.retrieval.zoning import lookup_zoning
 from backend.retrieval.vector_search import (
     expand_cross_references,
-    get_full_section,
     semantic_search,
 )
 from backend.router import route
@@ -162,7 +160,6 @@ _CSRF_EXEMPT_PATHS = {
     "/api/auth/logout",
     "/api/auth/apple/callback",  # Apple's cross-site form POST; the signed single-use state is the check
     "/api/events",
-    "/api/newsletter",  # anonymous email capture; single INSERT OR IGNORE
 }
 
 
@@ -449,48 +446,6 @@ async def autocomplete(q: str = "") -> list[dict]:
     if len(q.strip()) < 3 or len(q) > _MAX_ADDRESS_CHARS:
         return []
     return await geocode_address_suggestions(q)
-
-
-@app.get("/api/community-area")
-async def community_area_lookup(lat: float, lon: float) -> dict:
-    ca = community_area_by_point(lat, lon)
-    if ca is None:
-        raise HTTPException(status_code=404, detail="Location not within Chicago")
-    return {"community_area": ca, "name": COMMUNITY_AREAS.get(ca, "")}
-
-
-@app.get("/section/{section_id}")
-async def section(section_id: str) -> dict:
-    """Return the full reassembled municipal-code section by ID.
-
-    Backs the clickable cross-references in the sources panel: a chunk may cite
-    a section that wasn't itself retrieved, so we look it up on demand.
-    """
-    from backend.legislation.currency import amendments_touching, public
-
-    chunk = await get_full_section(section_id)
-    if chunk is None:
-        raise _section_not_found(section_id)
-    return {**chunk.model_dump(), "amended_since": [public(a) for a in amendments_touching(section_id)]}
-
-
-def _section_not_found(section_id: str, detail: str | None = None) -> HTTPException:
-    """404 for a section our code text lacks. When an amendment passed after the text's
-    vintage adds it (17-3-0600, TOD streets), say so and link the ordinance instead of
-    a bare "not found"."""
-    from backend.legislation.currency import amendments_touching, public
-
-    added_by = [public(a) for a in amendments_touching(section_id)]
-    if not added_by:
-        return HTTPException(status_code=404, detail=detail or f"Section {section_id} not found")
-    first = added_by[0]
-    return HTTPException(status_code=404, detail={
-        "message": (f"Section {section_id} isn't in the published Municipal Code text we use yet. "
-                    f"{first['record']}, passed {first['passed_on']}, added or changed it; see the ordinance."),
-        "section_id": section_id,
-        "not_in_published_code": True,
-        "added_by": added_by,
-    })
 
 
 # ---------------------------------------------------------------------------
@@ -3323,29 +3278,10 @@ _VALID_EVENT_NAMES = {
     "signup_completed",
     "segment_selected",
     "scorecard_feedback",
-    "newsletter_signup",
     # NOTE: purchase_completed / subscription_started are deliberately NOT
     # accepted here — money events are written server-side by the Stripe
     # webhook (payments.py) so a browser can't spoof them into the funnel.
 }
-
-
-_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
-
-@app.post("/api/newsletter")
-async def newsletter_signup(request: Request) -> dict:
-    """Anonymous newsletter capture — the owned email channel."""
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid body")
-    email = (body.get("email") or "").strip()
-    if not email or len(email) > 254 or not _EMAIL_RE.match(email):
-        raise HTTPException(status_code=400, detail="Invalid email")
-    source = str(body.get("source") or "")[:64] or None
-    added = await db.add_subscriber(email, source)
-    return {"ok": True, "added": added}
 
 
 @app.post("/api/events")

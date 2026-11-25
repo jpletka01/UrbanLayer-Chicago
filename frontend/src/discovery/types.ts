@@ -81,8 +81,6 @@ export interface RangeMeta {
   presets?: RangePreset[] | null;
 }
 
-export type FilterTier = "essential" | "more";
-
 export interface FilterDef {
   id: string;
   category: FilterCategory;

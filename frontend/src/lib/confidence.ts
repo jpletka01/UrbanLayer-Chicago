@@ -98,11 +98,6 @@ function fmtMoe(moe: number, unit: CaptionOpts["unit"]): string {
   return `±${fmtNumber(moe)}`;
 }
 
-/** "±$220" / "±2.5 pts" for a figure's published margin of error, or null when the source publishes none. */
-export function marginText(entry: Provenance | null | undefined, unit: CaptionOpts["unit"]): string | null {
-  return entry?.precision?.moe != null ? fmtMoe(entry.precision.moe, unit) : null;
-}
-
 const SOURCE_AGE_DAYS = 730;
 
 /** A year is enough for a source that is itself years old, or one dated by tax year or vintage;
@@ -229,8 +224,6 @@ function methodText(entry: Provenance, t: TFunction): string {
   }
   return t(`confidence.method.${entry.method_key}`, { defaultValue: entry.method ?? "" });
 }
-
-export interface SourceBullet { field: string; text: string }
 
 /** The five fields for a label's tooltip: authority, as of, coverage, precision, method.
     Every figure with an entry gets this block, captioned or not, so its source is one tap away. */

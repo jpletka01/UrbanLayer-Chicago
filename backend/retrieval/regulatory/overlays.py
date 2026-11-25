@@ -289,11 +289,3 @@ async def query_overlays_checked(
     return out
 
 
-async def query_all_overlays(
-    lat: float,
-    lon: float,
-    *,
-    client: httpx.AsyncClient | None = None,
-) -> list[tuple[int, dict]]:
-    """The hits from :func:`query_overlays_checked` (map highlighting only)."""
-    return (await query_overlays_checked(lat, lon, client=client)).hits

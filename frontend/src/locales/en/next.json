@@ -1,8 +1,4 @@
 {
-  "preview": {
-    "badge": "Preview",
-    "exit": "Exit preview"
-  },
   "nav": {
     "search": "Search",
     "discovery": "Discovery",
@@ -227,7 +223,6 @@
       "zoned": "Zoned {{zone}}.",
       "noZone": "The City's zoning map shows no district at this point.",
       "zoningUnchecked": "The zoning district couldn't be checked yet.",
-      "checkingLabel": "Checking",
       "checking": {
         "units": "Checking County building records",
         "tax": "Checking County tax records",
@@ -400,7 +395,6 @@
         "label": "Assessor's value",
         "year": "{{year}} assessment",
         "none": "No assessments on record",
-        "chartLabel": "Assessor's value by year: {{list}}",
         "hint": "Hover a year for its value; click to keep it shown."
       }
     },
@@ -677,7 +671,6 @@
         "what": "census figures",
         "notChecked": "Couldn't check the census figures today.",
         "fact": {
-          "owner_occupied_pct": "Homes lived in by their owners",
           "bachelors_or_higher_pct": "Adults with a bachelor's degree or more",
           "poverty_rate": "People below the poverty line",
           "median_age": "Median age"
@@ -686,7 +679,6 @@
         "dist": {
           "transportation_distribution": "How people get to work",
           "age_distribution": "Age",
-          "income_distribution": "Household income",
           "education_distribution": "Education (adults 25+)"
         },
         "bucket": {
@@ -1866,34 +1858,19 @@
     "export": "Export as PDF",
     "share": "Share",
     "minimize": "Back to the conversation",
-    "mapTitle": "Map · {{place}}",
-    "sourcesTitle_one": "{{count}} source",
-    "sourcesTitle_other": "{{count}} sources",
     "mapLabel": "Map of this answer's records",
     "mapUnavailable": "The map can't be shown in this browser.",
     "codeSource": "Chicago Municipal Code",
     "amendedSince_one": "The City Council passed {{count}} amendment touching this section on {{date}}, after this text's date.",
     "amendedSince_other": "The City Council passed {{count}} amendments touching this section since {{date}}, after this text's date.",
-    "point": {
-      "crime_one": "{{count}} crime",
-      "crime_other": "{{count}} crimes",
-      "request_one": "{{count}} 311 request",
-      "request_other": "{{count}} 311 requests",
-      "permit_one": "{{count}} permit",
-      "permit_other": "{{count}} permits"
-    },
-    "points_one": "{{count}} record",
-    "points_other": "{{count}} records",
     "preview": {
       "lot": "Profile",
       "map": "Map",
-      "sources": "Sources",
-      "data": "Data"
+      "sources": "Sources"
     },
     "signInTitle": "Sign in to keep going",
     "signInBody": "You've used today's free questions. Sign in for more; your conversation stays here.",
     "signInClose": "Close",
-    "dataTitle": "Records · {{place}}",
     "steps": {
       "reading": "Reading your question",
       "summary_one": "Checked {{count}} source · {{seconds}} s",
@@ -1909,25 +1886,6 @@
     "lens": {
       "theArea": "the community area",
       "lot": "The lot and the zoning around it",
-      "lotLeftOut": "Crime and permits aren't drawn for a question about the lot.",
-      "safety_one": "{{count}} crime within ½ mile · {{days}} days",
-      "safety_other": "{{count}} crimes within ½ mile · {{days}} days",
-      "safetyArea_one": "{{count}} crime · {{days}} days",
-      "safetyArea_other": "{{count}} crimes · {{days}} days",
-      "split": "{{violent}} violent · {{property}} property",
-      "inArea_one": "{{count}} in {{area}}",
-      "inArea_other": "{{count}} in {{area}}",
-      "recentPins_one": "Pin: the {{count}} from the last 30 days within ¼ mile",
-      "recentPins_other": "Pins: the {{count}} from the last 30 days within ¼ mile",
-      "noPins": "Squares show counts; too many or none recent to pin",
-      "construction_one": "{{count}} new building, demolition or big renovation within ½ mile",
-      "construction_other": "{{count}} new buildings, demolitions and big renovations within ½ mile",
-      "constructionArea_one": "{{count}} new building, demolition or big renovation",
-      "constructionArea_other": "{{count}} new buildings, demolitions and big renovations",
-      "smallLeftOut_one": "{{count}} smaller permit not drawn",
-      "smallLeftOut_other": "{{count}} smaller permits not drawn (repairs, signs, small work)",
-      "area_one": "{{count}} record · {{days}} days, counted by block",
-      "area_other": "{{count}} records · {{days}} days, counted by block",
       "kind": {
         "new": "New building",
         "renovation": "Big renovation",
@@ -2396,7 +2354,6 @@
     "perMonthPrice": "{{price}} a month",
     "perYearPrice": "{{price}} a year",
     "free": "Free",
-    "pro": "Pro",
     "yourPlan": "Your plan",
     "aMonth": "a month",
     "aYear": "a year",
@@ -2552,7 +2509,6 @@
       "perBuilding": "the building"
     },
     "projects": {
-      "label": "Projects",
       "units": "Units",
       "floors": "Floors",
       "floorArea": "Floor area",
@@ -2574,8 +2530,6 @@
       "fits": "Fits the numbers",
       "less": "Less: {{what}}",
       "more": "More: {{what}}",
-      "atSale": "if each sells for {{price}}",
-      "atRent": "at {{price}} a month each",
       "remove": "Remove your project {{n}}",
       "name": {
         "largest": "the largest",
