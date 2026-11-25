@@ -62,7 +62,7 @@ export async function loadRegistry(force = false): Promise<Registry | null> {
   return _pending;
 }
 
-/** Test-only: drop the in-memory cache. */
+/** Test-only: drop the in-memory cache. @internal */
 export function _resetCache(): void {
   _cache = null;
   _pending = null;

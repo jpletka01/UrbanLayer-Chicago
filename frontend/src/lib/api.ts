@@ -432,25 +432,6 @@ export function fetchPaymentsStatus(): Promise<PaymentsStatus> {
   return _paymentsStatus;
 }
 
-export async function checkReportAccess(
-  parcel: SelectedParcel,
-): Promise<{ has_access: boolean; reason: string }> {
-  // lat/lon accompany the pin so _resolve_location short-circuits on the
-  // explicit point instead of re-resolving the pin server-side.
-  const qs = new URLSearchParams({
-    lat: String(parcel.lat),
-    lon: String(parcel.lon),
-  });
-  if (parcel.pin) qs.set("pin", parcel.pin);
-  try {
-    const resp = await authFetch(`${API_BASE}/api/report/access?${qs}`);
-    if (!resp.ok) return { has_access: false, reason: "error" };
-    return resp.json();
-  } catch {
-    return { has_access: false, reason: "error" };
-  }
-}
-
 export interface ReportPurchase {
   id: number;
   address: string | null;
