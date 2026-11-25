@@ -543,16 +543,16 @@
    "no_impact_reason": "Use category for electrical substations; no Profile fact."
   },
   "O2026-0026237": {
-   "reviewed_record": "O2026-0026237",
-   "title": "Designation of segment of W Lawrence Ave right-of-way on Map Nos. 11-H, 11-G, 13-H, and 13-G as Transient Oriented Development (TOD) Street and amendment of Municipal Code Section 17-3-0602-F designating portion of W Lawrence Ave as Transient Oriented Development (TOD) Street",
+   "reviewed_record": "SO2026-0026237",
+   "title": "Designation of segment of W Lawrence Ave right-of-way on Map Nos. 11-H, 11-G, 13-H, and 13-G as Transient Oriented Development (TOD) Street and amendment of Municipal Code Section 17-3-0602-F designating portion of W Lawrence Ave as Transient Oriented Development (TOD) Street - A-9136",
    "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=A93BFA28-B069-F111-A823-001DD80F48C2",
    "review_status": "reviewed",
-   "reviewed_on": "2026-10-28",
-   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "reviewed_on": "2026-11-22",
+   "reviewed_by": "claude (read in session, 2026-11-22: the substitute replaced the 2026-10-28 review of O2026-0026237)",
    "basis": "ordinance",
-   "source_attachment": "TOD Street -  Lawrence Avenue - Western to Clark.pdf",
+   "source_attachment": "SO2026-0026237 Substitute Ordinance.pdf",
    "pages_read": "1 of 1",
-   "summary": "Designates W Lawrence Ave, Clark to Western (1500-2400 W), as a TOD street by adding it to 17-3-0602-F.",
+   "summary": "Designates two TOD street segments by adding them to 17-3-0602-F: W Lawrence Ave, Clark to Western (1500-2400 W), as the original did, and, new in the substitute, W Belmont Ave, Western to Campbell (2400-2460 W).",
    "impacts": [
     {
      "id": "tod-street-lawrence",
@@ -570,6 +570,29 @@
         "suffix": "AVE",
         "from": 1500,
         "to": 2400
+       }
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "whether this address is on a TOD street, which carries use prohibitions and rezoning rules for abutting lots (17-3-0602 to 17-3-0604)"
+    },
+    {
+     "id": "tod-street-belmont",
+     "sections": [
+      "17-3-0602-F"
+     ],
+     "fact_ids": [
+      "note.tod_street"
+     ],
+     "applies_when": {
+      "address_ranges": [
+       {
+        "direction": "W",
+        "street": "BELMONT",
+        "suffix": "AVE",
+        "from": 2400,
+        "to": 2460
        }
       ]
      },
