@@ -2,40 +2,16 @@
   "opensInNewTab": "(se abre en una pestaña nueva)",
   "newTabBlocked": "Su navegador bloqueó la pestaña nueva. Permita las ventanas emergentes para este sitio e inténtelo de nuevo.",
   "history": "Historial",
-  "newChat": "Nueva consulta",
-  "export": "Exportar",
   "share": "Compartir",
-  "tryUrbanLayer": "Probar UrbanLayer",
-  "viewHistory": "Ver historial",
-  "chatHistory": "Historial de consultas",
-  "noConversations": "Aún no hay conversaciones",
-  "signInShort": "Iniciar sesión",
-  "signInToSave": "Inicie sesión para guardar su investigación",
-  "signInToSaveShort": "Guardar su trabajo",
-  "signInTitle": "Inicie sesión para continuar",
-  "signInDescription": "Cree una cuenta para guardar las conversaciones y acceder a todas las funciones.",
-  "signInFreeNote": "Las cuentas gratuitas tienen 50 preguntas al mes",
-  "continueBrowsing": "Continuar navegando",
-  "signOut": "Cerrar sesión",
   "settings": "Configuración",
-  "manageSubscription": "Administrar suscripción",
-  "upgrade": "Mejorar plan",
   "pro": "Pro",
   "admin": "Panel de administración",
   "disclaimer": "Aviso: Esta información se basa en documentos oficiales de la ciudad, pero no constituye asesoramiento legal. Consulte a un abogado o comuníquese con el departamento municipal correspondiente para obtener orientación oficial.",
-  "copyLink": "Copiar enlace",
   "copied": "¡Copiado!",
   "copy": "Copiar",
-  "revoke": "Revocar",
-  "shareConversation": "Compartir conversación",
-  "exportTranscript": "Exportar transcripción",
-  "conversationActions": "Acciones de la conversación",
   "connectionLost": "Se perdió la conexión. Por favor, inténtelo de nuevo.",
-  "sharedConversation": "Esta es una conversación compartida (solo lectura)",
   "today": "Hoy",
   "yesterday": "Ayer",
-  "daysAgo": "Hace {{count}} días",
-  "deleteAll": "Borrar todo",
   "shareTitle": "Compartir esta conversación",
   "shareDescription": "Cualquier persona con este enlace puede ver esta conversación en modo de solo lectura.",
   "creatingLink": "Creando enlace...",
@@ -45,46 +21,10 @@
   "createNewLink": "Crear nuevo enlace",
   "done": "Listo",
   "close": "Cerrar",
-  "startNewConversation": "Iniciar nueva conversación",
-  "upgradeToPro": "Mejorar a Pro",
-  "followUpPlaceholder": "Escriba una consulta de seguimiento...",
   "shared": "Compartida",
-  "openDataPanel": "Abrir panel de datos",
   "submit": "Enviar",
-  "addAttachment": "Adjuntar archivo",
-  "deleteConversation": "Eliminar conversación",
-  "copyMessage": "Copiar mensaje",
-  "maybeLater": "Quizás más tarde",
-  "upgradePrompt": {
-    "featureBody": "{{feature}} es una función Pro. Actualice para desbloquearla junto con consultas ilimitadas, informes en PDF y más.",
-    "genericBody": "Desbloquee consultas ilimitadas, informes de zonificación en PDF, Descubrimiento de propiedades y soporte prioritario por $99/mes.",
-    "cta": "Actualizar — $99/mes",
-    "redirecting": "Redirigiendo al pago…"
-  },
-  "reportPrompt": {
-    "title": "Obtenga este informe",
-    "buy": "Comprar informe — $25",
-    "redirecting": "Redirigiendo al pago…",
-    "orPro": "Pro incluye el informe de cada terreno",
-    "upgrade": "Actualizar — $19 al mes",
-    "redirectingShort": "Redirigiendo…",
-    "bodyPrefix": "Descargue un informe profesional de viabilidad de desarrollo para",
-    "haveCode": "¿Tiene un código de acceso?"
-  },
   "loadConversationError": "No se pudo cargar la conversación. Es posible que se haya eliminado o que no tenga acceso.",
   "transcriptTitle": "Transcripción de Chicago",
-  "viewQuestionData": "Haga clic para ver los datos de esta pregunta",
-  "theme": {
-    "label": "Tema",
-    "light": "Claro",
-    "dark": "Oscuro",
-    "system": "Sistema"
-  },
-  "payments": {
-    "comingSoon": "Compras próximamente",
-    "reportsSoon": "Ya no se venden informes sueltos: Pro incluye el informe de cada terreno. La Ficha gratuita tiene los mismos datos de base, y ya puede ver un informe de muestra.",
-    "proSoon": "Las suscripciones Pro estarán disponibles próximamente."
-  },
   "confidence": {
     "state": {
       "low": "Confianza baja"
@@ -175,9 +115,6 @@
       "source": "Fuente: {{value}}",
       "scope": "Abarca: {{value}}"
     },
-    "sourceHeading": "Fuente",
-    "unavailable": "No se pudo verificar hoy",
-    "ai": "IA",
     "moeMethod": {
       "acs_handbook_median": "Suma de los rangos de renta del Censo"
     },
@@ -219,10 +156,6 @@
     "sinceUnknown": "(no se pudo verificar recientemente si hay enmiendas posteriores)"
   },
   "tools": {
-    "dates": "Fechas: {{label}}",
-    "code": "Sección del código: {{label}}",
-    "source": "Registro oficial: {{label}}",
-    "explain": "Qué significa: {{label}}",
     "ask": "Preguntar sobre: {{label}}"
   },
   "quota": {
@@ -240,7 +173,6 @@
   },
   "auth": {
     "continueWith": "Continuar con {{provider}}",
-    "testAccount": "cuenta de prueba local",
     "chooserTitle": "Inicie sesión en UrbanLayer",
     "chooserBody": "Es gratis, con 50 preguntas al mes. Inicie sesión con Google, Apple o Microsoft; nunca le pedimos una contraseña.",
     "close": "Cerrar",
@@ -262,9 +194,6 @@
       }
     },
     "methods": {
-      "title": "Formas de iniciar sesión",
-      "body": "Las formas de entrar a esta cuenta. Las cuentas nunca se unen por correo electrónico.",
-      "add": "Agregar {{provider}}",
       "remove": "Quitar",
       "lastOne": "Es su única forma de entrar, así que no se puede quitar.",
       "lastOneShort": "Única forma de entrar",
@@ -274,5 +203,6 @@
       "error": "No funcionó. Inténtelo de nuevo."
     },
     "testNote": "Revisión local: una cuenta de prueba; no se usa ninguna cuenta real de Google, Apple ni Microsoft."
-  }
+  },
+  "map": "Mapa"
 }

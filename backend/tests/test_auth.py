@@ -128,13 +128,6 @@ class TestUserDB:
     async def test_get_user_not_found(self, test_db):
         assert await db.get_user_by_id("nonexistent") is None
 
-    @pytest.mark.asyncio
-    async def test_get_user_by_google_id(self, test_db):
-        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
-        user = await db.get_user_by_google_id("g1")
-        assert user is not None
-        assert user["id"] == "u1"
-
 
 # ---------------------------------------------------------------------------
 # Refresh token DB operations

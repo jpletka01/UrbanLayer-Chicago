@@ -23,7 +23,7 @@ vi.mock("../../lib/scorecardContext", () => ({
   propertyStarterKeys: () => ["build", "zoning"],
 }));
 vi.mock("../../lib/tracking", () => ({ track: vi.fn() }));
-vi.mock("../../components/MessageBubble", () => ({ MessageBubble: ({ message }: { message: { content: string } }) => <p>{message.content}</p> }));
+vi.mock("../chat/ChatMessage", () => ({ ChatMessage: ({ message }: { message: { content: string } }) => <p>{message.content}</p> }));
 
 const data = { address: "1601 N Milwaukee Ave" } as unknown as ScorecardResponse;
 

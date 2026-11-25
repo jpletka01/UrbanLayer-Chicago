@@ -143,7 +143,7 @@ export async function setNote(id: string, note: string): Promise<boolean> {
   }
 }
 
-/** For tests: back to a fresh page load. */
+/** For tests: back to a fresh page load. @internal */
 export function _resetForTests(): void {
   state = INITIAL;
   listeners.clear();

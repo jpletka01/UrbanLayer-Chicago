@@ -8,7 +8,6 @@ be seen saying "couldn't check", and none saying "no".
 
 from __future__ import annotations
 
-import re
 import sqlite3
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -55,14 +54,6 @@ def test_detail_keeps_the_words_that_reported_each_failure():
         {"key": "crime", "labels": ["crime statistics"]},
     ]
     assert failures.failed_keys(["property assessments", GAP]) == ["property", "regulatory"]
-
-
-def test_every_key_belongs_to_a_module_and_the_profile_table_says_the_same():
-    assert set(failures.LABELS) == set(failures.MODULES)
-    ts = (REPO / "frontend" / "src" / "lib" / "failedSources.ts").read_text()
-    body = ts[ts.index("MODULE_OF"):ts.index("};")]
-    fe = dict(re.findall(r'"?(\w+)"?:\s*"(\w+)"', body))
-    assert fe == failures.MODULES
 
 
 # --- live failure rates ---------------------------------------------------------------------------------------

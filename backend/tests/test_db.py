@@ -156,17 +156,6 @@ class TestMessages:
         assert conv["messages"][1]["map_data"]["crimes"][0]["lat"] == 41.9
         assert conv["messages"][1]["map_fetched_at"] == 1000
 
-    async def test_update_map_data(self, test_db):
-        await db.create_conversation("conv_1", "Test")
-        await db.save_messages("conv_1", [
-            {"role": "user", "content": "Q"},
-            {"role": "assistant", "content": "A"},
-        ])
-        new_map = {"crimes": [{"lat": 42.0}]}
-        await db.update_message_map_data("conv_1", 1, new_map, 2000)
-        conv = await db.get_conversation("conv_1")
-        assert conv["messages"][1]["map_data"]["crimes"][0]["lat"] == 42.0
-        assert conv["messages"][1]["map_fetched_at"] == 2000
 
     async def test_cascade_delete(self, test_db):
         await db.create_conversation("conv_1", "Test")

@@ -237,7 +237,6 @@ def test_the_gap_labels_belong_to_the_incentives_key_and_the_economics_module():
         assert failures.key_for_label(label) == "incentives"
     detail = failures.failed_detail(["TIF district", "Opportunity Zone"])
     assert detail == [{"key": "incentives", "labels": ["TIF district", "Opportunity Zone"]}]
-    assert failures.MODULES["incentives"] == "economics"
 
 
 def test_domain_gaps_carry_the_incentive_gaps_into_partial_failures():
@@ -301,7 +300,6 @@ async def test_a_failed_neighborhood_part_is_a_named_gap_and_the_rest_still_answ
     assert summary.data_gaps == ["Walk Score", "Divvy stations"]  # in NEIGHBORHOOD_GAPS order
     assert summary.walkscore is None and summary.divvy is None
     assert [failures.key_for_label(g) for g in summary.data_gaps] == ["neighborhood", "neighborhood"]
-    assert failures.MODULES["neighborhood"] == "area"
 
 
 # --- brownfields, ARO housing, nearby construction ----------------------------------------------
@@ -321,7 +319,6 @@ async def test_an_epa_error_body_raises_and_the_regulatory_domain_marks_brownfie
         reg = await regulatory_domain(41.91, -87.67, client=AsyncMock())
     assert reg.brownfield_unchecked is True and reg.brownfield_sites == []
     assert _domain_data_gaps({"regulatory": reg}, ("regulatory",)) == ["EPA brownfield sites"]
-    assert failures.MODULES["brownfield"] == "record"
 
 
 def test_the_report_does_not_claim_a_brownfield_search_that_did_not_answer():

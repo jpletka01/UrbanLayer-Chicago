@@ -9,7 +9,6 @@ from backend.retrieval.regulatory.overlays import (
     ZONING_BASE_URL,
     OverlayLayerError,
     overlay_geojson_features,
-    query_all_overlays,
     query_overlay,
     query_overlay_checked,
     query_overlay_with_geometry,
@@ -93,50 +92,6 @@ async def test_query_overlay_sends_correct_geometry():
     assert params["geometry"] == "-87.65,41.93"
     assert params["geometryType"] == "esriGeometryPoint"
     assert params["inSR"] == "4326"
-
-
-@pytest.mark.asyncio
-async def test_query_all_overlays_returns_hits():
-    def make_resp(layer_id):
-        if layer_id == 5:
-            return _mock_response({
-                "features": [{"attributes": {"NAME": "Gold Coast"}}]
-            })
-        return _mock_response({"features": []})
-
-    client = AsyncMock(spec=httpx.AsyncClient)
-    client.get = AsyncMock(side_effect=lambda url, **kw: make_resp(
-        int(url.split("/")[-2])
-    ))
-
-    hits = await query_all_overlays(41.93, -87.65, client=client)
-
-    assert len(hits) == 1
-    layer_id, attrs = hits[0]
-    assert layer_id == 5
-    assert attrs["NAME"] == "Gold Coast"
-
-
-@pytest.mark.asyncio
-async def test_query_all_overlays_skips_failed_layers():
-    call_count = 0
-
-    async def mock_get(url, **kwargs):
-        nonlocal call_count
-        call_count += 1
-        lid = int(url.split("/")[-2])
-        if lid == 2:
-            raise httpx.ConnectError("timeout")
-        return _mock_response({"features": []})
-
-    client = AsyncMock(spec=httpx.AsyncClient)
-    client.get = mock_get
-
-    hits = await query_all_overlays(41.93, -87.65, client=client)
-
-    assert hits == []
-    # Every layer once, plus one retry for the failing layer.
-    assert call_count == len(OVERLAY_LAYERS) + 1
 
 
 @pytest.mark.asyncio
@@ -303,18 +258,6 @@ async def test_all_layers_failing_collapses_to_one_gap(monkeypatch):
 
 
 # --- live integration tests (real Chicago ArcGIS Zoning overlay service, free) ---
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_overlay_live_lincoln_park():
-    """Lincoln Park address should hit at least one overlay (e.g. landmark/historic)."""
-    hits = await query_all_overlays(41.9307, -87.6411)
-    assert isinstance(hits, list)
-    assert len(hits) > 0, "Expected at least one overlay hit in Lincoln Park"
-    layer_id, attrs = hits[0]
-    assert layer_id in OVERLAY_LAYERS
-    assert isinstance(attrs, dict)
 
 
 @pytest.mark.integration

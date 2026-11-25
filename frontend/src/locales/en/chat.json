@@ -9,12 +9,6 @@
     "unavailable": "Chat is temporarily unavailable. Your question is kept: try again in a little while.",
     "retry": "Try again"
   },
-  "chips": {
-    "map": "Map",
-    "mapCount": "Map · {{count}}",
-    "data": "Data · {{count}}",
-    "sources": "Sources · {{count}}"
-  },
   "placeholder": "Ask about Chicago...",
   "analyzing": "Analyzing your question…",
   "analyzed": "Analyzed your question",
@@ -23,15 +17,6 @@
   "searchingFor": "Searching municipal code for \"{{query}}\"",
   "propertyFor": "Looking up property records for {{address}}",
   "inArea": "{{label}} in {{area}}",
-  "emptyState": {
-    "heading": "Ask the analyst",
-    "subline": "It reads Chicago's municipal code and cites the sections. Ask about the code — or about any parcel you've opened.",
-    "examples": [
-      "What are the setback requirements for B3-2 zoning?",
-      "What uses are allowed in a C1-2 district?",
-      "When does a rear addition need a zoning variance?"
-    ]
-  },
   "propertyStarters": {
     "heading": "Ask about this property",
     "sublineWithAddress": "Grounded in the Property Profile for {{address}} — zoning, incentives, comps, and the code behind them.",
@@ -57,29 +42,6 @@
     "property_domain": "Looking up property records",
     "incentives_domain": "Checking TIF & incentive zones",
     "neighborhood_domain": "Loading demographics, census data & transit"
-  },
-  "thinking": "Thinking",
-  "citation": {
-    "sourceN": "Source {{n}}",
-    "view": "View {{ref}}",
-    "openSource": "Click to open full source"
-  },
-  "crossref": {
-    "view": "View § {{id}}",
-    "loading": "Loading preview…",
-    "unavailable": "Full text not available for this reference.",
-    "openSection": "Click to open full section",
-    "notCodified": "Not in the published code text yet; an amendment added it."
-  },
-  "dataPill": {
-    "crime": "Crime Data",
-    "311": "311 Requests",
-    "permits": "Building Permits",
-    "violations": "Building Violations",
-    "business": "Business Licenses",
-    "portal": "Chicago Data Portal",
-    "vacant_buildings": "Vacant buildings",
-    "food_inspections": "Food inspections"
   },
   "sinceThen": {
     "answeredOn": "Answered {{date}}",
@@ -132,7 +94,6 @@
       "adu_area": "an ADU-eligible area",
       "aro_zone": "an Affordable Requirements Ordinance zone",
       "fema_floodplain": "a FEMA floodplain"
-    },
-    "exportAnswered": "Answered {{date}}"
+    }
   }
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { CodeChunk, Message } from "../../lib/types";
-import { citingSentence, citingSentences, codeTable, numberForData, passageFor, recordsIn, sourcesFor } from "./evidenceModel";
+import { citingSentences, codeTable, numberForData, passageFor, recordsIn, sourcesFor } from "./evidenceModel";
+
+const citingSentence = (content: string, n: number) => citingSentences(content, n)[0] ?? null;
 
 const ADU: CodeChunk = {
   text: "17-7-0570-A Purpose. The ADU overlay allows additional dwelling units. 17-7-0570-C Coach houses. On a zoning lot in an RS district within an ADU-eligible area, one coach house containing one dwelling unit may be established in a detached accessory building. 17-7-0570-E Owner occupancy. The owner must live on the lot.",

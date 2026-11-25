@@ -157,12 +157,6 @@ class TestVoucherDb:
         assert len(vouchers) == 1
         assert vouchers[0]["redemptions"][0]["email"] == "a@b.com"
 
-    @pytest.mark.asyncio
-    async def test_get_user_by_email_case_insensitive(self, test_db):
-        await _user("u1", "Jane@Example.com")
-        assert (await db.get_user_by_email("jane@example.com"))["id"] == "u1"
-        assert await db.get_user_by_email("nobody@example.com") is None
-
 
 # ---------------------------------------------------------------------------
 # Effective tier (auth choke point)

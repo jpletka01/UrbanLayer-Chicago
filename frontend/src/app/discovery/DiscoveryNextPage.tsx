@@ -16,7 +16,7 @@ import { useResolvedThemeOrLight } from "../../contexts/useResolvedThemeOrLight"
 import { patternCss } from "../map/patterns";
 import { useDiscoverySearch } from "../../discovery/useDiscoverySearch";
 import { recipeStatus } from "../../discovery/recipeStatus";
-import { chipLabel } from "../../discovery/chips";
+import { chipLabel } from "../../discovery/chipLabel";
 import { COMMUNITY_AREAS } from "../../discovery/communityAreas";
 import { HIDE_UNUSUAL } from "../../discovery/draftModel";
 import { panelFromCqs } from "../../discovery/topicCompiler";

@@ -42,17 +42,15 @@ def _live_counts():
 
 # --- the table ---------------------------------------------------------------------------------------------------
 
-def test_the_failures_table_names_the_flood_lookup_and_puts_it_in_the_record_module():
+def test_the_failures_table_names_the_flood_lookup():
     assert failures.label("flood") == LABEL
     assert failures.key_for_label(LABEL) == "flood"
-    assert failures.MODULES["flood"] == "record"  # the Environment card, under "what to watch for"
     got = failures.failed_detail([LABEL, "crime statistics", "landmark designation (City zoning map didn't answer)"])
     assert got == [
         {"key": "flood", "labels": [LABEL]},
         {"key": "crime", "labels": ["crime statistics"]},
         {"key": "regulatory", "labels": ["landmark designation (City zoning map didn't answer)"]},
     ]
-    assert failures.in_module(failures.failed_keys([LABEL, "crime statistics"]), "record") == ["flood"]
 
 
 # --- the regulatory domain turns the exception into a gap ------------------------------------------------------------
