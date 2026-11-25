@@ -35,18 +35,6 @@ function _writeLocalStorage(reg: Registry): void {
   }
 }
 
-/** The currently cached registry, if any (no fetch). */
-export function cachedRegistry(): Registry | null {
-  if (!_cache) _cache = _readLocalStorage();
-  return _cache;
-}
-
-/** True when there is no cache or the cached version differs from `version`. */
-export function isStale(version: string): boolean {
-  const cur = cachedRegistry();
-  return cur === null || cur.version !== version;
-}
-
 /**
  * Return the registry. Within a session, the first successful fetch is reused (in-memory),
  * so PageHeader + DiscoveryPage mounting together share one request. A fresh session always

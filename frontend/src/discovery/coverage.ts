@@ -5,14 +5,7 @@
 // localStorage-cached payload) reads as fully dormant — coverage "none", nothing
 // populated — never "all available". This mirrors the backend's missing-meta default.
 
-import { caName } from "./communityAreas";
-import type { Coverage, Registry } from "./types";
-
-const NONE: Coverage = { mode: "none", liveAreas: [] };
-
-export function coverageOf(registry: Registry): Coverage {
-  return registry.coverage ?? NONE;
-}
+import type { Registry } from "./types";
 
 /** True only when the filter's underlying field has real data in the current index. */
 export function isPopulated(registry: Registry, filterId: string): boolean {
@@ -22,18 +15,4 @@ export function isPopulated(registry: Registry, filterId: string): boolean {
 /** Filter ids a recipe touches that are NOT yet populated (drives its NEEDS-DATA badge). */
 export function missingFieldsFor(registry: Registry, filterIds: string[]): string[] {
   return filterIds.filter((id) => !isPopulated(registry, id));
-}
-
-/** Human-readable list of the indexed community areas (e.g. "West Town, Logan Square"). */
-export function liveAreaNames(registry: Registry): string {
-  return coverageOf(registry)
-    .liveAreas.map((id) => caName(`neighborhood:${id}`))
-    .join(", ");
-}
-
-/** ISO date (YYYY-MM-DD) → a localized date that cannot shift with the viewer's time zone. */
-export function formatAsOf(iso: string, language: string): string | null {
-  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(language, { timeZone: "UTC", year: "numeric", month: "short", day: "numeric" });
 }

@@ -1,6 +1,5 @@
 import i18n from "./i18n";
 import type { DataDate } from "./dataDates";
-import type { FailedSource } from "./failedSources";
 import { parseSSE } from "./sse";
 import { flush, getVisitorId, track } from "./tracking";
 import type {
@@ -17,7 +16,6 @@ import type {
   Amendment,
   BenchmarkResults,
   ChatChunk,
-  CodeChunk,
   ContextObject,
   Conversation,
   ConversationDetail,
@@ -32,6 +30,13 @@ import type {
   TimeseriesBucket,
   UploadMeta,
 } from "./types";
+
+/** A source the Profile couldn't check (backend `data_health/failures.py`) and the words that reported it,
+ *  e.g. "property tax estimate" for a gap inside records that otherwise answered. */
+export interface FailedSource {
+  key: string;
+  labels: string[];
+}
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
 
@@ -410,29 +415,6 @@ export async function redeemVoucher(
   }
 }
 
-export async function createReportCheckoutSession(
-  parcel: SelectedParcel,
-): Promise<{ url: string }> {
-  track("checkout_started", { type: "report", pin: parcel.pin ?? null });
-  flush(); // the page is about to redirect to Stripe
-  // pin+address+lat+lon travel together: lat/lon let the backend skip
-  // re-resolution, address stays display-only metadata on the purchase row.
-  const resp = await authFetch(`${API_BASE}/api/checkout/report`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      address: parcel.address ?? "",
-      lat: parcel.lat,
-      lon: parcel.lon,
-      pin: parcel.pin ?? undefined,
-      language: i18n.language && i18n.language !== "en" ? i18n.language : undefined,
-      visitor_id: getVisitorId(),
-    }),
-  });
-  if (!resp.ok) throw new Error("Failed to create report checkout session");
-  return resp.json();
-}
-
 export interface PaymentsStatus {
   reports: boolean;
   subscriptions: boolean;
@@ -507,53 +489,6 @@ export async function createBillingPortal(): Promise<{ url: string }> {
   const resp = await authFetch(`${API_BASE}/api/billing/portal?language=${language}`, { method: "POST" });
   if (!resp.ok) throw new Error("Failed to create billing portal session");
   return resp.json();
-}
-
-// Sections are immutable, so cache by ID — lets hover-prefetch and the
-// subsequent click share one request. Failed lookups are evicted so they retry.
-const sectionCache = new Map<string, Promise<CodeChunk | SectionNotCodified | null>>();
-
-/** A 404 that is not "no such section": an amendment passed after the code text's vintage
- * added the section (17-3-0600), so the text isn't published yet. */
-export interface SectionNotCodified {
-  not_in_published_code: true;
-  section_id: string;
-  message: string;
-  added_by: Amendment[];
-}
-
-export function isNotCodified(x: unknown): x is SectionNotCodified {
-  return !!x && typeof x === "object" && (x as SectionNotCodified).not_in_published_code === true;
-}
-
-async function notCodifiedFrom(resp: Response): Promise<SectionNotCodified | null> {
-  if (resp.status !== 404) return null;
-  try {
-    const body = await resp.json();
-    return isNotCodified(body?.detail) ? body.detail : null;
-  } catch {
-    return null;
-  }
-}
-
-export function fetchSection(sectionId: string): Promise<CodeChunk | SectionNotCodified | null> {
-  const key = sectionId.trim();
-  const hit = sectionCache.get(key);
-  if (hit) return hit;
-  const p = (async () => {
-    try {
-      const resp = await authFetch(`${API_BASE}/section/${encodeURIComponent(key)}`);
-      if (!resp.ok) return notCodifiedFrom(resp);
-      return (await resp.json()) as CodeChunk;
-    } catch {
-      return null;
-    }
-  })();
-  sectionCache.set(key, p);
-  p.then((r) => {
-    if (r === null) sectionCache.delete(key);
-  });
-  return p;
 }
 
 export async function getAutocomplete(query: string): Promise<AddressSuggestion[]> {
@@ -1493,23 +1428,6 @@ export async function fetchProfilePart(
   } catch { return "failed"; }
 }
 
-/** One Municipal Code subsection (and the table it cites) with how current the code is. */
-export interface CodeSubsection {
-  section_id: string;
-  article: string;
-  article_title: string;
-  heading: string;
-  paragraphs: string[];
-  /** Raw "Columns: ... / Row n: ..." text, one entry per table. */
-  tables: string[];
-  current_through: string | null;
-  vintage_label: string | null;
-  source: string | null;
-  /** Amendments passed after this text was published that touch the section. */
-  amended_since?: Amendment[];
-}
-
-
 /** The PDF report. ``copy`` picks which: "original" is the first report this purchase rendered, kept as sold;
     "updated" (and the default) is a live render with today's data, labeled once an original exists. A purchase's
     first download becomes its original whichever is asked for. */
@@ -1647,36 +1565,6 @@ export async function discoveryExportCsv(req: DiscoverySearchRequest): Promise<b
     URL.revokeObjectURL(url);
     return true;
   } catch { return false; }
-}
-
-// --- Property Profile: area benchmarks + module-map layers ---
-
-/** The middle half and median land area of a district's base parcels in a community area (WS5 PR3). */
-export interface TypicalLot {
-  n: number;
-  p25_lot_sqft: number;
-  median_lot_sqft: number;
-  p75_lot_sqft: number;
-}
-
-export interface WhatIfFigures {
-  zone_class: string;
-  name: string;
-  code_section: string;
-  far: number | null;
-  max_floor_area_sqft: number | null;
-  max_height: string | null;
-  min_lot_area_per_unit: number | null;
-  units_by_lot_area: number | null;
-  units_arithmetic: string | null;
-}
-
-export interface WhatIfResponse {
-  suggestions: string[];
-  districts: string[];
-  lot_sqft?: number | null;
-  current?: WhatIfFigures | null;
-  target?: WhatIfFigures;
 }
 
 // --- Transit Stations ---
