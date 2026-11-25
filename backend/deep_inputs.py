@@ -68,12 +68,6 @@ def load_new_construction() -> dict:
         return _new_construction
 
 
-def reset_new_construction() -> None:
-    global _new_construction
-    with _nc_lock:
-        _new_construction = None
-
-
 def _new_construction_for(community_area: int | None) -> dict | None:
     """The area's new-condo price per gross sq ft with its band, how it was reached, and the premium behind it.
     None when the lot has no community area; a missing artifact raises."""

@@ -75,33 +75,3 @@ def _is_descendant(heading_id: str, target: str) -> bool:
     return heading_id == target or heading_id.startswith(target + "-")
 
 
-def extract_subsection(article_text: str, section_id: str) -> dict | None:
-    """{"heading", "paragraphs", "tables"} for ``section_id`` inside an article's text,
-    or None when the heading isn't there. Tables are returned as their raw
-    ``Columns:`` / ``Row n:`` text, filtered to the table(s) this subsection cites."""
-    body, *table_blocks = re.split(r"\n\[TABLE\]\n", article_text)
-    paragraphs = [p.strip() for p in re.split(r"\n{2,}", body) if p.strip()]
-
-    start = next((i for i, p in enumerate(paragraphs) if (m := _HEADING_RE.match(p)) and m.group(1) == section_id), None)
-    if start is None:
-        return None
-    picked = [paragraphs[start]]
-    for p in paragraphs[start + 1:]:
-        m = _HEADING_RE.match(p)
-        if m and not _is_descendant(m.group(1), section_id):
-            break
-        picked.append(p)
-
-    # A long table is indexed as several [TABLE] blocks sharing one header (row batches);
-    # put those back together so the viewer shows each table whole.
-    merged: dict[str, list[str]] = {}
-    include, exclude = TABLE_HINTS.get(section_id, ((), ()))
-    if include:
-        for block in table_blocks:
-            columns, _, rows = block.strip().split("\n\n", 1)[0].strip().partition("\n")
-            if all(s in columns for s in include) and not any(s in columns for s in exclude):
-                merged.setdefault(columns, []).append(rows)
-    tables = [columns + "\n" + "\n".join(r for r in rows if r) for columns, rows in merged.items()]
-    title = _HEADING_RE.sub("", picked[0], count=1)
-    heading = title.split(". ")[0].rstrip(".").strip()[:80]
-    return {"heading": heading, "paragraphs": picked, "tables": tables}
