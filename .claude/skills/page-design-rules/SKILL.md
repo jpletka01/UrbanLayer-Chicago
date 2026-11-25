@@ -10,7 +10,7 @@ description: UrbanLayer's rules for what a page shows and how — one answer fir
 The Profile once grew to ~3,000 words at equal weight because every PR added one correct sentence
 ("additive honesty"). These rules exist so that never happens again. They come from Jack's reviews
 (2026-10-31, 2026-11-02), `plans/reports/Fixing an overgrown data page.md`, and decision Items 49-54 in
-`claude-context/decisions/2026-10_build-queue.md`. Reasons, measured effect and the file map:
+`claude-context/decisions/2026-10_build-queue.md`. Reasons and measured effect (history: its file map and colors are the old UI's):
 `claude-context/guides/page-design.md`.
 
 ## 1. What a block shows

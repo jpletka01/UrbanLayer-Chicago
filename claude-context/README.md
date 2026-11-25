@@ -5,7 +5,7 @@ Load only what the current task needs. **Don't read everything.** One line per f
 
 **Two UIs during the front-end rewrite (2026-11-07):** new UI work (`frontend/src/ui-next/`, behind `?ui=next`; since Phase 10 the only UI, renamed `frontend/src/app/` 2026-11-15) follows `guides/frontend-redesign-vision.md` and decisions Items 73+ (`decisions/2026-11_frontend-rewrite.md`): SnowUI frame, Coastal charts, black for this lot, **no satellite map**. In the list below, the Bento Pro guides, `page-design.md`, `scorecard-dashboard-model.md`, `frontend-guide.md` and the historical design docs describe **today's live UI only**.
 
-**The definitive archive is the website About page** (`frontend/src/components/AboutPage.tsx`, ~38
+**The definitive archive is the website About page** (`frontend/src/app/about/AboutNextPage.tsx`, ~38
 sections): architecture, design decisions, and war stories in full. Files under `archive/` and `audits/`
 are now short **pointers** into that record + git history — read them for the one-paragraph summary and
 reusable lesson, not the full narrative.
@@ -24,20 +24,21 @@ reusable lesson, not the full narrative.
 - `guides/data-health.md` — **the data-source registry and checker** (`backend/data_health/`): one `SourceSpec` per source, how each date is read, statuses, acks, `check --dry-run`, how to add a source. Read before adding any data source.
 - `guides/code-refresh.md` — **the monthly municipal-code routine**: review what Council passed (`code_amendments.json`), when and how to ingest a new American Legal export, push the index to prod, what each red signal asks of you. Read when the reminder email arrives or before touching `ingestion/` or `backend/legislation/`.
 - `guides/parcel-resolution-truth-model.md` — the canonical address→PIN contract (who may write parcel identity; approximate/nearest-unverified rules).
-- `guides/scorecard-dashboard-model.md` — **HISTORICAL layout** (July 2026 dashboard model); superseded by `guides/page-design.md` for what the Profile shows and where.
 - `guides/deployment.md` — server ops, `.env` template, deploy commands, monitoring, DB backups.
 - `guides/ptaxsim-prod-seeding.md` — seeding the ptaxsim tax DB on prod (the "0 tax data since launch" runbook).
 - `guides/auth-and-conversations.md` — Google OAuth + JWT, conversation persistence, sharing.
 - `guides/latency-reduction.md` — Property Profile latency per task (measured 2026-11-07, Item 81; `eval/profile_latency.py`) + the 2026-06 chat pipeline perf work.
 
-### Design system — **live site: "Bento Pro"; the rewrite: SnowUI + Items 73–80**
+### Design system — **SnowUI + Items 73+ (one UI since Item 125)**
 - `guides/frontend-rewrite-runbook.md` — **start here for the front-end rewrite (2026-11-07)**: phase status table, working rules, the end-of-milestone checklist (decisions, docs, next-phase prompt). Decisions in `decisions/2026-11_frontend-rewrite.md` (Item 73 SnowUI base, Item 74 visual system, Item 75 how it is built, 76–80 Phase 1); the approved plan is local (`plans/2026-11-07_frontend-implementation-plan.md`).
-- `guides/frontend-redesign-vision.md` — **the front-end rewrite brief (governs `frontend/src/app/`, formerly `ui-next/`; Phase 1 built 2026-11-07)**: audience (builders), 11 page rules, app frame, Profile tabs, Discovery, chat, Saved, ruled-out list, data work it needs, urgent fixes, parked questions. Read before any redesign work; `page-design.md` still governs the live site until the rewrite ships.
-- `guides/page-design.md` — **what a page shows and how on today's live UI (2026-11-02)**; the rewrite's rules are rewritten after the builder test (Item 75): one answer first, evidence behind the Lucide tool tray, color by role, Button vs StatusLabel, the ratcheting page budget, measured effect, file map. Checklist form = skill `page-design-rules`. Read before ANY Profile/Discovery UI change.
-- `guides/bento-pro-redesign.md` — today's live-UI token system + landing (not used by the rewrite).
-- `guides/bento-pro-phase3-app-surfaces.md` — Scorecard/Discovery Bento Pro surfaces (the 2026-10 Discovery redesign shipped; see `archive/2026-10-30_discovery-redesign.md`).
+- `guides/frontend-redesign-vision.md` — **the front-end brief (governs `frontend/src/app/`, formerly `ui-next/`; Phase 1 built 2026-11-07)**: audience (builders), 11 page rules, app frame, Profile tabs, Discovery, chat, Saved, ruled-out list, data work it needs, urgent fixes, parked questions. Read before any page work.
 - `guides/dot-matrix.md` — the LED dot-matrix halftone renderer (hero skyline backdrop + reusable image→dot art + the in-browser Playwright probe workflow).
-- `guides/design-system.md`, `guides/light-dark-theming.md` — **HISTORICAL** (the "Cyanotype on Vellum" palette + Space Grotesk are retired by Bento Pro). The **theming mechanics still apply**: CSS-var-backed tokens, `ThemeProvider`/`useTheme`, `system` default, mode-lock islands with `data-theme`. Read only for that mechanism or the AA-contrast reasoning.
+
+### History (the old UI; read only for the reasoning, never as rules for `frontend/src/app/`)
+- `guides/page-design.md` — the old UI's page rules (2026-11-02); its still-true rules live in the skill `page-design-rules`, its reasons and measured effect here.
+- `guides/bento-pro-redesign.md`, `guides/bento-pro-phase3-app-surfaces.md` — the Bento Pro token system and surfaces, retired with the old UI (Item 125).
+- `guides/design-system.md`, `guides/light-dark-theming.md` — the "Cyanotype on Vellum" palette (retired by Bento Pro). The theming mechanics still apply: CSS-var-backed tokens, `ThemeProvider`/`useTheme`, `system` default, mode-lock islands with `data-theme`, the AA-contrast reasoning.
+- `guides/scorecard-dashboard-model.md` — the July 2026 Scorecard dashboard layout.
 
 ## Property Discovery — filter/search workbench (SHIPPED, full citywide, nav-linked)
 - `property-discovery/` — engineering spec (`00`–`09`, normative) + implementation record. **Start with
@@ -96,7 +97,8 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   `archive/TEMPLATE.md` is the archivation template.
 - `audits/*` — resolved point-in-time investigations, each pointing at the archive entry or living guide that
   superseded it (full-site-sweep, resolver-investigation, gis-parcel-resolution-fix, design-ux-skills-audit,
-  three-page-workflow-audit, lot-coverage-benchmark, verdict-flag-signals-panel-diff).
+  three-page-workflow-audit, lot-coverage-benchmark, verdict-flag-signals-panel-diff, and `2026-11_cleanup-inventory`:
+  the post-rewrite cleanup's evidence per item, Item 137).
 
 ## Keeping Docs Current
 After shipping, update the relevant **living** doc: backend modules → `backend/CLAUDE.md`; frontend →

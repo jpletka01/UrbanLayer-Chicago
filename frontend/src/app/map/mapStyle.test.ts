@@ -3,9 +3,11 @@
 import { validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import { describe, expect, it } from "vitest";
 import {
-  CTA_COLORS, GROUPS, LAYER_IDS, ROAD_METERS, metersPerPixel, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint, versionedTiles,
+  CTA_COLORS, GROUPS, LAYERS, ROAD_METERS, metersPerPixel, STREET_LABEL_MIN_ZOOM, ZONING_COLORS, buildStyle, groupLayerIds, modeOpacity, themePaint, versionedTiles,
   type MapTiles,
 } from "./mapStyle";
+
+const LAYER_IDS = LAYERS.map((l) => l.spec("light").id);
 
 const ALL: MapTiles = { base: { minZoom: 10, maxZoom: 16 }, parcels: { minZoom: 14, maxZoom: 16 }, zoning: { minZoom: 13, maxZoom: 16 } };
 const input = (tiles: MapTiles = ALL) => ({ theme: "light" as const, apiOrigin: "https://urbanlayerchicago.com", glyphsBase: "https://urbanlayerchicago.com/map/fonts", tiles });

@@ -80,11 +80,6 @@ export function citingSentences(content: string, n: number): string[] {
     .filter(Boolean);
 }
 
-/** The first of them (kept for callers that want one line). */
-export function citingSentence(content: string, n: number): string | null {
-  return citingSentences(content, n)[0] ?? null;
-}
-
 const STOP = new Set(["the", "and", "for", "that", "this", "with", "from", "are", "may", "shall", "lot", "its", "any", "not", "which", "than", "within", "each", "such", "into", "only", "per", "has", "have", "can", "could", "would", "also", "one"]);
 /** Words worth matching: district names joined ("RS-3" and "RS3" are one), numbers without commas, and other words cut to
     their first five letters so "reduction" meets "reduced". */

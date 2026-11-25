@@ -7,8 +7,6 @@ import { describe, it, expect } from "vitest";
 
 import enCommon from "./locales/en/common.json";
 import enChat from "./locales/en/chat.json";
-import enSidebar from "./locales/en/sidebar.json";
-import enLanding from "./locales/en/landing.json";
 import enMap from "./locales/en/map.json";
 import enData from "./locales/en/data.json";
 import enPages from "./locales/en/pages.json";
@@ -16,8 +14,6 @@ import enNext from "./locales/en/next.json";
 
 import esCommon from "./locales/es/common.json";
 import esChat from "./locales/es/chat.json";
-import esSidebar from "./locales/es/sidebar.json";
-import esLanding from "./locales/es/landing.json";
 import esMap from "./locales/es/map.json";
 import esData from "./locales/es/data.json";
 import esPages from "./locales/es/pages.json";
@@ -47,8 +43,6 @@ function placeholders(s: string): string[] {
 const NS: Record<string, [Json, Json]> = {
   common: [enCommon, esCommon],
   chat: [enChat, esChat],
-  sidebar: [enSidebar, esSidebar],
-  landing: [enLanding, esLanding],
   map: [enMap, esMap],
   data: [enData, esData],
   pages: [enPages, esPages],

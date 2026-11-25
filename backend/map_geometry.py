@@ -14,7 +14,7 @@ from typing import Any
 
 from shapely import coverage_is_valid, coverage_simplify
 from shapely.geometry import GeometryCollection, MultiPolygon, Polygon, box, mapping, shape
-from shapely.ops import polylabel, unary_union
+from shapely.ops import unary_union
 
 
 ZONING_SIMPLIFY_TOLERANCE_DEG = 0.00001  # approximately one metre in Chicago
@@ -152,23 +152,6 @@ def simplify_zoning_coverage(
     }
 
 
-def prepare_parcel_zoning(
-    feature_collection: dict | None,
-    *,
-    lat: float,
-    lon: float,
-    radius_mi: float = PARCEL_MAP_RADIUS_MI,
-) -> dict | None:
-    """Clip and safely simplify a parcel-scale zoning coverage."""
-    clipped = clip_zoning_coverage(
-        feature_collection,
-        lat=lat,
-        lon=lon,
-        radius_mi=radius_mi,
-    )
-    return simplify_zoning_coverage(clipped)
-
-
 def _polygon_parts(geometry: Polygon | MultiPolygon) -> Iterable[Polygon]:
     if isinstance(geometry, Polygon):
         yield geometry
@@ -176,42 +159,3 @@ def _polygon_parts(geometry: Polygon | MultiPolygon) -> Iterable[Polygon]:
         yield from geometry.geoms
 
 
-def zoning_label_points(feature_collection: dict | None) -> list[dict]:
-    """Return one interior label anchor for each exact zoning class.
-
-    The largest visible polygon wins when a class occurs in several fragments.
-    ``polylabel`` gives an interior visual centre for concave shapes; the
-    guaranteed-interior representative point is the defensive fallback.
-    """
-    if feature_collection is None:
-        return []
-
-    largest_by_class: dict[str, Polygon] = {}
-    for feature in feature_collection.get("features", []):
-        zone_class = str((feature.get("properties") or {}).get("ZONE_CLASS") or "").strip()
-        if not zone_class or not feature.get("geometry"):
-            continue
-        try:
-            geometry = shape(feature["geometry"])
-        except Exception:
-            continue
-        if not isinstance(geometry, (Polygon, MultiPolygon)):
-            continue
-        for polygon in _polygon_parts(geometry):
-            current = largest_by_class.get(zone_class)
-            if not polygon.is_empty and polygon.area > 0 and (current is None or polygon.area > current.area):
-                largest_by_class[zone_class] = polygon
-
-    labels: list[dict] = []
-    for zone_class, polygon in largest_by_class.items():
-        try:
-            point = polylabel(polygon, tolerance=0.000001)
-        except Exception:
-            point = polygon.representative_point()
-        if not polygon.covers(point):
-            point = polygon.representative_point()
-        labels.append({
-            "zone_class": zone_class,
-            "position": [point.x, point.y],
-        })
-    return labels

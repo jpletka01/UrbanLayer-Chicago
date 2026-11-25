@@ -32,3 +32,21 @@
 - Image size: unchanged, since the maps are deleted before the nginx stage copies `dist/`.
 - **Reproduce:** `SENTRY_AUTH_TOKEN=x SENTRY_ORG=x SENTRY_PROJECT=x npx vite build; find dist -name '*.map' | wc -l` (expect 0, exit 0).
 - **Not measured:** the upload's added build time on the server (the plugin uploads about 55 chunks' maps); whether EU-region org tokens need `SENTRY_URL`.
+
+## Item 138: sentry-sdk capped below 3 after 3.0 took production down (2026-11-25)
+
+- **Decision.** `requirements.prod.txt` now reads `sentry-sdk[fastapi]>=2.0.0,<3` (#281).
+- **What happened:**
+  - The 2026-11-25 deploy (#279) rebuilt the backend image. The rebuild picked up the new sentry-sdk 3.0, which rejects `send_default_pii`.
+  - With `SENTRY_DSN` set (production only), `backend/main.py` raised `TypeError: Unknown option 'send_default_pii'` at import, and the container restarted in a loop. Compose never started the frontend, so the site served Cloudflare 521 for about an hour.
+  - The revert of #279 (#280) failed the same way, which showed the cause wasn't that change. The container log on the server named it.
+- **Why nothing caught it:** `sentry_sdk.init` only runs with a DSN. Local runs, CI and the image check without a DSN never execute it.
+- **Alternatives:**
+  - Drop `send_default_pii=False` and move to 3.x. Rejected for the outage fix: it's a major version with other changes, and nobody had read its migration notes. It's a separate dependency PR.
+  - Pin every production dependency exactly. Not done here: it's a larger change that needs a lockfile.
+- **Why `<3`:** every deploy before today ran 2.x. 2.77 accepts the exact init call with a DSN set. This was checked by building the image and importing `backend.main` with `SENTRY_DSN` set.
+- **Revisit if:**
+  - Moving to sentry-sdk 3. Read its migration guide and test `import backend.main` with a DSN set, in the image.
+  - Another production dependency breaks a rebuild. Every other line in `requirements.prod.txt` still has no upper bound (fastapi, uvicorn, anthropic, httpx, pydantic, qdrant-client, sentence-transformers, stripe, …). A lockfile (`pip-compile`) would make rebuilds repeatable.
+
+**Numbers:** outage about 13:34–14:43 UTC on 2026-11-25 (first unhealthy deploy until `/health` 200 after #281). **Reproduce:** `docker build -f backend/Dockerfile .` then `docker run -e SENTRY_DSN=https://k@o1.ingest.de.sentry.io/1 <image> python -c "import backend.main"`. **Not measured:** requests lost during the outage.

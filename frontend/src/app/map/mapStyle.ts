@@ -346,8 +346,6 @@ export const LAYERS: LayerDef[] = [
 export const LOT_PIN_MAX_ZOOM = 15.5;
 export const lotPinImage = (t: Theme) => (t === "dark" ? "pin-lot-dark" : "pin-lot-light");
 
-export const LAYER_IDS = LAYERS.map((l) => l.spec("light").id);
-
 /** The style layers that belong to a group. */
 export function groupLayerIds(group: GroupId): string[] {
   return LAYERS.filter((l) => l.group === group).map((l) => l.spec("light").id);

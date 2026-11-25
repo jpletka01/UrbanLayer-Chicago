@@ -7,13 +7,11 @@ from pathlib import Path
 
 import pytest
 from shapely import coverage_is_valid
-from shapely.geometry import Point, shape
+from shapely.geometry import shape
 from shapely.ops import unary_union
 
 from backend.map_geometry import (
-    prepare_parcel_zoning,
     simplify_zoning_coverage,
-    zoning_label_points,
 )
 
 
@@ -78,38 +76,3 @@ def test_invalid_coverage_falls_back_to_source_geometry():
     assert simplify_zoning_coverage(overlapping) is overlapping
 
 
-def test_prepare_parcel_zoning_clips_to_requested_envelope():
-    source = {
-        "type": "FeatureCollection",
-        "features": [{
-            "type": "Feature",
-            "properties": {"ZONE_CLASS": "RS-3"},
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [[[-88, 41], [-87, 41], [-87, 42], [-88, 42], [-88, 41]]],
-            },
-        }],
-    }
-
-    result = prepare_parcel_zoning(source, lat=41.91, lon=-87.68, radius_mi=0.25)
-    min_x, min_y, max_x, max_y = shape(result["features"][0]["geometry"]).bounds
-
-    assert -87.69 < min_x < -87.68
-    assert -87.68 < max_x < -87.67
-    assert 41.90 < min_y < 41.91
-    assert 41.91 < max_y < 41.92
-
-
-def test_label_points_are_inside_largest_polygon_for_each_exact_class():
-    source = _fixture()
-    labels = zoning_label_points(source)
-
-    assert [label["zone_class"] for label in labels] == ["RT-4", "RS-3"]
-    assert len(labels) == 2
-    for label in labels:
-        polygons = [
-            shape(feature["geometry"])
-            for feature in source["features"]
-            if feature["properties"]["ZONE_CLASS"] == label["zone_class"]
-        ]
-        assert unary_union(polygons).covers(Point(label["position"]))

@@ -84,6 +84,11 @@ jobs:
       - name: ESLint
         run: cd frontend && npm ci && npm run lint
 
+      # Unused files, exports and dependencies in what ships (tests excluded), so code
+      # a change replaces is deleted in the same PR (post-rewrite cleanup, Item 137).
+      - name: Knip
+        run: cd frontend && npm run knip
+
   # Docs-only pushes must not deploy: `docker compose up -d --build` recreates the
   # frontend/backend containers, so the origin is briefly unreachable and Cloudflare
   # serves 521 for those seconds -- previously on EVERY main push, including one that

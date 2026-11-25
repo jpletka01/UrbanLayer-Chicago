@@ -78,19 +78,6 @@ class TestStripeDBHelpers:
         assert user["stripe_customer_id"] == "cus_test123"
         assert user["stripe_subscription_id"] is None
 
-    @pytest.mark.asyncio
-    async def test_get_user_by_stripe_customer(self, test_db):
-        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
-        await db.update_user_stripe("u1", "cus_test123", "sub_test456")
-
-        user = await db.get_user_by_stripe_customer("cus_test123")
-        assert user is not None
-        assert user["id"] == "u1"
-
-    @pytest.mark.asyncio
-    async def test_get_user_by_stripe_customer_not_found(self, test_db):
-        user = await db.get_user_by_stripe_customer("cus_nonexistent")
-        assert user is None
 
     @pytest.mark.asyncio
     async def test_schema_v7_adds_stripe_columns(self, test_db):
@@ -365,16 +352,8 @@ class TestEngagementFunnel:
 
 
 class TestNewsletter:
-    """Subscribers table (schema v13) + /api/newsletter endpoint."""
+    """Subscribers table (schema v13; the newsletter form was retired with the old landing, the table is kept)."""
 
-    @pytest.mark.asyncio
-    async def test_add_subscriber_dedupes_case_insensitive(self, test_db):
-        assert await db.add_subscriber("A@B.com", "footer") is True
-        assert await db.add_subscriber("a@b.com", "scorecard") is False
-        conn = db._get_db()
-        cur = await conn.execute("SELECT email, source FROM subscribers")
-        rows = [dict(r) for r in await cur.fetchall()]
-        assert rows == [{"email": "a@b.com", "source": "footer"}]
 
     @pytest.mark.asyncio
     async def test_schema_v13_creates_subscribers(self, test_db):
@@ -384,21 +363,3 @@ class TestNewsletter:
         )
         assert await cur.fetchone() is not None
 
-    def test_newsletter_endpoint_validates_email(self):
-        # No context manager: entering TestClient runs the app lifespan
-        # (real db init + model preload) and poisons global state for the
-        # rest of the suite — match the TestCheckoutReportEndpoint pattern.
-        from fastapi.testclient import TestClient
-        from backend.main import app
-
-        client = TestClient(app)
-        with patch("backend.main.db.add_subscriber", new=AsyncMock(return_value=True)) as mock_add:
-            ok = client.post("/api/newsletter", json={"email": "x@y.com", "source": "footer"})
-            assert ok.status_code == 200
-            assert ok.json() == {"ok": True, "added": True}
-            mock_add.assert_awaited_once_with("x@y.com", "footer")
-
-            bad = client.post("/api/newsletter", json={"email": "not-an-email"})
-            assert bad.status_code == 400
-            empty = client.post("/api/newsletter", json={})
-            assert empty.status_code == 400
