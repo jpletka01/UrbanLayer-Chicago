@@ -43,22 +43,6 @@
     "incentives_domain": "Checking TIF & incentive zones",
     "neighborhood_domain": "Loading demographics, census data & transit"
   },
-  "thinking": "Thinking",
-  "citation": {
-    "sourceN": "Source {{n}}",
-    "view": "View {{ref}}",
-    "openSource": "Click to open full source"
-  },
-  "dataPill": {
-    "crime": "Crime Data",
-    "311": "311 Requests",
-    "permits": "Building Permits",
-    "violations": "Building Violations",
-    "business": "Business Licenses",
-    "portal": "Chicago Data Portal",
-    "vacant_buildings": "Vacant buildings",
-    "food_inspections": "Food inspections"
-  },
   "sinceThen": {
     "answeredOn": "Answered {{date}}",
     "rebuilt": "details rebuilt from the saved answer",

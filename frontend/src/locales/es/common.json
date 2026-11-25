@@ -23,10 +23,8 @@
   "close": "Cerrar",
   "shared": "Compartida",
   "submit": "Enviar",
-  "copyMessage": "Copiar mensaje",
   "loadConversationError": "No se pudo cargar la conversación. Es posible que se haya eliminado o que no tenga acceso.",
   "transcriptTitle": "Transcripción de Chicago",
-  "viewQuestionData": "Haga clic para ver los datos de esta pregunta",
   "confidence": {
     "state": {
       "low": "Confianza baja"

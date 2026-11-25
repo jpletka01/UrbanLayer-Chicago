@@ -23,10 +23,8 @@
   "close": "Close",
   "shared": "Shared",
   "submit": "Submit",
-  "copyMessage": "Copy message",
   "loadConversationError": "Couldn't load conversation. It may have been deleted or you may not have access.",
   "transcriptTitle": "Chicago Transcript",
-  "viewQuestionData": "Click to view this question's data",
   "confidence": {
     "state": {
       "low": "Low confidence"
