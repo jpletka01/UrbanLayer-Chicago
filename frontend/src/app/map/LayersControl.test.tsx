@@ -42,4 +42,31 @@ describe("the Layers control", () => {
     fireEvent.mouseLeave(screen.getByTestId("layers-control"));
     expect(screen.queryByTestId("layers-row")).toBeNull();
   });
+
+  // Item 136: a choice with nothing to draw right now says so, instead of a click that changes nothing.
+  it("says under a layer's name when it has nothing to show yet", () => {
+    render(<LayersControl value={base} onChange={() => {}} theme="light" hints={{ zoning: "Zoom in to see", saved: "None saved yet" }} />);
+    fireEvent.mouseEnter(screen.getByTestId("layers-control"));
+    expect(screen.getByTestId("layers-zoning-hint").textContent).toBe("Zoom in to see");
+    expect(screen.getByTestId("layers-saved-hint").textContent).toBe("None saved yet");
+    expect(screen.queryByTestId("layers-transit-hint")).toBeNull();
+    expect(screen.getByTestId("layers-zoning").textContent).toContain("Zoning districts");
+  });
+
+  it("on a phone the row opens under the corner square, so it fits a 360 px screen", () => {
+    const { rerender } = render(<LayersControl value={base} onChange={() => {}} theme="light" />);
+    expect(screen.getByTestId("layers-control").className).toContain("items-end");
+    expect(screen.getByTestId("layers-control").className).not.toContain("flex-col");
+    rerender(<LayersControl value={base} onChange={() => {}} theme="light" stacked />);
+    expect(screen.getByTestId("layers-control").className).toContain("flex-col");
+  });
+
+  it("shows a plain tile, not a black square, when the satellite preview can't load", () => {
+    render(<LayersControl value={base} onChange={() => {}} theme="light" />);
+    const img = screen.getByTestId("layers-button").querySelector("img")!;
+    fireEvent.error(img);
+    expect(screen.getByTestId("layers-button").querySelector("img")).toBeNull();
+    expect(screen.getByTestId("satellite-preview-failed")).toBeTruthy();
+    expect(screen.getByTestId("layers-button").getAttribute("aria-label")).toBe("Switch to Satellite");
+  });
 });

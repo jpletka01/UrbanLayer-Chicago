@@ -1787,7 +1787,10 @@
       "transit": "Transit",
       "zoning": "Zoning districts",
       "satelliteNote": "Cook County's 2025 aerial photos. Lot colors are hidden under the photo; outlines and searches still show.",
-      "satelliteCredit": "Imagery: Cook County GIS, 2025"
+      "satelliteCredit": "Imagery: Cook County GIS, 2025",
+      "zoomIn": "Zoom in to see",
+      "noneSaved": "None saved yet",
+      "satelliteDown": "Satellite photos aren't loading: Cook County's image server isn't answering. Showing the map."
     },
     "families": {
       "residential": "Residential",

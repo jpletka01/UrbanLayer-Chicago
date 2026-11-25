@@ -32,11 +32,13 @@ import { track } from "../../lib/tracking";
 import { useIsPhone } from "../../lib/useIsPhone";
 import { AppFrame } from "../frame/AppFrame";
 import { STROKE } from "../icons";
-import { LayersControl, type LayersState } from "../map/LayersControl";
+import { LayersControl, type LayerToggle, type LayersState } from "../map/LayersControl";
+import { loadMapInfo } from "../map/mapInfo";
+import { belowMinZoom } from "../map/tileWatch";
 import { Pill } from "../ui/Blocks";
 import { ExploreMap, LotSheetBody, LotSheetHead, type Picked, type Ring, type ViewBox } from "./ExploreMap";
 import { FilterBar } from "./FilterBar";
-import { ToastHost } from "../ui/Toast";
+import { ToastHost, showToast } from "../ui/Toast";
 import { fetchParcelRow } from "../../discovery/searchClient";
 import { LotCard } from "./LotCard";
 import { useNeighborhoods, useViewMatches, type Hood } from "./discoveryData";
@@ -97,6 +99,25 @@ export default function DiscoveryNextPage() {
   }), [savedLots.lots]);
   const mapTheme = useResolvedThemeOrLight();
   const [view, setView] = useState<ViewBox | null>(null);
+  // Where each Layers choice has something to draw (Item 136): zoning tiles start at the tile set's own zoom (13), so
+  // at the city view the choice says "Zoom in to see" instead of a click that changes nothing.
+  const [zoningMinZoom, setZoningMinZoom] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    loadMapInfo().then((info) => { if (alive) setZoningMinZoom(info.zoning?.minZoom ?? null); });
+    return () => { alive = false; };
+  }, []);
+  const layerHints = useMemo(() => {
+    const h: Partial<Record<LayerToggle, string>> = {};
+    if (belowMinZoom(view?.zoom, zoningMinZoom)) h.zoning = t("map.layers.zoomIn");
+    if (!savedPoints.length) h.saved = t("map.layers.noneSaved");
+    return h;
+  }, [view?.zoom, zoningMinZoom, savedPoints.length, t]);
+  // Satellite's photos didn't arrive (Cook County's image server not answering): back to the map, and say so.
+  const satelliteFailed = useCallback(() => {
+    setLayers((l) => (l.basemap === "satellite" ? { ...l, basemap: "standard" } : l));
+    showToast(t("map.layers.satelliteDown"), { kind: "notice" });
+  }, [t]);
   const [camera, setCamera] = useState<{ bbox?: [number, number, number, number]; center?: [number, number]; zoom?: number; seq: number } | null>(null);
   const moveTo = useCallback((c: Omit<NonNullable<typeof camera>, "seq">) => setCamera((p) => ({ ...c, seq: (p?.seq ?? 0) + 1 })), []);
   const [goalsFolded, setGoalsFolded] = useState(false);
@@ -299,6 +320,7 @@ export default function DiscoveryNextPage() {
       showZoning={layers.zoning}
       showRail={layers.transit}
       basemap={layers.basemap}
+      onBasemapFailed={satelliteFailed}
       savedPoints={savedPoints}
       showSaved={layers.saved}
       walkMiles={walkPreview}
@@ -419,7 +441,7 @@ export default function DiscoveryNextPage() {
           {map}
           {/* Google Maps' Layers button (Item 128): bottom left above the map credit on a desktop; on a phone at the
               top left, below the filters, opening downward (the sheet covers the bottom). */}
-          <LayersControl value={layers} onChange={setLayers} theme={mapTheme} foldSignal={mapTouches}
+          <LayersControl value={layers} onChange={setLayers} theme={mapTheme} foldSignal={mapTouches} hints={layerHints} stacked={phone}
             className={`absolute z-30 ${phone ? "left-3 top-16" : "bottom-4 left-3"}`} />
           {/* On a phone the key sits on its own line below the quick filters at the right, never over them (owner's review). */}
           <div className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex gap-2 p-3 ${phone ? "flex-col items-end" : "items-start justify-between"}`}>
