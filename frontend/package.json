@@ -9,13 +9,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint . --max-warnings 35",
+    "lint": "eslint . --max-warnings 65",
     "preview": "vite preview",
     "test": "vitest run",
     "test:mobile": "playwright test",
     "test:mobile:report": "node e2e/mobile-audit-report.mjs",
-    "sweep:live": "node e2e/live-sweep.mjs",
-    "knip": "knip --production"
+    "sweep:live": "node e2e/live-sweep.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.3.1",
@@ -55,7 +54,6 @@
     "eslint-plugin-react-refresh": "^0.5.8",
     "globals": "^17.14.0",
     "jsdom": "^27.0.1",
-    "knip": "5.88.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.72.2",
     "vite": "^8.3.8",

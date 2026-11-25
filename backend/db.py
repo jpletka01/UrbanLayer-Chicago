@@ -987,6 +987,21 @@ def _title_from_messages(conv_id: str, messages: list[dict]) -> str | None:
     return None
 
 
+async def update_message_map_data(
+    conv_id: str, position: int, map_data: dict, fetched_at: int | None = None,
+) -> None:
+    db = _get_db()
+    await db.execute(
+        """
+        UPDATE messages
+        SET map_data_json = ?, map_fetched_at = ?
+        WHERE conversation_id = ? AND position = ?
+        """,
+        (json.dumps(map_data), fetched_at or _now_ms(), conv_id, position),
+    )
+    await db.commit()
+
+
 async def delete_conversation(
     conv_id: str, user_id: str | None = None,
 ) -> bool:
@@ -1658,6 +1673,31 @@ async def get_user_by_id(user_id: str) -> dict | None:
     return dict(row) if row else None
 
 
+async def get_user_by_google_id(google_id: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute("SELECT * FROM users WHERE google_id = ?", (google_id,))
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def get_user_by_stripe_customer(customer_id: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT * FROM users WHERE stripe_customer_id = ?", (customer_id,)
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def get_user_by_email(email: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT * FROM users WHERE lower(email) = lower(?)", (email,)
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
 # ---------------------------------------------------------------------------
 # Subscriptions (Billing, Item 123): Stripe's state per account; Pro is derived from it in auth.
 # ---------------------------------------------------------------------------
@@ -2265,6 +2305,16 @@ async def get_user_report_purchases(user_id: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Usage analytics
 # ---------------------------------------------------------------------------
+
+async def add_subscriber(email: str, source: str | None = None) -> bool:
+    """Store a newsletter subscriber. Returns True if newly added."""
+    db = _get_db()
+    cur = await db.execute(
+        "INSERT OR IGNORE INTO subscribers (email, source, created_at) VALUES (?, ?, ?)",
+        (email.strip().lower(), source, _now_ms()),
+    )
+    await db.commit()
+    return cur.rowcount > 0
 
 
 async def save_events(events: list[dict]) -> None:

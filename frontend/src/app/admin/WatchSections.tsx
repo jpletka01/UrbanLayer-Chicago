@@ -14,7 +14,7 @@ import type {
   AdminOverview, BenchmarkResults, ConversationStats, EngagementMetrics, JudgeResults, LatencyPercentiles, RequestLogEntry,
   TimeseriesBucket,
 } from "../../lib/types";
-import type { PieSlice } from "./PieChart";
+import type { PieSlice } from "../../lib/analytics";
 import { STROKE } from "../icons";
 import { Block, Pill, StatTile } from "../ui/Blocks";
 import { ADMIN_SECTIONS, codeAttention, correctionsAttention, dataAttention, type Attention } from "./adminModel";

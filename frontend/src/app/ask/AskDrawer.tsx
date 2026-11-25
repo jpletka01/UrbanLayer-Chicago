@@ -6,8 +6,7 @@ import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { RightDrawer } from "../ui/RightDrawer";
 import { useTranslation } from "react-i18next";
 import { ArrowUp, RotateCcw, SquareArrowOutUpRight } from "lucide-react";
-import { ChatMessage } from "../chat/ChatMessage";
-import { ThinkingSteps } from "../chat/ThinkingSteps";
+import { MessageBubble } from "../../components/MessageBubble";
 import type { useParcelChat } from "../../lib/useParcelChat";
 import { ICON, STROKE } from "../icons";
 
@@ -124,14 +123,15 @@ export function AskDrawer({
         ) : (
           chat.messages.map((m, i) => {
             const streamingThis = m.role === "assistant" && i === chat.messages.length - 1 && chat.streaming;
-            // As on the chat page: the latest answer's steps, live while it streams, then one line.
-            const isLatest = m.role === "assistant" && i === chat.messages.length - 1 && chat.activities.length > 0;
-            const waiting = streamingThis && !m.content;
+            const ctx = streamingThis ? chat.context : m.context;
             return (
-              <div key={i} className="flex flex-col gap-2">
-                {isLatest && <ThinkingSteps activities={chat.activities} answering={!waiting} />}
-                {!waiting && <ChatMessage message={m} streaming={streamingThis} />}
-              </div>
+              <MessageBubble
+                key={i}
+                message={m}
+                streaming={streamingThis}
+                codeChunks={ctx?.code_chunks ?? []}
+                activities={streamingThis ? chat.activities : undefined}
+              />
             );
           })
         )}

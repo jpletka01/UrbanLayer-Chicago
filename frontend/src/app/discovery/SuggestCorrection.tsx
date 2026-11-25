@@ -88,7 +88,7 @@ function useSent(pin10: string): boolean {
   return raw.split(",").includes(pin10);
 }
 
-/** Tests only: forget what this browser sent. @internal */
+/** Tests only: forget what this browser sent. */
 export function resetCorrectionsSent() {
   sentCache = null;
   try { sessionStorage.removeItem(SENT_KEY); } catch { /* nothing kept */ }

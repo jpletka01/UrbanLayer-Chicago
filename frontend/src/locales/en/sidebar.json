@@ -1,0 +1,41 @@
+{
+  "peek": {
+    "crimes_one": "{{count}} crime",
+    "crimes_other": "{{count}} crimes",
+    "requests_one": "{{count}} 311 request",
+    "requests_other": "{{count}} 311 requests",
+    "permits_one": "{{count}} permit",
+    "permits_other": "{{count}} permits",
+    "sources_one": "{{count}} source",
+    "sources_other": "{{count}} sources",
+    "expand": "Tap to expand"
+  },
+  "data": "Data",
+  "sources": "Sources",
+  "map": "Map",
+  "municipalCode": "Municipal Code",
+  "copyFullText": "Copy full text",
+  "loadingSection": "Loading section…",
+  "sourceCount_one": "{{count}} source",
+  "sourceCount_other": "{{count}} sources",
+  "sectionNotFound": "Section not found",
+  "bridge": {
+    "viewScorecard": "View Property Profile",
+    "pin": "PIN {{pin}}"
+  },
+  "semanticMatchScore": "Semantic match score",
+  "relatedSections": "Related sections",
+  "sourceLabel": "Source:",
+  "readFullText": "Read full text",
+  "collapse": "Collapse",
+  "noCodeRefs": "No code references found",
+  "noCodeRefsHint": "Ask about zoning or municipal code to see sources",
+  "noDatasets": "No live datasets were queried for this answer.",
+  "crossRefUnavailable": "This cross-referenced section couldn't be retrieved.",
+  "sectionsReferenced_one": "{{count}} code section referenced",
+  "sectionsReferenced_other": "{{count}} code sections referenced",
+  "openPanel": "Open panel (⌘B)",
+  "closePanel": "Close panel (⌘B)",
+  "dragToResize": "Drag to resize · Double-click to collapse",
+  "contextAndData": "Context & Data"
+}

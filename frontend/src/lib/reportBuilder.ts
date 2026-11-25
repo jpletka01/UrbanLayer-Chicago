@@ -83,6 +83,11 @@ function collectCodeChunks(messages: Message[]): CodeChunk[] {
   return chunks;
 }
 
+function formatCurrency(n: number): string {
+  const locale = i18n.language === "es" ? "es-ES" : "en-US";
+  return n.toLocaleString(locale, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
 function buildPropertySection(prop: PropertySummary): ReportSection {
   return {
     type: "property",
@@ -214,3 +219,5 @@ export function buildReportData(
     mapScreenshotDataUrl: mapScreenshot,
   };
 }
+
+export { formatCurrency };

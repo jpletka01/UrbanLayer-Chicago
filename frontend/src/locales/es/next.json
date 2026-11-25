@@ -1,4 +1,8 @@
 {
+  "preview": {
+    "badge": "Vista previa",
+    "exit": "Salir de la vista previa"
+  },
   "nav": {
     "search": "Buscar",
     "discovery": "Descubrir",
@@ -223,6 +227,7 @@
       "zoned": "Zonificación {{zone}}.",
       "noZone": "El mapa de zonificación de la Ciudad no muestra ningún distrito en este punto.",
       "zoningUnchecked": "Todavía no se pudo revisar el distrito de zonificación.",
+      "checkingLabel": "Revisando",
       "checking": {
         "units": "Revisando los registros de construcción del Condado",
         "tax": "Revisando los registros fiscales del Condado",
@@ -395,6 +400,7 @@
         "label": "Valor del Tasador",
         "year": "Tasación {{year}}",
         "none": "No hay tasaciones registradas",
+        "chartLabel": "Valor del Tasador por año: {{list}}",
         "hint": "Pase el cursor sobre un año para ver su valor; haga clic para mantenerlo visible."
       }
     },
@@ -671,6 +677,7 @@
         "what": "las cifras del Censo",
         "notChecked": "No se pudieron revisar las cifras del Censo hoy.",
         "fact": {
+          "owner_occupied_pct": "Viviendas habitadas por sus dueños",
           "bachelors_or_higher_pct": "Adultos con licenciatura o más",
           "poverty_rate": "Personas bajo la línea de pobreza",
           "median_age": "Edad mediana"
@@ -679,6 +686,7 @@
         "dist": {
           "transportation_distribution": "Cómo llegan al trabajo",
           "age_distribution": "Edad",
+          "income_distribution": "Ingreso del hogar",
           "education_distribution": "Escolaridad (adultos de 25+)"
         },
         "bucket": {
@@ -1858,19 +1866,34 @@
     "export": "Exportar como PDF",
     "share": "Compartir",
     "minimize": "Volver a la conversación",
+    "mapTitle": "Mapa · {{place}}",
+    "sourcesTitle_one": "{{count}} fuente",
+    "sourcesTitle_other": "{{count}} fuentes",
     "mapLabel": "Mapa de los registros de esta respuesta",
     "mapUnavailable": "El mapa no se puede mostrar en este navegador.",
     "codeSource": "Código Municipal de Chicago",
     "amendedSince_one": "El Concejo Municipal aprobó {{count}} enmienda que toca esta sección el {{date}}, después de la fecha de este texto.",
     "amendedSince_other": "El Concejo Municipal aprobó {{count}} enmiendas que tocan esta sección desde el {{date}}, después de la fecha de este texto.",
+    "point": {
+      "crime_one": "{{count}} delito",
+      "crime_other": "{{count}} delitos",
+      "request_one": "{{count}} solicitud al 311",
+      "request_other": "{{count}} solicitudes al 311",
+      "permit_one": "{{count}} permiso",
+      "permit_other": "{{count}} permisos"
+    },
+    "points_one": "{{count}} registro",
+    "points_other": "{{count}} registros",
     "preview": {
       "lot": "Ficha",
       "map": "Mapa",
-      "sources": "Fuentes"
+      "sources": "Fuentes",
+      "data": "Datos"
     },
     "signInTitle": "Inicie sesión para continuar",
     "signInBody": "Ya usó las preguntas gratuitas de hoy. Inicie sesión para hacer más; su conversación se queda aquí.",
     "signInClose": "Cerrar",
+    "dataTitle": "Registros · {{place}}",
     "steps": {
       "reading": "Leyendo su pregunta",
       "summary_one": "Se revisó {{count}} fuente · {{seconds}} s",
@@ -1886,6 +1909,25 @@
     "lens": {
       "theArea": "el área comunitaria",
       "lot": "El terreno y la zonificación alrededor",
+      "lotLeftOut": "No se dibujan delitos ni permisos para una pregunta sobre el terreno.",
+      "safety_one": "{{count}} delito a ½ milla · {{days}} días",
+      "safety_other": "{{count}} delitos a ½ milla · {{days}} días",
+      "safetyArea_one": "{{count}} delito · {{days}} días",
+      "safetyArea_other": "{{count}} delitos · {{days}} días",
+      "split": "{{violent}} violentos · {{property}} contra la propiedad",
+      "inArea_one": "{{count}} en {{area}}",
+      "inArea_other": "{{count}} en {{area}}",
+      "recentPins_one": "Marcador: el {{count}} de los últimos 30 días a ¼ de milla",
+      "recentPins_other": "Marcadores: los {{count}} de los últimos 30 días a ¼ de milla",
+      "noPins": "Los cuadros muestran conteos; demasiados o ninguno reciente para marcar",
+      "construction_one": "{{count}} edificio nuevo, demolición o renovación grande a ½ milla",
+      "construction_other": "{{count}} edificios nuevos, demoliciones y renovaciones grandes a ½ milla",
+      "constructionArea_one": "{{count}} edificio nuevo, demolición o renovación grande",
+      "constructionArea_other": "{{count}} edificios nuevos, demoliciones y renovaciones grandes",
+      "smallLeftOut_one": "{{count}} permiso menor no se dibuja",
+      "smallLeftOut_other": "{{count}} permisos menores no se dibujan (reparaciones, letreros, obras pequeñas)",
+      "area_one": "{{count}} registro · {{days}} días, contado por cuadra",
+      "area_other": "{{count}} registros · {{days}} días, contados por cuadra",
       "kind": {
         "new": "Edificio nuevo",
         "renovation": "Renovación grande",
@@ -2354,6 +2396,7 @@
     "perMonthPrice": "{{price}} al mes",
     "perYearPrice": "{{price}} al año",
     "free": "Gratis",
+    "pro": "Pro",
     "yourPlan": "Su plan",
     "aMonth": "al mes",
     "aYear": "al año",
@@ -2509,6 +2552,7 @@
       "perBuilding": "el edificio"
     },
     "projects": {
+      "label": "Proyectos",
       "units": "Unidades",
       "floors": "Pisos",
       "floorArea": "Superficie",
@@ -2530,6 +2574,8 @@
       "fits": "Cabe en las cifras",
       "less": "Menos: {{what}}",
       "more": "Más: {{what}}",
+      "atSale": "si cada una se vende en {{price}}",
+      "atRent": "a {{price}} al mes cada una",
       "remove": "Quitar su proyecto {{n}}",
       "name": {
         "largest": "el proyecto más grande",

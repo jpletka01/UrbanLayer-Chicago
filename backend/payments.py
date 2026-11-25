@@ -169,6 +169,11 @@ async def create_billing_portal_session(user: dict, language: str = "en") -> str
     return session.url
 
 
+async def create_report_checkout_session(*_args, **_kwargs) -> str:
+    """Retired with the $25 report (Item 123): Pro and the free Deep analysis replace it."""
+    raise HTTPException(status_code=410, detail={"error": "report_purchase_retired"})
+
+
 # ── Webhook ───────────────────────────────────────────────────────────────────────────────────────────────────
 
 _SUBSCRIPTION_EVENTS = {

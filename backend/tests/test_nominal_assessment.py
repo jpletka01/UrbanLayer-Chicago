@@ -4,12 +4,15 @@ The reference parcel is PIN 14-28-319-102-0000: class 100, $1 certified/Board to
 beside ten class-100 lots carrying $2,142,695 each and ~456 condo units.
 """
 
+import json
+import sqlite3
 
 import pytest
 
 from backend.discovery.parcel_index import derive_sort_fields
 from backend.models import PropertySummary
 from backend.report_builder import _resolve_market_value_and_tax
+from backend.retrieval.area_stats import _scan_index
 from backend.retrieval.property import _build_summary
 from backend.retrieval.property.assessment_level import is_nominal_assessment
 
@@ -105,3 +108,23 @@ def test_discovery_sort_key_skips_nominal_parcels():
     assert derive_sort_fields({"total_assessed_value": 5000.0, "class": "1-00"})["total_assessed_value_sortkey"] == 5000.0
 
 
+def test_area_medians_exclude_nominal_parcels(tmp_path):
+    db = tmp_path / "idx.db"
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE parcels (pin TEXT PRIMARY KEY, lat REAL, lon REAL, attrs TEXT, regions TEXT)")
+    conn.execute("CREATE TABLE meta (id INTEGER PRIMARY KEY, built_at INTEGER)")
+    rows = [
+        ("a", {"total_assessed_value": 1.0, "class": "1-00", "land_sqft": 143032, "land_use_class": "vacant"}),
+        ("b", {"total_assessed_value": 3.0, "class": "1-00", "land_sqft": 5000, "land_use_class": "vacant"}),
+        ("c", {"total_assessed_value": 50000.0, "class": "2-11", "land_sqft": 3000, "land_use_class": "residential"}),
+        ("d", {"total_assessed_value": 70000.0, "class": "2-11", "land_sqft": 3000, "land_use_class": "residential"}),
+    ]
+    for pin, attrs in rows:
+        conn.execute("INSERT INTO parcels VALUES (?,?,?,?,?)", (pin, 0, 0, json.dumps(attrs), json.dumps(["neighborhood:24"])))
+    conn.commit()
+    conn.close()
+    stats = _scan_index(str(db))[24]
+    assert stats["n_parcels"] == 4
+    assert stats["n_assessed"] == 2
+    assert stats["median_assessed"] == 60000.0
+    assert stats["n_mv_psf"] == 2

@@ -30,6 +30,7 @@ export interface FilterSpec {
 export interface GroupSpec { id: GroupId; icon: LucideIcon; filters: FilterSpec[] }
 
 const range = (min?: number, max?: number): Predicate => ({ kind: "range", ...(min != null ? { min } : {}), ...(max != null ? { max } : {}) });
+const yes: Predicate = { kind: "flag", value: true };
 
 // Base-district FAR, read as "about N stories' worth" over the whole lot: RS 0.65-0.9, RT/RM-4.5 1.05-1.7,
 // RM-5/RM-6 and most B/C 2-4.4, downtown and RM-6.5+ 5 and up.
@@ -124,7 +125,7 @@ export const WALK_MAX = 20;
 export const walkMiles = (minutes: number) => Math.round((minutes / 20) * 100) / 100;
 export const walkMinutes = (miles: number) => Math.round(miles * 20);
 
-
+export { yes as FLAG_YES };
 
 /** The groups that have at least one filter with data in this index. */
 export function liveGroups(registry: Registry): GroupSpec[] {

@@ -72,6 +72,10 @@ def _period_end(period: str | None, qd: str) -> str | None:
     return year_end(period.replace("-", "–").split("–")[-1], qd)
 
 
+def _money(v: Any) -> int | float | None:
+    return v if isinstance(v, (int, float)) else None
+
+
 def figure_entries(
     context, *, comparables, qd: str, existing: dict[str, dict], address_scoped_violations: bool = False,
 ) -> dict[str, dict]:
@@ -632,3 +636,48 @@ def expected_fact_ids(payload: dict) -> set[str]:
     return want
 
 
+def area_benchmark_entry(stats: dict, qd: str | None = None) -> dict | None:
+    """The provenance entry for a community area's median market value per land ft², served beside
+    it by ``/api/area-stats``: how many of the area's parcels it rests on (the index's land area is
+    sparse), and when the index was built. None when there is no median."""
+    from datetime import datetime, timezone
+
+    if stats.get("median_mv_per_land_sqft") is None or not stats.get("n_mv_psf"):
+        return None
+    qd = qd or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    built = stats.get("index_built")
+    return make_entry(
+        "area.benchmarks.market_value_per_land_sqft", query_date=qd,
+        value=_scalar(round(stats["median_mv_per_land_sqft"], 2)),
+        as_of=built if built and _ISO.match(built) else None,
+        as_of_basis="source_updated" if built else "queried",
+        geography=f"Community area {stats.get('community_area')}",
+        coverage={"n": stats["n_mv_psf"], "share": stats.get("coverage_share"), "universe": "parcels in the community area",
+                  "unit": "parcels", "sample": "area_sample"},
+        inputs=["cook.assessor.values", "cook.assessor.characteristics"],
+        note="Assessed value divided by the class assessment level, per land ft², across parcels with a land area.",
+    )
+
+
+def typical_lot_entry(stats: dict, zone_class: str, qd: str | None = None) -> dict | None:
+    """The provenance entry for the typical lot size of ``zone_class`` in a community area (WS5 PR3, Item 66):
+    how many lots the median rests on, and when the index was built. None when the district has no figure."""
+    from datetime import datetime, timezone
+
+    zc = zone_class.strip().upper()
+    row = (stats.get("lot_size_by_zone_class") or {}).get(zc)
+    if not row or not row.get("n"):
+        return None
+    qd = qd or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    built = stats.get("index_built")
+    return make_entry(
+        "area.benchmarks.typical_lot_sqft", query_date=qd,
+        value=_scalar(row["median_lot_sqft"]),
+        as_of=built if built and _ISO.match(built) else None,
+        as_of_basis="source_updated" if built else "queried",
+        geography=f"Community area {stats.get('community_area')}, {zc}",
+        coverage={"n": row["n"], "universe": f"{zc} base parcels in the community area",
+                  "unit": "lots", "sample": "area_sample"},
+        inputs=["cook.assessor.characteristics", "cook.ptaxsim", "chi.zoning.districts"],
+        note="Median land area of base parcels in this district, from the Assessor's land area or the County outline.",
+    )

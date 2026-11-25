@@ -56,6 +56,37 @@ export function humanizeShoutyCase(value: string): string {
     .join(" ");
 }
 
+/**
+ * Translate a FEMA flood-zone subtype (free-text `ZONE_SUBTY`, e.g.
+ * "AREA OF MINIMAL FLOOD HAZARD") into the active language. Falls back to a
+ * humanized version of the raw value when no translation exists.
+ */
+export function translateFloodSubtype(subtype: string | null | undefined): string {
+  if (!subtype) return "";
+  const norm = subtype.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "");
+  const key = `data:terms.floodSubtypes.${norm}`;
+  const translated = i18n.t(key);
+  if (translated !== key) return translated;
+  return humanizeShoutyCase(subtype);
+}
+
+/**
+ * Localize the enumerable free-text qualifiers embedded in backend zone-definition
+ * values ("50 ft (varies by lot frontage)", "No max (bonuses available)") and the
+ * "ft" unit. English passes through byte-identical.
+ */
+export function localizeZoningValue(value: string | null | undefined): string {
+  if (!value) return value ?? "";
+  if (i18n.language.startsWith("en")) return value;
+  if (value === "No max (bonuses available)") return i18n.t("data:zoning.noMaxBonuses");
+  if (value === "No fixed cap — tall buildings require PD review") return i18n.t("data:zoning.noFixedCapPd");
+  if (value === "No height standard in the zoning code") return i18n.t("data:zoning.noHeightStandard");
+  return value
+    .replace("(varies by lot frontage & ground-floor commercial)", `(${i18n.t("data:zoning.variesByFrontageCommercial")})`)
+    .replace("(varies by lot frontage)", `(${i18n.t("data:zoning.variesByLotFrontage")})`)
+    .replace(/\bft\b/g, i18n.t("data:zoning.feetUnit"));
+}
+
 /** applied → reflected; pending / never reviewed → not yet reviewed; reviewed, no change → not reflected. */
 export function amendmentStatus(a: Pick<Amendment, "review_status" | "product_effect">): "applied" | "none" | "pending" {
   if (a.review_status !== "reviewed" || a.product_effect === "pending" || !a.product_effect) return "pending";

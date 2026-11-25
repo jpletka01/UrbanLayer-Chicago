@@ -1,0 +1,182 @@
+"""Per-community-area benchmark aggregates for the Property Profile KPI band.
+
+Computed from the Property Discovery index (the only citywide per-parcel AV/sqft
+source we hold) in ONE full pass that builds all 77 areas at once, then cached
+in-process for a day — the index itself only changes on the monthly refresh.
+Computed on demand rather than at ``finalize_index`` so shipping this needs no
+off-box index rebuild; if the index is absent (fresh dev box) every stat is None
+and the UI simply renders no benchmark.
+
+Honesty notes (2026-07-07 audit — the first cut of this file failed all three):
+- The $/ft² benchmark is **market value** per land ft² (AV ÷ the parcel's class
+  assessment level), never raw AV/ft². Raw AV mixes 10% residential with 25%
+  commercial levels, which INVERTED the comparison for commercial subjects (a
+  class-517 read "above the area median" while sitting at half the area's
+  market $/ft²). Exempt parcels (no level) are excluded.
+- Every median ships its own ``n``. The index's ``land_sqft`` is sparse (~4% of
+  Uptown), so ``n_parcels`` alone badly overstated the sample behind the $/ft²
+  median; the frontend suppresses the line under a floor.
+- Typical lot size per zoning district (WS5 PR3, decision Item 66): median and middle
+  half of the land area of the area's **base** parcels (PIN ending 0000, so a condo unit
+  never claims the whole lot) in that exact district, leaving out shared outlines (one
+  polygon for a whole development, Item 59) and the "unusual" parcels (Item 60). Emitted
+  only at n ≥ ``MIN_LOT_N``; needs ``zone_class`` in the index (Item 59), else empty.
+- No area effective-tax-rate median (the index holds no bills) — that
+  comparison is served by the deterministic class-norm constant on the
+  frontend. Per-class medians are only emitted at n ≥ 20; below that a
+  "median" is an anecdote.
+"""
+
+import asyncio
+import json
+import logging
+import sqlite3
+import time
+from datetime import datetime, timezone
+
+from backend.config import get_settings
+from backend.retrieval.property.assessment_level import assessment_level_for_class, is_nominal_assessment
+
+log = logging.getLogger(__name__)
+
+_TTL_S = 24 * 3600
+# A failed scan (index mid-refresh, transient I/O) must not blank the benchmark
+# for a whole day — retry soon.
+_FAIL_TTL_S = 300
+_MIN_CLASS_N = 20
+# Lots per district before a "typical lot" is shown (the Profile's MIN_BENCHMARK_N, Item 66).
+MIN_LOT_N = 50
+
+_cache: dict[int, dict] | None = None
+_cache_expires: float = 0.0
+_lock = asyncio.Lock()
+
+
+def _median(values: list[float]) -> float | None:
+    if not values:
+        return None
+    values = sorted(values)
+    n = len(values)
+    mid = n // 2
+    return values[mid] if n % 2 else (values[mid - 1] + values[mid]) / 2
+
+
+def _quartiles(values: list[float]) -> tuple[float, float, float]:
+    """(25th, 50th, 75th) percentile by linear interpolation between order statistics."""
+    values = sorted(values)
+
+    def at(q: float) -> float:
+        pos = q * (len(values) - 1)
+        lo = int(pos)
+        hi = min(lo + 1, len(values) - 1)
+        return values[lo] + (values[hi] - values[lo]) * (pos - lo)
+
+    return at(0.25), at(0.5), at(0.75)
+
+
+def _typical_lot_eligible(pin: str, attrs: dict) -> float | None:
+    """The parcel's lot area when it may count toward its district's typical lot, else None."""
+    land = attrs.get("land_sqft")
+    if not (isinstance(land, (int, float)) and land > 0 and attrs.get("zone_class")):
+        return None
+    if not str(pin).endswith("0000") or attrs.get("shared_outline") or attrs.get("unusual"):
+        return None
+    return float(land)
+
+
+def _scan_index(path: str) -> dict[int, dict]:
+    """Single pass over the discovery index → stats for every community area."""
+    conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        # When the index was built: the benchmark is as old as that (WS0 M3).
+        index_built = None
+        try:
+            row = conn.execute("SELECT built_at FROM meta WHERE id = 1").fetchone()
+            if row and isinstance(row[0], (int, float)) and row[0] > 0:
+                index_built = datetime.fromtimestamp(row[0], tz=timezone.utc).strftime("%Y-%m-%d")
+        except sqlite3.Error:
+            pass
+        acc: dict[int, dict] = {}
+        for pin, attrs_json, regions_json in conn.execute("SELECT pin, attrs, regions FROM parcels"):
+            try:
+                regions = json.loads(regions_json)
+                ca = next(
+                    (int(r.split(":", 1)[1]) for r in regions if r.startswith("neighborhood:")),
+                    None,
+                )
+                if ca is None:
+                    continue
+                attrs = json.loads(attrs_json)
+            except (ValueError, TypeError, IndexError):
+                continue
+            a = acc.setdefault(ca, {"n": 0, "av": [], "mv_psf": [], "by_use": {}, "lots": {}})
+            a["n"] += 1
+            lot = _typical_lot_eligible(pin, attrs)
+            if lot is not None:
+                a["lots"].setdefault(str(attrs["zone_class"]).strip().upper(), []).append(lot)
+            av = attrs.get("total_assessed_value")
+            land = attrs.get("land_sqft")
+            # A $1 common area or remnant is a placeholder, not a value: it would drag the median down.
+            if isinstance(av, (int, float)) and av > 0 and not is_nominal_assessment(float(av), attrs.get("class")):
+                a["av"].append(float(av))
+                level = assessment_level_for_class(attrs.get("class"))
+                if level and isinstance(land, (int, float)) and land > 0:
+                    psf = (float(av) / level) / float(land)
+                    a["mv_psf"].append(psf)
+                    use = attrs.get("land_use_class")
+                    if isinstance(use, str) and use:
+                        a["by_use"].setdefault(use, []).append(psf)
+
+        out: dict[int, dict] = {}
+        for ca, a in acc.items():
+            out[ca] = {
+                "community_area": ca,
+                "n_parcels": a["n"],
+                "median_assessed": _median(a["av"]),
+                "n_assessed": len(a["av"]),
+                "median_mv_per_land_sqft": _median(a["mv_psf"]),
+                "n_mv_psf": len(a["mv_psf"]),
+                # What share of the area's parcels the $/ft² median rests on (the index's land
+                # area is sparse), and the index build date: the figure's coverage and age.
+                "coverage_share": round(len(a["mv_psf"]) / a["n"], 4) if a["n"] else None,
+                "index_built": index_built,
+                "by_land_use": {
+                    use: {"n": len(vals), "median_mv_per_land_sqft": _median(vals)}
+                    for use, vals in a["by_use"].items()
+                    if len(vals) >= _MIN_CLASS_N
+                },
+                "lot_size_by_zone_class": {
+                    zc: dict(zip(("p25_lot_sqft", "median_lot_sqft", "p75_lot_sqft"),
+                                 (round(q) for q in _quartiles(vals))), n=len(vals))
+                    for zc, vals in sorted(a["lots"].items())
+                    if len(vals) >= MIN_LOT_N
+                },
+            }
+        return out
+    finally:
+        conn.close()
+
+
+async def get_area_stats(community_area: int) -> dict | None:
+    """Benchmark aggregates for one community area, or None when unavailable."""
+    global _cache, _cache_expires
+    if _cache is None or time.monotonic() > _cache_expires:
+        async with _lock:
+            if _cache is None or time.monotonic() > _cache_expires:
+                path = str(get_settings().discovery_index_path)
+                try:
+                    loop = asyncio.get_running_loop()
+                    _cache = await loop.run_in_executor(None, _scan_index, path)
+                    _cache_expires = time.monotonic() + _TTL_S
+                    log.info("Area stats computed for %d community areas", len(_cache))
+                except Exception as exc:
+                    log.warning("Area stats scan failed (%s): %s", path, exc)
+                    _cache = {}
+                    _cache_expires = time.monotonic() + _FAIL_TTL_S
+    return _cache.get(community_area)
+
+
+def _reset_cache_for_tests() -> None:
+    global _cache, _cache_expires
+    _cache = None
+    _cache_expires = 0.0
