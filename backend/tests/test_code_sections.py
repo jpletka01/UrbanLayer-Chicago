@@ -9,7 +9,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.code_sections import SECTION_ID_RE, TABLE_HINTS, article_id, set_indexed_sections
+from backend.code_sections import SECTION_ID_RE, TABLE_HINTS, article_id, extract_subsection, set_indexed_sections
+from backend.provenance import BULK_SECTIONS
 
 SECTIONS = Path(__file__).resolve().parents[2] / "ingestion" / "data" / "sections"
 FILES = ["17-2-0300", "17-3-0400", "17-4-0400", "17-5-0400"]
@@ -67,6 +68,55 @@ def test_section_id_validation_rejects_anything_that_is_not_a_section(bad):
 
 # --- extraction from the real articles --------------------------------------------------
 
+def test_far_subsection_and_its_table_for_the_r_districts():
+    sub = extract_subsection(_article("17-2-0300"), "17-2-0304-A")
+    assert sub["heading"] == "Standards"
+    assert sub["paragraphs"][0].startswith("17-2-0304-A Standards. All development in R districts")
+    assert not any(p.startswith("17-2-0304-B") for p in sub["paragraphs"])  # stops at the next heading
+    assert len(sub["tables"]) == 1 and "Maximum Floor Area Ratio" in sub["tables"][0]
+    assert "Row 2: District: RS2; Maximum Floor Area Ratio*: 0.65" in sub["tables"][0]
+
+
+def test_b_c_far_picks_the_standards_table_not_the_aro_table():
+    sub = extract_subsection(_article("17-3-0400"), "17-3-0403-A")
+    assert len(sub["tables"]) == 1
+    assert "Proportion" not in sub["tables"][0].split("\n", 1)[0] and "Maximum Floor Area Ratio" in sub["tables"][0]
+
+
+def test_a_section_level_id_includes_its_subsections():
+    sub = extract_subsection(_article("17-2-0300"), "17-2-0304")
+    heads = [p.split(" ", 1)[0] for p in sub["paragraphs"] if p.startswith("17-2-")]
+    assert heads[:3] == ["17-2-0304", "17-2-0304-A", "17-2-0304-B"] and "17-2-0305" not in heads
+    assert sub["tables"] == []  # a whole section has no single table to attach
+
+
+@pytest.mark.parametrize("article,sec,starts,next_heading", [
+    ("17-7-0570", "17-7-0574", "Areas and Limitations. Additional Dwelling Unit-Allowed RS Areas", "17-7-0575"),
+    ("17-7-0590", "17-7-0591", "Boundaries. The Predominance of the Block (606) District", "17-7-0592"),
+    ("17-7-0590", "17-7-0593-A", "In the RS3 district", "17-7-0593-B"),
+])
+def test_chapter_17_7_sections_cut_out_of_their_article(indexed_code, article, sec, starts, next_heading):
+    assert article_id(sec) == article
+    sub = extract_subsection(_article(article), sec)
+    assert sub["paragraphs"][0].startswith(f"{sec} {starts}")
+    assert not any(p.startswith(next_heading + " ") for p in sub["paragraphs"])  # stops at the next heading
+
+
+def test_unknown_subsection_is_none():
+    assert extract_subsection(_article("17-2-0300"), "17-2-0399-Z") is None
+    assert extract_subsection("no headings here", "17-2-0304-A") is None
+
+
+def test_every_cited_standard_resolves_to_its_text_and_table():
+    """The sections Profile numbers cite (BULK_SECTIONS) must open on real text."""
+    cited = {sec for fam in BULK_SECTIONS.values() for sec in fam.values() if sec}
+    for sec in sorted(cited):
+        sub = extract_subsection(_article(next(f for f in FILES if f == article_id(sec))), sec)
+        assert sub is not None, sec
+        assert sub["paragraphs"][0].startswith(sec + " "), sec
+        if sec in TABLE_HINTS:
+            assert sub["tables"], f"{sec} has a table hint but no table matched"
+
 
 def test_table_hints_match_the_codes_real_column_headers():
     for sec, (include, exclude) in TABLE_HINTS.items():
@@ -77,6 +127,21 @@ def test_table_hints_match_the_codes_real_column_headers():
 
 
 # --- the endpoint -------------------------------------------------------------------------------
+
+def test_a_table_the_index_split_into_row_batches_is_put_back_together():
+    text = (
+        "17-2-0311-A Standards. Height limits:\n\n17-2-0311-B Exemptions. x"
+        "\n\n[TABLE]\nColumns: District | Maximum Building Height (feet)\nRow 1: District: RS1; Maximum Building Height (feet): 30"
+        "\n\n[TABLE]\nColumns: District | Maximum Building Height (feet)\nRow 2: District: RS2; Maximum Building Height (feet): 30"
+        "\n\n[TABLE]\nColumns: District | Minimum Side Setback\nRow 1: District: RS1; Minimum Side Setback: 5"
+    )
+    sub = extract_subsection(text, "17-2-0311-A")
+    assert len(sub["tables"]) == 1
+    assert sub["tables"][0].splitlines() == [
+        "Columns: District | Maximum Building Height (feet)",
+        "Row 1: District: RS1; Maximum Building Height (feet): 30",
+        "Row 2: District: RS2; Maximum Building Height (feet): 30",
+    ]
 
 
 def test_scrolling_the_index_registers_its_articles(monkeypatch):

@@ -285,6 +285,9 @@ export function ringMiles(region: string | undefined): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/** Transit as one control: a walk in minutes to the nearest L stop (the index has L stations only, 20 min a mile). */
+export const TRANSIT_WALKS = [{ minutes: 5, mi: 0.25 }, { minutes: 10, mi: 0.5 }, { minutes: 15, mi: 0.75 }];
+
 // ---------------------------------------------------------------- the ring
 
 export const RING_MILES = [0.25, 0.5, 1] as const;
@@ -318,6 +321,7 @@ export function milesBetween(aLat: number, aLon: number, bLat: number, bLon: num
 }
 
 export const clampMiles = (mi: number) => Math.min(RING_MAX_MI, Math.max(RING_MIN_MI, Math.round(mi * 20) / 20));
+
 
 // ---------------------------------------------------------------- where the map is, in the URL (owner's map review)
 

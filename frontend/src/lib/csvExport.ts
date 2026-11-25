@@ -40,6 +40,14 @@ export function downloadCSV(csv: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+export function exportCSV<T extends object>(
+  rows: T[],
+  filename: string,
+  columns?: CSVColumn<T>[],
+): void {
+  downloadCSV(toCSV(rows, columns), filename);
+}
+
 export function buildFilenameSlug(label: string): string {
   return label.replace(/[^a-zA-Z0-9]+/g, "_").toLowerCase().slice(0, 40);
 }

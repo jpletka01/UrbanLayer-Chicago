@@ -1,7 +1,23 @@
 {
+  "na": {
+    "value": "n/d",
+    "title": "No disponible en las fuentes de datos del condado para esta parcela en este momento."
+  },
   "property": {
+    "title": "Propiedad",
+    "address": "Dirección",
+    "pin": "PIN",
+    "class": "Clase",
+    "buildingSqft": "Área construida",
+    "landSqft": "Área del terreno",
     "stories": "Pisos",
     "units": "Unidades",
+    "commercialUnits": "Unidades comerciales",
+    "exemptionsApplied": "Exenciones aplicadas: {{kinds}} (−${{eav}} de valor gravable)",
+    "exemptionsCaveat": "Las exenciones por ocupación del propietario no se transfieren al comprador.",
+    "noBuildingVacant": "Terreno baldío — sin edificación registrada.",
+    "buildingDetailsUnavailable": "Detalles del edificio no disponibles para esta parcela — sin registro del tasador, de valuación ni de huella.",
+    "complexBuilding": "Esta parcela es una de {{n}} en una unidad comercial del tasador con {{sqft}} ft² de edificios en total. El tasador no publica la parte de este lote, por lo que no se muestra superficie construida.",
     "energy": {
       "rating": "Calificación Energética de Chicago {{rating}}/4",
       "star": "ENERGY STAR {{score}}/100",
@@ -21,6 +37,13 @@
       "taxSale": "Apareció en la venta fiscal anual de {{years}} (histórico)",
       "scavengerSale": "Apareció en la venta scavenger de {{years}} (histórico)"
     },
+    "assessorPermits": {
+      "title": "Registro de permisos del tasador",
+      "assessablePending": "Hay un permiso evaluable aún abierto — el tasador puede aumentar la tasación cuando se cierre.",
+      "summary_one": "{{count}} permiso en los últimos {{years}} años",
+      "summary_other": "{{count}} permisos en los últimos {{years}} años",
+      "declared": "{{amount}} declarado"
+    },
     "appeals": {
       "title": "Apelaciones de avalúo",
       "stageBor": "Junta de Revisión",
@@ -33,10 +56,121 @@
       "summary_other": "{{count}} apelaciones registradas · {{won}} ganada(s)",
       "noneHere": "Ninguna registrada para esta parcela"
     },
-    "building": "Edificio"
+    "rooms": "Habitaciones",
+    "bedrooms": "Dormitorios",
+    "baths": "Baños",
+    "buildingAge": "Antigüedad",
+    "yrs": "años",
+    "assessedValue": "Valor de avalúo",
+    "impliedMarketValue": "Valor de mercado implícito",
+    "assessmentHistory": "Historial de avalúo",
+    "yrsCount": "{{count}} años",
+    "year": "Año",
+    "land": "Terreno",
+    "building": "Edificio",
+    "total": "Total",
+    "salesHistory": "Historial de ventas",
+    "date": "Fecha",
+    "price": "Precio",
+    "deed": "Escritura",
+    "estAnnualTax": "Impuesto anual est.",
+    "taxBreakdown": "Desglose de impuestos",
+    "agencies": "{{count}} agencias",
+    "agency": "Agencia",
+    "rate": "Tasa",
+    "amount": "Monto",
+    "reportTeaser": "Proyecciones de impuestos + potencial de desarrollo en el informe",
+    "annualTax": "Impuesto anual",
+    "effectiveRate": "Tasa impositiva efect.",
+    "otherAgencies": "Otras ({{count}})",
+    "fullRecords": "Registros completos",
+    "taxBreakdownToggle": "Desglose de impuestos",
+    "agencyNames": {
+      "city_of_chicago": "Ciudad de Chicago",
+      "board_of_education": "Junta de Educación",
+      "chicago_park_district": "Distrito de Parques de Chicago",
+      "metro_water_reclamation": "Saneamiento Metropolitano del Agua",
+      "metropolitan_water_reclamation": "Saneamiento Metropolitano del Agua",
+      "cook_county_forest_preserve": "Bosques del Condado de Cook",
+      "city_colleges": "Colegios Comunitarios de la Ciudad",
+      "city_colleges_of_chicago": "Colegios Comunitarios de la Ciudad",
+      "cook_county": "Condado de Cook",
+      "cook_county_health_facilities": "Salud del Condado de Cook",
+      "chicago_transit_authority": "Autoridad de Tránsito de Chicago",
+      "north_shore_mosquito": "Control de Mosquitos (North Shore)",
+      "mosquito_abatement": "Control de Mosquitos"
+    },
+    "taxDetail": "Impuestos y tasación",
+    "buildingAndLot": "Edificio y lote",
+    "timeline": {
+      "ariaLabel": "Historial de tasación {{from}}–{{to}} con ventas y apelaciones",
+      "land": "Terreno",
+      "building": "Edificio",
+      "vsPrior": "vs año anterior",
+      "totalAssessed": "tasación total",
+      "sold": "venta",
+      "appealWon": "Apelación ganada −{{pct}}%",
+      "sale": "Venta",
+      "appeal": "Apelación ganada"
+    },
+    "floorArea": "Superficie construida",
+    "floorAreaTip": "Área total sumando todos los pisos — en un edificio de varios pisos puede superar el tamaño del lote.",
+    "tips": {
+      "assessed": "El valor imponible del Tasador del Condado de Cook — una fracción del valor de mercado fijada por clase (10% residencial, 25% comercial), no un precio de venta.",
+      "implied": "Valor catastral ÷ el nivel de tasación de la clase — el valor de mercado que implican las cifras del condado. Un método, no un avalúo.",
+      "annualTax": "La factura más reciente calculable con datos PTAXSIM del Condado de Cook (suele atrasarse 1–2 años).",
+      "effRate": "Impuesto anual ÷ valor de mercado implícito — lo que la propiedad realmente paga por dólar de valor; comparable entre parcelas.",
+      "class": "Código de clase del Condado de Cook — fija el nivel de tasación e indica el uso (1xx baldío, 2xx residencial, 5xx comercial).",
+      "assessorPermits": "Permisos que el Tasador del Condado de Cook tiene registrados para este PIN. Distinto del feed de permisos de la ciudad: está vinculado a la parcela y registra un costo declarado y si el tasador considera que el trabajo es evaluable, es decir, capaz de cambiar la tasación y por tanto el impuesto.",
+      "appeals": "Apelaciones de tasación de esta parcela (etapas del Tasador y la Junta de Revisión) y cómo les va a las apelaciones en esta cuadra — señal de si apelar aquí funciona."
+    },
+    "nominal": {
+      "value": "Nominal",
+      "short": "No es un valor de mercado",
+      "note": "El Condado avalúa esta parcela con un monto nominal, no con un valor de mercado. Las parcelas así suelen ser el área común de un desarrollo o el remanente de un terreno subdividido. Conforme a la ley de Illinois (35 ILCS 200/10-35), un área común que califica se registra en $1 al año y su valor se cuenta en el avalúo de los lotes que la comparten; no hemos confirmado que esta parcela califique."
+    }
   },
   "regulatory": {
+    "title": "Normativo",
     "overlays": "Normativas superpuestas",
+    "status": "Estado",
+    "noOverlays": "No se aplican normativas superpuestas a esta ubicación.",
+    "source": "Ver la fuente ↗",
+    "upcoming": {
+      "title": "Zonificación en trámite",
+      "disclaimer": "Las solicitudes de los solicitantes son propuestas, no aprobaciones. La zonificación actual sigue vigente a menos que el Concejo Municipal actúe y cambie el mapa oficial de zonificación.",
+      "checked": "Verificado el {{date}}",
+      "subject": "Menciona esta propiedad",
+      "subjectMatch": "coincide con la propiedad",
+      "nearby": "Cerca, dentro de {{radius}} mi",
+      "distance": "a {{distance}} mi",
+      "updated": "Actualizado el {{date}}",
+      "empty": "No se encontraron solicitudes de zonificación vigentes que se puedan ubicar para esta propiedad ni dentro de {{radius}} mi.",
+      "stale": "La última actualización no se completó. Se muestra la última verificación exitosa; confirme el registro de la Secretaría Municipal antes de basarse en él.",
+      "unavailable": "No se pudieron verificar las solicitudes de zonificación en trámite en este momento. Esto no significa que no existan.",
+      "partial": "La ubicación es parcial: no se pudo ubicar {{count}} solicitud(es) vigente(s) a partir del título oficial. La lista siguiente puede estar incompleta.",
+      "staleShort": "Última verificación correcta",
+      "partialShort_one": "{{count}} solicitud no se pudo ubicar",
+      "partialShort_other": "{{count}} solicitudes no se pudieron ubicar",
+      "noneNear": "Ninguna en esta propiedad ni a menos de {{radius}} mi",
+      "proposedStatus": "Propuesta · {{status}}"
+    },
+    "adu": {
+      "allowed_by_right": "Casas de carruaje y unidades de conversión permitidas por derecho",
+      "not_allowed": "Casas de carruaje y unidades de conversión no permitidas aquí",
+      "allowed_with_limits": "Área de ADU permitida en RS"
+    },
+    "floodZone": "Zona inundable",
+    "zone": "Zona {{code}}",
+    "specialFloodHazard": "Riesgo especial de inundación",
+    "affordableHousing": "Vivienda asequible (ARO)",
+    "projects": "Proyectos",
+    "totalUnits": "Total de unidades",
+    "units": "unidades",
+    "nearbyBrownfield": "Sitios contaminados cercanos ({{count}})",
+    "nearbyProjects": "Proyectos cercanos",
+    "unknownSite": "Sitio desconocido",
+    "ord": "Ord.",
     "flags": {
       "in_planned_development": "Desarrollo planificado",
       "in_landmark_district": "Distrito histórico",
@@ -51,23 +185,478 @@
       "in_adu_area": "Área ADU",
       "in_aro_zone": "Zona ARO",
       "in_ssa": "Área de servicio especial"
+    },
+    "constraints": "Revisiones y restricciones",
+    "opportunities": "Oportunidades y contexto",
+    "constraintCount_one": "{{count}} restricción",
+    "constraintCount_other": "{{count}} restricciones",
+    "moreConstraints_one": "y {{count}} más",
+    "moreConstraints_other": "y {{count}} más",
+    "environment": "Medio ambiente",
+    "unchecked": {
+      "title": "No se pudo verificar hoy",
+      "body": "El mapa de zonificación de la Ciudad no respondió para: {{items}}. Esto no es un «no»; intente de nuevo más tarde o consulte el mapa de la Ciudad.",
+      "mapLink": "Mapa de zonificación de la Ciudad ↗",
+      "flood": "Zona de inundación de FEMA",
+      "floodLink": "Mapa de inundación de FEMA ↗",
+      "types": {
+        "planned_development": "desarrollo planificado",
+        "lakefront_protection": "Distrito de Protección del Lago",
+        "pedestrian_street": "calle peatonal",
+        "landmark_building": "designación de monumento",
+        "historic_district": "distritos históricos y de monumentos",
+        "national_register": "distritos del Registro Nacional",
+        "special_district": "distritos especiales",
+        "fema_floodplain": "mapa local de zonas inundables",
+        "pmd_subarea": "subáreas PMD",
+        "tod_cta": "zona con servicio de transporte (TOD)",
+        "tod_metra": "zona con servicio de transporte (TOD)",
+        "adu_area": "elegibilidad para ADU",
+        "aro_zone": "zona ARO",
+        "ssa": "Área de Servicio Especial"
+      }
+    },
+    "pendingText": {
+      "title": "Cambios pendientes al código de zonificación",
+      "disclaimer": "Son propuestas ante el Concejo Municipal, no leyes vigentes. La ley actual y las cifras de esta página no cambian a menos que el Concejo apruebe una y se modifique el código.",
+      "checked": "Verificado el {{date}}",
+      "unavailable": "No se pudieron verificar los cambios pendientes al código de zonificación en este momento. Esto no significa que no existan.",
+      "stale": "La última actualización no se completó. Se muestra la última verificación exitosa; confirme el registro de la Secretaría Municipal antes de basarse en él.",
+      "incomplete_one": "{{count}} propuesta pendiente del Título 17 no se ha revisado para determinar si afecta a esta propiedad, por lo que esta lista puede estar incompleta.",
+      "incomplete_other": "{{count}} propuestas pendientes del Título 17 no se han revisado para determinar si afectan a esta propiedad, por lo que esta lista puede estar incompleta.",
+      "unreviewedHeading": "Aún sin revisar",
+      "reasonUnreviewed": "Aún sin revisar",
+      "reasonOutdated": "Una versión más reciente reemplazó la que revisamos",
+      "waiting": "presentada hace {{days}} días",
+      "emptyNone": "No hay propuestas pendientes de texto del Título 17 en el registro de la Secretaría Municipal.",
+      "empty_one": "La propuesta pendiente del Título 17 que revisamos ({{count}}) no se aplica al distrito, a las capas superpuestas ni a las cifras de esta propiedad.",
+      "empty_other": "Ninguna de las {{count}} propuestas pendientes del Título 17 que revisamos se aplica al distrito, a las capas superpuestas ni a las cifras de esta propiedad.",
+      "pending": "Pendiente · {{status}}",
+      "introduced": "Presentada el {{date}}",
+      "updated": "Actualizado el {{date}}",
+      "reviewed": "Leído del texto de la ordenanza · revisado el {{date}}",
+      "couldChange": "Propuesto: podría cambiar",
+      "today": "Hoy · ley vigente, sin cambios",
+      "sections": "Secciones",
+      "untested": "No se puede evaluar para esta propiedad",
+      "summaryToggle": "Qué dice la propuesta",
+      "official": "Registro oficial ↗",
+      "valueOf": "{{label}}: {{value}}",
+      "todayValue": "Hoy: {{value}}",
+      "proposedStatus": "Propuesta · {{status}}",
+      "count_one": "{{count}} propuesta ante el Concejo Municipal podría cambiar una regla de esta página",
+      "count_other": "{{count}} propuestas ante el Concejo Municipal podrían cambiar reglas de esta página",
+      "dateIntroduced": "Presentada ante el Concejo Municipal",
+      "dateLastAction": "Última acción del Concejo Municipal",
+      "dateReviewed": "Leímos el texto de la ordenanza",
+      "dateChecked": "Revisamos la lista del Secretario",
+      "notChecked": "Hoy no se pudo verificar",
+      "staleShort": "Última verificación correcta",
+      "incompleteShort_one": "{{count}} propuesta aún sin revisar",
+      "incompleteShort_other": "{{count}} propuestas aún sin revisar",
+      "noneApply_one": "{{count}} revisada; no aplica aquí",
+      "noneApply_other": "{{count}} revisadas; ninguna aplica aquí"
     }
   },
   "incentives": {
+    "title": "Incentivos",
     "inTif": "En distrito TIF",
+    "notInTif": "No en TIF",
+    "tifName": "Nombre TIF",
+    "period": "Período",
+    "propertyTaxRevenue": "Ingresos por impuesto predial",
+    "cumulativeRevenue": "Ingresos acumulados",
+    "fundBalance": "Saldo del fondo",
+    "annualExpenditure": "Gasto anual",
+    "district": "Distrito",
+    "taxRevenue": "Ingreso fiscal",
+    "annualFinancials": "Finanzas anuales",
+    "yrsCount": "{{count}} años",
+    "revenue": "Ingresos",
+    "expenditure": "Gastos",
     "opportunityZone": "Zona de oportunidad",
+    "notInOpportunityZone": "No en zona de oportunidad",
+    "tract": "Tramo censal",
     "enterpriseZone": "Zona empresarial",
-    "qct": "Distrito censal calificado (LIHTC)"
+    "notInEnterpriseZone": "No en zona empresarial",
+    "enterpriseZoneNotChecked": "Zona Empresarial: no verificada",
+    "ezUnchecked": "El mapa de Zonas Empresariales de la Ciudad no respondió, así que no pudimos verificar si esta parcela está en una. Esto no es un «no».",
+    "notChecked": "{{program}}: sin verificar",
+    "unchecked": {
+      "tif": "El mapa de distritos TIF de la Ciudad no respondió, así que no pudimos verificar si esta parcela está en uno. Esto no es un «no».",
+      "oz": "El mapa de Zonas de Oportunidad de HUD no respondió, así que no pudimos verificar si esta parcela está en una. Esto no es un «no».",
+      "qct": "No pudimos consultar el distrito censal de esta parcela ni la lista de HUD de distritos censales calificados, así que no pudimos verificar si está en uno. Esto no es un «no».",
+      "nmtc": "No pudimos consultar el distrito censal de esta parcela ni la lista de HUD del Crédito Fiscal para Nuevos Mercados (NMTC), así que no pudimos verificar si califica. Esto no es un «no»."
+    },
+    "cityGrantPrograms": "Programas de subsidios municipales",
+    "totalProjects": "Total de proyectos",
+    "totalFunding": "Financiamiento total",
+    "projects": "proyectos",
+    "recentProjects": "Proyectos recientes",
+    "taxClass": "Clase fiscal {{code}}",
+    "standardClassDescription": "Clasificación estándar — no aplica reducción de incentivo fiscal.",
+    "unavailableClassDescription": "El código de clase de propiedad no está disponible del Condado de Cook — no se puede determinar la clasificación de incentivo fiscal.",
+    "censusTract": "Tramo censal:",
+    "reportTeaser": "Análisis de elegibilidad con IA + próximos pasos en el informe",
+    "qct": "Distrito censal calificado (LIHTC)",
+    "nmtcEligible": "Comunidad de bajos ingresos NMTC",
+    "notInQct": "No está en un distrito censal calificado",
+    "notNmtcEligible": "No elegible para NMTC",
+    "severeDistress": "Gravemente desfavorecida — prioridad de asignación NMTC mejorada",
+    "short": {
+      "tif": "TIF",
+      "oz": "Zona de Oportunidad",
+      "ez": "Zona Empresarial",
+      "qct": "QCT",
+      "nmtc": "NMTC"
+    },
+    "notInLine": "No está en: {{list}}",
+    "activeCount_one": "{{count}} designación activa",
+    "activeCount_other": "{{count}} designaciones activas"
   },
   "neighborhood": {
+    "title": "Vecindario",
+    "population": "Población",
+    "medIncome": "Ingreso med.",
+    "homeValue": "Valor de vivienda",
+    "medianRent": "Renta mediana",
+    "poverty": "Pobreza",
+    "unemployment": "Desempleo",
+    "ownerOccupied": "Propietarios",
+    "bachelorsPlus": "Licenciatura+",
+    "vacancyRate": "Tasa de vacantes",
+    "perCapitaIncome": "Ingreso per cápita",
+    "foreignBorn": "Nacidos en el extranjero",
     "transit": "Transporte",
-    "traffic": "Tráfico vial"
+    "ctaLines": {
+      "Red": "Roja",
+      "Blue": "Azul",
+      "Brown": "Café",
+      "Green": "Verde",
+      "Orange": "Naranja",
+      "Purple": "Morada",
+      "Pink": "Rosa",
+      "Yellow": "Amarilla"
+    },
+    "todEligible": "Elegible TOD",
+    "walkScore": "Walk Score",
+    "walk": "Walk Score",
+    "transitScore": "Transit Score",
+    "bike": "Bike Score",
+    "walkScoreTM": "Walk Score®",
+    "walkDescriptions": {
+      "Walker's Paradise": "Paraíso peatonal",
+      "Very Walkable": "Muy transitable",
+      "Somewhat Walkable": "Algo transitable",
+      "Car-Dependent": "Dependiente del auto",
+      "Almost All Errands Require a Car": "Casi todo requiere auto"
+    },
+    "transitDescriptions": {
+      "Rider's Paradise": "Paraíso del transporte",
+      "Excellent Transit": "Transporte excelente",
+      "Good Transit": "Buen transporte",
+      "Some Transit": "Algo de transporte",
+      "Minimal Transit": "Transporte mínimo"
+    },
+    "bikeDescriptions": {
+      "Biker's Paradise": "Paraíso ciclista",
+      "Very Bikeable": "Muy ciclable",
+      "Bikeable": "Ciclable",
+      "Somewhat Bikeable": "Algo ciclable",
+      "Minimal Bike Infrastructure": "Infraestructura ciclista mínima"
+    },
+    "noData": "No hay datos del vecindario disponibles.",
+    "traffic": "Tráfico vial",
+    "trafficDaily": "≈{{count}} vehículos/día en {{road}}",
+    "trafficAsOf": "al {{date}}",
+    "aboveChicago": "{{pct}}% sobre Chicago",
+    "belowChicago": "{{pct}}% bajo Chicago",
+    "atChicagoMedian": "en la mediana de Chicago",
+    "viewCensusReporter": "Ver perfil completo en Census Reporter",
+    "tractDetail": "{{tract}} — detalle",
+    "acsPeriod": "ACS {{period}}",
+    "marginNote": "± es el margen de error del 90% de la encuesta",
+    "caCaption": "{{area}} · ACS {{period}} · ingreso estimado a partir de 5 rangos, sin margen de error",
+    "caCaptionNoPeriod": "{{area}} · ACS · ingreso estimado a partir de 5 rangos, sin margen de error",
+    "ageDistribution": "Distribución por edad",
+    "householdIncome": "Ingreso del hogar",
+    "raceEthnicity": "Raza y etnicidad",
+    "education": "Educación",
+    "transportationToWork": "Transporte al trabajo",
+    "buckets": {
+      "age": {
+        "Under 18": "Menor de 18",
+        "18-24": "18-24",
+        "25-34": "25-34",
+        "35-44": "35-44",
+        "45-54": "45-54",
+        "55-64": "55-64",
+        "65-74": "65-74",
+        "75+": "75+"
+      },
+      "income": {
+        "Under $25K": "Menos de $25K",
+        "$25-50K": "$25-50K",
+        "$50-75K": "$50-75K",
+        "$75-100K": "$75-100K",
+        "$100-150K": "$100-150K",
+        "$150-200K": "$150-200K",
+        "$200K+": "$200K+"
+      },
+      "race": {
+        "White": "Blanco",
+        "Black": "Negro",
+        "Asian": "Asiático",
+        "Two+": "Dos+",
+        "Other": "Otro",
+        "Hispanic": "Hispano"
+      },
+      "education": {
+        "No degree": "Sin título",
+        "High school": "Secundaria",
+        "Some college": "Algo de universidad",
+        "Bachelor's": "Licenciatura",
+        "Graduate+": "Posgrado+"
+      },
+      "transportation": {
+        "Drove alone": "Condujo solo",
+        "Carpooled": "Compartió auto",
+        "Public transit": "Transporte público",
+        "Walked": "Caminó",
+        "Bicycle": "Bicicleta",
+        "Work from home": "Trabajo desde casa",
+        "Other": "Otro"
+      }
+    }
+  },
+  "violations": {
+    "title": "Infracciones",
+    "total": "Total",
+    "open": "Abiertas",
+    "byCategory": "Por categoría",
+    "topDescriptions": "Descripciones principales",
+    "showingFirst": "Mostrando las primeras {{count}} — pueden existir más.",
+    "categoryLabels": {
+      "Elevator/Escalator": "Elevador/Escalera mecánica",
+      "Boiler/Mechanical": "Caldera/Mecánico",
+      "Electrical": "Eléctrico",
+      "Exterior Structure": "Estructura exterior",
+      "Interior Structure": "Estructura interior",
+      "Porch/Deck": "Porche/Terraza",
+      "Roof": "Techo",
+      "Fencing": "Cercas",
+      "Garage/Shed": "Garaje/Cobertizo",
+      "Windows/Screens": "Ventanas/Mallas",
+      "Fire Safety": "Seguridad contra incendios",
+      "Egress/Safety": "Salidas/Seguridad",
+      "Nuisance/Cleanup": "Molestia/Limpieza",
+      "Pest Control": "Control de plagas",
+      "Permits/Contractor": "Permisos/Contratista",
+      "Inspection Required": "Inspección requerida",
+      "Plumbing": "Plomería",
+      "Heating": "Calefacción",
+      "Other": "Otro"
+    }
+  },
+  "business": {
+    "title": "Licencias comerciales",
+    "activeLicenses": "Licencias activas",
+    "byLicenseType": "Por tipo de licencia",
+    "topActivities": "Actividades principales",
+    "showingFirst": "Mostrando las primeras {{count}} — pueden existir más.",
+    "licenseTypeLabels": {
+      "Retail Food Establishment": "Establecimiento de alimentos",
+      "Limited Business License": "Licencia comercial limitada",
+      "Regulated Business License": "Licencia comercial regulada",
+      "Tobacco": "Tabaco",
+      "Peddler License": "Licencia de vendedor ambulante",
+      "Motor Vehicle Services License": "Licencia de servicios automotrices",
+      "Package Goods": "Venta de licor empaquetado",
+      "Tavern": "Taberna",
+      "Public Place of Amusement": "Lugar público de entretenimiento",
+      "Day Care": "Guardería",
+      "Outdoor Patio": "Terraza al aire libre",
+      "Children's Services Facility License": "Licencia de servicios infantiles",
+      "Not-For-Profit Club": "Club sin fines de lucro",
+      "Massage Establishment": "Establecimiento de masajes",
+      "Expediter - Class B": "Gestor - Clase B",
+      "Shared Housing Unit Registration": "Registro de vivienda compartida",
+      "Filling Station": "Gasolinera"
+    }
+  },
+  "foodInspections": {
+    "title": "Inspecciones de alimentos",
+    "inspections1yr": "Inspecciones (1 año)",
+    "failRate": "Tasa de fallo",
+    "byResult": "Por resultado",
+    "byRiskLevel": "Por nivel de riesgo",
+    "recentInspections": "Inspecciones recientes"
+  },
+  "vacantBuildings": {
+    "title": "Edificios vacantes",
+    "reportedCases": "Casos reportados",
+    "byDepartment": "Por departamento",
+    "recentReports": "Reportes recientes",
+    "due": "${{amount}} adeudado"
   },
   "crimeDataLag": "Los datos de delitos excluyen los últimos {{days}} días (al {{cutoff}}).",
   "analytics": {
+    "title": "Analíticas",
+    "crime": "Delitos",
+    "311Requests": "Solicitudes 311",
+    "buildingPermits": "Permisos de construcción",
+    "totalStat": "Total",
+    "arrestRate": "Tasa de arresto",
+    "openStat": "Abiertas",
+    "oldest": "Más antigua",
+    "estCost": "Costo est.",
+    "notEnoughData": "No hay suficientes datos para tendencias mensuales.",
+    "cappedCrime": "Datos limitados — pueden existir más incidentes.",
+    "capped311": "Datos limitados — pueden existir más solicitudes.",
+    "cappedPermits": "Datos limitados — pueden existir más permisos.",
+    "type": "Tipo",
+    "dept": "Depto",
+    "trend": "Tendencia",
+    "year": "Año",
     "total": "Total",
     "showLess": "Ver menos",
-    "moreCount": "+{{count}} más"
+    "moreCount": "+{{count}} más",
+    "exportCsv": "CSV"
+  },
+  "terms": {
+    "incentives": {
+      "tif_district": {
+        "label": "Distrito TIF",
+        "description": "Distrito de Financiamiento por Incremento de Impuestos que captura el crecimiento del impuesto a la propiedad para financiar mejoras locales como infraestructura, paisajismo urbano e incentivos de desarrollo.",
+        "bullets": [
+          "Vida útil de 23 años desde la fecha de creación",
+          "No aumenta su tasa impositiva individual",
+          "Financia infraestructura y desarrollo del vecindario",
+          "Los TIF que expiran devuelven el incremento a todos los organismos tributarios"
+        ]
+      },
+      "opportunity_zone": {
+        "label": "Zona de oportunidad",
+        "description": "Incentivo fiscal federal (Ley de Recortes de Impuestos y Empleos de 2017) que fomenta la inversión de capital a largo plazo en sectores censales de bajos ingresos.",
+        "bullets": [
+          "Diferimiento del impuesto sobre ganancias de capital en inversiones calificadas",
+          "Mantener 10 años puede eliminar ganancias en nueva inversión",
+          "Inversiones realizadas a través de Fondos de Oportunidad Calificados (QOFs)",
+          "Designado hasta 2028"
+        ]
+      },
+      "enterprise_zone": {
+        "label": "Zona empresarial",
+        "description": "Área designada por el estado de Illinois que ofrece incentivos fiscales a empresas que invierten y crean empleos en comunidades económicamente desfavorecidas.",
+        "bullets": [
+          "Exención de impuesto sobre ventas en materiales de construcción",
+          "Créditos fiscales estatales por inversión",
+          "Exenciones de impuestos de servicios públicos disponibles",
+          "Debe crear o retener empleos para calificar"
+        ]
+      },
+      "nmtc": {
+        "label": "Crédito Fiscal para Nuevos Mercados (NMTC)",
+        "description": "Programa federal que ofrece incentivos de crédito fiscal para la inversión privada en comunidades de bajos ingresos a través de Instituciones Financieras de Desarrollo Comunitario (CDFI).",
+        "bullets": [
+          "Crédito fiscal del 39% reclamado durante 7 años sobre inversiones calificadas",
+          "Financia proyectos comerciales, industriales y comunitarios",
+          "Préstamos a tasas por debajo del mercado a través de asignatarios CDFI",
+          "Los distritos gravemente desfavorecidos reciben prioridad de asignación"
+        ]
+      },
+      "qct": {
+        "label": "Distrito Censal Calificado (QCT)",
+        "description": "Distrito censal designado por HUD donde el 50% o más de los hogares ganan menos del 60% del ingreso medio del área. Los proyectos LIHTC en QCT reciben un aumento de base mejorado.",
+        "bullets": [
+          "Aumento de base de hasta el 130% para proyectos LIHTC",
+          "Permite el crédito fiscal del 9% sobre una mayor parte de los costos elegibles",
+          "Designado anualmente por HUD según datos de ingresos",
+          "Factor clave para la viabilidad del desarrollo de vivienda asequible"
+        ]
+      }
+    },
+    "floodZones": {
+      "X": {
+        "label": "Zona X — Riesgo mínimo",
+        "description": "Área fuera de las llanuras de inundación de 100 y 500 años. Designación de menor riesgo de inundación.",
+        "bullets": [
+          "Seguro contra inundaciones no requerido (pero disponible)",
+          "Sin requisitos especiales de construcción"
+        ]
+      },
+      "A": {
+        "label": "Zona A — Alto riesgo",
+        "description": "Dentro de la llanura de inundación de 100 años. 1% de probabilidad anual de inundación, 26% de probabilidad en una hipoteca de 30 años.",
+        "bullets": [
+          "Seguro contra inundaciones requerido para hipotecas federales",
+          "Elevación Base de Inundación (BFE) no determinada"
+        ]
+      },
+      "AE": {
+        "label": "Zona AE — Alto riesgo (detallado)",
+        "description": "Dentro de la llanura de inundación de 100 años con elevaciones base detalladas determinadas por estudio de ingeniería.",
+        "bullets": [
+          "Seguro contra inundaciones requerido",
+          "Construcción elevada requerida sobre BFE",
+          "Análisis detallado de zona de inundación disponible"
+        ]
+      },
+      "AH": {
+        "label": "Zona AH — Inundación superficial",
+        "description": "Área de inundación superficial de 100 años con profundidades de 1–3 pies, típicamente áreas de acumulación.",
+        "bullets": [
+          "Seguro contra inundaciones requerido",
+          "Profundidades de inundación de 1–3 pies",
+          "Consideraciones especiales de drenaje"
+        ]
+      },
+      "AO": {
+        "label": "Zona AO — Flujo laminar",
+        "description": "Área de inundación superficial de 100 años con flujo laminar en terreno inclinado, profundidades de 1–3 pies.",
+        "bullets": [
+          "Seguro contra inundaciones requerido",
+          "Flujo laminar en lugar de acumulación",
+          "Consideraciones de ruta de drenaje"
+        ]
+      },
+      "VE": {
+        "label": "Zona VE — Alto riesgo costero",
+        "description": "Área costera con riesgo de inundación de 100 años incluyendo acción de oleaje. Designación de mayor riesgo.",
+        "bullets": [
+          "Seguro contra inundaciones requerido",
+          "Estándares de construcción más estrictos",
+          "Elevación sobre pilotes requerida"
+        ]
+      }
+    },
+    "extraOverlays": {
+      "tod_combined": {
+        "label": "Desarrollo orientado al tránsito (TOD)",
+        "description": "Zona cerca de estaciones de CTA o Metra que fomenta desarrollo denso de uso mixto con estacionamiento reducido.",
+        "bullets": [
+          "Requisitos de estacionamiento reducidos",
+          "Bonificaciones de densidad solo en distritos -3 (con aprobación)",
+          "Estándares de diseño orientados al peatón"
+        ]
+      }
+    },
+    "floodSubtypes": {
+      "FLOODWAY": "Cauce de crecida",
+      "AREA_OF_MINIMAL_FLOOD_HAZARD": "Área de riesgo de inundación mínimo",
+      "0_2_PCT_ANNUAL_CHANCE_FLOOD_HAZARD": "Riesgo de inundación del 0.2% anual",
+      "1_PCT_ANNUAL_CHANCE_FLOOD_HAZARD_CONTAINED_IN_STRUCTURE": "Riesgo de inundación del 1% anual contenido en estructura",
+      "1_PCT_ANNUAL_CHANCE_FLOOD_HAZARD_CONTAINED_IN_CHANNEL": "Riesgo de inundación del 1% anual contenido en canal",
+      "AREA_WITH_REDUCED_FLOOD_RISK_DUE_TO_LEVEE": "Área con riesgo de inundación reducido por dique"
+    }
+  },
+  "zoning": {
+    "variesByLotFrontage": "varía según el frente del lote",
+    "noMaxBonuses": "Sin máximo (bonificaciones disponibles)",
+    "feetUnit": "pies",
+    "variesByFrontageCommercial": "varía según el frente del lote y el comercio en planta baja",
+    "noFixedCapPd": "Sin límite fijo — los edificios altos requieren revisión PD",
+    "noHeightStandard": "Sin estándar de altura en el código de zonificación"
   },
   "report": {
     "siteReport": "Transcripción de conversación UrbanLayer",
@@ -139,5 +728,35 @@
     "close": "Cerrar",
     "yes": "Sí",
     "questionPrefix": "P:"
+  },
+  "comparables": {
+    "title": "Ventas comparables",
+    "medianPrice": "Precio mediano",
+    "priceLandSqft": "$/pie² de terreno",
+    "salesVolume": "Ventas",
+    "priceRange": "Rango de precios",
+    "priceBuildableSqft": "Mediana por pie² edificable",
+    "buildableBasisLand": "{{count}} ventas de terreno vacante",
+    "buildableBasisMixed": "{{count}} ventas, incluye construidas — no hay comparables de terreno vacante cerca",
+    "priceBldgSqft": "$/pie² construido",
+    "recentSales": "Ventas recientes",
+    "date": "Fecha",
+    "price": "Precio",
+    "distance": "Dist.",
+    "priceSqft": "$/pie²",
+    "noData": "No se encontraron ventas comparables cercanas.",
+    "radius": "En 0.25 mi, últimos 3 años",
+    "reportTeaser": "Gráfico de tendencia de ventas + análisis completo en el informe",
+    "stripAriaLabel": "{{count}} precios de ventas comparables",
+    "class": "Clase",
+    "tips": {
+      "median": "Mediana de ventas de mercado de parcelas de clase similar en ¼ de milla durante los últimos 3 años. Las muestras pequeñas se señalan — tómelas como indicativas.",
+      "psfLand": "Precio de venta mediano dividido por los pies cuadrados del lote — la vara más limpia para el valor del terreno.",
+      "psfBuildable": "Precio de venta dividido entre la superficie del terreno × el índice de superficie construible (FAR) permitido — lo que un desarrollador paga por cada pie cuadrado que realmente puede construir. Dos terrenos con el mismo precio por pie de terreno no valen lo mismo si uno permite 2.2 de FAR y el otro 0.9. El distrito de cada comparable proviene del mapa de zonificación; se excluyen los terrenos en distritos sin FAR publicado (desarrollos planificados).",
+      "psfBldg": "Precio de venta mediano dividido por la superficie construida — la comparación estándar por pie cuadrado."
+    }
+  },
+  "trends": {
+    "new": "nuevo"
   }
 }

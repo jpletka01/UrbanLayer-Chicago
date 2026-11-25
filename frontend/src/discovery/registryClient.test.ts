@@ -4,7 +4,7 @@ import { REG } from "./_fixtures";
 vi.mock("../lib/api", () => ({ fetchDiscoveryRegistry: vi.fn() }));
 
 import { fetchDiscoveryRegistry } from "../lib/api";
-import { _resetCache, loadRegistry } from "./registryClient";
+import { _resetCache, isStale, loadRegistry } from "./registryClient";
 
 const mockFetch = vi.mocked(fetchDiscoveryRegistry);
 
@@ -26,6 +26,12 @@ describe("registryClient", () => {
     await loadRegistry();
     await loadRegistry(true);
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("isStale compares the cached version", async () => {
+    await loadRegistry();
+    expect(isStale("v1")).toBe(false);
+    expect(isStale("v2")).toBe(true);
   });
 
   it("falls back to cache on fetch failure", async () => {

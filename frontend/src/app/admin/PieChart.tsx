@@ -1,27 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../../lib/i18n";
-
-export interface PieSlice {
-  label: string;
-  value: number;
-  color: string;
-}
-
-// Short label for a slice: the map catalog's crime/permit/311/department name when there is one.
-function capLabel(raw: string, max = 25): string {
-  const upper = raw.toUpperCase();
-  const crimeLabel = i18n.t(`crimeLabels.${upper}`, { ns: "map", defaultValue: "" });
-  if (crimeLabel) return crimeLabel.length > max ? crimeLabel.slice(0, max - 1) + "…" : crimeLabel;
-  const permitLabel = i18n.t(`permitLabels.${upper}`, { ns: "map", defaultValue: "" });
-  if (permitLabel) return permitLabel.length > max ? permitLabel.slice(0, max - 1) + "…" : permitLabel;
-  const srLabel = i18n.t(`srTypeLabels.${raw}`, { ns: "map", defaultValue: "" });
-  if (srLabel) return srLabel.length > max ? srLabel.slice(0, max - 1) + "…" : srLabel;
-  const deptLabel = i18n.t(`deptLabels.${raw}`, { ns: "map", defaultValue: "" });
-  if (deptLabel) return deptLabel.length > max ? deptLabel.slice(0, max - 1) + "…" : deptLabel;
-  const clean = raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, " ");
-  return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
-}
+import type { PieSlice } from "../../lib/analytics";
+import { capLabel } from "../../lib/mapColors";
 
 interface Props {
   slices: PieSlice[];

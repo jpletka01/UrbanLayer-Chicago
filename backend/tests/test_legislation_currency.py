@@ -436,6 +436,33 @@ def client():
         yield TestClient(main.app)
 
 
+def _ped_chunk() -> CodeChunk:
+    text = "17-3-0503-A Purpose. x\n\n17-3-0503-D Designated pedestrian streets. W Belmont Ave ...\n\n17-3-0504 Standards. y"
+    return CodeChunk(text=text, source_document="x", section="17-3-0500", section_title="Pedestrian streets", score=1.0)
+
+
+def test_code_section_endpoint_lists_the_amendments_since(client):
+    from backend import main
+
+    _write_snapshot()
+    with patch.object(main, "get_full_section", new=AsyncMock(return_value=_ped_chunk())):
+        d = client.get("/section/17-3-0500").json()
+    assert len(d["amended_since"]) == 3
+
+
+def test_a_section_added_after_the_text_explains_itself_instead_of_a_bare_404(client):
+    from backend import main
+
+    with patch.object(main, "get_full_section", new=AsyncMock(return_value=None)):
+        for path in ("/section/17-3-0600",):
+            r = client.get(path)
+            assert r.status_code == 404
+            detail = r.json()["detail"]
+            assert detail["not_in_published_code"] and detail["added_by"][0]["record"] == "SO2026-0025391"
+            assert "isn't in the published Municipal Code text" in detail["message"]
+        assert client.get("/section/17-2-0300").json()["detail"] == "Section 17-2-0300 not found"
+
+
 def test_admin_code_currency_is_admin_only_and_offline(client):
     from backend import main
     from backend.auth import require_admin

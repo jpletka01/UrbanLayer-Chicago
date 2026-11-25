@@ -108,6 +108,8 @@ export function useDistribution(filterId: string | null): Distribution | null | 
   }, [filterId]);
   return d && d.id === filterId ? d.dist : undefined;
 }
+
+const shapeCache = new Map<string, Promise<GeoJSON.Geometry | null>>();
 const contextCache = new Map<string, Promise<GeoJSON.FeatureCollection | null>>();
 // A list of 50 cards would ask for 50 outlines at once; four at a time keeps the server's thread pool free.
 const SHAPE_CONCURRENCY = 4;
@@ -117,6 +119,23 @@ function nextShape() {
   if (shapeActive >= SHAPE_CONCURRENCY) return;
   const run = shapeQueue.shift();
   if (run) { shapeActive += 1; run(); }
+}
+/** The lot's outline for a card's picture (`/api/map/lot`: the County's outline where it still matches, else PTAXSIM's). */
+export function fetchLotShape(pin10: string): Promise<GeoJSON.Geometry | null> {
+  let p = shapeCache.get(pin10);
+  if (!p) {
+    p = new Promise<GeoJSON.Geometry | null>((resolve) => {
+      shapeQueue.push(() => {
+        fetch(`${API_BASE}/api/map/lot?pin10=${encodeURIComponent(pin10)}`)
+          .then((r) => (r.ok ? r.json() : null)).then((j) => resolve((j?.geometry as GeoJSON.Geometry) ?? null))
+          .catch(() => { shapeCache.delete(pin10); resolve(null); })
+          .finally(() => { shapeActive -= 1; nextShape(); });
+      });
+      nextShape();
+    });
+    shapeCache.set(pin10, p);
+  }
+  return p;
 }
 
 /** A lot and its neighbors (`/api/discovery/lot-context`), each with its room band, for a card's picture. */
@@ -156,6 +175,23 @@ export function contextPaths(fc: GeoJSON.FeatureCollection, w: number, h: number
     r: (f.properties?.r as string | null) ?? null,
     me: !!f.properties?.me,
   })).sort((a, b) => Number(a.me) - Number(b.me));
+}
+
+/** A polygon's outer rings as an SVG path in a w x h box, kept to scale (north up). */
+export function shapePath(g: GeoJSON.Geometry, w: number, h: number, pad = 6): string | null {
+  const polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+  const rings = polys.map((p) => p[0]).filter(Boolean);
+  if (!rings.length) return null;
+  const lat0 = rings[0][0][1];
+  const k = Math.cos((lat0 * Math.PI) / 180);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const r of rings) for (const [x, y] of r) {
+    minX = Math.min(minX, x * k); maxX = Math.max(maxX, x * k); minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+  }
+  const s = Math.min((w - 2 * pad) / (maxX - minX || 1e-9), (h - 2 * pad) / (maxY - minY || 1e-9));
+  const ox = (w - (maxX - minX) * s) / 2;
+  const oy = (h - (maxY - minY) * s) / 2;
+  return rings.map((r) => r.map(([x, y], i) => `${i ? "L" : "M"}${(ox + (x * k - minX) * s).toFixed(1)},${(oy + (maxY - y) * s).toFixed(1)}`).join("") + "Z").join("");
 }
 
 export interface Hood { slug: string; name: string; geometry: GeoJSON.Geometry }

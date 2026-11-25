@@ -43,6 +43,20 @@ LABELS: dict[str, str] = {
 # A retrieval task's own name, where it differs from the key.
 ALIASES: dict[str, str] = {"zoning_lookup": "zoning", "comparable_sales": "comparables"}
 
+# Where a failure shows: the Profile module (and, in the report, the section) whose figures it leaves out.
+# ``build`` = zoning and overlays, ``economics`` = the parcel's records and incentives, ``market`` = comps and
+# nearby sales, ``record`` = violations, 311 and permits at the address, and the flood zone, ``area`` = the neighborhood. These are the
+# Profile's module ids (``module-<name>``), so the frontend table must match (a pytest pins it).
+MODULES: dict[str, str] = {
+    "zoning": "build", "regulatory": "build", "adjacent_zoning": "build", "block_face": "build",
+    "property": "economics", "incentives": "economics",
+    "comparables": "market", "nearby_construction": "market",
+    "violations": "record", "address_311": "record", "address_permits": "record", "address_violations": "record",
+    "flood": "record",  # the flood zone is shown on the Environment card, in "what to watch for"
+    "brownfield": "record",  # brownfields too (Item 65)
+    "crime": "area", "crime_yoy": "area", "neighborhood": "area", "aro_housing": "area", "311": "area",
+    "permits": "area", "business": "area", "vacant": "area", "food_inspections": "area",
+}
 
 # Sub-sources a domain reports as ``data_gaps`` (it succeeded, one part did not).
 _GAP_PROPERTY = {"property characteristics", "property assessments", "property sales history", "property tax estimate"}
@@ -117,3 +131,6 @@ def failed_detail(partial_failures: Iterable[str] | None) -> list[dict]:
     return [{"key": k, "labels": v} for k, v in out.items()]
 
 
+def in_module(keys: Iterable[str], module: str) -> list[str]:
+    """The failed keys whose figures belong to ``module``."""
+    return [k for k in keys if MODULES.get(k) == module]
